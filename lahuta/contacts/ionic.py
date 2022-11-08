@@ -10,12 +10,14 @@ import pandas as pd
 
 from ..core.groups import AtomGroup
 from ..core.universe import Universe
-from ..core.neighbors import NeighborPairsBase
+from ..core.neighbors import NeighborPairs, HBondNeighborPairs, NeighborPairsBase
 from ..utils.writers import DataFrameFactory
 from ..utils.array import matching_array_indices
 
+from ..config import config
 
-class HBondContactStrategy:
+
+class IonicContactStrategy:
     """A class to find hbond contacts between atoms in a molecule.
 
     Parameters
@@ -89,24 +91,19 @@ class HBondContactStrategy:
             An array of shape (n_pairs, 2) where each row is a pair of atom indices.
         """
 
-        hbond_atom12 = (
-            self.neighbors.type_filter("hbond donor", 0)
-            .type_filter("hbond acceptor", 1)
-            .contact_type("hbond")
-            .hbond_distance_filter(col=1)
-            .hbond_angle_filter(col=0)
+        ionic_atom12 = (
+            self.neighbors.type_filter("pos ionisable", 0)
+            .type_filter("neg ionisable", 1)
+            .distance_filter(config.CONTACT_TYPES["ionic"]["distance"])
         )
 
-        hbond_atom21 = (
-            self.neighbors.type_filter("hbond donor", 1)
-            .type_filter("hbond acceptor", 0)
-            .contact_type("hbond")
-            .hbond_distance_filter(col=0)
-            .hbond_angle_filter(col=1)
+        ionic_atom21 = (
+            self.neighbors.type_filter("neg ionisable", 0)
+            .type_filter("pos ionisable", 1)
+            .distance_filter(config.CONTACT_TYPES["ionic"]["distance"])
         )
 
-        # return hbond_atom21.pairs
-        return np.concatenate((hbond_atom12.pairs, hbond_atom21.pairs), axis=0)
+        return np.concatenate((ionic_atom12.pairs, ionic_atom21.pairs), axis=0)
 
     def _distances(self):
         """Return distances between covalently bonded pairs."""

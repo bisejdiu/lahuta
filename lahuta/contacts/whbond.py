@@ -10,12 +10,14 @@ import pandas as pd
 
 from ..core.groups import AtomGroup
 from ..core.universe import Universe
-from ..core.neighbors import NeighborPairsBase
+from ..core.neighbors import NeighborPairs, HBondNeighborPairs, NeighborPairsBase
 from ..utils.writers import DataFrameFactory
 from ..utils.array import matching_array_indices
 
+from ..config import config
 
-class HBondContactStrategy:
+
+class WeakHBondContactStrategy:
     """A class to find hbond contacts between atoms in a molecule.
 
     Parameters
@@ -90,22 +92,21 @@ class HBondContactStrategy:
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond donor", 0)
-            .type_filter("hbond acceptor", 1)
+            self.neighbors.type_filter("hbond acceptor", 0)
+            .type_filter("weak hbond donor", 1)
             .contact_type("hbond")
-            .hbond_distance_filter(col=1)
-            .hbond_angle_filter(col=0)
+            .hbond_distance_filter(col=0)
+            .hbond_angle_filter(col=1, weak=True)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond donor", 1)
-            .type_filter("hbond acceptor", 0)
+            self.neighbors.type_filter("hbond acceptor", 1)
+            .type_filter("weak hbond donor", 0)
             .contact_type("hbond")
-            .hbond_distance_filter(col=0)
-            .hbond_angle_filter(col=1)
+            .hbond_distance_filter(col=1)
+            .hbond_angle_filter(col=0, weak=True)
         )
 
-        # return hbond_atom21.pairs
         return np.concatenate((hbond_atom12.pairs, hbond_atom21.pairs), axis=0)
 
     def _distances(self):
