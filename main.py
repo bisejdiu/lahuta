@@ -4,8 +4,14 @@ from lahuta import AtomGroup
 from lahuta.core.universe import Universe
 from lahuta.contacts.covalent import CovalentContacts
 from lahuta.contacts.metal import MetalContacts
-from lahuta.contacts.hbonds import HBondContacts
-from lahuta.contacts.whbond import WeakHBondContacts
+from lahuta.contacts.hbonds import (
+    HBondContacts,
+    WeakHBondContacts,
+    PolarHBondContacts,
+    WeakPolarHBondContacts,
+)
+
+# from lahuta.contacts.whbond import WeakHBondContacts
 from lahuta.contacts.ionic import IonicContacts
 from lahuta.contacts.carbonyl import CarbonylContacts
 from lahuta.contacts.aromatic import AromaticContacts
@@ -79,6 +85,31 @@ if __name__ == "__main__":
     # print(a.contacts("dataframe", "print").head(40))
     # print(a.contacts("dataframe", "print").shape)
 
-    h = HydrophobicContacts(u, n)
-    print(h.contacts("dataframe", "print").head(40))
-    print(h.contacts("dataframe", "print").shape)
+    # h = HydrophobicContacts(u, n)
+    # print(h.contacts("dataframe", "print").head(40))
+    # print(h.contacts("dataframe", "print").shape)
+
+    # ph = PolarHBondContacts(u, n)
+    # # print(ph.pairs)
+    # pairs = ph.pairs
+    # new_sorted_pairs = []
+    # for pair in pairs:
+    #     key = tuple(sorted(pair))
+    #     new_sorted_pairs.append(key)
+
+    # # sort according to the first element of the pair
+    # new_sorted_pairs = sorted(new_sorted_pairs, key=lambda x: x[0])
+    # print(np.array(new_sorted_pairs))
+    # # print(ph.contacts("dataframe", "print").head(40))
+    # print(ph.contacts("dataframe", "print").shape)
+
+    ph = WeakPolarHBondContacts(u, n)
+    pairs = ph.pairs
+    new_sorted_pairs = []
+    for pair in pairs:
+        key = tuple(sorted(pair))
+        new_sorted_pairs.append(key)
+
+    new_sorted_pairs = sorted(new_sorted_pairs, key=lambda x: x[0])
+    print(np.array(new_sorted_pairs))
+    print(ph.contacts("dataframe", "print").shape)

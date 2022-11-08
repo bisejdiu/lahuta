@@ -127,6 +127,8 @@ class DataFrameFactory:
             data[f"residue2_{method}"] = getattr(col2, method)
         data["distances"] = distances
 
+        # print(data)
+
         self.data = pd.DataFrame.from_dict(data)
 
     def dataframe(self) -> pd.DataFrame:

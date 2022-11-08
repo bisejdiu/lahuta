@@ -201,7 +201,7 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the selected pairs.
         """
-        mask = self.distances < distance
+        mask = self.distances <= distance
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def radius_filter(
