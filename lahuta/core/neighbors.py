@@ -66,6 +66,11 @@ class NeighborPairsBase(Protocol):
         """Return the distances of the neighbor pairs."""
         return self._distances
 
+    @property
+    def indices(self) -> np.ndarray:
+        """Get the indices of the atoms that are neighbors."""
+        return np.unique([self.col1.indices, self.col2.indices])
+
 
 class NeighborPairs:
     """A class for storing neighbor pairs."""

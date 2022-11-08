@@ -2,11 +2,12 @@
 
 from lahuta import AtomGroup
 from lahuta.core.universe import Universe
-from lahuta.contacts.covalent import CovalentContactStrategy
-from lahuta.contacts.metal import MetalContactStrategy
-from lahuta.contacts.hbonds import HBondContactStrategy
-from lahuta.contacts.whbond import WeakHBondContactStrategy
-from lahuta.contacts.ionic import IonicContactStrategy
+from lahuta.contacts.covalent import CovalentContacts
+from lahuta.contacts.metal import MetalContacts
+from lahuta.contacts.hbonds import HBondContacts
+from lahuta.contacts.whbond import WeakHBondContacts
+from lahuta.contacts.ionic import IonicContacts
+from lahuta.contacts.carbonyl import CarbonylContacts
 from lahuta.config import config
 
 
@@ -26,11 +27,15 @@ if __name__ == "__main__":
     # )
     # print(m)
 
-    # cc = CovalentContactStrategy(u, n)
+    # cc = CovalentContacts(u, n)
     # print(cc.contacts("dataframe", "compact"))
 
-    # mc = MetalContactStrategy(u, n)
-    # print(mc.contacts("dataframe", "compact"))
+    mc = MetalContacts(u, n)
+    print(mc.contacts("dataframe", "compact"))
+
+    cc = CarbonylContacts(u, n)
+    # print(cc.pairs)
+    print(cc.contacts("dataframe", "compact"))
 
     # v = (
     #     n.type_filter("hbond donor", 0)
@@ -41,11 +46,13 @@ if __name__ == "__main__":
     # )
     # print(v.result_array)
 
-    # hb = HBondContactStrategy(u, n)
-    # whb = WeakHBondContactStrategy(u, n)
+    # hb = HBondContacts(u, n)
+    # # whb = WeakHBondContacts(u, n)
     # # print(hb.pairs)
-    # print(whb.contacts("dataframe", "print").head(40))
-    # print(whb.contacts("dataframe", "print").shape)
+    # # ww = hb.contacts("dataframe", "print")
+    # # ww.head(20)
+    # print(hb.contacts("dataframe", "print").head(40))
+    # print(hb.contacts("dataframe", "print").shape)
 
     # v1 = (
     #     n.type_filter("pos ionisable", 0)
@@ -61,6 +68,7 @@ if __name__ == "__main__":
     # print(v1.pairs)
     # print(v2.pairs)
 
-    i = IonicContactStrategy(u, n)
+    i = IonicContacts(u, n)
+    print(i.col1.indices, "indices")
     print(i.contacts("dataframe", "print").head(40))
     print(i.contacts("dataframe", "print").shape)

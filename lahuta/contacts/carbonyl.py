@@ -15,8 +15,8 @@ from ..config import config
 from .protocol import ContactBase
 
 
-class MetalContacts(ContactBase):
-    """A class to compute metal contacts.
+class CarbonylContacts(ContactBase):
+    """A class to compute carbonyl contacts.
 
     Parameters
     ----------
@@ -28,7 +28,7 @@ class MetalContacts(ContactBase):
 
     """
 
-    distance = config.CONTACT_TYPES["metal"]["distance"]
+    distance = config.CONTACT_TYPES["carbonyl"]["distance"]
 
     def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairsBase):
         # TODO:
@@ -46,7 +46,7 @@ class MetalContacts(ContactBase):
         super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
-        """Get the metal contacts.
+        """Get the carbonyl contacts.
 
         Parameters
         ----------
@@ -56,23 +56,20 @@ class MetalContacts(ContactBase):
         Returns
         -------
         np.ndarray
-            The metal contacts between atoms in a molecule.
+            The carbonyl contacts between atoms in a molecule.
 
         """
 
-        # (atom1 is hbond acceptor and atom2 is metal  OR
-        #  atom2 is hbond acceptor and atom1 is metal) AND
-        # distance between atom1 and atom2 is less than `distance`
-        acceptor_metal = (
-            self.neighbors.type_filter("hbond acceptor", 0)
-            .index_filter(self.metal_indices, 1)
+        ionic_atom12 = (
+            self.neighbors.type_filter("carbonyl oxygen", 0)
+            .type_filter("carbonyl carbon", 1)
             .distance_filter(self.distance)
-        ).pairs
+        )
 
-        metal_acceptor = (
-            self.neighbors.type_filter("hbond acceptor", 1)
-            .index_filter(self.metal_indices, 0)
+        ionic_atom21 = (
+            self.neighbors.type_filter("carbonyl carbon", 0)
+            .type_filter("carbonyl oxygen", 1)
             .distance_filter(self.distance)
-        ).pairs
+        )
 
-        return np.vstack((acceptor_metal, metal_acceptor))
+        return np.concatenate((ionic_atom12.pairs, ionic_atom21.pairs), axis=0)
