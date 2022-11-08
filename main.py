@@ -8,6 +8,8 @@ from lahuta.contacts.hbonds import HBondContacts
 from lahuta.contacts.whbond import WeakHBondContacts
 from lahuta.contacts.ionic import IonicContacts
 from lahuta.contacts.carbonyl import CarbonylContacts
+from lahuta.contacts.aromatic import AromaticContacts
+from lahuta.contacts.hydrophobic import HydrophobicContacts
 from lahuta.config import config
 
 
@@ -30,12 +32,12 @@ if __name__ == "__main__":
     # cc = CovalentContacts(u, n)
     # print(cc.contacts("dataframe", "compact"))
 
-    mc = MetalContacts(u, n)
-    print(mc.contacts("dataframe", "compact"))
+    # mc = MetalContacts(u, n)
+    # print(mc.contacts("dataframe", "compact"))
 
-    cc = CarbonylContacts(u, n)
-    # print(cc.pairs)
-    print(cc.contacts("dataframe", "compact"))
+    # cc = CarbonylContacts(u, n)
+    # # print(cc.pairs)
+    # print(cc.contacts("dataframe", "compact"))
 
     # v = (
     #     n.type_filter("hbond donor", 0)
@@ -68,7 +70,15 @@ if __name__ == "__main__":
     # print(v1.pairs)
     # print(v2.pairs)
 
-    i = IonicContacts(u, n)
-    print(i.col1.indices, "indices")
-    print(i.contacts("dataframe", "print").head(40))
-    print(i.contacts("dataframe", "print").shape)
+    # i = IonicContacts(u, n)
+    # print(i.col1.indices, "indices")
+    # print(i.contacts("dataframe", "print").head(40))
+    # print(i.contacts("dataframe", "print").shape)
+
+    # a = AromaticContacts(u, n)
+    # print(a.contacts("dataframe", "print").head(40))
+    # print(a.contacts("dataframe", "print").shape)
+
+    h = HydrophobicContacts(u, n)
+    print(h.contacts("dataframe", "print").head(40))
+    print(h.contacts("dataframe", "print").shape)

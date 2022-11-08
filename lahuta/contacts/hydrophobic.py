@@ -15,8 +15,8 @@ from ..config import config
 from .protocol import ContactBase
 
 
-class CarbonylContacts(ContactBase):
-    """A class to compute carbonyl contacts.
+class HydrophobicContacts(ContactBase):
+    """A class to compute hydrophobic contacts.
 
     Parameters
     ----------
@@ -28,13 +28,13 @@ class CarbonylContacts(ContactBase):
 
     """
 
-    distance = config.CONTACT_TYPES["carbonyl"]["distance"]
+    distance = config.CONTACT_TYPES["hydrophobic"]["distance"]
 
     def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairsBase):
         super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
-        """Get the carbonyl contacts.
+        """Get the hydrophobic contacts.
 
         Parameters
         ----------
@@ -44,20 +44,13 @@ class CarbonylContacts(ContactBase):
         Returns
         -------
         np.ndarray
-            The carbonyl contacts between atoms in a molecule.
+            The hydrophobic contacts between atoms in a molecule.
 
         """
 
-        ionic_atom12 = (
-            self.neighbors.type_filter("carbonyl oxygen", 0)
-            .type_filter("carbonyl carbon", 1)
+        return (
+            self.neighbors.type_filter("hydrophobe", 0)
+            .type_filter("hydrophobe", 1)
             .distance_filter(self.distance)
+            .pairs
         )
-
-        ionic_atom21 = (
-            self.neighbors.type_filter("carbonyl carbon", 0)
-            .type_filter("carbonyl oxygen", 1)
-            .distance_filter(self.distance)
-        )
-
-        return np.concatenate((ionic_atom12.pairs, ionic_atom21.pairs), axis=0)
