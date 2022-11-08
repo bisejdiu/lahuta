@@ -11,7 +11,6 @@ from lahuta.contacts.hbonds import (
     WeakPolarHBondContacts,
 )
 
-# from lahuta.contacts.whbond import WeakHBondContacts
 from lahuta.contacts.ionic import IonicContacts
 from lahuta.contacts.carbonyl import CarbonylContacts
 from lahuta.contacts.aromatic import AromaticContacts
@@ -104,12 +103,14 @@ if __name__ == "__main__":
     # print(ph.contacts("dataframe", "print").shape)
 
     ph = WeakPolarHBondContacts(u, n)
-    pairs = ph.pairs
-    new_sorted_pairs = []
-    for pair in pairs:
-        key = tuple(sorted(pair))
-        new_sorted_pairs.append(key)
+    # pairs = ph.pairs
+    # new_sorted_pairs = []
+    # for pair in pairs:
+    #     key = tuple(sorted(pair))
+    #     new_sorted_pairs.append(key)
 
-    new_sorted_pairs = sorted(new_sorted_pairs, key=lambda x: x[0])
-    print(np.array(new_sorted_pairs))
-    print(ph.contacts("dataframe", "print").shape)
+    # new_sorted_pairs = sorted(new_sorted_pairs, key=lambda x: x[0])
+    # print(np.array(new_sorted_pairs))
+    print(ph.contacts("dataframe", "print"))
+    print(ph.contacts("dataframe", "compact"))
+    print(ph.contacts("dataframe", "expanded"))

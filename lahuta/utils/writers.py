@@ -2,35 +2,32 @@
 Placeholder
 """
 
-from typing import List, Tuple, Union, Dict
-from typing_extensions import Protocol, Literal
+from typing import Dict, Any, Protocol, Literal
 
 import numpy as np
 import pandas as pd
 
 from ..core.groups import AtomGroup
 
+from dataclasses import dataclass
 
+
+@dataclass
 class DataFrameBase(Protocol):
     """A class for storing and manipulating contact data."""
 
-    def __init__(self, data: pd.DataFrame):
-        """A class for storing and manipulating contact data."""
-
-    def dataframe(self) -> pd.DataFrame:
-        """Return the dataframe."""
+    def dataframe(self, data: Dict[Any, Any]) -> pd.DataFrame:
+        ...
 
 
+@dataclass
 class CompactDataFrame:
     """A class for storing and manipulating contact data."""
 
-    def __init__(self, data: pd.DataFrame):
-        """A class for storing and manipulating contact data."""
-        self.data = data
-
-    def dataframe(self) -> pd.DataFrame:
+    def dataframe(self, data: Dict[Any, Any]) -> pd.DataFrame:
         """Build the dataframe based on input format."""
 
+        self.data = data
         df = pd.DataFrame.from_dict(self.data)
         df["residue1"] = df.filter(like="residue1_").apply(
             lambda x: "-".join(x.dropna().astype(str)), axis=1
@@ -43,64 +40,32 @@ class CompactDataFrame:
 
         return df[["residue1", "residue2", "distances"]]
 
-    def __repr__(self):
-        return f"<Lahuta DataFrame with {self.data.shape[0]} contacts>"
 
-    def __str__(self):
-        return self.__repr__()
-
-
-class ExpandedDataFrame:
-    """A class for storing and manipulating contact data."""
-
-    def __init__(self, data: pd.DataFrame):
-        """A class for storing and manipulating contact data."""
-        self.data = data
-
-    def dataframe(self) -> pd.DataFrame:
-        """Build the dataframe based on input format."""
-
-        return pd.DataFrame.from_dict(self.data)
-
-    def __repr__(self):
-        return f"<Lahuta DataFrame with {self.data.shape[0]} contacts>"
-
-    def __str__(self):
-        return self.__repr__()
-
-
+@dataclass
 class PrintDataFrame:
     """A class for storing and manipulating contact data."""
 
-    def __init__(self, data: pd.DataFrame):
-        """A class for storing and manipulating contact data."""
-        self.data = data
-
-    def dataframe(self) -> pd.DataFrame:
+    def dataframe(self, data: Dict[Any, Any]) -> pd.DataFrame:
         """Build the dataframe based on input format."""
 
-        self.data = {
-            k: v for k, v in sorted(self.data.items(), key=lambda item: item[0])
-        }
-        df = pd.DataFrame.from_dict(self.data)
-        df.columns = pd.MultiIndex.from_tuples(
-            [tuple(col.split("_")) for col in df.columns]
+        data = {k: v for k, v in sorted(data.items(), key=lambda item: item[0])}
+        self.data = pd.DataFrame.from_dict(data)
+        self.data.columns = pd.MultiIndex.from_tuples(
+            [tuple(col.split("_")) for col in self.data.columns]
         )
 
-        return df
-
-    def __repr__(self):
-        return f"<Lahuta DataFrame with {self.data.shape[0]} contacts>"
-
-    def __str__(self):
-        return self.__repr__()
+        return self.data
 
 
-FACTORY_DICT: Dict[Literal["compact", "expanded", "print"], DataFrameBase] = {
-    "compact": CompactDataFrame,
-    "expanded": ExpandedDataFrame,
-    "print": PrintDataFrame,
-}
+@dataclass
+class ExpandedDataFrame:
+    """A class for storing and manipulating contact data."""
+
+    def dataframe(self, data: Dict[Any, Any]) -> pd.DataFrame:
+        """Build the dataframe based on input format."""
+        self.data = data
+
+        return pd.DataFrame.from_dict(data)
 
 
 class DataFrameFactory:
@@ -112,7 +77,7 @@ class DataFrameFactory:
         self,
         nag: AtomGroup,
         distances: np.ndarray,
-        df_format: Literal["compact", "expanded", "print"],
+        df_format: Literal["print", "compact", "expanded"] = "print",
     ):
         """A class for storing and manipulating contact data."""
 
@@ -127,16 +92,16 @@ class DataFrameFactory:
             data[f"residue2_{method}"] = getattr(col2, method)
         data["distances"] = distances
 
-        # print(data)
-
-        self.data = pd.DataFrame.from_dict(data)
+        self.data = data
 
     def dataframe(self) -> pd.DataFrame:
         """Build the dataframe based on input format."""
-        return FACTORY_DICT[self.format](self.data).dataframe()
 
-    def __repr__(self):
-        return f"<Lahuta DataFrame with {self.data.shape[0]} contacts>"
+        return FACTORY_DICT[self.format].dataframe(self.data)
 
-    def __str__(self):
-        return self.__repr__()
+
+FACTORY_DICT: Dict[str, DataFrameBase] = {
+    "compact": CompactDataFrame(),
+    "expanded": ExpandedDataFrame(),
+    "print": PrintDataFrame(),
+}
