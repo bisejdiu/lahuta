@@ -2,19 +2,19 @@
 
 from lahuta import AtomGroup
 from lahuta.core.universe import Universe
-from lahuta.contacts.covalent import CovalentContacts
-from lahuta.contacts.metal import MetalContacts
-from lahuta.contacts.hbonds import (
+from lahuta.contacts import CovalentContacts
+from lahuta.contacts import MetalContacts
+from lahuta.contacts import (
     HBondContacts,
     WeakHBondContacts,
     PolarHBondContacts,
     WeakPolarHBondContacts,
 )
 
-from lahuta.contacts.ionic import IonicContacts
-from lahuta.contacts.carbonyl import CarbonylContacts
-from lahuta.contacts.aromatic import AromaticContacts
-from lahuta.contacts.hydrophobic import HydrophobicContacts
+from lahuta.contacts import IonicContacts
+from lahuta.contacts import CarbonylContacts
+from lahuta.contacts import AromaticContacts
+from lahuta.contacts import HydrophobicContacts
 
 from lahuta.config.defaults import CONTACTS
 

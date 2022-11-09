@@ -531,7 +531,7 @@ STANDARD_NUCLEOTIDES = set(
 )
 
 
-STANDARD_RESIDUES = set(
+STANDARD_AMINO_ACIDS = set(
     [
         "ALA",
         "CYS",

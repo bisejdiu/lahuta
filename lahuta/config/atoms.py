@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # NAMES
 HALOGENS = set(["F", "CL", "BR", "I", "AT"])
 

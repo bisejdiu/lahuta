@@ -7,7 +7,7 @@ from openbabel import openbabel as ob
 
 from ..config.atoms import PROT_ATOM_TYPES
 from ..config.smarts import ATOM_TYPES
-from ..config.residues import STANDARD_RESIDUES
+from ..config.residues import STANDARD_AMINO_ACIDS
 
 
 def assign_atom_types(mol, atomgroup):
@@ -53,7 +53,7 @@ def assign_atom_types(mol, atomgroup):
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
     for residue in atomgroup.select_atoms(
-        "resname " + " ".join(STANDARD_RESIDUES)
+        "resname " + " ".join(STANDARD_AMINO_ACIDS)
     ).residues:
         for atom in residue.atoms:
 
