@@ -13,7 +13,7 @@ from ..core.neighbors import NeighborPairsBase
 from ..core.groups import AtomGroup
 from ..core.universe import Universe
 
-from ..utils.array import matching_array_indices
+from ..utils.array import matching_indices
 from ..utils.writers import DataFrameFactory
 
 # class ContactStrategy(Protocol):
@@ -108,7 +108,7 @@ class ContactBase(ABC):
 
     def filter_distances(self):
         """Return distances between contact pairs."""
-        indices = matching_array_indices(self.neighbors.pairs, self.pairs)
+        indices = matching_indices(self.neighbors.pairs, self.pairs)
         return self.neighbors.distances[indices]
 
     @abstractmethod

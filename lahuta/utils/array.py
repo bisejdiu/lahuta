@@ -39,9 +39,8 @@ def calculate_angle(point_a, point_b, point_c, degrees=True):
     return np.arccos(res)
 
 
-def matching_array_indices(arr1, arr2):
-    """Return indices of elements in `arr1` that are in `arr2`. It works by broadcasting
-    `arr1` and `arr2` to a common shape and then comparing the elements.
+def matching_indices(arr1, arr2):
+    """Return indices of elements in `arr1` that are in `arr2`.
 
     Parameters
     ----------
@@ -58,4 +57,25 @@ def matching_array_indices(arr1, arr2):
     """
 
     idx = (arr1[:, None] == arr2).all(-1).any(1)
+    return np.where(idx)[0]
+
+
+def non_matching_indices(arr1, arr2):
+    """Return the elements in `arr1` that are not in `arr2`.
+
+    Parameters
+    ----------
+    arr1 : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+    arr2 : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+
+    Returns
+    -------
+    arr : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+
+    """
+    idx = (arr1[:, None] != arr2).any(-1).all(1)
+
     return np.where(idx)[0]

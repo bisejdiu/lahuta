@@ -15,6 +15,7 @@ from lahuta.contacts import IonicContacts
 from lahuta.contacts import CarbonylContacts
 from lahuta.contacts import AromaticContacts
 from lahuta.contacts import HydrophobicContacts
+from lahuta.contacts.vdw import VanDerWaalsContacts
 
 from lahuta.config.defaults import CONTACTS
 
@@ -37,8 +38,8 @@ if __name__ == "__main__":
     # cc = CovalentContacts(u, n)
     # print(cc.contacts("dataframe", "compact"))
 
-    mc = MetalContacts(u, n)
-    print(mc.contacts("dataframe", "compact"))
+    # mc = MetalContacts(u, n)
+    # print(mc.contacts("dataframe", "compact"))
 
     # cc = CarbonylContacts(u, n)
     # # print(cc.pairs)
@@ -114,3 +115,9 @@ if __name__ == "__main__":
     # print(ph.contacts("dataframe", "print"))
     # print(ph.contacts("dataframe", "compact"))
     # print(ph.contacts("dataframe", "expanded"))
+
+    vdw = VanDerWaalsContacts(u, n)
+    # vdw.pairs = vdw.compute_contacts(remove_clashes=False)
+    # vdw.distances = vdw.filter_distances()
+    # print(vdw.pairs)
+    print(vdw.contacts("dataframe", "compact"))
