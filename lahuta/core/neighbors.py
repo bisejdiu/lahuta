@@ -10,7 +10,7 @@ import numpy as np
 
 from ..utils.array import calculate_angle
 from ..utils.atom_types import find_hydrogen_bonded_atoms
-from ..config import config
+from ..config.defaults import CONTACTS, VDW_RADII
 
 # from .groups import AtomGroup
 
@@ -290,7 +290,7 @@ class HBondNeighborPairs(NeighborPairs):
         attr_col = getattr(self, f"col{col+1}")
         hbound_attr_col = getattr(self, f"col{col2}")
 
-        tt_vdw_dist = attr_col.atoms.vdw_radii + config.VDW_RADII["H"] + vdw_comp_factor
+        tt_vdw_dist = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
         hbond_dist = self._get_hbond_distances(attr_col, hbound_attr_col)
         # hbond_dist = self._get_hbond_distances(hbound_attr_col, attr_col)
@@ -336,9 +336,7 @@ class HBondNeighborPairs(NeighborPairs):
         self.angles = self._get_hbond_angles(attr_col, hbound_attr_col)
         # self.angles = self._get_hbond_angles(hbound_attr_col, attr_col)
 
-        idx = np.any(
-            self.angles >= config.CONTACT_TYPES[contact_type]["angle rad"], axis=1
-        )
+        idx = np.any(self.angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
         self._distances = self._distances[idx]
 

@@ -10,7 +10,7 @@ from ..core.groups import AtomGroup
 from ..core.universe import Universe
 from ..core.neighbors import NeighborPairsBase
 
-from ..config import config
+from lahuta.config.defaults import CONTACTS
 
 from .protocol import ContactBase
 
@@ -28,7 +28,7 @@ class IonicContacts(ContactBase):
 
     """
 
-    distance = config.CONTACT_TYPES["ionic"]["distance"]
+    distance = CONTACTS["ionic"]["distance"]
 
     def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairsBase):
         super().__init__(ua, neighbors)

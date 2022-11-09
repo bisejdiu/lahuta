@@ -10,7 +10,8 @@ from ..core.groups import AtomGroup
 from ..core.universe import Universe
 from ..core.neighbors import NeighborPairsBase
 
-from ..config import config
+from ..config.defaults import CONTACTS
+from ..config.atoms import METALS
 
 from .protocol import ContactBase
 
@@ -28,18 +29,13 @@ class MetalContacts(ContactBase):
 
     """
 
-    distance = config.CONTACT_TYPES["metal"]["distance"]
+    distance = CONTACTS["metal"]["distance"]
 
     def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairsBase):
-        # TODO:
-        # put this into the config
-        metals = config.METALS
-        metals.add("Fe")
 
-        print("metal indices")
         self.metal_indices = (
             ua.atoms[neighbors.indices]
-            .select_atoms("element " + " ".join(metals))
+            .select_atoms("element " + " ".join(METALS))
             .indices
         )
 

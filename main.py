@@ -15,8 +15,8 @@ from lahuta.contacts.ionic import IonicContacts
 from lahuta.contacts.carbonyl import CarbonylContacts
 from lahuta.contacts.aromatic import AromaticContacts
 from lahuta.contacts.hydrophobic import HydrophobicContacts
-from lahuta.config import config
 
+from lahuta.config.defaults import CONTACTS
 
 if __name__ == "__main__":
 
@@ -37,8 +37,8 @@ if __name__ == "__main__":
     # cc = CovalentContacts(u, n)
     # print(cc.contacts("dataframe", "compact"))
 
-    # mc = MetalContacts(u, n)
-    # print(mc.contacts("dataframe", "compact"))
+    mc = MetalContacts(u, n)
+    print(mc.contacts("dataframe", "compact"))
 
     # cc = CarbonylContacts(u, n)
     # # print(cc.pairs)
@@ -64,12 +64,12 @@ if __name__ == "__main__":
     # v1 = (
     #     n.type_filter("pos ionisable", 0)
     #     .type_filter("neg ionisable", 1)
-    #     .distance_filter(config.CONTACT_TYPES["ionic"]["distance"])
+    #     .distance_filter(CONTACTS["ionic"]["distance"])
     # )
     # v2 = (
     #     n.type_filter("neg ionisable", 0)
     #     .type_filter("pos ionisable", 1)
-    #     .distance_filter(config.CONTACT_TYPES["ionic"]["distance"])
+    #     .distance_filter(CONTACTS["ionic"]["distance"])
     # )
 
     # print(v1.pairs)
@@ -102,7 +102,7 @@ if __name__ == "__main__":
     # # print(ph.contacts("dataframe", "print").head(40))
     # print(ph.contacts("dataframe", "print").shape)
 
-    ph = WeakPolarHBondContacts(u, n)
+    # ph = WeakPolarHBondContacts(u, n)
     # pairs = ph.pairs
     # new_sorted_pairs = []
     # for pair in pairs:
@@ -111,6 +111,6 @@ if __name__ == "__main__":
 
     # new_sorted_pairs = sorted(new_sorted_pairs, key=lambda x: x[0])
     # print(np.array(new_sorted_pairs))
-    print(ph.contacts("dataframe", "print"))
-    print(ph.contacts("dataframe", "compact"))
-    print(ph.contacts("dataframe", "expanded"))
+    # print(ph.contacts("dataframe", "print"))
+    # print(ph.contacts("dataframe", "compact"))
+    # print(ph.contacts("dataframe", "expanded"))

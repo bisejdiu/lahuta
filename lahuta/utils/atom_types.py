@@ -5,13 +5,15 @@ import numpy as np
 
 from openbabel import openbabel as ob
 
-from ..config import config
+from ..config.atoms import PROT_ATOM_TYPES
+from ..config.smarts import ATOM_TYPES
+from ..config.residues import STANDARD_RESIDUES
 
 
 def assign_atom_types(mol, atomgroup):
     """
     Assign atom types to each atom in the molecule.
-    Atom types are defined in config.ATOM_TYPES
+    Atom types are defined in `ATOM_TYPES`
     """
     atypes = {
         "hbond acceptor": 0,
@@ -28,7 +30,7 @@ def assign_atom_types(mol, atomgroup):
     }
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
-    for atom_type, smartsdict in config.ATOM_TYPES.items():
+    for atom_type, smartsdict in ATOM_TYPES.items():
 
         for smarts in smartsdict.values():
 
@@ -51,16 +53,16 @@ def assign_atom_types(mol, atomgroup):
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
     for residue in atomgroup.select_atoms(
-        "resname " + " ".join(config.STD_RES)
+        "resname " + " ".join(STANDARD_RESIDUES)
     ).residues:
         for atom in residue.atoms:
 
             # REMOVE TYPES IF ALREADY ASSIGNED FROM SMARTS
-            for atom_type in list(config.PROT_ATOM_TYPES.keys()):
+            for atom_type in list(PROT_ATOM_TYPES.keys()):
                 atypes_array[atom.index, atypes[atom_type]] = 0
 
             # ADD ATOM TYPES FROM DICTIONARY
-            for atom_type, atom_ids in config.PROT_ATOM_TYPES.items():
+            for atom_type, atom_ids in PROT_ATOM_TYPES.items():
                 atom_id = residue.resname.strip() + atom.name.strip()
                 if atom_id in atom_ids:
                     atypes_array[atom.index, atypes[atom_type]] = 1
