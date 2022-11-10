@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="lahuta",
-    version="0.5",
+    version="0.6",
     description="Lahuta is a Python package for calculating interatomic contacts based on the rules defined in CREDO.",
     author="Besian I. Sejdiu",
     project_urls={

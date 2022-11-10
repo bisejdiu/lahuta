@@ -160,7 +160,6 @@ class NeighborPairs:
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def index_filter(
-        # return the parent class
         self,
         indices: Union[int, List[int]],
         col: int,
@@ -272,8 +271,6 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the union of the two NeighborPairs objects.
         """
-        # result_pairs = self.setops.union(other.pairs)
-        # mask = np.isin(self.pairs, result_pairs).all(axis=1)
         mask = self.setops.union(other.pairs)
         pairs = np.concatenate((self.pairs, other.pairs), axis=0)[mask]
         distances = np.concatenate((self.distances, other.distances), axis=0)[mask]
@@ -299,14 +296,6 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the difference of the two NeighborPairs objects.
         """
-        # result_pairs = self.setops.difference(other.pairs)
-        # mask = np.isin(self.pairs, result_pairs).all(axis=1)
-
-        # return self.__class__(
-        #     self._atoms,
-        #     result_pairs,
-        #     self._distances[mask],
-        # )
         mask = self.setops.difference(other.pairs)
 
         return self.__class__(
@@ -517,11 +506,6 @@ class NeighborPairs:
         return self.symmetric_difference(other)
 
     def __eq__(self, other):
-        """Test group equality.
-
-        Two groups are equal if they contain the same indices in
-        the same order
-        """
         return np.array_equal(self.pairs, other.pairs)
 
     def __and__(self, other):
@@ -579,7 +563,6 @@ class HBondNeighborPairs(NeighborPairs):
         tt_vdw_dist = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
         hbond_dist = self._get_hbond_distances(attr_col, hbound_attr_col)
-        # hbond_dist = self._get_hbond_distances(hbound_attr_col, attr_col)
 
         distance_condition = hbond_dist <= tt_vdw_dist[:, np.newaxis]
         tt_hbond_dist_pairs = self.pairs[np.any(distance_condition, axis=1)]
