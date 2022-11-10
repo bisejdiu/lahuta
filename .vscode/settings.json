@@ -1,6 +1,19 @@
 {
     "python.formatting.provider": "black",
-    "python.analysis.extraPaths": ["lahuta", "lahuta/config"]
+    "python.analysis.extraPaths": [
+        "lahuta",
+        "lahuta/config",
+        "lahuta/contacts"
+    ],
+    "python.testing.pytestArgs": [
+        "lahuta"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
 
+    "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+   }
+   
 
 }

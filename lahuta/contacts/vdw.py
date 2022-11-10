@@ -14,7 +14,7 @@ from lahuta.config.defaults import CONTACTS
 
 from .protocol import ContactBase
 
-from ..utils.array import non_matching_indices
+from ..utils.array_utils import non_matching_indices
 
 
 class VanDerWaalsContacts(ContactBase):
