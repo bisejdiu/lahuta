@@ -10,3 +10,4 @@ from .hbonds import (
 from .hydrophobic import HydrophobicContacts
 from .ionic import IonicContacts
 from .metal import MetalContacts
+from .vdw import VanDerWaalsContacts

@@ -13,7 +13,7 @@ from ..core.neighbors import NeighborPairsBase
 from ..core.groups import AtomGroup
 from ..core.universe import Universe
 
-from ..utils.array import matching_indices
+from ..utils.array_utils import matching_indices
 from ..utils.writers import DataFrameFactory
 
 # class ContactStrategy(Protocol):
