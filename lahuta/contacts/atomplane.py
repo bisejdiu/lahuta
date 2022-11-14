@@ -26,17 +26,17 @@ class AtomPlaneContacts:
         rings = perceive_rings(self.ua.universe.mol)
         reference = np.array([ring["center"] for ring in rings])
         max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
-        p, d = get_mda_neighbors(self.ua, reference, max_cutoff=max_cutoff)
-        pp = self.ua.atoms[p].indices
+        pairs, d = get_mda_neighbors(self.ua, reference, max_cutoff=max_cutoff)
+        processed_pairs = self.ua.atoms[pairs].indices
 
-        ag = self.ua.universe.select_atoms("not element H")
-        pp = ag[p].indices
+        atomgroup = self.ua.universe.select_atoms("not element H")
+        processed_pairs = atomgroup[pairs].indices
 
-        n = NeighborPairs(self.ua.atoms, pp, d)
-        no_aroms = n.difference(n.type_filter("aromatic", col=1))
+        neighbors = NeighborPairs(self.ua.atoms, processed_pairs, d)
+        no_aroms = neighbors.difference(neighbors.type_filter("aromatic", col=1))
 
-        ix = intersection(pp, no_aroms.pairs)
-        pix = p[ix]
+        ix = intersection(processed_pairs, no_aroms.pairs)
+        pix = pairs[ix]
 
         ring_centers = np.array([ring["center"] for ring in rings])
         ring_normals = np.array([ring["normal"] for ring in rings])
@@ -49,7 +49,7 @@ class AtomPlaneContacts:
         )
 
         result = []
-        for (ix1, ix2), angle in zip(pp, angles):
+        for (ix1, ix2), angle in zip(processed_pairs, angles):
             result.append([ix1, ix2, angle])
 
         return sorted(result, key=lambda x: x[2])
