@@ -562,7 +562,7 @@ class HBondNeighborPairs(NeighborPairs):
 
         self.hbond_array = find_hydrogen_bonded_atoms(self._atoms.universe.mol)
         self.hbond_angles = (
-            None if kwargs.get("angles") is None else kwargs.get("angles")
+            None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
         )
         self.result_array = (
             None if kwargs.get("result_array") is None else kwargs.get("result_array")
@@ -604,7 +604,7 @@ class HBondNeighborPairs(NeighborPairs):
             self._atoms,
             tt_hbond_dist_pairs,
             tt_hbond_distances,
-            angles=self.hbond_angles,
+            hbangles=self.hbond_angles,
             result_array=self.result_array,
         )
 
@@ -650,7 +650,7 @@ class HBondNeighborPairs(NeighborPairs):
             self._atoms,
             self._pairs,
             self.distances,
-            angles=self.hbond_angles,
+            hbangles=self.hbond_angles,
             result_array=self.result_array,
         )
 

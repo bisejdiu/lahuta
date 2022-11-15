@@ -346,10 +346,15 @@ class APDataFrameFactory:
         """A class for storing and manipulating contact data."""
 
         ring_indices = [ring["atoms"] for ring in rings]
-        first_ring_atoms = [
-            ring[0] for ix, ring in enumerate(ring_indices) if ix in nag[:, 0].indices
-        ]
-
+        # first_ring_atoms = [
+        #     ring[0] for ix, ring in enumerate(ring_indices) if ix in nag[:, 0].indices
+        # ]
+        first_ring_atoms_dict = {
+            ix: ring[0]
+            for ix, ring in enumerate(ring_indices)
+            if ix in nag[:, 0].indices
+        }
+        first_ring_atoms = [first_ring_atoms_dict[x] for x in nag[:, 0].indices]
         col1, col2 = nag.universe.atoms[first_ring_atoms], nag[:, 1]
 
         self.methods = ["resids", "resnames", "names", "indices"]
