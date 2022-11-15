@@ -26,13 +26,15 @@ class AtomPlaneContacts:
         rings = perceive_rings(self.ua.universe.mol)
         reference = np.array([ring["center"] for ring in rings])
         max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
-        pairs, d = get_mda_neighbors(self.ua, reference, max_cutoff=max_cutoff)
-        processed_pairs = self.ua.atoms[pairs].indices
 
         atomgroup = self.ua.universe.select_atoms("not element H")
+        pairs, distances = mda_distances.capped_distance(
+            reference, atomgroup.positions, max_cutoff, return_distances=True
+        )
+
         processed_pairs = atomgroup[pairs].indices
 
-        neighbors = NeighborPairs(self.ua.atoms, processed_pairs, d)
+        neighbors = NeighborPairs(self.ua.atoms, processed_pairs, distances)
         no_aroms = neighbors.difference(neighbors.type_filter("aromatic", col=1))
 
         ix = intersection(processed_pairs, no_aroms.pairs)
@@ -66,6 +68,20 @@ def get_mda_neighbors(ua, reference, max_cutoff=5.0):
 
 
 def vector_angle(v1, v2):
+    """Calculate the angle between two vectors.
+
+    Parameters
+    ----------
+    v1 : np.ndarray
+        First vector. It must be already normalized.
+    v2 : np.ndarray
+        Second vector.
+
+    Returns
+    -------
+    float
+        Angle between vectors in degrees.
+    """
 
     dot = np.einsum("ij,ij->i", v1, v2 / np.linalg.norm(v2, axis=1)[..., np.newaxis])
     angle = np.sign(dot) * np.arccos(dot)

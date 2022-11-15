@@ -15,6 +15,7 @@ from lahuta.contacts import (
     WeakPolarHBondContacts,
 )
 from lahuta.contacts.atomplane import AtomPlaneContacts
+from lahuta.contacts.planeplane import PlanePlaneContacts
 from lahuta.contacts.vdw import VanDerWaalsContacts
 from lahuta.core.universe import Universe
 
@@ -121,7 +122,13 @@ if __name__ == "__main__":
     # # print(vdw.pairs)
     # print(vdw.contacts("dataframe", "compact"))
 
-    ap = AtomPlaneContacts(u)
+    # ap = AtomPlaneContacts(u)
+    # z = ap.compute_contacts()
+    # print(z)
+    # print(len(z))
 
-    z = ap.compute_contacts()
-    print(z)
+    # pp = PlanePlaneContacts(u)
+    # z = pp.compute_contacts()
+    # print(len(z))
+    # print(z[0])
+    # print(z[1])

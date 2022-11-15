@@ -2,13 +2,12 @@
 Placeholder for the universe module.
 """
 
-import numpy as np
 import MDAnalysis as mda
+import numpy as np
 
-from .groups import AtomGroup
-
-from .obabel import OBMol
 from ..utils.atom_types import assign_atom_types, assign_radii
+from .groups import AtomGroup
+from .obabel import OBMol
 
 
 class Universe(mda.Universe):
@@ -37,12 +36,12 @@ class Universe(mda.Universe):
         """
         self.add_TopologyAttr(attrname, values)
 
-    def select_atoms(self, *args, **kwargs):
+    def select_atoms(self, *args, **kwargs) -> AtomGroup:
         """Select atoms.
 
         Wrapper around MDAnalysis Universe.select_atoms that returns a LahutaAtomGroup.
         """
-        return self.atoms.select_atoms(*args, **kwargs)
+        return self.atoms.select_atoms(*args, **kwargs)  # type: ignore
 
     def compute_neighbors(self, *args, **kwargs):
         """Compute neighbors.
