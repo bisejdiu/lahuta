@@ -2,9 +2,10 @@
 Placeholder for the neighbors module.
 """
 
+import warnings
 from abc import abstractmethod
 from functools import partial, update_wrapper
-from typing import Any, List, Union
+from typing import Any, List, Optional, Union
 
 import numpy as np
 from typing_extensions import Literal, Protocol
@@ -79,6 +80,7 @@ class NeighborPairs:
         self._atoms = uniatom.atoms
         self._pairs = pairs
         self._distances = distances
+        self._angles = None
         self.col1, self.col2 = uniatom[pairs[:, 0]], uniatom[pairs[:, 1]]
 
         self.setops = au.ArraySetOps(self._pairs)
@@ -224,6 +226,29 @@ class NeighborPairs:
         col_func = getattr(self, f"col{col+1}")
         mask = col_func.atoms.vdw_radii <= radius
 
+        return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
+
+    def angle_filter(
+        self, angle: float
+    ) -> Union["NeighborPairs", "HBondNeighborPairs"]:
+        """Select pairs based on the angle.
+
+        Parameters
+        ----------
+        angle : float
+            The angle to select.
+
+        Returns
+        -------
+        pairs : NeighborPairs
+            A NeighborPairs object containing the selected pairs.
+        """
+        if self._angles is None:
+
+            warnings.warn("Found no angles. Returning all pairs.")
+            return self
+
+        mask = self._angles <= angle
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     # TODO: vdw_comp_factor should be a class attribute and retrieved from config file
@@ -452,6 +477,11 @@ class NeighborPairs:
         return self._distances
 
     @property
+    def angles(self) -> Optional[np.ndarray]:
+        """Get the angles between the pairs of atoms that are neighbors."""
+        return self._angles
+
+    @property
     def indices(self) -> np.ndarray:
         """Get the indices of the atoms that are neighbors."""
         return np.unique([self.col1.indices, self.col2.indices])
@@ -531,7 +561,9 @@ class HBondNeighborPairs(NeighborPairs):
         super().__init__(*args, **kwargs)
 
         self.hbond_array = find_hydrogen_bonded_atoms(self._atoms.universe.mol)
-        self.angles = None if kwargs.get("angles") is None else kwargs.get("angles")
+        self.hbond_angles = (
+            None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
+        )
         self.result_array = (
             None if kwargs.get("result_array") is None else kwargs.get("result_array")
         )
@@ -572,7 +604,7 @@ class HBondNeighborPairs(NeighborPairs):
             self._atoms,
             tt_hbond_dist_pairs,
             tt_hbond_distances,
-            angles=self.angles,
+            hbangles=self.hbond_angles,
             result_array=self.result_array,
         )
 
@@ -602,23 +634,23 @@ class HBondNeighborPairs(NeighborPairs):
         attr_col = getattr(self, f"col{col+1}")
         hbound_attr_col = getattr(self, f"col{col2}")
 
-        self.angles = self._get_hbond_angles(attr_col, hbound_attr_col)
-        # self.angles = self._get_hbond_angles(hbound_attr_col, attr_col)
+        self.hbond_angles = self._get_hbond_angles(attr_col, hbound_attr_col)
+        # self.hbond_angles = self._get_hbond_angles(hbound_attr_col, attr_col)
 
-        idx = np.any(self.angles >= CONTACTS[contact_type]["angle rad"], axis=1)
+        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
         self._distances = self._distances[idx]
 
-        # self.result_array = np.full((len(self.angles), 4), np.nan)
+        # self.result_array = np.full((len(self.hbond_angles), 4), np.nan)
         # self.result_array[:, :2] = self._pairs
-        # self.result_array[:, 2] = np.nanmin(self.angles, axis=1)
+        # self.result_array[:, 2] = np.nanmin(self.hbond_angles, axis=1)
         # self.result_array[:, 3] = self.distances
 
         return self.__class__(
             self._atoms,
             self._pairs,
             self.distances,
-            angles=self.angles,
+            hbangles=self.hbond_angles,
             result_array=self.result_array,
         )
 
