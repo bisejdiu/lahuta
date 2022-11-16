@@ -12,7 +12,7 @@ from typing_extensions import Literal, Protocol
 
 from ..config.defaults import CONTACTS, VDW_RADII
 from ..utils import array_utils as au
-from ..utils.array_utils import calculate_angle
+from ..utils.array_utils import array_distance, calculate_angle
 from ..utils.atom_types import find_hydrogen_bonded_atoms
 
 
@@ -82,6 +82,14 @@ class NeighborPairs:
         self._distances = distances
         self._angles = None
         self.col1, self.col2 = uniatom[pairs[:, 0]], uniatom[pairs[:, 1]]
+
+        self.hbond_array = find_hydrogen_bonded_atoms(self._atoms.universe.mol)
+        self.hbond_angles = (
+            None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
+        )
+        # self.result_array = (
+        #     None if kwargs.get("result_array") is None else kwargs.get("result_array")
+        # )
 
         self.setops = au.ArraySetOps(self._pairs)
 
@@ -252,10 +260,130 @@ class NeighborPairs:
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     # TODO: vdw_comp_factor should be a class attribute and retrieved from config file
-    def hbond_distance_filter(self, col: int = 0, vdw_comp_factor: float = 0.1):
-        raise NotImplementedError(
-            "This method is not implemented for `NeighborPairs`. Please use `HBondNeighborPairs`."
+    # def hbond_distance_filter(self, col: int = 0, vdw_comp_factor: float = 0.1):
+    #     raise NotImplementedError(
+    #         "This method is not implemented for `NeighborPairs`. Please use `HBondNeighborPairs`."
+    #     )
+
+    def hbond_distance_filter(
+        self, col: int = 0, vdw_comp_factor: float = 0.1
+    ) -> "NeighborPairs":
+        """Filter the pairs based on the distance between the hydrogen bonded atoms.
+
+        Parameters
+        ----------
+        col : int
+            The column of the hydrogen bonded atom indices in the `hbond_array`.
+        vdw_comp_factor : float
+            The van der Waals complementarity factor.
+
+        Returns
+        -------
+        pairs : NeighborPairs
+            The filtered neighbor pairs.
+        """
+        col2 = 2
+        if col == 1:
+            col2 = 1
+
+        attr_col = getattr(self, f"col{col+1}")
+        hbound_attr_col = getattr(self, f"col{col2}")
+
+        vdw_distances = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
+
+        hbond_dist = self._get_hbond_distances(attr_col, hbound_attr_col)
+
+        distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
+        hbond_dist_pairs = self.pairs[distances_mask]
+        hbond_distances = self.distances[distances_mask]
+
+        return self.__class__(
+            self._atoms,
+            hbond_dist_pairs,
+            hbond_distances,
+            hbangles=self.hbond_angles,
+            # result_array=self.result_array,
         )
+
+    def hbond_angle_filter(self, col: int = 0, weak: bool = False) -> "NeighborPairs":
+        """Filter the pairs based on the angle between the hydrogen bonded atoms.
+
+        Parameters
+        ----------
+        col : int
+            The column of the hydrogen bonded atom indices in the `hbond_array`.
+        angle : float
+            The angle in degrees.
+
+        Returns
+        -------
+        pairs : NeighborPairs1
+            The filtered neighbor pairs.
+        """
+
+        contact_type = "weak hbond" if weak else "hbond"
+        col2 = 2
+        if col == 1:
+            col2 = 1
+
+        attr_col = getattr(self, f"col{col+1}")
+        hbound_attr_col = getattr(self, f"col{col2}")
+
+        self.hbond_angles = self._get_hbond_angles(attr_col, hbound_attr_col)
+
+        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
+        self._pairs = self._pairs[idx]
+        self._distances = self._distances[idx]
+
+        # self.result_array = np.full((len(self.hbond_angles), 4), np.nan)
+        # self.result_array[:, :2] = self._pairs
+        # self.result_array[:, 2] = np.nanmin(self.hbond_angles, axis=1)
+        # self.result_array[:, 3] = self.distances
+
+        return self.__class__(
+            self._atoms,
+            self._pairs,
+            self.distances,
+            hbangles=self.hbond_angles,
+            # result_array=self.result_array,
+        )
+
+    def _get_hbond_distances(self, attr_col, hbound_attr_col):
+        """Get the distances between the hydrogen bonded atoms.
+
+        Parameters
+        ----------
+        col : int
+            The column index of the hydrogen bonded atom.
+
+        Returns
+        -------
+        distances : np.ndarray
+            The distances between the hydrogen bonded atoms.
+        """
+
+        hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
+        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+
+        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+        distance_array = array_distance(attr_col.atoms.positions, hbound_atom_pos)
+
+        return distance_array
+
+    def _get_hbond_angles(self, col1, col2):
+        atom1_pos = col1.atoms.positions
+        atom2_pos = col2.atoms.positions
+
+        hbound_atom_indices = self.hbond_array[col1.atoms.indices]
+        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+
+        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+
+        point_a = atom1_pos[:, np.newaxis, :]
+        point_b = hbound_atom_pos
+        point_c = atom2_pos[:, np.newaxis, :]
+
+        return calculate_angle(point_a, point_b, point_c, degrees=False)
 
     def intersection(
         self, other: "NeighborPairsBase"
@@ -592,18 +720,18 @@ class HBondNeighborPairs(NeighborPairs):
         attr_col = getattr(self, f"col{col+1}")
         hbound_attr_col = getattr(self, f"col{col2}")
 
-        tt_vdw_dist = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
+        vdw_distances = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
         hbond_dist = self._get_hbond_distances(attr_col, hbound_attr_col)
 
-        distance_condition = hbond_dist <= tt_vdw_dist[:, np.newaxis]
-        tt_hbond_dist_pairs = self.pairs[np.any(distance_condition, axis=1)]
-        tt_hbond_distances = self.distances[np.any(distance_condition, axis=1)]
+        distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
+        hbond_dist_pairs = self.pairs[distances_mask]
+        hbond_distances = self.distances[distances_mask]
 
         return self.__class__(
             self._atoms,
-            tt_hbond_dist_pairs,
-            tt_hbond_distances,
+            hbond_dist_pairs,
+            hbond_distances,
             hbangles=self.hbond_angles,
             result_array=self.result_array,
         )
@@ -668,15 +796,11 @@ class HBondNeighborPairs(NeighborPairs):
             The distances between the hydrogen bonded atoms.
         """
 
-        col_atom_pos = attr_col.atoms.positions
-
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan
-        distance_array = np.linalg.norm(
-            col_atom_pos[:, np.newaxis, :] - hbound_atom_pos, axis=-1
-        )
+        distance_array = array_distance(attr_col.atoms.positions, hbound_atom_pos)
 
         return distance_array
 

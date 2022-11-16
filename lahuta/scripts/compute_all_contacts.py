@@ -2,25 +2,14 @@ import time
 
 from lahuta import AtomGroup
 from lahuta.config.defaults import CONTACTS
-from lahuta.contacts import (
-    AromaticContacts,
-    CarbonylContacts,
-    CovalentContacts,
-    HBondContacts,
-    HydrophobicContacts,
-    IonicContacts,
-    MetalContacts,
-    PolarHBondContacts,
-    WeakHBondContacts,
-    WeakPolarHBondContacts,
-)
-from lahuta.contacts.plane import (
-    APDataFrameFactory,
-    AtomPlaneContacts,
-    EnumContactStrategies,
-    PlanePlaneContacts,
-    PPDataFrameFactory,
-)
+from lahuta.contacts import (AromaticContacts, CarbonylContacts,
+                             CovalentContacts, HBondContacts,
+                             HydrophobicContacts, IonicContacts, MetalContacts,
+                             PolarHBondContacts, WeakHBondContacts,
+                             WeakPolarHBondContacts)
+from lahuta.contacts.plane import (APDataFrameFactory, AtomPlaneContacts,
+                                   EnumContactStrategies, PlanePlaneContacts,
+                                   PPDataFrameFactory)
 from lahuta.contacts.vdw import VanDerWaalsContacts
 from lahuta.core.universe import Universe
 
@@ -32,49 +21,53 @@ n = u.compute_neighbors()
 
 # Compute contacts
 cc = CovalentContacts(u, n)
-c = cc.contacts("dataframe", "expanded")
-print("covalent", c.shape)
-print(c)
+# c = cc.contacts("dataframe", "expanded")
+# print("covalent", c.shape)
+# print(c)
 
 mc = MetalContacts(u, n)
-c = mc.contacts("dataframe", "expanded")
-print("metal", c.shape)
+# c = mc.contacts("dataframe", "expanded")
+# print("metal", c.shape)
 
 cc = CarbonylContacts(u, n)
-c = cc.contacts("dataframe", "expanded")
-print("carbonyl", c.shape)
+# c = cc.contacts("dataframe", "expanded")
+# print("carbonyl", c.shape)
 
 hb = HBondContacts(u, n)
-c = hb.contacts("dataframe", "expanded")
-print("hbond", c.shape)
+# c = hb.contacts("dataframe", "expanded")
+# print("hbond", c.shape)
 
 whb = WeakHBondContacts(u, n)
-c = whb.contacts("dataframe", "expanded")
-print("weak hbond", c.shape)
+# c = whb.contacts("dataframe", "expanded")
+# print("weak hbond", c.shape)
 
 i = IonicContacts(u, n)
-c = i.contacts("dataframe", "expanded")
-print("ionic", c.shape)
+# c = i.contacts("dataframe", "expanded")
+# print("ionic", c.shape)
 
 a = AromaticContacts(u, n)
-c = a.contacts("dataframe", "expanded")
-print("aromatic", c.shape)
+# c = a.contacts("dataframe", "expanded")
+# print("aromatic", c.shape)
 
 h = HydrophobicContacts(u, n)
-c = h.contacts("dataframe", "expanded")
-print("hydrophobic", c.shape)
+# c = h.contacts("dataframe", "expanded")
+# print("hydrophobic", c.shape)
 
 ph = PolarHBondContacts(u, n)
-c = ph.contacts("dataframe", "expanded")
-print("polar hbond", c.shape)
+# c = ph.contacts("dataframe", "expanded")
+# print("polar hbond", c.shape)
 
 wph = WeakPolarHBondContacts(u, n)
-c = ph.contacts("dataframe", "expanded")
-print("weak polar hbond", c.shape)
+# c = ph.contacts("dataframe", "expanded")
+# print("weak polar hbond", c.shape)
 
 vdw = VanDerWaalsContacts(u, n)
-c = vdw.contacts("dataframe", "expanded")
-print("vdw", c.shape)
+# c = vdw.contacts("dataframe", "expanded")
+# print("vdw", c.shape)
+
+end = time.time()
+print("time", end - start)
+
 
 ap = AtomPlaneContacts(u)
 ap.compute_contacts()
@@ -111,5 +104,5 @@ c = PPDataFrameFactory(
 ).dataframe()
 print("plane plane", c.shape)
 
-end = time.time()
-print("time", end - start)
+# end = time.time()
+# print("time", end - start)
