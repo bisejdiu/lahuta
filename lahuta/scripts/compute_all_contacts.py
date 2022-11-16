@@ -2,14 +2,25 @@ import time
 
 from lahuta import AtomGroup
 from lahuta.config.defaults import CONTACTS
-from lahuta.contacts import (AromaticContacts, CarbonylContacts,
-                             CovalentContacts, HBondContacts,
-                             HydrophobicContacts, IonicContacts, MetalContacts,
-                             PolarHBondContacts, WeakHBondContacts,
-                             WeakPolarHBondContacts)
-from lahuta.contacts.plane import (APDataFrameFactory, AtomPlaneContacts,
-                                   EnumContactStrategies, PlanePlaneContacts,
-                                   PPDataFrameFactory)
+from lahuta.contacts import (
+    AromaticContacts,
+    CarbonylContacts,
+    CovalentContacts,
+    HBondContacts,
+    HydrophobicContacts,
+    IonicContacts,
+    MetalContacts,
+    PolarHBondContacts,
+    WeakHBondContacts,
+    WeakPolarHBondContacts,
+)
+from lahuta.contacts.plane import (
+    APDataFrameFactory,
+    AtomPlaneContacts,
+    EnumContactStrategies,
+    PlanePlaneContacts,
+    PPDataFrameFactory,
+)
 from lahuta.contacts.vdw import VanDerWaalsContacts
 from lahuta.core.universe import Universe
 
@@ -65,9 +76,6 @@ vdw = VanDerWaalsContacts(u, n)
 # c = vdw.contacts("dataframe", "expanded")
 # print("vdw", c.shape)
 
-end = time.time()
-print("time", end - start)
-
 
 ap = AtomPlaneContacts(u)
 ap.compute_contacts()
@@ -104,5 +112,5 @@ c = PPDataFrameFactory(
 ).dataframe()
 print("plane plane", c.shape)
 
-# end = time.time()
-# print("time", end - start)
+end = time.time()
+print("time", end - start)

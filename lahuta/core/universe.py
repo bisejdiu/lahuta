@@ -5,7 +5,11 @@ Placeholder for the universe module.
 import MDAnalysis as mda
 import numpy as np
 
-from ..utils.atom_types import assign_atom_types, assign_radii
+from ..utils.atom_types import (
+    assign_atom_types,
+    assign_radii,
+    find_hydrogen_bonded_atoms,
+)
 from .groups import AtomGroup
 from .obabel import OBMol
 
@@ -19,6 +23,7 @@ class Universe(mda.Universe):
 
         self.mol = OBMol(self.filename)
         self.atoms = AtomGroup(self.atoms)
+        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
         self._extend_topology("vdw_radii", assign_radii(self.mol))
         self._extend_topology("atom_types", assign_atom_types(self.mol, self.atoms))

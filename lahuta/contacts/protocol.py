@@ -3,16 +3,14 @@ Placeholder
 """
 
 from abc import ABC, abstractmethod
-from typing import Union, Dict, Literal, Any
+from typing import Any, Dict, Literal, Union
 
 import numpy as np
 import pandas as pd
 
-from ..core.neighbors import NeighborPairsBase
-
 from ..core.groups import AtomGroup
+from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
-
 from ..utils.array_utils import matching_indices
 from ..utils.writers import DataFrameFactory
 
@@ -40,7 +38,7 @@ class ContactBase(ABC):
     def __init__(
         self,
         ua: Union[Universe, AtomGroup],
-        neighbor_pairs: NeighborPairsBase,
+        neighbor_pairs: NeighborPairs,
         **kwargs,
     ):
         self._ua = ua

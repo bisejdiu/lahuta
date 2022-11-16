@@ -2,16 +2,14 @@
 Placeholder for the groups module.
 """
 
-import numpy as np
-
 import MDAnalysis as mda
-from MDAnalysis.lib.nsgrid import FastNS
+import numpy as np
 from MDAnalysis.core.topologyattrs import AtomAttr
-
-from .neighbors import NeighborPairs, HBondNeighborPairs
+from MDAnalysis.lib.nsgrid import FastNS
 
 # import from local utils module
 from ..utils.mda import mda_psuedobox_from_atomgroup
+from .neighbors import NeighborPairs
 
 
 class AtomGroup(mda.AtomGroup):
