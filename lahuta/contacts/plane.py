@@ -26,7 +26,17 @@ from .protocol import ContactBase
 
 @dataclass
 class APContactStrategy(Protocol):
-    def contacts(self, ns: NeighborPairs) -> np.ndarray:
+    """Protocol for the APContactStrategy class."""
+
+    name: str
+    distance: float
+
+    def contacts(
+        self,
+        ns: NeighborPairs,
+        angles: Optional[np.ndarray],
+        angle_cutoff: float = 30.0,
+    ) -> NeighborPairs:
         ...
 
 
@@ -47,59 +57,83 @@ class GeneralContactClass(ContactBase):
 
 
 @dataclass
-class CationPI:
-    dist_co = CONTACTS["aromatic"]["atom_aromatic_distance"]
+class DonorPI:
+    name: str = "DonorPI"
+    distance: float = CONTACTS["aromatic"]["atom_aromatic_distance"]
 
-    def contacts(self, ns: NeighborPairs) -> np.ndarray:
+    def contacts(
+        self,
+        ns: NeighborPairs,
+        angles: Optional[np.ndarray] = None,
+        angle_cutoff: float = 30.0,
+    ) -> NeighborPairs:
+        """Compute the contacts between aromatic rings and the donor pi system."""
+        if angles is None:
+            raise ValueError("Angles must be provided for DonorPI contacts.")
         return (
-            ns.angle_filter(30.0)
-            .distance_filter(self.dist_co)
+            ns.numeric_filter(angles, angle_cutoff)
+            .distance_filter(self.distance)
+            .type_filter("hbond donor", col=1)
+        )
+
+
+@dataclass
+class CationPI:
+    name: str = "CationPI"
+    distance: float = CONTACTS["aromatic"]["atom_aromatic_distance"]
+
+    def contacts(
+        self,
+        ns: NeighborPairs,
+        angles: Optional[np.ndarray] = None,
+        angle_cutoff: float = 30.0,
+    ) -> NeighborPairs:
+        """Compute the contacts between aromatic rings and the cation pi system."""
+        if angles is None:
+            raise ValueError("Angles must be provided for CationPI contacts.")
+        return (
+            ns.numeric_filter(angles, angle_cutoff)
+            .distance_filter(self.distance)
             .type_filter("pos ionisable", col=1)
-            .pairs
         )
 
 
 @dataclass
 class CarbonPI:
-    dist_co = CONTACTS["aromatic"]["atom_aromatic_distance"]
+    name: str = "CarbonPI"
+    distance: float = CONTACTS["aromatic"]["atom_aromatic_distance"]
 
-    def contacts(self, ns: NeighborPairs) -> np.ndarray:
+    def contacts(
+        self,
+        ns: NeighborPairs,
+        angles: Optional[np.ndarray] = None,
+        angle_cutoff: float = 30.0,
+    ) -> NeighborPairs:
+        """Compute the contacts between aromatic rings and the carbon pi system."""
+        if angles is None:
+            raise ValueError("Angles must be provided for CarbonPI contacts.")
         return (
-            ns.angle_filter(30.0)
+            ns.numeric_filter(angles, angle_cutoff)
             .index_filter(ns.col2.select_atoms("element C").indices, col=1)
-            .distance_filter(self.dist_co)
+            .distance_filter(self.distance)
             .type_filter("weak hbond donor", col=1)
-            .pairs
-        )
-
-
-@dataclass
-class DonorPI:
-    dist_co = CONTACTS["aromatic"]["atom_aromatic_distance"]
-
-    def contacts(self, ns: NeighborPairs) -> np.ndarray:
-        return (
-            ns.angle_filter(30.0)
-            .distance_filter(self.dist_co)
-            .type_filter("hbond donor", col=1)
-            .pairs
         )
 
 
 @dataclass
 class SulphurPI:
-    dist_co = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
+    name: str = "SulphurPI"
+    distance: float = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
-    def contacts(self, ns: NeighborPairs) -> np.ndarray:
+    def contacts(
+        self,
+        ns: NeighborPairs,
+        angles: Optional[np.ndarray] = None,
+        angle_cutoff: float = 30.0,
+    ) -> NeighborPairs:
+        """Compute the contacts between aromatic rings and the sulphur pi system."""
         indices = ns.col2.select_atoms("resname MET and element S").indices
-        return ns.index_filter(indices, col=1).distance_filter(self.dist_co).pairs
-
-
-class EnumContactStrategies(Enum):
-    CationPI_contacts = CationPI()
-    CarbonPI_contacts = CarbonPI()
-    DonorPI_contacts = DonorPI()
-    SulphurPI_contacts = SulphurPI()
+        return ns.index_filter(indices, col=1).distance_filter(self.distance)
 
 
 # define a factory for the different strategies
@@ -115,28 +149,19 @@ class AtomPlaneContacts:
     def __init__(self, ua):
         self.ua = ua
         self.rings = perceive_rings(self.ua.universe.mol)
+        self.angles = None
 
-        for strategy in EnumContactStrategies:
-            setattr(self, strategy.name, strategy.value)
+        for name, strategy in FACTORY_CONTACTS.items():
+            setattr(self, name, strategy)
 
-    def get_contacts(self, atomplane_contacts: Optional[List[APContactStrategy]]):
-        contacts = []
+    def get_contacts(self, contacts: Optional[List[str]] = None):
+        if contacts is None:
+            contacts = list(FACTORY_CONTACTS.keys())
 
-        if atomplane_contacts is None:
-            atomplane_contacts = list(FACTORY_CONTACTS.values())
-
-        for contact in atomplane_contacts:
-            contacts.append(contact.contacts(self.neighbors))
-
-        return contacts
-
-    def call_strategy(self, strategy: EnumContactStrategies) -> ContactBase:
-        pairs = strategy.value.contacts(self.neighbors)
-
-        ix = intersection(self.neighbors.pairs, pairs)
-
-        ns = NeighborPairs(self.ua.atoms, pairs, self.neighbors.distances[ix])
-        return GeneralContactClass(self.ua, ns)
+        return [
+            FACTORY_CONTACTS[contact].contacts(self.neighbors, self.angles)
+            for contact in contacts
+        ]
 
     def compute_contacts(self, **kwargs):
 
@@ -145,7 +170,8 @@ class AtomPlaneContacts:
         neighbors = NeighborPairs(self.ua.atoms, ppairs, distances)
         n = neighbors.difference(neighbors.type_filter("aromatic", col=1))
 
-        n._angles = self._calculate_angles(n.pairs)  # type: ignore
+        # n._angles = self._calculate_angles(n.pairs)  # type: ignore
+        self.angles = self._calculate_angles(n.pairs)
 
         # FIXME: we need to improve this
         self.neighbors = n
@@ -193,10 +219,13 @@ class PlanePlaneContacts:
         distances = mda_distances.self_distance_array(reference, box=None)
         differences = reference[:, None] - reference[None, :]
 
-        results = []
+        # results = []
         pairs = []
         pair_distances = []
         pair_contact_label = []
+        ring_atom_indices = []
+        theta_angles = []
+        normal_angles = []
 
         ring_pairs = itertools.combinations(ring_ids, 2)
         for ix, (ix1, ix2) in enumerate(ring_pairs):
@@ -221,13 +250,19 @@ class PlanePlaneContacts:
             pairs.append([resid1, resid2])
             pair_distances.append(distances[ix])
             pair_contact_label.append(int_type)
+            ring_atom_indices.append([ring1["atoms"], ring2["atoms"]])
+            theta_angles.append(theta)
+            normal_angles.append(normal_angle)
 
-            results.append([ring1, ring2, distances[ix], normal_angle, theta, int_type])
+            # results.append([ring1, ring2, distances[ix], normal_angle, theta, int_type])
 
         self.pairs = np.array(pairs)
         self.distances = np.array(pair_distances)
         self.contact_labels = np.array(pair_contact_label)
-        return results
+        self.ring_atom_indices = ring_atom_indices
+        self.theta_angles = np.array(theta_angles)
+        self.normal_angles = np.array(normal_angles)
+        # return results
 
 
 def assign_pp_contact_type(normal_angle, theta):
@@ -330,32 +365,32 @@ def perceive_rings(mol):
     return aromatics
 
 
+def process_ring_information(indices, rings):
+    """Process ring information for a given set of indices."""
+    ring_atoms = {ix: ring["atoms"] for ix, ring in enumerate(rings) if ix in indices}
+    ring_atoms = [ring_atoms[ix] for ix in indices]
+    first_ring_atoms = [ring[0] for ring in ring_atoms]
+
+    return first_ring_atoms, ring_atoms
+
+
 class APDataFrameFactory:
     """A class for storing and manipulating contact data."""
 
-    # TODO:
-    # AtomGroup does not neccessarily have a double column format of atoms.
     def __init__(
         self,
-        nag: AtomGroup,
-        distances: np.ndarray,
+        apcontacts: Any,
         rings: Any,
         label: str = "ring",
         df_format: Literal["print", "compact", "expanded"] = "print",
     ):
         """A class for storing and manipulating contact data."""
 
-        ring_indices = [ring["atoms"] for ring in rings]
-        # first_ring_atoms = [
-        #     ring[0] for ix, ring in enumerate(ring_indices) if ix in nag[:, 0].indices
-        # ]
-        first_ring_atoms_dict = {
-            ix: ring[0]
-            for ix, ring in enumerate(ring_indices)
-            if ix in nag[:, 0].indices
-        }
-        first_ring_atoms = [first_ring_atoms_dict[x] for x in nag[:, 0].indices]
-        col1, col2 = nag.universe.atoms[first_ring_atoms], nag[:, 1]
+        nag = apcontacts._atoms[apcontacts.pairs]
+
+        first_rings, ring_atoms = process_ring_information(nag[:, 0].indices, rings)
+
+        col1, col2 = nag.universe.atoms[first_rings], nag[:, 1]
 
         self.methods = ["resids", "resnames", "names", "indices"]
         self.format = df_format
@@ -364,8 +399,10 @@ class APDataFrameFactory:
         for method in self.methods:
             data[f"residue1_{method}"] = getattr(col1, method)
             data[f"residue2_{method}"] = getattr(col2, method)
-        data["distances"] = distances
-        data["labels"] = [label] * len(distances)
+
+        data["ring_atoms"] = ring_atoms
+        data["distances"] = apcontacts.distances
+        data["labels"] = [label] * len(apcontacts.distances)
 
         self.data = data
 
@@ -381,13 +418,12 @@ class PPDataFrameFactory:
 
     def __init__(
         self,
-        nag: AtomGroup,
-        distances: np.ndarray,
-        label: str = "ring",
+        pcontacts: Any,
         df_format: Literal["print", "compact", "expanded"] = "print",
     ):
         """A class for storing and manipulating contact data."""
 
+        nag = pcontacts.ua.atoms[pcontacts.pairs]
         col1, col2 = nag[:, 0], nag[:, 1]
 
         self.methods = ["resids", "resnames", "names", "indices"]
@@ -397,8 +433,13 @@ class PPDataFrameFactory:
         for method in self.methods:
             data[f"residue1_{method}"] = getattr(col1, method)
             data[f"residue2_{method}"] = getattr(col2, method)
-        data["distances"] = distances
-        data["labels"] = label
+
+        data["ring1_atoms"] = [ring[0] for ring in pcontacts.ring_atom_indices]
+        data["ring2_atoms"] = [ring[1] for ring in pcontacts.ring_atom_indices]
+        data["distances"] = pcontacts.distances
+        data["theta_angles"] = pcontacts.theta_angles
+        data["normal_angles"] = pcontacts.normal_angles
+        data["labels"] = pcontacts.contact_labels
 
         self.data = data
 

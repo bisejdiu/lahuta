@@ -82,7 +82,7 @@ class NeighborPairs:
         self._atoms = uniatom.atoms
         self._pairs = pairs
         self._distances = distances
-        self._angles = None
+        # self._angles = None
         # self.col1, self.col2 = uniatom[pairs[:, 0]], uniatom[pairs[:, 1]]
 
         # self.hbond_array = find_hydrogen_bonded_atoms(self._atoms.universe.mol)
@@ -194,6 +194,25 @@ class NeighborPairs:
         mask = self.distances <= distance
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
+    def numeric_filter(
+        self, array: np.ndarray, cutoff: float, lte: bool = True
+    ) -> "NeighborPairs":
+        """Select pairs based on a boolean mask.
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            The boolean mask to select.
+
+        Returns
+        -------
+        pairs : NeighborPairs
+            A NeighborPairs object containing the selected pairs.
+        """
+        # add support for lt and gt
+        mask = array <= cutoff if lte else array > cutoff
+        return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
+
     def radius_filter(self, radius: float, col: int) -> "NeighborPairs":
         """Select pairs based on the distance.
 
@@ -213,26 +232,26 @@ class NeighborPairs:
 
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
-    def angle_filter(self, angle: float) -> "NeighborPairs":
-        """Select pairs based on the angle.
+    # def angle_filter(self, angle: float) -> "NeighborPairs":
+    #     """Select pairs based on the angle.
 
-        Parameters
-        ----------
-        angle : float
-            The angle to select.
+    #     Parameters
+    #     ----------
+    #     angle : float
+    #         The angle to select.
 
-        Returns
-        -------
-        pairs : NeighborPairs
-            A NeighborPairs object containing the selected pairs.
-        """
-        if self._angles is None:
+    #     Returns
+    #     -------
+    #     pairs : NeighborPairs
+    #         A NeighborPairs object containing the selected pairs.
+    #     """
+    #     if self._angles is None:
 
-            warnings.warn("Found no angles. Returning all pairs.")
-            return self
+    #         warnings.warn("Found no angles. Returning all pairs.")
+    #         return self
 
-        mask = self._angles <= angle
-        return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
+    #     mask = self._angles <= angle
+    #     return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
         self, col: int = 0, vdw_comp_factor: float = 0.1
@@ -575,10 +594,10 @@ class NeighborPairs:
         """Get the distances between the pairs of atoms that are neighbors."""
         return self._distances
 
-    @property
-    def angles(self) -> Optional[np.ndarray]:
-        """Get the angles between the pairs of atoms that are neighbors."""
-        return self._angles
+    # @property
+    # def angles(self) -> Optional[np.ndarray]:
+    #     """Get the angles between the pairs of atoms that are neighbors."""
+    #     return self._angles
 
     @property
     def indices(self) -> np.ndarray:

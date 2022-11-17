@@ -1,47 +1,58 @@
 import time
 
 import lahuta.contacts.contacts as contacts
+from lahuta.contacts.plane import APDataFrameFactory, AtomPlaneContacts
 from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
     # Load the universe
-    u = Universe("/home/bisejdiu/p/lahuta/lahuta/notebooks/2RH1.pdb")
+    u = Universe("/home/bisejdiu/p/lahuta/lahuta/notebooks/1KX2.pdb")
     n = u.compute_neighbors()
 
-    start = time.time()
-    # Compute contacts
-    cov = contacts.covalent_neighbors(n)
-    print(cov.pairs.shape)
+    ap = AtomPlaneContacts(u)
+    ap.compute_contacts()
 
-    met = contacts.metalic_neighbors(n)
-    print(met.pairs.shape)
+    z = ap.get_contacts()
+    print(z)
 
-    carb = contacts.carbonyl_neighbors(n)
-    print(carb.pairs.shape)
+    # Create a dataframe
+    df = APDataFrameFactory(z[1], ap.rings, "test", df_format="expanded").dataframe()
+    print(df)
 
-    hb = contacts.hbond_neighbors(n)
-    print(hb.pairs.shape)
+    # start = time.time()
+    # # Compute contacts
+    # cov = contacts.covalent_neighbors(n)
+    # print(cov.pairs.shape)
 
-    whb = contacts.weak_hbond_neighbors(n)
-    print(whb.pairs.shape)
+    # met = contacts.metalic_neighbors(n)
+    # print(met.pairs.shape)
 
-    ionic = contacts.ionic_neighbors(n)
-    print(ionic.pairs.shape)
+    # carb = contacts.carbonyl_neighbors(n)
+    # print(carb.pairs.shape)
 
-    aromatic = contacts.aromatic_neighbors(n)
-    print(aromatic.pairs.shape)
+    # hb = contacts.hbond_neighbors(n)
+    # print(hb.pairs.shape)
 
-    hydrophobic = contacts.hydrophobic_neighbors(n)
-    print(hydrophobic.pairs.shape)
+    # whb = contacts.weak_hbond_neighbors(n)
+    # print(whb.pairs.shape)
 
-    phb = contacts.polar_hbond_neighbors(n)
-    print(phb.pairs.shape)
+    # ionic = contacts.ionic_neighbors(n)
+    # print(ionic.pairs.shape)
 
-    wphb = contacts.weak_polar_hbond_neighbors(n)
-    print(wphb.pairs.shape)
+    # aromatic = contacts.aromatic_neighbors(n)
+    # print(aromatic.pairs.shape)
 
-    vdw = contacts.vdw_neighbors(n)
-    print(vdw.pairs.shape)
+    # hydrophobic = contacts.hydrophobic_neighbors(n)
+    # print(hydrophobic.pairs.shape)
 
-    end = time.time()
-    print("Time elapsed: ", end - start)
+    # phb = contacts.polar_hbond_neighbors(n)
+    # print(phb.pairs.shape)
+
+    # wphb = contacts.weak_polar_hbond_neighbors(n)
+    # print(wphb.pairs.shape)
+
+    # vdw = contacts.vdw_neighbors(n)
+    # print(vdw.pairs.shape)
+
+    # end = time.time()
+    # print("Time elapsed: ", end - start)
