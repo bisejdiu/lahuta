@@ -38,22 +38,6 @@ class APContactStrategy(Protocol):
         ...
 
 
-class GeneralContactClass(ContactBase):
-    def __init__(
-        self,
-        ua: Union[Universe, AtomGroup],
-        neighbor_pairs: NeighborPairs,
-        **kwargs,
-    ):
-        self._ua = ua
-        self.neighbors = neighbor_pairs
-        self.pairs = self.neighbors.pairs
-        self.distances = self.neighbors.distances
-
-    def compute_contacts(self, **kwargs):
-        return self.neighbors.pairs
-
-
 @dataclass
 class DonorPI:
     name: str = "DonorPI"
