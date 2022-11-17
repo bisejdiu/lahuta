@@ -17,7 +17,6 @@ from lahuta.contacts import (
 from lahuta.contacts.plane import (
     APDataFrameFactory,
     AtomPlaneContacts,
-    EnumContactStrategies,
     PlanePlaneContacts,
     PPDataFrameFactory,
 )
@@ -76,40 +75,6 @@ vdw = VanDerWaalsContacts(u, n)
 c = vdw.contacts("dataframe", "expanded")
 print("vdw", c.shape)
 
-ap = AtomPlaneContacts(u)
-ap.compute_contacts()
-
-s = ap.call_strategy(EnumContactStrategies.DonorPI_contacts)
-c = APDataFrameFactory(
-    s._ua.atoms[s.pairs], s.distances, ap.rings, "DonorPI", "expanded"
-).dataframe()
-print("donor pi", c.shape)
-
-s = ap.call_strategy(EnumContactStrategies.CarbonPI_contacts)
-c = APDataFrameFactory(
-    s._ua.atoms[s.pairs], s.distances, ap.rings, "CarbonPI", "expanded"
-).dataframe()
-print("carbon pi", c.shape)
-
-s = ap.call_strategy(EnumContactStrategies.CationPI_contacts)
-c = APDataFrameFactory(
-    s._ua.atoms[s.pairs], s.distances, ap.rings, "CationPI", "expanded"
-).dataframe()
-print("cation pi", c.shape)
-
-s = ap.call_strategy(EnumContactStrategies.SulphurPI_contacts)
-c = APDataFrameFactory(
-    s._ua.atoms[s.pairs], s.distances, ap.rings, "SulphurPI", "expanded"
-).dataframe()
-print("sulphur pi", c.shape)
-
-pp = PlanePlaneContacts(u)
-_ = pp.compute_contacts()
-
-c = PPDataFrameFactory(
-    pp.ua.atoms[pp.pairs], pp.distances, pp.contact_labels, "expanded"
-).dataframe()
-print("plane plane", c.shape)
 
 end = time.time()
 print("time", end - start)
