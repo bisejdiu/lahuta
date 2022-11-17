@@ -373,7 +373,7 @@ class NeighborPairs:
 
         return calculate_angle(point_a, point_b, point_c, degrees=False)
 
-    def intersection(self, other: "NeighborPairsBase") -> "NeighborPairs":
+    def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
 
         Parameters
@@ -395,7 +395,7 @@ class NeighborPairs:
             self._distances[mask],
         )
 
-    def union(self, other: "NeighborPairsBase") -> "NeighborPairs":
+    def union(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the union of two NeighborPairs objects.
 
         Parameters
@@ -418,7 +418,7 @@ class NeighborPairs:
             distances,
         )
 
-    def difference(self, other: "NeighborPairsBase") -> "NeighborPairs":
+    def difference(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the difference of two NeighborPairs objects.
 
         Parameters
@@ -439,7 +439,7 @@ class NeighborPairs:
             self._distances[mask],
         )
 
-    def symmetric_difference(self, other: "NeighborPairsBase") -> "NeighborPairs":
+    def symmetric_difference(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the symmetric difference of two NeighborPairs objects.
 
         Parameters
@@ -474,7 +474,7 @@ class NeighborPairs:
             sorted_distances,
         )
 
-    def isdisjoint(self, other: "NeighborPairsBase") -> bool:
+    def isdisjoint(self, other: "NeighborPairs") -> bool:
         """Test whether two NeighborPairs objects have a null intersection.
 
         Parameters
@@ -489,7 +489,7 @@ class NeighborPairs:
         """
         return self.setops.isdisjoint(other.pairs)
 
-    def issubset(self, other: "NeighborPairsBase") -> bool:
+    def issubset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of a NeighborPairs object are in another.
 
         Parameters
@@ -504,7 +504,7 @@ class NeighborPairs:
         """
         return self.setops.issubset(other.pairs)
 
-    def issuperset(self, other: "NeighborPairsBase") -> bool:
+    def issuperset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of another NeighborPairs object are in this one.
 
         Parameters
@@ -519,7 +519,7 @@ class NeighborPairs:
         """
         return self.setops.issuperset(other.pairs)
 
-    def isequal(self, other: "NeighborPairsBase") -> bool:
+    def isequal(self, other: "NeighborPairs") -> bool:
         """Test whether two NeighborPairs objects contain the same elements.
 
         Parameters
@@ -544,7 +544,7 @@ class NeighborPairs:
         """
         return self.setops.isunique()
 
-    def is_strict_subset(self, other: "NeighborPairsBase") -> bool:
+    def is_strict_subset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of a NeighborPairs object are in another and the two sets are not equal.
 
         Parameters
@@ -559,7 +559,7 @@ class NeighborPairs:
         """
         return self.setops.is_strict_subset(other.pairs)
 
-    def is_strict_superset(self, other: "NeighborPairsBase") -> bool:
+    def is_strict_superset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of another NeighborPairs object are in this one and the two sets are not equal.
 
         Parameters

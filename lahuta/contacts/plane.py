@@ -4,7 +4,6 @@ Placeholder for the universe module.
 
 import itertools
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict, List, Literal, Optional, Protocol, Union
 
 import numpy as np
@@ -13,7 +12,6 @@ from lahuta.config.defaults import CONTACTS
 from lahuta.contacts.protocol import ContactBase
 from lahuta.core.groups import AtomGroup
 from lahuta.core.universe import Universe
-from lahuta.utils.array_utils import intersection
 from MDAnalysis.lib import distances as mda_distances
 from openbabel import openbabel as ob
 
@@ -114,7 +112,7 @@ class CarbonPI:
             raise ValueError("Angles must be provided for CarbonPI contacts.")
         return (
             ns.numeric_filter(angles, angle_cutoff)
-            .index_filter(ns.col2.select_atoms("element C").indices, col=1)
+            .index_filter(ns.col2.select_atoms("element C").indices, col=1)  # type: ignore
             .distance_filter(self.distance)
             .type_filter("weak hbond donor", col=1)
         )
@@ -132,7 +130,7 @@ class SulphurPI:
         angle_cutoff: float = 30.0,
     ) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the sulphur pi system."""
-        indices = ns.col2.select_atoms("resname MET and element S").indices
+        indices = ns.col2.select_atoms("resname MET and element S").indices  # type: ignore
         return ns.index_filter(indices, col=1).distance_filter(self.distance)
 
 
