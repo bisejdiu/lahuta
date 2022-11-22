@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import lahuta.contacts.contacts as contacts
-from lahuta.contacts.plane import AtomPlaneContacts
+from lahuta.contacts.plane import AtomPlaneContacts, PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
@@ -14,6 +14,7 @@ from lahuta.core.universe import Universe
 class ExpectedResults:
     with open(Path(__file__).parent / "data" / "1KX2.json") as f:
         data = json.load(f)
+
     COVALENT = data["COVALENT"]
     METALIC = data["METALIC"]
     CARBONYL = data["CARBONYL"]
@@ -29,6 +30,7 @@ class ExpectedResults:
     CATIONPI = data["CATIONPI"]
     DONORPI = data["DONORPI"]
     SULPHURPI = data["SULPHURPI"]
+    PLANEPLANE = data["PLANEPLANE"]
 
 
 class DataLoader:
@@ -60,6 +62,14 @@ def atomplane():
     atomplane = AtomPlaneContacts(DataLoader().u)
     atomplane.compute_contacts()
     return atomplane
+
+
+@pytest.fixture
+def planeplane():
+    """Helper fixture to get planeplane."""
+    planeplane = PlanePlaneContacts(DataLoader().u)
+    planeplane.compute_contacts()
+    return planeplane
 
 
 def test_covalent_neighbors(neighbors):
@@ -196,3 +206,11 @@ def test_sulphurpi_neighbors(atomplane):
     assert spi.pairs.shape[0] == ExpectedResults.SULPHURPI["shapex"]
     assert np.all(pairs == ExpectedResults.SULPHURPI["pairs"])
     assert np.allclose(distances, ExpectedResults.SULPHURPI["distances"], atol=1e-3)
+
+
+def test_planeplane_neighbors(planeplane):
+    """Test the planeplane neighbors."""
+    pairs, distances = np.array(planeplane.pairs), np.array(planeplane.distances)
+    assert planeplane.pairs.shape[0] == ExpectedResults.PLANEPLANE["shapex"]
+    assert np.all(pairs == ExpectedResults.PLANEPLANE["pairs"])
+    assert np.allclose(distances, ExpectedResults.PLANEPLANE["distances"], atol=1e-3)
