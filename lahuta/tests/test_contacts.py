@@ -26,6 +26,18 @@ class ExpectedResults:
     IONIC = np.array(
         [[721, 942], [1159, 447], [1189, 515], [1189, 514], [1189, 513], [1189, 512]]
     )
+    AROMATIC = np.array(
+        [[1199, 250], [1199, 252], [1198, 250], [1198, 252], [1183, 252], [1183, 251]]
+    )
+    HYDROPHOBIC = np.array(
+        [[760, 805], [760, 803], [793, 1211], [717, 982], [635, 1184], [635, 1186]]
+    )
+    POLAR_HBOND = np.array(
+        [[740, 667], [749, 700], [749, 689], [664, 632], [844, 819], [844, 716]]
+    )
+    POLAR_WEAK_HBOND = np.array(
+        [[759, 803], [759, 800], [667, 739], [651, 701], [632, 703], [610, 1002]]
+    )
 
 
 class DataLoader:
@@ -72,3 +84,23 @@ def test_weak_hbond_neighbors(neighbors):
 def test_ionic_neighbors(neighbors):
     ionic = contacts.ionic_neighbors(neighbors)
     assert np.all(ionic.pairs[:6] == ExpectedResults.IONIC)
+
+
+def test_aromatic_neighbors(neighbors):
+    aromatic = contacts.aromatic_neighbors(neighbors)
+    assert np.all(aromatic.pairs[:6] == ExpectedResults.AROMATIC)
+
+
+def test_hydrophobic_neighbors(neighbors):
+    hydrophobic = contacts.hydrophobic_neighbors(neighbors)
+    assert np.all(hydrophobic.pairs[:6] == ExpectedResults.HYDROPHOBIC)
+
+
+def test_polar_hbond_neighbors(neighbors):
+    phb = contacts.polar_hbond_neighbors(neighbors)
+    assert np.all(phb.pairs[:6] == ExpectedResults.POLAR_HBOND)
+
+
+def test_weak_polar_hbond_neighbors(neighbors):
+    pwhb = contacts.weak_polar_hbond_neighbors(neighbors)
+    assert np.all(pwhb.pairs[:6] == ExpectedResults.POLAR_WEAK_HBOND)
