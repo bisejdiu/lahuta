@@ -1,13 +1,18 @@
+import warnings
+from pathlib import Path
+
 import numpy as np
+
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
 
 def test_intersection(repeat: int = 10):
     """Test the intersection of two NeighborPairs objects."""
-
-    u = Universe("/home/bisejdiu/p/lahuta/lahuta/notebooks/1KX2.pdb")
-    n = u.compute_neighbors()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        u = Universe(Path(__file__).parent / "data" / "1KX2.pdb")
+        n = u.compute_neighbors()
 
     for _ in range(repeat):
         sample_size = np.random.randint(1, n.pairs.shape[0])
