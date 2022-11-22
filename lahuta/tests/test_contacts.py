@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import lahuta.contacts.contacts as contacts
+from lahuta.contacts.plane import AtomPlaneContacts
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
@@ -24,6 +25,10 @@ class ExpectedResults:
     POLAR_HBOND = data["POLAR_HBOND"]
     WEAK_POLAR_HBOND = data["WEAK_POLAR_HBOND"]
     VDW = data["VDW"]
+    CARBONPI = data["CARBONPI"]
+    CATIONPI = data["CATIONPI"]
+    DONORPI = data["DONORPI"]
+    SULPHURPI = data["SULPHURPI"]
 
 
 class DataLoader:
@@ -47,6 +52,14 @@ class DataLoader:
 def neighbors():
     """Helper fixture to get neighbor pairs."""
     return DataLoader().n
+
+
+@pytest.fixture
+def atomplane():
+    """Helper fixture to get atomplane."""
+    atomplane = AtomPlaneContacts(DataLoader().u)
+    atomplane.compute_contacts()
+    return atomplane
 
 
 def test_covalent_neighbors(neighbors):
@@ -148,3 +161,38 @@ def test_weak_polar_hbond_neighbors(neighbors):
     assert pwhb.pairs.shape[0] == ExpectedResults.WEAK_POLAR_HBOND["shapex"]
     assert np.all(pairs == ExpectedResults.WEAK_POLAR_HBOND["pairs"])
     assert np.allclose(distances, ExpectedResults.WEAK_POLAR_HBOND["distances"])
+
+
+def test_carbonpi_neighbors(atomplane):
+    """Test the carbonpi neighbors."""
+    cpi = atomplane.carbon_pi.contacts(atomplane.neighbors, atomplane.angles)
+    pairs, distances = np.array(cpi.pairs[:6]), np.array(cpi.distances[:6])
+    assert cpi.pairs.shape[0] == ExpectedResults.CARBONPI["shapex"]
+    assert np.all(pairs == ExpectedResults.CARBONPI["pairs"])
+    assert np.allclose(distances, ExpectedResults.CARBONPI["distances"], atol=1e-3)
+
+
+def test_cationpi_neighbors(atomplane):
+    """Test the cationpi neighbors."""
+    cpi = atomplane.cation_pi.contacts(atomplane.neighbors, atomplane.angles)
+    assert cpi.pairs.shape[0] == ExpectedResults.CATIONPI["shapex"]
+    assert np.all([] == ExpectedResults.CATIONPI["pairs"])
+    assert np.allclose([], ExpectedResults.CATIONPI["distances"], atol=1e-3)
+
+
+def test_donorpi_neighbors(atomplane):
+    """Test the donorpi neighbors."""
+    dpi = atomplane.donor_pi.contacts(atomplane.neighbors, atomplane.angles)
+    pairs, distances = np.array(dpi.pairs[:6]), np.array(dpi.distances[:6])
+    assert dpi.pairs.shape[0] == ExpectedResults.DONORPI["shapex"]
+    assert np.all(pairs == ExpectedResults.DONORPI["pairs"])
+    assert np.allclose(distances, ExpectedResults.DONORPI["distances"], atol=1e-3)
+
+
+def test_sulphurpi_neighbors(atomplane):
+    """Test the sulphurpi neighbors."""
+    spi = atomplane.sulphur_pi.contacts(atomplane.neighbors, atomplane.angles)
+    pairs, distances = np.array(spi.pairs[:6]), np.array(spi.distances[:6])
+    assert spi.pairs.shape[0] == ExpectedResults.SULPHURPI["shapex"]
+    assert np.all(pairs == ExpectedResults.SULPHURPI["pairs"])
+    assert np.allclose(distances, ExpectedResults.SULPHURPI["distances"], atol=1e-3)
