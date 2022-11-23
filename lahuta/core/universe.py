@@ -21,7 +21,7 @@ class Universe(mda.Universe):
         """A subclass of MDAnalysis Universe that adds some extra functionality."""
         super().__init__(*args, **kwargs)
 
-        self.mol = OBMol(self.filename)
+        self.mol = OBMol(str(self.filename))
         self.atoms = AtomGroup(self.atoms)
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
