@@ -2,11 +2,16 @@
 Placeholder for the universe module.
 """
 
+from pathlib import Path
+
 import MDAnalysis as mda
 import numpy as np
 
-from ..utils.atom_types import (assign_atom_types, assign_radii,
-                                find_hydrogen_bonded_atoms)
+from ..utils.atom_types import (
+    assign_atom_types,
+    assign_radii,
+    find_hydrogen_bonded_atoms,
+)
 from .groups import AtomGroup
 from .obabel import OBMol
 
@@ -18,18 +23,26 @@ class Universe(mda.Universe):
         """A subclass of MDAnalysis Universe that adds some extra functionality."""
         # get the first argument from the args list
         self.filename = args[0]
-        if self.filename.endswith(".cif"):
 
+        suffix = "pdb"
+        if isinstance(self.filename, str):
+            suffix = self.filename.split(".")[-1]
+        elif isinstance(self.filename, Path):
+            suffix = self.filename.suffix[1:]
+            self.filename = str(self.filename)
+
+        if suffix == "cif":
             from io import StringIO
 
-            from lahuta.utils.cif_converter import convert_cif_to_pdb
+            from lahuta.utils.cif_converter import convert_cif_to_pdb, read_cif_as_pdb
 
-            pdb_str, mol = convert_cif_to_pdb(self.filename)
+            # pdb_str, mol = convert_cif_to_pdb(self.filename)
+            pdb_str, mol = read_cif_as_pdb(self.filename)
             super().__init__(
                 mda.lib.util.NamedStream(StringIO(pdb_str), "dummy.pdb"), **kwargs
             )
             self.mol = mol
-        else:
+        elif suffix == "pdb":
 
             super().__init__(*args, **kwargs)
             self.mol = OBMol(str(self.filename))
