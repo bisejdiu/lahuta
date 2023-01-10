@@ -5,11 +5,8 @@ Placeholder for the universe module.
 import MDAnalysis as mda
 import numpy as np
 
-from ..utils.atom_types import (
-    assign_atom_types,
-    assign_radii,
-    find_hydrogen_bonded_atoms,
-)
+from ..utils.atom_types import (assign_atom_types, assign_radii,
+                                find_hydrogen_bonded_atoms)
 from .groups import AtomGroup
 from .obabel import OBMol
 
@@ -19,9 +16,24 @@ class Universe(mda.Universe):
 
     def __init__(self, *args, **kwargs):
         """A subclass of MDAnalysis Universe that adds some extra functionality."""
-        super().__init__(*args, **kwargs)
+        # get the first argument from the args list
+        self.filename = args[0]
+        if self.filename.endswith(".cif"):
 
-        self.mol = OBMol(str(self.filename))
+            from io import StringIO
+
+            from lahuta.utils.cif_converter import convert_cif_to_pdb
+
+            pdb_str, mol = convert_cif_to_pdb(self.filename)
+            super().__init__(
+                mda.lib.util.NamedStream(StringIO(pdb_str), "dummy.pdb"), **kwargs
+            )
+            self.mol = mol
+        else:
+
+            super().__init__(*args, **kwargs)
+            self.mol = OBMol(str(self.filename))
+
         self.atoms = AtomGroup(self.atoms)
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
