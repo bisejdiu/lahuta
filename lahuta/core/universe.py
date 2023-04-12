@@ -2,6 +2,8 @@
 Placeholder for the universe module.
 """
 
+from pathlib import Path
+
 import MDAnalysis as mda
 import numpy as np
 
@@ -19,9 +21,32 @@ class Universe(mda.Universe):
 
     def __init__(self, *args, **kwargs):
         """A subclass of MDAnalysis Universe that adds some extra functionality."""
-        super().__init__(*args, **kwargs)
+        # get the first argument from the args list
+        self.filename = args[0]
 
-        self.mol = OBMol(str(self.filename))
+        suffix = "pdb"
+        if isinstance(self.filename, str):
+            suffix = self.filename.split(".")[-1]
+        elif isinstance(self.filename, Path):
+            suffix = self.filename.suffix[1:]
+            self.filename = str(self.filename)
+
+        if suffix == "cif":
+            from io import StringIO
+
+            from lahuta.utils.cif_converter import convert_cif_to_pdb, read_cif_as_pdb
+
+            # pdb_str, mol = convert_cif_to_pdb(self.filename)
+            pdb_str, mol = read_cif_as_pdb(self.filename)
+            super().__init__(
+                mda.lib.util.NamedStream(StringIO(pdb_str), "dummy.pdb"), **kwargs
+            )
+            self.mol = mol
+        elif suffix == "pdb":
+
+            super().__init__(*args, **kwargs)
+            self.mol = OBMol(str(self.filename))
+
         self.atoms = AtomGroup(self.atoms)
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
