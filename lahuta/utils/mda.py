@@ -9,7 +9,7 @@ def mda_psuedobox_from_atomgroup(atomgroup):
     lmax = atomgroup.positions.max(axis=0)
     lmin = atomgroup.positions.min(axis=0)
     pseudobox = np.zeros(6, dtype=np.float32)
-    pseudobox[:3] = 1.1 * (lmax - lmin)
+    pseudobox[:3] = 5 * (lmax - lmin)
     pseudobox[3:] = 90.0
     shift_coords = atomgroup.positions.copy()
     shift_coords -= lmin
