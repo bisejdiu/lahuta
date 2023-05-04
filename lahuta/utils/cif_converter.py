@@ -24,6 +24,8 @@ def read_cif_as_pdb(cif_file: str):
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".pdb", delete=False) as pdb_file:
 
+        log_level = ob.cvar.obErrorLog.GetOutputLevel()
+        ob.cvar.obErrorLog.SetOutputLevel(0)
         ob_conv = ob.OBConversion()
         ob_conv.SetInFormat("cif")
         temp_mol = ob.OBMol()
@@ -40,5 +42,7 @@ def read_cif_as_pdb(cif_file: str):
         ob_conv.SetInFormat("pdb")
         mol = ob.OBMol()
         ob_conv.ReadString(mol, pdb_str)
+
+        ob.cvar.obErrorLog.SetOutputLevel(log_level)
 
         return pdb_str, mol

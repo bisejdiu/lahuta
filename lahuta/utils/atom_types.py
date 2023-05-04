@@ -2,12 +2,13 @@
 Placehoder for the atom types and radii.
 """
 import numpy as np
-
 from openbabel import openbabel as ob
 
+from lahuta.config.atoms import ID_TO_TYPES
+
 from ..config.atoms import PROT_ATOM_TYPES
-from ..config.smarts import ATOM_TYPES
 from ..config.residues import STANDARD_AMINO_ACIDS
+from ..config.smarts import ATOM_TYPES
 
 
 def assign_atom_types(mol, atomgroup):
@@ -68,6 +69,80 @@ def assign_atom_types(mol, atomgroup):
                     atypes_array[atom.index, atypes[atom_type]] = 1
 
     return atypes_array
+
+
+def vec_assign_atom_types(mol, atomgroup, ta):
+    """
+    Assign atom types to each atom in the molecule.
+    Atom types are defined in `ATOM_TYPES`
+    """
+    atypes = {
+        "hbond acceptor": 0,
+        "pos ionisable": 1,
+        "carbonyl oxygen": 2,
+        "weak hbond donor": 3,
+        "carbonyl carbon": 4,
+        "weak hbond acceptor": 5,
+        "hbond donor": 6,
+        "neg ionisable": 7,
+        "aromatic": 8,
+        "xbond acceptor": 9,
+        "hydrophobe": 10,
+    }
+
+    # atom_id_to_type_index = {atom_id: atypes[atom_type] for atom_type, atom_ids in PROT_ATOM_TYPES_SET.items() for atom_id in atom_ids}
+
+    atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
+    for atom_type, smartsdict in ATOM_TYPES.items():
+
+        for smarts in smartsdict.values():
+
+            ob_smart = ob.OBSmartsPattern()
+            ob_smart.Init(str(smarts))
+            ob_smart.Match(mol)
+
+            matches = [x[0] for x in ob_smart.GetMapList()]
+            for match in matches:
+                atom = mol.GetAtom(match)
+
+                if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
+                    atypes_array[atom.GetId(), atypes[atom_type]] = 1
+
+    # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
+    for atom in atomgroup.select_atoms(
+        "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
+    ):
+        atypes_array[atom.index, atypes["hbond acceptor"]] = 1
+        atypes_array[atom.index, atypes["hbond donor"]] = 1
+
+    # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
+    resname, atom_name = ta['resname'], ta['name']
+
+    # Convert atoms to NumPy arrays for efficient indexing
+    ag = atomgroup.select_atoms("resname " + " ".join(STANDARD_AMINO_ACIDS)).atoms
+    resindices = np.array([atom.resindex for atom in atomgroup])
+    indices = np.array([atom.index for atom in atomgroup])
+
+    # Convert arrays to string type
+    resname_str = resname[resindices].astype(str)
+    atom_name_str = atom_name[indices].astype(str)
+
+    # Generate atom_id array by concatenating resname and atom_name arrays
+    atom_ids = np.core.defchararray.add(
+        np.core.defchararray.strip(resname_str),
+        np.core.defchararray.strip(atom_name_str)
+    )
+
+    for idx, atom in enumerate(ag):
+        atom_id = atom_ids[idx]
+        atom_types = ID_TO_TYPES.get(atom_id, None)
+
+        if atom_types is not None:
+            for atom_type in atom_types:
+                atypes_array[atom.index, atypes[atom_type]] = 1
+
+    return atypes_array
+
 
 
 def assign_radii(mol):
