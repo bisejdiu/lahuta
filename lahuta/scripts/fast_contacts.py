@@ -7,11 +7,13 @@ from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
     # Load the universe
+    start = time.time()
     u = Universe("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
+    end = time.time()
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1cbs.cif")
     n = u.compute_neighbors()
 
-    start = time.time()
+    
     # Compute contacts
     cov = contacts.covalent_neighbors(n)
     print(cov.pairs.shape, 'cov')
@@ -69,5 +71,5 @@ if __name__ == "__main__":
 
     print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
 
-    end = time.time()
+    # end = time.time()
     print("Time elapsed: ", end - start)

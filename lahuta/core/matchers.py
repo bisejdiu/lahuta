@@ -15,8 +15,8 @@ class SmartsMatcherBase(ABC):
     This class serves as an abstract base class for concrete implementations
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
-    def __init__(self, ATOM_TYPES):
-        self.ATOM_TYPES = ATOM_TYPES
+    def __init__(self, atom_types):
+        self.atom_types = atom_types
 
     @abstractmethod
     def compute(self, mol, atypes):
@@ -27,13 +27,13 @@ class SmartsMatcher(SmartsMatcherBase):
     A class for matching SMARTS patterns to atoms in a molecule.
     
     This class performs sequential SMARTS pattern matching on atoms in a
-    molecule, returning atom types as defined in the ATOM_TYPES dictionary.
+    molecule, returning atom types as defined in the atom_types dictionary.
     Inherits from the SmartsMatcherBase abstract base class.
     """
     def compute(self, mol, atypes):
         atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
 
-        for atom_type, smartsdict in self.ATOM_TYPES.items():
+        for atom_type, smartsdict in self.atom_types.items():
 
             for smarts in smartsdict.values():
 
@@ -55,16 +55,16 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     A class for parallel matching of SMARTS patterns to atoms in a molecule.
     
     This class utilizes multiple threads for parallel SMARTS pattern matching
-    on atoms in a molecule, returning atom types as defined in the ATOM_TYPES
+    on atoms in a molecule, returning atom types as defined in the atom_types
     dictionary. Inherits from the SmartsMatcherBase abstract base class.
     """
-    def __init__(self, ATOM_TYPES):
-        super().__init__(ATOM_TYPES)
+    def __init__(self, atom_types):
+        super().__init__(atom_types)
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
     def precompute_ob_smarts(self):
         precomputed_ob_smarts = {}
-        for atom_type, smartsdict in self.ATOM_TYPES.items():
+        for atom_type, smartsdict in self.atom_types.items():
             precomputed_ob_smarts[atom_type] = []
             for smarts in smartsdict.values():
                 ob_smart = ob.OBSmartsPattern()
