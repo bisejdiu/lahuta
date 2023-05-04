@@ -91,6 +91,7 @@ def vec_assign_atom_types(mol, atomgroup, ta):
     }
 
     # atom_id_to_type_index = {atom_id: atypes[atom_type] for atom_type, atom_ids in PROT_ATOM_TYPES_SET.items() for atom_id in atom_ids}
+    atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
     for atom_type, smartsdict in ATOM_TYPES.items():

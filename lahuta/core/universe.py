@@ -7,6 +7,7 @@ import MDAnalysis as mda
 import numpy as np
 from openbabel import openbabel as ob
 
+from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.groups import AtomGroup
 from lahuta.core.obabel import OBMol
 from lahuta.utils.atom_types import (assign_radii, find_hydrogen_bonded_atoms,
@@ -74,8 +75,14 @@ class Universe(mda.Universe):
         self.atoms = AtomGroup(self.atoms)
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
+        atom_type_assigner = AtomTypeAssigner(self.mol, self.atoms, self.topology_attributes)
+        atom_type_assigner.legacy = False
+        atom_type_assigner.parallel = False
+        atypes_array = atom_type_assigner.assign_atom_types()
+
         self._extend_topology("vdw_radii", assign_radii(self.mol))
-        self._extend_topology("atom_types", vec_assign_atom_types(self.mol, self.atoms, self.topology_attributes))
+        # self._extend_topology("atom_types", vec_assign_atom_types(self.mol, self.atoms, self.topology_attributes))
+        self._extend_topology("atom_types", atypes_array)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         """Extend the topology with a new attribute.

@@ -14,37 +14,37 @@ if __name__ == "__main__":
     start = time.time()
     # Compute contacts
     cov = contacts.covalent_neighbors(n)
-    print(cov.pairs.shape)
+    print(cov.pairs.shape, 'cov')
 
     met = contacts.metalic_neighbors(n)
-    print(met.pairs.shape)
+    print(met.pairs.shape, 'met')
 
     carb = contacts.carbonyl_neighbors(n)
-    print(carb.pairs.shape)
+    print(carb.pairs.shape, 'carb')
 
     hb = contacts.hbond_neighbors(n)
-    print(hb.pairs.shape)
+    print(hb.pairs.shape, 'hb')
 
     whb = contacts.weak_hbond_neighbors(n)
-    print(whb.pairs.shape)
+    print(whb.pairs.shape, 'whb')
 
     ionic = contacts.ionic_neighbors(n)
-    print(ionic.pairs.shape)
+    print(ionic.pairs.shape, 'ionic')
 
     aromatic = contacts.aromatic_neighbors(n)
-    print(aromatic.pairs.shape)
+    print(aromatic.pairs.shape, 'aromatic')
 
     hydrophobic = contacts.hydrophobic_neighbors(n)
-    print(hydrophobic.pairs.shape)
+    print(hydrophobic.pairs.shape, 'hydrophobic')
 
     phb = contacts.polar_hbond_neighbors(n)
-    print(phb.pairs.shape)
+    print(phb.pairs.shape, 'phb')
 
     wphb = contacts.weak_polar_hbond_neighbors(n)
-    print(wphb.pairs.shape)
+    print(wphb.pairs.shape, 'wphb')
 
     vdw = contacts.vdw_neighbors(n)
-    print(vdw.pairs.shape)
+    print(vdw.pairs.shape, 'vdw')
 
     ap = AtomPlaneContacts(u)
     ap.compute_contacts()
@@ -52,20 +52,20 @@ if __name__ == "__main__":
     # z = ap.get_contacts()
     # print(z)
     cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)
-    print(cp.pairs.shape)
+    print(cp.pairs.shape, 'cp')
 
     cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)
-    print(cp2.pairs.shape)
+    print(cp2.pairs.shape, 'cp2')
 
     dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)
-    print(dp.pairs.shape)
+    print(dp.pairs.shape, 'dp')
 
     sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)
-    print(sp.pairs.shape)
+    print(sp.pairs.shape, 'sp')
 
     pp = PlanePlaneContacts(u)
     pp.compute_contacts()
-    print(pp.pairs.shape)
+    print(pp.pairs.shape, 'pp')
 
     print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
 

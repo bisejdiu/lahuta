@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 import numpy as np
 from typing_extensions import Literal, Protocol
 
+# from ..utils.atom_types import find_hydrogen_bonded_atoms
+from lahuta.config.atoms import PROT_ATOM_TYPES
+
 from ..config.defaults import CONTACTS, VDW_RADII
 from ..utils import array_utils as au
 from ..utils.array_utils import array_distance, calculate_angle
-
-# from ..utils.atom_types import find_hydrogen_bonded_atoms
 
 
 class NeighborPairsBase(Protocol):
@@ -105,19 +106,20 @@ class NeighborPairs:
         ), "The number of pairs and distances must be the same."
 
         # TODO: Get from config file and change variable name
-        self.type_keys = {
-            "hbond acceptor": 0,
-            "pos ionisable": 1,
-            "carbonyl oxygen": 2,
-            "weak hbond donor": 3,
-            "carbonyl carbon": 4,
-            "weak hbond acceptor": 5,
-            "hbond donor": 6,
-            "neg ionisable": 7,
-            "aromatic": 8,
-            "xbond acceptor": 9,
-            "hydrophobe": 10,
-        }
+        # self.type_keys = {
+        #     "hbond acceptor": 0,
+        #     "pos ionisable": 1,
+        #     "carbonyl oxygen": 2,
+        #     "weak hbond donor": 3,
+        #     "carbonyl carbon": 4,
+        #     "weak hbond acceptor": 5,
+        #     "hbond donor": 6,
+        #     "neg ionisable": 7,
+        #     "aromatic": 8,
+        #     "xbond acceptor": 9,
+        #     "hydrophobe": 10,
+        # }
+        self.type_keys = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
     def type_filter(
         self, atom_types: Union[str, List[str]], col: int
