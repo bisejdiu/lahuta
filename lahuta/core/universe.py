@@ -7,11 +7,10 @@ import MDAnalysis as mda
 import numpy as np
 from openbabel import openbabel as ob
 
-from ..utils.atom_types import (assign_atom_types, assign_radii,
-                                find_hydrogen_bonded_atoms,
-                                vec_assign_atom_types)
-from .groups import AtomGroup
-from .obabel import OBMol
+from lahuta.core.groups import AtomGroup
+from lahuta.core.obabel import OBMol
+from lahuta.utils.atom_types import (assign_radii, find_hydrogen_bonded_atoms,
+                                     vec_assign_atom_types)
 
 
 def create_mda_universe_from_obmol(mol):
