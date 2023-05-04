@@ -1,17 +1,14 @@
 import time
 
 import lahuta.contacts.contacts as contacts
-from lahuta.contacts.plane import (
-    APDataFrameFactory,
-    AtomPlaneContacts,
-    PlanePlaneContacts,
-    PPDataFrameFactory,
-)
+from lahuta.contacts.plane import (APDataFrameFactory, AtomPlaneContacts,
+                                   PlanePlaneContacts, PPDataFrameFactory)
 from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
     # Load the universe
-    u = Universe("/home/bisejdiu/p/lahuta/lahuta/notebooks/1KX2.pdb")
+    u = Universe("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
+    # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1cbs.cif")
     n = u.compute_neighbors()
 
     start = time.time()
