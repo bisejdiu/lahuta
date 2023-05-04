@@ -69,7 +69,6 @@ class Universe(mda.Universe):
         self.mol = OBMol(*args)
         universe = create_mda_universe_from_obmol(self.mol)
         super().__init__(universe._topology, **kwargs)
-        # self.mol = mol
 
         self.trajectory = universe.trajectory
         self.atoms.positions = universe.atoms.positions
