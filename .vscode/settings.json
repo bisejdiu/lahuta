@@ -1,5 +1,5 @@
 {
-    "python.formatting.provider": "black",
+    "python.formatting.provider": "none",
     "python.analysis.extraPaths": [
         "lahuta",
         "lahuta/config",
@@ -13,7 +13,10 @@
 
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
-   }
+},
+"[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+}
    
 
 }
