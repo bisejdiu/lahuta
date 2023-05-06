@@ -109,7 +109,7 @@ class Universe:
         self.mol = file_loader.mol
 
         self._universe.atoms = AtomGroup(self._universe.atoms)
-        # self.atoms._u = self
+        self.atoms._u = self
 
         # self.hbond_array = HydrogenBondFinder(molecule_io.mol).find_hydrogen_bonded_atoms()
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
