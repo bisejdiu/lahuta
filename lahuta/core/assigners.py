@@ -37,10 +37,13 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
     def compute(self, atypes_array, atypes):
         # print("atypes", atypes)
-        resname, atom_name = self.ta["resname"], self.ta["name"]
+        # resname, atom_name = self.ta["resname"], self.ta["name"]
 
-        resname_str = resname[self.protein_atomgroup.resindices].astype(str)
-        atom_name_str = atom_name[self.protein_atomgroup.indices].astype(str)
+        # resname_str = resname[self.protein_atomgroup.resindices].astype(str)
+        # atom_name_str = atom_name[self.protein_atomgroup.indices].astype(str)
+
+        resname_str = self.protein_atomgroup.resnames.astype(str)
+        atom_name_str = self.protein_atomgroup.names.astype(str)
 
         atom_id_labels = np.core.defchararray.add(
             np.core.defchararray.strip(resname_str),

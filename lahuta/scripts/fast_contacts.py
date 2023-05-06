@@ -12,7 +12,9 @@ from lahuta.core.universe import Universe
 if __name__ == "__main__":
     # Load the universe
     start = time.time()
-    u = Universe("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
+    # u = Universe("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
+    # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.pdb")
+    u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
     # end = time.time()
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1cbs.cif")
     n = u.compute_neighbors()

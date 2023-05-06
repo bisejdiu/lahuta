@@ -120,7 +120,7 @@ class Universe:
         }
         self.topology_attributes = top_attr
         atomtype_assigner = AtomTypeAssigner(
-            self.mol, self.atoms, top_attr, legacy=False, parallel=False
+            self.mol, self.atoms, top_attr, legacy=True, parallel=False
         )
         atypes_array = atomtype_assigner.assign_atom_types()
 
