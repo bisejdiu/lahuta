@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
@@ -19,14 +21,31 @@ class AtomTypeAssigner:
     (sequential or parallel) and protein atom type assignment (vectorized or legacy).
     """
 
-    def __init__(self, mol, atomgroup, ta, parallel=True, legacy=False):
+    def __init__(self, mol, atomgroup, ta, parallel=False, legacy=True):
         self.mol = mol
         self.atomgroup = atomgroup
         print("->", self.atomgroup)
         self.protein_atomgroup = self.atomgroup.select_atoms("protein")
         self.ta = ta
 
-        self.atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
+        # self.atypes = OrderedDict(
+        #     {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
+        # )
+        self.atypes = OrderedDict(
+            {
+                "hbond acceptor": 0,
+                "pos ionisable": 1,
+                "carbonyl oxygen": 2,
+                "weak hbond donor": 3,
+                "carbonyl carbon": 4,
+                "weak hbond acceptor": 5,
+                "hbond donor": 6,
+                "neg ionisable": 7,
+                "aromatic": 8,
+                "xbond acceptor": 9,
+                "hydrophobe": 10,
+            }
+        )
         self.parallel = parallel
         self.legacy = legacy
 
@@ -96,6 +115,7 @@ class AtomTypeAssigner:
 
         # atypes_array = self._compute_smarts_types()
         if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
+            print("-> ", "not equal")
             atypes_array = self._compute_smarts_types()
 
         atypes_array = self._compute_water_types(atypes_array)
