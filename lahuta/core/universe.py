@@ -2,7 +2,7 @@
 Placeholder for the universe module.
 """
 
-
+import itertools
 from typing import Any
 
 import MDAnalysis as mda
@@ -42,20 +42,35 @@ class CIFLoader(FileLoader):
         coords = np.empty((n_atoms, 3))
         resindices = np.empty(n_atoms, dtype=int)
 
-        atom_counter = 0
-        for res_idx, res in enumerate(ob.OBResidueIter(mol)):
-            for atom in ob.OBResidueAtomIter(res):
-                topology_attributes["name"][atom_counter] = res.GetAtomID(atom)
-                topology_attributes["type"][atom_counter] = atom.GetType()
-                topology_attributes["element"][atom_counter] = ob.GetSymbol(
-                    atom.GetAtomicNum()
-                )
-                coords[atom_counter] = [atom.GetX(), atom.GetY(), atom.GetZ()]
-                resindices[atom_counter] = res_idx
-                atom_counter += 1
+        atom_iterator = itertools.chain.from_iterable(
+            ob.OBResidueAtomIter(res) for res in ob.OBResidueIter(mol)
+        )
+        for atom_counter, atom in enumerate(atom_iterator):
+            residue = atom.GetResidue()
+            res_idx = residue.GetIdx()
+            element = ob.GetSymbol(atom.GetAtomicNum())
+            topology_attributes["name"][atom_counter] = residue.GetAtomID(atom)
+            topology_attributes["type"][atom_counter] = element
+            topology_attributes["element"][atom_counter] = element
+            coords[atom_counter] = [atom.GetX(), atom.GetY(), atom.GetZ()]
+            resindices[atom_counter] = res_idx
 
-            topology_attributes["resname"][res_idx] = res.GetName()
-            topology_attributes["resid"][res_idx] = res.GetIdx() + 1  # 1-based indexing
+            topology_attributes["resname"][res_idx] = residue.GetName()
+            topology_attributes["resid"][res_idx] = res_idx + 1  # 1-based indexing
+
+        # atom_counter = 0
+        # for res_idx, res in enumerate(ob.OBResidueIter(mol)):
+        #     for atom in ob.OBResidueAtomIter(res):
+        #         element = ob.GetSymbol(atom.GetAtomicNum())
+        #         topology_attributes["name"][atom_counter] = res.GetAtomID(atom)
+        #         topology_attributes["type"][atom_counter] = element
+        #         topology_attributes["element"][atom_counter] = element
+        #         coords[atom_counter] = [atom.GetX(), atom.GetY(), atom.GetZ()]
+        #         resindices[atom_counter] = res_idx
+        #         atom_counter += 1
+
+        # topology_attributes["resname"][res_idx] = res.GetName()
+        # topology_attributes["resid"][res_idx] = res.GetIdx() + 1  # 1-based indexing
 
         # Create the Universe
         universe = mda.Universe.empty(
