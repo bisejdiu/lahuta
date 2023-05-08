@@ -53,10 +53,12 @@ class CIFLoader(FileLoader):
             topology_attributes["type"][atom_counter] = element
             topology_attributes["element"][atom_counter] = element
             coords[atom_counter] = [atom.GetX(), atom.GetY(), atom.GetZ()]
-            resindices[atom_counter] = res_idx
+            resindices[atom_counter] = residue.GetNum()
 
             topology_attributes["resname"][res_idx] = residue.GetName()
-            topology_attributes["resid"][res_idx] = res_idx + 1  # 1-based indexing
+            topology_attributes["resid"][
+                res_idx
+            ] = residue.GetNum()  # res_idx + 1  # 1-based indexing
 
         # atom_counter = 0
         # for res_idx, res in enumerate(ob.OBResidueIter(mol)):
