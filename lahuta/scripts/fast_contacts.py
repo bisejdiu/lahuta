@@ -14,8 +14,8 @@ if __name__ == "__main__":
     start = time.time()
     # u = Universe("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.pdb")
-    # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
-    u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.pdb")
+    u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
+    # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.pdb")
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.cif")
     # end = time.time()
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1cbs.cif")
@@ -60,16 +60,16 @@ if __name__ == "__main__":
 
     # z = ap.get_contacts()
     # print(z)
-    cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)
+    cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
     print(cp.pairs.shape, "cp")
 
-    cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)
+    cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
     print(cp2.pairs.shape, "cp2")
 
-    dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)
+    dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
     print(dp.pairs.shape, "dp")
 
-    sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)
+    sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
     print(sp.pairs.shape, "sp")
 
     pp = PlanePlaneContacts(u)
