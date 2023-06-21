@@ -10,7 +10,11 @@ from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
 from lahuta.core.groups import AtomGroup
 from lahuta.core.loaders import CIFLoader, PDBLoader
-from lahuta.utils.atom_types import assign_radii, find_hydrogen_bonded_atoms
+from lahuta.utils.atom_types import (
+    assign_atom_types,
+    assign_radii,
+    find_hydrogen_bonded_atoms,
+)
 
 
 class Universe:
@@ -38,6 +42,7 @@ class Universe:
         atomtype_assigner = AtomTypeAssigner(
             self.mol, self.atoms, top_attr, legacy=True, parallel=False
         )
+        # atypes_array = assign_atom_types(self.mol, self.atoms)
         atypes_array = atomtype_assigner.assign_atom_types()
 
         # save atypes_array to pickle file

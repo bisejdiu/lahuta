@@ -32,9 +32,7 @@ def assign_atom_types(mol, atomgroup):
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
     for atom_type, smartsdict in ATOM_TYPES.items():
-
         for smarts in smartsdict.values():
-
             ob_smart = ob.OBSmartsPattern()
             ob_smart.Init(str(smarts))
             ob_smart.Match(mol)
@@ -57,7 +55,6 @@ def assign_atom_types(mol, atomgroup):
         "resname " + " ".join(STANDARD_AMINO_ACIDS)
     ).residues:
         for atom in residue.atoms:
-
             # REMOVE TYPES IF ALREADY ASSIGNED FROM SMARTS
             for atom_type in list(PROT_ATOM_TYPES.keys()):
                 atypes_array[atom.index, atypes[atom_type]] = 0
@@ -95,9 +92,7 @@ def vec_assign_atom_types(mol, atomgroup, ta):
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
     for atom_type, smartsdict in ATOM_TYPES.items():
-
         for smarts in smartsdict.values():
-
             ob_smart = ob.OBSmartsPattern()
             ob_smart.Init(str(smarts))
             ob_smart.Match(mol)
@@ -117,7 +112,7 @@ def vec_assign_atom_types(mol, atomgroup, ta):
         atypes_array[atom.index, atypes["hbond donor"]] = 1
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
-    resname, atom_name = ta['resname'], ta['name']
+    resname, atom_name = ta["resname"], ta["name"]
 
     # Convert atoms to NumPy arrays for efficient indexing
     ag = atomgroup.select_atoms("resname " + " ".join(STANDARD_AMINO_ACIDS)).atoms
@@ -129,9 +124,9 @@ def vec_assign_atom_types(mol, atomgroup, ta):
     atom_name_str = atom_name[indices].astype(str)
 
     # Generate atom_id array by concatenating resname and atom_name arrays
-    atom_ids = np.core.defchararray.add(
-        np.core.defchararray.strip(resname_str),
-        np.core.defchararray.strip(atom_name_str)
+    atom_ids = np.core.defchararray.add(  # type: ignore
+        np.core.defchararray.strip(resname_str),  # type: ignore
+        np.core.defchararray.strip(atom_name_str),  # type: ignore
     )
 
     for idx, atom in enumerate(ag):
@@ -143,7 +138,6 @@ def vec_assign_atom_types(mol, atomgroup, ta):
                 atypes_array[atom.index, atypes[atom_type]] = 1
 
     return atypes_array
-
 
 
 def assign_radii(mol):
