@@ -216,7 +216,7 @@ class PDBLoader(FileLoader):
     def load(self, *args):
         self._load_obabel()
         universe = mda.Universe(self.file_name, *args)
-        return universe
+        return self.mol, universe
 
 
 # class MoleculeIO:

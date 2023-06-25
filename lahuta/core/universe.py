@@ -9,7 +9,7 @@ from MDAnalysis.core.topology import Topology
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
 from lahuta.core.groups import AtomGroup
-from lahuta.core.loaders import CIFLoader, CIFLoader_easy, CIFLoader_old, PDBLoader
+from lahuta.core.loaders import CIFLoader, CIFLoader_old, PDBLoader
 from lahuta.utils.atom_types import (
     assign_atom_types,
     assign_radii,
