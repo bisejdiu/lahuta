@@ -9,7 +9,7 @@ from MDAnalysis.core.topology import Topology
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
 from lahuta.core.groups import AtomGroup
-from lahuta.core.loaders import CIFLoader, PDBLoader
+from lahuta.core.loaders import CIFLoader, CIFLoader_easy, CIFLoader_old, PDBLoader
 from lahuta.utils.atom_types import (
     assign_atom_types,
     assign_radii,
@@ -18,15 +18,15 @@ from lahuta.utils.atom_types import (
 
 
 class Universe:
-    def __init__(self, file_name=None, *args):
+    def __init__(self, file_name=None, loader=None, *args):
         if isinstance(file_name, Topology):
             raise NotImplementedError(
                 "Initializing Universe from a Topology object is not supported."
             )
 
         file_loader = self._create_file_loader(file_name if file_name else args[0])
-        self._universe = file_loader.load(*args)
-        self.mol = file_loader.mol
+        self.mol, self._universe = file_loader.load()
+        # self.mol = file_loader.mol
 
         self._universe.atoms = AtomGroup(self._universe.atoms)
         self.atoms._u = self
@@ -40,7 +40,7 @@ class Universe:
         }
         self.topology_attributes = top_attr
         atomtype_assigner = AtomTypeAssigner(
-            self.mol, self.atoms, top_attr, legacy=True, parallel=False
+            self.mol, self.atoms, top_attr, legacy=False, parallel=False
         )
         # atypes_array = assign_atom_types(self.mol, self.atoms)
         atypes_array = atomtype_assigner.assign_atom_types()
@@ -61,7 +61,7 @@ class Universe:
         return self
 
     @staticmethod
-    def _create_file_loader(file_name: str) -> FileLoader:
+    def _create_file_loader(file_name: str):  # -> FileLoader:
         file_ext = file_name.split(".")[-1]
         if file_ext.lower() == "cif":
             return CIFLoader(file_name)
