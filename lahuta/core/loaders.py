@@ -15,9 +15,15 @@ from lahuta.core.obmol import OBMol
 class CIFLoader:
     def __init__(self, file_path):
         self.file_path = file_path
-        self.block = gemmi.cif.read_file(file_path).sole_block()
-        self.structure = gemmi.make_structure_from_block(self.block)
-        self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
+        extension = file_path.split(".")[-1]
+        if extension == "cif":
+            self.block = gemmi.cif.read_file(file_path).sole_block()
+            self.structure = gemmi.make_structure_from_block(self.block)
+            self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
+        else:
+            self.structure = gemmi.read_pdb(file_path)
+            self.block = self.structure.make_mmcif_document().sole_block()
+            self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
 
         self.n_atoms = len(self.atom_site_data.get("Cartn_x"))
 
@@ -61,21 +67,23 @@ class CIFLoader:
     def create_obmol(self):
         obmol = OBMol()
 
-        added_residues = set()
         ob_res = None
+        added_residues = set()
         for idx, (chain, residue, atom) in enumerate(
             zip(self.chains, self.residues, self.atoms)
         ):
             _, chain_id = chain
             resname, resnumber, _ = residue
-            _, atom_id, element = atom
+            atom_name, atom_id, element = atom
 
-            if ob_res is None or ob_res not in added_residues:
+            cra = (chain_id, resnumber, resname)
+            if ob_res is None or cra not in added_residues:
+                # print(cra)
                 ob_res = obmol.create_residue_obmol(resnumber, resname, chain_id)
-                added_residues.add(ob_res)
+                added_residues.add(cra)
 
             obmol.create_atom_obmol(
-                int(atom_id), element, self.coords_array[idx], ob_res
+                atom_name, int(atom_id), element, self.coords_array[idx], ob_res
             )
 
         obmol.perceive_bonds()
@@ -90,12 +98,14 @@ class CIFLoader:
 
             obmol.create_bond_obmol(atom1, atom2)
 
-        obmol.end_modify(True)
+        obmol.perceive_properties()
 
-        return obmol.obmol
+        obmol.end_modify(True)
+        obmol.mol.SetChainsPerceived()
+
+        return obmol.mol
 
     def create_mda_universe(self):
-        print(self.chains.mapping)
         resnames, resids, chain_ids = [], [], []
         for model in self.structure:
             for chain in model:
@@ -115,7 +125,7 @@ class CIFLoader:
         )
 
         mda_universe.add_TopologyAttr("names", self.atoms.names)
-        mda_universe.add_TopologyAttr("type", self.atoms.elements)
+        mda_universe.add_TopologyAttr("type", self.atoms.types)
         mda_universe.add_TopologyAttr("elements", self.atoms.elements)
         mda_universe.add_TopologyAttr("resnames", resnames)
         mda_universe.add_TopologyAttr("resids", resids)

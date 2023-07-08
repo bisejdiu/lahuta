@@ -75,27 +75,26 @@ def calculate_angle(point_a, point_b, point_c, degrees=True):
 
     return np.arccos(res)
 
+
 def array_distance(arr1, arr2):
     """Takes the difference between the two arrays and calculates the norm of the difference.
 
-    
+
     Parameters
     ----------
     arr1: np.array
         Shape (n, 3) array
-        
+
     arr2: np.array
         Shape (m, 6, 3) array
-        
+
     Returns
     -------
     distance_array: np.array
         Shape (n, 6) array
     """
-    distance_array = np.linalg.norm(
-        arr1[:, np.newaxis, :] - arr2, axis=-1
-    )
-    
+    distance_array = np.linalg.norm(arr1[:, np.newaxis, :] - arr2, axis=-1)
+
     return distance_array
 
 

@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.cif")
     # end = time.time()
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1cbs.cif")
-    n = u.compute_neighbors()
+    n = u.compute_neighbors(res_dif=2)
 
     # Compute contacts
     cov = contacts.covalent_neighbors(n)

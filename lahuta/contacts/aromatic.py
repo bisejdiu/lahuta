@@ -5,6 +5,7 @@ Placeholder for the universe module.
 from typing import Union
 
 import numpy as np
+
 from lahuta.config.defaults import CONTACTS
 
 from ..core.groups import AtomGroup

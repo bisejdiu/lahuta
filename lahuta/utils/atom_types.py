@@ -154,7 +154,7 @@ def assign_radii(mol):
         An array of shape (n_atoms, 2) where the first column is the van der Waals
         radius and the second column is the covalent radius.
     """
-    atom_radii = np.zeros(mol.NumAtoms())
+    atom_radii = np.zeros(mol.NumAtoms(), dtype=float)
     for atom in ob.OBMolAtomIter(mol):
         atom_radii[atom.GetId()] = ob.GetVdwRad(atom.GetAtomicNum())
     return atom_radii

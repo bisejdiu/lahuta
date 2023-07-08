@@ -1,11 +1,12 @@
 from functools import partial
 
 import numpy as np
+from openbabel import openbabel as ob
+
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.utils.array_utils import difference
-from openbabel import openbabel as ob
 
 
 def is_covalent(mol, pair: np.ndarray):

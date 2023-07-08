@@ -82,8 +82,12 @@ class NeighborPairs:
 
     def __init__(self, uniatom, pairs, distances, **kwargs):
         self._atoms = uniatom.atoms
-        self._pairs = pairs
-        self._distances = distances
+
+        pairs = np.sort(pairs, axis=1)
+        indices = np.argsort(pairs[:, 0])
+
+        self._pairs = pairs[indices]
+        self._distances = distances[indices]
         # self._angles = None
         # self.col1, self.col2 = uniatom[pairs[:, 0]], uniatom[pairs[:, 1]]
 

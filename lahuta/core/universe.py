@@ -24,11 +24,13 @@ class Universe:
                 "Initializing Universe from a Topology object is not supported."
             )
 
-        file_loader = self._create_file_loader(file_name if file_name else args[0])
+        file_loader = self._create_file_loader(
+            file_name if file_name else args[0], loader
+        )
         self.mol, self._universe = file_loader.load()
         # self.mol = file_loader.mol
 
-        self._universe.atoms = AtomGroup(self._universe.atoms)
+        self._universe.atoms = AtomGroup(self._universe.atoms)  # type: ignore
         self.atoms._u = self
 
         # self.hbond_array = HydrogenBondFinder(molecule_io.mol).find_hydrogen_bonded_atoms()
@@ -42,8 +44,8 @@ class Universe:
         atomtype_assigner = AtomTypeAssigner(
             self.mol, self.atoms, top_attr, legacy=False, parallel=False
         )
-        # atypes_array = assign_atom_types(self.mol, self.atoms)
-        atypes_array = atomtype_assigner.assign_atom_types()
+        atypes_array = assign_atom_types(self.mol, self.atoms)
+        # atypes_array = atomtype_assigner.assign_atom_types()
 
         # save atypes_array to pickle file
         # import pickle
@@ -61,8 +63,10 @@ class Universe:
         return self
 
     @staticmethod
-    def _create_file_loader(file_name: str):  # -> FileLoader:
+    def _create_file_loader(file_name: str, loader):  # -> FileLoader:
         file_ext = file_name.split(".")[-1]
+        if loader:
+            return loader(file_name)
         if file_ext.lower() == "cif":
             return CIFLoader(file_name)
         else:

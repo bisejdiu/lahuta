@@ -44,8 +44,12 @@ class ContactBase(ABC):
         self._ua = ua
         self.neighbors = neighbor_pairs
 
-        self.pairs = self.compute_contacts(**kwargs)
-        self.distances = self.filter_distances()
+        contact_pairs = self.compute_contacts(**kwargs)
+        self.pair_indices = self.matching_indices(self.neighbors.pairs, contact_pairs)
+        # sort pair_indices
+        # self.pair_indices = np.sort(self.pair_indices)
+        self.pairs = self.neighbors.pairs[self.pair_indices]
+        self.distances = self.neighbors.distances[self.pair_indices]
 
     @property
     def indices(self, **kwargs) -> np.ndarray:
@@ -84,7 +88,7 @@ class ContactBase(ABC):
         output: Literal["dict", "dataframe"],
         dftype: Literal["compact", "expanded", "print"] = "compact",
     ) -> Union[Dict[Any, Any], pd.DataFrame]:
-        """Get the covalent contacts.
+        """Get contacts.
 
         Parameters
         ----------
@@ -104,10 +108,26 @@ class ContactBase(ABC):
         else:
             raise ValueError(f"Invalid output type: {output}")
 
-    def filter_distances(self):
+    def filter_distances(self, pairs):
         """Return distances between contact pairs."""
-        indices = matching_indices(self.neighbors.pairs, self.pairs)
+        # indices = np.where((self.neighbors.pairs == pairs[:, None]).all(-1).any(-1))[0]
+        # print("indices", indices)
+        # print("pair sizes", self.neighbors.pairs.shape, self.pairs.shape)
+
+        condition1 = self.neighbors.pairs[:, 0, None] == pairs[:, 0]
+        condition2 = self.neighbors.pairs[:, 1, None] == pairs[:, 1]
+
+        # Find the indices where both conditions are true
+        indices = np.where((condition1 & condition2).any(axis=-1))[0]
+
+        # print("pairs", self.neighbors.pairs, self.pairs)
+        # indices = matching_indices(self.neighbors.pairs, self.pairs)
         return self.neighbors.distances[indices]
+
+    @staticmethod
+    def matching_indices(pairs, pairs_to_match):
+        indices = np.where((pairs_to_match == pairs[:, None]).all(-1).any(-1))[0]
+        return indices
 
     @abstractmethod
     def compute_contacts(self, **kwargs) -> np.ndarray:

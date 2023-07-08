@@ -65,7 +65,12 @@ class Atoms:
     def _process(self):
         self._names = np.array(self.block_data.get("label_atom_id"))
         self._ids = np.array(self.block_data.get("id"), dtype=int)
-        self._elements = np.array(self.block_data.get("type_symbol"))
+        self._elements = np.core.defchararray.capitalize(
+            self.block_data.get("type_symbol")
+        )
+        self._types = np.array(self.block_data.get("type_symbol"))
+        # capitalize the element symbols
+        # self._elements = np.core.defchararray.capitalize(self._elements)  # type: ignore
 
     @property
     def names(self):
@@ -73,7 +78,7 @@ class Atoms:
 
     @property
     def types(self):
-        return self._names
+        return self._types
 
     @property
     def ids(self):
@@ -112,7 +117,6 @@ class Chains:
         _, self._ids = np.unique(self._auths, return_inverse=True)
         self._ids += 1
 
-        # self.mapping = {v: k for k, v in enumerate(self._ids)}
         self.mapping = dict(zip(self._auths, self._ids))
 
     @property

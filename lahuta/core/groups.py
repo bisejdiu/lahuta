@@ -52,7 +52,7 @@ class AtomGroup(mda.AtomGroup):
         pairs, distances = self.get_neighbors(atomgroup, radius)
 
         if skip_adjacent:
-            idx = self._remove_adjacent_residue_pairs(self, pairs, res_dif=res_dif)
+            idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
             pairs = pairs[idx]
             distances = distances[idx]
 
@@ -86,7 +86,7 @@ class AtomGroup(mda.AtomGroup):
 
         return atomgroup[neighbors.get_pairs()].indices, neighbors.get_pair_distances()
 
-    def _remove_adjacent_residue_pairs(self, uniag, pairs, res_dif=1):
+    def _remove_adjacent_residue_pairs(self, pairs, res_dif=1):
         """Remove pairs where the difference in residue ids is less than `res_dif`.
 
         Parameters
@@ -105,7 +105,7 @@ class AtomGroup(mda.AtomGroup):
 
         """
         # so it works for both AtomGroup and Universe
-        resids = uniag.atoms.resids[pairs]
+        resids = self.atoms.resids[pairs]
         return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
 
     def __str__(self) -> str:
