@@ -6,6 +6,7 @@ Placeholder for the universe module.
 import numpy as np
 from MDAnalysis.core.topology import Topology
 
+from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
 from lahuta.core.groups import AtomGroup
@@ -18,15 +19,13 @@ from lahuta.utils.atom_types import (
 
 
 class Universe:
-    def __init__(self, file_name=None, loader=None, *args):
+    def __init__(self, file_name=None, *args):
         if isinstance(file_name, Topology):
             raise NotImplementedError(
                 "Initializing Universe from a Topology object is not supported."
             )
 
-        file_loader = self._create_file_loader(
-            file_name if file_name else args[0], loader
-        )
+        file_loader = self._create_file_loader(file_name if file_name else args[0])
         self.mol, self._universe = file_loader.load()
         # self.mol = file_loader.mol
 
@@ -55,13 +54,13 @@ class Universe:
         return self
 
     @staticmethod
-    def _create_file_loader(file_name: str, loader):  # -> FileLoader:
-        file_ext = file_name.split(".")[-1]
-        if loader:
-            return loader(file_name)
-        if file_ext.lower() == "cif":
-            return CIFLoader(file_name)
+    def _create_file_loader(file_name: str):  # -> FileLoader:
+        file_format, is_pdb = Universe.get_format(file_name)
+        if file_format is not None:
+            return CIFLoader(file_name, is_pdb=is_pdb)
         else:
+            # TODO: Channel to an MDA loader
+            print("Not Supported Format")
             return PDBLoader(file_name)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
@@ -72,6 +71,23 @@ class Universe:
 
     def compute_neighbors(self, *args, **kwargs):
         return self.atoms.compute_neighbors(*args, **kwargs)
+
+    @staticmethod
+    def get_format(file_name):
+        """Retrieve the file format from a file name.
+
+        Args:
+            file_name (str): The name of the file.
+
+        Returns:
+            tuple: The file format and a boolean indicating if it is pdb or pdb.gz.
+        """
+        file_name_lower = file_name.lower()
+        for fmt in GEMMI_SUPPRTED_FORMATS:
+            if file_name_lower.endswith("." + fmt):
+                is_pdb = fmt in {"pdb", "pdb.gz"}
+                return fmt, is_pdb
+        return None, False
 
     def __getattr__(self, attr):
         # Delegate attribute access to the created universe

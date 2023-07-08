@@ -43,3 +43,5 @@ CONTACTS = {
     "carbonyl": {"distance": 3.6},
     "metal": {"distance": 2.8},
 }
+
+GEMMI_SUPPRTED_FORMATS = {"cif", "mmcif", "cif.gz", "pdb", "pdb.gz"}

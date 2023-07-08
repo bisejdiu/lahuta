@@ -13,11 +13,11 @@ from lahuta.core.obmol import OBMol
 
 
 class CIFLoader:
-    def __init__(self, file_path):
+    def __init__(self, file_path, is_pdb=False):
         self.file_path = file_path
-        extension = file_path.split(".")[-1]
-        if extension == "cif":
-            self.block = gemmi.cif.read_file(file_path).sole_block()
+        # extension = file_path.split(".")[-1]
+        if not is_pdb:
+            self.block = gemmi.cif.read(file_path).sole_block()
             self.structure = gemmi.make_structure_from_block(self.block)
             self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
         else:
