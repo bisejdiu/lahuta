@@ -101,7 +101,7 @@ class CIFLoader:
         obmol.perceive_properties()
 
         obmol.end_modify(True)
-        obmol.mol.SetChainsPerceived()
+        obmol.mol.SetChainsPerceived()  # type: ignore
 
         return obmol.mol
 
