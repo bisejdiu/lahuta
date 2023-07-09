@@ -24,7 +24,7 @@ class AtomTypeAssigner:
     def __init__(self, mol, atomgroup, ta, parallel=False, legacy=True):
         self.mol = mol
         self.atomgroup = atomgroup
-        print("->", self.atomgroup)
+        # print("->", self.atomgroup)
         self.protein_atomgroup = self.atomgroup.select_atoms("protein")
         self.ta = ta
 

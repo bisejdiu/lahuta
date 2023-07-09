@@ -4,10 +4,11 @@ Placeholder for the universe module.
 
 from typing import Union
 
+import MDAnalysis as mda
 import numpy as np
+
 from lahuta.config.defaults import CONTACTS
 
-from ..core.groups import AtomGroup
 from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
 from .protocol import ContactBase
@@ -28,7 +29,7 @@ class IonicContacts(ContactBase):
 
     distance = CONTACTS["ionic"]["distance"]
 
-    def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairs):
+    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
         super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:

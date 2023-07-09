@@ -2,14 +2,12 @@
 Placeholder
 """
 
-from typing import Dict, Any, Protocol, Literal
+from dataclasses import dataclass
+from typing import Any, Dict, Literal, Protocol
 
+import MDAnalysis as mda
 import numpy as np
 import pandas as pd
-
-from ..core.groups import AtomGroup
-
-from dataclasses import dataclass
 
 
 @dataclass
@@ -75,7 +73,7 @@ class DataFrameFactory:
     # AtomGroup does not neccessarily have a double column format of atoms.
     def __init__(
         self,
-        nag: AtomGroup,
+        nag: mda.AtomGroup,
         distances: np.ndarray,
         df_format: Literal["print", "compact", "expanded"] = "print",
     ):

@@ -4,11 +4,11 @@ Placeholder for the universe module.
 
 from typing import Union
 
+import MDAnalysis as mda
 import numpy as np
 
 from ..config.atoms import METALS
 from ..config.defaults import CONTACTS
-from ..core.groups import AtomGroup
 from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
 from .protocol import ContactBase
@@ -29,8 +29,7 @@ class MetalContacts(ContactBase):
 
     distance = CONTACTS["metal"]["distance"]
 
-    def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairs):
-
+    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
         self.metal_indices = (
             ua.atoms[neighbors.indices]
             .select_atoms("element " + " ".join(METALS))

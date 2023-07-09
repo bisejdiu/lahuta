@@ -6,20 +6,18 @@ import itertools
 from dataclasses import dataclass
 from typing import Any, Dict, List, Literal, Optional, Protocol, Union
 
+import MDAnalysis as mda
 import numpy as np
 import pandas as pd
-from lahuta.config.defaults import CONTACTS
-from lahuta.contacts.protocol import ContactBase
-from lahuta.core.groups import AtomGroup
-from lahuta.core.universe import Universe
 from MDAnalysis.lib import distances as mda_distances
 from openbabel import openbabel as ob
 
-from ..core.groups import AtomGroup
+from lahuta.config.defaults import CONTACTS
+from lahuta.contacts.protocol import ContactBase
+from lahuta.core.universe import Universe
+
 from ..core.neighbors import NeighborPairs
-from ..core.universe import Universe
 from ..utils.writers import FACTORY_DICT
-from .protocol import ContactBase
 
 
 @dataclass
@@ -146,7 +144,6 @@ class AtomPlaneContacts:
         ]
 
     def compute_contacts(self, **kwargs):
-
         ppairs, distances = self._calculate_distances()
 
         neighbors = NeighborPairs(self.ua.atoms, ppairs, distances)
@@ -189,12 +186,11 @@ class AtomPlaneContacts:
 
 
 class PlanePlaneContacts:
-    def __init__(self, ua: Union[Universe, AtomGroup]):
+    def __init__(self, ua: Union[Universe, mda.AtomGroup]):
         self.ua = ua
         self.rings = perceive_rings(self.ua.universe.mol)
 
     def compute_contacts(self, **kwargs):
-
         ring_ids = np.arange(len(self.rings))
 
         reference = np.array([x["center"] for x in self.rings])
@@ -324,7 +320,6 @@ def perceive_rings(mol):
     aromatics = []
 
     for _, ob_ring in enumerate(mol.GetSSSR()):
-
         if not ob_ring.IsAromatic():
             continue
 

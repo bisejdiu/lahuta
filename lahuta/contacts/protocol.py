@@ -5,10 +5,10 @@ Placeholder
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Literal, Union
 
+import MDAnalysis as mda
 import numpy as np
 import pandas as pd
 
-from ..core.groups import AtomGroup
 from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
 from ..utils.array_utils import matching_indices
@@ -37,7 +37,7 @@ class ContactBase(ABC):
 
     def __init__(
         self,
-        ua: Union[Universe, AtomGroup],
+        ua: Union[Universe, mda.AtomGroup],
         neighbor_pairs: NeighborPairs,
         **kwargs,
     ):
@@ -57,7 +57,7 @@ class ContactBase(ABC):
         return np.sort(np.unique([self.pairs[:, 0], self.pairs[:, 1]]))
 
     @property
-    def atoms(self) -> AtomGroup:
+    def atoms(self) -> mda.AtomGroup:
         """Retrieve the contact atoms."""
         return self._ua.atoms[self.pairs]
 

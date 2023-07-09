@@ -4,10 +4,10 @@ Placeholder for the universe module.
 
 from typing import Union
 
+import MDAnalysis as mda
 import numpy as np
 from openbabel import openbabel as ob
 
-from ..core.groups import AtomGroup
 from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
 from .protocol import ContactBase
@@ -26,7 +26,7 @@ class CovalentContacts(ContactBase):
 
     """
 
-    def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairs):
+    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
         super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:

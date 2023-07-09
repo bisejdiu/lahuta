@@ -3,19 +3,28 @@ Placeholder for the universe module.
 """
 
 
+import MDAnalysis as mda
 import numpy as np
 from MDAnalysis.core.topology import Topology
+from MDAnalysis.lib.nsgrid import FastNS
 
+import lahuta.core.topattrs as topattrs
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
-from lahuta.core.groups import AtomGroup
+
+# from lahuta.core.groups import AtomGroup
 from lahuta.core.loaders import CIFLoader, PDBLoader
-from lahuta.utils.atom_types import (
-    assign_atom_types,
-    assign_radii,
-    find_hydrogen_bonded_atoms,
-)
+from lahuta.core.neighbors import NeighborPairs
+from lahuta.utils.atom_types import assign_radii, find_hydrogen_bonded_atoms
+from lahuta.utils.mda import mda_psuedobox_from_atomgroup
+
+# class AtomGroup(mda.AtomGroup):
+#     """A subclass of the MDAnalysis AtomGroup class."""
+
+#     def __init__(self, *args, **kwargs):
+#         """Initialize the AtomGroup."""
+#         super().__init__(*args, **kwargs)
 
 
 class Universe:
@@ -27,12 +36,11 @@ class Universe:
 
         file_loader = self._create_file_loader(file_name if file_name else args[0])
         self.mol, self._universe = file_loader.load()
-        # self.mol = file_loader.mol
 
-        self._universe.atoms = AtomGroup(self._universe.atoms)  # type: ignore
+        # self._universe.atoms = AtomGroup(self._universe.atoms)  # type: ignore
+
         self.atoms._u = self
 
-        # self.hbond_array = HydrogenBondFinder(molecule_io.mol).find_hydrogen_bonded_atoms()
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
         top_attr = {
@@ -43,7 +51,6 @@ class Universe:
         atomtype_assigner = AtomTypeAssigner(
             self.mol, self.atoms, top_attr, legacy=False, parallel=False
         )
-        # atypes_array = assign_atom_types(self.mol, self.atoms)
         atypes_array = atomtype_assigner.assign_atom_types()
 
         self._extend_topology("vdw_radii", assign_radii(self.mol))
@@ -66,11 +73,97 @@ class Universe:
     def _extend_topology(self, attrname: str, values: np.ndarray):
         self.add_TopologyAttr(attrname, values)
 
-    def select_atoms(self, *args, **kwargs) -> AtomGroup:
-        return self.atoms.select_atoms(*args, **kwargs)
+    # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
+    #     return self.atoms.select_atoms(*args, **kwargs)
 
-    def compute_neighbors(self, *args, **kwargs):
-        return self.atoms.compute_neighbors(*args, **kwargs)
+    # def compute_neighbors(self, *args, **kwargs):
+    #     return self.atoms.compute_neighbors(*args, **kwargs)
+
+    def compute_neighbors(
+        self,
+        radius=5.0,
+        ignore_hydrogens=True,
+        # hbonds=False,
+        skip_adjacent=True,
+        res_dif=1,
+    ):
+        """Compute the neighbors of each atom in the Universe.
+
+        Parameters
+        ----------
+        radius : float, optional
+            The cutoff radius. Default is 5.0.
+        ignore_hydrogens : bool, optional
+            Whether to ignore hydrogens. Default is True.
+        hbonds : bool, optional
+            Whether to include hydrogen bonds. Default is False.
+
+        Returns
+        -------
+        neighbors : np.ndarray
+            An array of shape (n_atoms, n_neighbors) where each row contains the
+            indices of the neighbors of the atom in the row.
+        """
+        if ignore_hydrogens:
+            atomgroup = self.select_atoms("not name H*")
+        else:
+            atomgroup = self.atoms
+
+        pairs, distances = self.get_neighbors(atomgroup, radius)
+
+        if skip_adjacent:
+            idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
+            pairs = pairs[idx]
+            distances = distances[idx]
+
+        return NeighborPairs(self.atoms, pairs, distances)
+
+    def get_neighbors(self, atomgroup=None, radius=5.0):
+        """Get the neighbors of an atomgroup.
+
+        Parameters
+        ----------
+        atomgroup : AtomGroup
+            The atomgroup to get the neighbors of.
+
+        Returns
+        -------
+        pairs : np.ndarray
+            An array of shape (n_pairs, 2) where each row contains the indices of
+            the atoms in the pair.
+        distances : np.ndarray
+            An array of shape (n_pairs,) containing the distances of each pair.
+        """
+        if atomgroup is None:
+            atomgroup = self.atoms
+
+        shift_coords, pseudobox = mda_psuedobox_from_atomgroup(atomgroup)
+
+        gridsearch = FastNS(
+            cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
+        )
+        neighbors = gridsearch.self_search()
+
+        return atomgroup[neighbors.get_pairs()].indices, neighbors.get_pair_distances()
+
+    def _remove_adjacent_residue_pairs(self, pairs, res_dif=1):
+        """Remove pairs where the difference in residue ids is less than `res_dif`.
+
+        Parameters
+        ----------
+        pairs : np.ndarray
+            An array of shape (n_pairs, 2) where each row is a pair of atom indices.
+        res_dif : int, optional
+            The difference in residue ids to remove. Default is 1.
+
+        Returns
+        -------
+        pairs : np.ndarray
+            An array of shape (n_pairs, 2) where each row is a pair of atom indices.
+
+        """
+        resids = self.atoms.resids[pairs]
+        return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
 
     @staticmethod
     def get_format(file_name):

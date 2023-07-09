@@ -4,10 +4,11 @@ Placeholder for the universe module.
 
 from typing import Union
 
+import MDAnalysis as mda
 import numpy as np
+
 from lahuta.config.defaults import CONTACTS
 
-from ..core.groups import AtomGroup
 from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
 from ..utils.array_utils import non_matching_indices
@@ -30,7 +31,7 @@ class VanDerWaalsContacts(ContactBase):
     # TODO: this should be put in the config file
     vdw_comp_factor = 0.1
 
-    def __init__(self, ua: Union[Universe, AtomGroup], neighbors: NeighborPairs):
+    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
         super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
