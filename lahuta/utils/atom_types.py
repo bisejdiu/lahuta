@@ -17,16 +17,16 @@ def assign_atom_types(mol, atomgroup):
     Atom types are defined in `ATOM_TYPES`
     """
     atypes = {
-        "hbond acceptor": 0,
-        "pos ionisable": 1,
-        "carbonyl oxygen": 2,
-        "weak hbond donor": 3,
-        "carbonyl carbon": 4,
-        "weak hbond acceptor": 5,
-        "hbond donor": 6,
-        "neg ionisable": 7,
+        "hbond_acceptor": 0,
+        "pos_ionisable": 1,
+        "carbonyl_oxygen": 2,
+        "weak_hbond_donor": 3,
+        "carbonyl_carbon": 4,
+        "weak hbond_acceptor": 5,
+        "hbond_donor": 6,
+        "neg_ionisable": 7,
         "aromatic": 8,
-        "xbond acceptor": 9,
+        "xbond_acceptor": 9,
         "hydrophobe": 10,
     }
 
@@ -47,8 +47,8 @@ def assign_atom_types(mol, atomgroup):
     for atom in atomgroup.select_atoms(
         "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
     ):
-        atypes_array[atom.index, atypes["hbond acceptor"]] = 1
-        atypes_array[atom.index, atypes["hbond donor"]] = 1
+        atypes_array[atom.index, atypes["hbond_acceptor"]] = 1
+        atypes_array[atom.index, atypes["hbond_donor"]] = 1
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
     for residue in atomgroup.select_atoms(
@@ -74,16 +74,16 @@ def vec_assign_atom_types(mol, atomgroup, ta):
     Atom types are defined in `ATOM_TYPES`
     """
     atypes = {
-        "hbond acceptor": 0,
-        "pos ionisable": 1,
-        "carbonyl oxygen": 2,
-        "weak hbond donor": 3,
-        "carbonyl carbon": 4,
-        "weak hbond acceptor": 5,
-        "hbond donor": 6,
-        "neg ionisable": 7,
+        "hbond_acceptor": 0,
+        "pos_ionisable": 1,
+        "carbonyl_oxygen": 2,
+        "weak_hbond_donor": 3,
+        "carbonyl_carbon": 4,
+        "weak hbond_acceptor": 5,
+        "hbond_donor": 6,
+        "neg_ionisable": 7,
         "aromatic": 8,
-        "xbond acceptor": 9,
+        "xbond_acceptor": 9,
         "hydrophobe": 10,
     }
 
@@ -108,8 +108,8 @@ def vec_assign_atom_types(mol, atomgroup, ta):
     for atom in atomgroup.select_atoms(
         "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
     ):
-        atypes_array[atom.index, atypes["hbond acceptor"]] = 1
-        atypes_array[atom.index, atypes["hbond donor"]] = 1
+        atypes_array[atom.index, atypes["hbond_acceptor"]] = 1
+        atypes_array[atom.index, atypes["hbond_donor"]] = 1
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
     resname, atom_name = ta["resname"], ta["name"]

@@ -48,14 +48,14 @@ class IonicContacts(ContactBase):
         """
 
         ionic_atom12 = (
-            self.neighbors.type_filter("pos ionisable", 0)
-            .type_filter("neg ionisable", 1)
+            self.neighbors.type_filter("pos_ionisable", 0)
+            .type_filter("neg_ionisable", 1)
             .distance_filter(self.distance)
         )
 
         ionic_atom21 = (
-            self.neighbors.type_filter("neg ionisable", 0)
-            .type_filter("pos ionisable", 1)
+            self.neighbors.type_filter("neg_ionisable", 0)
+            .type_filter("pos_ionisable", 1)
             .distance_filter(self.distance)
         )
 

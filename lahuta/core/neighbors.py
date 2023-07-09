@@ -8,12 +8,10 @@ from collections import OrderedDict
 from functools import partial, update_wrapper
 from typing import TYPE_CHECKING, Any, List, Optional, Union
 
-if TYPE_CHECKING:
-    from .groups import AtomGroup
-
 import numpy as np
 from typing_extensions import Literal, Protocol
 
+from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 # from ..utils.atom_types import find_hydrogen_bonded_atoms
 from lahuta.config.atoms import PROT_ATOM_TYPES
 
@@ -111,35 +109,33 @@ class NeighborPairs:
         ), "The number of pairs and distances must be the same."
 
         # TODO: Get from config file and change variable name
-        self.type_keys = OrderedDict(
-            {
-                "hbond acceptor": 0,
-                "pos ionisable": 1,
-                "carbonyl oxygen": 2,
-                "weak hbond donor": 3,
-                "carbonyl carbon": 4,
-                "weak hbond acceptor": 5,
-                "hbond donor": 6,
-                "neg ionisable": 7,
-                "aromatic": 8,
-                "xbond acceptor": 9,
-                "hydrophobe": 10,
-            }
-        )
+        self.type_keys = AVAILABLE_ATOM_TYPES
         # self.type_keys = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
-    def type_filter(
-        self, atom_types: Union[str, List[str]], col: int
-    ) -> "NeighborPairs":
+    # def _type_filter(self, atom_type: str, col_func) -> "NeighborPairs":
+    #     """Common function to filter based on atom type."""
+    #     mask = getattr(col_func, atom_type)
+    #     return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
+
+    # def type_filter(self, atom_type: str, col: int) -> "NeighborPairs":
+    #     """Select pairs based on the atom type of a given column."""
+    #     if col == 0:
+    #         return self._type_filter(atom_type, self.col1)
+    #     elif col == 1:
+    #         return self._type_filter(atom_type, self.col2)
+    #     else:
+    #         raise ValueError("col argument must be 1 or 2.")
+
+    def type_filter(self, atom_type: str, col: int) -> "NeighborPairs":
         """Select pairs based on the atom types.
 
         Parameters
         ----------
-        atom_types : str or list of str
+        atom_type : str or list of str
             The atom types to select. The atom types can be a combination of the
-            following: 'carbonyl oxygen', 'weak hbond donor', 'pos ionisable',
-            'carbonyl carbon', 'hbond acceptor', 'hbond donor', 'neg ionisable',
-            'weak hbond acceptor', 'xbond acceptor', 'aromatic', 'hydrophobe'.
+            following: 'carbonyl_oxygen', 'weak_hbond_donor', 'pos_ionisable',
+            'carbonyl_carbon', 'hbond_acceptor', 'hbond_donor', 'neg_ionisable',
+            'weak hbond_acceptor', 'xbond_acceptor', 'aromatic', 'hydrophobe'.
 
         col : AtomGroup
             The column to select the atom types from. Either 1 or 2.
@@ -149,13 +145,9 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the selected pairs.
         """
-        if isinstance(atom_types, str):
-            atom_types = [atom_types]
-
-        col_func = getattr(self, f"col{col+1}")
-        mask = np.any(
-            col_func.atom_types[:, [self.type_keys[k] for k in atom_types]], axis=1
-        )
+        col = getattr(self, f"col{col+1}")
+        col_ag = getattr(col, atom_type)
+        mask = col_ag.astype(bool)
 
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 

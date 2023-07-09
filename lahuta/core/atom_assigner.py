@@ -1,7 +1,6 @@
-from collections import OrderedDict
-
 import numpy as np
 
+from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import ATOM_TYPES
 from lahuta.core.assigners import (
@@ -31,21 +30,7 @@ class AtomTypeAssigner:
         # self.atypes = OrderedDict(
         #     {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
         # )
-        self.atypes = OrderedDict(
-            {
-                "hbond acceptor": 0,
-                "pos ionisable": 1,
-                "carbonyl oxygen": 2,
-                "weak hbond donor": 3,
-                "carbonyl carbon": 4,
-                "weak hbond acceptor": 5,
-                "hbond donor": 6,
-                "neg ionisable": 7,
-                "aromatic": 8,
-                "xbond acceptor": 9,
-                "hydrophobe": 10,
-            }
-        )
+        self.atypes = AVAILABLE_ATOM_TYPES
         self.parallel = parallel
         self.legacy = legacy
 
@@ -82,8 +67,8 @@ class AtomTypeAssigner:
         for atom in self.atomgroup.select_atoms(
             "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
         ):
-            atypes_array[atom.index, self.atypes["hbond acceptor"]] = 1
-            atypes_array[atom.index, self.atypes["hbond donor"]] = 1
+            atypes_array[atom.index, self.atypes["hbond_acceptor"]] = 1
+            atypes_array[atom.index, self.atypes["hbond_donor"]] = 1
 
         return atypes_array
 

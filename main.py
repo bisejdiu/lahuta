@@ -20,7 +20,6 @@ from lahuta.contacts.vdw import VanDerWaalsContacts
 from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
-
     import numpy as np
 
     np.set_printoptions(suppress=True)
@@ -29,8 +28,8 @@ if __name__ == "__main__":
     n = u.compute_neighbors()
     # print(n)
     # m = (
-    #     n.type_filter(["carbonyl oxygen"], 0)
-    #     .type_filter(["carbonyl oxygen"], 1)
+    #     n.type_filter(["carbonyl_oxygen"], 0)
+    #     .type_filter(["carbonyl_oxygen"], 1)
     #     .distance_filter(4.0)
     # )
     # print(m)
@@ -46,8 +45,8 @@ if __name__ == "__main__":
     # print(cc.contacts("dataframe", "compact"))
 
     # v = (
-    #     n.type_filter("hbond donor", 0)
-    #     .type_filter("hbond acceptor", 1)
+    #     n.type_filter("hbond_donor", 0)
+    #     .type_filter("hbond_acceptor", 1)
     #     .contact_type("hbond")
     #     .hbond_distance_filter(col=1)  # type: ignore
     #     .hbond_angle_filter(col=0)  # type: ignore
@@ -63,13 +62,13 @@ if __name__ == "__main__":
     # print(hb.contacts("dataframe", "print").shape)
 
     # v1 = (
-    #     n.type_filter("pos ionisable", 0)
-    #     .type_filter("neg ionisable", 1)
+    #     n.type_filter("pos_ionisable", 0)
+    #     .type_filter("neg_ionisable", 1)
     #     .distance_filter(CONTACTS["ionic"]["distance"])
     # )
     # v2 = (
-    #     n.type_filter("neg ionisable", 0)
-    #     .type_filter("pos ionisable", 1)
+    #     n.type_filter("neg_ionisable", 0)
+    #     .type_filter("pos_ionisable", 1)
     #     .distance_filter(CONTACTS["ionic"]["distance"])
     # )
 

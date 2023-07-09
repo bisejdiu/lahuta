@@ -53,17 +53,17 @@ class MetalContacts(ContactBase):
 
         """
 
-        # (atom1 is hbond acceptor and atom2 is metal  OR
-        #  atom2 is hbond acceptor and atom1 is metal) AND
+        # (atom1 is hbond_acceptor and atom2 is metal  OR
+        #  atom2 is hbond_acceptor and atom1 is metal) AND
         # distance between atom1 and atom2 is less than `distance`
         acceptor_metal = (
-            self.neighbors.type_filter("hbond acceptor", 0)
+            self.neighbors.type_filter("hbond_acceptor", 0)
             .index_filter(self.metal_indices, 1)
             .distance_filter(self.distance)
         ).pairs
 
         metal_acceptor = (
-            self.neighbors.type_filter("hbond acceptor", 1)
+            self.neighbors.type_filter("hbond_acceptor", 1)
             .index_filter(self.metal_indices, 0)
             .distance_filter(self.distance)
         ).pairs

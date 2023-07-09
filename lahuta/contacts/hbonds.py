@@ -46,15 +46,15 @@ class HBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond donor", 0)
-            .type_filter("hbond acceptor", 1)
+            self.neighbors.type_filter("hbond_donor", 0)
+            .type_filter("hbond_acceptor", 1)
             .hbond_distance_filter(col=1)
             .hbond_angle_filter(col=0)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond donor", 1)
-            .type_filter("hbond acceptor", 0)
+            self.neighbors.type_filter("hbond_donor", 1)
+            .type_filter("hbond_acceptor", 0)
             .hbond_distance_filter(col=0)
             .hbond_angle_filter(col=1)
         )
@@ -94,15 +94,15 @@ class WeakHBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond acceptor", 0)
-            .type_filter("weak hbond donor", 1)
+            self.neighbors.type_filter("hbond_acceptor", 0)
+            .type_filter("weak_hbond_donor", 1)
             .hbond_distance_filter(col=0)
             .hbond_angle_filter(col=1, weak=True)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond acceptor", 1)
-            .type_filter("weak hbond donor", 0)
+            self.neighbors.type_filter("hbond_acceptor", 1)
+            .type_filter("weak_hbond_donor", 0)
             .hbond_distance_filter(col=1)
             .hbond_angle_filter(col=0, weak=True)
         )
@@ -144,14 +144,14 @@ class PolarHBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond donor", 0)
-            .type_filter("hbond acceptor", 1)
+            self.neighbors.type_filter("hbond_donor", 0)
+            .type_filter("hbond_acceptor", 1)
             .distance_filter(self.distance)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond donor", 1)
-            .type_filter("hbond acceptor", 0)
+            self.neighbors.type_filter("hbond_donor", 1)
+            .type_filter("hbond_acceptor", 0)
             .distance_filter(self.distance)
         )
 
@@ -192,14 +192,14 @@ class WeakPolarHBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond acceptor", 0)
-            .type_filter("weak hbond donor", 1)
+            self.neighbors.type_filter("hbond_acceptor", 0)
+            .type_filter("weak_hbond_donor", 1)
             .distance_filter(self.distance)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond acceptor", 1)
-            .type_filter("weak hbond donor", 0)
+            self.neighbors.type_filter("hbond_acceptor", 1)
+            .type_filter("weak_hbond_donor", 0)
             .distance_filter(self.distance)
         )
 

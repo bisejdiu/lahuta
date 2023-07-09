@@ -8,6 +8,7 @@ import numpy as np
 from MDAnalysis.core.topology import Topology
 from MDAnalysis.lib.nsgrid import FastNS
 
+from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
@@ -47,7 +48,9 @@ class Universe:
         self._topattr_handler = AtomAttrClassHandler()
 
         self._extend_topology("vdw_radii", assign_radii(self.mol))
-        self._extend_topology("atom_types", atypes_array)
+        # self._extend_topology("atom_types", atypes_array)
+        for attr in AVAILABLE_ATOM_TYPES:
+            self._extend_topology(attr, atypes_array[:, AVAILABLE_ATOM_TYPES[attr]])
 
     @property
     def universe(self):

@@ -53,7 +53,7 @@ class DonorPI:
         return (
             ns.numeric_filter(angles, angle_cutoff)
             .distance_filter(self.distance)
-            .type_filter("hbond donor", col=1)
+            .type_filter("hbond_donor", col=1)
         )
 
 
@@ -74,7 +74,7 @@ class CationPI:
         return (
             ns.numeric_filter(angles, angle_cutoff)
             .distance_filter(self.distance)
-            .type_filter("pos ionisable", col=1)
+            .type_filter("pos_ionisable", col=1)
         )
 
 
@@ -96,7 +96,7 @@ class CarbonPI:
             ns.numeric_filter(angles, angle_cutoff)
             .index_filter(ns.col2.select_atoms("element C").indices, col=1)  # type: ignore
             .distance_filter(self.distance)
-            .type_filter("weak hbond donor", col=1)
+            .type_filter("weak_hbond_donor", col=1)
         )
 
 
