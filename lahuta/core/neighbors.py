@@ -2,77 +2,16 @@
 Placeholder for the neighbors module.
 """
 
-import warnings
-from abc import abstractmethod
-from collections import OrderedDict
-from functools import partial, update_wrapper
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import List, Union
 
+import MDAnalysis as mda
 import numpy as np
-from typing_extensions import Literal, Protocol
 
 from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
-# from ..utils.atom_types import find_hydrogen_bonded_atoms
-from lahuta.config.atoms import PROT_ATOM_TYPES
+from lahuta.config.defaults import CONTACTS, VDW_RADII
 
-from ..config.defaults import CONTACTS, VDW_RADII
 from ..utils import array_utils as au
 from ..utils.array_utils import array_distance, calculate_angle
-
-
-class NeighborPairsBase(Protocol):
-    """A protocol for neighbor pairs."""
-
-    _atoms: Any
-    col1: Any
-    col2: Any
-    _pairs: np.ndarray
-    _distances: np.ndarray
-
-    @abstractmethod
-    def type_filter(
-        self, atom_types: Union[str, List[str]], col: int
-    ) -> "NeighborPairsBase":
-        """Filter the neighbor pairs by atom type."""
-
-    @abstractmethod
-    def contact_type(self, contact_type: Literal["hbond", "native"]) -> "NeighborPairs":
-        """Filter the neighbor pairs by contact type."""
-
-    @abstractmethod
-    def index_filter(
-        self, indices: Union[int, List[int]], col: int
-    ) -> "NeighborPairsBase":
-        """Filter the neighbor pairs by atom index."""
-
-    @abstractmethod
-    def distance_filter(self, distance: float) -> "NeighborPairsBase":
-        """Filter the neighbor pairs by distance."""
-
-    @abstractmethod
-    def radius_filter(self, radius: float, col: int) -> "NeighborPairsBase":
-        """Filter the neighbor pairs by radius."""
-
-    @abstractmethod
-    def hbond_distance_filter(
-        self, col: int, vdw_comp_factor: float
-    ) -> "NeighborPairs":
-        """Filter the neighbor pairs by distance."""
-
-    @property
-    def pairs(self) -> np.ndarray:
-        """Return the neighbor pairs."""
-        return self._pairs
-
-    @property
-    def distances(self) -> np.ndarray:
-        """Return the distances of the neighbor pairs."""
-        return self._distances
-
-    @property
-    def indices(self) -> np.ndarray:
-        """Get the indices of the atoms that are neighbors."""
-        return np.unique([self.col1.indices, self.col2.indices])
 
 
 class NeighborPairs:
@@ -86,17 +25,11 @@ class NeighborPairs:
 
         self._pairs = pairs[indices]
         self._distances = distances[indices]
-        # self._angles = None
-        # self.col1, self.col2 = uniatom[pairs[:, 0]], uniatom[pairs[:, 1]]
 
-        # self.hbond_array = find_hydrogen_bonded_atoms(self._atoms.universe.mol)
         self.hbond_array = uniatom.atoms.universe.hbond_array
         self.hbond_angles = (
             None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
         )
-        # self.result_array = (
-        #     None if kwargs.get("result_array") is None else kwargs.get("result_array")
-        # )
 
         self.setops = au.ArraySetOps(self._pairs)
 
@@ -108,23 +41,7 @@ class NeighborPairs:
             self.pairs.shape[0] == self._distances.size
         ), "The number of pairs and distances must be the same."
 
-        # TODO: Get from config file and change variable name
         self.type_keys = AVAILABLE_ATOM_TYPES
-        # self.type_keys = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
-
-    # def _type_filter(self, atom_type: str, col_func) -> "NeighborPairs":
-    #     """Common function to filter based on atom type."""
-    #     mask = getattr(col_func, atom_type)
-    #     return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
-
-    # def type_filter(self, atom_type: str, col: int) -> "NeighborPairs":
-    #     """Select pairs based on the atom type of a given column."""
-    #     if col == 0:
-    #         return self._type_filter(atom_type, self.col1)
-    #     elif col == 1:
-    #         return self._type_filter(atom_type, self.col2)
-    #     else:
-    #         raise ValueError("col argument must be 1 or 2.")
 
     def type_filter(self, atom_type: str, col: int) -> "NeighborPairs":
         """Select pairs based on the atom types.
@@ -576,12 +493,12 @@ class NeighborPairs:
         return self.setops.is_strict_superset(other.pairs)
 
     @property
-    def col1(self) -> "AtomGroup":
+    def col1(self) -> mda.AtomGroup:
         """The first column of the pairs array."""
         return self._atoms[self.pairs[:, 0]]
 
     @property
-    def col2(self) -> "AtomGroup":
+    def col2(self) -> mda.AtomGroup:
         """The second column of the pairs array."""
         return self._atoms[self.pairs[:, 1]]
 

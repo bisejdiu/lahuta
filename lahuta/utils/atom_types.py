@@ -4,6 +4,7 @@ Placehoder for the atom types and radii.
 import numpy as np
 from openbabel import openbabel as ob
 
+from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.atoms import ID_TO_TYPES
 
 from ..config.atoms import PROT_ATOM_TYPES
@@ -16,19 +17,7 @@ def assign_atom_types(mol, atomgroup):
     Assign atom types to each atom in the molecule.
     Atom types are defined in `ATOM_TYPES`
     """
-    atypes = {
-        "hbond_acceptor": 0,
-        "pos_ionisable": 1,
-        "carbonyl_oxygen": 2,
-        "weak_hbond_donor": 3,
-        "carbonyl_carbon": 4,
-        "weak hbond_acceptor": 5,
-        "hbond_donor": 6,
-        "neg_ionisable": 7,
-        "aromatic": 8,
-        "xbond_acceptor": 9,
-        "hydrophobe": 10,
-    }
+    atypes = AVAILABLE_ATOM_TYPES
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
     for atom_type, smartsdict in ATOM_TYPES.items():
@@ -73,19 +62,7 @@ def vec_assign_atom_types(mol, atomgroup, ta):
     Assign atom types to each atom in the molecule.
     Atom types are defined in `ATOM_TYPES`
     """
-    atypes = {
-        "hbond_acceptor": 0,
-        "pos_ionisable": 1,
-        "carbonyl_oxygen": 2,
-        "weak_hbond_donor": 3,
-        "carbonyl_carbon": 4,
-        "weak hbond_acceptor": 5,
-        "hbond_donor": 6,
-        "neg_ionisable": 7,
-        "aromatic": 8,
-        "xbond_acceptor": 9,
-        "hydrophobe": 10,
-    }
+    atypes = AVAILABLE_ATOM_TYPES
 
     # atom_id_to_type_index = {atom_id: atypes[atom_type] for atom_type, atom_ids in PROT_ATOM_TYPES_SET.items() for atom_id in atom_ids}
     atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}

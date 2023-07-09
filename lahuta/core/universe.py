@@ -12,8 +12,6 @@ from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
-
-# from lahuta.core.groups import AtomGroup
 from lahuta.core.loaders import CIFLoader, PDBLoader
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler
