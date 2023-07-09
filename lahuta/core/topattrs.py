@@ -2,37 +2,47 @@ import numpy as np
 from MDAnalysis.core.topologyattrs import AtomAttr
 
 
-class VdWRadii(AtomAttr):
-    """VdW radii for all atoms in the Universe."""
+class AtomAttrClassHandler:
+    """A class for generating new AtomAttr subclasses.
 
-    attrname = "vdw_radii"
-    singular = "vdw_radius"
+    This class is used to generate new AtomAttr subclasses and add them to the
+    global namespace. The new subclasses are generated based on the name of the
+    attribute and the singular name of the attribute. The singular name is used
+    to generate the name of the class, while the name of the attribute is used
+    to generate the name of the class attribute.
 
-    # @staticmethod
-    # def _gen_initial_values(n_atoms, n_residues, n_segments):
-    #     """Generate the initial values for the VdW radii."""
-    #     return np.zeros(n_atoms)
+    For example, if the attribute name is "atom_types" and the singular name is
+    "atom_type", the new class will be named "AtomTypes" and the class attribute
+    will be named "atom_type".
 
+    Attributes:
+        atomattr_class (AtomAttr subclass): The generated AtomAttr subclass.
+    """
 
-class CovRadii(AtomAttr):
-    """Covalent radii for all atoms in the Universe."""
+    def __init__(self):
+        """Initialize the handler."""
+        self.atomattr_class = None
 
-    attrname = "cov_radii"
-    singular = "cov_radius"
+    @staticmethod
+    def _gen_initial_values(n_atoms, *_):
+        """Generate the initial values for the attribute."""
+        return np.zeros(n_atoms)
 
-    # @staticmethod
-    # def _gen_initial_values(n_atoms, n_residues, n_segments, radii):
-    #     """Generate the initial values for the VdW radii."""
-    #     return radii[:, 1]
+    def init_topattr(self, attrname, singular_name):
+        """Generate the new AtomAttr subclass and add it to the global namespace.
 
+        Args:
+            attr_name (str): The name of the attribute.
+            singular_name (str): The singular name of the attribute.
 
-class AtomTypes(AtomAttr):
-    """Atom types for all atoms in the Universe."""
+        Returns:
+            AtomAttr subclass: The created class is added to the global namespace.
+        """
 
-    attrname = "atom_types"
-    singular = "atom_type"
-
-    # @staticmethod
-    # def _gen_initial_values(n_atoms, n_residues, n_segments):
-    #     """Generate the initial values for the atom types."""
-    #     return np.zeros(n_atoms, dtype=np.int32)
+        attr_dict = {
+            "attrname": attrname,
+            "singular": singular_name,
+            "_gen_initial_values": self._gen_initial_values,
+        }
+        self.atomattr_class = type(attrname, (AtomAttr,), attr_dict)
+        globals()[attrname] = self.atomattr_class

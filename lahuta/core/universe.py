@@ -8,7 +8,6 @@ import numpy as np
 from MDAnalysis.core.topology import Topology
 from MDAnalysis.lib.nsgrid import FastNS
 
-import lahuta.core.topattrs as topattrs
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
@@ -16,15 +15,9 @@ from lahuta.core.base import FileLoader
 # from lahuta.core.groups import AtomGroup
 from lahuta.core.loaders import CIFLoader, PDBLoader
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.utils.atom_types import assign_radii, find_hydrogen_bonded_atoms
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
-
-# class AtomGroup(mda.AtomGroup):
-#     """A subclass of the MDAnalysis AtomGroup class."""
-
-#     def __init__(self, *args, **kwargs):
-#         """Initialize the AtomGroup."""
-#         super().__init__(*args, **kwargs)
 
 
 class Universe:
@@ -36,8 +29,6 @@ class Universe:
 
         file_loader = self._create_file_loader(file_name if file_name else args[0])
         self.mol, self._universe = file_loader.load()
-
-        # self._universe.atoms = AtomGroup(self._universe.atoms)  # type: ignore
 
         self.atoms._u = self
 
@@ -52,6 +43,8 @@ class Universe:
             self.mol, self.atoms, top_attr, legacy=False, parallel=False
         )
         atypes_array = atomtype_assigner.assign_atom_types()
+
+        self._topattr_handler = AtomAttrClassHandler()
 
         self._extend_topology("vdw_radii", assign_radii(self.mol))
         self._extend_topology("atom_types", atypes_array)
@@ -71,6 +64,7 @@ class Universe:
             return PDBLoader(file_name)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
+        self._topattr_handler.init_topattr(attrname, attrname)
         self.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
