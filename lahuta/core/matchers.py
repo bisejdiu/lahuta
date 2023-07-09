@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 from openbabel import openbabel as ob
 
-from lahuta.config.residues import STANDARD_AMINO_ACIDS
+from lahuta.config.atoms import STANDARD_AMINO_ACIDS
 
 
 class SmartsMatcherBase(ABC):

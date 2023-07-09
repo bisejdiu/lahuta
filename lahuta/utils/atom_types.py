@@ -4,12 +4,8 @@ Placehoder for the atom types and radii.
 import numpy as np
 from openbabel import openbabel as ob
 
-from lahuta.config.atoms import ID_TO_TYPES
-from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-
-from ..config.atoms import PROT_ATOM_TYPES
-from ..config.residues import STANDARD_AMINO_ACIDS
-from ..config.smarts import SmartsPatternRegistry
+from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
 
 
 def assign_atom_types(mol, atomgroup):
