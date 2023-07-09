@@ -22,7 +22,7 @@ if __name__ == "__main__":
     start = time.time()
     n = u.compute_neighbors(res_dif=2)
 
-    # Compute contacts
+    # Compute contacAMIDE_SMARTSts
     cov = contacts.covalent_neighbors(n)
     print(cov.pairs.shape, "cov")
 

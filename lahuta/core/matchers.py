@@ -11,10 +11,11 @@ from lahuta.config.residues import STANDARD_AMINO_ACIDS
 class SmartsMatcherBase(ABC):
     """
     Base class for SMARTS pattern matching on molecules.
-    
+
     This class serves as an abstract base class for concrete implementations
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
+
     def __init__(self, atom_types):
         self.atom_types = atom_types
 
@@ -22,21 +23,22 @@ class SmartsMatcherBase(ABC):
     def compute(self, mol, atypes):
         raise NotImplementedError("Subclasses must implement this method")
 
+
 class SmartsMatcher(SmartsMatcherBase):
     """
     A class for matching SMARTS patterns to atoms in a molecule.
-    
+
     This class performs sequential SMARTS pattern matching on atoms in a
     molecule, returning atom types as defined in the atom_types dictionary.
     Inherits from the SmartsMatcherBase abstract base class.
     """
+
     def compute(self, mol, atypes):
         atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
 
-        for atom_type, smartsdict in self.atom_types.items():
-
+        for atom_type in self.atom_types:
+            smartsdict = self.atom_types[atom_type.name].value
             for smarts in smartsdict.values():
-
                 ob_smart = ob.OBSmartsPattern()
                 ob_smart.Init(str(smarts))
                 ob_smart.Match(mol)
@@ -46,25 +48,28 @@ class SmartsMatcher(SmartsMatcherBase):
                     atom = mol.GetAtom(match)
 
                     if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                        atypes_array[atom.GetId(), atypes[atom_type]] = 1
+                        atypes_array[atom.GetId(), atypes[atom_type.name].value] = 1
 
         return atypes_array
+
 
 class ParallelSmartsMatcher(SmartsMatcherBase):
     """
     A class for parallel matching of SMARTS patterns to atoms in a molecule.
-    
+
     This class utilizes multiple threads for parallel SMARTS pattern matching
     on atoms in a molecule, returning atom types as defined in the atom_types
     dictionary. Inherits from the SmartsMatcherBase abstract base class.
     """
+
     def __init__(self, atom_types):
         super().__init__(atom_types)
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
     def precompute_ob_smarts(self):
         precomputed_ob_smarts = {}
-        for atom_type, smartsdict in self.atom_types.items():
+        for atom_type in self.atom_types:
+            smartsdict = self.atom_types[atom_type.name].value
             precomputed_ob_smarts[atom_type] = []
             for smarts in smartsdict.values():
                 ob_smart = ob.OBSmartsPattern()
@@ -75,7 +80,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     def match_ob_smarts(self, ob_smart, mol, atypes, atom_type):
         ob_smart.Match(mol)
         matches = [x[0] for x in ob_smart.GetMapList()]
-        return [(match, atypes[atom_type]) for match in matches]
+        return [(match, atypes[atom_type.name].value) for match in matches]
 
     def compute(self, mol, atypes):
         atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
@@ -84,7 +89,12 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
 
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for atom_type, ob_smarts_list in self.precomputed_ob_smarts.items():
-                future_matches = [executor.submit(self.match_ob_smarts, ob_smart, mol, atypes, atom_type) for ob_smart in ob_smarts_list]
+                future_matches = [
+                    executor.submit(
+                        self.match_ob_smarts, ob_smart, mol, atypes, atom_type
+                    )
+                    for ob_smart in ob_smarts_list
+                ]
 
                 for future in future_matches:
                     matches = future.result()

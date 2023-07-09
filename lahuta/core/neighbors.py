@@ -7,8 +7,8 @@ from typing import List, Union
 import MDAnalysis as mda
 import numpy as np
 
-from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.defaults import CONTACTS, VDW_RADII
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 
 from ..utils import array_utils as au
 from ..utils.array_utils import array_distance, calculate_angle

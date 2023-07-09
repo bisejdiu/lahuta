@@ -44,6 +44,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
         resname_str = self.protein_atomgroup.resnames.astype(str)
         atom_name_str = self.protein_atomgroup.names.astype(str)
+        atype_names = [member.name.lower() for member in atypes]
 
         atom_id_labels = np.core.defchararray.add(  # type: ignore
             np.core.defchararray.strip(resname_str),  # type: ignore
@@ -53,7 +54,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
         # prot_atom_types_array = [
         #     list(atom_ids_label_set) for atom_ids_label_set in PROT_ATOM_TYPES.values()
         # ]
-        prot_atom_types_array = [list(PROT_ATOM_TYPES[key]) for key in atypes.keys()]
+        prot_atom_types_array = [list(PROT_ATOM_TYPES.get(key)) for key in atype_names]
         # prot_atom_types_array = []
         # for key in atypes.keys():
         #     print("adding", key, atypes[key])
@@ -82,14 +83,23 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
     """
 
     def compute(self, atypes_array, atypes):
+        # print("--> ", atypes)
+        # print("--> ", [member.name for member in atypes])
         for residue in self.protein_atomgroup.residues:
             for atom in residue.atoms:
                 for atom_type in list(PROT_ATOM_TYPES.keys()):
-                    atypes_array[atom.index, atypes[atom_type]] = 0
+                    # print("1", atom_type.upper())
+                    # print(
+                    #     atom_type,
+                    #     atom_type.upper(),
+                    #     atypes[atom_type.upper()],  # abc
+                    #     atypes[atom_type.upper()].value,
+                    # )
+                    atypes_array[atom.index, atypes[atom_type.upper()].value] = 0
 
                 for atom_type, atom_ids in PROT_ATOM_TYPES.items():
                     atom_id = residue.resname.strip() + atom.name.strip()
                     if atom_id in atom_ids:
-                        atypes_array[atom.index, atypes[atom_type]] = 1
+                        atypes_array[atom.index, atypes[atom_type.upper()].value] = 1
 
         return atypes_array

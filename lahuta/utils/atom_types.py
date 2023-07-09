@@ -4,23 +4,24 @@ Placehoder for the atom types and radii.
 import numpy as np
 from openbabel import openbabel as ob
 
-from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.atoms import ID_TO_TYPES
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 
 from ..config.atoms import PROT_ATOM_TYPES
 from ..config.residues import STANDARD_AMINO_ACIDS
-from ..config.smarts import ATOM_TYPES
+from ..config.smarts import SmartsPatternRegistry
 
 
 def assign_atom_types(mol, atomgroup):
     """
     Assign atom types to each atom in the molecule.
-    Atom types are defined in `ATOM_TYPES`
+    Atom types are defined in `SmartsPatternRegistry`
     """
     atypes = AVAILABLE_ATOM_TYPES
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
-    for atom_type, smartsdict in ATOM_TYPES.items():
+    for atom_type in SmartsPatternRegistry:
+        smartsdict = SmartsPatternRegistry[atom_type.name].value
         for smarts in smartsdict.values():
             ob_smart = ob.OBSmartsPattern()
             ob_smart.Init(str(smarts))
@@ -30,7 +31,7 @@ def assign_atom_types(mol, atomgroup):
             for match in matches:
                 atom = mol.GetAtom(match)
 
-                atypes_array[atom.GetId(), atypes[atom_type]] = 1
+                atypes_array[atom.GetId(), atypes[atom_type.name].value] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
     for atom in atomgroup.select_atoms(
@@ -60,15 +61,16 @@ def assign_atom_types(mol, atomgroup):
 def vec_assign_atom_types(mol, atomgroup, ta):
     """
     Assign atom types to each atom in the molecule.
-    Atom types are defined in `ATOM_TYPES`
+    Atom types are defined in `SmartsPatternRegistry`
     """
-    atypes = AVAILABLE_ATOM_TYPES
+    # atypes = AVAILABLE_ATOM_TYPES
 
     # atom_id_to_type_index = {atom_id: atypes[atom_type] for atom_type, atom_ids in PROT_ATOM_TYPES_SET.items() for atom_id in atom_ids}
     atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
-    for atom_type, smartsdict in ATOM_TYPES.items():
+    for atom_type in SmartsPatternRegistry:
+        smartsdict = SmartsPatternRegistry[atom_type.name].value
         for smarts in smartsdict.values():
             ob_smart = ob.OBSmartsPattern()
             ob_smart.Init(str(smarts))
@@ -79,7 +81,7 @@ def vec_assign_atom_types(mol, atomgroup, ta):
                 atom = mol.GetAtom(match)
 
                 if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                    atypes_array[atom.GetId(), atypes[atom_type]] = 1
+                    atypes_array[atom.GetId(), atypes[atom_type.name].value] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
     for atom in atomgroup.select_atoms(

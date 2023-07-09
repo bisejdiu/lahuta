@@ -244,6 +244,7 @@ PROT_ATOM_TYPES = {
             "TYROH",  # isostar plots
         ]
     ),
+    "xbond_donor": set(),
     "weak_hbond_acceptor": set(
         [
             "ALAO",  # all the carbonyl Oxygens in the main chain

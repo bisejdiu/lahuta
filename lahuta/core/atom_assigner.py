@@ -1,8 +1,7 @@
 import numpy as np
 
-from lahuta.config.atom_types import AVAILABLE_ATOM_TYPES
 from lahuta.config.atoms import PROT_ATOM_TYPES
-from lahuta.config.smarts import ATOM_TYPES
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
 from lahuta.core.assigners import (
     LegacyProteinTypeAssigner,
     VectorizedProteinTypeAssigner,
@@ -50,10 +49,10 @@ class AtomTypeAssigner:
 
         Depending on the configuration, either the SmartsMatcher or the
         ParallelSmartsMatcher class will be used for SMARTS pattern matching.
-        Returns an array of atom types as defined in the ATOM_TYPES dictionary.
+        Returns an array of atom types as defined in the SmartsPatternRegistry dictionary.
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
-        smarts_matcher = smarts_matcher_class(ATOM_TYPES)
+        smarts_matcher = smarts_matcher_class(SmartsPatternRegistry)
         return smarts_matcher.compute(self.mol, self.atypes)
 
     def _compute_water_types(self, atypes_array):
@@ -100,7 +99,6 @@ class AtomTypeAssigner:
 
         # atypes_array = self._compute_smarts_types()
         if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
-            print("-> ", "not equal")
             atypes_array = self._compute_smarts_types()
 
         atypes_array = self._compute_water_types(atypes_array)
