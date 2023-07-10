@@ -31,7 +31,7 @@ class NeighborPairs:
             None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
         )
 
-        self.setops = au.ArraySetOps(self._pairs)
+        # self.setops = au.ArraySetOps(self._pairs)
 
         # put kwargs in the object
         for key, value in kwargs.items():
@@ -345,7 +345,7 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the symmetric difference of the two NeighborPairs objects.
         """
-        mask_a, mask_b = self.setops.symmetric_difference(other.pairs)
+        mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
 
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
         distances = np.concatenate(
@@ -380,7 +380,7 @@ class NeighborPairs:
         isdisjoint : bool
             True if the two NeighborPairs objects have a null intersection.
         """
-        return self.setops.isdisjoint(other.pairs)
+        return au.isdisjoint(self.pairs, other.pairs)
 
     def issubset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of a NeighborPairs object are in another.
@@ -395,7 +395,7 @@ class NeighborPairs:
         issubset : bool
             True if all elements of the NeighborPairs object are in the other NeighborPairs object.
         """
-        return self.setops.issubset(other.pairs)
+        return au.issubset(self.pairs, other.pairs)
 
     def issuperset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of another NeighborPairs object are in this one.
@@ -410,7 +410,7 @@ class NeighborPairs:
         issuperset : bool
             True if all elements of the other NeighborPairs object are in this NeighborPairs object.
         """
-        return self.setops.issuperset(other.pairs)
+        return au.issuperset(self.pairs, other.pairs)
 
     def isequal(self, other: "NeighborPairs") -> bool:
         """Test whether two NeighborPairs objects contain the same elements.
@@ -425,7 +425,7 @@ class NeighborPairs:
         isequal : bool
             True if the two NeighborPairs objects contain the same elements.
         """
-        return self.setops.isequal(other.pairs)
+        return au.isequal(self.pairs, other.pairs)
 
     def isunique(self) -> bool:
         """Test whether the NeighborPairs object contains unique pairs.
@@ -435,7 +435,7 @@ class NeighborPairs:
         isunique : bool
             True if the NeighborPairs object contains unique pairs.
         """
-        return self.setops.isunique()
+        return au.isunique(self.pairs)
 
     def is_strict_subset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of a NeighborPairs object are in another and the two sets are not equal.
@@ -450,7 +450,7 @@ class NeighborPairs:
         is_strict_subset : bool
             True if all elements of the NeighborPairs object are in the other NeighborPairs object and the two sets are not equal.
         """
-        return self.setops.is_strict_subset(other.pairs)
+        return au.is_strict_subset(self.pairs, other.pairs)
 
     def is_strict_superset(self, other: "NeighborPairs") -> bool:
         """Test whether all elements of another NeighborPairs object are in this one and the two sets are not equal.
@@ -465,7 +465,7 @@ class NeighborPairs:
         is_strict_superset : bool
             True if all elements of the other NeighborPairs object are in this NeighborPairs object and the two sets are not equal.
         """
-        return self.setops.is_strict_superset(other.pairs)
+        return au.is_strict_superset(self.pairs, other.pairs)
 
     @property
     def col1(self) -> mda.AtomGroup:

@@ -2,69 +2,43 @@
 Placeholder
 """
 
-from functools import partial, update_wrapper
+# from functools import partial, update_wrapper
 
 import numpy as np
 
+# class ArraySetOps:
+#     def __init__(self, arr):
+#         self.arr = arr
 
-class ArraySetOpsMixin:
-    def __init__(self, array):
-        self.array = array
+#         self.intersection = partial(intersection, self.arr)
+#         self.union = partial(union, self.arr)
+#         self.difference = partial(difference, self.arr)
+#         self.symmetric_difference = partial(symmetric_difference, self.arr)
+#         self.isdisjoint = partial(isdisjoint, self.arr)
+#         self.issubset = partial(issubset, self.arr)
+#         self.issuperset = partial(issuperset, self.arr)
+#         self.isequal = partial(isequal, self.arr)
+#         self.isunique = partial(isunique, self.arr)
+#         self.is_strict_subset = partial(is_strict_subset, self.arr)
+#         self.is_strict_superset = partial(is_strict_superset, self.arr)
 
-    def intersection(self, arr1, arr2, assume_unique=False):
-        """Calculate the intersection of two arrays and return the indices of the
-        elements in `arr1` that are in `arr2`.
+#         update_wrapper(self.intersection, intersection)
+#         update_wrapper(self.union, union)
+#         update_wrapper(self.difference, difference)
+#         update_wrapper(self.symmetric_difference, symmetric_difference)
+#         update_wrapper(self.isdisjoint, isdisjoint)
+#         update_wrapper(self.issubset, issubset)
+#         update_wrapper(self.issuperset, issuperset)
+#         update_wrapper(self.isequal, isequal)
+#         update_wrapper(self.isunique, isunique)
+#         update_wrapper(self.is_strict_subset, is_strict_subset)
+#         update_wrapper(self.is_strict_superset, is_strict_superset)
 
-        Parameters
-        ----------
-        arr1 : np.ndarray
-            An array of shape (n, 2) where each row is a pair of atom indices.
-        arr2 : np.ndarray
-            An array of shape (n, 2) where each row is a pair of atom indices.
-        Returns
-        -------
-        arr : np.ndarray
-            An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in both `arr1` and `arr2`.
-        """
+#     def __repr__(self):
+#         return f"<ArraySetOps for array {self.arr}>"
 
-        arr1 = asvoid(arr1)
-        arr2 = asvoid(arr2)
-        return np.in1d(arr1, arr2, assume_unique)
-
-
-class ArraySetOps:
-    def __init__(self, arr):
-        self.arr = arr
-
-        self.intersection = partial(intersection, self.arr)
-        self.union = partial(union, self.arr)
-        self.difference = partial(difference, self.arr)
-        self.symmetric_difference = partial(symmetric_difference, self.arr)
-        self.isdisjoint = partial(isdisjoint, self.arr)
-        self.issubset = partial(issubset, self.arr)
-        self.issuperset = partial(issuperset, self.arr)
-        self.isequal = partial(isequal, self.arr)
-        self.isunique = partial(isunique, self.arr)
-        self.is_strict_subset = partial(is_strict_subset, self.arr)
-        self.is_strict_superset = partial(is_strict_superset, self.arr)
-
-        update_wrapper(self.intersection, intersection)
-        update_wrapper(self.union, union)
-        update_wrapper(self.difference, difference)
-        update_wrapper(self.symmetric_difference, symmetric_difference)
-        update_wrapper(self.isdisjoint, isdisjoint)
-        update_wrapper(self.issubset, issubset)
-        update_wrapper(self.issuperset, issuperset)
-        update_wrapper(self.isequal, isequal)
-        update_wrapper(self.isunique, isunique)
-        update_wrapper(self.is_strict_subset, is_strict_subset)
-        update_wrapper(self.is_strict_superset, is_strict_superset)
-
-    def __repr__(self):
-        return f"<ArraySetOps for array {self.arr}>"
-
-    def __str__(self):
-        return self.__repr__()
+#     def __str__(self):
+#         return self.__repr__()
 
 
 def calculate_angle(point_a, point_b, point_c, degrees=True):
