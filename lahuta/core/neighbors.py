@@ -25,6 +25,11 @@ class NeighborPairs:
         self._pairs = pairs[indices]
         self._distances = distances[indices]
 
+        self._cols = {
+            1: self._atoms[self.pairs[:, 0]],
+            2: self._atoms[self.pairs[:, 1]],
+        }
+
         self.hbond_array = uniatom.atoms.universe.hbond_array
         self.hbond_angles = (
             None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
@@ -40,7 +45,7 @@ class NeighborPairs:
 
         self.type_keys = AVAILABLE_ATOM_TYPES
 
-    def type_filter(self, atom_type: str, col: int) -> "NeighborPairs":
+    def type_filter(self, atom_type: str, partner: int) -> "NeighborPairs":
         """Filters pairs based on atom types.
 
         Args:
@@ -50,21 +55,20 @@ class NeighborPairs:
                 'xbond_acceptor', 'aromatic', 'hydrophobe'.
                 Names come from :class:`SmartsPatternRegistry` (Enum).
 
-            col (int): The column to select the atom types from. It can be either 1 or 2.
+            partner (int): The column to select the atom types from. It can be either 1 or 2.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing the filtered pairs.
         """
-        col = getattr(self, f"col{col+1}")
-        col_ag = getattr(col, atom_type)
+        col_ag = getattr(self._cols[partner], atom_type)
         mask = col_ag.astype(bool)
 
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def index_filter(
         self,
-        indices: Union[int, List[int]],
-        col: int,
+        indices: List[int],
+        partner: int,
     ) -> "NeighborPairs":
         """Select pairs based on the atom indices.
 
@@ -73,7 +77,7 @@ class NeighborPairs:
         indices : int or list of int
             The atom indices to select.
 
-        col : int
+        partner : int
             The column to select the atom types from. Either 1 or 2.
 
         Returns
@@ -81,10 +85,8 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the selected pairs.
         """
-        if isinstance(indices, int):
-            indices = [indices]
 
-        col_func = getattr(self, f"col{col+1}")
+        col_func = self._cols[partner]
         mask = np.isin(col_func.indices, indices)
 
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
@@ -124,13 +126,16 @@ class NeighborPairs:
         mask = array <= cutoff if lte else array > cutoff
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
-    def radius_filter(self, radius: float, col: int) -> "NeighborPairs":
-        """Select pairs based on the distance.
+    def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
+        """Select pairs based on the radius.
 
         Parameters
         ----------
-        distance : float
-            The distance to select.
+        radius : float
+            The radius to select.
+
+        partner : int
+            The column to select the atom types from. Either 1 or 2.
 
         Returns
         -------
@@ -138,19 +143,19 @@ class NeighborPairs:
             A NeighborPairs object containing the selected pairs.
         """
 
-        col_func = getattr(self, f"col{col+1}")
+        col_func = self._cols[partner]
         mask = col_func.atoms.vdw_radii <= radius
 
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
-        self, col: int = 0, vdw_comp_factor: float = 0.1
+        self, partner: int = 0, vdw_comp_factor: float = 0.1
     ) -> "NeighborPairs":
         """Filter the pairs based on the distance between the hydrogen bonded atoms.
 
         Parameters
         ----------
-        col : int
+        partner : int
             The column of the hydrogen bonded atom indices in the `hbond_array`.
         vdw_comp_factor : float
             The van der Waals complementarity factor.
@@ -160,12 +165,7 @@ class NeighborPairs:
         pairs : NeighborPairs
             The filtered neighbor pairs.
         """
-        col2 = 2
-        if col == 1:
-            col2 = 1
-
-        attr_col = getattr(self, f"col{col+1}")
-        hbound_attr_col = getattr(self, f"col{col2}")
+        attr_col, hbound_attr_col = self._get_partners(partner)
 
         vdw_distances = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
@@ -180,15 +180,22 @@ class NeighborPairs:
             hbond_dist_pairs,
             hbond_distances,
             hbangles=self.hbond_angles,
-            # result_array=self.result_array,
         )
 
-    def hbond_angle_filter(self, col: int = 0, weak: bool = False) -> "NeighborPairs":
+    def _get_partners(self, partner):
+        """Return attr_col and hbound_attr_col depending on the value of partner."""
+        partner2 = 1 if partner == 2 else 2
+
+        return self._cols[partner], self._cols[partner2]
+
+    def hbond_angle_filter(
+        self, partner: int = 0, weak: bool = False
+    ) -> "NeighborPairs":
         """Filter the pairs based on the angle between the hydrogen bonded atoms.
 
         Parameters
         ----------
-        col : int
+        partner : int
             The column of the hydrogen bonded atom indices in the `hbond_array`.
         angle : float
             The angle in degrees.
@@ -200,14 +207,12 @@ class NeighborPairs:
         """
 
         contact_type = "weak hbond" if weak else "hbond"
-        col2 = 2
-        if col == 1:
-            col2 = 1
+        partner2 = 1 if partner == 2 else 2
 
-        attr_col = getattr(self, f"col{col+1}")
-        hbound_attr_col = getattr(self, f"col{col2}")
+        attr_partner = self._cols[partner]
+        hbound_attr_partner = self._cols[partner2]
 
-        self.hbond_angles = self._get_hbond_angles(attr_col, hbound_attr_col)
+        self.hbond_angles = self._get_hbond_angles(attr_partner, hbound_attr_partner)
 
         idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
@@ -465,14 +470,14 @@ class NeighborPairs:
         return au.is_strict_superset(self.pairs, other.pairs)
 
     @property
-    def col1(self) -> mda.AtomGroup:
-        """The first column of the pairs array."""
-        return self._atoms[self.pairs[:, 0]]
+    def partner1(self) -> mda.AtomGroup:
+        """Get the first partner of the pairs of atoms that are neighbors."""
+        return self._cols[1]
 
     @property
-    def col2(self) -> mda.AtomGroup:
-        """The second column of the pairs array."""
-        return self._atoms[self.pairs[:, 1]]
+    def partner2(self) -> mda.AtomGroup:
+        """Get the second partner of the pairs of atoms that are neighbors."""
+        return self._cols[2]
 
     @property
     def pairs(self) -> np.ndarray:
@@ -492,7 +497,7 @@ class NeighborPairs:
     @property
     def indices(self) -> np.ndarray:
         """Get the indices of the atoms that are neighbors."""
-        return np.unique([self.col1.indices, self.col2.indices])
+        return np.unique([self.partner1.indices, self.partner2.indices])
 
     def __getitem__(self, item: Union[int, slice, np.ndarray]) -> "NeighborPairs":
         """Get the pair of atoms at the specified index.

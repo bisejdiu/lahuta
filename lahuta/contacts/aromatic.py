@@ -48,8 +48,8 @@ class AromaticContacts(ContactBase):
         """
 
         return (
-            self.neighbors.type_filter("aromatic", 0)
-            .type_filter("aromatic", 1)
+            self.neighbors.type_filter("aromatic", 1)
+            .type_filter("aromatic", 2)
             .distance_filter(self.distance)
             .pairs
         )

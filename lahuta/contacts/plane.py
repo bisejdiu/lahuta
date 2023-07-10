@@ -53,7 +53,7 @@ class DonorPI:
         return (
             ns.numeric_filter(angles, angle_cutoff)
             .distance_filter(self.distance)
-            .type_filter("hbond_donor", col=1)
+            .type_filter("hbond_donor", partner=2)
         )
 
 
@@ -74,7 +74,7 @@ class CationPI:
         return (
             ns.numeric_filter(angles, angle_cutoff)
             .distance_filter(self.distance)
-            .type_filter("pos_ionisable", col=1)
+            .type_filter("pos_ionisable", partner=2)
         )
 
 
@@ -94,9 +94,9 @@ class CarbonPI:
             raise ValueError("Angles must be provided for CarbonPI contacts.")
         return (
             ns.numeric_filter(angles, angle_cutoff)
-            .index_filter(ns.col2.select_atoms("element C").indices, col=1)  # type: ignore
+            .index_filter(ns.partner2.select_atoms("element C").indices, partner=2)  # type: ignore
             .distance_filter(self.distance)
-            .type_filter("weak_hbond_donor", col=1)
+            .type_filter("weak_hbond_donor", partner=2)
         )
 
 
@@ -112,8 +112,8 @@ class SulphurPI:
         angle_cutoff: float = 30.0,
     ) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the sulphur pi system."""
-        indices = ns.col2.select_atoms("resname MET and element S").indices  # type: ignore
-        return ns.index_filter(indices, col=1).distance_filter(self.distance)
+        indices = ns.partner2.select_atoms("resname MET and element S").indices  # type: ignore
+        return ns.index_filter(indices, partner=2).distance_filter(self.distance)
 
 
 # define a factory for the different strategies
@@ -147,7 +147,7 @@ class AtomPlaneContacts:
         ppairs, distances = self._calculate_distances()
 
         neighbors = NeighborPairs(self.ua.atoms, ppairs, distances)
-        n = neighbors.difference(neighbors.type_filter("aromatic", col=1))
+        n = neighbors.difference(neighbors.type_filter("aromatic", partner=2))
 
         # n._angles = self._calculate_angles(n.pairs)  # type: ignore
         self.angles = self._calculate_angles(n.pairs)

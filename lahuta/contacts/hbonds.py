@@ -27,8 +27,8 @@ class HBondContacts(ContactBase):
 
     """
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the hbond contacts between atoms in a molecule.
@@ -46,17 +46,17 @@ class HBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond_donor", 0)
-            .type_filter("hbond_acceptor", 1)
-            .hbond_distance_filter(col=1)
-            .hbond_angle_filter(col=0)
+            self.neighbors.type_filter("hbond_donor", 1)
+            .type_filter("hbond_acceptor", 2)
+            .hbond_distance_filter(partner=2)
+            .hbond_angle_filter(partner=1)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond_donor", 1)
-            .type_filter("hbond_acceptor", 0)
-            .hbond_distance_filter(col=0)
-            .hbond_angle_filter(col=1)
+            self.neighbors.type_filter("hbond_donor", 2)
+            .type_filter("hbond_acceptor", 1)
+            .hbond_distance_filter(partner=1)
+            .hbond_angle_filter(partner=2)
         )
 
         return np.unique(np.vstack((hbond_atom12.pairs, hbond_atom21.pairs)), axis=0)
@@ -94,17 +94,17 @@ class WeakHBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond_acceptor", 0)
-            .type_filter("weak_hbond_donor", 1)
-            .hbond_distance_filter(col=0)
-            .hbond_angle_filter(col=1, weak=True)
+            self.neighbors.type_filter("hbond_acceptor", 1)
+            .type_filter("weak_hbond_donor", 2)
+            .hbond_distance_filter(partner=1)
+            .hbond_angle_filter(partner=2, weak=True)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond_acceptor", 1)
-            .type_filter("weak_hbond_donor", 0)
-            .hbond_distance_filter(col=1)
-            .hbond_angle_filter(col=0, weak=True)
+            self.neighbors.type_filter("hbond_acceptor", 2)
+            .type_filter("weak_hbond_donor", 1)
+            .hbond_distance_filter(partner=2)
+            .hbond_angle_filter(partner=1, weak=True)
         )
 
         return np.unique(np.vstack((hbond_atom12.pairs, hbond_atom21.pairs)), axis=0)
@@ -144,14 +144,14 @@ class PolarHBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond_donor", 0)
-            .type_filter("hbond_acceptor", 1)
+            self.neighbors.type_filter("hbond_donor", 1)
+            .type_filter("hbond_acceptor", 2)
             .distance_filter(self.distance)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond_donor", 1)
-            .type_filter("hbond_acceptor", 0)
+            self.neighbors.type_filter("hbond_donor", 2)
+            .type_filter("hbond_acceptor", 1)
             .distance_filter(self.distance)
         )
 
@@ -192,14 +192,14 @@ class WeakPolarHBondContacts(ContactBase):
         """
 
         hbond_atom12 = (
-            self.neighbors.type_filter("hbond_acceptor", 0)
-            .type_filter("weak_hbond_donor", 1)
+            self.neighbors.type_filter("hbond_acceptor", 1)
+            .type_filter("weak_hbond_donor", 2)
             .distance_filter(self.distance)
         )
 
         hbond_atom21 = (
-            self.neighbors.type_filter("hbond_acceptor", 1)
-            .type_filter("weak_hbond_donor", 0)
+            self.neighbors.type_filter("hbond_acceptor", 2)
+            .type_filter("weak_hbond_donor", 1)
             .distance_filter(self.distance)
         )
 

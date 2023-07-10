@@ -48,8 +48,8 @@ class HydrophobicContacts(ContactBase):
         """
 
         return (
-            self.neighbors.type_filter("hydrophobe", 0)
-            .type_filter("hydrophobe", 1)
+            self.neighbors.type_filter("hydrophobe", 1)
+            .type_filter("hydrophobe", 2)
             .distance_filter(self.distance)
             .pairs
         )

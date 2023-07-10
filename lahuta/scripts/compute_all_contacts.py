@@ -1,6 +1,5 @@
 import time
 
-from lahuta import AtomGroup
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts import (
     AromaticContacts,

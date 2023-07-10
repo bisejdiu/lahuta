@@ -48,14 +48,14 @@ class CarbonylContacts(ContactBase):
         """
 
         ionic_atom12 = (
-            self.neighbors.type_filter("carbonyl_oxygen", 0)
-            .type_filter("carbonyl_carbon", 1)
+            self.neighbors.type_filter("carbonyl_oxygen", 1)
+            .type_filter("carbonyl_carbon", 2)
             .distance_filter(self.distance)
         )
 
         ionic_atom21 = (
-            self.neighbors.type_filter("carbonyl_carbon", 0)
-            .type_filter("carbonyl_oxygen", 1)
+            self.neighbors.type_filter("carbonyl_carbon", 1)
+            .type_filter("carbonyl_oxygen", 2)
             .distance_filter(self.distance)
         )
 
