@@ -9,9 +9,8 @@ import numpy as np
 
 from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-
-from ..utils import array_utils as au
-from ..utils.array_utils import array_distance, calculate_angle
+from lahuta.utils import array_utils as au
+from lahuta.utils.array_utils import array_distance, calculate_angle
 
 
 class NeighborPairs:
@@ -30,8 +29,6 @@ class NeighborPairs:
         self.hbond_angles = (
             None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
         )
-
-        # self.setops = au.ArraySetOps(self._pairs)
 
         # put kwargs in the object
         for key, value in kwargs.items():
@@ -530,9 +527,8 @@ class NeighborPairs:
         contains : bool
             True if the pair of atoms is in the NeighborPairs object.
         """
-        from ..utils.array_utils import issubset
 
-        return issubset(other.pairs, self.pairs)
+        return au.issubset(other.pairs, self.pairs)
 
     def __add__(self, other):
         # TODO:

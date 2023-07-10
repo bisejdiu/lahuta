@@ -2,43 +2,7 @@
 Placeholder
 """
 
-# from functools import partial, update_wrapper
-
 import numpy as np
-
-# class ArraySetOps:
-#     def __init__(self, arr):
-#         self.arr = arr
-
-#         self.intersection = partial(intersection, self.arr)
-#         self.union = partial(union, self.arr)
-#         self.difference = partial(difference, self.arr)
-#         self.symmetric_difference = partial(symmetric_difference, self.arr)
-#         self.isdisjoint = partial(isdisjoint, self.arr)
-#         self.issubset = partial(issubset, self.arr)
-#         self.issuperset = partial(issuperset, self.arr)
-#         self.isequal = partial(isequal, self.arr)
-#         self.isunique = partial(isunique, self.arr)
-#         self.is_strict_subset = partial(is_strict_subset, self.arr)
-#         self.is_strict_superset = partial(is_strict_superset, self.arr)
-
-#         update_wrapper(self.intersection, intersection)
-#         update_wrapper(self.union, union)
-#         update_wrapper(self.difference, difference)
-#         update_wrapper(self.symmetric_difference, symmetric_difference)
-#         update_wrapper(self.isdisjoint, isdisjoint)
-#         update_wrapper(self.issubset, issubset)
-#         update_wrapper(self.issuperset, issuperset)
-#         update_wrapper(self.isequal, isequal)
-#         update_wrapper(self.isunique, isunique)
-#         update_wrapper(self.is_strict_subset, is_strict_subset)
-#         update_wrapper(self.is_strict_superset, is_strict_superset)
-
-#     def __repr__(self):
-#         return f"<ArraySetOps for array {self.arr}>"
-
-#     def __str__(self):
-#         return self.__repr__()
 
 
 def calculate_angle(point_a, point_b, point_c, degrees=True):
@@ -153,10 +117,9 @@ def asvoid(arr):
     """
     arr = np.ascontiguousarray(arr)
     if np.issubdtype(arr.dtype, np.floating):
-        """Care needs to be taken here since
-        np.array([-0.]).view(np.void) != np.array([0.]).view(np.void)
-        Adding 0. converts -0. to 0.
-        """
+        # Care needs to be taken here since
+        # np.array([-0.]).view(np.void) != np.array([0.]).view(np.void)
+        # Adding 0. converts -0. to 0.
         arr += 0.0
     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))
 
