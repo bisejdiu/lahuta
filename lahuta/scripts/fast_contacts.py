@@ -21,6 +21,7 @@ if __name__ == "__main__":
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/8djb.cif")
     start = time.time()
     n = u.compute_neighbors(res_dif=2)
+    print("Finished computing neighbors")
 
     # Compute contacAMIDE_SMARTSts
     cov = contacts.covalent_neighbors(n)

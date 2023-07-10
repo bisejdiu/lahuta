@@ -13,37 +13,69 @@ from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
 
 
+class HBondHandler:
+    def __init__(self, atoms, hbond_array):
+        self._atoms = atoms
+        self.hbond_array = hbond_array
+
+    def get_hbond_distances(self, attr_col, hbound_attr_col):
+        hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
+        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+
+        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+        distance_array = array_distance(attr_col.atoms.positions, hbound_atom_pos)
+
+        return distance_array
+
+    def get_vdw_distances(self, attr_col, vdw_comp_factor):
+        return attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
+
+    def get_hbond_angles(self, col1, col2):
+        atom1_pos = col1.atoms.positions
+        atom2_pos = col2.atoms.positions
+
+        hbound_atom_indices = self.hbond_array[col1.atoms.indices]
+        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+
+        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+
+        point_a = atom1_pos[:, np.newaxis, :]
+        point_b = hbound_atom_pos
+        point_c = atom2_pos[:, np.newaxis, :]
+
+        return calculate_angle(point_a, point_b, point_c, degrees=False)
+
+
 class NeighborPairs:
     """A class for storing neighbor pairs."""
 
-    def __init__(self, uniatom, pairs, distances, **kwargs):
+    # TODO:
+    def __init__(self, uniatom, pairs, distances):
         self._atoms = uniatom.atoms
 
-        pairs = np.sort(pairs, axis=1)
-        indices = np.argsort(pairs[:, 0])
+        self._validate_inputs(pairs, distances)
+        self._pairs, self._distances = self._sort_inputs(pairs, distances)
 
-        self._pairs = pairs[indices]
-        self._distances = distances[indices]
+        self.hbond_array = uniatom.atoms.universe.hbond_array
+        self.hbond_handler = HBondHandler(self._atoms, self.hbond_array)
 
         self._cols = {
             1: self._atoms[self.pairs[:, 0]],
             2: self._atoms[self.pairs[:, 1]],
         }
 
-        self.hbond_array = uniatom.atoms.universe.hbond_array
-        self.hbond_angles = (
-            None if kwargs.get("hbangles") is None else kwargs.get("hbangles")
+    def _validate_inputs(self, pairs, distances):
+        message = (
+            "The number of pairs and distances must be the same."
+            f"Got {pairs.shape[0]} pairs and {distances.shape[0]} distances."
         )
+        assert pairs.shape[0] == distances.shape[0], message
 
-        # put kwargs in the object
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def _sort_inputs(self, pairs, distances):
+        pairs = np.sort(pairs, axis=1)
+        indices = np.argsort(pairs[:, 0])
 
-        assert (
-            self.pairs.shape[0] == self._distances.size
-        ), "The number of pairs and distances must be the same."
-
-        self.type_keys = AVAILABLE_ATOM_TYPES
+        return pairs[indices], distances[indices]
 
     def type_filter(self, atom_type: str, partner: int) -> "NeighborPairs":
         """Filters pairs based on atom types.
@@ -167,9 +199,8 @@ class NeighborPairs:
         """
         attr_col, hbound_attr_col = self._get_partners(partner)
 
-        vdw_distances = attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
-
-        hbond_dist = self._get_hbond_distances(attr_col, hbound_attr_col)
+        vdw_distances = self.hbond_handler.get_vdw_distances(attr_col, vdw_comp_factor)
+        hbond_dist = self.hbond_handler.get_hbond_distances(attr_col, hbound_attr_col)
 
         distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
         hbond_dist_pairs = self.pairs[distances_mask]
@@ -179,14 +210,8 @@ class NeighborPairs:
             self._atoms,
             hbond_dist_pairs,
             hbond_distances,
-            hbangles=self.hbond_angles,
+            # hbangles=self.hbond_angles,
         )
-
-    def _get_partners(self, partner):
-        """Return attr_col and hbound_attr_col depending on the value of partner."""
-        partner2 = 1 if partner == 2 else 2
-
-        return self._cols[partner], self._cols[partner2]
 
     def hbond_angle_filter(
         self, partner: int = 0, weak: bool = False
@@ -197,76 +222,31 @@ class NeighborPairs:
         ----------
         partner : int
             The column of the hydrogen bonded atom indices in the `hbond_array`.
-        angle : float
-            The angle in degrees.
+        weak : bool
+            If True, accept weaker hydrogen bonds.
 
         Returns
         -------
-        pairs : NeighborPairs1
+        pairs : NeighborPairs
             The filtered neighbor pairs.
         """
-
         contact_type = "weak hbond" if weak else "hbond"
-        partner2 = 1 if partner == 2 else 2
+        attr_partner, hbound_attr_partner = self._get_partners(partner)
 
-        attr_partner = self._cols[partner]
-        hbound_attr_partner = self._cols[partner2]
-
-        self.hbond_angles = self._get_hbond_angles(attr_partner, hbound_attr_partner)
+        self.hbond_angles = self.hbond_handler.get_hbond_angles(
+            attr_partner, hbound_attr_partner
+        )
 
         idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
         self._distances = self._distances[idx]
 
-        # self.result_array = np.full((len(self.hbond_angles), 4), np.nan)
-        # self.result_array[:, :2] = self._pairs
-        # self.result_array[:, 2] = np.nanmin(self.hbond_angles, axis=1)
-        # self.result_array[:, 3] = self.distances
-
         return self.__class__(
             self._atoms,
             self._pairs,
             self.distances,
-            hbangles=self.hbond_angles,
-            # result_array=self.result_array,
+            # hbangles=self.hbond_angles,
         )
-
-    def _get_hbond_distances(self, attr_col, hbound_attr_col):
-        """Get the distances between the hydrogen bonded atoms.
-
-        Parameters
-        ----------
-        col : int
-            The column index of the hydrogen bonded atom.
-
-        Returns
-        -------
-        distances : np.ndarray
-            The distances between the hydrogen bonded atoms.
-        """
-
-        hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
-        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
-
-        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
-        distance_array = array_distance(attr_col.atoms.positions, hbound_atom_pos)
-
-        return distance_array
-
-    def _get_hbond_angles(self, col1, col2):
-        atom1_pos = col1.atoms.positions
-        atom2_pos = col2.atoms.positions
-
-        hbound_atom_indices = self.hbond_array[col1.atoms.indices]
-        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
-
-        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
-
-        point_a = atom1_pos[:, np.newaxis, :]
-        point_b = hbound_atom_pos
-        point_c = atom2_pos[:, np.newaxis, :]
-
-        return calculate_angle(point_a, point_b, point_c, degrees=False)
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
@@ -498,6 +478,12 @@ class NeighborPairs:
     def indices(self) -> np.ndarray:
         """Get the indices of the atoms that are neighbors."""
         return np.unique([self.partner1.indices, self.partner2.indices])
+
+    def _get_partners(self, partner):
+        """Return attr_col and hbound_attr_col depending on the value of partner."""
+        partner2 = 1 if partner == 2 else 2
+
+        return self._cols[partner], self._cols[partner2]
 
     def __getitem__(self, item: Union[int, slice, np.ndarray]) -> "NeighborPairs":
         """Get the pair of atoms at the specified index.
