@@ -75,8 +75,8 @@ class WeakHBondContacts(ContactBase):
 
     """
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the weak hbond contacts between atoms in a molecule.
@@ -125,8 +125,8 @@ class PolarHBondContacts(ContactBase):
 
     distance = CONTACTS["hbond"]["polar distance"]
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the polar hbond contacts between atoms in a molecule.
@@ -173,8 +173,8 @@ class WeakPolarHBondContacts(ContactBase):
 
     distance = CONTACTS["weak hbond"]["weak polar distance"]
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the weak polar hbond contacts between atoms in a molecule.

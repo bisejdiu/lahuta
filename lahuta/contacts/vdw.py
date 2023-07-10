@@ -31,8 +31,8 @@ class VanDerWaalsContacts(ContactBase):
     # TODO: this should be put in the config file
     vdw_comp_factor = 0.1
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the VdW contacts.

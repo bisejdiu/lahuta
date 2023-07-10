@@ -29,8 +29,8 @@ class AromaticContacts(ContactBase):
 
     distance = CONTACTS["aromatic"]["distance"]
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the aromatic contacts.

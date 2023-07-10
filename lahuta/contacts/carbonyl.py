@@ -29,8 +29,8 @@ class CarbonylContacts(ContactBase):
 
     distance = CONTACTS["carbonyl"]["distance"]
 
-    def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
-        super().__init__(ua, neighbors)
+    # def __init__(self, ua: Union[Universe, mda.AtomGroup], neighbors: NeighborPairs):
+    #     super().__init__(ua, neighbors)
 
     def compute_contacts(self, **kwargs) -> np.ndarray:
         """Get the carbonyl contacts.
