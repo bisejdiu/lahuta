@@ -7,6 +7,31 @@ from functools import partial, update_wrapper
 import numpy as np
 
 
+class ArraySetOpsMixin:
+    def __init__(self, array):
+        self.array = array
+
+    def intersection(self, arr1, arr2, assume_unique=False):
+        """Calculate the intersection of two arrays and return the indices of the
+        elements in `arr1` that are in `arr2`.
+
+        Parameters
+        ----------
+        arr1 : np.ndarray
+            An array of shape (n, 2) where each row is a pair of atom indices.
+        arr2 : np.ndarray
+            An array of shape (n, 2) where each row is a pair of atom indices.
+        Returns
+        -------
+        arr : np.ndarray
+            An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in both `arr1` and `arr2`.
+        """
+
+        arr1 = asvoid(arr1)
+        arr2 = asvoid(arr2)
+        return np.in1d(arr1, arr2, assume_unique)
+
+
 class ArraySetOps:
     def __init__(self, arr):
         self.arr = arr

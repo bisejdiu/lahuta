@@ -44,23 +44,19 @@ class NeighborPairs:
         self.type_keys = AVAILABLE_ATOM_TYPES
 
     def type_filter(self, atom_type: str, col: int) -> "NeighborPairs":
-        """Select pairs based on the atom types.
+        """Filters pairs based on atom types.
 
-        Parameters
-        ----------
-        atom_type : str or list of str
-            The atom types to select. The atom types can be a combination of the
-            following: 'carbonyl_oxygen', 'weak_hbond_donor', 'pos_ionisable',
-            'carbonyl_carbon', 'hbond_acceptor', 'hbond_donor', 'neg_ionisable',
-            'weak hbond_acceptor', 'xbond_acceptor', 'aromatic', 'hydrophobe'.
+        Args:
+            atom_type (str or list of str): The atom types can one of the following:
+                'carbonyl_oxygen', 'weak_hbond_donor', 'pos_ionisable', 'carbonyl_carbon',
+                'hbond_acceptor', 'hbond_donor', 'neg_ionisable', 'weak_hbond_acceptor',
+                'xbond_acceptor', 'aromatic', 'hydrophobe'.
+                Names come from :class:`SmartsPatternRegistry` (Enum).
 
-        col : AtomGroup
-            The column to select the atom types from. Either 1 or 2.
+            col (int): The column to select the atom types from. It can be either 1 or 2.
 
-        Returns
-        -------
-        pairs : NeighborPairs
-            A NeighborPairs object containing the selected pairs.
+        Returns:
+            NeighborPairs: A NeighborPairs object containing the filtered pairs.
         """
         col = getattr(self, f"col{col+1}")
         col_ag = getattr(col, atom_type)
@@ -149,27 +145,6 @@ class NeighborPairs:
         mask = col_func.atoms.vdw_radii <= radius
 
         return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
-
-    # def angle_filter(self, angle: float) -> "NeighborPairs":
-    #     """Select pairs based on the angle.
-
-    #     Parameters
-    #     ----------
-    #     angle : float
-    #         The angle to select.
-
-    #     Returns
-    #     -------
-    #     pairs : NeighborPairs
-    #         A NeighborPairs object containing the selected pairs.
-    #     """
-    #     if self._angles is None:
-
-    #         warnings.warn("Found no angles. Returning all pairs.")
-    #         return self
-
-    #     mask = self._angles <= angle
-    #     return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
         self, col: int = 0, vdw_comp_factor: float = 0.1
@@ -305,7 +280,7 @@ class NeighborPairs:
             A NeighborPairs object containing the intersection of the two NeighborPairs objects.
         """
 
-        mask = self.setops.intersection(other.pairs)
+        mask = au.intersection(self.pairs, other.pairs)
 
         return self.__class__(
             self._atoms,
@@ -326,7 +301,7 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the union of the two NeighborPairs objects.
         """
-        mask = self.setops.union(other.pairs)
+        mask = au.union(self.pairs, other.pairs)
         pairs = np.concatenate((self.pairs, other.pairs), axis=0)[mask]
         distances = np.concatenate((self.distances, other.distances), axis=0)[mask]
 
@@ -349,7 +324,7 @@ class NeighborPairs:
         pairs : NeighborPairs
             A NeighborPairs object containing the difference of the two NeighborPairs objects.
         """
-        mask = self.setops.difference(other.pairs)
+        mask = au.difference(self.pairs, other.pairs)
 
         return self.__class__(
             self._atoms,
