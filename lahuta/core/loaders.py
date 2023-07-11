@@ -1,49 +1,91 @@
-import itertools
-from io import StringIO
-
 import gemmi
 import MDAnalysis as mda
 import numpy as np
 import pandas as pd
-from openbabel import openbabel as ob
 
 from lahuta.core.base import FileLoader
 from lahuta.core.cra import Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
 
 
-class CIFLoader:
+class GemmiLoader:
+    def __init__(self, file_path, is_pdb=False):
+        self.file_path = file_path
+        if is_pdb:
+            self.structure = gemmi.read_pdb(self.file_path)
+            self.block = self.structure.make_mmcif_document().sole_block()
+        else:
+            self.block = gemmi.cif.read(self.file_path).sole_block()
+            self.structure = gemmi.make_structure_from_block(self.block)
+
+        self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
+
+        self._chains = Chains().from_gemmi(self.atom_site_data)
+        self._residues = Residues().from_gemmi(self.atom_site_data)
+        self._atoms = Atoms().from_gemmi(self.atom_site_data)
+
+    @property
+    def n_atoms(self):
+        return self._atoms.names.shape[0]
+
+    @property
+    def chains(self):
+        return self._chains
+
+    @property
+    def residues(self):
+        return self._residues
+
+    @property
+    def atoms(self):
+        return self._atoms
+
+
+class MDALoader:
+    def __init__(self, file_path, traj_path=None):
+        self.file_path = file_path
+        self.universe = mda.Universe(self.file_path)
+
+        self._chains = Chains().from_mda(self.universe)
+        self._residues = Residues().from_mda(self.universe)
+        self._atoms = Atoms().from_mda(self.universe)
+
+    @property
+    def n_atoms(self):
+        return self._atoms.names.shape[0]
+
+    @property
+    def chains(self):
+        return self._chains
+
+    @property
+    def residues(self):
+        return self._residues
+
+    @property
+    def atoms(self):
+        return self._atoms
+
+
+class StructureLoader:
     def __init__(self, file_path, is_pdb=False):
         self.file_path = file_path
         # extension = file_path.split(".")[-1]
-        if not is_pdb:
-            self.block = gemmi.cif.read(file_path).sole_block()
-            self.structure = gemmi.make_structure_from_block(self.block)
-            self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
-        else:
-            self.structure = gemmi.read_pdb(file_path)
-            self.block = self.structure.make_mmcif_document().sole_block()
-            self.atom_site_data = self.block.get_mmcif_category("_atom_site.")
-
-        self.n_atoms = len(self.atom_site_data.get("Cartn_x"))
-
-        self.chains = Chains(self.atom_site_data)
-        self.residues = Residues(self.atom_site_data)
-        self.atoms = Atoms(self.atom_site_data)
+        self.loader = GemmiLoader(file_path, is_pdb=is_pdb)
 
         self.atoms_df = pd.DataFrame(
             {
-                "atom_name": self.atoms.names,
-                "chain_name": self.chains.auths,
-                "res_id": self.residues.resids,
-                "res_name": self.residues.resnames,
+                "atom_name": self.loader.atoms.names,
+                "chain_name": self.loader.chains.auths,
+                "res_id": self.loader.residues.resids,
+                "res_name": self.loader.residues.resnames,
             }
         )
 
-        self.coords_array = self.extract_positions(self.atom_site_data)
+        self.coords_array = self.extract_positions(self.loader.atom_site_data)
 
     def extract_positions(self, atom_site_data):
-        coords_array = np.zeros((self.n_atoms, 3))
+        coords_array = np.zeros((self.loader.n_atoms, 3))
 
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
@@ -70,7 +112,7 @@ class CIFLoader:
         ob_res = None
         added_residues = set()
         for idx, (chain, residue, atom) in enumerate(
-            zip(self.chains, self.residues, self.atoms)
+            zip(self.loader.chains, self.loader.residues, self.loader.atoms)
         ):
             _, chain_id = chain
             resname, resnumber, _ = residue
@@ -87,7 +129,7 @@ class CIFLoader:
             )
 
         obmol.perceive_bonds()
-        for connection in self.structure.connections:
+        for connection in self.loader.structure.connections:
             prt1, prt2 = connection.partner1, connection.partner2
             atom1 = self._get_atom_index(
                 prt1.atom_name, prt1.chain_name, prt1.res_id.seqid.num, prt1.res_id.name
@@ -106,27 +148,28 @@ class CIFLoader:
         return obmol.mol
 
     def create_mda_universe(self):
+        # TODO: Add icodes and ids to the universe
         resnames, resids, chain_ids = [], [], []
-        for model in self.structure:
+        for model in self.loader.structure:
             for chain in model:
                 for residue in chain:
                     resids.append(residue.seqid.num)
                     resnames.append(residue.name)
-                    chain_ids.append(self.chains.mapping[chain.name])
+                    chain_ids.append(self.loader.chains.mapping[chain.name])
 
         n_residues = len(resids)
 
         mda_universe = mda.Universe.empty(
-            n_atoms=self.n_atoms,
+            n_atoms=self.loader.n_atoms,
             n_residues=n_residues,
-            atom_resindex=self.residues.resindices,
+            atom_resindex=self.loader.residues.resindices,
             residue_segindex=chain_ids,
             trajectory=True,
         )
 
-        mda_universe.add_TopologyAttr("names", self.atoms.names)
-        mda_universe.add_TopologyAttr("type", self.atoms.types)
-        mda_universe.add_TopologyAttr("elements", self.atoms.elements)
+        mda_universe.add_TopologyAttr("names", self.loader.atoms.names)
+        mda_universe.add_TopologyAttr("type", self.loader.atoms.types)
+        mda_universe.add_TopologyAttr("elements", self.loader.atoms.elements)
         mda_universe.add_TopologyAttr("resnames", resnames)
         mda_universe.add_TopologyAttr("resids", resids)
         mda_universe.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))

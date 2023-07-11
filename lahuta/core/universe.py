@@ -12,7 +12,7 @@ from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.base import FileLoader
-from lahuta.core.loaders import CIFLoader, PDBLoader
+from lahuta.core.loaders import PDBLoader, StructureLoader
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.utils.atom_types import assign_radii, find_hydrogen_bonded_atoms
@@ -54,7 +54,7 @@ class Universe:
     def _create_file_loader(file_name: str):  # -> FileLoader:
         file_format, is_pdb = Universe.get_format(file_name)
         if file_format is not None:
-            return CIFLoader(file_name, is_pdb=is_pdb)
+            return StructureLoader(file_name, is_pdb=is_pdb)
         else:
             # TODO: Channel to an MDA loader
             print("Not Supported Format")
