@@ -41,7 +41,6 @@ class Universe:
         self._topattr_handler = AtomAttrClassHandler()
 
         self._extend_topology("vdw_radii", assign_radii(self.mol))
-        # self._extend_topology("atom_types", atypes_array)
         for atom_type in AVAILABLE_ATOM_TYPES:
             self._extend_topology(
                 atom_type.name.lower(), atypes_array[:, atom_type.value]

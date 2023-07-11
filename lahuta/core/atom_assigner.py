@@ -22,16 +22,8 @@ class AtomTypeAssigner:
     def __init__(self, mol, atomgroup, parallel=False, legacy=True):
         self.mol = mol
         self.atomgroup = atomgroup
-        # print("->", self.atomgroup)
         self.protein_atomgroup = self.atomgroup.select_atoms("protein")
-        self.ta = {
-            "resname": self.atomgroup.resnames,
-            "name": self.atomgroup.names,
-        }
 
-        # self.atypes = OrderedDict(
-        #     {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
-        # )
         self.atypes = AVAILABLE_ATOM_TYPES
         self.parallel = parallel
         self.legacy = legacy
@@ -56,7 +48,7 @@ class AtomTypeAssigner:
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
         smarts_matcher = smarts_matcher_class(SmartsPatternRegistry)
-        return smarts_matcher.compute(self.mol, self.atypes)
+        return smarts_matcher.compute(self.mol)
 
     def _compute_water_types(self, atypes_array):
         """
@@ -85,10 +77,8 @@ class AtomTypeAssigner:
         """
         protein_type_assigner_class = self.protein_type_assigner_classes[self.legacy]
 
-        protein_type_assigner = protein_type_assigner_class(
-            self.protein_atomgroup, self.ta
-        )
-        return protein_type_assigner.compute(atypes_array, self.atypes)
+        protein_type_assigner = protein_type_assigner_class(self.protein_atomgroup)
+        return protein_type_assigner.compute(atypes_array)
 
     def assign_atom_types(self):
         """

@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 
 
 class ProteinTypeAssignerBase(ABC):
@@ -14,9 +15,10 @@ class ProteinTypeAssignerBase(ABC):
     and LegacyProteinTypeAssigner.
     """
 
-    def __init__(self, protein_atomgroup, ta):
+    ATYPES = AVAILABLE_ATOM_TYPES
+
+    def __init__(self, protein_atomgroup):
         self.protein_atomgroup = protein_atomgroup
-        self.ta = ta
 
     @abstractmethod
     def compute(self, atypes_array, atypes):
@@ -35,7 +37,8 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
     abstract base class.
     """
 
-    def compute(self, atypes_array, atypes):
+    def compute(self, atypes_array):
+        atypes = self.ATYPES
         # print("atypes", atypes)
         # resname, atom_name = self.ta["resname"], self.ta["name"]
 
@@ -82,7 +85,8 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
     to proteins. Inherits from the ProteinTypeAssignerBase abstract base class.
     """
 
-    def compute(self, atypes_array, atypes):
+    def compute(self, atypes_array):
+        atypes = self.ATYPES
         # print("--> ", atypes)
         # print("--> ", [member.name for member in atypes])
         for residue in self.protein_atomgroup.residues:

@@ -6,6 +6,7 @@ import numpy as np
 from openbabel import openbabel as ob
 
 from lahuta.config.atoms import STANDARD_AMINO_ACIDS
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 
 
 class SmartsMatcherBase(ABC):
@@ -16,11 +17,13 @@ class SmartsMatcherBase(ABC):
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
 
+    ATYPES = AVAILABLE_ATOM_TYPES
+
     def __init__(self, atom_types):
         self.atom_types = atom_types
 
     @abstractmethod
-    def compute(self, mol, atypes):
+    def compute(self, mol):
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -33,7 +36,8 @@ class SmartsMatcher(SmartsMatcherBase):
     Inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def compute(self, mol, atypes):
+    def compute(self, mol):
+        atypes = self.ATYPES
         atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
 
         for atom_type in self.atom_types:
@@ -82,7 +86,8 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         matches = [x[0] for x in ob_smart.GetMapList()]
         return [(match, atypes[atom_type.name].value) for match in matches]
 
-    def compute(self, mol, atypes):
+    def compute(self, mol):
+        atypes = self.ATYPES
         atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
 
         num_threads = os.cpu_count()
