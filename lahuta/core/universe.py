@@ -33,13 +33,8 @@ class Universe:
 
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
-        top_attr = {
-            "resname": self.atoms.resnames,
-            "name": self.atoms.names,
-        }
-        self.topology_attributes = top_attr
         atomtype_assigner = AtomTypeAssigner(
-            self.mol, self.atoms, top_attr, legacy=False, parallel=False
+            self.mol, self.atoms, legacy=False, parallel=False
         )
         atypes_array = atomtype_assigner.assign_atom_types()
 

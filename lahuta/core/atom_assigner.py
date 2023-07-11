@@ -19,12 +19,15 @@ class AtomTypeAssigner:
     (sequential or parallel) and protein atom type assignment (vectorized or legacy).
     """
 
-    def __init__(self, mol, atomgroup, ta, parallel=False, legacy=True):
+    def __init__(self, mol, atomgroup, parallel=False, legacy=True):
         self.mol = mol
         self.atomgroup = atomgroup
         # print("->", self.atomgroup)
         self.protein_atomgroup = self.atomgroup.select_atoms("protein")
-        self.ta = ta
+        self.ta = {
+            "resname": self.atomgroup.resnames,
+            "name": self.atomgroup.names,
+        }
 
         # self.atypes = OrderedDict(
         #     {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
