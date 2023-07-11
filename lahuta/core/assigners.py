@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
-from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
 
 
 class ProteinTypeAssignerBase(ABC):
@@ -14,8 +14,6 @@ class ProteinTypeAssignerBase(ABC):
     of protein atom type assignment, such as VectorizedProteinTypeAssigner
     and LegacyProteinTypeAssigner.
     """
-
-    ATYPES = AVAILABLE_ATOM_TYPES
 
     def __init__(self, protein_atomgroup):
         self.protein_atomgroup = protein_atomgroup
@@ -38,7 +36,6 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
     """
 
     def compute(self, atypes_array):
-        atypes = self.ATYPES
         # print("atypes", atypes)
         # resname, atom_name = self.ta["resname"], self.ta["name"]
 
@@ -47,7 +44,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
         resname_str = self.protein_atomgroup.resnames.astype(str)
         atom_name_str = self.protein_atomgroup.names.astype(str)
-        atype_names = [member.name.lower() for member in atypes]
+        atype_names = [member.name.lower() for member in ATypes]
 
         atom_id_labels = np.core.defchararray.add(  # type: ignore
             np.core.defchararray.strip(resname_str),  # type: ignore
@@ -86,24 +83,14 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
     """
 
     def compute(self, atypes_array):
-        atypes = self.ATYPES
-        # print("--> ", atypes)
-        # print("--> ", [member.name for member in atypes])
         for residue in self.protein_atomgroup.residues:
             for atom in residue.atoms:
                 for atom_type in list(PROT_ATOM_TYPES.keys()):
-                    # print("1", atom_type.upper())
-                    # print(
-                    #     atom_type,
-                    #     atom_type.upper(),
-                    #     atypes[atom_type.upper()],  # abc
-                    #     atypes[atom_type.upper()].value,
-                    # )
-                    atypes_array[atom.index, atypes[atom_type.upper()].value] = 0
+                    atypes_array[atom.index, ATypes[atom_type.upper()].value] = 0
 
                 for atom_type, atom_ids in PROT_ATOM_TYPES.items():
                     atom_id = residue.resname.strip() + atom.name.strip()
                     if atom_id in atom_ids:
-                        atypes_array[atom.index, atypes[atom_type.upper()].value] = 1
+                        atypes_array[atom.index, ATypes[atom_type.upper()].value] = 1
 
         return atypes_array

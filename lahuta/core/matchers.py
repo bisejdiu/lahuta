@@ -6,7 +6,7 @@ import numpy as np
 from openbabel import openbabel as ob
 
 from lahuta.config.atoms import STANDARD_AMINO_ACIDS
-from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
 
 
 class SmartsMatcherBase(ABC):
@@ -16,8 +16,6 @@ class SmartsMatcherBase(ABC):
     This class serves as an abstract base class for concrete implementations
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
-
-    ATYPES = AVAILABLE_ATOM_TYPES
 
     def __init__(self, atom_types):
         self.atom_types = atom_types
@@ -37,8 +35,7 @@ class SmartsMatcher(SmartsMatcherBase):
     """
 
     def compute(self, mol):
-        atypes = self.ATYPES
-        atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
+        atypes_array = np.zeros((mol.NumAtoms(), len(ATypes)))
 
         for atom_type in self.atom_types:
             smartsdict = self.atom_types[atom_type.name].value
@@ -52,7 +49,7 @@ class SmartsMatcher(SmartsMatcherBase):
                     atom = mol.GetAtom(match)
 
                     if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                        atypes_array[atom.GetId(), atypes[atom_type.name].value] = 1
+                        atypes_array[atom.GetId(), ATypes[atom_type.name].value] = 1
 
         return atypes_array
 
@@ -87,8 +84,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         return [(match, atypes[atom_type.name].value) for match in matches]
 
     def compute(self, mol):
-        atypes = self.ATYPES
-        atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
+        atypes_array = np.zeros((mol.NumAtoms(), len(ATypes)))
 
         num_threads = os.cpu_count()
 
@@ -96,7 +92,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
             for atom_type, ob_smarts_list in self.precomputed_ob_smarts.items():
                 future_matches = [
                     executor.submit(
-                        self.match_ob_smarts, ob_smart, mol, atypes, atom_type
+                        self.match_ob_smarts, ob_smart, mol, ATypes, atom_type
                     )
                     for ob_smart in ob_smarts_list
                 ]
