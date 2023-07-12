@@ -2,6 +2,7 @@
 Placehoder for the atom types and radii.
 """
 import numpy as np
+from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
 from openbabel import openbabel as ob
 
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
@@ -150,3 +151,13 @@ def find_hydrogen_bonded_atoms(mol):
                     hbond_array[atom.GetId(), ix] = atom2.GetId()
 
     return hbond_array
+
+
+def v_radii_assignment(elements):
+    vdwradii = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
+
+    def v_capitalize(array, mapping):
+        vfunc = np.vectorize(mapping.get)
+        return vfunc(array)
+
+    return v_capitalize(elements, vdwradii)

@@ -10,12 +10,11 @@ from MDAnalysis.lib.nsgrid import FastNS
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
-from lahuta.core.base import FileLoader
-from lahuta.core.loaders import PDBLoader, StructureLoader
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.utils.atom_types import assign_radii, find_hydrogen_bonded_atoms
+from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 
@@ -26,39 +25,43 @@ class Universe:
                 "Initializing Universe from a Topology object is not supported."
             )
 
-        file_loader = self._create_file_loader(file_name if file_name else args[0])
-        self.mol, self._universe = file_loader.load()
+        self.file_loader = self._file_loader(file_name if file_name else args[0])
+        # self.mol = file_loader.to("mol")
+        self._universe = self.file_loader.to("mda", *args)
 
         self.atoms._u = self
 
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
+        # self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
-        atomtype_assigner = AtomTypeAssigner(
-            self.mol, self.atoms, legacy=False, parallel=False
-        )
-        atypes_array = atomtype_assigner.assign_atom_types()
+        # atomtype_assigner = AtomTypeAssigner(
+        #     self.mol, self.atoms, legacy=False, parallel=False
+        # )
+        # atypes_array = atomtype_assigner.assign_atom_types()
 
         self._topattr_handler = AtomAttrClassHandler()
 
-        self._extend_topology("vdw_radii", assign_radii(self.mol))
-        for atom_type in AVAILABLE_ATOM_TYPES:
-            self._extend_topology(
-                atom_type.name.lower(), atypes_array[:, atom_type.value]
-            )
+        # self._extend_topology("vdw_radii", assign_radii(self.mol))
+        self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
+        # for atom_type in AVAILABLE_ATOM_TYPES:
+        #     self._extend_topology(
+        #         atom_type.name.lower(), atypes_array[:, atom_type.value]
+        #     )
+
+        self.mol = None
+        self.hbond_array = None
+        self._ready = False
 
     @property
     def universe(self):
         return self
 
     @staticmethod
-    def _create_file_loader(file_name: str):  # -> FileLoader:
+    def _file_loader(file_name: str):  # -> FileLoader:
         file_format, is_pdb = Universe.get_format(file_name)
         if file_format is not None:
-            return StructureLoader(file_name, is_pdb=is_pdb)
-        else:
-            # TODO: Channel to an MDA loader
-            print("Not Supported Format")
-            return PDBLoader(file_name)
+            return GemmiLoader(file_name, is_pdb=is_pdb)
+
+        return TopologyLoader(file_name)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         self._topattr_handler.init_topattr(attrname, attrname)
@@ -69,6 +72,20 @@ class Universe:
 
     # def compute_neighbors(self, *args, **kwargs):
     #     return self.atoms.compute_neighbors(*args, **kwargs)
+
+    def _make_ready(self):
+        self.mol = self.file_loader.to("mol")
+        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
+
+        atomtype_assigner = AtomTypeAssigner(self.mol, self.atoms)
+        atypes_array = atomtype_assigner.assign_atom_types()
+
+        for atom_type in AVAILABLE_ATOM_TYPES:
+            self._extend_topology(
+                atom_type.name.lower(), atypes_array[:, atom_type.value]
+            )
+
+        self._ready = True
 
     def compute_neighbors(
         self,
@@ -95,6 +112,10 @@ class Universe:
             An array of shape (n_atoms, n_neighbors) where each row contains the
             indices of the neighbors of the atom in the row.
         """
+
+        if not self._ready:
+            self._make_ready()
+
         if ignore_hydrogens:
             atomgroup = self.select_atoms("not name H*")
         else:

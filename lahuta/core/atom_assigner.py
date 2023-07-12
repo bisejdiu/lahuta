@@ -90,9 +90,9 @@ class AtomTypeAssigner:
         """
         atypes_array = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)))
 
-        # atypes_array = self._compute_smarts_types()
-        if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
-            atypes_array = self._compute_smarts_types()
+        atypes_array = self._compute_smarts_types()
+        # if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
+        #     atypes_array = self._compute_smarts_types()
 
         atypes_array = self._compute_water_types(atypes_array)
         atypes_array = self._compute_protein_types(atypes_array)
