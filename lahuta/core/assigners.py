@@ -19,7 +19,7 @@ class ProteinTypeAssignerBase(ABC):
         self.protein_atomgroup = protein_atomgroup
 
     @abstractmethod
-    def compute(self, atypes_array, atypes):
+    def compute(self, atypes_array):
         """
         Abstract method for computing protein atom types.
         """

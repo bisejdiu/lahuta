@@ -23,6 +23,9 @@ class AtomTypeAssigner:
         self.mol = mol
         self.atomgroup = atomgroup
         self.protein_atomgroup = self.atomgroup.select_atoms("protein")
+        self.n_atoms = (
+            self.atomgroup.universe.atoms.n_atoms
+        )  # self.atomgroup.indices.max()
 
         self.atypes = AVAILABLE_ATOM_TYPES
         self.parallel = parallel
@@ -47,7 +50,7 @@ class AtomTypeAssigner:
         Returns an array of atom types as defined in the SmartsPatternRegistry dictionary.
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
-        smarts_matcher = smarts_matcher_class(SmartsPatternRegistry)
+        smarts_matcher = smarts_matcher_class(SmartsPatternRegistry, self.n_atoms)
         return smarts_matcher.compute(self.mol)
 
     def _compute_water_types(self, atypes_array):
@@ -90,9 +93,9 @@ class AtomTypeAssigner:
         """
         atypes_array = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)))
 
-        atypes_array = self._compute_smarts_types()
-        # if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
-        #     atypes_array = self._compute_smarts_types()
+        # atypes_array = self._compute_smarts_types()
+        if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
+            atypes_array = self._compute_smarts_types()
 
         atypes_array = self._compute_water_types(atypes_array)
         atypes_array = self._compute_protein_types(atypes_array)

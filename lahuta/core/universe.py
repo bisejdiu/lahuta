@@ -2,54 +2,74 @@
 Placeholder for the universe module.
 """
 
+from typing import Literal
 
 import MDAnalysis as mda
 import numpy as np
 from MDAnalysis.core.topology import Topology
-from MDAnalysis.lib.nsgrid import FastNS
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
-from lahuta.core.neighbors import NeighborPairs
+from lahuta.core.groups import AtomGroup
+from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
-from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 
+# class Universe:
+#     def __init__(self, file_name=None, *args):
+#         if isinstance(file_name, Topology):
+#             raise NotImplementedError(
+#                 "Initializing Universe from a Topology object is not supported."
+#             )
 class Universe:
-    def __init__(self, file_name=None, *args):
-        if isinstance(file_name, Topology):
-            raise NotImplementedError(
-                "Initializing Universe from a Topology object is not supported."
+    def __init__(self, *args):
+        if len(args) == 0:
+            raise ValueError(
+                "Must pass either a file name or an MDAnalysis Universe or MDAnalysis.AtomGroup instance"
             )
 
-        self.file_loader = self._file_loader(file_name if file_name else args[0])
-        # self.mol = file_loader.to("mol")
-        self._universe = self.file_loader.to("mda", *args)
+        if isinstance(args[0], mda.Universe) or isinstance(args[0], mda.AtomGroup):
+            if len(args) > 1:
+                raise ValueError(
+                    "When passing an MDAnalysis.Universe or MDAnalysis.AtomGroup instance, no other arguments are allowed"
+                )
+            self._initialize_from_universe(args[0])
+        else:
+            self._initialize_from_files(args)
 
-        self.atoms._u = self
-
-        # self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
-
-        # atomtype_assigner = AtomTypeAssigner(
-        #     self.mol, self.atoms, legacy=False, parallel=False
-        # )
-        # atypes_array = atomtype_assigner.assign_atom_types()
-
-        self._topattr_handler = AtomAttrClassHandler()
-
-        # self._extend_topology("vdw_radii", assign_radii(self.mol))
-        self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
-        # for atom_type in AVAILABLE_ATOM_TYPES:
-        #     self._extend_topology(
-        #         atom_type.name.lower(), atypes_array[:, atom_type.value]
-        #     )
+            self.atoms._u = self
 
         self.mol = None
         self.hbond_array = None
         self._ready = False
+        self._topattr_handler = AtomAttrClassHandler()
+
+    def _initialize_from_universe(self, uniatom):
+        self.file_loader = TopologyLoader.from_mda(uniatom)
+        self._universe = self.file_loader.to("mda")
+        self._universe.atoms = AtomGroup(self._universe.atoms)
+        self.atoms = self._universe.atoms[uniatom.indices]
+        # self._universe.atoms = self._universe.atoms[uniatom.indices]
+        # self._universe._topology = uniatom.universe._topology
+        # self.file_loader = TopologyLoader.from_mda(uniatom)
+        # self._initialize_common()
+
+    def _initialize_from_files(self, files):
+        for file in files:
+            if not isinstance(file, str):
+                raise ValueError(
+                    "All arguments must be filenames when not providing an MDAnalysis Universe or MDAnalysis.AtomGroup instance"
+                )
+        # Assuming the first file is the topology file
+        self.file_loader = self._file_loader(files[0])
+        self._universe = self.file_loader.to("mda", *files)
+
+    @classmethod
+    def from_mda(cls, mda_universe):
+        return cls(mda_universe)
 
     @property
     def universe(self):
@@ -65,21 +85,24 @@ class Universe:
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         self._topattr_handler.init_topattr(attrname, attrname)
-        self.add_TopologyAttr(attrname, values)
+        self.atoms.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
-    # def compute_neighbors(self, *args, **kwargs):
-    #     return self.atoms.compute_neighbors(*args, **kwargs)
+    def ready(self):
+        """
+        Prepare instance for computations by transforming the molecule and assigning atom types.
+        """
 
-    def _make_ready(self):
         self.mol = self.file_loader.to("mol")
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
 
+        # TODO: remove array from the variable names by instead using type hints
+        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
         atomtype_assigner = AtomTypeAssigner(self.mol, self.atoms)
         atypes_array = atomtype_assigner.assign_atom_types()
 
+        self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
         for atom_type in AVAILABLE_ATOM_TYPES:
             self._extend_topology(
                 atom_type.name.lower(), atypes_array[:, atom_type.value]
@@ -87,95 +110,40 @@ class Universe:
 
         self._ready = True
 
+    # TODO: rename to find_neighbors
     def compute_neighbors(
         self,
         radius=5.0,
         ignore_hydrogens=True,
-        # hbonds=False,
         skip_adjacent=True,
         res_dif=1,
     ):
-        """Compute the neighbors of each atom in the Universe.
-
-        Parameters
-        ----------
-        radius : float, optional
-            The cutoff radius. Default is 5.0.
-        ignore_hydrogens : bool, optional
-            Whether to ignore hydrogens. Default is True.
-        hbonds : bool, optional
-            Whether to include hydrogen bonds. Default is False.
-
-        Returns
-        -------
-        neighbors : np.ndarray
-            An array of shape (n_atoms, n_neighbors) where each row contains the
-            indices of the neighbors of the atom in the row.
         """
+        Compute the neighbors of each atom in the Universe.
 
+        Args:
+        ----
+        radius (float, optional): The cutoff radius. Default is 5.0.
+        ignore_hydrogens (bool, optional): Whether to ignore hydrogens. Default is True.
+        skip_adjacent (bool, optional): Whether to skip adjacent. Default is True.
+        res_dif (int, optional): The residue difference to consider. Default is 1.
+
+        Returns:
+        -------
+        NeighborPairs : np.ndarray
+            An array of shape (n_atoms, n_neighbors) where each row contains the indices of the neighbors of the atom in the row.
+
+        """
         if not self._ready:
-            self._make_ready()
+            self.ready()
 
-        if ignore_hydrogens:
-            atomgroup = self.select_atoms("not name H*")
-        else:
-            atomgroup = self.atoms
-
-        pairs, distances = self.get_neighbors(atomgroup, radius)
-
-        if skip_adjacent:
-            idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
-            pairs = pairs[idx]
-            distances = distances[idx]
-
-        return NeighborPairs(self.atoms, pairs, distances)
-
-    def get_neighbors(self, atomgroup=None, radius=5.0):
-        """Get the neighbors of an atomgroup.
-
-        Parameters
-        ----------
-        atomgroup : AtomGroup
-            The atomgroup to get the neighbors of.
-
-        Returns
-        -------
-        pairs : np.ndarray
-            An array of shape (n_pairs, 2) where each row contains the indices of
-            the atoms in the pair.
-        distances : np.ndarray
-            An array of shape (n_pairs,) containing the distances of each pair.
-        """
-        if atomgroup is None:
-            atomgroup = self.atoms
-
-        shift_coords, pseudobox = mda_psuedobox_from_atomgroup(atomgroup)
-
-        gridsearch = FastNS(
-            cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
+        neighbors = NeighborSearch(self)
+        return neighbors.compute(
+            radius=radius,
+            ignore_hydrogens=ignore_hydrogens,
+            skip_adjacent=skip_adjacent,
+            res_dif=res_dif,
         )
-        neighbors = gridsearch.self_search()
-
-        return atomgroup[neighbors.get_pairs()].indices, neighbors.get_pair_distances()
-
-    def _remove_adjacent_residue_pairs(self, pairs, res_dif=1):
-        """Remove pairs where the difference in residue ids is less than `res_dif`.
-
-        Parameters
-        ----------
-        pairs : np.ndarray
-            An array of shape (n_pairs, 2) where each row is a pair of atom indices.
-        res_dif : int, optional
-            The difference in residue ids to remove. Default is 1.
-
-        Returns
-        -------
-        pairs : np.ndarray
-            An array of shape (n_pairs, 2) where each row is a pair of atom indices.
-
-        """
-        resids = self.atoms.resids[pairs]
-        return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
 
     @staticmethod
     def get_format(file_name):
@@ -193,6 +161,22 @@ class Universe:
                 is_pdb = fmt in {"pdb", "pdb.gz"}
                 return fmt, is_pdb
         return None, False
+
+    def to(self, fmt: Literal["mda", "mol"], *args):
+        """
+        Convert the Universe to a different format.
+
+        Args:
+        ----
+        fmt (str): The format to convert to. Currently supported formats are "mda" and "mol".
+        args (list): Trajectory file name(s). Only required if converting to "mda".
+
+        Returns:
+        -------
+        Universe : Universe
+            A new Universe instance in the specified format.
+        """
+        return self.file_loader.to(fmt, *args)
 
     def __getattr__(self, attr):
         # Delegate attribute access to the created universe

@@ -20,35 +20,35 @@ class BaseLoader(ABC):
         self.structure = None
         self.universe = None
 
+    def _validate_access(self, attr_name):
+        if getattr(self, attr_name) is None:
+            raise ValueError(f"No {attr_name} in the loader")
+
     @property
     def n_atoms(self):
-        if self._atoms is None:
-            raise ValueError("No atoms in the loader")
-        return len(self._atoms)
+        self._validate_access("_atoms")
+        return len(self._atoms)  # type: ignore
 
     @property
     def chains(self):
-        if self._chains is None:
-            raise ValueError("No chains in the loader")
+        self._validate_access("_chains")
         return self._chains
 
     @property
     def residues(self):
-        if self._residues is None:
-            raise ValueError("No residues in the loader")
+        self._validate_access("_residues")
         return self._residues
 
     @property
     def atoms(self):
-        if self._atoms is None:
-            raise ValueError("No atoms in the loader")
+        self._validate_access("_atoms")
         return self._atoms
 
     @property
     def coords_array(self):
         return self._coords_array
 
-    def to(self, object_type: Literal["mol", "mda"]):
+    def to(self, object_type: Literal["mol", "mda"], *args, **kwargs):
         method_str = f"to_{object_type}"
         if hasattr(self, method_str):
             return getattr(self, method_str)()
@@ -162,3 +162,17 @@ class TopologyLoader(BaseLoader):
         )
 
         return obmol.mol
+
+    @classmethod
+    def from_mda(cls, mda_universe):
+        cls_instance = cls.__new__(cls)
+        cls_instance.universe = mda_universe.universe.copy()
+        (
+            cls_instance._chains,
+            cls_instance._residues,
+            cls_instance._atoms,
+        ) = cls_instance.create()
+        cls_instance._coords_array = cls_instance.universe.atoms.positions
+        cls_instance.structure = None
+
+        return cls_instance

@@ -17,8 +17,9 @@ class SmartsMatcherBase(ABC):
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
 
-    def __init__(self, atom_types):
+    def __init__(self, atom_types, n_atoms):
         self.atom_types = atom_types
+        self.n_atoms = n_atoms
 
     @abstractmethod
     def compute(self, mol):
@@ -35,7 +36,7 @@ class SmartsMatcher(SmartsMatcherBase):
     """
 
     def compute(self, mol):
-        atypes_array = np.zeros((mol.NumAtoms(), len(ATypes)))
+        atypes_array = np.zeros((self.n_atoms, len(ATypes)))
 
         for atom_type in self.atom_types:
             smartsdict = self.atom_types[atom_type.name].value
@@ -63,8 +64,8 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     dictionary. Inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def __init__(self, atom_types):
-        super().__init__(atom_types)
+    def __init__(self, atom_types, n_atoms):
+        super().__init__(atom_types, n_atoms)
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
     def precompute_ob_smarts(self):
@@ -102,6 +103,6 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
                     for match, atype in matches:
                         atom = mol.GetAtom(match)
                         if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                            atypes_array[atom.GetId(), atype] = 1
+                            atypes_array[atom.GetIdx() - 1, atype] = 1
 
         return atypes_array

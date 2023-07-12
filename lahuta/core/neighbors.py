@@ -56,6 +56,13 @@ class NeighborPairs:
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)
 
+        # print("uniatom type: ", type(uniatom))
+        # print("uniatom atoms type: ", type(uniatom.atoms))
+        # print("uniatom atoms universe type: ", type(uniatom.atoms.universe))
+        # print(
+        #     "uniatom atoms universe hbond_array type: ",
+        #     type(uniatom.atoms.universe.hbond_array),
+        # )
         self.hbond_array = uniatom.atoms.universe.hbond_array
         self.hbond_handler = HBondHandler(self._atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
