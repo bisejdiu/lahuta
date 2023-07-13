@@ -1,5 +1,7 @@
 import time
 
+import MDAnalysis as mda
+
 import lahuta.contacts.contacts as contacts
 from lahuta.contacts.plane import (
     APDataFrameFactory,
@@ -15,6 +17,8 @@ if __name__ == "__main__":
     # u = Universe("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.pdb")
     u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
+    # mda_u = mda.Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.pdb")
+    # u = Universe(mda_u.atoms)
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.pdb")
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.cif")
     # end = time.time()

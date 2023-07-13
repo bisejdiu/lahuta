@@ -40,31 +40,18 @@ class Universe:
         else:
             self._initialize_from_files(args)
 
-        # self.atoms._u = self
-
         self.atoms = self.file_loader.atoms
         self.residues = self.file_loader.residues
         self.chains = self.file_loader.chains
-        self.universe = self.file_loader.to("mda")
 
         self.mol = None
         self.hbond_array = None
         self._ready = False
         self._topattr_handler = AtomAttrClassHandler()
 
-        # print("number of atoms: ", self.atoms.n_atoms)
-
     def _initialize_from_universe(self, uniatom):
-        self.file_loader = TopologyLoader.from_mda(
-            uniatom
-        )  # use self._file_loader to get the correct loader
-        self._universe = self.file_loader.to("mda")
-        self._universe.atoms = AtomGroup(self._universe.atoms[uniatom.indices])
-        # self.atoms = self._universe.atoms[uniatom.indices]
-        # self._universe.atoms = self._universe.atoms[uniatom.indices]
-        # self._universe._topology = uniatom.universe._topology
-        # self.file_loader = TopologyLoader.from_mda(uniatom)
-        # self._initialize_common()
+        self.file_loader = TopologyLoader.from_mda(uniatom)
+        self.universe = self.file_loader.to("mda")
 
     def _initialize_from_files(self, files):
         for file in files:
@@ -74,16 +61,7 @@ class Universe:
                 )
         # Assuming the first file is the topology file
         self.file_loader = self._file_loader(files[0])
-        # self._universe = self.file_loader.to("mda", *files)
         self.universe = self.file_loader.to("mda", *files)
-
-    @classmethod
-    def from_mda(cls, mda_universe):
-        return cls(mda_universe)
-
-    # @property
-    # def universe(self):
-    #     return self
 
     @staticmethod
     def _file_loader(file_name: str):  # -> FileLoader:
