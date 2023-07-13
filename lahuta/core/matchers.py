@@ -36,7 +36,8 @@ class SmartsMatcher(SmartsMatcherBase):
     """
 
     def compute(self, mol):
-        atypes_array = np.zeros((self.n_atoms, len(ATypes)))
+        print("self.n_atoms", self.n_atoms, mol.NumAtoms())
+        atypes_array = np.zeros((mol.NumAtoms(), len(ATypes)))
 
         for atom_type in self.atom_types:
             smartsdict = self.atom_types[atom_type.name].value

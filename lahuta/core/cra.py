@@ -73,6 +73,7 @@ class Atoms:
 
         self._names = np.array([], dtype="<U10")
         self._ids = np.array([], dtype=int)
+        self._ix = np.array([], dtype=int)  # re-indexed ids
         self._elements = np.array([], dtype="<U10")
         self._types = np.array([], dtype="<U10")
 
@@ -81,6 +82,7 @@ class Atoms:
         cls_instance = cls.__new__(cls)
         cls_instance._names = np.array(gemmi_block.get("label_atom_id"))
         cls_instance._ids = np.array(gemmi_block.get("id"), dtype=int)
+        cls_instance._ix = cls_instance._ids.copy()
         cls_instance._elements = np.array(gemmi_block.get("type_symbol"))
         cls_instance._types = np.array(gemmi_block.get("type_symbol"))
 
@@ -91,6 +93,7 @@ class Atoms:
         cls_instance = cls.__new__(cls)
         cls_instance._names = mda_universe.atoms.names
         cls_instance._ids = mda_universe.atoms.ids
+        cls_instance._ix = np.arange(cls_instance._ids.size)
         cls_instance._elements = mda_universe.atoms.elements
         cls_instance._types = mda_universe.atoms.types
 
@@ -107,6 +110,10 @@ class Atoms:
     @property
     def ids(self):
         return self._ids
+
+    @property
+    def ix(self):
+        return self._ix
 
     @property
     def elements(self):

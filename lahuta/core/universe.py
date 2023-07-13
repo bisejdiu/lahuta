@@ -40,18 +40,27 @@ class Universe:
         else:
             self._initialize_from_files(args)
 
-            self.atoms._u = self
+        # self.atoms._u = self
+
+        self.atoms = self.file_loader.atoms
+        self.residues = self.file_loader.residues
+        self.chains = self.file_loader.chains
+        self.universe = self.file_loader.to("mda")
 
         self.mol = None
         self.hbond_array = None
         self._ready = False
         self._topattr_handler = AtomAttrClassHandler()
 
+        # print("number of atoms: ", self.atoms.n_atoms)
+
     def _initialize_from_universe(self, uniatom):
-        self.file_loader = TopologyLoader.from_mda(uniatom)
+        self.file_loader = TopologyLoader.from_mda(
+            uniatom
+        )  # use self._file_loader to get the correct loader
         self._universe = self.file_loader.to("mda")
-        self._universe.atoms = AtomGroup(self._universe.atoms)
-        self.atoms = self._universe.atoms[uniatom.indices]
+        self._universe.atoms = AtomGroup(self._universe.atoms[uniatom.indices])
+        # self.atoms = self._universe.atoms[uniatom.indices]
         # self._universe.atoms = self._universe.atoms[uniatom.indices]
         # self._universe._topology = uniatom.universe._topology
         # self.file_loader = TopologyLoader.from_mda(uniatom)
@@ -65,15 +74,16 @@ class Universe:
                 )
         # Assuming the first file is the topology file
         self.file_loader = self._file_loader(files[0])
-        self._universe = self.file_loader.to("mda", *files)
+        # self._universe = self.file_loader.to("mda", *files)
+        self.universe = self.file_loader.to("mda", *files)
 
     @classmethod
     def from_mda(cls, mda_universe):
         return cls(mda_universe)
 
-    @property
-    def universe(self):
-        return self
+    # @property
+    # def universe(self):
+    #     return self
 
     @staticmethod
     def _file_loader(file_name: str):  # -> FileLoader:
@@ -85,7 +95,7 @@ class Universe:
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         self._topattr_handler.init_topattr(attrname, attrname)
-        self.atoms.universe.add_TopologyAttr(attrname, values)
+        self.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
@@ -99,7 +109,7 @@ class Universe:
 
         # TODO: remove array from the variable names by instead using type hints
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
-        atomtype_assigner = AtomTypeAssigner(self.mol, self.atoms)
+        atomtype_assigner = AtomTypeAssigner(self.mol, self.universe.atoms)
         atypes_array = atomtype_assigner.assign_atom_types()
 
         self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
@@ -115,7 +125,6 @@ class Universe:
         self,
         radius=5.0,
         ignore_hydrogens=True,
-        skip_adjacent=True,
         res_dif=1,
     ):
         """
@@ -141,7 +150,6 @@ class Universe:
         return neighbors.compute(
             radius=radius,
             ignore_hydrogens=ignore_hydrogens,
-            skip_adjacent=skip_adjacent,
             res_dif=res_dif,
         )
 
@@ -178,17 +186,17 @@ class Universe:
         """
         return self.file_loader.to(fmt, *args)
 
-    def __getattr__(self, attr):
-        # Delegate attribute access to the created universe
-        return getattr(self._universe, attr)
+    # def __getattr__(self, attr):
+    #     # Delegate attribute access to the created universe
+    #     return getattr(self._universe, attr)
 
-    def __dir__(self):
-        universe_dir = set(dir(self._universe))
-        self_dir = set(super().__dir__())
-        return sorted(self_dir.union(universe_dir))
+    # def __dir__(self):
+    #     universe_dir = set(dir(self._universe))
+    #     self_dir = set(super().__dir__())
+    #     return sorted(self_dir.union(universe_dir))
 
     def __repr__(self):
-        return f"<Lahuta Universe with {self.atoms.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self.universe.atoms.n_atoms} atoms>"
 
     def __str__(self):
         return self.__repr__()

@@ -18,9 +18,11 @@ class OBMol:
         ob_res.SetName(str(resname))
         return ob_res
 
-    def create_atom_obmol(self, atom_name, atom_id, atom_element, atom_pos, ob_residue):
+    def create_atom_obmol(
+        self, idx, atom_name, atom_id, atom_element, atom_pos, ob_residue
+    ):
         assert self.mol is not None, "Molecule is not initialized"
-        ob_atom = self.mol.NewAtom(atom_id - 1)
+        ob_atom = self.mol.NewAtom(idx)
         ob_atom.SetAtomicNum(gemmi.Element(atom_element).atomic_number)
         ob_atom.SetType(atom_name)
         ob_atom.SetVector(float(atom_pos[0]), float(atom_pos[1]), float(atom_pos[2]))
@@ -89,6 +91,8 @@ class OBMol:
         ob_res = None
         added_residues = set()
         for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
+            # if idx > 1240:
+            #     print(idx + 1, chain, residue, atom)
             _, chain_id = chain
             resname, resnumber, _ = residue
             atom_name, atom_id, element = atom
@@ -99,7 +103,7 @@ class OBMol:
                 added_residues.add(cra)
 
             self.create_atom_obmol(
-                atom_name, int(atom_id), element, coords[idx], ob_res
+                idx, atom_name, int(atom_id), element, coords[idx], ob_res
             )
 
         self.perceive_bonds()

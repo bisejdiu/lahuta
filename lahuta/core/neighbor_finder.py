@@ -26,7 +26,7 @@ class NeighborSearch:
         """
         self.instance = instance
 
-    def compute(self, radius=5.0, ignore_hydrogens=True, skip_adjacent=True, res_dif=1):
+    def compute(self, radius=5.0, ignore_hydrogens=True, res_dif=1):
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -44,23 +44,20 @@ class NeighborSearch:
 
         """
         if ignore_hydrogens:
-            atomgroup = self.instance.select_atoms("not name H*")
+            atomgroup = self.instance.universe.atoms.select_atoms("not name H*")
         else:
             atomgroup = self.instance.atoms
 
         pairs, distances = self.get_neighbors(atomgroup, radius)
 
-        print(pairs.shape, pairs.max(axis=0))
+        print("max pairs values: ", pairs.max(axis=0))
 
-        if skip_adjacent:
+        if res_dif > 0:
             idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
             pairs = pairs[idx]
             distances = distances[idx]
 
-        # print("instance type: ", type(self.instance))
-        # print("instance atoms type: ", type(self.instance.atoms))
-
-        return NeighborPairs(self.instance.atoms, pairs, distances)
+        return NeighborPairs(self.instance, pairs, distances)
 
     def get_neighbors(self, atomgroup=None, radius=5.0):
         """
@@ -99,5 +96,5 @@ class NeighborSearch:
         -------
         np.ndarray: An array of shape (n_pairs, 2) where each row is a pair of atom indices.
         """
-        resids = self.instance._universe.universe.atoms.resids[pairs]
+        resids = self.instance.universe.atoms.resids[pairs]
         return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)

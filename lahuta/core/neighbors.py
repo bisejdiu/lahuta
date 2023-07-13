@@ -50,8 +50,12 @@ class NeighborPairs:
     """A class for storing neighbor pairs."""
 
     # TODO:
-    def __init__(self, uniatom, pairs, distances):
-        self._atoms = uniatom.atoms
+    def __init__(self, luni, pairs, distances):
+        # self._atoms = luni.universe.atoms
+        # self._mol = luni.mol
+        self.luni = luni
+        self.atoms = luni.universe.atoms
+        # self._u = luni.universe
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)
@@ -63,8 +67,8 @@ class NeighborPairs:
         #     "uniatom atoms universe hbond_array type: ",
         #     type(uniatom.atoms.universe.hbond_array),
         # )
-        self.hbond_array = uniatom.atoms.universe.hbond_array
-        self.hbond_handler = HBondHandler(self._atoms, self.hbond_array)
+        self.hbond_array = luni.hbond_array
+        self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
 
     def _validate_inputs(self, pairs, distances):
@@ -81,7 +85,7 @@ class NeighborPairs:
         return pairs[indices], distances[indices]
 
     def _get_pair_column(self, partner):
-        return self._atoms[self.pairs[:, partner - 1]]
+        return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner):
         """Return attr_col and hbound_attr_col depending on the value of partner."""
@@ -512,7 +516,9 @@ class NeighborPairs:
         """
         if isinstance(item, int):
             return self.__class__(
-                self._atoms, self._pairs[item].reshape(1, 2), self._distances[item]
+                self.atoms,
+                self._pairs[item].reshape(1, 2),
+                self._distances[item],
             )
 
         # return self.__class__(self._atoms, self.pairs[item], self.distances[item])
