@@ -72,7 +72,7 @@ class Universe:
         return TopologyLoader(file_name)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
-        print("value size", values.size, values.shape)
+        # print("value size", values.size, values.shape)
         self._topattr_handler.init_topattr(attrname, attrname)
         self.uniag.universe.add_TopologyAttr(attrname, values)
 
@@ -87,14 +87,35 @@ class Universe:
         self.mol = self.file_loader.to("mol")
 
         # TODO: remove array from the variable names by instead using type hints
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
+        hbond_array = find_hydrogen_bonded_atoms(self.mol)
+        # print("...", hbond_array)
         atomtype_assigner = AtomTypeAssigner(self.mol, self.uniag.atoms)
-        atypes_array = atomtype_assigner.assign_atom_types()
+        ag_types = atomtype_assigner.assign_atom_types()
 
-        self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
+        # ag_types = AtomTypeAssigner(self.mol, self.uniag.atoms).assign_atom_types()
+        reference_array = np.zeros(
+            (self.uniag.atoms.universe.atoms.n_atoms, ag_types.shape[1])
+        )
+        reference_hbond_array = np.zeros(
+            (self.uniag.atoms.universe.atoms.n_atoms, 6), dtype=int
+        )
+
+        ix = self.uniag.atoms.indices
+        full_ag_atypes = reference_array.copy()
+        # full_ag_hbonds = reference_array[:, :6].copy()
+        full_ag_atypes[ix] = ag_types
+        reference_hbond_array[ix] = hbond_array
+        self.hbond_array = reference_hbond_array
+
+        # print("...2", self.hbond_array)
+
+        # self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
+        self._extend_topology(
+            "vdw_radii", v_radii_assignment(self.uniag.atoms.universe.atoms.elements)
+        )
         for atom_type in AVAILABLE_ATOM_TYPES:
             self._extend_topology(
-                atom_type.name.lower(), atypes_array[:, atom_type.value]
+                atom_type.name.lower(), full_ag_atypes[:, atom_type.value]
             )
 
         self._ready = True

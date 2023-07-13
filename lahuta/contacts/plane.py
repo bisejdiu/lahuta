@@ -161,7 +161,10 @@ class AtomPlaneContacts:
         reference = np.array([ring["center"] for ring in self.rings])
         max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
-        atomgroup = self.ua.uniag.select_atoms("not element H")
+        atomgroup = self.ua.uniag.atoms  # .select_atoms("not element H")
+        # print("-----", self.ua)
+        # print("self.ua.uniag", self.ua.uniag.n_atoms)
+        # print("atomgroup", atomgroup.indices.max(), atomgroup.n_atoms)
         pairs, distances = mda_distances.capped_distance(
             reference, atomgroup.positions, max_cutoff, return_distances=True
         )
@@ -169,7 +172,7 @@ class AtomPlaneContacts:
         ppairs = atomgroup[pairs].indices
         ppairs[:, 0] = pairs[:, 0]
 
-        return self.ua.uniag.atoms[ppairs].indices, distances
+        return self.ua.uniag.universe.atoms[ppairs].indices, distances
 
     def _calculate_angles(self, ppairs):
         ring_centers = np.array([ring["center"] for ring in self.rings])
@@ -179,7 +182,8 @@ class AtomPlaneContacts:
         ring_normals = np.take(ring_normals, ppairs[:, 0], axis=0)
 
         angles = vector_angle(
-            ring_normals, ring_centers - self.ua.uniag.atoms[ppairs[:, 1]].positions
+            ring_normals,
+            ring_centers - self.ua.uniag.universe.atoms[ppairs[:, 1]].positions,
         )
 
         return angles
