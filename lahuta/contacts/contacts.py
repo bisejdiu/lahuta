@@ -48,7 +48,6 @@ def covalent_neighbors(ns: NeighborPairs):
     """
 
     mol_is_covale = partial(is_covalent, ns.luni.mol)
-    print(ns.pairs.shape, "xxx")
     if ns.pairs.shape[0] != 0:
         cov_pair_indices = np.apply_along_axis(mol_is_covale, 1, ns.pairs)
 

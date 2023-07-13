@@ -72,6 +72,7 @@ class Universe:
         return TopologyLoader(file_name)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
+        print("value size", values.size, values.shape)
         self._topattr_handler.init_topattr(attrname, attrname)
         self.uniag.universe.add_TopologyAttr(attrname, values)
 
@@ -102,7 +103,6 @@ class Universe:
     def compute_neighbors(
         self,
         radius=5.0,
-        ignore_hydrogens=True,
         res_dif=1,
     ):
         """
@@ -111,7 +111,6 @@ class Universe:
         Args:
         ----
         radius (float, optional): The cutoff radius. Default is 5.0.
-        ignore_hydrogens (bool, optional): Whether to ignore hydrogens. Default is True.
         skip_adjacent (bool, optional): Whether to skip adjacent. Default is True.
         res_dif (int, optional): The residue difference to consider. Default is 1.
 
@@ -127,7 +126,6 @@ class Universe:
         neighbors = NeighborSearch(self)
         return neighbors.compute(
             radius=radius,
-            ignore_hydrogens=ignore_hydrogens,
             res_dif=res_dif,
         )
 

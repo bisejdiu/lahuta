@@ -51,11 +51,9 @@ class NeighborPairs:
 
     # TODO:
     def __init__(self, luni, pairs, distances):
-        # self._atoms = luni.uniag.atoms
-        # self._mol = luni.mol
         self.luni = luni
-        self.atoms = luni.uniag.atoms
-        # self._u = luni.uniag
+        # self.atoms = luni.uniag.atoms
+        self.atoms = luni.uniag.atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)
@@ -108,7 +106,9 @@ class NeighborPairs:
         Returns:
             NeighborPairs: A NeighborPairs object containing the filtered pairs.
         """
-        col_ag = getattr(self._get_pair_column(partner), atom_type)
+        col = self._get_pair_column(partner)
+        # print("col: ", col)
+        col_ag = getattr(col, atom_type)
         mask = col_ag.astype(bool)
 
         return self.clone(self.pairs[mask], self.distances[mask])

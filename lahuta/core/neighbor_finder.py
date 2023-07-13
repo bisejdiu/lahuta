@@ -24,16 +24,19 @@ class NeighborSearch:
         instance : Class Instance
             The instance of the class these methods originally belonged to.
         """
+        mda_atoms, mda_universe = instance.uniag.atoms, instance.uniag.universe
+        self.ag_no_h = mda_atoms.select_atoms("not name H*")
+        self.og_resids = mda_universe.atoms.resids
+
         self.instance = instance
 
-    def compute(self, radius=5.0, ignore_hydrogens=True, res_dif=1):
+    def compute(self, radius=5.0, res_dif=1):
         """
         Compute the neighbors of each atom in the Universe.
 
         Args:
         ----
         radius (float, optional): The cutoff radius. Default is 5.0.
-        ignore_hydrogens (bool, optional): Whether to ignore hydrogens. Default is True.
         skip_adjacent (bool, optional): Whether to skip adjacent. Default is True.
         res_dif (int, optional): The residue difference to consider. Default is 1.
 
@@ -43,12 +46,8 @@ class NeighborSearch:
             An array of shape (n_atoms, n_neighbors) where each row contains the indices of the neighbors of the atom in the row.
 
         """
-        if ignore_hydrogens:
-            atomgroup = self.instance.uniag.atoms.select_atoms("not name H*")
-        else:
-            atomgroup = self.instance.atoms
 
-        pairs, distances = self.get_neighbors(atomgroup, radius)
+        pairs, distances = self.get_neighbors(radius)
 
         print("max pairs values: ", pairs.max(axis=0))
 
@@ -59,7 +58,7 @@ class NeighborSearch:
 
         return NeighborPairs(self.instance, pairs, distances)
 
-    def get_neighbors(self, atomgroup=None, radius=5.0):
+    def get_neighbors(self, radius=5.0):
         """
         Get the neighbors of an atomgroup.
 
@@ -71,11 +70,8 @@ class NeighborSearch:
         ------
         tuple: A tuple containing two arrays. The first array of shape (n_pairs, 2) where each row contains the indices of the atoms in the pair. The second array of shape (n_pairs,) containing the distances of each pair.
         """
-        if atomgroup is None:
-            atomgroup = self.instance.atoms
 
-        shift_coords, pseudobox = mda_psuedobox_from_atomgroup(atomgroup)
-        print("pseudobox", pseudobox)
+        shift_coords, pseudobox = mda_psuedobox_from_atomgroup(self.ag_no_h)
 
         # TODO: handle pbc
         gridsearch = FastNS(
@@ -83,7 +79,10 @@ class NeighborSearch:
         )
         neighbors = gridsearch.self_search()
 
-        return atomgroup[neighbors.get_pairs()].indices, neighbors.get_pair_distances()
+        return (
+            self.ag_no_h[neighbors.get_pairs()].indices,
+            neighbors.get_pair_distances(),
+        )
 
     def _remove_adjacent_residue_pairs(self, pairs, res_dif=1):
         """
@@ -96,14 +95,9 @@ class NeighborSearch:
 
         Returns:
         -------
-        np.ndarray: An array of shape (n_pairs, 2) where each row is a pair of atom indices.
+        np.ndarray: An array of shape (n_pairs,) containing the indices of the pairs to keep.
         """
-        print(self.instance.uniag.atoms.resids.shape)
-        print(self.instance.uniag.resids)
-        print(
-            self.instance.uniag.indices.shape,
-            self.instance.uniag.atoms.universe.atoms.indices.shape,
-        )
-        print(pairs.max(axis=0))
-        resids = self.instance.uniag.atoms.universe.atoms.resids[pairs]
-        return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
+        resids = self.og_resids[pairs]
+        # return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
+        mask = np.abs(np.diff(resids, axis=1)) > res_dif
+        return np.ravel(mask)
