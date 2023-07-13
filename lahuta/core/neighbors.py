@@ -51,11 +51,11 @@ class NeighborPairs:
 
     # TODO:
     def __init__(self, luni, pairs, distances):
-        # self._atoms = luni.universe.atoms
+        # self._atoms = luni.uniag.atoms
         # self._mol = luni.mol
         self.luni = luni
-        self.atoms = luni.universe.atoms
-        # self._u = luni.universe
+        self.atoms = luni.uniag.atoms
+        # self._u = luni.uniag
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)

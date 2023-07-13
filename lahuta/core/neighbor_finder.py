@@ -44,7 +44,7 @@ class NeighborSearch:
 
         """
         if ignore_hydrogens:
-            atomgroup = self.instance.universe.atoms.select_atoms("not name H*")
+            atomgroup = self.instance.uniag.atoms.select_atoms("not name H*")
         else:
             atomgroup = self.instance.atoms
 
@@ -98,5 +98,12 @@ class NeighborSearch:
         -------
         np.ndarray: An array of shape (n_pairs, 2) where each row is a pair of atom indices.
         """
-        resids = self.instance.universe.atoms.resids[pairs]
+        print(self.instance.uniag.atoms.resids.shape)
+        print(self.instance.uniag.resids)
+        print(
+            self.instance.uniag.indices.shape,
+            self.instance.uniag.atoms.universe.atoms.indices.shape,
+        )
+        print(pairs.max(axis=0))
+        resids = self.instance.uniag.atoms.universe.atoms.resids[pairs]
         return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)

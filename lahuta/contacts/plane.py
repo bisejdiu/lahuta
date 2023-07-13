@@ -161,7 +161,7 @@ class AtomPlaneContacts:
         reference = np.array([ring["center"] for ring in self.rings])
         max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
-        atomgroup = self.ua.universe.select_atoms("not element H")
+        atomgroup = self.ua.uniag.select_atoms("not element H")
         pairs, distances = mda_distances.capped_distance(
             reference, atomgroup.positions, max_cutoff, return_distances=True
         )
@@ -169,7 +169,7 @@ class AtomPlaneContacts:
         ppairs = atomgroup[pairs].indices
         ppairs[:, 0] = pairs[:, 0]
 
-        return self.ua.universe.atoms[ppairs].indices, distances
+        return self.ua.uniag.atoms[ppairs].indices, distances
 
     def _calculate_angles(self, ppairs):
         ring_centers = np.array([ring["center"] for ring in self.rings])
@@ -179,7 +179,7 @@ class AtomPlaneContacts:
         ring_normals = np.take(ring_normals, ppairs[:, 0], axis=0)
 
         angles = vector_angle(
-            ring_normals, ring_centers - self.ua.universe.atoms[ppairs[:, 1]].positions
+            ring_normals, ring_centers - self.ua.uniag.atoms[ppairs[:, 1]].positions
         )
 
         return angles
@@ -222,8 +222,8 @@ class PlanePlaneContacts:
             if int_type is None:
                 continue
 
-            resid1 = self.ua.universe.atoms[ring1["atoms"]].indices[0]
-            resid2 = self.ua.universe.atoms[ring2["atoms"]].indices[0]
+            resid1 = self.ua.uniag.atoms[ring1["atoms"]].indices[0]
+            resid2 = self.ua.uniag.atoms[ring2["atoms"]].indices[0]
 
             pairs.append([resid1, resid2])
             pair_distances.append(distances[ix])
@@ -400,7 +400,7 @@ class PPDataFrameFactory:
     ):
         """A class for storing and manipulating contact data."""
 
-        nag = pcontacts.ua.universe.atoms[pcontacts.pairs]
+        nag = pcontacts.ua.uniag.atoms[pcontacts.pairs]
         col1, col2 = nag[:, 0], nag[:, 1]
 
         self.methods = ["resids", "resnames", "names", "indices"]

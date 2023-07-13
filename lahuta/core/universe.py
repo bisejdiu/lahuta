@@ -51,7 +51,7 @@ class Universe:
 
     def _initialize_from_universe(self, uniatom):
         self.file_loader = TopologyLoader.from_mda(uniatom)
-        self.universe = self.file_loader.to("mda")
+        self.uniag = self.file_loader.to("mda")
 
     def _initialize_from_files(self, files):
         for file in files:
@@ -61,7 +61,7 @@ class Universe:
                 )
         # Assuming the first file is the topology file
         self.file_loader = self._file_loader(files[0])
-        self.universe = self.file_loader.to("mda", *files)
+        self.uniag = self.file_loader.to("mda", *files)
 
     @staticmethod
     def _file_loader(file_name: str):  # -> FileLoader:
@@ -73,7 +73,7 @@ class Universe:
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         self._topattr_handler.init_topattr(attrname, attrname)
-        self.universe.universe.add_TopologyAttr(attrname, values)
+        self.uniag.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
@@ -87,7 +87,7 @@ class Universe:
 
         # TODO: remove array from the variable names by instead using type hints
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
-        atomtype_assigner = AtomTypeAssigner(self.mol, self.universe.atoms)
+        atomtype_assigner = AtomTypeAssigner(self.mol, self.uniag.atoms)
         atypes_array = atomtype_assigner.assign_atom_types()
 
         self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
@@ -174,7 +174,7 @@ class Universe:
     #     return sorted(self_dir.union(universe_dir))
 
     def __repr__(self):
-        return f"<Lahuta Universe with {self.universe.atoms.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self.uniag.atoms.n_atoms} atoms>"
 
     def __str__(self):
         return self.__repr__()

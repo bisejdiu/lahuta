@@ -48,11 +48,18 @@ def covalent_neighbors(ns: NeighborPairs):
     """
 
     mol_is_covale = partial(is_covalent, ns.luni.mol)
-    cov_pair_indices = np.apply_along_axis(mol_is_covale, 1, ns.pairs)
+    print(ns.pairs.shape, "xxx")
+    if ns.pairs.shape[0] != 0:
+        cov_pair_indices = np.apply_along_axis(mol_is_covale, 1, ns.pairs)
 
-    pairs = ns.pairs[cov_pair_indices]
-    distances = ns.distances[cov_pair_indices]
-    return NeighborPairs(ns.luni, pairs, distances)
+        pairs = ns.pairs[cov_pair_indices]
+        distances = ns.distances[cov_pair_indices]
+    else:
+        pairs = np.array([])
+        distances = np.array([])
+
+    return ns.clone(pairs, distances)
+    # return NeighborPairs(ns.luni, pairs, distances)
 
 
 def metalic_neighbors(
