@@ -18,7 +18,7 @@ class BaseLoader(ABC):
         self._coords_array = None
 
         self.structure = None
-        self.universe = None
+        self.uniag = None
 
     def _validate_access(self, attr_name):
         if getattr(self, attr_name) is None:
@@ -140,18 +140,18 @@ class GemmiLoader(BaseLoader):
 class TopologyLoader(BaseLoader):
     def __init__(self, file_path, traj_path=None):
         super().__init__(file_path)
-        self.universe = mda.Universe(self.file_path)
+        self.uniag = mda.Universe(self.file_path)
         self._chains, self._residues, self._atoms = self.create()
-        self._coords_array = self.universe.atoms.positions  # type: ignore
+        self._coords_array = self.uniag.atoms.positions  # type: ignore
 
     def create(self):
-        chains = Chains().from_mda(self.universe)
-        residues = Residues().from_mda(self.universe)
-        atoms = Atoms().from_mda(self.universe)
+        chains = Chains().from_mda(self.uniag)
+        residues = Residues().from_mda(self.uniag)
+        atoms = Atoms().from_mda(self.uniag)
         return chains, residues, atoms
 
     def to_mda(self):
-        return self.universe
+        return self.uniag
 
     def to_mol(self):
         obmol = OBMol()
@@ -164,15 +164,15 @@ class TopologyLoader(BaseLoader):
         return obmol.mol
 
     @classmethod
-    def from_mda(cls, mda_universe):
-        cls_instance = cls.__new__(cls)
-        cls_instance.universe = mda_universe.universe.copy()
+    def from_mda(cls, uniag):
+        top_loader = cls.__new__(cls)
+        top_loader.uniag = uniag.copy()
         (
-            cls_instance._chains,
-            cls_instance._residues,
-            cls_instance._atoms,
-        ) = cls_instance.create()
-        cls_instance._coords_array = cls_instance.universe.atoms.positions
-        cls_instance.structure = None
+            top_loader._chains,
+            top_loader._residues,
+            top_loader._atoms,
+        ) = top_loader.create()
+        top_loader._coords_array = top_loader.uniag.atoms.positions
+        top_loader.structure = None
 
-        return cls_instance
+        return top_loader

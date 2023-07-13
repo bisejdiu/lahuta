@@ -75,7 +75,9 @@ class NeighborSearch:
             atomgroup = self.instance.atoms
 
         shift_coords, pseudobox = mda_psuedobox_from_atomgroup(atomgroup)
+        print("pseudobox", pseudobox)
 
+        # TODO: handle pbc
         gridsearch = FastNS(
             cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
         )

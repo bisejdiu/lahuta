@@ -73,7 +73,7 @@ class Universe:
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         self._topattr_handler.init_topattr(attrname, attrname)
-        self.universe.add_TopologyAttr(attrname, values)
+        self.universe.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
