@@ -13,6 +13,7 @@ from lahuta.core.universe import Universe
 
 class ExpectedResults:
     with open(Path(__file__).parent / "data" / "1KX2.json") as f:
+    # with open("/home/bisejdiu/p/lahuta/lahuta/notebooks/1KX2.pdb") as f:
         data = json.load(f)
 
     COVALENT = data["COVALENT"]
@@ -42,7 +43,8 @@ class DataLoader:
         """Load the data for the tests."""
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            self.u = Universe(Path(__file__).parent / "data" / "1KX2.pdb")
+            path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
+            self.u = Universe(str(path_obj))
         self.n = self.u.compute_neighbors()
 
     def __call__(self):
@@ -75,7 +77,7 @@ def planeplane():
 def test_covalent_neighbors(neighbors):
     """Test the covalent neighbors."""
     cov = contacts.covalent_neighbors(neighbors)
-    pairs, distances = np.array(cov.pairs[:6]), np.array(cov.distances[:6])
+    pairs, distances = np.array(cov.pairs), np.array(cov.distances)
     assert cov.pairs.shape[0] == ExpectedResults.COVALENT["shapex"]
     assert np.all(pairs == ExpectedResults.COVALENT["pairs"])
     assert np.allclose(distances, ExpectedResults.COVALENT["distances"], atol=1e-3)
@@ -86,7 +88,7 @@ def test_metalic_neighbors(neighbors):
     met = contacts.metalic_neighbors(neighbors)
     pairs, distances = np.array(met.pairs), np.array(met.distances)
     assert met.pairs.shape[0] == ExpectedResults.METALIC["shapex"]
-    assert np.all(np.array(met.pairs) == ExpectedResults.METALIC["pairs"])
+    assert met.pairs.tolist() == ExpectedResults.METALIC["pairs"]
     assert np.allclose(distances, ExpectedResults.METALIC["distances"], atol=1e-3)
 
 
@@ -95,7 +97,7 @@ def test_carbonyl_neighbors(neighbors):
     cbnyl = contacts.carbonyl_neighbors(neighbors)
     pairs, distances = np.array(cbnyl.pairs[:6]), np.array(cbnyl.distances[:6])
     assert cbnyl.pairs.shape[0] == ExpectedResults.CARBONYL["shapex"]
-    assert np.all(pairs == ExpectedResults.CARBONYL["pairs"])
+    assert pairs.tolist() == ExpectedResults.CARBONYL["pairs"]
     assert np.allclose(distances, ExpectedResults.CARBONYL["distances"], atol=1e-3)
 
 

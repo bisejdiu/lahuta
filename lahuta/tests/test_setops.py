@@ -11,14 +11,15 @@ def test_intersection(repeat: int = 10):
     """Test the intersection of two NeighborPairs objects."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        u = Universe(Path(__file__).parent / "data" / "1KX2.pdb")
+        path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
+        u = Universe(str(path_obj))
         n = u.compute_neighbors()
 
     for _ in range(repeat):
         sample_size = np.random.randint(1, n.pairs.shape[0])
         i = np.random.choice(n.pairs.shape[0], sample_size)
         i = np.unique(np.sort(i))
-        m = NeighborPairs(u.atoms, n.pairs[i], n.distances[i])
+        m = NeighborPairs(u, n.pairs[i], n.distances[i])
 
         assert (
             i.size
