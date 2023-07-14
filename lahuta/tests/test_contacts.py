@@ -13,7 +13,6 @@ from lahuta.core.universe import Universe
 
 class ExpectedResults:
     with open(Path(__file__).parent / "data" / "1KX2.json") as f:
-    # with open("/home/bisejdiu/p/lahuta/lahuta/notebooks/1KX2.pdb") as f:
         data = json.load(f)
 
     COVALENT = data["COVALENT"]
