@@ -15,7 +15,8 @@ from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.groups import AtomGroup
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
+from lahuta.utils.atom_types import (find_hydrogen_bonded_atoms,
+                                     v_radii_assignment)
 
 
 # class Universe:
@@ -50,7 +51,7 @@ class Universe:
 
         if not all(isinstance(arg, str) for arg in args):
             raise ValueError(
-                "All arguments must be filenames when not providing an MDAnalysis.AtomGroup instance"
+                "Input must be either an MDAnalysis.AtomGroup instance or a list of file names"
             )
         return self._initialize_from_files
 

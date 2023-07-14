@@ -2,10 +2,8 @@ import numpy as np
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
-from lahuta.core.assigners import (
-    LegacyProteinTypeAssigner,
-    VectorizedProteinTypeAssigner,
-)
+from lahuta.core.assigners import (LegacyProteinTypeAssigner,
+                                   VectorizedProteinTypeAssigner)
 from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher
 
 
@@ -67,8 +65,8 @@ class AtomTypeAssigner:
         for atom in self.atomgroup.select_atoms(
             "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
         ):
-            atypes_array[atom.index, self.atypes["hbond_acceptor"]] = 1
-            atypes_array[atom.index, self.atypes["hbond_donor"]] = 1
+            atypes_array[atom.index, self.atypes["hbond_acceptor".upper()].value] = 1
+            atypes_array[atom.index, self.atypes["hbond_donor".upper()].value] = 1
 
         return atypes_array
 
