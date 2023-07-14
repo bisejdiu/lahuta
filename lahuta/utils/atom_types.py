@@ -136,19 +136,29 @@ def assign_radii(mol):
     return atom_radii
 
 
-def find_hydrogen_bonded_atoms(mol):
+def find_hydrogen_bonded_atoms(luni):
     """
     Find hydrogen bonded atoms in the molecule.
     """
     # hbond_indices = np.zeros(mol.NumAtoms(), dtype=bool)
-    hbond_array = np.zeros((mol.NumAtoms(), 6), dtype=int)
+    # hbond_array = np.zeros((mol.NumAtoms(), 6), dtype=int)
+    ag_atoms = luni.uniag.atoms
+    hbond_array = np.zeros((ag_atoms.universe.atoms.n_atoms, 6), dtype=int)
+    mol = luni.mol if luni.mol is not None else luni.to("mol")
+
+    max_index = np.max(ag_atoms.indices)
+    atom_mapping = np.full(max_index + 1, -1)
+    atom_mapping[np.arange(ag_atoms.n_atoms)] = ag_atoms.indices
 
     for atom in ob.OBMolAtomIter(mol):
         if atom.ExplicitHydrogenCount():
             for ix, atom2 in enumerate(ob.OBAtomAtomIter(atom)):
                 if atom2.GetAtomicNum() == 1:
                     # hbond_indices[atom.GetId()] = True
-                    hbond_array[atom.GetId(), ix] = atom2.GetId()
+                    # hbond_array[atom.GetId(), ix] = atom2.GetId()
+                    hbond_array[atom_mapping[atom.GetId()], ix] = atom_mapping[
+                        atom2.GetId()
+                    ]
 
     return hbond_array
 

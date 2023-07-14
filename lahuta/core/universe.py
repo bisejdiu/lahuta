@@ -87,32 +87,27 @@ class Universe:
         self.mol = self.file_loader.to("mol")
 
         # TODO: remove array from the variable names by instead using type hints
-        hbond_array = find_hydrogen_bonded_atoms(self.mol)
+        self.hbond_array = find_hydrogen_bonded_atoms(self)
         # print("...", hbond_array)
         atomtype_assigner = AtomTypeAssigner(self.mol, self.uniag.atoms)
         ag_types = atomtype_assigner.assign_atom_types()
+        og_atoms = self.uniag.atoms.universe.atoms
 
         # ag_types = AtomTypeAssigner(self.mol, self.uniag.atoms).assign_atom_types()
-        reference_array = np.zeros(
-            (self.uniag.atoms.universe.atoms.n_atoms, ag_types.shape[1])
-        )
-        reference_hbond_array = np.zeros(
-            (self.uniag.atoms.universe.atoms.n_atoms, 6), dtype=int
-        )
+        reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
+        # reference_hbond_array = np.zeros((og_atoms.n_atoms, 6), dtype=int)
 
         ix = self.uniag.atoms.indices
         full_ag_atypes = reference_array.copy()
         # full_ag_hbonds = reference_array[:, :6].copy()
         full_ag_atypes[ix] = ag_types
-        reference_hbond_array[ix] = hbond_array
-        self.hbond_array = reference_hbond_array
+        # reference_hbond_array[ix] = hbond_array
+        # self.hbond_array = reference_hbond_array
 
         # print("...2", self.hbond_array)
 
         # self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
-        self._extend_topology(
-            "vdw_radii", v_radii_assignment(self.uniag.atoms.universe.atoms.elements)
-        )
+        self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
         for atom_type in AVAILABLE_ATOM_TYPES:
             self._extend_topology(
                 atom_type.name.lower(), full_ag_atypes[:, atom_type.value]

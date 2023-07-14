@@ -19,6 +19,13 @@ class HBondHandler:
         self.hbond_array = hbond_array
 
     def get_hbond_distances(self, attr_col, hbound_attr_col):
+        # print(
+        #     "...",
+        #     # self._atoms.n_atoms,
+        #     # self._atoms.indices.max(axis=0),
+        #     hbound_attr_col.atoms.indices.max(axis=0),
+        #     attr_col.atoms.indices.max(axis=0),
+        # )
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
@@ -65,6 +72,7 @@ class NeighborPairs:
         #     "uniatom atoms universe hbond_array type: ",
         #     type(uniatom.atoms.universe.hbond_array),
         # )
+        # print("-->", self.atoms.n_atoms, luni.hbond_array.shape)
         self.hbond_array = luni.hbond_array
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
@@ -106,9 +114,7 @@ class NeighborPairs:
         Returns:
             NeighborPairs: A NeighborPairs object containing the filtered pairs.
         """
-        col = self._get_pair_column(partner)
-        # print("col: ", col)
-        col_ag = getattr(col, atom_type)
+        col_ag = getattr(self._get_pair_column(partner), atom_type)
         mask = col_ag.astype(bool)
 
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -205,7 +211,7 @@ class NeighborPairs:
         # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
-        self, partner: int = 0, vdw_comp_factor: float = 0.1
+        self, partner: int, vdw_comp_factor: float = 0.1
     ) -> "NeighborPairs":
         """Filter the pairs based on the distance between the hydrogen bonded atoms.
 
@@ -239,9 +245,7 @@ class NeighborPairs:
         #     # hbangles=self.hbond_angles,
         # )
 
-    def hbond_angle_filter(
-        self, partner: int = 0, weak: bool = False
-    ) -> "NeighborPairs":
+    def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
         """Filter the pairs based on the angle between the hydrogen bonded atoms.
 
         Parameters
@@ -259,10 +263,10 @@ class NeighborPairs:
         contact_type = "weak hbond" if weak else "hbond"
         attr_partner, hbound_attr_partner = self._get_partners(partner)
 
-        if self.hbond_angles is None:
-            self.hbond_angles = self.hbond_handler.get_hbond_angles(
-                attr_partner, hbound_attr_partner
-            )
+        # if self.hbond_angles is None:
+        self.hbond_angles = self.hbond_handler.get_hbond_angles(
+            attr_partner, hbound_attr_partner
+        )
 
         idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
