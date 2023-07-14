@@ -62,11 +62,17 @@ class AtomTypeAssigner:
         types for all water molecules in the atomgroup. Returns the modified
         atypes_array.
         """
-        for atom in self.atomgroup.select_atoms(
+        water_ag = self.atomgroup.select_atoms(
             "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
-        ):
-            atypes_array[atom.index, self.atypes["hbond_acceptor".upper()].value] = 1
-            atypes_array[atom.index, self.atypes["hbond_donor".upper()].value] = 1
+        )
+        max_index = np.max(self.atomgroup.universe.atoms.indices)
+        atom_mapping = np.full(max_index + 1, -1)
+        atom_mapping[self.atomgroup.atoms.indices] = np.arange(self.atomgroup.n_atoms)
+
+        # TODO: vectorize this
+        for atom in water_ag:
+            atypes_array[atom_mapping[atom.index], self.atypes["hbond_acceptor".upper()].value] = 1
+            atypes_array[atom_mapping[atom.index], self.atypes["hbond_donor".upper()].value] = 1
 
         return atypes_array
 
