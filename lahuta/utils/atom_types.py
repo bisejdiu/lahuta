@@ -146,6 +146,7 @@ def find_hydrogen_bonded_atoms(luni):
     hbond_array = np.zeros((ag_atoms.universe.atoms.n_atoms, 6), dtype=int)
     mol = luni.mol if luni.mol is not None else luni.to("mol")
 
+    # will give -1 for atoms not in the atomgroup
     max_index = np.max(ag_atoms.indices)
     atom_mapping = np.full(max_index + 1, -1)
     atom_mapping[np.arange(ag_atoms.n_atoms)] = ag_atoms.indices
@@ -156,9 +157,9 @@ def find_hydrogen_bonded_atoms(luni):
                 if atom2.GetAtomicNum() == 1:
                     # hbond_indices[atom.GetId()] = True
                     # hbond_array[atom.GetId(), ix] = atom2.GetId()
-                    hbond_array[atom_mapping[atom.GetId()], ix] = atom_mapping[
-                        atom2.GetId()
-                    ]
+                    atom1_id = atom_mapping[atom.GetId()]
+                    atom2_id = atom_mapping[atom2.GetId()]
+                    hbond_array[atom1_id, ix] = atom2_id
 
     return hbond_array
 
