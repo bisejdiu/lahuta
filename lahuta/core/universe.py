@@ -26,55 +26,58 @@ from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignme
 #             )
 class Universe:
     def __init__(self, *args):
-        if len(args) == 0:
-            raise ValueError(
-                "Must pass either a file name or an MDAnalysis Universe or MDAnalysis.AtomGroup instance"
-            )
+        self._mdag = None
+        initializer = self._validate_input(*args)
+        initializer(*args)
 
-        if isinstance(args[0], mda.Universe) or isinstance(args[0], mda.AtomGroup):
-            if len(args) > 1:
-                raise ValueError(
-                    "When passing an MDAnalysis.Universe or MDAnalysis.AtomGroup instance, no other arguments are allowed"
-                )
-            self._initialize_from_universe(args[0])
-        else:
-            self._initialize_from_files(args)
+        self.atoms, self.residues, self.chains = self._file_loader
 
-        self.atoms = self.file_loader.atoms
-        self.residues = self.file_loader.residues
-        self.chains = self.file_loader.chains
-
-        self.mol = None
+        self._mol = None
         self.hbond_array = None
         self._ready = False
         self._topattr_handler = AtomAttrClassHandler()
 
-    def _initialize_from_universe(self, uniatom):
-        self.file_loader = TopologyLoader.from_mda(uniatom)
-        self.uniag = self.file_loader.to("mda")
+    def _validate_input(self, *args):
+        if not args:
+            raise ValueError("No input provided")
 
-    def _initialize_from_files(self, files):
-        for file in files:
-            if not isinstance(file, str):
+        if isinstance(args[0], mda.AtomGroup):
+            if len(args) != 1:
                 raise ValueError(
-                    "All arguments must be filenames when not providing an MDAnalysis Universe or MDAnalysis.AtomGroup instance"
+                    "When passing an MDAnalysis.AtomGroup instance, no other arguments are allowed"
                 )
-        # Assuming the first file is the topology file
-        self.file_loader = self._file_loader(files[0])
-        self.uniag = self.file_loader.to("mda", *files)
+            return self._initialize_from_universe
 
-    @staticmethod
-    def _file_loader(file_name: str):  # -> FileLoader:
-        file_format, is_pdb = Universe.get_format(file_name)
-        if file_format is not None:
-            return GemmiLoader(file_name, is_pdb=is_pdb)
+        if not all(isinstance(arg, str) for arg in args):
+            raise ValueError(
+                "All arguments must be filenames when not providing an MDAnalysis.AtomGroup instance"
+            )
+        return self._initialize_from_files
 
-        return TopologyLoader(file_name)
+    def _initialize_from_universe(self, *args):
+        self._file_loader = TopologyLoader.from_mda(args[0])
+        self._mdag = self._file_loader.to("mda")
+
+    def _initialize_from_files(self, *files):
+        self._file_loader = self._get_file_loader(files)
+        self._mdag = self._file_loader.to("mda")
+
+    def _get_file_loader(self, files: tuple):
+        # GemmiLoader can only handle one file and its format should be supported
+        if len(files) == 1:
+            file_name = files[0]
+            file_format, is_pdb = Universe.get_format(file_name)
+            if file_format:
+                return GemmiLoader(file_name, is_pdb=is_pdb)
+
+        # If there are multiple files or the single file is not supported by GemmiLoader,
+        # then use TopologyLoader
+        return TopologyLoader(*files)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
         # print("value size", values.size, values.shape)
         self._topattr_handler.init_topattr(attrname, attrname)
-        self.uniag.universe.add_TopologyAttr(attrname, values)
+        self._mdag.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
@@ -84,20 +87,20 @@ class Universe:
         Prepare instance for computations by transforming the molecule and assigning atom types.
         """
 
-        self.mol = self.file_loader.to("mol")
+        self._mol = self._file_loader.to("mol")
 
         # TODO: remove array from the variable names by instead using type hints
         self.hbond_array = find_hydrogen_bonded_atoms(self)
         # print("...", hbond_array)
-        atomtype_assigner = AtomTypeAssigner(self.mol, self.uniag.atoms)
+        atomtype_assigner = AtomTypeAssigner(self._mol, self._mdag.atoms)
         ag_types = atomtype_assigner.assign_atom_types()
-        og_atoms = self.uniag.atoms.universe.atoms
+        og_atoms = self._mdag.atoms.universe.atoms
 
-        # ag_types = AtomTypeAssigner(self.mol, self.uniag.atoms).assign_atom_types()
+        # ag_types = AtomTypeAssigner(self._mol, self._mdag.atoms).assign_atom_types()
         reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
         # reference_hbond_array = np.zeros((og_atoms.n_atoms, 6), dtype=int)
 
-        ix = self.uniag.atoms.indices
+        ix = self._mdag.atoms.indices
         full_ag_atypes = reference_array.copy()
         # full_ag_hbonds = reference_array[:, :6].copy()
         full_ag_atypes[ix] = ag_types
@@ -176,19 +179,14 @@ class Universe:
         Universe : Universe
             A new Universe instance in the specified format.
         """
-        return self.file_loader.to(fmt, *args)
-
-    # def __getattr__(self, attr):
-    #     # Delegate attribute access to the created universe
-    #     return getattr(self._universe, attr)
-
-    # def __dir__(self):
-    #     universe_dir = set(dir(self._universe))
-    #     self_dir = set(super().__dir__())
-    #     return sorted(self_dir.union(universe_dir))
+        if fmt == "mol" and self._mol is not None:
+            return self._mol
+        # if fmt == "mda":
+        #     return self._mdag
+        return self._file_loader.to(fmt, *args)
 
     def __repr__(self):
-        return f"<Lahuta Universe with {self.uniag.atoms.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self._mdag.atoms.n_atoms} atoms>"
 
     def __str__(self):
         return self.__repr__()

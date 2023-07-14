@@ -59,8 +59,8 @@ class NeighborPairs:
     # TODO:
     def __init__(self, luni, pairs, distances):
         self.luni = luni
-        # self.atoms = luni.uniag.atoms
-        self.atoms = luni.uniag.atoms.universe.atoms
+        # self.atoms = luni.to("mda").atoms
+        self.atoms = luni.to("mda").atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)

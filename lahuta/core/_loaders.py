@@ -18,7 +18,7 @@ class BaseLoader(ABC):
         self._coords_array = None
 
         self.structure = None
-        self.uniag = None
+        self.ag = None
 
     def _validate_access(self, attr_name):
         if getattr(self, attr_name) is None:
@@ -67,6 +67,11 @@ class BaseLoader(ABC):
     def to_mol(self):
         ...
 
+    def __iter__(self):
+        yield self.atoms
+        yield self.residues
+        yield self.chains
+
 
 class GemmiLoader(BaseLoader):
     def __init__(self, file_path, is_pdb=False):
@@ -98,6 +103,9 @@ class GemmiLoader(BaseLoader):
         return coords_array
 
     def to_mda(self):
+        if self.ag is not None:
+            return self.ag
+
         # TODO: Add icodes and ids to the universe
         resnames, resids, chain_ids = [], [], []
         for model in self.structure:
@@ -124,6 +132,8 @@ class GemmiLoader(BaseLoader):
 
         universe.atoms.positions = self.coords_array  # type: ignore
 
+        self.ag = universe
+
         return universe
 
     def to_mol(self):
@@ -138,20 +148,23 @@ class GemmiLoader(BaseLoader):
 
 
 class TopologyLoader(BaseLoader):
-    def __init__(self, file_path, traj_path=None):
+    def __init__(self, *paths):
+        file_path = paths[0]
         super().__init__(file_path)
-        self.uniag = mda.Universe(self.file_path)
+        self.ag = mda.Universe(self.file_path)
+        if len(paths) > 1:
+            self.ag.load_new(paths[1:], format=None, in_memory=False)
         self._chains, self._residues, self._atoms = self.create()
-        self._coords_array = self.uniag.atoms.positions  # type: ignore
+        self._coords_array = self.ag.atoms.positions  # type: ignore
 
     def create(self):
-        chains = Chains().from_mda(self.uniag)
-        residues = Residues().from_mda(self.uniag)
-        atoms = Atoms().from_mda(self.uniag)
+        chains = Chains().from_mda(self.ag)
+        residues = Residues().from_mda(self.ag)
+        atoms = Atoms().from_mda(self.ag)
         return chains, residues, atoms
 
     def to_mda(self):
-        return self.uniag
+        return self.ag
 
     def to_mol(self):
         obmol = OBMol()
@@ -164,15 +177,15 @@ class TopologyLoader(BaseLoader):
         return obmol.mol
 
     @classmethod
-    def from_mda(cls, uniag):
+    def from_mda(cls, ag):
         top_loader = cls.__new__(cls)
-        top_loader.uniag = uniag.copy()
+        top_loader.ag = ag.copy()
         (
             top_loader._chains,
             top_loader._residues,
             top_loader._atoms,
         ) = top_loader.create()
-        top_loader._coords_array = top_loader.uniag.atoms.positions
+        top_loader._coords_array = top_loader.ag.positions
         top_loader.structure = None
 
         return top_loader
