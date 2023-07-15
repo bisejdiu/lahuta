@@ -4,6 +4,7 @@ from typing import Literal
 import gemmi
 import MDAnalysis as mda
 import numpy as np
+from MDAnalysis.core.groups import AtomGroup
 
 from lahuta.core.cra import Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
@@ -75,6 +76,7 @@ class BaseLoader(ABC):
 
 class GemmiLoader(BaseLoader):
     def __init__(self, file_path, is_pdb=False):
+        print("Using GemmiLoader")
         super().__init__(file_path)
         if is_pdb:
             structure = gemmi.read_pdb(self.file_path)
@@ -149,11 +151,14 @@ class GemmiLoader(BaseLoader):
 
 class TopologyLoader(BaseLoader):
     def __init__(self, *paths):
+        print("Using TopologyLoader")
         file_path = paths[0]
         super().__init__(file_path)
-        self.ag = mda.Universe(self.file_path)
+        universe = mda.Universe(self.file_path)
+        self.ag: AtomGroup = universe.atoms  # type: ignore
+        assert self.ag is not None
         if len(paths) > 1:
-            self.ag.load_new(paths[1:], format=None, in_memory=False)
+            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
         self._chains, self._residues, self._atoms = self.create()
         self._coords_array = self.ag.atoms.positions  # type: ignore
 

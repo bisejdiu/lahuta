@@ -18,12 +18,6 @@ from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
 
 
-# class Universe:
-#     def __init__(self, file_name=None, *args):
-#         if isinstance(file_name, Topology):
-#             raise NotImplementedError(
-#                 "Initializing Universe from a Topology object is not supported."
-#             )
 class Universe:
     def __init__(self, *args):
         self._mdag = None
