@@ -1,5 +1,5 @@
+import warnings
 from pathlib import Path
-from typing import List, Set
 
 import MDAnalysis as mda
 import numpy as np
@@ -7,6 +7,11 @@ import pytest
 
 from lahuta.contacts import contacts as C
 from lahuta.core.universe import Universe
+
+HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
+AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
+
+# pylint: disable=attribute-defined-outside-init
 
 
 class ContactType:
@@ -47,17 +52,21 @@ class UniverseWrapper:
 
 selections_res_difs = [
     ("protein and not resname ARG", 2),
-    # ("protein and not resname LYS", 3),
+    ("protein and not resname LYS", 3),
+    (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
+    ("resid 1 to 50", 4),
 ]
 
 
 class TestMDAnalysis:
     @pytest.fixture(params=selections_res_difs, autouse=True)
     def setup_method(self, request):
-        print("Running setup_method")
         selection, res_dif = request.param
         path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
-        self.universe = UniverseWrapper(str(path_obj), selection)
+        with warnings.catch_warnings(record=True) as _:
+            _uwrap = UniverseWrapper(str(path_obj), selection)
+        self.universe = _uwrap
+
         self.contact_types = [
             ContactType("covalent", C.covalent_neighbors, self.universe),
             ContactType("metalic", C.metalic_neighbors, self.universe),
@@ -80,10 +89,9 @@ class TestMDAnalysis:
 
     def test_subset_check(self):
         for contact_type in self.contact_types:
-            print("contact_type", contact_type, type(contact_type))
-            assert contact_type.neighbors.issubset(
-                contact_type.neighbors_ref
-            ), f"{contact_type.name} neighbors are not a subset of the reference neighbors"
+            message = f"{contact_type.name} neighbors are not a subset of the reference neighbors"
+            assert contact_type.neighbors is not None, "Neighbors are None"
+            assert contact_type.neighbors.issubset(contact_type.neighbors_ref), message
 
     def test_number_of_pairs(self):
         for contact_type in self.contact_types:

@@ -86,7 +86,7 @@ class Universe:
     def _build_atom_mapping(self, ag: AtomGroup):
         max_index = np.max(ag.universe.atoms.indices)
         atom_mapping = np.full(max_index + 1, -1)
-        atom_mapping[ag.atoms.indices] = np.arange(ag.n_atoms)
+        atom_mapping[ag.indices] = np.arange(ag.n_atoms)
         return atom_mapping
 
     def ready(self):
