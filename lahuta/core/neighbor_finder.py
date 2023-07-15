@@ -24,7 +24,8 @@ class NeighborSearch:
         instance : Class Instance
             The instance of the class these methods originally belonged to.
         """
-        mda_atoms, mda_universe = instance.to("mda").atoms, instance.to("mda").universe
+        mda = instance.to("mda").copy()
+        mda_atoms, mda_universe = mda.atoms, mda.universe
         self.ag_no_h = mda_atoms.select_atoms("not name H*")
         self.og_resids = mda_universe.atoms.resids
 

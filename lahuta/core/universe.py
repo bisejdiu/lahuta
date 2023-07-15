@@ -15,8 +15,7 @@ from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.groups import AtomGroup
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.utils.atom_types import (find_hydrogen_bonded_atoms,
-                                     v_radii_assignment)
+from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
 
 
 # class Universe:
@@ -36,6 +35,7 @@ class Universe:
         self._mol = None
         self.hbond_array = None
         self._ready = False
+        self._mapping = None
         self._topattr_handler = AtomAttrClassHandler()
 
     def _validate_input(self, *args):
@@ -83,25 +83,33 @@ class Universe:
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
+    def _build_atom_mapping(self, ag: AtomGroup):
+        max_index = np.max(ag.universe.atoms.indices)
+        atom_mapping = np.full(max_index + 1, -1)
+        atom_mapping[ag.atoms.indices] = np.arange(ag.n_atoms)
+        return atom_mapping
+
     def ready(self):
         """
         Prepare instance for computations by transforming the molecule and assigning atom types.
         """
 
         self._mol = self._file_loader.to("mol")
+        self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
         self.hbond_array = find_hydrogen_bonded_atoms(self)
         # print("...", hbond_array)
-        atomtype_assigner = AtomTypeAssigner(self._mol, self._mdag.atoms)
+        # print("self._mdag", self._mdag, type(self._mdag))
+        atomtype_assigner = AtomTypeAssigner(self)
         ag_types = atomtype_assigner.assign_atom_types()
-        og_atoms = self._mdag.atoms.universe.atoms
+        og_atoms = self._mdag.universe.atoms
 
-        # ag_types = AtomTypeAssigner(self._mol, self._mdag.atoms).assign_atom_types()
+        # ag_types = AtomTypeAssigner(self._mol, self._mdag).assign_atom_types()
         reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
         # reference_hbond_array = np.zeros((og_atoms.n_atoms, 6), dtype=int)
 
-        ix = self._mdag.atoms.indices
+        ix = self._mdag.indices
         full_ag_atypes = reference_array.copy()
         # full_ag_hbonds = reference_array[:, :6].copy()
         full_ag_atypes[ix] = ag_types
@@ -187,7 +195,7 @@ class Universe:
         return self._file_loader.to(fmt, *args)
 
     def __repr__(self):
-        return f"<Lahuta Universe with {self._mdag.atoms.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self._mdag.n_atoms} atoms>"
 
     def __str__(self):
         return self.__repr__()

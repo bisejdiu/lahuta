@@ -17,9 +17,8 @@ class SmartsMatcherBase(ABC):
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
 
-    def __init__(self, atom_types, n_atoms):
+    def __init__(self, atom_types):
         self.atom_types = atom_types
-        self.n_atoms = n_atoms
 
     @abstractmethod
     def compute(self, mol):

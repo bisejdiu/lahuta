@@ -132,9 +132,9 @@ class GemmiLoader(BaseLoader):
 
         universe.atoms.positions = self.coords_array  # type: ignore
 
-        self.ag = universe
+        self.ag = universe.atoms
 
-        return universe
+        return self.ag
 
     def to_mol(self):
         obmol = OBMol()
@@ -180,6 +180,7 @@ class TopologyLoader(BaseLoader):
     def from_mda(cls, ag):
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
+        top_loader.ag._u = ag.universe.copy()
         (
             top_loader._chains,
             top_loader._residues,

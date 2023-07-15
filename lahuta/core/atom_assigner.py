@@ -2,8 +2,10 @@ import numpy as np
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
-from lahuta.core.assigners import (LegacyProteinTypeAssigner,
-                                   VectorizedProteinTypeAssigner)
+from lahuta.core.assigners import (
+    LegacyProteinTypeAssigner,
+    VectorizedProteinTypeAssigner,
+)
 from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher
 
 
@@ -17,16 +19,11 @@ class AtomTypeAssigner:
     (sequential or parallel) and protein atom type assignment (vectorized or legacy).
     """
 
-    def __init__(self, mol, atomgroup, parallel=False, legacy=False):
-        self.mol = mol
-        self.atomgroup = atomgroup
-        self.protein_atomgroup = self.atomgroup.select_atoms("protein")
-        self.n_atoms = max(
-            self.atomgroup.indices.max(), self.protein_atomgroup.indices.shape[0]
-        )
-        # (
-        #     self.atomgroup.universe.atoms.n_atoms
-        # )  # self.atomgroup.indices.max()
+    def __init__(self, luni, parallel=False, legacy=False):
+        self.mol = luni.to("mol")
+        self.mda = luni.to("mda")
+        self.mapping = luni._mapping
+        self.protein_ag = self.mda.select_atoms("protein")
 
         self.atypes = AVAILABLE_ATOM_TYPES
         self.parallel = parallel
@@ -51,7 +48,7 @@ class AtomTypeAssigner:
         Returns an array of atom types as defined in the SmartsPatternRegistry dictionary.
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
-        smarts_matcher = smarts_matcher_class(SmartsPatternRegistry, self.n_atoms)
+        smarts_matcher = smarts_matcher_class(SmartsPatternRegistry)
         return smarts_matcher.compute(self.mol)
 
     def _compute_water_types(self, atypes_array):
@@ -62,17 +59,19 @@ class AtomTypeAssigner:
         types for all water molecules in the atomgroup. Returns the modified
         atypes_array.
         """
-        water_ag = self.atomgroup.select_atoms(
+        water_ag = self.mda.select_atoms(
             "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
         )
-        max_index = np.max(self.atomgroup.universe.atoms.indices)
-        atom_mapping = np.full(max_index + 1, -1)
-        atom_mapping[self.atomgroup.atoms.indices] = np.arange(self.atomgroup.n_atoms)
+        # max_index = np.max(self.mda.universe.atoms.indices)
+        # atom_mapping = np.full(max_index + 1, -1)
+        # atom_mapping[self.mda.atoms.indices] = np.arange(self.mda.n_atoms)
 
         # TODO: vectorize this
+        hbond_acceptor = self.atypes["hbond_acceptor".upper()].value
+        hbond_donor = self.atypes["hbond_donor".upper()].value
         for atom in water_ag:
-            atypes_array[atom_mapping[atom.index], self.atypes["hbond_acceptor".upper()].value] = 1
-            atypes_array[atom_mapping[atom.index], self.atypes["hbond_donor".upper()].value] = 1
+            atypes_array[self.mapping[atom.index], hbond_acceptor] = 1
+            atypes_array[self.mapping[atom.index], hbond_donor] = 1
 
         return atypes_array
 
@@ -87,7 +86,7 @@ class AtomTypeAssigner:
         """
         protein_type_assigner_class = self.protein_type_assigner_classes[self.legacy]
 
-        protein_type_assigner = protein_type_assigner_class(self.protein_atomgroup)
+        protein_type_assigner = protein_type_assigner_class(self.protein_ag)
         return protein_type_assigner.compute(atypes_array)
 
     def assign_atom_types(self):
@@ -101,7 +100,7 @@ class AtomTypeAssigner:
         atypes_array = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)))
 
         # atypes_array = self._compute_smarts_types()
-        if self.atomgroup.n_atoms != self.protein_atomgroup.n_atoms:
+        if self.mda.n_atoms != self.protein_ag.n_atoms:
             atypes_array = self._compute_smarts_types()
 
         atypes_array = self._compute_water_types(atypes_array)
