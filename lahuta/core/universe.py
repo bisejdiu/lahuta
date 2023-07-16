@@ -6,7 +6,6 @@ from typing import Literal
 
 import MDAnalysis as mda
 import numpy as np
-from MDAnalysis.core.topology import Topology
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
