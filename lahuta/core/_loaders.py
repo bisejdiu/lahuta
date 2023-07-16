@@ -76,7 +76,7 @@ class BaseLoader(ABC):
 
 class GemmiLoader(BaseLoader):
     def __init__(self, file_path, is_pdb=False):
-        print("Using GemmiLoader")
+        # print("Using GemmiLoader")
         super().__init__(file_path)
         if is_pdb:
             structure = gemmi.read_pdb(self.file_path)
