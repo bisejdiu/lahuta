@@ -79,8 +79,60 @@ def matching_indices(arr1, arr2):
     """
 
     idx = (arr1[:, None] == arr2).all(-1).any(1)
-    # TODO: simplify this (just return the indices)
-    return np.where(idx)[0]
+    return idx
+
+
+def optimized_matching_pairs(arr1, set2):
+    """Return elements in `arr1` that are in `arr2`.
+
+    Parameters
+    ----------
+    arr1 : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+    arr2 : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+
+    Returns
+    -------
+    arr : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+
+    """
+    # Convert arrays to sets of tuples
+    set1 = set(map(tuple, arr1))
+    if not isinstance(set2, set):
+        set2 = set(map(tuple, set2))
+
+    # Find common elements
+    common = np.array(list(set1 & set2))
+
+    return common
+
+
+def np_optimized_matching_pairs(arr1, arr2):
+    """Return elements in `arr1` that are in `arr2`.
+
+    Parameters
+    ----------
+    arr1 : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+    arr2 : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+
+    Returns
+    -------
+    arr : np.ndarray
+        An array of shape (n, 2) where each row is a pair of atom indices.
+    """
+
+    # Convert the pairs in both arrays to complex numbers
+    arr1_complex = arr1[:, 0] + 1j * arr1[:, 1]
+    arr2_complex = arr2[:, 0] + 1j * arr2[:, 1]
+
+    # Get common complex numbers
+    common_complex = np.in1d(arr1_complex, arr2_complex)
+
+    return common_complex
 
 
 def non_matching_indices(arr1, arr2):
@@ -101,10 +153,7 @@ def non_matching_indices(arr1, arr2):
     """
     idx = (arr1[:, None] != arr2).any(-1).all(1)
 
-    # TODO: simplify this (just return the indices)
-    return np.where(idx)[0]
-    # simplify return above
-    # return idx
+    return idx
 
 
 # These are all set operations we want to implement in our classes
