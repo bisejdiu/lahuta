@@ -20,30 +20,6 @@ def get_bonded_atoms(mol):
     return bonds
 
 
-def is_covalent(mol, pair: np.ndarray):
-    """Check if two atoms are bonded.
-
-    Parameters
-    ----------
-    pair : np.ndarray
-        An array of shape (2,) where each row is a pair of atom indices.
-
-    pair : np.ndarray
-        An array of shape (2,) where each row is a pair of atom indices.
-
-    Returns
-    -------
-    boolean: bool
-        True if the pair is bonded, False otherwise.
-
-    """
-    ix1, ix2 = pair
-    for cov_bonded in ob.OBAtomAtomIter(mol.GetAtom(int(ix1) + 1)):
-        if cov_bonded.GetId() == ix2:
-            return True
-    return False
-
-
 def covalent_neighbors(ns: NeighborPairs):
     """Find neighbors that are covalently bonded.
 
