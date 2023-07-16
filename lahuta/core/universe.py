@@ -12,7 +12,6 @@ from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
-from lahuta.core.groups import AtomGroup
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
@@ -77,7 +76,7 @@ class Universe:
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
-    def _build_atom_mapping(self, ag: AtomGroup):
+    def _build_atom_mapping(self, ag: mda.AtomGroup):
         max_index = np.max(ag.universe.atoms.indices)
         atom_mapping = np.full(max_index + 1, -1)
         atom_mapping[ag.indices] = np.arange(ag.n_atoms)
