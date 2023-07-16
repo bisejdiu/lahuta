@@ -1,5 +1,3 @@
-from functools import partial
-
 import numpy as np
 from openbabel import openbabel as ob
 
@@ -10,6 +8,19 @@ from lahuta.utils.array_utils import difference, np_optimized_matching_pairs
 
 
 def get_bonded_atoms(mol):
+    """Get the bonded atoms of a molecule.
+
+    Parameters
+    ----------
+    mol : openbabel.OBMol
+        The molecule object.
+
+    Returns
+    -------
+    bonds : np.ndarray
+        An array of shape (n_bonds, 2) where each row contains the indices of the atoms
+        in the bond.
+    """
     bonds = np.zeros((mol.NumBonds(), 2))
     for ix, bond in enumerate(ob.OBMolBondIter(mol)):
         atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
