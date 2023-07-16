@@ -2,6 +2,7 @@
 Placehoder for the atom types and radii.
 """
 import numpy as np
+from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
 from openbabel import openbabel as ob
 
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
@@ -135,18 +136,37 @@ def assign_radii(mol):
     return atom_radii
 
 
-def find_hydrogen_bonded_atoms(mol):
+def find_hydrogen_bonded_atoms(luni):
     """
     Find hydrogen bonded atoms in the molecule.
     """
     # hbond_indices = np.zeros(mol.NumAtoms(), dtype=bool)
-    hbond_array = np.zeros((mol.NumAtoms(), 6), dtype=int)
+    # hbond_array = np.zeros((mol.NumAtoms(), 6), dtype=int)
+    ag_atoms = luni.to("mda").atoms
+    hbond_array = np.zeros((ag_atoms.universe.atoms.n_atoms, 6), dtype=int)
+    mol = luni.to("mol")
+
+    # will give -1 for atoms not in the atomgroup
+    max_index = np.max(ag_atoms.indices)
+    atom_mapping = np.full(max_index + 1, -1)
+    atom_mapping[np.arange(ag_atoms.n_atoms)] = ag_atoms.indices
 
     for atom in ob.OBMolAtomIter(mol):
         if atom.ExplicitHydrogenCount():
             for ix, atom2 in enumerate(ob.OBAtomAtomIter(atom)):
                 if atom2.GetAtomicNum() == 1:
-                    # hbond_indices[atom.GetId()] = True
-                    hbond_array[atom.GetId(), ix] = atom2.GetId()
+                    atom1_id = atom_mapping[atom.GetId()]
+                    atom2_id = atom_mapping[atom2.GetId()]
+                    hbond_array[atom1_id, ix] = atom2_id
 
     return hbond_array
+
+
+def v_radii_assignment(elements):
+    vdwradii = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
+
+    def v_capitalize(array, mapping):
+        vfunc = np.vectorize(mapping.get)
+        return vfunc(array)
+
+    return v_capitalize(elements, vdwradii)

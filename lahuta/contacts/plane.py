@@ -128,7 +128,7 @@ FACTORY_CONTACTS: Dict[str, APContactStrategy] = {
 class AtomPlaneContacts:
     def __init__(self, ua):
         self.ua = ua
-        self.rings = perceive_rings(self.ua.universe.mol)
+        self.rings = perceive_rings(self.ua.to("mol"))
         self.angles = None
 
         for name, strategy in FACTORY_CONTACTS.items():
@@ -146,7 +146,7 @@ class AtomPlaneContacts:
     def compute_contacts(self, **kwargs):
         ppairs, distances = self._calculate_distances()
 
-        neighbors = NeighborPairs(self.ua.atoms, ppairs, distances)
+        neighbors = NeighborPairs(self.ua, ppairs, distances)
         n = neighbors.difference(neighbors.type_filter("aromatic", partner=2))
 
         # n._angles = self._calculate_angles(n.pairs)  # type: ignore
@@ -161,7 +161,10 @@ class AtomPlaneContacts:
         reference = np.array([ring["center"] for ring in self.rings])
         max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
-        atomgroup = self.ua.universe.select_atoms("not element H")
+        atomgroup = self.ua.to("mda").atoms  # .select_atoms("not element H")
+        # print("-----", self.ua)
+        # print("self.ua.to("mda")", self.ua.to("mda").n_atoms)
+        # print("atomgroup", atomgroup.indices.max(), atomgroup.n_atoms)
         pairs, distances = mda_distances.capped_distance(
             reference, atomgroup.positions, max_cutoff, return_distances=True
         )
@@ -169,7 +172,7 @@ class AtomPlaneContacts:
         ppairs = atomgroup[pairs].indices
         ppairs[:, 0] = pairs[:, 0]
 
-        return self.ua.atoms[ppairs].indices, distances
+        return self.ua.to("mda").universe.atoms[ppairs].indices, distances
 
     def _calculate_angles(self, ppairs):
         ring_centers = np.array([ring["center"] for ring in self.rings])
@@ -179,7 +182,8 @@ class AtomPlaneContacts:
         ring_normals = np.take(ring_normals, ppairs[:, 0], axis=0)
 
         angles = vector_angle(
-            ring_normals, ring_centers - self.ua.atoms[ppairs[:, 1]].positions
+            ring_normals,
+            ring_centers - self.ua.to("mda").universe.atoms[ppairs[:, 1]].positions,
         )
 
         return angles
@@ -188,7 +192,7 @@ class AtomPlaneContacts:
 class PlanePlaneContacts:
     def __init__(self, ua: Union[Universe, mda.AtomGroup]):
         self.ua = ua
-        self.rings = perceive_rings(self.ua.universe.mol)
+        self.rings = perceive_rings(self.ua.to("mol"))
 
     def compute_contacts(self, **kwargs):
         ring_ids = np.arange(len(self.rings))
@@ -222,8 +226,8 @@ class PlanePlaneContacts:
             if int_type is None:
                 continue
 
-            resid1 = self.ua.atoms[ring1["atoms"]].indices[0]
-            resid2 = self.ua.atoms[ring2["atoms"]].indices[0]
+            resid1 = self.ua.to("mda").atoms[ring1["atoms"]].indices[0]
+            resid2 = self.ua.to("mda").atoms[ring2["atoms"]].indices[0]
 
             pairs.append([resid1, resid2])
             pair_distances.append(distances[ix])
@@ -400,7 +404,7 @@ class PPDataFrameFactory:
     ):
         """A class for storing and manipulating contact data."""
 
-        nag = pcontacts.ua.atoms[pcontacts.pairs]
+        nag = pcontacts.ua.to("mda").atoms[pcontacts.pairs]
         col1, col2 = nag[:, 0], nag[:, 1]
 
         self.methods = ["resids", "resnames", "names", "indices"]

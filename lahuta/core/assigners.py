@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
 
 
 class ProteinTypeAssignerBase(ABC):
@@ -14,12 +15,11 @@ class ProteinTypeAssignerBase(ABC):
     and LegacyProteinTypeAssigner.
     """
 
-    def __init__(self, protein_atomgroup, ta):
+    def __init__(self, protein_atomgroup):
         self.protein_atomgroup = protein_atomgroup
-        self.ta = ta
 
     @abstractmethod
-    def compute(self, atypes_array, atypes):
+    def compute(self, atypes_array):
         """
         Abstract method for computing protein atom types.
         """
@@ -35,7 +35,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
     abstract base class.
     """
 
-    def compute(self, atypes_array, atypes):
+    def compute(self, atypes_array):
         # print("atypes", atypes)
         # resname, atom_name = self.ta["resname"], self.ta["name"]
 
@@ -44,7 +44,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
         resname_str = self.protein_atomgroup.resnames.astype(str)
         atom_name_str = self.protein_atomgroup.names.astype(str)
-        atype_names = [member.name.lower() for member in atypes]
+        atype_names = [member.name.lower() for member in list(ATypes)]
 
         atom_id_labels = np.core.defchararray.add(  # type: ignore
             np.core.defchararray.strip(resname_str),  # type: ignore
@@ -54,7 +54,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
         # prot_atom_types_array = [
         #     list(atom_ids_label_set) for atom_ids_label_set in PROT_ATOM_TYPES.values()
         # ]
-        prot_atom_types_array = [list(PROT_ATOM_TYPES.get(key)) for key in atype_names]
+        prot_atom_types_array = [list(PROT_ATOM_TYPES[key]) for key in atype_names]
         # prot_atom_types_array = []
         # for key in atypes.keys():
         #     print("adding", key, atypes[key])
@@ -82,24 +82,15 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
     to proteins. Inherits from the ProteinTypeAssignerBase abstract base class.
     """
 
-    def compute(self, atypes_array, atypes):
-        # print("--> ", atypes)
-        # print("--> ", [member.name for member in atypes])
+    def compute(self, atypes_array):
         for residue in self.protein_atomgroup.residues:
             for atom in residue.atoms:
                 for atom_type in list(PROT_ATOM_TYPES.keys()):
-                    # print("1", atom_type.upper())
-                    # print(
-                    #     atom_type,
-                    #     atom_type.upper(),
-                    #     atypes[atom_type.upper()],  # abc
-                    #     atypes[atom_type.upper()].value,
-                    # )
-                    atypes_array[atom.index, atypes[atom_type.upper()].value] = 0
+                    atypes_array[atom.index, ATypes[atom_type.upper()].value] = 0
 
                 for atom_type, atom_ids in PROT_ATOM_TYPES.items():
                     atom_id = residue.resname.strip() + atom.name.strip()
                     if atom_id in atom_ids:
-                        atypes_array[atom.index, atypes[atom_type.upper()].value] = 1
+                        atypes_array[atom.index, ATypes[atom_type.upper()].value] = 1
 
         return atypes_array

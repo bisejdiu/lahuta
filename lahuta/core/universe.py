@@ -2,165 +2,154 @@
 Placeholder for the universe module.
 """
 
+from typing import Literal
 
 import MDAnalysis as mda
 import numpy as np
 from MDAnalysis.core.topology import Topology
-from MDAnalysis.lib.nsgrid import FastNS
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
-from lahuta.core.base import FileLoader
-from lahuta.core.loaders import CIFLoader, PDBLoader
-from lahuta.core.neighbors import NeighborPairs
+from lahuta.core.groups import AtomGroup
+from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.utils.atom_types import assign_radii, find_hydrogen_bonded_atoms
-from lahuta.utils.mda import mda_psuedobox_from_atomgroup
+from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
 
 
 class Universe:
-    def __init__(self, file_name=None, *args):
-        if isinstance(file_name, Topology):
-            raise NotImplementedError(
-                "Initializing Universe from a Topology object is not supported."
-            )
+    def __init__(self, *args):
+        self._mdag = None
+        initializer = self._validate_input(*args)
+        initializer(*args)
 
-        file_loader = self._create_file_loader(file_name if file_name else args[0])
-        self.mol, self._universe = file_loader.load()
+        self.atoms, self.residues, self.chains = self._file_loader
 
-        self.atoms._u = self
-
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mol)
-
-        top_attr = {
-            "resname": self.atoms.resnames,
-            "name": self.atoms.names,
-        }
-        self.topology_attributes = top_attr
-        atomtype_assigner = AtomTypeAssigner(
-            self.mol, self.atoms, top_attr, legacy=False, parallel=False
-        )
-        atypes_array = atomtype_assigner.assign_atom_types()
-
+        self._mol = None
+        self.hbond_array = None
+        self._ready = False
+        self._mapping = None
         self._topattr_handler = AtomAttrClassHandler()
 
-        self._extend_topology("vdw_radii", assign_radii(self.mol))
-        # self._extend_topology("atom_types", atypes_array)
-        for atom_type in AVAILABLE_ATOM_TYPES:
-            self._extend_topology(
-                atom_type.name.lower(), atypes_array[:, atom_type.value]
+    def _validate_input(self, *args):
+        if not args:
+            raise ValueError("No input provided")
+
+        if isinstance(args[0], mda.AtomGroup):
+            if len(args) != 1:
+                raise ValueError(
+                    "When passing an MDAnalysis.AtomGroup instance, no other arguments are allowed"
+                )
+            return self._initialize_from_universe
+
+        if not all(isinstance(arg, str) for arg in args):
+            raise ValueError(
+                "Input must be either an MDAnalysis.AtomGroup instance or a list of file names"
             )
+        return self._initialize_from_files
 
-    @property
-    def universe(self):
-        return self
+    def _initialize_from_universe(self, *args):
+        self._file_loader = TopologyLoader.from_mda(args[0])
+        self._mdag = self._file_loader.to("mda")
 
-    @staticmethod
-    def _create_file_loader(file_name: str):  # -> FileLoader:
-        file_format, is_pdb = Universe.get_format(file_name)
-        if file_format is not None:
-            return CIFLoader(file_name, is_pdb=is_pdb)
-        else:
-            # TODO: Channel to an MDA loader
-            print("Not Supported Format")
-            return PDBLoader(file_name)
+    def _initialize_from_files(self, *files):
+        self._file_loader = self._get_file_loader(files)
+        self._mdag = self._file_loader.to("mda")
+
+    def _get_file_loader(self, files: tuple):
+        # GemmiLoader can only handle one file and its format should be supported
+        if len(files) == 1:
+            file_name = files[0]
+            file_format, is_pdb = Universe.get_format(file_name)
+            if file_format:
+                return GemmiLoader(file_name, is_pdb=is_pdb)
+
+        # If there are multiple files or the single file is not supported by GemmiLoader,
+        # then use TopologyLoader
+        return TopologyLoader(*files)
 
     def _extend_topology(self, attrname: str, values: np.ndarray):
+        # print("value size", values.size, values.shape)
         self._topattr_handler.init_topattr(attrname, attrname)
-        self.add_TopologyAttr(attrname, values)
+        self._mdag.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
-    # def compute_neighbors(self, *args, **kwargs):
-    #     return self.atoms.compute_neighbors(*args, **kwargs)
+    def _build_atom_mapping(self, ag: AtomGroup):
+        max_index = np.max(ag.universe.atoms.indices)
+        atom_mapping = np.full(max_index + 1, -1)
+        atom_mapping[ag.indices] = np.arange(ag.n_atoms)
+        return atom_mapping
 
+    def ready(self):
+        """
+        Prepare instance for computations by transforming the molecule and assigning atom types.
+        """
+
+        self._mol = self._file_loader.to("mol")
+        self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
+
+        # TODO: remove array from the variable names by instead using type hints
+        self.hbond_array = find_hydrogen_bonded_atoms(self)
+        # print("...", hbond_array)
+        # print("self._mdag", self._mdag, type(self._mdag))
+        atomtype_assigner = AtomTypeAssigner(self)
+        ag_types = atomtype_assigner.assign_atom_types()
+        og_atoms = self._mdag.universe.atoms
+
+        # ag_types = AtomTypeAssigner(self._mol, self._mdag).assign_atom_types()
+        reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
+        # reference_hbond_array = np.zeros((og_atoms.n_atoms, 6), dtype=int)
+
+        ix = self._mdag.indices
+        full_ag_atypes = reference_array.copy()
+        # full_ag_hbonds = reference_array[:, :6].copy()
+        full_ag_atypes[ix] = ag_types
+        # reference_hbond_array[ix] = hbond_array
+        # self.hbond_array = reference_hbond_array
+
+        # print("...2", self.hbond_array)
+
+        # self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
+        self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
+        for atom_type in AVAILABLE_ATOM_TYPES:
+            self._extend_topology(
+                atom_type.name.lower(), full_ag_atypes[:, atom_type.value]
+            )
+
+        self._ready = True
+
+    # TODO: rename to find_neighbors
     def compute_neighbors(
         self,
         radius=5.0,
-        ignore_hydrogens=True,
-        # hbonds=False,
-        skip_adjacent=True,
         res_dif=1,
     ):
-        """Compute the neighbors of each atom in the Universe.
-
-        Parameters
-        ----------
-        radius : float, optional
-            The cutoff radius. Default is 5.0.
-        ignore_hydrogens : bool, optional
-            Whether to ignore hydrogens. Default is True.
-        hbonds : bool, optional
-            Whether to include hydrogen bonds. Default is False.
-
-        Returns
-        -------
-        neighbors : np.ndarray
-            An array of shape (n_atoms, n_neighbors) where each row contains the
-            indices of the neighbors of the atom in the row.
         """
-        if ignore_hydrogens:
-            atomgroup = self.select_atoms("not name H*")
-        else:
-            atomgroup = self.atoms
+        Compute the neighbors of each atom in the Universe.
 
-        pairs, distances = self.get_neighbors(atomgroup, radius)
+        Args:
+        ----
+        radius (float, optional): The cutoff radius. Default is 5.0.
+        skip_adjacent (bool, optional): Whether to skip adjacent. Default is True.
+        res_dif (int, optional): The residue difference to consider. Default is 1.
 
-        if skip_adjacent:
-            idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
-            pairs = pairs[idx]
-            distances = distances[idx]
-
-        return NeighborPairs(self.atoms, pairs, distances)
-
-    def get_neighbors(self, atomgroup=None, radius=5.0):
-        """Get the neighbors of an atomgroup.
-
-        Parameters
-        ----------
-        atomgroup : AtomGroup
-            The atomgroup to get the neighbors of.
-
-        Returns
+        Returns:
         -------
-        pairs : np.ndarray
-            An array of shape (n_pairs, 2) where each row contains the indices of
-            the atoms in the pair.
-        distances : np.ndarray
-            An array of shape (n_pairs,) containing the distances of each pair.
+        NeighborPairs : np.ndarray
+            An array of shape (n_atoms, n_neighbors) where each row contains the indices of the neighbors of the atom in the row.
+
         """
-        if atomgroup is None:
-            atomgroup = self.atoms
+        if not self._ready:
+            self.ready()
 
-        shift_coords, pseudobox = mda_psuedobox_from_atomgroup(atomgroup)
-
-        gridsearch = FastNS(
-            cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
+        neighbors = NeighborSearch(self)
+        return neighbors.compute(
+            radius=radius,
+            res_dif=res_dif,
         )
-        neighbors = gridsearch.self_search()
-
-        return atomgroup[neighbors.get_pairs()].indices, neighbors.get_pair_distances()
-
-    def _remove_adjacent_residue_pairs(self, pairs, res_dif=1):
-        """Remove pairs where the difference in residue ids is less than `res_dif`.
-
-        Parameters
-        ----------
-        pairs : np.ndarray
-            An array of shape (n_pairs, 2) where each row is a pair of atom indices.
-        res_dif : int, optional
-            The difference in residue ids to remove. Default is 1.
-
-        Returns
-        -------
-        pairs : np.ndarray
-            An array of shape (n_pairs, 2) where each row is a pair of atom indices.
-
-        """
-        resids = self.atoms.resids[pairs]
-        return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
 
     @staticmethod
     def get_format(file_name):
@@ -179,17 +168,28 @@ class Universe:
                 return fmt, is_pdb
         return None, False
 
-    def __getattr__(self, attr):
-        # Delegate attribute access to the created universe
-        return getattr(self._universe, attr)
+    def to(self, fmt: Literal["mda", "mol"], *args):
+        """
+        Convert the Universe to a different format.
 
-    def __dir__(self):
-        universe_dir = set(dir(self._universe))
-        self_dir = set(super().__dir__())
-        return sorted(self_dir.union(universe_dir))
+        Args:
+        ----
+        fmt (str): The format to convert to. Currently supported formats are "mda" and "mol".
+        args (list): Trajectory file name(s). Only required if converting to "mda".
+
+        Returns:
+        -------
+        Universe : Universe
+            A new Universe instance in the specified format.
+        """
+        if fmt == "mol" and self._mol is not None:
+            return self._mol
+        # if fmt == "mda":
+        #     return self._mdag
+        return self._file_loader.to(fmt, *args)
 
     def __repr__(self):
-        return f"<Lahuta Universe with {self.atoms.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self._mdag.n_atoms} atoms>"
 
     def __str__(self):
         return self.__repr__()

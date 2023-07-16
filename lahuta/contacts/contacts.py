@@ -47,12 +47,19 @@ def covalent_neighbors(ns: NeighborPairs):
         A NeighborPairs object containing only covalent neighbors.
     """
 
-    mol_is_covale = partial(is_covalent, ns._atoms.universe.mol)
-    cov_pair_indices = np.apply_along_axis(mol_is_covale, 1, ns.pairs)
+    mol_is_covalent = partial(is_covalent, ns.luni.to("mol"))
+    if ns.pairs.shape[0] != 0:
+        mapped_pairs = ns.luni._mapping[ns.pairs]
+        cov_pair_indices = np.apply_along_axis(mol_is_covalent, 1, mapped_pairs)
 
-    pairs = ns._pairs[cov_pair_indices]
-    distances = ns._distances[cov_pair_indices]
-    return NeighborPairs(ns._atoms, pairs, distances)
+        pairs = ns.pairs[cov_pair_indices]
+        distances = ns.distances[cov_pair_indices]
+    else:
+        pairs = np.array([])
+        distances = np.array([])
+
+    return ns.clone(pairs, distances)
+    # return NeighborPairs(ns.luni, pairs, distances)
 
 
 def metalic_neighbors(
@@ -75,7 +82,7 @@ def metalic_neighbors(
         A NeighborPairs object containing only metalic contacts.
     """
     metal_indices = (
-        ns._atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
+        ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
     )
 
     acceptor_metal = (
@@ -235,22 +242,20 @@ def vdw_neighbors(
         A NeighborPairs object containing only vdw contacts.
     """
 
-    vdw_radii = (
-        ns._atoms.vdw_radii[ns.pairs[:, 0]] + ns._atoms.vdw_radii[ns.pairs[:, 1]]
-    )
+    vdw_radii = ns.atoms.vdw_radii[ns.pairs[:, 0]] + ns.atoms.vdw_radii[ns.pairs[:, 1]]
 
     distance_mask = ns.distances <= vdw_radii + vdw_comp_factor
     vdw_comp_pairs = ns.pairs[distance_mask]
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
-        return NeighborPairs(ns._atoms, vdw_comp_pairs, vdw_distances)
+        return NeighborPairs(ns.luni, vdw_comp_pairs, vdw_distances)
 
     vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
     return NeighborPairs(
-        ns._atoms, vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices]
+        ns.luni, vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices]
     )
 
 

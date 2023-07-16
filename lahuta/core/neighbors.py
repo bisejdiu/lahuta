@@ -19,6 +19,13 @@ class HBondHandler:
         self.hbond_array = hbond_array
 
     def get_hbond_distances(self, attr_col, hbound_attr_col):
+        # print(
+        #     "...",
+        #     # self._atoms.n_atoms,
+        #     # self._atoms.indices.max(axis=0),
+        #     hbound_attr_col.atoms.indices.max(axis=0),
+        #     attr_col.atoms.indices.max(axis=0),
+        # )
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
@@ -50,14 +57,24 @@ class NeighborPairs:
     """A class for storing neighbor pairs."""
 
     # TODO:
-    def __init__(self, uniatom, pairs, distances):
-        self._atoms = uniatom.atoms
+    def __init__(self, luni, pairs, distances):
+        self.luni = luni
+        # self.atoms = luni.to("mda").atoms
+        self.atoms = luni.to("mda").atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)
 
-        self.hbond_array = uniatom.atoms.universe.hbond_array
-        self.hbond_handler = HBondHandler(self._atoms, self.hbond_array)
+        # print("uniatom type: ", type(uniatom))
+        # print("uniatom atoms type: ", type(uniatom.atoms))
+        # print("uniatom atoms universe type: ", type(uniatom.atoms.universe))
+        # print(
+        #     "uniatom atoms universe hbond_array type: ",
+        #     type(uniatom.atoms.universe.hbond_array),
+        # )
+        # print("-->", self.atoms.n_atoms, luni.hbond_array.shape)
+        self.hbond_array = luni.hbond_array
+        self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
 
     def _validate_inputs(self, pairs, distances):
@@ -74,7 +91,7 @@ class NeighborPairs:
         return pairs[indices], distances[indices]
 
     def _get_pair_column(self, partner):
-        return self._atoms[self.pairs[:, partner - 1]]
+        return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner):
         """Return attr_col and hbound_attr_col depending on the value of partner."""
@@ -194,7 +211,7 @@ class NeighborPairs:
         # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
-        self, partner: int = 0, vdw_comp_factor: float = 0.1
+        self, partner: int, vdw_comp_factor: float = 0.1
     ) -> "NeighborPairs":
         """Filter the pairs based on the distance between the hydrogen bonded atoms.
 
@@ -228,9 +245,7 @@ class NeighborPairs:
         #     # hbangles=self.hbond_angles,
         # )
 
-    def hbond_angle_filter(
-        self, partner: int = 0, weak: bool = False
-    ) -> "NeighborPairs":
+    def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
         """Filter the pairs based on the angle between the hydrogen bonded atoms.
 
         Parameters
@@ -248,10 +263,10 @@ class NeighborPairs:
         contact_type = "weak hbond" if weak else "hbond"
         attr_partner, hbound_attr_partner = self._get_partners(partner)
 
-        if self.hbond_angles is None:
-            self.hbond_angles = self.hbond_handler.get_hbond_angles(
-                attr_partner, hbound_attr_partner
-            )
+        # if self.hbond_angles is None:
+        self.hbond_angles = self.hbond_handler.get_hbond_angles(
+            attr_partner, hbound_attr_partner
+        )
 
         idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
@@ -505,7 +520,9 @@ class NeighborPairs:
         """
         if isinstance(item, int):
             return self.__class__(
-                self._atoms, self._pairs[item].reshape(1, 2), self._distances[item]
+                self.atoms,
+                self._pairs[item].reshape(1, 2),
+                self._distances[item],
             )
 
         # return self.__class__(self._atoms, self.pairs[item], self.distances[item])

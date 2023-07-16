@@ -1,3 +1,5 @@
+from typing import Dict, Set
+
 import lahuta.config._atom_type_strings as at
 
 HALOGENS = set(["F", "CL", "BR", "I", "AT"])
@@ -12,7 +14,7 @@ METALS = at.METALS
 STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS
 
 
-PROT_ATOM_TYPES = {
+PROT_ATOM_TYPES: Dict[str, Set[str]] = {
     "hbond_acceptor": at.HBOND_ACCEPTORS,
     "hbond_donor": at.HBOND_DONORS,
     "xbond_acceptor": at.XBOND_ACCEPTORS,
