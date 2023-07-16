@@ -6,31 +6,18 @@ from openbabel import openbabel as ob
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.utils.array_utils import difference
+from lahuta.utils.array_utils import difference, np_optimized_matching_pairs
 
 
-def is_covalent(mol, pair: np.ndarray):
-    """Check if two atoms are bonded.
+def get_bonded_atoms(mol):
+    bonds = np.zeros((mol.NumBonds(), 2))
+    for ix, bond in enumerate(ob.OBMolBondIter(mol)):
+        atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
+        bonds[ix, :] = (
+            (atom_idx1, atom_idx2) if atom_idx1 < atom_idx2 else (atom_idx2, atom_idx1)
+        )
 
-    Parameters
-    ----------
-    pair : np.ndarray
-        An array of shape (2,) where each row is a pair of atom indices.
-
-    pair : np.ndarray
-        An array of shape (2,) where each row is a pair of atom indices.
-
-    Returns
-    -------
-    boolean: bool
-        True if the pair is bonded, False otherwise.
-
-    """
-    ix1, ix2 = pair
-    for cov_bonded in ob.OBAtomAtomIter(mol.GetAtom(int(ix1) + 1)):
-        if cov_bonded.GetId() == ix2:
-            return True
-    return False
+    return bonds
 
 
 def covalent_neighbors(ns: NeighborPairs):
@@ -46,19 +33,10 @@ def covalent_neighbors(ns: NeighborPairs):
     NeighborPairs
         A NeighborPairs object containing only covalent neighbors.
     """
+    bonds = get_bonded_atoms(ns.luni.to("mol"))
+    indices = np_optimized_matching_pairs(ns.pairs + 1, bonds)
 
-    mol_is_covalent = partial(is_covalent, ns.luni.to("mol"))
-    if ns.pairs.shape[0] != 0:
-        mapped_pairs = ns.luni._mapping[ns.pairs]
-        cov_pair_indices = np.apply_along_axis(mol_is_covalent, 1, mapped_pairs)
-
-        pairs = ns.pairs[cov_pair_indices]
-        distances = ns.distances[cov_pair_indices]
-    else:
-        pairs = np.array([])
-        distances = np.array([])
-
-    return ns.clone(pairs, distances)
+    return ns.clone(ns.pairs[indices], ns.distances[indices])
     # return NeighborPairs(ns.luni, pairs, distances)
 
 

@@ -55,6 +55,8 @@ selections_res_difs = [
     ("protein and not resname LYS", 3),
     (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
     ("resid 1 to 50", 4),
+    ("resid 1 to 50 or resname HEC", 2),
+    ("(protein and not resname ARG LYS) or resname HEC", 2),
 ]
 
 
