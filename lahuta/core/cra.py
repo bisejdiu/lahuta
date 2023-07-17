@@ -1,66 +1,56 @@
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Union
 
 import numpy as np
-from MDAnalysis.core.universe import Universe
 
 if TYPE_CHECKING:
     from lahuta.core.loaders import GemmiLoader, TopologyLoader
 
 
 class Residues:
-    def __init__(self, name=None):
-        self.name = name
+    dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
 
-        self._resnames = np.array([], dtype="<U10")
-        self._resids = np.array([], dtype=int)
-        self._resindices = np.array([], dtype=int)
-        self._icodes = np.array([], dtype="<U10")
+    def __init__(self):
+        self._data = np.empty(0, dtype=self.dtype)
 
     @classmethod
     def from_gemmi(cls, gemmi_block):
         cls_instance = cls.__new__(cls)
-        cls_instance._resnames = np.array(gemmi_block.get("label_comp_id"))
-        cls_instance._resids = np.array(gemmi_block.get("auth_seq_id"), dtype=int)
-        cls_instance._icodes = np.array(
-            gemmi_block.get("pdbx_PDB_ins_code"), dtype=bool
-        )
-        _, cls_instance._resindices = np.unique(
-            cls_instance._resids, return_inverse=True
-        )
+
+        # Create structured array
+        resnames = np.array(gemmi_block.get("label_comp_id"))
+        resids = np.array(gemmi_block.get("auth_seq_id"), dtype=int)
+
+        data = np.empty(len(resnames), dtype=cls.dtype)
+        data["resname"] = resnames
+        data["resid"] = resids
+
+        cls_instance._data = data
 
         return cls_instance
 
     @classmethod
     def from_mda(cls, mda_universe):
         cls_instance = cls.__new__(cls)
-        cls_instance._resnames = mda_universe.atoms.resnames
-        cls_instance._resids = mda_universe.atoms.resids
-        cls_instance._resindices = mda_universe.atoms.resindices
-        cls_instance._icodes = mda_universe.atoms.icodes
+        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
+        cls_instance._data["resname"] = mda_universe.atoms.resnames
+        cls_instance._data["resid"] = mda_universe.atoms.resids
 
         return cls_instance
 
     @property
     def resnames(self):
-        return self._resnames
+        return self._data["resname"]
 
     @property
     def resids(self):
-        return self._resids
-
-    @property
-    def resindices(self):
-        return self._resindices
-
-    @property
-    def icodes(self):
-        return self._icodes
+        return self._data["resid"]
 
     def __len__(self):
-        return len(self._resnames)
+        return len(self._data)
 
     def __getitem__(self, index):
-        return self._resnames[index], self._resids[index], self._resindices[index]
+        return self._data[index]
 
     def __iter__(self):
         for i in range(len(self)):
@@ -75,17 +65,7 @@ class Atoms:
         }
     )
 
-    def __init__(self, name=None):
-        self.name = name
-
-        # Define dtype for an atom
-        # self.dtype = np.dtype(
-        #     {
-        #         "names": ["name", "id", "element", "type"],
-        #         "formats": ["<U10", "int", "<U10", "<U10"],
-        #     }
-        # )
-
+    def __init__(self):
         self._data = np.empty(0, dtype=self.dtype)
 
     @classmethod
@@ -105,13 +85,15 @@ class Atoms:
         return cls_instance
 
     @classmethod
-    def from_mda(cls, mda_universe):
+    def from_mda(cls, uv):
         cls_instance = cls.__new__(cls)
-        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
-        cls_instance._data["name"] = mda_universe.atoms.names
-        cls_instance._data["id"] = mda_universe.atoms.ids
-        cls_instance._data["element"] = mda_universe.atoms.elements
-        cls_instance._data["type"] = mda_universe.atoms.types
+        data = np.empty(len(uv.atoms), dtype=cls_instance.dtype)
+        data["name"] = uv.atoms.names
+        data["id"] = uv.atoms.ids
+        data["element"] = uv.atoms.elements
+        data["type"] = uv.atoms.types
+
+        cls_instance._data = data
 
         return cls_instance
 
@@ -132,6 +114,77 @@ class Atoms:
         return self._data["element"]
 
     def __len__(self):
+        return self._data.size
+
+    def __getitem__(self, index):
+        return self._data[index]
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
+
+
+class Chains:
+    dtype = np.dtype(
+        {"names": ["label", "auth", "id"], "formats": ["<U10", "<U10", "int"]}
+    )
+
+    def __init__(self, name=None):
+        self.name = name
+        self._data = np.empty(0, dtype=self.dtype)
+
+        self.mapping = {}
+
+    @classmethod
+    def from_gemmi(cls, gemmi_block):
+        cls_instance = cls.__new__(cls)
+
+        # Create structured array
+        labels = np.array(gemmi_block.get("label_asym_id"))
+        auths = np.array(gemmi_block.get("auth_asym_id"))
+        _, ids = np.unique(auths, return_inverse=True)
+        ids += 1
+
+        data = np.empty(len(labels), dtype=cls.dtype)
+        data["label"] = labels
+        data["auth"] = auths
+        data["id"] = ids
+
+        cls_instance._data = data
+        cls_instance.mapping = dict(zip(auths, ids))
+
+        return cls_instance
+
+    @classmethod
+    def from_mda(cls, mda_universe):
+        cls_instance = cls.__new__(cls)
+        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
+        cls_instance._data["label"] = mda_universe.atoms.chainIDs
+        cls_instance._data["auth"] = mda_universe.atoms.chainIDs
+        _, cls_instance._data["id"] = np.unique(
+            cls_instance._data["auth"], return_inverse=True
+        )
+        cls_instance._data["id"] += 1
+
+        cls_instance.mapping = dict(
+            zip(cls_instance._data["auth"], cls_instance._data["id"])
+        )
+
+        return cls_instance
+
+    @property
+    def labels(self):
+        return self._data["label"]
+
+    @property
+    def auths(self):
+        return self._data["auth"]
+
+    @property
+    def ids(self):
+        return self._data["id"]
+
+    def __len__(self):
         return len(self._data)
 
     def __getitem__(self, index):
@@ -142,131 +195,10 @@ class Atoms:
             yield self[i]
 
 
-# class Atoms:
-#     def __init__(self, name=None):
-#         self.name = name
-
-#         self._names = np.array([], dtype="<U10")
-#         self._ids = np.array([], dtype=int)
-#         self._ix = np.array([], dtype=int)  # re-indexed ids
-#         self._elements = np.array([], dtype="<U10")
-#         self._types = np.array([], dtype="<U10")
-
-#     @classmethod
-#     def from_gemmi(cls, gemmi_block):
-#         cls_instance = cls.__new__(cls)
-#         cls_instance._names = np.array(gemmi_block.get("label_atom_id"))
-#         cls_instance._ids = np.array(gemmi_block.get("id"), dtype=int)
-#         cls_instance._ix = cls_instance._ids.copy()
-#         cls_instance._elements = np.array(gemmi_block.get("type_symbol"))
-#         cls_instance._types = np.array(gemmi_block.get("type_symbol"))
-
-#         return cls_instance
-
-#     @classmethod
-#     def from_mda(cls, mda_universe):
-#         cls_instance = cls.__new__(cls)
-#         cls_instance._names = mda_universe.atoms.names
-#         cls_instance._ids = mda_universe.atoms.ids
-#         cls_instance._ix = np.arange(cls_instance._ids.size)
-#         cls_instance._elements = mda_universe.atoms.elements
-#         cls_instance._types = mda_universe.atoms.types
-
-#         return cls_instance
-
-#     @property
-#     def names(self):
-#         return self._names
-
-#     @property
-#     def types(self):
-#         return self._types
-
-#     @property
-#     def ids(self):
-#         return self._ids
-
-#     @property
-#     def ix(self):
-#         return self._ix
-
-#     @property
-#     def elements(self):
-#         return self._elements
-
-#     def __len__(self):
-#         return len(self._names)
-
-#     def __getitem__(self, index):
-#         return self._names[index], self._ids[index], self._elements[index]
-
-#     def __iter__(self):
-#         for i in range(len(self)):
-#             yield self[i]
-
-
-class Chains:
-    def __init__(self, name=None):
-        self.name = name
-
-        self._labels = np.array([], dtype="<U10")
-        self._auths = np.array([], dtype="<U10")
-        self._ids = np.array([], dtype=int)
-
-        self.mapping = {}
-
-    @classmethod
-    def from_gemmi(cls, gemmi_block):
-        cls_instance = cls.__new__(cls)
-        cls_instance._labels = np.array(gemmi_block.get("label_asym_id"))
-        cls_instance._auths = np.array(gemmi_block.get("auth_asym_id"))
-        _, cls_instance._ids = np.unique(cls_instance._auths, return_inverse=True)
-        cls_instance._ids += 1
-
-        cls_instance.mapping = dict(zip(cls_instance._auths, cls_instance._ids))
-
-        return cls_instance
-
-    @classmethod
-    def from_mda(cls, mda_universe):
-        cls_instance = cls.__new__(cls)
-        cls_instance._labels = mda_universe.atoms.chainIDs
-        cls_instance._auths = mda_universe.atoms.chainIDs
-        _, cls_instance._ids = np.unique(cls_instance._auths, return_inverse=True)
-        cls_instance._ids += 1
-
-        cls_instance.mapping = dict(zip(cls_instance._auths, cls_instance._ids))
-
-        return cls_instance
-
-    @property
-    def labels(self):
-        return self._labels
-
-    @property
-    def auths(self):
-        return self._auths
-
-    @property
-    def ids(self):
-        return self._ids
-
-    def __len__(self):
-        return len(self._labels)
-
-    def __getitem__(self, index):
-        return self._labels[index], self._ids[index]
-
-    def __iter__(self):
-        for i in range(len(self)):
-            yield self[i]
-
-
 class CRA:
     def __init__(self, obj: Union["GemmiLoader", "TopologyLoader"], site_data):
         obj_name = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
-        print("obj_map", obj_map)
         self._atoms = getattr(Atoms, obj_map)(site_data)
         self._residues = getattr(Residues, obj_map)(site_data)
         self._chains = getattr(Chains, obj_map)(site_data)
@@ -289,3 +221,13 @@ class CRA:
 
     def __iter__(self):
         return zip(self._chains, self._residues, self._atoms)
+
+
+# TODO: The idea is for an atom instance to also contain residue and chain information
+@dataclass
+class Atom:
+    def __init__(self, _name, _id, _element, _type):
+        self.name = _name
+        self.id = _id
+        self.element = _element
+        self.type = _type

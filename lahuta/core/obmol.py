@@ -77,7 +77,7 @@ class OBMol:
         if connections is None:
             connections = []
 
-        print("atoms", type(atoms))
+        # print("atoms", type(atoms))
 
         atoms_df = pd.DataFrame(
             {
@@ -94,17 +94,14 @@ class OBMol:
         ob_res = None
         added_residues = set()
         for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
-            # if idx > 1240:
-            #     print(idx + 1, chain, residue, atom)
-            _, chain_id = chain
-            resname, resnumber, _ = residue
-            # print("atom", atom, type(atom))
-            atom_name, atom_id, element, _ = atom
+            chain_id = chain["id"]
+            resname, resid = residue["resname"], residue["resid"]
+            atom_name, atom_id, element = atom["name"], atom["id"], atom["element"]
 
-            cra = (chain_id, resnumber, resname)
-            if ob_res is None or cra not in added_residues:
-                ob_res = self.create_residue_obmol(resnumber, resname, chain_id)
-                added_residues.add(cra)
+            _cra_ = (chain_id, resid, resname)
+            if ob_res is None or _cra_ not in added_residues:
+                ob_res = self.create_residue_obmol(resid, resname, chain_id)
+                added_residues.add(_cra_)
 
             self.create_atom_obmol(
                 idx, atom_name, int(atom_id), element, coords[idx], ob_res
