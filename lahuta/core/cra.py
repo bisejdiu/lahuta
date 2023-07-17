@@ -7,56 +7,6 @@ if TYPE_CHECKING:
     from lahuta.core.loaders import GemmiLoader, TopologyLoader
 
 
-class Residues:
-    dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
-
-    def __init__(self):
-        self._data = np.empty(0, dtype=self.dtype)
-
-    @classmethod
-    def from_gemmi(cls, gemmi_block):
-        cls_instance = cls.__new__(cls)
-
-        # Create structured array
-        resnames = np.array(gemmi_block.get("label_comp_id"))
-        resids = np.array(gemmi_block.get("auth_seq_id"), dtype=int)
-
-        data = np.empty(len(resnames), dtype=cls.dtype)
-        data["resname"] = resnames
-        data["resid"] = resids
-
-        cls_instance._data = data
-
-        return cls_instance
-
-    @classmethod
-    def from_mda(cls, mda_universe):
-        cls_instance = cls.__new__(cls)
-        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
-        cls_instance._data["resname"] = mda_universe.atoms.resnames
-        cls_instance._data["resid"] = mda_universe.atoms.resids
-
-        return cls_instance
-
-    @property
-    def resnames(self):
-        return self._data["resname"]
-
-    @property
-    def resids(self):
-        return self._data["resid"]
-
-    def __len__(self):
-        return len(self._data)
-
-    def __getitem__(self, index):
-        return self._data[index]
-
-    def __iter__(self):
-        for i in range(len(self)):
-            yield self[i]
-
-
 class Atoms:
     dtype = np.dtype(
         {
@@ -115,6 +65,56 @@ class Atoms:
 
     def __len__(self):
         return self._data.size
+
+    def __getitem__(self, index):
+        return self._data[index]
+
+    def __iter__(self):
+        for i in range(len(self)):
+            yield self[i]
+
+
+class Residues:
+    dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
+
+    def __init__(self):
+        self._data = np.empty(0, dtype=self.dtype)
+
+    @classmethod
+    def from_gemmi(cls, gemmi_block):
+        cls_instance = cls.__new__(cls)
+
+        # Create structured array
+        resnames = np.array(gemmi_block.get("label_comp_id"))
+        resids = np.array(gemmi_block.get("auth_seq_id"), dtype=int)
+
+        data = np.empty(len(resnames), dtype=cls.dtype)
+        data["resname"] = resnames
+        data["resid"] = resids
+
+        cls_instance._data = data
+
+        return cls_instance
+
+    @classmethod
+    def from_mda(cls, mda_universe):
+        cls_instance = cls.__new__(cls)
+        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
+        cls_instance._data["resname"] = mda_universe.atoms.resnames
+        cls_instance._data["resid"] = mda_universe.atoms.resids
+
+        return cls_instance
+
+    @property
+    def resnames(self):
+        return self._data["resname"]
+
+    @property
+    def resids(self):
+        return self._data["resid"]
+
+    def __len__(self):
+        return len(self._data)
 
     def __getitem__(self, index):
         return self._data[index]
