@@ -4,7 +4,7 @@ import numpy as np
 from MDAnalysis.core.universe import Universe
 
 if TYPE_CHECKING:
-    from lahuta.core.loaders import GemmiLoader
+    from lahuta.core.loaders import GemmiLoader, TopologyLoader
 
 
 class Residues:
@@ -68,66 +68,141 @@ class Residues:
 
 
 class Atoms:
+    dtype = np.dtype(
+        {
+            "names": ["name", "id", "element", "type"],
+            "formats": ["<U10", "int", "<U10", "<U10"],
+        }
+    )
+
     def __init__(self, name=None):
         self.name = name
 
-        self._names = np.array([], dtype="<U10")
-        self._ids = np.array([], dtype=int)
-        self._ix = np.array([], dtype=int)  # re-indexed ids
-        self._elements = np.array([], dtype="<U10")
-        self._types = np.array([], dtype="<U10")
+        # Define dtype for an atom
+        # self.dtype = np.dtype(
+        #     {
+        #         "names": ["name", "id", "element", "type"],
+        #         "formats": ["<U10", "int", "<U10", "<U10"],
+        #     }
+        # )
+
+        self._data = np.empty(0, dtype=self.dtype)
 
     @classmethod
     def from_gemmi(cls, gemmi_block):
         cls_instance = cls.__new__(cls)
-        cls_instance._names = np.array(gemmi_block.get("label_atom_id"))
-        cls_instance._ids = np.array(gemmi_block.get("id"), dtype=int)
-        cls_instance._ix = cls_instance._ids.copy()
-        cls_instance._elements = np.array(gemmi_block.get("type_symbol"))
-        cls_instance._types = np.array(gemmi_block.get("type_symbol"))
+
+        # Create structured array
+        label_atom_id = gemmi_block.get("label_atom_id")
+        data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
+        data["name"] = np.array(label_atom_id)
+        data["id"] = np.array(gemmi_block.get("id"), dtype=int)
+        data["element"] = np.array(gemmi_block.get("type_symbol"))
+        data["type"] = np.array(gemmi_block.get("type_symbol"))
+
+        cls_instance._data = data
 
         return cls_instance
 
     @classmethod
     def from_mda(cls, mda_universe):
         cls_instance = cls.__new__(cls)
-        cls_instance._names = mda_universe.atoms.names
-        cls_instance._ids = mda_universe.atoms.ids
-        cls_instance._ix = np.arange(cls_instance._ids.size)
-        cls_instance._elements = mda_universe.atoms.elements
-        cls_instance._types = mda_universe.atoms.types
+        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
+        cls_instance._data["name"] = mda_universe.atoms.names
+        cls_instance._data["id"] = mda_universe.atoms.ids
+        cls_instance._data["element"] = mda_universe.atoms.elements
+        cls_instance._data["type"] = mda_universe.atoms.types
 
         return cls_instance
 
     @property
     def names(self):
-        return self._names
+        return self._data["name"]
 
     @property
     def types(self):
-        return self._types
+        return self._data["type"]
 
     @property
     def ids(self):
-        return self._ids
-
-    @property
-    def ix(self):
-        return self._ix
+        return self._data["id"]
 
     @property
     def elements(self):
-        return self._elements
+        return self._data["element"]
 
     def __len__(self):
-        return len(self._names)
+        return len(self._data)
 
     def __getitem__(self, index):
-        return self._names[index], self._ids[index], self._elements[index]
+        return self._data[index]
 
     def __iter__(self):
         for i in range(len(self)):
             yield self[i]
+
+
+# class Atoms:
+#     def __init__(self, name=None):
+#         self.name = name
+
+#         self._names = np.array([], dtype="<U10")
+#         self._ids = np.array([], dtype=int)
+#         self._ix = np.array([], dtype=int)  # re-indexed ids
+#         self._elements = np.array([], dtype="<U10")
+#         self._types = np.array([], dtype="<U10")
+
+#     @classmethod
+#     def from_gemmi(cls, gemmi_block):
+#         cls_instance = cls.__new__(cls)
+#         cls_instance._names = np.array(gemmi_block.get("label_atom_id"))
+#         cls_instance._ids = np.array(gemmi_block.get("id"), dtype=int)
+#         cls_instance._ix = cls_instance._ids.copy()
+#         cls_instance._elements = np.array(gemmi_block.get("type_symbol"))
+#         cls_instance._types = np.array(gemmi_block.get("type_symbol"))
+
+#         return cls_instance
+
+#     @classmethod
+#     def from_mda(cls, mda_universe):
+#         cls_instance = cls.__new__(cls)
+#         cls_instance._names = mda_universe.atoms.names
+#         cls_instance._ids = mda_universe.atoms.ids
+#         cls_instance._ix = np.arange(cls_instance._ids.size)
+#         cls_instance._elements = mda_universe.atoms.elements
+#         cls_instance._types = mda_universe.atoms.types
+
+#         return cls_instance
+
+#     @property
+#     def names(self):
+#         return self._names
+
+#     @property
+#     def types(self):
+#         return self._types
+
+#     @property
+#     def ids(self):
+#         return self._ids
+
+#     @property
+#     def ix(self):
+#         return self._ix
+
+#     @property
+#     def elements(self):
+#         return self._elements
+
+#     def __len__(self):
+#         return len(self._names)
+
+#     def __getitem__(self, index):
+#         return self._names[index], self._ids[index], self._elements[index]
+
+#     def __iter__(self):
+#         for i in range(len(self)):
+#             yield self[i]
 
 
 class Chains:
@@ -188,17 +263,16 @@ class Chains:
 
 
 class CRA:
-    def __init__(
-        self, obj: Union["GemmiLoader", Universe], name: Union[str, None] = None
-    ):
+    def __init__(self, obj: Union["GemmiLoader", "TopologyLoader"], site_data):
         obj_name = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
-        self._atoms = getattr(Atoms, obj_map)(obj.atom_site_data)
-        self._residues = getattr(Residues, obj_map)(obj.atom_site_data)
-        self._chains = getattr(Chains, obj_map)(obj.atom_site_data)
+        print("obj_map", obj_map)
+        self._atoms = getattr(Atoms, obj_map)(site_data)
+        self._residues = getattr(Residues, obj_map)(site_data)
+        self._chains = getattr(Chains, obj_map)(site_data)
 
     def _obj_map(self, obj_name):
-        mapping = {"GemmiLoader": "from_gemmi", "Universe": "from_mda"}
+        mapping = {"GemmiLoader": "from_gemmi", "TopologyLoader": "from_mda"}
         return mapping[obj_name]
 
     @property
@@ -212,3 +286,6 @@ class CRA:
     @property
     def chains(self):
         return self._chains
+
+    def __iter__(self):
+        return zip(self._chains, self._residues, self._atoms)

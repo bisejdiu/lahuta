@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from MDAnalysis.core.groups import AtomGroup
 
-from lahuta.core.cra import Atoms, Chains, Residues
+from lahuta.core.cra import CRA, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
 
 
@@ -90,6 +90,8 @@ class GemmiLoader(BaseLoader):
         self._chains, self._residues, self._atoms = self.create(atom_site_data)
         self._coords_array = self.extract_positions(atom_site_data)
 
+        self.cra = CRA(self, atom_site_data)
+
     def create(self, atom_site_data):
         chains = Chains().from_gemmi(atom_site_data)
         residues = Residues().from_gemmi(atom_site_data)
@@ -149,7 +151,7 @@ class GemmiLoader(BaseLoader):
     def to_mol(self):
         obmol = OBMol()
         obmol.create_mol(
-            (self.chains, self.residues, self.atoms),
+            self.cra,
             self.coords_array,
             self.structure.connections,
         )
@@ -170,6 +172,8 @@ class TopologyLoader(BaseLoader):
         self._chains, self._residues, self._atoms = self.create()
         self._coords_array = self.ag.atoms.positions  # type: ignore
 
+        self.cra = CRA(self, self.ag)
+
     def create(self):
         chains = Chains().from_mda(self.ag)
         residues = Residues().from_mda(self.ag)
@@ -182,7 +186,7 @@ class TopologyLoader(BaseLoader):
     def to_mol(self):
         obmol = OBMol()
         obmol.create_mol(
-            (self.chains, self.residues, self.atoms),
+            self.cra,
             self.coords_array,
             self.structure,
         )
@@ -201,5 +205,7 @@ class TopologyLoader(BaseLoader):
         ) = top_loader.create()
         top_loader._coords_array = top_loader.ag.positions
         top_loader.structure = None
+
+        top_loader.cra = CRA(top_loader, top_loader.ag)
 
         return top_loader
