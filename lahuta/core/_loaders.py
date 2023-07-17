@@ -22,28 +22,28 @@ class BaseLoader(ABC):
         self.structure = None
         self.ag = None
 
-    def _validate_access(self, attr_name):
-        if getattr(self, attr_name) is None:
-            raise ValueError(f"No {attr_name} in the loader")
+    # def _validate_access(self, attr_name):
+    #     if getattr(self, attr_name) is None:
+    #         raise ValueError(f"No {attr_name} in the loader")
 
     @property
     def n_atoms(self):
-        self._validate_access("_atoms")
+        # self._validate_access("_atoms")
         return len(self._atoms)  # type: ignore
 
     @property
     def chains(self):
-        self._validate_access("_chains")
+        # self._validate_access("_chains")
         return self._chains
 
     @property
     def residues(self):
-        self._validate_access("_residues")
+        # self._validate_access("_residues")
         return self._residues
 
     @property
     def atoms(self):
-        self._validate_access("_atoms")
+        # self._validate_access("_atoms")
         return self._atoms
 
     @property
@@ -87,10 +87,11 @@ class GemmiLoader(BaseLoader):
 
         self.structure = structure
         atom_site_data = block.get_mmcif_category("_atom_site.")
-        self._chains, self._residues, self._atoms = self.create(atom_site_data)
-        self._coords_array = self.extract_positions(atom_site_data)
+        # self._chains, self._residues, self._atoms = self.create(atom_site_data)
 
         self.arc = ARC(self, atom_site_data)
+        self._chains, self._residues, self._atoms = zip(*self.arc)
+        self._coords_array = self.extract_positions(atom_site_data)
 
     def create(self, atom_site_data):
         chains = Chains().from_gemmi(atom_site_data)
@@ -112,7 +113,7 @@ class GemmiLoader(BaseLoader):
 
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
         struct_arr = np.rec.fromarrays(
-            [self.residues.resnames, self.residues.resids, self.chains.ids],
+            [self.arc.residues.resnames, self.arc.residues.resids, self.arc.chains.ids],
             names="resnames,resids,chain_ids",
         )
 
@@ -127,7 +128,7 @@ class GemmiLoader(BaseLoader):
 
         # Create a new Universe
         uv = mda.Universe.empty(
-            n_atoms=self.atoms.ids.size,
+            n_atoms=self.arc.atoms.ids.size,
             n_residues=uniques.size,
             atom_resindex=resindices,
             residue_segindex=chain_ids,
@@ -135,9 +136,9 @@ class GemmiLoader(BaseLoader):
         )
 
         # Add topology attributes
-        uv.add_TopologyAttr("names", self.atoms.names)
-        uv.add_TopologyAttr("type", self.atoms.types)
-        uv.add_TopologyAttr("elements", self.atoms.elements)
+        uv.add_TopologyAttr("names", self.arc.atoms.names)
+        uv.add_TopologyAttr("type", self.arc.atoms.types)
+        uv.add_TopologyAttr("elements", self.arc.atoms.elements)
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))
@@ -169,10 +170,11 @@ class TopologyLoader(BaseLoader):
         assert self.ag is not None
         if len(paths) > 1:
             self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
-        self._chains, self._residues, self._atoms = self.create()
-        self._coords_array = self.ag.atoms.positions  # type: ignore
+        # self._chains, self._residues, self._atoms = self.create()
 
         self.arc = ARC(self, self.ag)
+        self._chains, self._residues, self._atoms = zip(*self.arc)
+        self._coords_array = self.ag.atoms.positions  # type: ignore
 
     def create(self):
         chains = Chains().from_mda(self.ag)
