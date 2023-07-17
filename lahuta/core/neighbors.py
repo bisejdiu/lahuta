@@ -19,13 +19,6 @@ class HBondHandler:
         self.hbond_array = hbond_array
 
     def get_hbond_distances(self, attr_col, hbound_attr_col):
-        # print(
-        #     "...",
-        #     # self._atoms.n_atoms,
-        #     # self._atoms.indices.max(axis=0),
-        #     hbound_attr_col.atoms.indices.max(axis=0),
-        #     attr_col.atoms.indices.max(axis=0),
-        # )
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
@@ -56,23 +49,13 @@ class HBondHandler:
 class NeighborPairs:
     """A class for storing neighbor pairs."""
 
-    # TODO:
     def __init__(self, luni, pairs, distances):
         self.luni = luni
-        # self.atoms = luni.to("mda").atoms
         self.atoms = luni.to("mda").atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = self._sort_inputs(pairs, distances)
 
-        # print("uniatom type: ", type(uniatom))
-        # print("uniatom atoms type: ", type(uniatom.atoms))
-        # print("uniatom atoms universe type: ", type(uniatom.atoms.universe))
-        # print(
-        #     "uniatom atoms universe hbond_array type: ",
-        #     type(uniatom.atoms.universe.hbond_array),
-        # )
-        # print("-->", self.atoms.n_atoms, luni.hbond_array.shape)
         self.hbond_array = luni.hbond_array
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
@@ -119,8 +102,6 @@ class NeighborPairs:
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
-
     def index_filter(
         self,
         indices: List[int],
@@ -147,8 +128,6 @@ class NeighborPairs:
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
-
     def distance_filter(self, distance: float) -> "NeighborPairs":
         """Select pairs based on the distance.
 
@@ -164,7 +143,6 @@ class NeighborPairs:
         """
         mask = self.distances <= distance
         return self.clone(self.pairs[mask], self.distances[mask])
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def numeric_filter(
         self, array: np.ndarray, cutoff: float, lte: bool = True
@@ -184,7 +162,6 @@ class NeighborPairs:
         # add support for lt and gt
         mask = array <= cutoff if lte else array > cutoff
         return self.clone(self.pairs[mask], self.distances[mask])
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
         """Select pairs based on the radius.
@@ -207,8 +184,6 @@ class NeighborPairs:
         mask = col_func.atoms.vdw_radii <= radius
 
         return self.clone(self.pairs[mask], self.distances[mask])
-
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
         self, partner: int, vdw_comp_factor: float = 0.1
@@ -238,13 +213,6 @@ class NeighborPairs:
 
         return self.clone(hbond_dist_pairs, hbond_distances)
 
-        # return self.__class__(
-        #     self._atoms,
-        #     hbond_dist_pairs,
-        #     hbond_distances,
-        #     # hbangles=self.hbond_angles,
-        # )
-
     def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
         """Filter the pairs based on the angle between the hydrogen bonded atoms.
 
@@ -273,12 +241,6 @@ class NeighborPairs:
         self._distances = self._distances[idx]
 
         return self.clone(self.pairs, self.distances)
-
-        # return self.__class__(
-        #     self._atoms,
-        #     self._pairs,
-        #     self.distances,
-        # )
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
