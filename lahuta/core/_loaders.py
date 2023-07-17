@@ -88,6 +88,8 @@ class GemmiLoader(BaseLoader):
         self.arc = ARC(self, atom_site_data)
         self._coords_array = self.extract_positions(atom_site_data)
 
+        self.ag = None
+
     def extract_positions(self, atom_site_data):
         coords_array = np.zeros((self.n_atoms, 3))
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
@@ -103,7 +105,7 @@ class GemmiLoader(BaseLoader):
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
         struct_arr = np.rec.fromarrays(
             [self.arc.residues.resnames, self.arc.residues.resids, self.arc.chains.ids],
-            names="resnames,resids,chain_ids",
+            names="resnames, resids, chain_ids",
         )
 
         # Use factorize to get the labels and unique values
@@ -119,6 +121,7 @@ class GemmiLoader(BaseLoader):
         uv = mda.Universe.empty(
             n_atoms=self.arc.atoms.ids.size,
             n_residues=uniques.size,
+            n_segments=chain_ids.size,
             atom_resindex=resindices,
             residue_segindex=chain_ids,
             trajectory=True,
@@ -130,7 +133,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("elements", self.arc.atoms.elements)
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
-        uv.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))
+        uv.add_TopologyAttr("segids", chain_ids)
 
         uv.atoms.positions = self.coords_array  # type: ignore
 
