@@ -4,9 +4,10 @@ from typing import Literal
 import gemmi
 import MDAnalysis as mda
 import numpy as np
+import pandas as pd
 from MDAnalysis.core.groups import AtomGroup
 
-from lahuta.core.cra import Atoms, Chains, Residues
+from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
 
 
@@ -20,30 +21,31 @@ class BaseLoader(ABC):
 
         self.structure = None
         self.ag = None
+        self.arc = None
 
-    def _validate_access(self, attr_name):
-        if getattr(self, attr_name) is None:
-            raise ValueError(f"No {attr_name} in the loader")
+    # def _validate_access(self, attr_name):
+    #     if getattr(self, attr_name) is None:
+    #         raise ValueError(f"No {attr_name} in the loader")
 
     @property
     def n_atoms(self):
-        self._validate_access("_atoms")
-        return len(self._atoms)  # type: ignore
+        # self._validate_access("_atoms")
+        return len(self.atoms)  # type: ignore
 
     @property
     def chains(self):
-        self._validate_access("_chains")
-        return self._chains
+        # self._validate_access("_chains")
+        return self.arc.chains
 
     @property
     def residues(self):
-        self._validate_access("_residues")
-        return self._residues
+        # self._validate_access("_residues")
+        return self.arc.residues
 
     @property
     def atoms(self):
-        self._validate_access("_atoms")
-        return self._atoms
+        # self._validate_access("_atoms")
+        return self.arc.atoms
 
     @property
     def coords_array(self):
@@ -55,10 +57,6 @@ class BaseLoader(ABC):
             return getattr(self, method_str)()
 
         raise ValueError(f"Object type {object_type} is not supported")
-
-    @abstractmethod
-    def create(self):
-        ...
 
     @abstractmethod
     def to_mda(self):
@@ -76,7 +74,6 @@ class BaseLoader(ABC):
 
 class GemmiLoader(BaseLoader):
     def __init__(self, file_path, is_pdb=False):
-        # print("Using GemmiLoader")
         super().__init__(file_path)
         if is_pdb:
             structure = gemmi.read_pdb(self.file_path)
@@ -87,14 +84,9 @@ class GemmiLoader(BaseLoader):
 
         self.structure = structure
         atom_site_data = block.get_mmcif_category("_atom_site.")
-        self._chains, self._residues, self._atoms = self.create(atom_site_data)
-        self._coords_array = self.extract_positions(atom_site_data)
 
-    def create(self, atom_site_data):
-        chains = Chains().from_gemmi(atom_site_data)
-        residues = Residues().from_gemmi(atom_site_data)
-        atoms = Atoms().from_gemmi(atom_site_data)
-        return chains, residues, atoms
+        self.arc = ARC(self, atom_site_data)
+        self._coords_array = self.extract_positions(atom_site_data)
 
     def extract_positions(self, atom_site_data):
         coords_array = np.zeros((self.n_atoms, 3))
@@ -108,40 +100,48 @@ class GemmiLoader(BaseLoader):
         if self.ag is not None:
             return self.ag
 
-        # TODO: Add icodes and ids to the universe
-        resnames, resids, chain_ids = [], [], []
-        for model in self.structure:
-            for chain in model:
-                for residue in chain:
-                    resids.append(residue.seqid.num)
-                    resnames.append(residue.name)
-                    chain_ids.append(self.chains.mapping[chain.name])
+        # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
+        struct_arr = np.rec.fromarrays(
+            [self.arc.residues.resnames, self.arc.residues.resids, self.arc.chains.ids],
+            names="resnames,resids,chain_ids",
+        )
 
-        universe = mda.Universe.empty(
-            n_atoms=self.n_atoms,
-            n_residues=len(resids),
-            atom_resindex=self.residues.resindices,
+        # Use factorize to get the labels and unique values
+        resindices, uniques = pd.factorize(struct_arr)
+
+        resnames, resids, chain_ids = (
+            uniques["resnames"],
+            uniques["resids"],
+            uniques["chain_ids"],
+        )
+
+        # Create a new Universe
+        uv = mda.Universe.empty(
+            n_atoms=self.arc.atoms.ids.size,
+            n_residues=uniques.size,
+            atom_resindex=resindices,
             residue_segindex=chain_ids,
             trajectory=True,
         )
 
-        universe.add_TopologyAttr("names", self.atoms.names)
-        universe.add_TopologyAttr("type", self.atoms.types)
-        universe.add_TopologyAttr("elements", self.atoms.elements)
-        universe.add_TopologyAttr("resnames", resnames)
-        universe.add_TopologyAttr("resids", resids)
-        universe.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))
+        # Add topology attributes
+        uv.add_TopologyAttr("names", self.arc.atoms.names)
+        uv.add_TopologyAttr("type", self.arc.atoms.types)
+        uv.add_TopologyAttr("elements", self.arc.atoms.elements)
+        uv.add_TopologyAttr("resnames", resnames)
+        uv.add_TopologyAttr("resids", resids)
+        uv.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))
 
-        universe.atoms.positions = self.coords_array  # type: ignore
+        uv.atoms.positions = self.coords_array  # type: ignore
 
-        self.ag = universe.atoms
+        self.ag = uv.atoms
 
         return self.ag
 
     def to_mol(self):
         obmol = OBMol()
         obmol.create_mol(
-            (self.chains, self.residues, self.atoms),
+            self.arc,
             self.coords_array,
             self.structure.connections,
         )
@@ -159,14 +159,9 @@ class TopologyLoader(BaseLoader):
         assert self.ag is not None
         if len(paths) > 1:
             self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
-        self._chains, self._residues, self._atoms = self.create()
-        self._coords_array = self.ag.atoms.positions  # type: ignore
 
-    def create(self):
-        chains = Chains().from_mda(self.ag)
-        residues = Residues().from_mda(self.ag)
-        atoms = Atoms().from_mda(self.ag)
-        return chains, residues, atoms
+        self.arc = ARC(self, self.ag)
+        self._coords_array = self.ag.atoms.positions  # type: ignore
 
     def to_mda(self):
         return self.ag
@@ -174,7 +169,7 @@ class TopologyLoader(BaseLoader):
     def to_mol(self):
         obmol = OBMol()
         obmol.create_mol(
-            (self.chains, self.residues, self.atoms),
+            self.arc,
             self.coords_array,
             self.structure,
         )
@@ -186,12 +181,9 @@ class TopologyLoader(BaseLoader):
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()
-        (
-            top_loader._chains,
-            top_loader._residues,
-            top_loader._atoms,
-        ) = top_loader.create()
         top_loader._coords_array = top_loader.ag.positions
         top_loader.structure = None
+
+        top_loader.arc = ARC(top_loader, top_loader.ag)
 
         return top_loader

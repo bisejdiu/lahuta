@@ -186,6 +186,10 @@ class Universe:
         #     return self._mdag
         return self._file_loader.to(fmt, *args)
 
+    @property
+    def arc(self):
+        return self._file_loader.arc
+
     def __repr__(self):
         return f"<Lahuta Universe with {self._mdag.n_atoms} atoms>"
 
