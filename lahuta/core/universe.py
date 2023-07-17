@@ -22,8 +22,6 @@ class Universe:
         initializer = self._validate_input(*args)
         initializer(*args)
 
-        self.atoms, self.residues, self.chains = self._file_loader
-
         self._mol = None
         self.hbond_array = None
         self._ready = False
