@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from MDAnalysis.core.groups import AtomGroup
 
-from lahuta.core.cra import ARC, Atoms, Chains, Residues
+from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
 
 
