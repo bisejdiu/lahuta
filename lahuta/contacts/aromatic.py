@@ -11,10 +11,11 @@ from lahuta.config.defaults import CONTACTS
 
 from ..core.neighbors import NeighborPairs
 from ..core.universe import Universe
+from .base import ContactAnalysis
 from .protocol import ContactBase
 
 
-class AromaticContacts(ContactBase):
+class AromaticContacts_(ContactBase):
     """A class to compute aromatic contacts.
 
     Parameters
@@ -52,4 +53,15 @@ class AromaticContacts(ContactBase):
             .type_filter("aromatic", 2)
             .distance_filter(self.distance)
             .pairs
+        )
+
+
+class AromaticContacts(ContactAnalysis):
+    distance = CONTACTS["aromatic"]["distance"]
+
+    def _compute(self, *_):
+        return (
+            self.ns.type_filter("aromatic", 1)
+            .type_filter("aromatic", 2)
+            .distance_filter(self.distance)
         )
