@@ -58,10 +58,6 @@ class BaseLoader(ABC):
 
         raise ValueError(f"Object type {object_type} is not supported")
 
-    # @abstractmethod
-    # def create(self):
-    #     ...
-
     @abstractmethod
     def to_mda(self):
         ...
@@ -88,21 +84,9 @@ class GemmiLoader(BaseLoader):
 
         self.structure = structure
         atom_site_data = block.get_mmcif_category("_atom_site.")
-        # self._chains, self._residues, self._atoms = self.create(atom_site_data)
 
         self.arc = ARC(self, atom_site_data)
-        # self._chains, self._residues, self._atoms = (
-        #     self.arc.chains,
-        #     self.arc.residues,
-        #     self.arc.atoms,
-        # )
         self._coords_array = self.extract_positions(atom_site_data)
-
-    # def create(self, atom_site_data):
-    #     chains = Chains().from_gemmi(atom_site_data)
-    #     residues = Residues().from_gemmi(atom_site_data)
-    #     atoms = Atoms().from_gemmi(atom_site_data)
-    #     return chains, residues, atoms
 
     def extract_positions(self, atom_site_data):
         coords_array = np.zeros((self.n_atoms, 3))
@@ -175,21 +159,9 @@ class TopologyLoader(BaseLoader):
         assert self.ag is not None
         if len(paths) > 1:
             self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
-        # self._chains, self._residues, self._atoms = self.create()
 
         self.arc = ARC(self, self.ag)
-        # self._chains, self._residues, self._atoms = (
-        #     self.arc.chains,
-        #     self.arc.residues,
-        #     self.arc.atoms,
-        # )
         self._coords_array = self.ag.atoms.positions  # type: ignore
-
-    # def create(self):
-    #     chains = Chains().from_mda(self.ag)
-    #     residues = Residues().from_mda(self.ag)
-    #     atoms = Atoms().from_mda(self.ag)
-    #     return chains, residues, atoms
 
     def to_mda(self):
         return self.ag
@@ -209,11 +181,6 @@ class TopologyLoader(BaseLoader):
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()
-        # (
-        #     top_loader._chains,
-        #     top_loader._residues,
-        #     top_loader._atoms,
-        # ) = top_loader.create()
         top_loader._coords_array = top_loader.ag.positions
         top_loader.structure = None
 
