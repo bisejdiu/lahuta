@@ -237,14 +237,18 @@ class ARC:
     def chains(self):
         return self._chains
 
+    def __len__(self):
+        return len(self._atoms)
+
     def __getitem__(self, index):
         if isinstance(index, int):
             return self.get_atom(index)
         else:
-            return self._atoms[index], self._residues[index], self._chains[index]
+            indices = np.arange(len(self))[index]
+            return [self.get_atom(i) for i in indices]
 
     def __iter__(self):
-        return zip(self._chains, self._residues, self._atoms)
+        return (self.get_atom(i) for i in range(len(self)))
 
 
 # TODO: The idea is for an atom instance to also contain residue and chain information
