@@ -519,10 +519,9 @@ class NeighborPairs:
             A new NeighborPair object containing the pair of atoms at the specified index.
         """
         if isinstance(item, int):
-            return self.__class__(
-                self.atoms,
-                self._pairs[item].reshape(1, 2),
-                self._distances[item],
+            return self.clone(
+                self.pairs[item],
+                self.distances[item],
             )
 
         # return self.__class__(self._atoms, self.pairs[item], self.distances[item])
