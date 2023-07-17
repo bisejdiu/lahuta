@@ -195,7 +195,7 @@ class Chains:
             yield self[i]
 
 
-class CRA:
+class ARC:
     def __init__(self, obj: Union["GemmiLoader", "TopologyLoader"], site_data):
         obj_name = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
