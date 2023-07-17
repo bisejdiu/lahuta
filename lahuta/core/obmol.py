@@ -71,20 +71,17 @@ class OBMol:
         if self.mol:
             self.mol.EndModify(nuke_perceived_data)
 
-    def create_mol(self, cra, coords, connections=None):
-        # print("cra", type(cra), cra)
-        chains, residues, atoms = zip(*cra)
+    def create_mol(self, arc, coords, connections=None):
+        chains, residues, atoms = zip(*arc)
         if connections is None:
             connections = []
 
-        # print("atoms", type(atoms))
-
         atoms_df = pd.DataFrame(
             {
-                "atom_name": cra.atoms.names,
-                "chain_name": cra.chains.auths,
-                "res_id": cra.residues.resids,
-                "res_name": cra.residues.resnames,
+                "atom_name": arc.atoms.names,
+                "chain_name": arc.chains.auths,
+                "res_id": arc.residues.resids,
+                "res_name": arc.residues.resnames,
             }
         )
 
@@ -94,9 +91,9 @@ class OBMol:
         ob_res = None
         added_residues = set()
         for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
-            chain_id = chain["id"]
-            resname, resid = residue["resname"], residue["resid"]
             atom_name, atom_id, element = atom["name"], atom["id"], atom["element"]
+            resname, resid = residue["resname"], residue["resid"]
+            chain_id = chain["id"]
 
             _cra_ = (chain_id, resid, resname)
             if ob_res is None or _cra_ not in added_residues:
