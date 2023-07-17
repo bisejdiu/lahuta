@@ -207,6 +207,24 @@ class ARC:
         mapping = {"GemmiLoader": "from_gemmi", "TopologyLoader": "from_mda"}
         return mapping[obj_name]
 
+    def get_atom(self, index):
+        atom_info = self._atoms[index]
+        residue_info = self._residues[index]
+        chain_info = self._chains[index]
+
+        atom_kwargs = {
+            "name": atom_info["name"],
+            "id": atom_info["id"],
+            "element": atom_info["element"],
+            "type": atom_info["type"],
+            "resname": residue_info["resname"],
+            "resid": residue_info["resid"],
+            "chain_label": chain_info["label"],
+            "chain_id": chain_info["id"],
+        }
+
+        return Atom(**atom_kwargs)
+
     @property
     def atoms(self):
         return self._atoms
@@ -219,6 +237,12 @@ class ARC:
     def chains(self):
         return self._chains
 
+    def __getitem__(self, index):
+        if isinstance(index, int):
+            return self.get_atom(index)
+        else:
+            return self._atoms[index], self._residues[index], self._chains[index]
+
     def __iter__(self):
         return zip(self._chains, self._residues, self._atoms)
 
@@ -226,8 +250,9 @@ class ARC:
 # TODO: The idea is for an atom instance to also contain residue and chain information
 @dataclass
 class Atom:
-    def __init__(self, _name, _id, _element, _type):
-        self.name = _name
-        self.id = _id
-        self.element = _element
-        self.type = _type
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+    def __repr__(self):
+        attrs = ", ".join(f"{k}={v}" for k, v in self.__dict__.items())
+        return f"Atom({attrs})"
