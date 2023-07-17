@@ -4,6 +4,7 @@ from typing import Literal
 import gemmi
 import MDAnalysis as mda
 import numpy as np
+import pandas as pd
 from MDAnalysis.core.groups import AtomGroup
 
 from lahuta.core.cra import Atoms, Chains, Residues
@@ -76,7 +77,6 @@ class BaseLoader(ABC):
 
 class GemmiLoader(BaseLoader):
     def __init__(self, file_path, is_pdb=False):
-        # print("Using GemmiLoader")
         super().__init__(file_path)
         if is_pdb:
             structure = gemmi.read_pdb(self.file_path)
@@ -108,33 +108,41 @@ class GemmiLoader(BaseLoader):
         if self.ag is not None:
             return self.ag
 
-        # TODO: Add icodes and ids to the universe
-        resnames, resids, chain_ids = [], [], []
-        for model in self.structure:
-            for chain in model:
-                for residue in chain:
-                    resids.append(residue.seqid.num)
-                    resnames.append(residue.name)
-                    chain_ids.append(self.chains.mapping[chain.name])
+        # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
+        struct_arr = np.rec.fromarrays(
+            [self.residues.resnames, self.residues.resids, self.chains.ids],
+            names="resnames,resids,chain_ids",
+        )
 
-        universe = mda.Universe.empty(
-            n_atoms=self.n_atoms,
-            n_residues=len(resids),
-            atom_resindex=self.residues.resindices,
+        # Use factorize to get the labels and unique values
+        resindices, uniques = pd.factorize(struct_arr)
+
+        resnames, resids, chain_ids = (
+            uniques["resnames"],
+            uniques["resids"],
+            uniques["chain_ids"],
+        )
+
+        # Create a new Universe
+        uv = mda.Universe.empty(
+            n_atoms=self.atoms.ids.size,
+            n_residues=uniques.size,
+            atom_resindex=resindices,
             residue_segindex=chain_ids,
             trajectory=True,
         )
 
-        universe.add_TopologyAttr("names", self.atoms.names)
-        universe.add_TopologyAttr("type", self.atoms.types)
-        universe.add_TopologyAttr("elements", self.atoms.elements)
-        universe.add_TopologyAttr("resnames", resnames)
-        universe.add_TopologyAttr("resids", resids)
-        universe.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))
+        # Add topology attributes
+        uv.add_TopologyAttr("names", self.atoms.names)
+        uv.add_TopologyAttr("type", self.atoms.types)
+        uv.add_TopologyAttr("elements", self.atoms.elements)
+        uv.add_TopologyAttr("resnames", resnames)
+        uv.add_TopologyAttr("resids", resids)
+        uv.add_TopologyAttr("segids", np.array(["PROT"], dtype=object))
 
-        universe.atoms.positions = self.coords_array  # type: ignore
+        uv.atoms.positions = self.coords_array  # type: ignore
 
-        self.ag = universe.atoms
+        self.ag = uv.atoms
 
         return self.ag
 
