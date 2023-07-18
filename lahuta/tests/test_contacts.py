@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+import lahuta.contacts as C
 from lahuta.contacts import F
 from lahuta.contacts.plane import AtomPlaneContacts, PlanePlaneContacts
 from lahuta.core.universe import Universe
@@ -85,9 +86,45 @@ def planeplane(data_loader):
         (F.vdw_neighbors, ExpectedResults.VDW),
     ],
 )
-def test_atom_atom_neighbors(neighbor_func, expected_result, neighbors):
+def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
     """Test the neighbors."""
     result = neighbor_func(neighbors)
+    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+
+    expected_pairs = np.array(expected_result["pairs"])
+
+    # Reshape the expected_pairs to match the shape of the pairs
+    if expected_pairs.size == 0:
+        expected_pairs = expected_pairs.reshape((0, 2))
+
+    assert result.pairs.shape[1] == 2
+    assert result.pairs.shape[0] == expected_result["shapex"]
+    assert np.all(pairs == expected_pairs)
+    assert np.allclose(distances, expected_result["distances"], atol=1e-3)
+
+
+@pytest.mark.parametrize(
+    "contact_class, expected_result",
+    [
+        (C.CovalentContacts, ExpectedResults.COVALENT),
+        (C.MetalicContacts, ExpectedResults.METALIC),
+        (C.CarbonylContacts, ExpectedResults.CARBONYL),
+        (C.HBondContacts, ExpectedResults.HBOND),
+        (C.WeakHBondContacts, ExpectedResults.WEAK_HBOND),
+        (C.IonicContacts, ExpectedResults.IONIC),
+        (C.AromaticContacts, ExpectedResults.AROMATIC),
+        (C.HydrophobicContacts, ExpectedResults.HYDROPHOBIC),
+        (C.PolarHBondContacts, ExpectedResults.POLAR_HBOND),
+        (C.WeakPolarHBondContacts, ExpectedResults.WEAK_POLAR_HBOND),
+        (C.VanDerWaalsContacts, ExpectedResults.VDW),
+    ],
+)
+def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
+    """Test the neighbors."""
+    instance = contact_class(neighbors)
+    instance.run()
+    result = instance.results
+
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
 
     expected_pairs = np.array(expected_result["pairs"])
