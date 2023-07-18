@@ -5,16 +5,15 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-import lahuta.contacts.contacts as contacts
+from lahuta.contacts import F
 from lahuta.contacts.plane import AtomPlaneContacts, PlanePlaneContacts
-from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
 # pylint: disable=redefined-outer-name
 
 
 class ExpectedResults:
-    with open(Path(__file__).parent / "data" / "1KX2.json") as f:
+    with open(Path(__file__).parent / "data" / "1KX2.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
     COVALENT = data["COVALENT"]
@@ -73,17 +72,17 @@ def planeplane(data_loader):
 @pytest.mark.parametrize(
     "neighbor_func, expected_result",
     [
-        (contacts.covalent_neighbors, ExpectedResults.COVALENT),
-        (contacts.metalic_neighbors, ExpectedResults.METALIC),
-        (contacts.carbonyl_neighbors, ExpectedResults.CARBONYL),
-        (contacts.hbond_neighbors, ExpectedResults.HBOND),
-        (contacts.weak_hbond_neighbors, ExpectedResults.WEAK_HBOND),
-        (contacts.ionic_neighbors, ExpectedResults.IONIC),
-        (contacts.aromatic_neighbors, ExpectedResults.AROMATIC),
-        (contacts.hydrophobic_neighbors, ExpectedResults.HYDROPHOBIC),
-        (contacts.polar_hbond_neighbors, ExpectedResults.POLAR_HBOND),
-        (contacts.weak_polar_hbond_neighbors, ExpectedResults.WEAK_POLAR_HBOND),
-        (contacts.vdw_neighbors, ExpectedResults.VDW),
+        (F.covalent_neighbors, ExpectedResults.COVALENT),
+        (F.metalic_neighbors, ExpectedResults.METALIC),
+        (F.carbonyl_neighbors, ExpectedResults.CARBONYL),
+        (F.hbond_neighbors, ExpectedResults.HBOND),
+        (F.weak_hbond_neighbors, ExpectedResults.WEAK_HBOND),
+        (F.ionic_neighbors, ExpectedResults.IONIC),
+        (F.aromatic_neighbors, ExpectedResults.AROMATIC),
+        (F.hydrophobic_neighbors, ExpectedResults.HYDROPHOBIC),
+        (F.polar_hbond_neighbors, ExpectedResults.POLAR_HBOND),
+        (F.weak_polar_hbond_neighbors, ExpectedResults.WEAK_POLAR_HBOND),
+        (F.vdw_neighbors, ExpectedResults.VDW),
     ],
 )
 def test_atom_atom_neighbors(neighbor_func, expected_result, neighbors):

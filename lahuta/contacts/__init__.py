@@ -1,3 +1,4 @@
+from . import contacts as F
 from .aromatic import AromaticContacts
 from .carbonyl import CarbonylContacts
 from .contacts import (
@@ -25,26 +26,8 @@ from .ionic import IonicContacts
 from .metal import MetalicContacts
 from .vdw import VanDerWaalsContacts
 
-funcs = [
-    aromatic_neighbors,
-    carbonyl_neighbors,
-    covalent_neighbors,
-    hbond_neighbors,
-    hydrophobic_neighbors,
-    ionic_neighbors,
-    metalic_neighbors,
-    polar_hbond_neighbors,
-    vdw_neighbors,
-    weak_hbond_neighbors,
-    weak_polar_hbond_neighbors,
-]
-
-
-F = type("F", (), {})
-for func in funcs:
-    setattr(F, func.__name__, func)
-
 __all__ = [
+    "F",
     "aromatic_neighbors",
     "carbonyl_neighbors",
     "covalent_neighbors",
@@ -62,7 +45,7 @@ __all__ = [
     "HBondContacts",
     "HydrophobicContacts",
     "IonicContacts",
-    "MetalContacts",
+    "MetalicContacts",
     "PolarHBondContacts",
     "VanDerWaalsContacts",
     "WeakHBondContacts",
