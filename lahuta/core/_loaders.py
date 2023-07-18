@@ -17,7 +17,7 @@ class BaseLoader(ABC):
         self._chains = None
         self._residues = None
         self._atoms = None
-        self._coords_array = None
+        # self._coords_array = None
 
         self.structure = None
         self.ag = None
@@ -47,9 +47,9 @@ class BaseLoader(ABC):
         # self._validate_access("_atoms")
         return self.arc.atoms
 
-    @property
-    def coords_array(self):
-        return self._coords_array
+    # @property
+    # def coords_array(self):
+    #     return self._coords_array
 
     def to(self, object_type: Literal["mol", "mda"], *args, **kwargs):
         method_str = f"to_{object_type}"
@@ -86,7 +86,8 @@ class GemmiLoader(BaseLoader):
         atom_site_data = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
-        self._coords_array = self.extract_positions(atom_site_data)
+        # self._coords_array = self.extract_positions(atom_site_data)
+        self.arc.atoms.coordinates = self.extract_positions(atom_site_data)
 
         self.ag = None
 
@@ -135,7 +136,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("segids", chain_ids)
 
-        uv.atoms.positions = self.coords_array  # type: ignore
+        uv.atoms.positions = self.arc.atoms.coordinates  # type: ignore
 
         self.ag = uv.atoms
 
@@ -145,7 +146,7 @@ class GemmiLoader(BaseLoader):
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            self.coords_array,
+            # self.coords_array,
             self.structure.connections,
         )
 
@@ -163,8 +164,7 @@ class TopologyLoader(BaseLoader):
         if len(paths) > 1:
             self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
 
-        self.arc = ARC(self, self.ag)
-        self._coords_array = self.ag.atoms.positions  # type: ignore
+        self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
     def to_mda(self):
         return self.ag
@@ -173,7 +173,7 @@ class TopologyLoader(BaseLoader):
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            self.coords_array,
+            # self.coords_array,
             self.structure,
         )
 
@@ -184,7 +184,6 @@ class TopologyLoader(BaseLoader):
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()
-        top_loader._coords_array = top_loader.ag.positions
         top_loader.structure = None
 
         top_loader.arc = ARC(top_loader, top_loader.ag)
