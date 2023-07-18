@@ -155,7 +155,6 @@ class GemmiLoader(BaseLoader):
 
 class TopologyLoader(BaseLoader):
     def __init__(self, *paths):
-        print("Using TopologyLoader")
         file_path = paths[0]
         super().__init__(file_path)
         universe = mda.Universe(self.file_path)

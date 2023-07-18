@@ -2,15 +2,17 @@
 Placeholder for the neighbors module.
 """
 
-from typing import List, Union
+from typing import List, Literal, Union
 
 import MDAnalysis as mda
 import numpy as np
+import pandas as pd
 
 from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.core.helpers import get_class_attributes
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
+from lahuta.writers.frame_writer import DataFrameWriter
 
 
 class HBondHandler:
@@ -441,6 +443,42 @@ class NeighborPairs:
                 setattr(child_instance, attr, value)
 
         return child_instance
+
+    def to_frame(
+        self, df_format: Literal["compact", "expanded"] = "expanded"
+    ) -> pd.DataFrame:
+        """Convert the NeighborPairs object to a pandas DataFrame.
+
+        Parameters
+        ----------
+        df_format : str
+            The format of the DataFrame. It can be either "compact" or "expanded".
+
+        Returns
+        -------
+        df : pd.DataFrame
+            The DataFrame containing the pairs of atoms and their distances.
+        """
+        return self._create_df(df_format)
+
+    def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> dict:
+        """Convert the NeighborPairs object to a dictionary.
+
+        Parameters
+        ----------
+        df_format : str
+            The format of the DataFrame. It can be either "compact" or "expanded".
+
+        Returns
+        -------
+        df : pd.DataFrame
+            The DataFrame containing the pairs of atoms and their distances.
+        """
+        return self._create_df(df_format).to_dict(orient="list")
+
+    def _create_df(self, df_format: Literal["compact", "expanded"] = "expanded"):
+        """Create a DataFrame from the NeighborPairs object."""
+        return DataFrameWriter(self, df_format).create()
 
     @property
     def partner1(self) -> mda.AtomGroup:
