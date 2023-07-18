@@ -62,7 +62,6 @@ def covalent_neighbors(ns: NeighborPairs):
     indices = np_optimized_matching_pairs(ns.pairs + 1, bonds)
 
     return ns.clone(ns.pairs[indices], ns.distances[indices])
-    # return NeighborPairs(ns.luni, pairs, distances)
 
 
 def metalic_neighbors(
