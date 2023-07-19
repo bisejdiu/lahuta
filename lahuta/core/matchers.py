@@ -63,7 +63,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     dictionary. Inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def __init__(self, atom_types, n_atoms):
+    def __init__(self, atom_types):
         super().__init__(atom_types)
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 

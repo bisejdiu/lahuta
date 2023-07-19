@@ -1,20 +1,49 @@
 """
 Placehoder for the atom types and radii.
 """
+
+from typing import Any, Dict, Protocol
+
+import MDAnalysis as mda
 import numpy as np
 from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
+from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
+from lahuta.config.atoms import (ID_TO_TYPES, PROT_ATOM_TYPES,
+                                 STANDARD_AMINO_ACIDS)
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
 
 
-def assign_atom_types(mol, atomgroup):
+class ResidueGroupType(Protocol):
+    
+    @property
+    def atoms(self) -> "AtomGroupType":
+        ...
+
+    def __iter__(self) -> Any:
+        ...
+
+
+class AtomGroupType(Protocol):
+
+    def select_atoms(self, selection: str) -> "AtomGroupType":
+        ...
+
+    @property
+    def residues(self) -> "ResidueGroupType":
+        ...
+
+    def __iter__(self) -> Any:
+        ...
+
+def assign_atom_types(mol, atomgroup: AtomGroupType):
     """
     Assign atom types to each atom in the molecule.
     Atom types are defined in `SmartsPatternRegistry`
     """
     atypes = AVAILABLE_ATOM_TYPES
+    uv = atomgroup.universe.atoms.universe
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
     for atom_type in SmartsPatternRegistry:
@@ -136,14 +165,15 @@ def assign_radii(mol):
     return atom_radii
 
 
-def find_hydrogen_bonded_atoms(luni):
+def find_hydrogen_bonded_atoms(luni) -> NDArray[np.int_]:
     """
     Find hydrogen bonded atoms in the molecule.
     """
     # hbond_indices = np.zeros(mol.NumAtoms(), dtype=bool)
     # hbond_array = np.zeros((mol.NumAtoms(), 6), dtype=int)
     ag_atoms = luni.to("mda").atoms
-    hbond_array = np.zeros((ag_atoms.universe.atoms.n_atoms, 6), dtype=int)
+    n_atoms: int = ag_atoms.universe.atoms.n_atoms
+    hbond_array: NDArray[np.int_] = np.zeros((n_atoms, 6), dtype=int)
     mol = luni.to("mol")
 
     # will give -1 for atoms not in the atomgroup
@@ -162,10 +192,10 @@ def find_hydrogen_bonded_atoms(luni):
     return hbond_array
 
 
-def v_radii_assignment(elements):
-    vdwradii = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
+def v_radii_assignment(elements: NDArray[np.str_]) -> NDArray[np.float_]:
+    vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
 
-    def v_capitalize(array, mapping):
+    def v_capitalize(array: NDArray[np.str_], mapping: Dict[str, int]):
         vfunc = np.vectorize(mapping.get)
         return vfunc(array)
 
