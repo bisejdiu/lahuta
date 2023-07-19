@@ -64,7 +64,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     """
 
     def __init__(self, atom_types, n_atoms):
-        super().__init__(atom_types, n_atoms)
+        super().__init__(atom_types)
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
     def precompute_ob_smarts(self):
