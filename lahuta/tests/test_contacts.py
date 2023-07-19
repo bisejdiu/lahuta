@@ -7,7 +7,8 @@ import pytest
 
 import lahuta.contacts as C
 from lahuta.contacts import F
-from lahuta.contacts.plane import AtomPlaneContacts, PlanePlaneContacts
+from lahuta.contacts.atom_plane import AtomPlaneContacts
+from lahuta.contacts.plane import PlanePlaneContacts
 from lahuta.core.universe import Universe
 
 # pylint: disable=redefined-outer-name
@@ -29,7 +30,6 @@ class ExpectedResults:
     WEAK_POLAR_HBOND = data["WEAK_POLAR_HBOND"]
     VDW = data["VDW"]
     CARBONPI = data["CARBONPI"]
-    CARBONPI2 = data["CARBONPI2"]
     CATIONPI = data["CATIONPI"]
     DONORPI = data["DONORPI"]
     SULPHURPI = data["SULPHURPI"]
@@ -58,8 +58,7 @@ def neighbors(data_loader):
 @pytest.fixture(scope="session")
 def ap(data_loader):
     """Helper fixture to get ap."""
-    ap = AtomPlaneContacts(data_loader[0])
-    ap.compute_contacts()
+    ap = AtomPlaneContacts(data_loader[1])
     return ap
 
 
@@ -152,20 +151,20 @@ def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
     "contact_func, expected_result",
     [
         (
-            lambda ap: ap.cation_pi.contacts(ap.neighbors, ap.angles),
+            lambda ap: ap.cation_pi(),
             ExpectedResults.CATIONPI,
         ),
         (
-            lambda ap: ap.donor_pi.contacts(ap.neighbors, ap.angles),
+            lambda ap: ap.donor_pi(),
             ExpectedResults.DONORPI,
         ),
         (
-            lambda ap: ap.sulphur_pi.contacts(ap.neighbors, ap.angles),
+            lambda ap: ap.sulphur_pi(),
             ExpectedResults.SULPHURPI,
         ),
         (
-            lambda ap: ap.carbon_pi.contacts(ap.neighbors, ap.angles),
-            ExpectedResults.CARBONPI2,
+            lambda ap: ap.carbon_pi(),
+            ExpectedResults.CARBONPI,
         ),
     ],
 )
