@@ -141,3 +141,37 @@ def donor_pi(n, angle_cutoff: float = 30.0, cache=True):
 def sulphur_pi(n, cache=True):
     func = create_contact_function("sulphur_pi", None, cache)
     return func(n)
+
+
+class AtomPlaneContacts:
+    max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
+
+    def __init__(self, ns):
+        self.angles = None
+        self.rings = perceive_rings(ns.luni.to("mol"))
+        self._ap_contacts = _AtomPlaneContacts()
+
+        self._compute(ns, ns.luni.to("mda"))
+
+    def _compute(self, ns, mda):
+        result = compute_neighbors.call(mda.atoms.positions, self.rings)
+        pairs, distances = result[0]
+
+        neighbors = ns.clone(pairs, distances)
+
+        self.neighbors = neighbors - neighbors.type_filter("aromatic", partner=2)
+
+        result = compute_angles.call(self.neighbors, mda.universe.atoms, self.rings)
+        self.angles = result[0]
+
+    def donor_pi(self):
+        return self._ap_contacts._donor_pi(self.neighbors, self.angles)
+
+    def sulphur_pi(self):
+        return self._ap_contacts._sulphur_pi(self.neighbors, self.angles)
+
+    def carbon_pi(self):
+        return self._ap_contacts._carbon_pi(self.neighbors, self.angles)
+
+    def cation_pi(self):
+        return self._ap_contacts._cation_pi(self.neighbors, self.angles)
