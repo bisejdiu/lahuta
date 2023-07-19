@@ -29,6 +29,7 @@ class ExpectedResults:
     WEAK_POLAR_HBOND = data["WEAK_POLAR_HBOND"]
     VDW = data["VDW"]
     CARBONPI = data["CARBONPI"]
+    CARBONPI2 = data["CARBONPI2"]
     CATIONPI = data["CATIONPI"]
     DONORPI = data["DONORPI"]
     SULPHURPI = data["SULPHURPI"]
@@ -84,6 +85,10 @@ def planeplane(data_loader):
         (F.polar_hbond_neighbors, ExpectedResults.POLAR_HBOND),
         (F.weak_polar_hbond_neighbors, ExpectedResults.WEAK_POLAR_HBOND),
         (F.vdw_neighbors, ExpectedResults.VDW),
+        (F.sulphur_pi, ExpectedResults.SULPHURPI),
+        (F.carbon_pi, ExpectedResults.CARBONPI),
+        (F.cation_pi, ExpectedResults.CATIONPI),
+        (F.donor_pi, ExpectedResults.DONORPI),
     ],
 )
 def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
@@ -117,6 +122,10 @@ def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
         (C.PolarHBondContacts, ExpectedResults.POLAR_HBOND),
         (C.WeakPolarHBondContacts, ExpectedResults.WEAK_POLAR_HBOND),
         (C.VanDerWaalsContacts, ExpectedResults.VDW),
+        (C.SulphurPi, ExpectedResults.SULPHURPI),
+        (C.CarbonPi, ExpectedResults.CARBONPI),
+        (C.CationPi, ExpectedResults.CATIONPI),
+        (C.DonorPi, ExpectedResults.DONORPI),
     ],
 )
 def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
@@ -156,7 +165,7 @@ def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
         ),
         (
             lambda ap: ap.carbon_pi.contacts(ap.neighbors, ap.angles),
-            ExpectedResults.CARBONPI,
+            ExpectedResults.CARBONPI2,
         ),
     ],
 )
