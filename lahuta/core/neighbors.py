@@ -56,7 +56,7 @@ class NeighborPairs:
         self.atoms = luni.to("mda").atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
-        self._pairs, self._distances = self._sort_inputs(pairs, distances)
+        self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
         self.hbond_array = luni.hbond_array
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
@@ -69,7 +69,8 @@ class NeighborPairs:
         )
         assert pairs.shape[0] == distances.shape[0], message
 
-    def _sort_inputs(self, pairs, distances):
+    @staticmethod
+    def sort_inputs(pairs, distances):
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
 
@@ -480,6 +481,17 @@ class NeighborPairs:
         """Create a DataFrame from the NeighborPairs object."""
         return DataFrameWriter(self, df_format).create()
 
+    def _neighborpairs_equal(self, other):
+        # Get the indices that would sort each array
+        indices1 = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))
+        indices2 = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))
+
+        # Sort each array using the indices
+        pairs, dists = self.pairs[indices1], self.distances[indices1]
+        other_pairs, other_dists = other.pairs[indices2], other.distances[indices2]
+
+        return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)
+
     @property
     def partner1(self) -> mda.AtomGroup:
         """Get the first partner of the pairs of atoms that are neighbors."""
@@ -556,7 +568,7 @@ class NeighborPairs:
         return self.symmetric_difference(other)
 
     def __eq__(self, other):
-        return np.array_equal(self.pairs, other.pairs)
+        return self._neighborpairs_equal(other)
 
     def __and__(self, other):
         return self.intersection(other)
