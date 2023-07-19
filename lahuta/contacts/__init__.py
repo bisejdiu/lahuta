@@ -1,6 +1,8 @@
-from . import contacts as F
 from .aromatic import AromaticContacts
+from .atom_plane import carbon_pi, cation_pi, donor_pi, sulphur_pi
+from .carbon_pi import CarbonPi
 from .carbonyl import CarbonylContacts
+from .cation_pi import CationPi
 from .contacts import (
     aromatic_neighbors,
     carbonyl_neighbors,
@@ -15,6 +17,7 @@ from .contacts import (
     weak_polar_hbond_neighbors,
 )
 from .covalent import CovalentContacts
+from .donor_pi import DonorPi
 from .hbonds import (
     HBondContacts,
     PolarHBondContacts,
@@ -24,10 +27,10 @@ from .hbonds import (
 from .hydrophobic import HydrophobicContacts
 from .ionic import IonicContacts
 from .metal import MetalicContacts
+from .sulphur_pi import SulphurPi
 from .vdw import VanDerWaalsContacts
 
 __all__ = [
-    "F",
     "aromatic_neighbors",
     "carbonyl_neighbors",
     "covalent_neighbors",
@@ -39,6 +42,10 @@ __all__ = [
     "vdw_neighbors",
     "weak_hbond_neighbors",
     "weak_polar_hbond_neighbors",
+    "donor_pi",
+    "sulphur_pi",
+    "carbon_pi",
+    "cation_pi",
     "AromaticContacts",
     "CarbonylContacts",
     "CovalentContacts",
@@ -50,4 +57,8 @@ __all__ = [
     "VanDerWaalsContacts",
     "WeakHBondContacts",
     "WeakPolarHBondContacts",
+    "CarbonPi",
+    "CationPi",
+    "DonorPi",
+    "SulphurPi",
 ]
