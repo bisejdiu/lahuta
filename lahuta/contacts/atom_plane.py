@@ -109,7 +109,7 @@ def compute_contacts(contact_fn, angle_cutoff, use_cache):
 
         angles_fn = compute_angles if not use_cache else compute_angles.call
         result = angles_fn(neighbors, mda.universe.atoms, rings)
-        angles = result if use_cache else result[0]
+        angles = result[0] if use_cache else result
 
         return contact_fn(neighbors, angles, angle_cutoff)
 
