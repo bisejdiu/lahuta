@@ -12,6 +12,7 @@ HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
 
 # pylint: disable=attribute-defined-outside-init
+# pylint: disable=redefined-outer-name
 
 
 class ContactType:
@@ -38,8 +39,8 @@ class ContactType:
 
 
 class UniverseWrapper:
-    def __init__(self, pdb_path: str, selection: str):
-        self.mda_u = mda.Universe(pdb_path)
+    def __init__(self, mda_u, selection: str):
+        self.mda_u = mda_u
         resnames = self.mda_u.select_atoms(
             f"all and not ({selection})"
         ).residues.resnames
@@ -48,6 +49,13 @@ class UniverseWrapper:
         # Initialize *my* Universe class
         self.u_ref = Universe(self.mda_u.atoms)
         self.u = Universe(self.mda_u.select_atoms(selection).atoms)
+
+
+@pytest.fixture(scope="session")
+def mda_universe():
+    pdb_path = Path(__file__).parent / "data" / "1KX2.pdb"
+    with warnings.catch_warnings(record=True) as _:
+        return mda.Universe(str(pdb_path))
 
 
 selections_res_difs = [
@@ -62,12 +70,10 @@ selections_res_difs = [
 
 class TestMDAnalysis:
     @pytest.fixture(params=selections_res_difs, autouse=True)
-    def setup_method(self, request):
+    def setup_method(self, request, mda_universe):
         selection, res_dif = request.param
-        path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
         with warnings.catch_warnings(record=True) as _:
-            _uwrap = UniverseWrapper(str(path_obj), selection)
-        self.universe = _uwrap
+            self.universe = UniverseWrapper(mda_universe, selection)
 
         self.contact_types = [
             ContactType("covalent", C.covalent_neighbors, self.universe),

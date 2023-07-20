@@ -2,15 +2,17 @@
 Placeholder for the neighbors module.
 """
 
-from typing import List, Union
+from typing import Any, Dict, Iterable, List, Literal, Sequence, Sized, Union
 
 import MDAnalysis as mda
 import numpy as np
+import pandas as pd
 
 from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.core.helpers import get_class_attributes
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
+from lahuta.writers.frame_writer import DataFrameWriter
 
 
 class HBondHandler:
@@ -19,13 +21,6 @@ class HBondHandler:
         self.hbond_array = hbond_array
 
     def get_hbond_distances(self, attr_col, hbound_attr_col):
-        # print(
-        #     "...",
-        #     # self._atoms.n_atoms,
-        #     # self._atoms.indices.max(axis=0),
-        #     hbound_attr_col.atoms.indices.max(axis=0),
-        #     attr_col.atoms.indices.max(axis=0),
-        # )
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
@@ -56,26 +51,17 @@ class HBondHandler:
 class NeighborPairs:
     """A class for storing neighbor pairs."""
 
-    # TODO:
     def __init__(self, luni, pairs, distances):
         self.luni = luni
-        # self.atoms = luni.to("mda").atoms
         self.atoms = luni.to("mda").atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
-        self._pairs, self._distances = self._sort_inputs(pairs, distances)
+        self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        # print("uniatom type: ", type(uniatom))
-        # print("uniatom atoms type: ", type(uniatom.atoms))
-        # print("uniatom atoms universe type: ", type(uniatom.atoms.universe))
-        # print(
-        #     "uniatom atoms universe hbond_array type: ",
-        #     type(uniatom.atoms.universe.hbond_array),
-        # )
-        # print("-->", self.atoms.n_atoms, luni.hbond_array.shape)
         self.hbond_array = luni.hbond_array
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
+        self._annotations = {}
 
     def _validate_inputs(self, pairs, distances):
         message = (
@@ -84,7 +70,22 @@ class NeighborPairs:
         )
         assert pairs.shape[0] == distances.shape[0], message
 
-    def _sort_inputs(self, pairs, distances):
+    @staticmethod
+    def get_sorting_index(pairs):
+        pairs = np.sort(pairs, axis=1)
+        indices = np.argsort(pairs[:, 0])
+
+        return indices
+
+    # @staticmethod
+    # def get_sorting_index(pairs):
+    #     pairs_sorted = np.sort(pairs, axis=1)
+    #     # indices = np.lexsort((pairs_sorted[:, 1], pairs_sorted[:, 0]))
+    #     indices = np.argsort(pairs_sorted[:, 0])
+    #     return indices
+
+    @staticmethod
+    def sort_inputs(pairs, distances):
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
 
@@ -119,8 +120,6 @@ class NeighborPairs:
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
-
     def index_filter(
         self,
         indices: List[int],
@@ -147,8 +146,6 @@ class NeighborPairs:
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
-
     def distance_filter(self, distance: float) -> "NeighborPairs":
         """Select pairs based on the distance.
 
@@ -164,7 +161,6 @@ class NeighborPairs:
         """
         mask = self.distances <= distance
         return self.clone(self.pairs[mask], self.distances[mask])
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def numeric_filter(
         self, array: np.ndarray, cutoff: float, lte: bool = True
@@ -184,7 +180,6 @@ class NeighborPairs:
         # add support for lt and gt
         mask = array <= cutoff if lte else array > cutoff
         return self.clone(self.pairs[mask], self.distances[mask])
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
         """Select pairs based on the radius.
@@ -207,8 +202,6 @@ class NeighborPairs:
         mask = col_func.atoms.vdw_radii <= radius
 
         return self.clone(self.pairs[mask], self.distances[mask])
-
-        # return self.__class__(self._atoms, self.pairs[mask], self.distances[mask])
 
     def hbond_distance_filter(
         self, partner: int, vdw_comp_factor: float = 0.1
@@ -238,13 +231,6 @@ class NeighborPairs:
 
         return self.clone(hbond_dist_pairs, hbond_distances)
 
-        # return self.__class__(
-        #     self._atoms,
-        #     hbond_dist_pairs,
-        #     hbond_distances,
-        #     # hbangles=self.hbond_angles,
-        # )
-
     def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
         """Filter the pairs based on the angle between the hydrogen bonded atoms.
 
@@ -273,12 +259,6 @@ class NeighborPairs:
         self._distances = self._distances[idx]
 
         return self.clone(self.pairs, self.distances)
-
-        # return self.__class__(
-        #     self._atoms,
-        #     self._pairs,
-        #     self.distances,
-        # )
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
@@ -481,6 +461,83 @@ class NeighborPairs:
         return child_instance
 
     @property
+    def annotations(self) -> Dict[str, Sequence[Any]]:
+        """Get the annotations of the NeighborPairs object."""
+        return self._annotations
+
+    @annotations.setter
+    def annotations(self, annotations: Dict[str, Sequence[Any]]):
+        """Set the annotations of the NeighborPairs object."""
+        self._annotations = annotations
+
+    def add_annotations(self, annotations: Dict[str, Sequence[Any]]):
+        """Add annotations to the NeighborPairs object."""
+        for value in annotations.values():
+            assert len(value) == self.pairs.shape[0]
+
+        self._annotations.update(annotations)
+
+    def to_frame(
+        self,
+        df_format: Literal["compact", "expanded"] = "expanded",
+        annotations: bool = False,
+    ) -> pd.DataFrame:
+        """Convert the NeighborPairs object to a pandas DataFrame.
+
+        Parameters
+        ----------
+        df_format : str
+            The format of the DataFrame. It can be either "compact" or "expanded".
+        annotations : bool
+            Whether to include annotations in the DataFrame.
+
+        Returns
+        -------
+        df : pd.DataFrame
+            The DataFrame containing the pairs of atoms and their distances.
+        """
+        if annotations:
+            return self._create_df(df_format, self.annotations)
+        else:
+            return self._create_df(df_format)
+
+        # return self._create_df(df_format)
+
+    def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> dict:
+        """Convert the NeighborPairs object to a dictionary.
+
+        Parameters
+        ----------
+        df_format : str
+            The format of the DataFrame. It can be either "compact" or "expanded".
+
+        Returns
+        -------
+        df : pd.DataFrame
+            The DataFrame containing the pairs of atoms and their distances.
+        """
+        return self._create_df(df_format).to_dict(orient="list")
+
+    def _create_df(
+        self,
+        df_format: Literal["compact", "expanded"] = "expanded",
+        annotations: Dict[str, np.ndarray] = None,
+    ):
+        """Create a DataFrame from the NeighborPairs object."""
+        return DataFrameWriter(self, df_format, annotations).create()
+
+    def _neighborpairs_equal(self, other):
+        # Get the indices that would sort each array
+        indices1 = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))
+        indices2 = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))
+
+        # Sort each array using the indices
+        pairs, dists = self.pairs[indices1], self.distances[indices1]
+        other_pairs, other_dists = other.pairs[indices2], other.distances[indices2]
+
+        return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)
+
+    @property
     def partner1(self) -> mda.AtomGroup:
         """Get the first partner of the pairs of atoms that are neighbors."""
         return self._get_pair_column(1)
@@ -519,10 +576,9 @@ class NeighborPairs:
             A new NeighborPair object containing the pair of atoms at the specified index.
         """
         if isinstance(item, int):
-            return self.__class__(
-                self.atoms,
-                self._pairs[item].reshape(1, 2),
-                self._distances[item],
+            return self.clone(
+                self.pairs[item],
+                self.distances[item],
             )
 
         # return self.__class__(self._atoms, self.pairs[item], self.distances[item])
@@ -557,7 +613,7 @@ class NeighborPairs:
         return self.symmetric_difference(other)
 
     def __eq__(self, other):
-        return np.array_equal(self.pairs, other.pairs)
+        return self._neighborpairs_equal(other)
 
     def __and__(self, other):
         return self.intersection(other)

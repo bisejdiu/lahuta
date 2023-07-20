@@ -2,13 +2,10 @@ import time
 
 import MDAnalysis as mda
 
-import lahuta.contacts.contacts as contacts
-from lahuta.contacts.plane import (
-    APDataFrameFactory,
-    AtomPlaneContacts,
+from lahuta.contacts import AtomPlaneContacts, F
+from lahuta.contacts.plane_plane import (
     PlanePlaneContacts,
-    PPDataFrameFactory,
-)
+)  # APDataFrameFactory,; PPDataFrameFactory,
 from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
@@ -31,59 +28,78 @@ if __name__ == "__main__":
     print("Finished computing neighbors")
 
     # Compute contacAMIDE_SMARTSts
-    cov = contacts.covalent_neighbors(n)
+    cov = F.covalent_neighbors(n)
     print(cov.pairs.shape, "cov")
 
-    met = contacts.metalic_neighbors(n)
+    met = F.metalic_neighbors(n)
     print(met.pairs.shape, "met")
 
-    carb = contacts.carbonyl_neighbors(n)
+    carb = F.carbonyl_neighbors(n)
     print(carb.pairs.shape, "carb")
 
-    hb = contacts.hbond_neighbors(n)
+    hb = F.hbond_neighbors(n)
     print(hb.pairs.shape, "hb")
 
-    whb = contacts.weak_hbond_neighbors(n)
+    whb = F.weak_hbond_neighbors(n)
     print(whb.pairs.shape, "whb")
 
-    ionic = contacts.ionic_neighbors(n)
+    ionic = F.ionic_neighbors(n)
     print(ionic.pairs.shape, "ionic")
 
-    aromatic = contacts.aromatic_neighbors(n)
+    aromatic = F.aromatic_neighbors(n)
     print(aromatic.pairs.shape, "aromatic")
 
-    hydrophobic = contacts.hydrophobic_neighbors(n)
+    hydrophobic = F.hydrophobic_neighbors(n)
     print(hydrophobic.pairs.shape, "hydrophobic")
 
-    phb = contacts.polar_hbond_neighbors(n)
+    phb = F.polar_hbond_neighbors(n)
     print(phb.pairs.shape, "phb")
 
-    wphb = contacts.weak_polar_hbond_neighbors(n)
+    wphb = F.weak_polar_hbond_neighbors(n)
     print(wphb.pairs.shape, "wphb")
 
-    vdw = contacts.vdw_neighbors(n)
+    vdw = F.vdw_neighbors(n)
     print(vdw.pairs.shape, "vdw")
 
-    ap = AtomPlaneContacts(u)
-    ap.compute_contacts()
-
-    cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    cp = F.carbon_pi(n)
     print(cp.pairs.shape, "cp")
 
-    cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    cp2 = F.cation_pi(n)
     print(cp2.pairs.shape, "cp2")
 
-    dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    dp = F.donor_pi(n)
     print(dp.pairs.shape, "dp")
 
-    sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    sp = F.sulphur_pi(n)
     print(sp.pairs.shape, "sp")
 
-    pp = PlanePlaneContacts(u)
-    pp.compute_contacts()
+    # ap = AtomPlaneContacts(u)
+    # ap.compute_contacts()
+
+    # cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # print(cp.pairs.shape, "cp")
+
+    # cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # print(cp2.pairs.shape, "cp2")
+
+    # dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # print(dp.pairs.shape, "dp")
+
+    # sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # print(sp.pairs.shape, "sp")
+
+    # pp = PlanePlaneContacts(n)
+    # pp.compute()
+    # pn = pp.get_neighbors()
+    # print(pn.pairs.shape, "pp")
+
+    # # print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
+    # print(pp.get_neighbors().to_frame(annotations=True))
+
+    pp = F.plane_plane_neighbors(n)
     print(pp.pairs.shape, "pp")
 
-    print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
+    print(pp.to_frame(annotations=True))
 
     end = time.time()
     print("Time elapsed: ", end - start)

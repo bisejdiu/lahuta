@@ -17,6 +17,7 @@ class Atoms:
 
     def __init__(self):
         self._data = np.empty(0, dtype=self.dtype)
+        self._coordinates = np.zeros((0, 3))
 
     @classmethod
     def from_gemmi(cls, gemmi_block):
@@ -31,6 +32,7 @@ class Atoms:
         data["type"] = np.array(gemmi_block.get("type_symbol"))
 
         cls_instance._data = data
+        cls_instance._coordinates = np.zeros((0, 3))
 
         return cls_instance
 
@@ -44,6 +46,7 @@ class Atoms:
         data["type"] = uv.atoms.types
 
         cls_instance._data = data
+        cls_instance._coordinates = uv.atoms.positions
 
         return cls_instance
 
@@ -62,6 +65,14 @@ class Atoms:
     @property
     def elements(self):
         return self._data["element"]
+
+    @property
+    def coordinates(self):
+        return self._coordinates
+
+    @coordinates.setter
+    def coordinates(self, coordinates):
+        self._coordinates = coordinates
 
     def __len__(self):
         return self._data.size

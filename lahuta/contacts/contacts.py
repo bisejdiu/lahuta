@@ -6,6 +6,20 @@ from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.utils.array_utils import difference, np_optimized_matching_pairs
 
+__all__ = [
+    "covalent_neighbors",
+    "metalic_neighbors",
+    "carbonyl_neighbors",
+    "ionic_neighbors",
+    "aromatic_neighbors",
+    "hydrophobic_neighbors",
+    "vdw_neighbors",
+    "hbond_neighbors",
+    "weak_hbond_neighbors",
+    "polar_hbond_neighbors",
+    "weak_polar_hbond_neighbors",
+]
+
 
 def get_bonded_atoms(mol):
     """Get the bonded atoms of a molecule.
@@ -48,7 +62,6 @@ def covalent_neighbors(ns: NeighborPairs):
     indices = np_optimized_matching_pairs(ns.pairs + 1, bonds)
 
     return ns.clone(ns.pairs[indices], ns.distances[indices])
-    # return NeighborPairs(ns.luni, pairs, distances)
 
 
 def metalic_neighbors(
