@@ -1,5 +1,5 @@
 from .aromatic import AromaticContacts
-from .atom_plane import carbon_pi, cation_pi, donor_pi, sulphur_pi
+from .atom_plane import AtomPlaneContacts, carbon_pi, cation_pi, donor_pi, sulphur_pi
 from .carbon_pi import CarbonPi
 from .carbonyl import CarbonylContacts
 from .cation_pi import CationPi
@@ -61,4 +61,5 @@ __all__ = [
     "CationPi",
     "DonorPi",
     "SulphurPi",
+    "AtomPlaneContacts",
 ]

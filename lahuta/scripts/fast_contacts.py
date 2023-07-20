@@ -2,10 +2,9 @@ import time
 
 import MDAnalysis as mda
 
-from lahuta.contacts import F
+from lahuta.contacts import AtomPlaneContacts, F
 from lahuta.contacts.plane import (
     APDataFrameFactory,
-    AtomPlaneContacts,
     PlanePlaneContacts,
     PPDataFrameFactory,
 )
