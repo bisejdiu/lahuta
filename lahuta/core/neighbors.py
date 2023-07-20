@@ -2,7 +2,7 @@
 Placeholder for the neighbors module.
 """
 
-from typing import List, Literal, Union
+from typing import Dict, List, Literal, Union
 
 import MDAnalysis as mda
 import numpy as np
@@ -61,6 +61,7 @@ class NeighborPairs:
         self.hbond_array = luni.hbond_array
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
+        self._annotations = {}
 
     def _validate_inputs(self, pairs, distances):
         message = (
@@ -70,9 +71,12 @@ class NeighborPairs:
         assert pairs.shape[0] == distances.shape[0], message
 
     @staticmethod
-    def sort_inputs(pairs, distances):
+    def sort_inputs(pairs, distances, return_indices=False):
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
+
+        if return_indices:
+            return pairs[indices], distances[indices], indices
 
         return pairs[indices], distances[indices]
 
@@ -445,8 +449,24 @@ class NeighborPairs:
 
         return child_instance
 
+    @property
+    def annotations(self) -> Dict[str, np.ndarray]:
+        """Get the annotations of the NeighborPairs object."""
+        return self._annotations
+
+    @annotations.setter
+    def annotations(self, annotations: Dict[str, np.ndarray]):
+        """Set the annotations of the NeighborPairs object."""
+        self._annotations = annotations
+
+    def add_annotations(self, annotations: Dict[str, np.ndarray]):
+        """Add annotations to the NeighborPairs object."""
+        self._annotations.update(annotations)
+
     def to_frame(
-        self, df_format: Literal["compact", "expanded"] = "expanded"
+        self,
+        df_format: Literal["compact", "expanded"] = "expanded",
+        annotations: bool = False,
     ) -> pd.DataFrame:
         """Convert the NeighborPairs object to a pandas DataFrame.
 
@@ -454,13 +474,20 @@ class NeighborPairs:
         ----------
         df_format : str
             The format of the DataFrame. It can be either "compact" or "expanded".
+        annotations : bool
+            Whether to include annotations in the DataFrame.
 
         Returns
         -------
         df : pd.DataFrame
             The DataFrame containing the pairs of atoms and their distances.
         """
-        return self._create_df(df_format)
+        if annotations:
+            return self._create_df(df_format, self.annotations)
+        else:
+            return self._create_df(df_format)
+
+        # return self._create_df(df_format)
 
     def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> dict:
         """Convert the NeighborPairs object to a dictionary.
@@ -477,9 +504,13 @@ class NeighborPairs:
         """
         return self._create_df(df_format).to_dict(orient="list")
 
-    def _create_df(self, df_format: Literal["compact", "expanded"] = "expanded"):
+    def _create_df(
+        self,
+        df_format: Literal["compact", "expanded"] = "expanded",
+        annotations: Dict[str, np.ndarray] = None,
+    ):
         """Create a DataFrame from the NeighborPairs object."""
-        return DataFrameWriter(self, df_format).create()
+        return DataFrameWriter(self, df_format, annotations).create()
 
     def _neighborpairs_equal(self, other):
         # Get the indices that would sort each array
