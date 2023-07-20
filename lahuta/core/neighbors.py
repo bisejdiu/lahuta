@@ -71,12 +71,23 @@ class NeighborPairs:
         assert pairs.shape[0] == distances.shape[0], message
 
     @staticmethod
-    def sort_inputs(pairs, distances, return_indices=False):
+    def get_sorting_index(pairs):
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
 
-        if return_indices:
-            return pairs[indices], distances[indices], indices
+        return indices
+
+    # @staticmethod
+    # def get_sorting_index(pairs):
+    #     pairs_sorted = np.sort(pairs, axis=1)
+    #     # indices = np.lexsort((pairs_sorted[:, 1], pairs_sorted[:, 0]))
+    #     indices = np.argsort(pairs_sorted[:, 0])
+    #     return indices
+
+    @staticmethod
+    def sort_inputs(pairs, distances):
+        pairs = np.sort(pairs, axis=1)
+        indices = np.argsort(pairs[:, 0])
 
         return pairs[indices], distances[indices]
 

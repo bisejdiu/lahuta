@@ -132,11 +132,10 @@ class PlanePlaneContacts:
 
     def _sort_inputs(self):
         pairs, distances = self._get_pairs_distances()
-        pairs, distances, indices = NeighborPairs.sort_inputs(  # type: ignore
-            pairs, distances, return_indices=True
-        )
+        indices = NeighborPairs.get_sorting_index(pairs)
+        pairs, distances = NeighborPairs.sort_inputs(pairs, self.distances)
+
         self._pair_ids = self._pair_ids[indices]
-        self.distances = distances
         sorted_annotations = {k: v[indices] for k, v in self._annotations.items()}
         self._annotations = sorted_annotations
 

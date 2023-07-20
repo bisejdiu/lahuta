@@ -44,30 +44,30 @@ def data_loader():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
-        u = Universe(str(path_obj))
-    n = u.compute_neighbors()
-    return u, n
+        uv = Universe(str(path_obj))
+    ns = uv.compute_neighbors()
+    return ns
 
 
 @pytest.fixture(scope="session")
 def neighbors(data_loader):
     """Helper fixture to get neighbor pairs."""
-    return data_loader[1]
+    return data_loader
 
 
 @pytest.fixture(scope="session")
 def ap(data_loader):
     """Helper fixture to get ap."""
-    ap = AtomPlaneContacts(data_loader[1])
+    ap = AtomPlaneContacts(data_loader)
     return ap
 
 
 @pytest.fixture(scope="session")
 def planeplane(data_loader):
     """Helper fixture to get planeplane."""
-    planeplane = PlanePlaneContacts(data_loader[0])
+    planeplane = PlanePlaneContacts(data_loader)
     planeplane.compute()
-    return planeplane
+    return planeplane.get_neighbors()
 
 
 @pytest.mark.parametrize(
