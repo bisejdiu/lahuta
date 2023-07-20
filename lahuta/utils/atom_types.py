@@ -10,46 +10,25 @@ from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.config.atoms import (ID_TO_TYPES, PROT_ATOM_TYPES,
-                                 STANDARD_AMINO_ACIDS)
+from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
+from lahuta.types.mdanalysis import AtomGroupType, ResidueGroupType
+from lahuta.types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
-class ResidueGroupType(Protocol):
-    
-    @property
-    def atoms(self) -> "AtomGroupType":
-        ...
-
-    def __iter__(self) -> Any:
-        ...
-
-
-class AtomGroupType(Protocol):
-
-    def select_atoms(self, selection: str) -> "AtomGroupType":
-        ...
-
-    @property
-    def residues(self) -> "ResidueGroupType":
-        ...
-
-    def __iter__(self) -> Any:
-        ...
-
-def assign_atom_types(mol, atomgroup: AtomGroupType):
+def assign_atom_types(mol: MolType, atomgroup: AtomGroupType):
     """
     Assign atom types to each atom in the molecule.
     Atom types are defined in `SmartsPatternRegistry`
     """
     atypes = AVAILABLE_ATOM_TYPES
-    uv = atomgroup.universe.atoms.universe
+    # uv = atomgroup.universe.atoms.universe
 
-    atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
+    atypes_array = np.zeros((mol.NumAtoms(), len(atypes)), dtype=np.int8)
     for atom_type in SmartsPatternRegistry:
         smartsdict = SmartsPatternRegistry[atom_type.name].value
         for smarts in smartsdict.values():
-            ob_smart = ob.OBSmartsPattern()
+            ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(ob.OBSmartsPattern())
             ob_smart.Init(str(smarts))
             ob_smart.Match(mol)
 
@@ -84,7 +63,9 @@ def assign_atom_types(mol, atomgroup: AtomGroupType):
     return atypes_array
 
 
-def vec_assign_atom_types(mol, atomgroup, ta):
+def vec_assign_atom_types(
+    mol: MolType, atomgroup: AtomGroupType, ta: Dict[str, NDArray[np.str_]]
+):
     """
     Assign atom types to each atom in the molecule.
     Atom types are defined in `SmartsPatternRegistry`
@@ -98,7 +79,7 @@ def vec_assign_atom_types(mol, atomgroup, ta):
     for atom_type in SmartsPatternRegistry:
         smartsdict = SmartsPatternRegistry[atom_type.name].value
         for smarts in smartsdict.values():
-            ob_smart = ob.OBSmartsPattern()
+            ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(ob.OBSmartsPattern())
             ob_smart.Init(str(smarts))
             ob_smart.Match(mol)
 
