@@ -30,7 +30,7 @@ PROT_ATOM_TYPES: Dict[str, Set[str]] = {
 }
 
 
-def remap_prot_atom_types(prot_atom_types):
+def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
     """Convert the PROT_ATOM_TYPES dictionary to a dictionary mapping atom ids to atom types.
 
     Args:
@@ -39,7 +39,7 @@ def remap_prot_atom_types(prot_atom_types):
     Returns:
         dict: A dictionary mapping atom ids to atom types.
     """
-    id_to_types = {}
+    id_to_types: Dict[str, Set[str]] = {}
     for atom_type, atom_set in prot_atom_types.items():
         for atom_id in atom_set:
             if atom_id not in id_to_types:
