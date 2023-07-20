@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import List
 
 import lahuta.config._smart_strings as smarts
 
@@ -37,6 +38,6 @@ class SmartsPatternRegistry(Enum):
     AROMATIC = smarts.AROMATIC_SMARTS
 
 
-_Atom_Type_Names: list[str] = [member.name for member in SmartsPatternRegistry]
+_Atom_Type_Names: List[str] = [member.name for member in SmartsPatternRegistry]
 available_atom_types_dict = {name: i for i, name in enumerate(_Atom_Type_Names)}
 AVAILABLE_ATOM_TYPES = Enum("AVAILABLE_ATOM_TYPES", available_atom_types_dict)
