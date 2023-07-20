@@ -132,7 +132,7 @@ class PlanePlaneContacts:
 
     def _sort_inputs(self):
         pairs, distances = self._get_pairs_distances()
-        pairs, distances, indices = NeighborPairs.sort_inputs(
+        pairs, distances, indices = NeighborPairs.sort_inputs(  # type: ignore
             pairs, distances, return_indices=True
         )
         self._pair_ids = self._pair_ids[indices]
@@ -151,7 +151,7 @@ class PlanePlaneContacts:
     def _gen_combinations(self, use_itertools=False):
         """Generate all combinations of pairs of indices in the form (i, j) where i < j"""
         if use_itertools:
-            from itertools import combinations
+            from itertools import combinations  # type: ignore
 
             return np.array(list(combinations(range(len(self.rings)), 2)))
         else:
@@ -292,43 +292,6 @@ class APDataFrameFactory:
         data["ring_atoms"] = ring_atoms
         data["distances"] = apcontacts.distances
         data["labels"] = [label] * len(apcontacts.distances)
-
-        self.data = data
-
-    def dataframe(self) -> pd.DataFrame:
-        """Build the dataframe based on input format."""
-
-        return FACTORY_DICT[self.format].dataframe(self.data)
-        # return ExpandedDataFrame().dataframe(self.data)
-
-
-class PPDataFrameFactory:
-    """A class for storing and manipulating contact data."""
-
-    def __init__(
-        self,
-        pcontacts: Any,
-        df_format: Literal["print", "compact", "expanded"] = "print",
-    ):
-        """A class for storing and manipulating contact data."""
-
-        nag = pcontacts.ua.to("mda").atoms[pcontacts.pairs]
-        col1, col2 = nag[:, 0], nag[:, 1]
-
-        self.methods = ["resids", "resnames", "names", "indices"]
-        self.format = df_format
-
-        data = {}
-        for method in self.methods:
-            data[f"residue1_{method}"] = getattr(col1, method)
-            data[f"residue2_{method}"] = getattr(col2, method)
-
-        data["ring1_atoms"] = [ring[0] for ring in pcontacts.ring_atom_indices]
-        data["ring2_atoms"] = [ring[1] for ring in pcontacts.ring_atom_indices]
-        data["distances"] = pcontacts.distances
-        data["theta_angles"] = pcontacts.theta_angles
-        data["normal_angles"] = pcontacts.normal_angles
-        data["labels"] = pcontacts.contact_labels
 
         self.data = data
 
