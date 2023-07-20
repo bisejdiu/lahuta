@@ -73,11 +73,14 @@ class PlanePlaneContacts:
         self.ns = ns
         self.rings = enumerate_rings(self.ns.luni.to("mol"))
         self.centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
+        self._annotations = {}
+
+        self._pair_ids = np.array([])
+        self.distances = np.array([])
 
     def compute(self):
         centers = self.rings.centers
         normals = self.rings.normals
-        atom_indices = self.rings.first_atom_idx
 
         pair_ids = self._gen_combinations()
 
@@ -100,34 +103,50 @@ class PlanePlaneContacts:
 
         int_types = assign_pp_contact_type(normal_angles, theta_angles)
 
-        # check for int_type is not None constraint
-        valid_mask = int_types != "None"
+        # check for int_type is not None
+        mask = int_types != "None"
 
-        self._pair_ids = pair_ids[valid_mask]
-        self.distances = pair_dists[valid_mask]
-        self.contact_labels = int_types[valid_mask]
-        self.ring_atom_indices = atom_indices[pair_ids[valid_mask]]
-        self.theta_angles = theta_angles[valid_mask]
-        self.normal_angles = normal_angles[valid_mask]
+        self._pair_ids = pair_ids[mask]
+        self.distances = pair_dists[mask]
 
-    @property
-    def pairs(self):
+        self._make_annotations(theta_angles[mask], normal_angles[mask], int_types[mask])
+
+    def _make_annotations(self, theta_angles, normal_angles, int_types):
+        ring_atoms = self.rings.atoms[self._pair_ids]
+        self._annotations["theta_angles"] = theta_angles
+        self._annotations["normal_angles"] = normal_angles
+        self._annotations["ring1_atoms"] = ring_atoms[:, 0]
+        self._annotations["ring2_atoms"] = ring_atoms[:, 1]
+        self._annotations["contact_labels"] = int_types
+
+    def _get_pairs_distances(self):
+        ring_atom_indices = self.rings.first_atom_idx[self._pair_ids]
         first_ring_indices, second_ring_indices = (
-            self.ring_atom_indices[:, 0],
-            self.ring_atom_indices[:, 1],
+            ring_atom_indices[:, 0],
+            ring_atom_indices[:, 1],
         )
-        return np.array(list(zip(first_ring_indices, second_ring_indices)))
+
+        pairs = np.array(list(zip(first_ring_indices, second_ring_indices)))
+
+        return pairs, self.distances
+
+    def _sort_inputs(self):
+        pairs, distances = self._get_pairs_distances()
+        pairs, distances, indices = NeighborPairs.sort_inputs(
+            pairs, distances, return_indices=True
+        )
+        self._pair_ids = self._pair_ids[indices]
+        self.distances = distances
+        sorted_annotations = {k: v[indices] for k, v in self._annotations.items()}
+        self._annotations = sorted_annotations
+
+        return pairs, distances
 
     def get_neighbors(self):
-        first_ring_indices, second_ring_indices = (
-            self.ring_atom_indices[:, 0],
-            self.ring_atom_indices[:, 1],
-        )
-        pairs = np.array(list(zip(first_ring_indices, second_ring_indices)))
-        sorted_pairs, sorted_distances = NeighborPairs.sort_inputs(
-            pairs, self.distances
-        )
-        return self.ns.clone(sorted_pairs, sorted_distances)
+        pairs, distances = self._sort_inputs()
+        ns = self.ns.clone(pairs, distances)
+        ns.annotations = self._annotations
+        return ns
 
     def _gen_combinations(self, use_itertools=False):
         """Generate all combinations of pairs of indices in the form (i, j) where i < j"""

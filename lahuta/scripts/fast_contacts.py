@@ -92,9 +92,10 @@ if __name__ == "__main__":
 
     pp = PlanePlaneContacts(n)
     pp.compute()
-    print(pp.pairs.shape, "pp")
+    pn = pp.get_neighbors()
+    print(pn.pairs.shape, "pp")
 
     # print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
-    print(pp.get_neighbors().to_frame())
+    print(pp.get_neighbors().to_frame(annotations=True))
     end = time.time()
     print("Time elapsed: ", end - start)
