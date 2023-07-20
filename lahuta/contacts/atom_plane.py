@@ -3,7 +3,7 @@ from joblib import Memory
 from MDAnalysis.lib import distances as mda_distances
 
 from lahuta.config.defaults import CONTACTS
-from lahuta.contacts.plane import perceive_rings, vector_angle
+from lahuta.contacts.plane_plane import perceive_rings, vector_angle
 from lahuta.core.neighbors import NeighborPairs
 
 memory = Memory("cachedir", verbose=0)

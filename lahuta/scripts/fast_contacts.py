@@ -3,7 +3,7 @@ import time
 import MDAnalysis as mda
 
 from lahuta.contacts import AtomPlaneContacts, F
-from lahuta.contacts.plane import (
+from lahuta.contacts.plane_plane import (
     APDataFrameFactory,
     PlanePlaneContacts,
     PPDataFrameFactory,
@@ -90,11 +90,11 @@ if __name__ == "__main__":
     # sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
     # print(sp.pairs.shape, "sp")
 
-    pp = PlanePlaneContacts(u)
-    pp.compute_contacts()
+    pp = PlanePlaneContacts(n)
+    pp.compute()
     print(pp.pairs.shape, "pp")
 
-    print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
-
+    # print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
+    print(pp.get_neighbors().to_frame())
     end = time.time()
     print("Time elapsed: ", end - start)

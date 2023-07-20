@@ -8,7 +8,7 @@ import pytest
 import lahuta.contacts as C
 from lahuta.contacts import F
 from lahuta.contacts.atom_plane import AtomPlaneContacts
-from lahuta.contacts.plane import PlanePlaneContacts
+from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.universe import Universe
 
 # pylint: disable=redefined-outer-name
@@ -66,7 +66,7 @@ def ap(data_loader):
 def planeplane(data_loader):
     """Helper fixture to get planeplane."""
     planeplane = PlanePlaneContacts(data_loader[0])
-    planeplane.compute_contacts()
+    planeplane.compute()
     return planeplane
 
 
