@@ -44,8 +44,8 @@ def data_loader():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
-        uv = Universe(str(path_obj))
-    ns = uv.compute_neighbors()
+        universe = Universe(str(path_obj))
+    ns = universe.compute_neighbors()
     return ns
 
 
@@ -56,18 +56,18 @@ def neighbors(data_loader):
 
 
 @pytest.fixture(scope="session")
-def ap(data_loader):
-    """Helper fixture to get ap."""
-    ap = AtomPlaneContacts(data_loader)
-    return ap
+def atom_plane(data_loader):
+    """Helper fixture to get atomplane."""
+    atomplane = AtomPlaneContacts(data_loader)
+    return atomplane
 
 
 @pytest.fixture(scope="session")
-def planeplane(data_loader):
+def plane_plane(data_loader):
     """Helper fixture to get planeplane."""
     planeplane = PlanePlaneContacts(data_loader)
-    planeplane.compute()
-    return planeplane.get_neighbors()
+
+    return planeplane
 
 
 @pytest.mark.parametrize(
@@ -130,7 +130,7 @@ def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
 def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
     """Test the neighbors."""
     instance = contact_class(neighbors)
-    instance.run()
+    # instance.run()
     result = instance.results
 
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
@@ -168,9 +168,9 @@ def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
         ),
     ],
 )
-def test_atomplane_contacts(contact_func, expected_result, ap):
+def test_atomplane_contacts(contact_func, expected_result, atom_plane):
     """Test the contacts."""
-    result = contact_func(ap)
+    result = contact_func(atom_plane)
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
 
     expected_pairs = np.array(expected_result["pairs"])
@@ -184,9 +184,10 @@ def test_atomplane_contacts(contact_func, expected_result, ap):
     assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
 
-def test_planeplane_neighbors(planeplane):
-    """Test the planeplane neighbors."""
-    pairs, distances = np.array(planeplane.pairs), np.array(planeplane.distances)
-    assert planeplane.pairs.shape[0] == ExpectedResults.PLANEPLANE["shapex"]
+def test_planeplane_neighbors(plane_plane):
+    """Test the plane_plane neighbors."""
+    plane_ns = plane_plane.results
+    pairs, distances = np.array(plane_ns.pairs), np.array(plane_ns.distances)
+    assert plane_ns.pairs.shape[0] == ExpectedResults.PLANEPLANE["shapex"]
     assert np.all(pairs == ExpectedResults.PLANEPLANE["pairs"])
     assert np.allclose(distances, ExpectedResults.PLANEPLANE["distances"], atol=1e-3)

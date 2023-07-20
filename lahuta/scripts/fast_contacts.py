@@ -88,12 +88,18 @@ if __name__ == "__main__":
     # sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
     # print(sp.pairs.shape, "sp")
 
-    pp = PlanePlaneContacts(n)
-    pp.compute()
-    pn = pp.get_neighbors()
-    print(pn.pairs.shape, "pp")
+    # pp = PlanePlaneContacts(n)
+    # pp.compute()
+    # pn = pp.get_neighbors()
+    # print(pn.pairs.shape, "pp")
 
-    # print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
-    print(pp.get_neighbors().to_frame(annotations=True))
+    # # print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
+    # print(pp.get_neighbors().to_frame(annotations=True))
+
+    pp = F.plane_plane_neighbors(n)
+    print(pp.pairs.shape, "pp")
+
+    print(pp.to_frame(annotations=True))
+
     end = time.time()
     print("Time elapsed: ", end - start)

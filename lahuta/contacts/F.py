@@ -12,6 +12,7 @@ from .contacts import (
     weak_hbond_neighbors,
     weak_polar_hbond_neighbors,
 )
+from .plane_plane import plane_plane_neighbors
 
 __all__ = [
     "aromatic_neighbors",
@@ -29,4 +30,5 @@ __all__ = [
     "sulphur_pi",
     "carbon_pi",
     "cation_pi",
+    "plane_plane_neighbors",
 ]

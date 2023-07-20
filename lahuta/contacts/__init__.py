@@ -27,6 +27,7 @@ from .hbonds import (
 from .hydrophobic import HydrophobicContacts
 from .ionic import IonicContacts
 from .metal import MetalicContacts
+from .plane_plane import plane_plane_neighbors
 from .sulphur_pi import SulphurPi
 from .vdw import VanDerWaalsContacts
 
@@ -46,6 +47,7 @@ __all__ = [
     "sulphur_pi",
     "carbon_pi",
     "cation_pi",
+    "plane_plane_neighbors",
     "AromaticContacts",
     "CarbonylContacts",
     "CovalentContacts",

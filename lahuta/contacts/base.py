@@ -19,6 +19,8 @@ class ContactAnalysis:
         self.partner1_atoms = ns.atoms
         self.results: Any = None
 
+        self.run()
+
     def run(self):
         self.run_methods()
 
