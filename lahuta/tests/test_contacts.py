@@ -88,6 +88,7 @@ def plane_plane(data_loader):
         (F.carbon_pi, ExpectedResults.CARBONPI),
         (F.cation_pi, ExpectedResults.CATIONPI),
         (F.donor_pi, ExpectedResults.DONORPI),
+        (F.plane_plane_neighbors, ExpectedResults.PLANEPLANE),
     ],
 )
 def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
