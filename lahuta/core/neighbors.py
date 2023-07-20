@@ -2,7 +2,7 @@
 Placeholder for the neighbors module.
 """
 
-from typing import Dict, List, Literal, Union
+from typing import Any, Dict, Iterable, List, Literal, Sequence, Sized, Union
 
 import MDAnalysis as mda
 import numpy as np
@@ -450,17 +450,20 @@ class NeighborPairs:
         return child_instance
 
     @property
-    def annotations(self) -> Dict[str, np.ndarray]:
+    def annotations(self) -> Dict[str, Sequence[Any]]:
         """Get the annotations of the NeighborPairs object."""
         return self._annotations
 
     @annotations.setter
-    def annotations(self, annotations: Dict[str, np.ndarray]):
+    def annotations(self, annotations: Dict[str, Sequence[Any]]):
         """Set the annotations of the NeighborPairs object."""
         self._annotations = annotations
 
-    def add_annotations(self, annotations: Dict[str, np.ndarray]):
+    def add_annotations(self, annotations: Dict[str, Sequence[Any]]):
         """Add annotations to the NeighborPairs object."""
+        for value in annotations.values():
+            assert len(value) == self.pairs.shape[0]
+
         self._annotations.update(annotations)
 
     def to_frame(
