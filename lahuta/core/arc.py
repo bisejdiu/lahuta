@@ -262,9 +262,11 @@ class ARC:
         return (self.get_atom(i) for i in range(len(self)))
 
 
-# TODO: The idea is for an atom instance to also contain residue and chain information
 @dataclass
 class Atom:
+
+    # __slots__ = ["name", "id", "element", "type", "resname", "resid", "chain_label", "chain_id"]
+
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 

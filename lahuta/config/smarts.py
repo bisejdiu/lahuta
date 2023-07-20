@@ -37,7 +37,6 @@ class SmartsPatternRegistry(Enum):
     AROMATIC = smarts.AROMATIC_SMARTS
 
 
-_Atom_Type_Names = [member.name for member in SmartsPatternRegistry]
-AVAILABLE_ATOM_TYPES = Enum(
-    "AVAILABLE_ATOM_TYPES", {name: i for i, name in enumerate(_Atom_Type_Names)}
-)
+_Atom_Type_Names: list[str] = [member.name for member in SmartsPatternRegistry]
+available_atom_types_dict = {name: i for i, name in enumerate(_Atom_Type_Names)}
+AVAILABLE_ATOM_TYPES = Enum("AVAILABLE_ATOM_TYPES", available_atom_types_dict)

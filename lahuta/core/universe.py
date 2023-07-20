@@ -13,12 +13,13 @@ from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
+from lahuta.utils.atom_types import (find_hydrogen_bonded_atoms,
+                                     v_radii_assignment)
 
 
 class Universe:
     def __init__(self, *args):
-        self._mdag = None
+        # self._mdag = None
         initializer = self._validate_input(*args)
         initializer(*args)
 
