@@ -15,7 +15,7 @@ from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
-def assign_atom_types(mol: MolType, atomgroup: AtomGroupType):
+def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8]:
     """
     Assign atom types to each atom in the molecule.
     Atom types are defined in `SmartsPatternRegistry`

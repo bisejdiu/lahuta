@@ -34,10 +34,12 @@ class HBondHandler:
 
         return distance_array
 
-    def get_vdw_distances(self, attr_col: AtomGroupType, vdw_comp_factor: float):
+    def get_vdw_distances(
+        self, attr_col: AtomGroupType, vdw_comp_factor: float
+    ) -> NDArray[np.float_]:
         return attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
-    def get_hbond_angles(self, col1: AtomGroupType, col2: AtomGroupType):
+    def get_hbond_angles(self, col1: AtomGroupType, col2: AtomGroupType) -> float:
         atom1_pos = col1.atoms.positions
         atom2_pos = col2.atoms.positions
 
@@ -72,7 +74,7 @@ class NeighborPairs:
 
         self.hbond_array = find_hydrogen_bonded_atoms(self.mda, self.mol)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
-        self.hbond_angles = None  # store values to avoid recomputing
+        self.hbond_angles: Optional[float] = None  # store values to avoid recomputing
         self._annotations: Dict[str, Sequence[Any]] = {}
 
     def _validate_inputs(
@@ -86,8 +88,8 @@ class NeighborPairs:
 
     @staticmethod
     def get_sorting_index(pairs: NDArray[np.int_]) -> NDArray[np.int_]:
-        sorted_pairs: NDArray[np.int_] = np.sort(pairs, axis=1)  # type: ignore
-        indices: NDArray[np.int_] = np.argsort(sorted_pairs[:, 0])  # type: ignore
+        sorted_pairs: NDArray[np.int_] = np.sort(pairs, axis=1)
+        indices: NDArray[np.int_] = np.argsort(sorted_pairs[:, 0])
 
         return indices
 
@@ -95,12 +97,13 @@ class NeighborPairs:
     def sort_inputs(
         pairs: NDArray[np.int_], distances: NDArray[np.float_]
     ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
-        pairs = np.sort(pairs, axis=1)  # type: ignore
-        indices = np.argsort(pairs[:, 0])  # type: ignore
+        pairs = np.sort(pairs, axis=1)
+        indices = np.argsort(pairs[:, 0])
 
         return pairs[indices], distances[indices]
 
     def _get_pair_column(self, partner: int) -> AtomGroupType:
+        """Return the column of the pair of atoms depending on the value of partner."""
         return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner: int) -> Tuple[AtomGroupType, AtomGroupType]:
@@ -477,11 +480,11 @@ class NeighborPairs:
         return self._annotations
 
     @annotations.setter
-    def annotations(self, annotations: Dict[str, Sequence[Any]]):
+    def annotations(self, annotations: Dict[str, Sequence[Any]]) -> None:
         """Set the annotations of the NeighborPairs object."""
         self._annotations = annotations
 
-    def add_annotations(self, annotations: Dict[str, Sequence[Any]]):
+    def add_annotations(self, annotations: Dict[str, Sequence[Any]]) -> None:
         """Add annotations to the NeighborPairs object."""
         for value in annotations.values():
             assert len(value) == self.pairs.shape[0]
@@ -535,11 +538,11 @@ class NeighborPairs:
         self,
         df_format: Literal["compact", "expanded"] = "expanded",
         annotations: Optional[Dict[str, Sequence[Any]]] = None,
-    ):
+    ) -> pd.DataFrame:
         """Create a DataFrame from the NeighborPairs object."""
         return DataFrameWriter(self, df_format, annotations).create()
 
-    def _neighborpairs_equal(self, other: "NeighborPairs"):
+    def _neighborpairs_equal(self, other: "NeighborPairs") -> bool:
         # Get the indices that would sort each array
         indices1: NDArray[np.int_] = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))  # type: ignore
         indices2: NDArray[np.int_] = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))  # type: ignore
@@ -575,7 +578,7 @@ class NeighborPairs:
         """Get the indices of the atoms that are neighbors."""
         return np.unique([self.partner1.indices, self.partner2.indices])  # type: ignore
 
-    def __getitem__(self, item: Union[int, slice]) -> "NeighborPairs":
+    def __getitem__(self, item: Union[int, slice, NDArray[np.int_]]) -> "NeighborPairs":
         """Get the pair of atoms at the specified index.
 
         Parameters
@@ -613,28 +616,28 @@ class NeighborPairs:
 
         return au.issubset(other.pairs, self.pairs)
 
-    def __add__(self, other: "NeighborPairs"):
+    def __add__(self, other: "NeighborPairs") -> "NeighborPairs":
         # TODO:
         # currently this is different from MDAnalysis.
         # The question to answer is if neighbor pairs should be unique or not.
         return self.union(other)
 
-    def __sub__(self, other: "NeighborPairs"):
+    def __sub__(self, other: "NeighborPairs") -> "NeighborPairs":
         return self.difference(other)
 
-    def __or__(self, other: "NeighborPairs"):
+    def __or__(self, other: "NeighborPairs") -> "NeighborPairs":
         return self.symmetric_difference(other)
 
     def __eq__(self, other: Any) -> bool:
         return self._neighborpairs_equal(other)
 
-    def __and__(self, other: "NeighborPairs"):
+    def __and__(self, other: "NeighborPairs") -> "NeighborPairs":
         return self.intersection(other)
 
-    def __xor__(self, other: "NeighborPairs"):
+    def __xor__(self, other: "NeighborPairs") -> "NeighborPairs":
         return self.symmetric_difference(other)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.pairs.shape[0]
 
     def __str__(self) -> str:

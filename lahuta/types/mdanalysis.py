@@ -1,4 +1,4 @@
-from typing import Any, Dict, Protocol, Union
+from typing import Any, Protocol, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -82,7 +82,9 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: Union[int, slice]) -> "AtomGroupType":
+    def __getitem__(
+        self, index: Union[int, slice, NDArray[np.int_]]
+    ) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
@@ -98,7 +100,7 @@ class UniverseType(Protocol):
     def universe(self) -> "UniverseType":
         ...
 
-    def copy() -> "UniverseType":
+    def copy(self) -> "UniverseType":
         ...
 
     def __iter__(self) -> Any:

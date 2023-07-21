@@ -1,7 +1,7 @@
 """
 Placeholder
 """
-from typing import Set, Tuple, TypeVar, Union
+from typing import Tuple, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -97,7 +97,7 @@ def matching_indices(
 
 
 def optimized_matching_pairs(
-    arr1: NDArray[np.int_], set2: Union[NDArray[np.int_], Set[Tuple[int, int]]]
+    arr1: NDArray[np.int_], arr2: NDArray[np.int_]
 ) -> NDArray[np.int_]:
     """Return elements in `arr1` that are in `arr2`.
 
@@ -116,8 +116,7 @@ def optimized_matching_pairs(
     """
     # Convert arrays to sets of tuples
     set1 = set(map(tuple, arr1))
-    if not isinstance(set2, set):
-        set2 = set(map(tuple, set2))
+    set2 = set(map(tuple, arr2))
 
     # Find common elements
     common = np.array(list(set1 & set2))

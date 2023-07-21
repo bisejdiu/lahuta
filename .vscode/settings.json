@@ -18,7 +18,9 @@
 "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
 },
-"python.analysis.typeCheckingMode": "strict"
+"python.analysis.typeCheckingMode": "strict",
+"python.linting.mypyCategorySeverity.error": "Warning",
+"python.linting.mypyEnabled": true
    
 
 }
