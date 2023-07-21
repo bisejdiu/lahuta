@@ -245,15 +245,15 @@ class ARC:
         return Atom(**atom_kwargs)
 
     @property
-    def atoms(self):
+    def atoms(self) -> "Atoms":
         return self._atoms
 
     @property
-    def residues(self):
+    def residues(self) -> "Residues":
         return self._residues
 
     @property
-    def chains(self):
+    def chains(self) -> "Chains":
         return self._chains
 
     def __len__(self):

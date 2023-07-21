@@ -1,14 +1,11 @@
 import gemmi
 import pandas as pd
-from openbabel import openbabel as ob
+from openbabel import openbabel as ob  # type: ignore
 
 
 class OBMol:
     def __init__(self):
         self.mol = None
-        # self.mol = ob.OBMol()
-        # self.mol.SetChainsPerceived()
-        # self.mol.BeginModify()
 
     def create_residue_obmol(self, resid, resname, chain_id):
         assert self.mol is not None, "Molecule is not initialized"

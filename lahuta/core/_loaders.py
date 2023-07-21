@@ -1,57 +1,51 @@
 from abc import ABC, abstractmethod
-from typing import Literal
+from typing import Any, Dict, Literal, Optional, Union
 
 import gemmi
-import MDAnalysis as mda
+import MDAnalysis as mda  # type: ignore
 import numpy as np
 import pandas as pd
-from MDAnalysis.core.groups import AtomGroup
 
 from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
+from lahuta.types.mdanalysis import AtomGroupType, UniverseType
+from lahuta.types.openbabel import MolType
 
 
 class BaseLoader(ABC):
-    def __init__(self, file_path):
+    def __init__(self, file_path: str):
         self.file_path = file_path
         self._chains = None
         self._residues = None
         self._atoms = None
-        # self._coords_array = None
 
         self.structure = None
-        self.ag = None
-        self.arc = None
-
-    # def _validate_access(self, attr_name):
-    #     if getattr(self, attr_name) is None:
-    #         raise ValueError(f"No {attr_name} in the loader")
+        # self.ag = None
+        self.arc: Optional[ARC] = None
 
     @property
-    def n_atoms(self):
-        # self._validate_access("_atoms")
-        return len(self.atoms)  # type: ignore
+    def n_atoms(self) -> int:
+        return len(self.atoms)
 
     @property
-    def chains(self):
-        # self._validate_access("_chains")
+    def chains(self) -> Chains:
+        if self.arc is None:
+            raise ValueError("arc has not been initialized")
         return self.arc.chains
 
     @property
-    def residues(self):
-        # self._validate_access("_residues")
+    def residues(self) -> Residues:
+        if self.arc is None:
+            raise ValueError("arc has not been initialized")
         return self.arc.residues
 
     @property
-    def atoms(self):
-        # self._validate_access("_atoms")
+    def atoms(self) -> Atoms:
+        if self.arc is None:
+            raise ValueError("arc has not been initialized")
         return self.arc.atoms
 
-    # @property
-    # def coords_array(self):
-    #     return self._coords_array
-
-    def to(self, object_type: Literal["mol", "mda"], *args, **kwargs):
+    def to(self, object_type: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
         method_str = f"to_{object_type}"
         if hasattr(self, method_str):
             return getattr(self, method_str)()
@@ -59,11 +53,11 @@ class BaseLoader(ABC):
         raise ValueError(f"Object type {object_type} is not supported")
 
     @abstractmethod
-    def to_mda(self):
+    def to_mda(self) -> AtomGroupType:
         ...
 
     @abstractmethod
-    def to_mol(self):
+    def to_mol(self) -> MolType:
         ...
 
     def __iter__(self):
@@ -73,14 +67,14 @@ class BaseLoader(ABC):
 
 
 class GemmiLoader(BaseLoader):
-    def __init__(self, file_path, is_pdb=False):
+    def __init__(self, file_path: str, is_pdb: bool = False):
         super().__init__(file_path)
         if is_pdb:
-            structure = gemmi.read_pdb(self.file_path)
-            block = structure.make_mmcif_document().sole_block()
+            structure: Any = gemmi.read_pdb(self.file_path)  # type: ignore
+            block: Any = structure.make_mmcif_document().sole_block()
         else:
-            block = gemmi.cif.read(self.file_path).sole_block()
-            structure = gemmi.make_structure_from_block(block)
+            block: Any = gemmi.cif.read(self.file_path).sole_block()  # type: ignore
+            structure: Any = gemmi.make_structure_from_block(block)  # type: ignore
 
         self.structure = structure
         atom_site_data = block.get_mmcif_category("_atom_site.")
@@ -89,28 +83,26 @@ class GemmiLoader(BaseLoader):
         # self._coords_array = self.extract_positions(atom_site_data)
         self.arc.atoms.coordinates = self.extract_positions(atom_site_data)
 
-        self.ag = None
+        self.ag: AtomGroupType = self._create_mda()
 
-    def extract_positions(self, atom_site_data):
-        coords_array = np.zeros((self.n_atoms, 3))
+    def extract_positions(self, atom_site_data: Dict[str, Any]):
+        coords_array = np.zeros((self.n_atoms, 3), dtype=np.float_)
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
         coords_array[:, 2] = atom_site_data.get("Cartn_z")
 
         return coords_array
 
-    def to_mda(self):
-        if self.ag is not None:
-            return self.ag
-
+    def _create_mda(self) -> AtomGroupType:
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
-        struct_arr = np.rec.fromarrays(
+        assert self.arc is not None, "arc has not been initialized"
+        struct_arr = np.rec.fromarrays(  # type: ignore
             [self.arc.residues.resnames, self.arc.residues.resids, self.arc.chains.ids],
-            names="resnames, resids, chain_ids",
+            names=str("resnames, resids, chain_ids"),  # type: ignore
         )
 
         # Use factorize to get the labels and unique values
-        resindices, uniques = pd.factorize(struct_arr)
+        resindices, uniques = pd.factorize(struct_arr)  # type: ignore
 
         resnames, resids, chain_ids = (
             uniques["resnames"],
@@ -119,7 +111,7 @@ class GemmiLoader(BaseLoader):
         )
 
         # Create a new Universe
-        uv = mda.Universe.empty(
+        uv: UniverseType = mda.Universe.empty(  # type: ignore
             n_atoms=self.arc.atoms.ids.size,
             n_residues=uniques.size,
             n_segments=chain_ids.size,
@@ -129,24 +121,24 @@ class GemmiLoader(BaseLoader):
         )
 
         # Add topology attributes
-        uv.add_TopologyAttr("names", self.arc.atoms.names)
-        uv.add_TopologyAttr("type", self.arc.atoms.types)
-        uv.add_TopologyAttr("elements", self.arc.atoms.elements)
-        uv.add_TopologyAttr("resnames", resnames)
-        uv.add_TopologyAttr("resids", resids)
-        uv.add_TopologyAttr("segids", chain_ids)
+        uv.add_TopologyAttr("names", self.arc.atoms.names)  # type: ignore
+        uv.add_TopologyAttr("type", self.arc.atoms.types)  # type: ignore
+        uv.add_TopologyAttr("elements", self.arc.atoms.elements)  # type: ignore
+        uv.add_TopologyAttr("resnames", resnames)  # type: ignore
+        uv.add_TopologyAttr("resids", resids)  # type: ignore
+        uv.add_TopologyAttr("segids", chain_ids)  # type: ignore
 
         uv.atoms.positions = self.arc.atoms.coordinates  # type: ignore
 
-        self.ag = uv.atoms
+        return uv.atoms
 
+    def to_mda(self) -> AtomGroupType:
         return self.ag
 
-    def to_mol(self):
+    def to_mol(self) -> MolType:
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            # self.coords_array,
             self.structure.connections,
         )
 
@@ -158,7 +150,7 @@ class TopologyLoader(BaseLoader):
         file_path = paths[0]
         super().__init__(file_path)
         universe = mda.Universe(self.file_path)
-        self.ag: AtomGroup = universe.atoms  # type: ignore
+        self.ag: AtomGroupType = universe.atoms  # type: ignore
         assert self.ag is not None
         if len(paths) > 1:
             self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
