@@ -1,10 +1,13 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from lahuta.core.loaders import GemmiLoader, TopologyLoader
+
+from lahuta.types.mdanalysis import UniverseType
 
 
 class Atoms:
@@ -16,15 +19,15 @@ class Atoms:
     )
 
     def __init__(self):
-        self._data = np.empty(0, dtype=self.dtype)
-        self._coordinates = np.zeros((0, 3))
+        self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
+        self._coordinates = np.zeros((0, 3), dtype=np.float_)
 
     @classmethod
-    def from_gemmi(cls, gemmi_block):
+    def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Atoms":
         cls_instance = cls.__new__(cls)
 
         # Create structured array
-        label_atom_id = gemmi_block.get("label_atom_id")
+        label_atom_id: List[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
         data["id"] = np.array(gemmi_block.get("id"), dtype=int)
@@ -37,9 +40,9 @@ class Atoms:
         return cls_instance
 
     @classmethod
-    def from_mda(cls, uv):
+    def from_mda(cls, uv: UniverseType) -> "Atoms":
         cls_instance = cls.__new__(cls)
-        data = np.empty(len(uv.atoms), dtype=cls_instance.dtype)
+        data: NDArray[Any] = np.empty(len(uv.atoms), dtype=cls_instance.dtype)
         data["name"] = uv.atoms.names
         data["id"] = uv.atoms.ids
         data["element"] = uv.atoms.elements
@@ -67,17 +70,17 @@ class Atoms:
         return self._data["element"]
 
     @property
-    def coordinates(self):
+    def coordinates(self) -> NDArray[np.float_]:
         return self._coordinates
 
     @coordinates.setter
-    def coordinates(self, coordinates):
+    def coordinates(self, coordinates: NDArray[np.float_]):
         self._coordinates = coordinates
 
     def __len__(self):
         return self._data.size
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Union[int, slice]):
         return self._data[index]
 
     def __iter__(self):
@@ -89,15 +92,15 @@ class Residues:
     dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
 
     def __init__(self):
-        self._data = np.empty(0, dtype=self.dtype)
+        self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
     @classmethod
-    def from_gemmi(cls, gemmi_block):
+    def from_gemmi(cls, gemmi_block: Dict[str, Any]):
         cls_instance = cls.__new__(cls)
 
         # Create structured array
-        resnames = np.array(gemmi_block.get("label_comp_id"))
-        resids = np.array(gemmi_block.get("auth_seq_id"), dtype=int)
+        resnames = np.array(gemmi_block["label_comp_id"])
+        resids = np.array(gemmi_block["auth_seq_id"], dtype=int)
 
         data = np.empty(len(resnames), dtype=cls.dtype)
         data["resname"] = resnames
@@ -108,7 +111,7 @@ class Residues:
         return cls_instance
 
     @classmethod
-    def from_mda(cls, mda_universe):
+    def from_mda(cls, mda_universe: UniverseType) -> "Residues":
         cls_instance = cls.__new__(cls)
         cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance._data["resname"] = mda_universe.atoms.resnames
@@ -127,7 +130,7 @@ class Residues:
     def __len__(self):
         return len(self._data)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Union[int, slice]):
         return self._data[index]
 
     def __iter__(self):
@@ -140,20 +143,20 @@ class Chains:
         {"names": ["label", "auth", "id"], "formats": ["<U10", "<U10", "int"]}
     )
 
-    def __init__(self, name=None):
+    def __init__(self, name: Optional[str] = None):
         self.name = name
-        self._data = np.empty(0, dtype=self.dtype)
+        self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
         self.mapping = {}
 
     @classmethod
-    def from_gemmi(cls, gemmi_block):
+    def from_gemmi(cls, gemmi_block: Dict[str, Any]):
         cls_instance = cls.__new__(cls)
 
         # Create structured array
-        labels = np.array(gemmi_block.get("label_asym_id"))
-        auths = np.array(gemmi_block.get("auth_asym_id"))
-        _, ids = np.unique(auths, return_inverse=True)
+        labels: NDArray[np.str_] = np.array(gemmi_block["label_asym_id"])
+        auths: NDArray[np.str_] = np.array(gemmi_block["auth_asym_id"])
+        _, ids = np.unique(auths, return_inverse=True)  # type: ignore
         ids += 1
 
         data = np.empty(len(labels), dtype=cls.dtype)
@@ -167,12 +170,12 @@ class Chains:
         return cls_instance
 
     @classmethod
-    def from_mda(cls, mda_universe):
+    def from_mda(cls, mda_universe: UniverseType) -> "Chains":
         cls_instance = cls.__new__(cls)
         cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance._data["label"] = mda_universe.atoms.chainIDs
         cls_instance._data["auth"] = mda_universe.atoms.chainIDs
-        _, cls_instance._data["id"] = np.unique(
+        _, cls_instance._data["id"] = np.unique(  # type: ignore
             cls_instance._data["auth"], return_inverse=True
         )
         cls_instance._data["id"] += 1
@@ -184,21 +187,21 @@ class Chains:
         return cls_instance
 
     @property
-    def labels(self):
+    def labels(self) -> NDArray[np.str_]:
         return self._data["label"]
 
     @property
-    def auths(self):
+    def auths(self) -> NDArray[np.str_]:
         return self._data["auth"]
 
     @property
-    def ids(self):
+    def ids(self) -> NDArray[np.int_]:
         return self._data["id"]
 
     def __len__(self):
         return len(self._data)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Union[int, slice]):
         return self._data[index]
 
     def __iter__(self):
@@ -207,18 +210,23 @@ class Chains:
 
 
 class ARC:
-    def __init__(self, obj: Union["GemmiLoader", "TopologyLoader"], site_data):
-        obj_name = obj.__class__.__name__
+    def __init__(
+        self, obj: Union["GemmiLoader", "TopologyLoader"], site_data: Dict[str, Any]
+    ):
+        obj_name: str = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
         self._atoms = getattr(Atoms, obj_map)(site_data)
         self._residues = getattr(Residues, obj_map)(site_data)
         self._chains = getattr(Chains, obj_map)(site_data)
 
-    def _obj_map(self, obj_name):
-        mapping = {"GemmiLoader": "from_gemmi", "TopologyLoader": "from_mda"}
+    def _obj_map(self, obj_name: str) -> str:
+        mapping = {
+            "GemmiLoader": "from_gemmi",
+            "TopologyLoader": "from_mda",
+        }
         return mapping[obj_name]
 
-    def get_atom(self, index):
+    def get_atom(self, index: int) -> "Atom":
         atom_info = self._atoms[index]
         residue_info = self._residues[index]
         chain_info = self._chains[index]
@@ -251,11 +259,11 @@ class ARC:
     def __len__(self):
         return len(self._atoms)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Union[int, slice]):
         if isinstance(index, int):
             return self.get_atom(index)
         else:
-            indices = np.arange(len(self))[index]
+            indices = np.arange(len(self))[index]  # type: ignore
             return [self.get_atom(i) for i in indices]
 
     def __iter__(self):
@@ -264,10 +272,9 @@ class ARC:
 
 @dataclass
 class Atom:
-
     # __slots__ = ["name", "id", "element", "type", "resname", "resid", "chain_label", "chain_id"]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Dict[str, Any]):
         self.__dict__.update(kwargs)
 
     def __repr__(self):
