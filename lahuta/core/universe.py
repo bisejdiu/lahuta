@@ -6,6 +6,7 @@ from typing import Literal, Union
 
 import MDAnalysis as mda
 import numpy as np
+from numpy.typing import NDArray
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
@@ -76,9 +77,9 @@ class Universe:
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
-    def _build_atom_mapping(self, ag: mda.AtomGroup):
+    def _build_atom_mapping(self, ag: AtomGroupType) -> NDArray[np.int64]:
         max_index = np.max(ag.universe.atoms.indices)
-        atom_mapping = np.full(max_index + 1, -1)
+        atom_mapping = np.full(max_index + 1, -1, dtype=np.int64)
         atom_mapping[ag.indices] = np.arange(ag.n_atoms)
         return atom_mapping
 
@@ -94,7 +95,7 @@ class Universe:
         # self.hbond_array = find_hydrogen_bonded_atoms(self._mdag, self._mol)
         # print("...", hbond_array)
         # print("self._mdag", self._mdag, type(self._mdag))
-        atomtype_assigner = AtomTypeAssigner(self)
+        atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mdag.universe.atoms
 

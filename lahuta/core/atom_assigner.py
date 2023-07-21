@@ -1,12 +1,17 @@
+from typing import Dict, Type
+
 import numpy as np
+from numpy.typing import NDArray
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
-from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.assigners import (
     LegacyProteinTypeAssigner,
     VectorizedProteinTypeAssigner,
 )
-from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher
+from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher, SmartsMatcherBase
+from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.types.openbabel import MolType
 
 
 class AtomTypeAssigner:
@@ -19,17 +24,24 @@ class AtomTypeAssigner:
     (sequential or parallel) and protein atom type assignment (vectorized or legacy).
     """
 
-    def __init__(self, luni, parallel=False, legacy=False):
-        self.mol = luni.to("mol")
-        self.mda = luni.to("mda")
-        self.mapping = luni._mapping
+    def __init__(
+        self,
+        mda: AtomGroupType,
+        mol: MolType,
+        mapping: NDArray[np.int64],
+        parallel: bool = False,
+        legacy: bool = False,
+    ) -> None:
+        self.mda = mda
+        self.mol = mol
+        self.mapping = mapping
         self.protein_ag = self.mda.select_atoms("protein")
 
         self.atypes = AVAILABLE_ATOM_TYPES
         self.parallel = parallel
         self.legacy = legacy
 
-        self.smarts_matcher_classes = {
+        self.smarts_matcher_classes: Dict[bool, Type[SmartsMatcherBase]] = {
             True: ParallelSmartsMatcher,
             False: SmartsMatcher,
         }
@@ -48,7 +60,7 @@ class AtomTypeAssigner:
         Returns an array of atom types as defined in the SmartsPatternRegistry dictionary.
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
-        smarts_matcher = smarts_matcher_class(SmartsPatternRegistry)
+        smarts_matcher = smarts_matcher_class()
         return smarts_matcher.compute(self.mol)
 
     def _compute_water_types(self, atypes_array):

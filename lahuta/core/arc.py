@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -18,7 +18,7 @@ class Atoms:
         }
     )
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
         self._coordinates = np.zeros((0, 3), dtype=np.float_)
 
@@ -54,19 +54,19 @@ class Atoms:
         return cls_instance
 
     @property
-    def names(self):
+    def names(self) -> NDArray[np.str_]:
         return self._data["name"]
 
     @property
-    def types(self):
+    def types(self) -> NDArray[np.str_]:
         return self._data["type"]
 
     @property
-    def ids(self):
+    def ids(self) -> NDArray[np.int_]:
         return self._data["id"]
 
     @property
-    def elements(self):
+    def elements(self) -> NDArray[np.str_]:
         return self._data["element"]
 
     @property
@@ -77,13 +77,13 @@ class Atoms:
     def coordinates(self, coordinates: NDArray[np.float_]) -> None:
         self._coordinates = coordinates
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._data.size
 
     def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
         return self._data[index]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[NDArray[Any]]:
         for i in range(len(self)):
             yield self[i]
 
@@ -91,11 +91,11 @@ class Atoms:
 class Residues:
     dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
     @classmethod
-    def from_gemmi(cls, gemmi_block: Dict[str, Any]):
+    def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Residues":
         cls_instance = cls.__new__(cls)
 
         # Create structured array
@@ -120,20 +120,20 @@ class Residues:
         return cls_instance
 
     @property
-    def resnames(self):
+    def resnames(self) -> NDArray[np.str_]:
         return self._data["resname"]
 
     @property
-    def resids(self):
+    def resids(self) -> NDArray[np.int_]:
         return self._data["resid"]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._data)
 
-    def __getitem__(self, index: Union[int, slice]):
+    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
         return self._data[index]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[NDArray[Any]]:
         for i in range(len(self)):
             yield self[i]
 
@@ -147,10 +147,10 @@ class Chains:
         self.name = name
         self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
-        self.mapping = {}
+        self.mapping: Dict[str, int] = {}
 
     @classmethod
-    def from_gemmi(cls, gemmi_block: Dict[str, Any]):
+    def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Chains":
         cls_instance = cls.__new__(cls)
 
         # Create structured array
@@ -198,13 +198,13 @@ class Chains:
     def ids(self) -> NDArray[np.int_]:
         return self._data["id"]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._data)
 
-    def __getitem__(self, index: Union[int, slice]):
+    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
         return self._data[index]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[NDArray[Any]]:
         for i in range(len(self)):
             yield self[i]
 
@@ -217,9 +217,9 @@ class ARC:
     ):
         obj_name: str = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
-        self._atoms = getattr(Atoms, obj_map)(site_data)
-        self._residues = getattr(Residues, obj_map)(site_data)
-        self._chains = getattr(Chains, obj_map)(site_data)
+        self._atoms: Atoms = getattr(Atoms, obj_map)(site_data)
+        self._residues: Residues = getattr(Residues, obj_map)(site_data)
+        self._chains: Chains = getattr(Chains, obj_map)(site_data)
 
     def _obj_map(self, obj_name: str) -> str:
         mapping = {
@@ -258,17 +258,17 @@ class ARC:
     def chains(self) -> "Chains":
         return self._chains
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._atoms)
 
-    def __getitem__(self, index: Union[int, slice]):
+    def __getitem__(self, index: Union[int, slice]) -> Union["Atom", List["Atom"]]:
         if isinstance(index, int):
             return self.get_atom(index)
         else:
             indices = np.arange(len(self))[index]  # type: ignore
             return [self.get_atom(i) for i in indices]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator["Atom"]:
         return (self.get_atom(i) for i in range(len(self)))
 
 
@@ -276,9 +276,9 @@ class ARC:
 class Atom:
     # __slots__ = ["name", "id", "element", "type", "resname", "resid", "chain_label", "chain_id"]
 
-    def __init__(self, **kwargs: Dict[str, Any]):
+    def __init__(self, **kwargs: Any):  # FIXME: specify the type of kwargs
         self.__dict__.update(kwargs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         attrs = ", ".join(f"{k}={v}" for k, v in self.__dict__.items())
         return f"Atom({attrs})"

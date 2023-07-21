@@ -1,9 +1,11 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
+from numpy.typing import NDArray
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
+from lahuta.types.mdanalysis import AtomGroupType
 
 
 class ProteinTypeAssignerBase(ABC):
@@ -15,11 +17,11 @@ class ProteinTypeAssignerBase(ABC):
     and LegacyProteinTypeAssigner.
     """
 
-    def __init__(self, protein_atomgroup):
-        self.protein_atomgroup = protein_atomgroup
+    def __init__(self, protein_ag: AtomGroupType) -> None:
+        self.protein_ag = protein_ag
 
     @abstractmethod
-    def compute(self, atypes_array):
+    def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
         """
         Abstract method for computing protein atom types.
         """
@@ -35,18 +37,18 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
     abstract base class.
     """
 
-    def compute(self, atypes_array):
+    def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
         # print("atypes", atypes)
         # resname, atom_name = self.ta["resname"], self.ta["name"]
 
-        # resname_str = resname[self.protein_atomgroup.resindices].astype(str)
-        # atom_name_str = atom_name[self.protein_atomgroup.indices].astype(str)
+        # resname_str = resname[self.protein_ag.resindices].astype(str)
+        # atom_name_str = atom_name[self.protein_ag.indices].astype(str)
 
-        resname_str = self.protein_atomgroup.resnames.astype(str)
-        atom_name_str = self.protein_atomgroup.names.astype(str)
+        resname_str = self.protein_ag.resnames.astype(str)
+        atom_name_str = self.protein_ag.names.astype(str)
         atype_names = [member.lower() for member in list(ATypes)]
 
-        atom_id_labels = np.core.defchararray.add(  # type: ignore
+        atom_id_labels: NDArray[np.str_] = np.core.defchararray.add(  # type: ignore
             np.core.defchararray.strip(resname_str),  # type: ignore
             np.core.defchararray.strip(atom_name_str),  # type: ignore
         )
@@ -59,8 +61,8 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
         # for key in atypes.keys():
         #     print("adding", key, atypes[key])
         #     prot_atom_types_array.append(list(PROT_ATOM_TYPES[key]))
-
-        mask = np.array(
+        assert isinstance(atom_id_labels, np.ndarray)
+        mask: NDArray[np.bool_] = np.array(
             [
                 np.isin(atom_id_labels, prot_atom_types)
                 for prot_atom_types in prot_atom_types_array
@@ -82,15 +84,15 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
     to proteins. Inherits from the ProteinTypeAssignerBase abstract base class.
     """
 
-    def compute(self, atypes_array):
-        for residue in self.protein_atomgroup.residues:
+    def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+        for residue in self.protein_ag.residues:
             for atom in residue.atoms:
                 for atom_type in list(PROT_ATOM_TYPES.keys()):
-                    atypes_array[atom.index, ATypes[atom_type.upper()].value] = 0
+                    atypes_array[atom.index, ATypes[atom_type.upper()]] = 0
 
                 for atom_type, atom_ids in PROT_ATOM_TYPES.items():
                     atom_id = residue.resname.strip() + atom.name.strip()
                     if atom_id in atom_ids:
-                        atypes_array[atom.index, ATypes[atom_type.upper()].value] = 1
+                        atypes_array[atom.index, ATypes[atom_type.upper()]] = 1
 
         return atypes_array

@@ -35,7 +35,7 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
             for match in matches:
                 atom = mol.GetAtom(match)
 
-                atypes_array[atom.GetId(), atypes[atom_type.name].value] = 1
+                atypes_array[atom.GetId(), atypes[atom_type.name]] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
     for atom in atomgroup.select_atoms(

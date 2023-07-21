@@ -1,12 +1,16 @@
 import os
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from openbabel import openbabel as ob
+from numpy.typing import NDArray
+from openbabel import openbabel as ob  # type: ignore
 
 from lahuta.config.atoms import STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
+from lahuta.config.smarts import SmartsPatternRegistry
+from lahuta.types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 class SmartsMatcherBase(ABC):
@@ -17,11 +21,9 @@ class SmartsMatcherBase(ABC):
     of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
     """
 
-    def __init__(self, atom_types):
-        self.atom_types = atom_types
-
     @abstractmethod
-    def compute(self, mol):
+    def compute(self, mol: MolType) -> NDArray[np.int8]:
+        """Abstract method for SMARTS pattern matching."""
         raise NotImplementedError("Subclasses must implement this method")
 
 
@@ -34,13 +36,16 @@ class SmartsMatcher(SmartsMatcherBase):
     Inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def compute(self, mol):
-        atypes_array = np.zeros((mol.NumAtoms(), len(ATypes)))
+    def compute(self, mol: MolType) -> NDArray[np.int8]:
+        shape = (mol.NumAtoms(), len(ATypes))
+        atypes_array: NDArray[np.int_] = np.zeros(shape, dtype=np.int8)
 
-        for atom_type in self.atom_types:
-            smartsdict = self.atom_types[atom_type.name].value
+        for atom_type in SmartsPatternRegistry:
+            smartsdict = SmartsPatternRegistry[atom_type.name].value
             for smarts in smartsdict.values():
-                ob_smart = ob.OBSmartsPattern()
+                ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(
+                    ob.OBSmartsPattern()
+                )
                 ob_smart.Init(str(smarts))
                 ob_smart.Match(mol)
 
@@ -63,28 +68,36 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     dictionary. Inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def __init__(self, atom_types):
-        super().__init__(atom_types)
+    def __init__(self) -> None:
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
-    def precompute_ob_smarts(self):
-        precomputed_ob_smarts = {}
-        for atom_type in self.atom_types:
-            smartsdict = self.atom_types[atom_type.name].value
-            precomputed_ob_smarts[atom_type] = []
+    def precompute_ob_smarts(self) -> Dict[str, List[ObSmartPatternType]]:
+        precomputed_ob_smarts: Dict[str, List[ObSmartPatternType]] = {}
+        for atom_type in SmartsPatternRegistry:
+            smartsdict = SmartsPatternRegistry[atom_type.name].value
+            precomputed_ob_smarts[atom_type.name] = []
             for smarts in smartsdict.values():
-                ob_smart = ob.OBSmartsPattern()
+                ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(
+                    ob.OBSmartsPattern()
+                )
                 ob_smart.Init(str(smarts))
-                precomputed_ob_smarts[atom_type].append(ob_smart)
+                precomputed_ob_smarts[atom_type.name].append(ob_smart)
         return precomputed_ob_smarts
 
-    def match_ob_smarts(self, ob_smart, mol, atypes, atom_type):
+    def match_ob_smarts(
+        self,
+        ob_smart: ObSmartPatternType,
+        mol: MolType,
+        atypes: Dict[str, int],
+        atom_type: str,
+    ) -> List[Tuple[Any, int]]:
         ob_smart.Match(mol)
         matches = [x[0] for x in ob_smart.GetMapList()]
-        return [(match, atypes[atom_type.name].value) for match in matches]
+        return [(match, atypes[atom_type]) for match in matches]
 
-    def compute(self, mol):
-        atypes_array = np.zeros((mol.NumAtoms(), len(ATypes)))
+    def compute(self, mol: MolType) -> NDArray[np.int8]:
+        shape = (mol.NumAtoms(), len(ATypes))
+        atypes_array: NDArray[np.int_] = np.zeros(shape, dtype=np.int8)
 
         num_threads = os.cpu_count()
 
