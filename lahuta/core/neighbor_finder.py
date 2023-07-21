@@ -1,7 +1,10 @@
-import numpy as np
-from MDAnalysis.lib.nsgrid import FastNS
+from typing import Tuple
 
-from lahuta.core.neighbors import NeighborPairs
+import numpy as np
+from MDAnalysis.lib.nsgrid import FastNS  # type: ignore
+from numpy.typing import NDArray
+
+from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 
@@ -15,7 +18,7 @@ class NeighborSearch:
         The instance of the class these methods originally belonged to.
     """
 
-    def __init__(self, mda):
+    def __init__(self, mda: AtomGroupType) -> None:
         """
         Initialize NeighborSearch class.
 
@@ -31,7 +34,9 @@ class NeighborSearch:
 
         # self.instance = instance
 
-    def compute(self, radius=5.0, res_dif=1):
+    def compute(
+        self, radius: float = 5.0, res_dif: int = 1
+    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -50,18 +55,21 @@ class NeighborSearch:
 
         pairs, distances = self.get_neighbors(radius)
 
-        print("max pairs values: ", pairs.max(axis=0))
-
         if res_dif > 0:
             idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
             pairs = pairs[idx]
             distances = distances[idx]
+        # else:
+        #     pairs = og_pairs
 
+        # assert pairs.shape[0] != 0, "No neighbors found. Try increasing the radius."
         return pairs, distances
 
         # return NeighborPairs(self.instance, pairs, distances)
 
-    def get_neighbors(self, radius=5.0):
+    def get_neighbors(
+        self, radius: float = 5.0
+    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
         """
         Get the neighbors of an atomgroup.
 
@@ -73,21 +81,30 @@ class NeighborSearch:
         ------
         tuple: A tuple containing two arrays. The first array of shape (n_pairs, 2) where each row contains the indices of the atoms in the pair. The second array of shape (n_pairs,) containing the distances of each pair.
         """
+        # def fast_ns_wrapper(atomgroup, radius):
+        #     shift_coords, pseudobox = mda_psuedobox_from_atomgroup(atomgroup)
+        #     gridsearch = FastNS(
+        #         cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
+        #     )
+        #     neighbors = gridsearch.self_search()
+        #     return neighbors
 
         shift_coords, pseudobox = mda_psuedobox_from_atomgroup(self.ag_no_h)
 
         # TODO: handle pbc
-        gridsearch = FastNS(
+        gridsearch = FastNS(  # type: ignore
             cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
         )
-        neighbors = gridsearch.self_search()
+        neighbors = gridsearch.self_search()  # type: ignore
 
         return (
-            self.ag_no_h[neighbors.get_pairs()].indices,
-            neighbors.get_pair_distances(),
+            self.ag_no_h[neighbors.get_pairs()].indices,  # type: ignore
+            neighbors.get_pair_distances(),  # type: ignore
         )
 
-    def _remove_adjacent_residue_pairs(self, pairs, res_dif=1):
+    def _remove_adjacent_residue_pairs(
+        self, pairs: NDArray[np.int_], res_dif: int = 1
+    ) -> NDArray[np.bool_]:
         """
         Remove pairs where the difference in residue ids is less than `res_dif`.
 
@@ -100,6 +117,7 @@ class NeighborSearch:
         -------
         np.ndarray: An array of shape (n_pairs,) containing the indices of the pairs to keep.
         """
+
         resids = self.og_resids[pairs]
         # return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
         mask = np.abs(np.diff(resids, axis=1)) > res_dif
