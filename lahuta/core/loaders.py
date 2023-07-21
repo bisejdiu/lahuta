@@ -1,9 +1,10 @@
+from types.base import FileLoader
+
 import MDAnalysis as mda
 import numpy as np
 import pandas as pd
 
 from lahuta.core._loaders import GemmiLoader, TopologyLoader
-from lahuta.core.base import FileLoader
 from lahuta.core.obmol import OBMol
 
 

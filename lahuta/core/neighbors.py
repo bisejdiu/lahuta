@@ -23,6 +23,7 @@ from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.core.helpers import get_class_attributes
+from lahuta.types.base import LuniType
 from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
@@ -65,7 +66,9 @@ class HBondHandler:
 class NeighborPairs:
     """A class for storing neighbor pairs."""
 
-    def __init__(self, luni, pairs: NDArray[np.int_], distances: NDArray[np.float_]):
+    def __init__(
+        self, luni: LuniType, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+    ):
         self.luni = luni
         self.atoms = luni.to("mda").atoms.universe.atoms
 
@@ -91,13 +94,6 @@ class NeighborPairs:
         indices: NDArray[np.int_] = np.argsort(sorted_pairs[:, 0])
 
         return indices
-
-    # @staticmethod
-    # def get_sorting_index(pairs):
-    #     pairs_sorted = np.sort(pairs, axis=1)
-    #     # indices = np.lexsort((pairs_sorted[:, 1], pairs_sorted[:, 0]))
-    #     indices = np.argsort(pairs_sorted[:, 0])
-    #     return indices
 
     @staticmethod
     def sort_inputs(

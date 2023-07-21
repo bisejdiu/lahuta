@@ -2,7 +2,7 @@
 Placeholder for the universe module.
 """
 
-from typing import Literal
+from typing import Literal, Union
 
 import MDAnalysis as mda
 import numpy as np
@@ -13,8 +13,9 @@ from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.utils.atom_types import (find_hydrogen_bonded_atoms,
-                                     v_radii_assignment)
+from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.types.openbabel import MolType
+from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
 
 
 class Universe:
@@ -165,7 +166,7 @@ class Universe:
                 return fmt, is_pdb
         return None, False
 
-    def to(self, fmt: Literal["mda", "mol"], *args):
+    def to(self, fmt: Literal["mda", "mol"]) -> Union[MolType, AtomGroupType]:
         """
         Convert the Universe to a different format.
 
@@ -183,7 +184,7 @@ class Universe:
             return self._mol
         # if fmt == "mda":
         #     return self._mdag
-        return self._file_loader.to(fmt, *args)
+        return self._file_loader.to(fmt)
 
     @property
     def arc(self):
