@@ -27,6 +27,7 @@ from lahuta.types.base import LuniType
 from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
+from lahuta.utils.atom_types import find_hydrogen_bonded_atoms
 from lahuta.writers.frame_writer import DataFrameWriter
 
 
@@ -76,7 +77,7 @@ class NeighborPairs:
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        self.hbond_array = luni.hbond_array
+        self.hbond_array = find_hydrogen_bonded_atoms(self.mda, self.mol)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles = None  # store values to avoid recomputing
         self._annotations = {}

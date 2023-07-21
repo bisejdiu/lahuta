@@ -90,7 +90,7 @@ class Universe:
         self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        self.hbond_array = find_hydrogen_bonded_atoms(self._mdag, self._mol)
+        # self.hbond_array = find_hydrogen_bonded_atoms(self._mdag, self._mol)
         # print("...", hbond_array)
         # print("self._mdag", self._mdag, type(self._mdag))
         atomtype_assigner = AtomTypeAssigner(self)
