@@ -27,6 +27,9 @@ class OBSmartsPatternWrapper:
         return self.ob_smarts_pattern.GetMapList()
 
 
+# class
+
+
 # pylint: disable=C0103
 class MolType(Protocol):
     def NumAtoms(self) -> int:
@@ -35,5 +38,95 @@ class MolType(Protocol):
     def GetAtom(self, index: int) -> Any:
         ...
 
+    # def GetId(self) -> Any:
+    #     ...
+
+    def GetAtomById(self, index: int) -> Any:
+        ...
+
+    def NewAtom(self, index: int) -> "MolAtomType":
+        ...
+
+    def NewBond(self) -> Any:
+        ...
+
+    def NewResidue(self) -> Any:
+        ...
+
+    def ConnectTheDots(self) -> None:
+        ...
+
+    def PerceiveBondOrders(self) -> None:
+        ...
+
+    def BeginModify(self) -> Any:
+        ...
+
+    def EndModify(self, flag: bool = True) -> None:
+        ...
+
+    def SetAromaticPerceived(self) -> None:
+        ...
+
+    def SetAtomTypesPerceived(self) -> None:
+        ...
+
+    def SetChiralityPerceived(self) -> None:
+        ...
+
+    def SetRingTypesPerceived(self) -> None:
+        ...
+
+    def SetPartialChargesPerceived(self) -> None:
+        ...
+
+    def SetChainsPerceived(self) -> None:
+        ...
+
+
+class MolTypeWrapper:
+    def __init__(self, mol: MolType):
+        self.mol = mol
+
     def GetId(self) -> int:
+        ...
+
+
+class MolAtomType(Protocol):
+    def GetId(self) -> int:
+        ...
+
+    def GetIdx(self) -> int:
+        ...
+
+    def GetAtomicNum(self) -> int:
+        ...
+
+    def SetType(self, atom_name: str) -> None:
+        ...
+
+    def SetPartialCharge(self, charge: float) -> None:
+        ...
+
+    def SetVector(self, x: float, y: float, z: float) -> None:
+        ...
+
+    def SetFormalCharge(self, charge: int) -> None:
+        ...
+
+    def SetAtomicNum(self, atomic_num: int) -> None:
+        ...
+
+
+class MolResType(Protocol):
+    def AddAtom(self, atom: MolAtomType) -> None:
+        ...
+
+    def SetHetAtom(self, atom: MolAtomType, is_het: bool) -> None:
+        ...
+
+    def SetSerialNum(self, atom: MolAtomType, serial_num: int) -> None:
+        ...
+
+    def GetSerialNum(self, atom: MolAtomType) -> int:
         ...

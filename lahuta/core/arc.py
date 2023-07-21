@@ -80,7 +80,7 @@ class Atoms:
     def __len__(self):
         return self._data.size
 
-    def __getitem__(self, index: Union[int, slice]):
+    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
         return self._data[index]
 
     def __iter__(self):
