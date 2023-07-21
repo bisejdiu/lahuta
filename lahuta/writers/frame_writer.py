@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Sequence
 
-import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from lahuta.core.neighbors import NeighborPairs
@@ -37,7 +37,7 @@ class DataFrameWriter:
         else:
             raise ValueError("Format must be compact or expanded.")
 
-    def build(self):
+    def build(self) -> Dict[str, NDArray[Any]]:
         """Build the data."""
         attrs = ["resids", "resnames", "names", "indices"]
         p1, p2 = self.ns.partner1, self.ns.partner2
