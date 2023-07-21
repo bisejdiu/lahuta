@@ -50,7 +50,7 @@ class MolType(Protocol):
     def NewBond(self) -> Any:
         ...
 
-    def NewResidue(self) -> Any:
+    def NewResidue(self) -> "MolResType":
         ...
 
     def ConnectTheDots(self) -> None:
@@ -132,6 +132,15 @@ class MolResType(Protocol):
         ...
 
     def GetSerialNum(self, atom: MolAtomType) -> int:
+        ...
+
+    def SetChainNum(self, chain_num: int) -> None:
+        ...
+
+    def SetNum(self, num: str) -> None:
+        ...
+
+    def SetName(self, name: str) -> None:
         ...
 
 

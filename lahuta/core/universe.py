@@ -2,15 +2,16 @@
 Placeholder for the universe module.
 """
 
-from typing import Literal, Union
+from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload
 
-import MDAnalysis as mda
+import MDAnalysis as mda  # type: ignore
 import numpy as np
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core._loaders import GemmiLoader, TopologyLoader
+from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
+from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
@@ -19,20 +20,28 @@ from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.types.openbabel import MolType
 from lahuta.utils.atom_types import v_radii_assignment
 
+LuniInputType = Union[mda.AtomGroup, str, List[str]]
+
 
 class Universe:
-    def __init__(self, *args):
-        # self._mdag = None
-        initializer = self._validate_input(*args)
-        initializer(*args)
-
-        self._mol = None
+    def __init__(self, *args: LuniInputType) -> None:
+        self._mol: Optional[MolType] = None
         self.hbond_array = None
         self._ready = False
-        self._mapping = None
+        self._mapping: NDArray[np.int64] = np.array([], dtype=np.int64)
         self._topattr_handler = AtomAttrClassHandler()
+        # self._file_loader: Optional[BaseLoader] = None
+        # self._mdag: Optional[AtomGroupType] = None
 
-    def _validate_input(self, *args):
+        initializer = self._validate_input(*args)
+        self._file_loader, self._mdag = initializer(*args)
+
+        assert self._mdag is not None
+        assert self._file_loader is not None
+
+    def _validate_input(
+        self, *args: LuniInputType
+    ) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
         if not args:
             raise ValueError("No input provided")
 
@@ -49,15 +58,19 @@ class Universe:
             )
         return self._initialize_from_files
 
-    def _initialize_from_universe(self, *args):
-        self._file_loader = TopologyLoader.from_mda(args[0])
-        self._mdag = self._file_loader.to("mda")
+    def _initialize_from_universe(
+        self, *args: LuniInputType
+    ) -> Tuple[BaseLoader, AtomGroupType]:
+        _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
+        _mdag = _file_loader.to("mda")
+        return _file_loader, _mdag
 
-    def _initialize_from_files(self, *files):
-        self._file_loader = self._get_file_loader(files)
-        self._mdag = self._file_loader.to("mda")
+    def _initialize_from_files(self, files: str) -> Tuple[BaseLoader, AtomGroupType]:
+        _file_loader = self._get_file_loader(files)
+        _mdag = _file_loader.to("mda")
+        return _file_loader, _mdag
 
-    def _get_file_loader(self, files: tuple):
+    def _get_file_loader(self, *files: str) -> BaseLoader:
         # GemmiLoader can only handle one file and its format should be supported
         if len(files) == 1:
             file_name = files[0]
@@ -69,8 +82,9 @@ class Universe:
         # then use TopologyLoader
         return TopologyLoader(*files)
 
-    def _extend_topology(self, attrname: str, values: np.ndarray):
+    def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         # print("value size", values.size, values.shape)
+
         self._topattr_handler.init_topattr(attrname, attrname)
         self._mdag.universe.add_TopologyAttr(attrname, values)
 
@@ -83,11 +97,12 @@ class Universe:
         atom_mapping[ag.indices] = np.arange(ag.n_atoms)
         return atom_mapping
 
-    def ready(self):
+    def ready(self) -> None:
         """
         Prepare instance for computations by transforming the molecule and assigning atom types.
         """
 
+        assert self._file_loader is not None
         self._mol = self._file_loader.to("mol")
         self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
@@ -122,9 +137,9 @@ class Universe:
     # TODO: rename to find_neighbors
     def compute_neighbors(
         self,
-        radius=5.0,
-        res_dif=1,
-    ):
+        radius: float = 5.0,
+        res_dif: int = 1,
+    ) -> NeighborPairs:
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -152,7 +167,7 @@ class Universe:
         return NeighborPairs(self.to("mda"), self.to("mol"), pairs, distances)
 
     @staticmethod
-    def get_format(file_name):
+    def get_format(file_name: str) -> Tuple[Union[str, None], bool]:
         """Retrieve the file format from a file name.
 
         Args:
@@ -167,6 +182,14 @@ class Universe:
                 is_pdb = fmt in {"pdb", "pdb.gz"}
                 return fmt, is_pdb
         return None, False
+
+    @overload
+    def to(self, fmt: Literal["mda"]) -> AtomGroupType:
+        ...
+
+    @overload
+    def to(self, fmt: Literal["mol"]) -> MolType:
+        ...
 
     def to(self, fmt: Literal["mda", "mol"]) -> Union[MolType, AtomGroupType]:
         """
@@ -189,11 +212,11 @@ class Universe:
         return self._file_loader.to(fmt)
 
     @property
-    def arc(self):
+    def arc(self) -> Union[None, ARC]:
         return self._file_loader.arc
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Lahuta Universe with {self._mdag.n_atoms} atoms>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()

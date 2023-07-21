@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterator, Literal, Optional, Union
+from typing import Any, Dict, Iterator, Literal, Optional, Union, overload
 
 import gemmi
 import MDAnalysis as mda  # type: ignore
@@ -46,12 +46,20 @@ class BaseLoader(ABC):
             raise ValueError("arc has not been initialized")
         return self.arc.atoms
 
-    def to(self, object_type: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
-        method_str = f"to_{object_type}"
+    @overload
+    def to(self, fmt: Literal["mda"]) -> AtomGroupType:
+        ...
+
+    @overload
+    def to(self, fmt: Literal["mol"]) -> MolType:
+        ...
+
+    def to(self, fmt: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
+        method_str = f"to_{fmt}"
         if hasattr(self, method_str):
             return getattr(self, method_str)()  # type: ignore
 
-        raise ValueError(f"Object type {object_type} is not supported")
+        raise ValueError(f"Object type {fmt} is not supported")
 
     @abstractmethod
     def to_mda(self) -> AtomGroupType:

@@ -1,4 +1,4 @@
-from typing import Any, Optional, Set, Tuple
+from typing import Any, Optional, Set, Tuple, Union
 
 import gemmi
 import numpy as np
@@ -11,7 +11,7 @@ from lahuta.types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrap
 
 
 class OBMol:
-    def __init__(self):
+    def __init__(self) -> None:
         self.mol: Optional[MolType] = None
 
     def create_residue_obmol(
@@ -19,7 +19,7 @@ class OBMol:
         resid: NDArray[np.int_],
         resname: NDArray[np.str_],
         chain_id: NDArray[np.int_],
-    ):
+    ) -> MolResType:
         assert self.mol is not None, "Molecule is not initialized"
         ob_res = self.mol.NewResidue()
         ob_res.SetChainNum(int(chain_id))
@@ -65,12 +65,12 @@ class OBMol:
         )
         ob_res.SetSerialNum(ob_atom, ob_res.GetSerialNum(ob_atom))
 
-    def perceive_bonds(self):
+    def perceive_bonds(self) -> None:
         if self.mol:
             self.mol.ConnectTheDots()
             self.mol.PerceiveBondOrders()
 
-    def perceive_properties(self):
+    def perceive_properties(self) -> Union[MolType, None]:
         # self.mol.SetChainsPerceived()
         if self.mol:
             self.mol.SetAromaticPerceived()
@@ -81,11 +81,14 @@ class OBMol:
 
         return self.mol
 
-    def end_modify(self, nuke_perceived_data: bool = True):
+    def end_modify(self, nuke_perceived_data: bool = True) -> None:
         if self.mol:
             self.mol.EndModify(nuke_perceived_data)
 
     def create_mol(self, arc: ARC, connections: Optional[Any] = None) -> None:
+        # chains = arc.chains
+        # residues = arc.residues
+        # atoms = arc.atoms
         chains, residues, atoms = arc.chains, arc.residues, arc.atoms
         coords = atoms.coordinates
         if connections is None:
