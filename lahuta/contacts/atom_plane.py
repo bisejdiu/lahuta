@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 from joblib import Memory  # type: ignore
@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts.plane_plane import perceive_rings, vector_angle
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.types.mda_commands import MDACappedDistance, MDADistanceType
+from lahuta.types.mda_commands import CappedDistance, DistanceType
 from lahuta.types.mdanalysis import AtomGroupType
 
 memory = Memory("cachedir", verbose=0)
@@ -75,7 +75,7 @@ def compute_neighbors(
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
     reference: NDArray[np.float_] = np.array([ring["center"] for ring in rings])
 
-    wrapper: MDADistanceType = MDACappedDistance(mda_distances)
+    wrapper: DistanceType = CappedDistance(mda_distances)
     pairs, distances = wrapper.capped_distance(
         reference, positions, max_cutoff, return_distances=True
     )
@@ -99,16 +99,20 @@ def compute_angles(
     return angles
 
 
-def subtract_aromatic_neighbors(ns, pairs, distances):
+def subtract_aromatic_neighbors(
+    ns: NeighborPairs, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+):
     cloned_neighbors = ns.clone(pairs, distances)
     neighbors = cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)
     return neighbors
 
 
-def compute_contacts(contact_fn, angle_cutoff, use_cache):
-    def wrapped(ns):
+def compute_contacts(
+    contact_fn: Callable[..., Any], angle_cutoff: float, use_cache: bool
+):
+    def wrapped(ns: NeighborPairs):
         mol = ns.luni.to("mol")
-        mda = ns.luni.to("mda")
+        mda: AtomGroupType = ns.luni.to("mda")
         rings = perceive_rings(mol)
 
         neighbors_fn = compute_neighbors if not use_cache else compute_neighbors.call

@@ -3,6 +3,7 @@ Placeholder for the neighbors module.
 """
 
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterable,
@@ -461,7 +462,9 @@ class NeighborPairs:
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 
-    def clone(self, pairs, distances) -> "NeighborPairs":
+    def clone(
+        self, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+    ) -> "NeighborPairs":
         """Get a copy of the NeighborPairs object."""
 
         attrs = {attr: getattr(self, attr) for attr in get_class_attributes(self)}

@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-class MDADistanceType(Protocol):
+class DistanceType(Protocol):
     def capped_distance(
         self,
         reference: NDArray[np.float_],
@@ -18,8 +18,8 @@ class MDADistanceType(Protocol):
         ...
 
 
-class MDACappedDistance:
-    def __init__(self, capped_distance: MDADistanceType):
+class CappedDistance:
+    def __init__(self, capped_distance: DistanceType):
         self.func = capped_distance
 
     def capped_distance(
