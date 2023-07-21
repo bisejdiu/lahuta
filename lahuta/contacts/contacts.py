@@ -58,7 +58,7 @@ def covalent_neighbors(ns: NeighborPairs):
     NeighborPairs
         A NeighborPairs object containing only covalent neighbors.
     """
-    bonds = get_bonded_atoms(ns.luni.to("mol"))
+    bonds = get_bonded_atoms(ns.mol)
     indices = np_optimized_matching_pairs(ns.pairs + 1, bonds)
 
     return ns.clone(ns.pairs[indices], ns.distances[indices])
@@ -251,14 +251,18 @@ def vdw_neighbors(
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
-        return NeighborPairs(ns.luni, vdw_comp_pairs, vdw_distances)
+        return ns.clone(vdw_comp_pairs, vdw_distances)  # TODO: check if this is correct
+        # return NeighborPairs(ns.luni, vdw_comp_pairs, vdw_distances)
 
     vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
-    return NeighborPairs(
-        ns.luni, vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices]
-    )
+    return ns.clone(
+        vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices]
+    )  # TODO: check if this is correct
+    # return NeighborPairs(
+    #     ns.luni, vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices]
+    # )
 
 
 def hbond_neighbors(ns: NeighborPairs):

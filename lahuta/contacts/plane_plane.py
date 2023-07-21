@@ -74,7 +74,7 @@ def enumerate_rings(mol):
 class _PlanePlaneContacts:
     def __init__(self, ns):
         self.ns = ns
-        self.rings = enumerate_rings(self.ns.luni.to("mol"))
+        self.rings = enumerate_rings(self.ns.mol)
         self.centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
         self._annotations = {}
 

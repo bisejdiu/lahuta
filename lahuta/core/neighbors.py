@@ -69,8 +69,9 @@ class NeighborPairs:
     def __init__(
         self, luni: LuniType, pairs: NDArray[np.int_], distances: NDArray[np.float_]
     ):
-        self.luni = luni
-        self.atoms = luni.to("mda").atoms.universe.atoms
+        self.mda = luni.to("mda")
+        self.mol = luni.to("mol")
+        self.atoms = self.mda.atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)

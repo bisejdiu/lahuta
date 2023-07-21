@@ -111,8 +111,8 @@ def compute_contacts(
     contact_fn: Callable[..., Any], angle_cutoff: float, use_cache: bool
 ):
     def wrapped(ns: NeighborPairs):
-        mol = ns.luni.to("mol")
-        mda: AtomGroupType = ns.luni.to("mda")
+        mol = ns.mol
+        mda: AtomGroupType = ns.mda
         rings = perceive_rings(mol)
 
         neighbors_fn = compute_neighbors if not use_cache else compute_neighbors.call
@@ -162,10 +162,10 @@ class AtomPlaneContacts:
 
     def __init__(self, ns):
         self.angles = None
-        self.rings = perceive_rings(ns.luni.to("mol"))
+        self.rings = perceive_rings(ns.mol)
         self._ap_contacts = _AtomPlaneContacts()
 
-        self._compute(ns, ns.luni.to("mda"))
+        self._compute(ns, ns.mda)
 
     def _compute(self, ns, mda):
         result = compute_neighbors.call(mda.atoms.positions, self.rings)
