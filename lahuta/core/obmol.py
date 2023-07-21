@@ -85,7 +85,7 @@ class OBMol:
         if self.mol:
             self.mol.EndModify(nuke_perceived_data)
 
-    def create_mol(self, arc: ARC, connections: Optional[Any] = None):
+    def create_mol(self, arc: ARC, connections: Optional[Any] = None) -> None:
         chains, residues, atoms = arc.chains, arc.residues, arc.atoms
         coords = atoms.coordinates
         if connections is None:

@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 if TYPE_CHECKING:
     from lahuta.core.loaders import GemmiLoader, TopologyLoader
 
-from lahuta.types.mdanalysis import UniverseType
+from lahuta.types.mdanalysis import AtomGroupType, UniverseType
 
 
 class Atoms:
@@ -211,7 +211,9 @@ class Chains:
 
 class ARC:
     def __init__(
-        self, obj: Union["GemmiLoader", "TopologyLoader"], site_data: Dict[str, Any]
+        self,
+        obj: Union["GemmiLoader", "TopologyLoader"],
+        site_data: Union[Dict[str, Any], AtomGroupType],
     ):
         obj_name: str = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)

@@ -69,6 +69,9 @@ class AtomGroupType(Protocol):
     def chainIDs(self) -> NDArray[np.str_]:
         ...
 
+    def copy() -> "AtomGroupType":
+        ...
+
     def __iter__(self) -> Any:
         ...
 
@@ -89,6 +92,9 @@ class UniverseType(Protocol):
 
     @property
     def universe(self) -> "UniverseType":
+        ...
+
+    def copy() -> "UniverseType":
         ...
 
     def __iter__(self) -> Any:

@@ -77,7 +77,7 @@ class GemmiLoader(BaseLoader):
             structure: Any = gemmi.make_structure_from_block(block)  # type: ignore
 
         self.structure = structure
-        atom_site_data = block.get_mmcif_category("_atom_site.")
+        atom_site_data: Dict[str, Any] = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
         # self._coords_array = self.extract_positions(atom_site_data)
@@ -136,24 +136,25 @@ class GemmiLoader(BaseLoader):
         return self.ag
 
     def to_mol(self) -> MolType:
+        assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
             self.structure.connections,
         )
-
+        assert obmol.mol is not None
         return obmol.mol
 
 
 class TopologyLoader(BaseLoader):
-    def __init__(self, *paths):
-        file_path = paths[0]
+    def __init__(self, *paths: str):
+        file_path: str = paths[0]
         super().__init__(file_path)
         universe = mda.Universe(self.file_path)
         self.ag: AtomGroupType = universe.atoms  # type: ignore
         assert self.ag is not None
         if len(paths) > 1:
-            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
+            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)  # type: ignore
 
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
@@ -161,20 +162,20 @@ class TopologyLoader(BaseLoader):
         return self.ag
 
     def to_mol(self):
+        assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            # self.coords_array,
             self.structure,
         )
-
+        assert obmol.mol is not None
         return obmol.mol
 
     @classmethod
-    def from_mda(cls, ag):
+    def from_mda(cls, ag: AtomGroupType):
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
-        top_loader.ag._u = ag.universe.copy()
+        top_loader.ag._u = ag.universe.copy()  # type: ignore
         top_loader.structure = None
 
         top_loader.arc = ARC(top_loader, top_loader.ag)
