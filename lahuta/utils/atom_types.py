@@ -4,7 +4,6 @@ Placehoder for the atom types and radii.
 
 from typing import Any, Dict, Protocol
 
-import MDAnalysis as mda
 import numpy as np
 from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
 from numpy.typing import NDArray
@@ -12,7 +11,7 @@ from openbabel import openbabel as ob
 
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
-from lahuta.types.mdanalysis import AtomGroupType, ResidueGroupType
+from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
@@ -146,7 +145,7 @@ def assign_radii(mol):
     return atom_radii
 
 
-def find_hydrogen_bonded_atoms(mda, mol) -> NDArray[np.int_]:
+def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.int_]:
     """
     Find hydrogen bonded atoms in the molecule.
     """

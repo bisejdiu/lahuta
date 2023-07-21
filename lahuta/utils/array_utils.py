@@ -1,10 +1,12 @@
 """
 Placeholder
 """
-from typing import Set, Tuple, Union
+from typing import Set, Tuple, TypeVar, Union
 
 import numpy as np
 from numpy.typing import NDArray
+
+_DType = TypeVar("_DType", np.float_, np.int_)
 
 
 # pylint: disable=W1114
@@ -47,7 +49,9 @@ def calculate_angle(
     return np.arccos(res)
 
 
-def array_distance(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> float:
+def array_distance(
+    arr1: NDArray[np.float_], arr2: NDArray[np.float_]
+) -> NDArray[np.float_]:
     """Takes the difference between the two arrays and calculates the norm of the difference.
 
 
@@ -173,7 +177,7 @@ def non_matching_indices(
 
 
 # These are all set operations we want to implement in our classes
-def asvoid(arr: NDArray[np.float_]) -> NDArray[np.float_]:
+def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
     """
     Reference: https://stackoverflow.com/questions/16216078/test-for-membership-in-a-2d-numpy-array
     Based on http://stackoverflow.com/a/16973510/190597 (Jaime, 2013-06)
@@ -185,12 +189,12 @@ def asvoid(arr: NDArray[np.float_]) -> NDArray[np.float_]:
         # Care needs to be taken here since
         # np.array([-0.]).view(np.void) != np.array([0.]).view(np.void)
         # Adding 0. converts -0. to 0.
-        arr += 0.0
-    return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))
+        arr += 0.0  # type: ignore
+    return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))  # type: ignore
 
 
 def intersection(
-    arr1: NDArray[np.float_], arr2: NDArray[np.float_], assume_unique: bool = False
+    arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
 ) -> NDArray[np.bool_]:
     """Calculate the intersection of two arrays and return the indices of the
     elements in `arr1` that are in `arr2`.
@@ -207,13 +211,13 @@ def intersection(
         An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in both `arr1` and `arr2`.
     """
 
-    arr1 = asvoid(arr1)
-    arr2 = asvoid(arr2)
-    return np.in1d(arr1, arr2, assume_unique)  # type: ignore
+    arr1_void = asvoid(arr1)
+    arr2_void = asvoid(arr2)
+    return np.in1d(arr1_void, arr2_void, assume_unique)  # type: ignore
 
 
 def difference(
-    arr1: NDArray[np.float_], arr2: NDArray[np.float_], assume_unique: bool = False
+    arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
 ) -> NDArray[np.bool_]:
     """Calculate the difference of two arrays and return the indices of the
     elements in `arr1` that are not in `arr2`.
@@ -230,14 +234,14 @@ def difference(
         An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in `arr1` but not in `arr2`.
     """
 
-    arr1 = asvoid(arr1)
-    arr2 = asvoid(arr2)
+    arr1_void = asvoid(arr1)
+    arr2_void = asvoid(arr2)
 
-    return np.in1d(arr1, arr2, assume_unique, invert=True)  # type: ignore
+    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)  # type: ignore
 
 
 def symmetric_difference(
-    arr1: NDArray[np.float_], arr2: NDArray[np.float_], assume_unique: bool = False
+    arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
 ) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
     """Calculate the symmetric difference of two arrays and return the indices of the
     elements in `arr1` that are not in `arr2` and the indices of the elements in `arr2` that are not in `arr1`.
@@ -260,7 +264,7 @@ def symmetric_difference(
     return mask_a, mask_b
 
 
-def union(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> NDArray[np.int_]:
+def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int_]:
     """Calculate the union of two arrays and return the indices of the
     elements in `arr1` and `arr2`. Duplicate entries are removed. Neighbors indices are sorted.
 
@@ -285,7 +289,7 @@ def union(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> NDArray[np.int_
     return sorted_indices
 
 
-def isdisjoint(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
+def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """Return True if two arrays have a null intersection.
 
     Parameters
@@ -303,7 +307,7 @@ def isdisjoint(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
     return arr1[intersection(arr1, arr2)].size == 0
 
 
-def issubset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
+def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """Return True if the first array is a subset of the second array.
 
     Parameters
@@ -321,7 +325,7 @@ def issubset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
     return bool(np.all(intersection(arr1, arr2)))  # type: ignore
 
 
-def issuperset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
+def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """Return True if the first array is a superset of the second array.
 
     Parameters
@@ -339,7 +343,7 @@ def issuperset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
     return issubset(arr2, arr1)
 
 
-def isequal(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
+def isequal(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """Return True if the two arrays are equal.
 
     Parameters
@@ -357,7 +361,7 @@ def isequal(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
     return issubset(arr1, arr2) and issubset(arr2, arr1)
 
 
-def isunique(arr: NDArray[np.float_]) -> bool:
+def isunique(arr: NDArray[_DType]) -> bool:
     """Return True if the array contains no duplicate entries.
 
     Parameters
@@ -373,7 +377,7 @@ def isunique(arr: NDArray[np.float_]) -> bool:
     return arr.shape[0] == np.unique(arr, axis=0).shape[0]  # type: ignore
 
 
-def is_strict_subset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
+def is_strict_subset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """Return True if the first array is a strict subset of the second array,
     but not identical.
 
@@ -392,7 +396,7 @@ def is_strict_subset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool
     return issubset(arr1, arr2) and not isequal(arr1, arr2)
 
 
-def is_strict_superset(arr1: NDArray[np.float_], arr2: NDArray[np.float_]) -> bool:
+def is_strict_superset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """Return True if the first array is a strict superset of the second array,
     but not identical.
 

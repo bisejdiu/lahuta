@@ -1,4 +1,4 @@
-from typing import Any, Dict, Protocol
+from typing import Any, Dict, Protocol, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -69,7 +69,11 @@ class AtomGroupType(Protocol):
     def chainIDs(self) -> NDArray[np.str_]:
         ...
 
-    def copy() -> "AtomGroupType":
+    @property
+    def vdw_radii(self) -> NDArray[np.float_]:
+        ...
+
+    def copy(self) -> "AtomGroupType":
         ...
 
     def __iter__(self) -> Any:
@@ -78,7 +82,7 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: Any) -> "AtomGroupType":
+    def __getitem__(self, index: Union[int, slice]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
