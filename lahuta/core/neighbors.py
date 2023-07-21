@@ -25,6 +25,7 @@ from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.core.helpers import get_class_attributes
 from lahuta.types.base import LuniType
 from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.types.openbabel import MolType
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
 from lahuta.utils.atom_types import find_hydrogen_bonded_atoms
@@ -68,10 +69,14 @@ class NeighborPairs:
     """A class for storing neighbor pairs."""
 
     def __init__(
-        self, luni: LuniType, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+        self,
+        mda: AtomGroupType,
+        mol: MolType,
+        pairs: NDArray[np.int_],
+        distances: NDArray[np.float_],
     ):
-        self.mda = luni.to("mda")
-        self.mol = luni.to("mol")
+        self.mda = mda
+        self.mol = mol
         self.atoms = self.mda.atoms.universe.atoms
 
         self._validate_inputs(pairs, distances)

@@ -15,7 +15,7 @@ class NeighborSearch:
         The instance of the class these methods originally belonged to.
     """
 
-    def __init__(self, instance):
+    def __init__(self, mda):
         """
         Initialize NeighborSearch class.
 
@@ -24,12 +24,12 @@ class NeighborSearch:
         instance : Class Instance
             The instance of the class these methods originally belonged to.
         """
-        mda = instance.to("mda")  # .copy()
+        # mda = instance.to("mda")  # .copy()
         mda_atoms, mda_universe = mda.atoms, mda.universe
         self.ag_no_h = mda_atoms.select_atoms("not name H*")
         self.og_resids = mda_universe.atoms.resids
 
-        self.instance = instance
+        # self.instance = instance
 
     def compute(self, radius=5.0, res_dif=1):
         """
@@ -57,7 +57,9 @@ class NeighborSearch:
             pairs = pairs[idx]
             distances = distances[idx]
 
-        return NeighborPairs(self.instance, pairs, distances)
+        return pairs, distances
+
+        # return NeighborPairs(self.instance, pairs, distances)
 
     def get_neighbors(self, radius=5.0):
         """

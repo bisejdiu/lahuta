@@ -19,7 +19,7 @@ def test_intersection(repeat: int = 10):
         sample_size = np.random.randint(1, n.pairs.shape[0])
         i = np.random.choice(n.pairs.shape[0], sample_size)
         i = np.unique(np.sort(i))
-        m = NeighborPairs(u, n.pairs[i], n.distances[i])
+        m = NeighborPairs(u.to("mda"), u.to("mol"), n.pairs[i], n.distances[i])
 
         assert (
             i.size

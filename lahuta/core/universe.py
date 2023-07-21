@@ -12,10 +12,11 @@ from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core._loaders import GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
+from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.types.openbabel import MolType
-from lahuta.utils.atom_types import find_hydrogen_bonded_atoms, v_radii_assignment
+from lahuta.utils.atom_types import v_radii_assignment
 
 
 class Universe:
@@ -143,11 +144,13 @@ class Universe:
         if not self._ready:
             self.ready()
 
-        neighbors = NeighborSearch(self)
-        return neighbors.compute(
+        neighbors = NeighborSearch(self.to("mda"))
+        pairs, distances = neighbors.compute(
             radius=radius,
             res_dif=res_dif,
         )
+
+        return NeighborPairs(self.to("mda"), self.to("mol"), pairs, distances)
 
     @staticmethod
     def get_format(file_name):
