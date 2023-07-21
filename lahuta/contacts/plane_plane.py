@@ -10,11 +10,13 @@ import MDAnalysis as mda
 import numpy as np
 import pandas as pd
 from MDAnalysis.lib import distances as mda_distances
+from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts.protocol import ContactBase
 from lahuta.core.universe import Universe
+from lahuta.types.openbabel import MolType
 
 from ..core.neighbors import NeighborPairs
 from ..utils.writers import FACTORY_DICT
@@ -230,7 +232,7 @@ def assign_pp_contact_type(normal_angle, theta):
     return types[indices]
 
 
-def vector_angle(v1, v2):
+def vector_angle(v1: NDArray[np.float_], v2: NDArray[np.float_]) -> NDArray[np.float_]:
     """Calculate the angle between two vectors.
 
     Parameters
@@ -254,8 +256,8 @@ def vector_angle(v1, v2):
     return np.degrees(angle)
 
 
-def perceive_rings(mol):
-    aromatics = []
+def perceive_rings(mol: MolType) -> List[Dict[str, Any]]:
+    aromatics: List[Dict[str, Any]] = []
 
     for _, ob_ring in enumerate(mol.GetSSSR()):
         if not ob_ring.IsAromatic():

@@ -1,10 +1,15 @@
+from typing import Any, Dict, List, Tuple
+
 import numpy as np
-from joblib import Memory
-from MDAnalysis.lib import distances as mda_distances
+from joblib import Memory  # type: ignore
+from MDAnalysis.lib import distances as mda_distances  # type: ignore
+from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts.plane_plane import perceive_rings, vector_angle
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.types.mda_commands import MDACappedDistance, MDADistanceType
+from lahuta.types.mdanalysis import AtomGroupType
 
 memory = Memory("cachedir", verbose=0)
 
@@ -20,7 +25,7 @@ DEFAULT_CONTACT_DISTS = {
 class _AtomPlaneContacts:
     @staticmethod
     def _donor_pi(
-        ns: NeighborPairs, angles, angle_cutoff: float = 30.0
+        ns: NeighborPairs, angles: NDArray[np.float_], angle_cutoff: float = 30.0
     ) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the donor pi system."""
         distance = DEFAULT_CONTACT_DISTS["donor_pi"]
@@ -39,7 +44,7 @@ class _AtomPlaneContacts:
 
     @staticmethod
     def _carbon_pi(
-        ns: NeighborPairs, angles, angle_cutoff: float = 30.0
+        ns: NeighborPairs, angles: NDArray[np.float_], angle_cutoff: float = 30.0
     ) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the carbon pi system."""
         distance = DEFAULT_CONTACT_DISTS["carbon_pi"]
@@ -52,7 +57,7 @@ class _AtomPlaneContacts:
 
     @staticmethod
     def _cation_pi(
-        ns: NeighborPairs, angles, angle_cutoff: float = 30.0
+        ns: NeighborPairs, angles: NDArray[np.float_], angle_cutoff: float = 30.0
     ) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the cation pi system."""
         distance = DEFAULT_CONTACT_DISTS["cation_pi"]
@@ -63,19 +68,24 @@ class _AtomPlaneContacts:
         )
 
 
-@memory.cache
-def compute_neighbors(positions, rings):
+@memory.cache  # type: ignore
+def compute_neighbors(
+    positions: NDArray[np.float_], rings: List[Dict[str, Any]]
+) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
-    reference = np.array([ring["center"] for ring in rings])
+    reference: NDArray[np.float_] = np.array([ring["center"] for ring in rings])
 
-    pairs, distances = mda_distances.capped_distance(
+    wrapper: MDADistanceType = MDACappedDistance(mda_distances)
+    pairs, distances = wrapper.capped_distance(
         reference, positions, max_cutoff, return_distances=True
     )
     return pairs, distances
 
 
-@memory.cache
-def compute_angles(ns, uv_atoms, rings):
+@memory.cache  # type: ignore
+def compute_angles(
+    ns: NeighborPairs, uv_atoms: AtomGroupType, rings: List[Dict[str, Any]]
+):
     ring_centers = np.array([ring["center"] for ring in rings])
     ring_normals = np.array([ring["normal"] for ring in rings])
 

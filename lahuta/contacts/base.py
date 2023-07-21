@@ -1,5 +1,11 @@
 from typing import Any, Protocol, runtime_checkable
 
+import numpy as np
+from numpy.typing import NDArray
+
+from lahuta.core.neighbors import NeighborPairs
+from lahuta.types.mdanalysis import AtomGroupType
+
 
 @runtime_checkable
 class ComputeProtocol(Protocol):
@@ -9,14 +15,15 @@ class ComputeProtocol(Protocol):
 
 @runtime_checkable
 class ComputeElementwiseProtocol(Protocol):
-    def compute_elementwise(self, atoms, pair, distance) -> Any:
+    def compute_elementwise(
+        self, atoms: AtomGroupType, pair: NDArray[np.int_], distance: NDArray[np.float_]
+    ) -> Any:
         ...
 
 
 class ContactAnalysis:
-    def __init__(self, ns):
+    def __init__(self, ns: NeighborPairs):
         self.ns = ns
-        self.partner1_atoms = ns.atoms
         self.results: Any = None
 
         self.run()

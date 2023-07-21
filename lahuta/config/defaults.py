@@ -1,3 +1,5 @@
+from typing import Dict
+
 # http://en.wikipedia.org/wiki/Atomic_radii_of_the_elements_(data_page)
 VDW_RADII = {"H": 1.2}
 
@@ -5,7 +7,7 @@ CONTACTS_DIST_MAX = 4.5
 
 THETA_REQUIRED = set(["CARBONPI", "CATIONPI", "DONORPI", "HALOGENPI"])
 
-CONTACTS = {
+CONTACTS: Dict[str, Dict[str, float]] = {
     "hbond": {
         "distance": 3.9,
         "polar distance": 3.5,

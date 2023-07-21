@@ -2,14 +2,27 @@
 Placeholder for the neighbors module.
 """
 
-from typing import Any, Dict, Iterable, List, Literal, Sequence, Sized, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Literal,
+    Sequence,
+    Sized,
+    Tuple,
+    Union,
+    cast,
+)
 
 import MDAnalysis as mda
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.core.helpers import get_class_attributes
+from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
 from lahuta.writers.frame_writer import DataFrameWriter
@@ -51,7 +64,7 @@ class HBondHandler:
 class NeighborPairs:
     """A class for storing neighbor pairs."""
 
-    def __init__(self, luni, pairs, distances):
+    def __init__(self, luni, pairs: NDArray[np.int_], distances: NDArray[np.float_]):
         self.luni = luni
         self.atoms = luni.to("mda").atoms.universe.atoms
 
@@ -71,9 +84,10 @@ class NeighborPairs:
         assert pairs.shape[0] == distances.shape[0], message
 
     @staticmethod
-    def get_sorting_index(pairs):
-        pairs = np.sort(pairs, axis=1)
-        indices = np.argsort(pairs[:, 0])
+    def get_sorting_index(pairs: NDArray[np.int_]) -> NDArray[np.int_]:
+        # sorted_pairs: NDArray[np.int_] = np.sort(pairs, axis=1)
+        sorted_pairs: NDArray[np.int_] = cast(NDArray[np.int_], np.sort(pairs, axis=1))
+        indices: NDArray[np.int_] = np.argsort(sorted_pairs[:, 0])
 
         return indices
 
@@ -85,13 +99,15 @@ class NeighborPairs:
     #     return indices
 
     @staticmethod
-    def sort_inputs(pairs, distances):
+    def sort_inputs(
+        pairs: NDArray[np.int_], distances: NDArray[np.float_]
+    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
 
         return pairs[indices], distances[indices]
 
-    def _get_pair_column(self, partner):
+    def _get_pair_column(self, partner) -> AtomGroupType:
         return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner):
@@ -122,7 +138,7 @@ class NeighborPairs:
 
     def index_filter(
         self,
-        indices: List[int],
+        indices: NDArray[np.int_],
         partner: int,
     ) -> "NeighborPairs":
         """Select pairs based on the atom indices.
@@ -163,7 +179,7 @@ class NeighborPairs:
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def numeric_filter(
-        self, array: np.ndarray, cutoff: float, lte: bool = True
+        self, array: NDArray[np.float_], cutoff: float, lte: bool = True
     ) -> "NeighborPairs":
         """Select pairs based on a boolean mask.
 
@@ -538,22 +554,22 @@ class NeighborPairs:
         return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)
 
     @property
-    def partner1(self) -> mda.AtomGroup:
+    def partner1(self) -> AtomGroupType:
         """Get the first partner of the pairs of atoms that are neighbors."""
         return self._get_pair_column(1)
 
     @property
-    def partner2(self) -> mda.AtomGroup:
+    def partner2(self) -> AtomGroupType:
         """Get the second partner of the pairs of atoms that are neighbors."""
         return self._get_pair_column(2)
 
     @property
-    def pairs(self) -> np.ndarray:
+    def pairs(self) -> NDArray[np.int_]:
         """Get the pairs of atoms that are neighbors."""
         return self._pairs
 
     @property
-    def distances(self) -> np.ndarray:
+    def distances(self) -> NDArray[np.float_]:
         """Get the distances between the pairs of atoms that are neighbors."""
         return self._distances
 
