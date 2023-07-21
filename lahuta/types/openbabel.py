@@ -83,6 +83,9 @@ class MolType(Protocol):
     def SetChainsPerceived(self) -> None:
         ...
 
+    def NumBonds(self) -> int:
+        ...
+
 
 class MolTypeWrapper:
     def __init__(self, mol: MolType):
@@ -129,4 +132,25 @@ class MolResType(Protocol):
         ...
 
     def GetSerialNum(self, atom: MolAtomType) -> int:
+        ...
+
+
+class MolBond(Protocol):
+    def GetBeginAtomIdx(self) -> int:
+        ...
+
+    def GetEndAtomIdx(self) -> int:
+        ...
+
+
+class BondIterator(Protocol):
+    def __next__(self) -> MolBond:
+        ...
+
+    def __iter__(self) -> "BondIterator":
+        ...
+
+
+class BondIterable(Protocol):
+    def __iter__(self) -> BondIterator:
         ...

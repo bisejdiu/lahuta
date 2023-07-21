@@ -39,7 +39,7 @@ class _AtomPlaneContacts:
     def sulphur_pi(ns: NeighborPairs, *_: Any) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the sulphur pi system."""
         distance = DEFAULT_CONTACT_DISTS["sulphur_pi"]
-        indices = ns.partner2.select_atoms("resname MET and element S").indices  # type: ignore
+        indices = ns.partner2.select_atoms("resname MET and element S").indices
         return ns.index_filter(indices, partner=2).distance_filter(distance)
 
     @staticmethod
@@ -50,7 +50,7 @@ class _AtomPlaneContacts:
         distance = DEFAULT_CONTACT_DISTS["carbon_pi"]
         return (
             ns.numeric_filter(angles, angle_cutoff)
-            .index_filter(ns.partner2.select_atoms("element C").indices, partner=2)  # type: ignore
+            .index_filter(ns.partner2.select_atoms("element C").indices, partner=2)
             .distance_filter(distance)
             .type_filter("weak_hbond_donor", partner=2)
         )

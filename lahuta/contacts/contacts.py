@@ -1,9 +1,11 @@
 import numpy as np
-from openbabel import openbabel as ob
+from numpy.typing import NDArray
+from openbabel import openbabel as ob  # type: ignore
 
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.types.openbabel import BondIterable, MolType
 from lahuta.utils.array_utils import difference, np_optimized_matching_pairs
 
 __all__ = [
@@ -21,7 +23,7 @@ __all__ = [
 ]
 
 
-def get_bonded_atoms(mol):
+def get_bonded_atoms(mol: MolType):
     """Get the bonded atoms of a molecule.
 
     Parameters
@@ -35,8 +37,15 @@ def get_bonded_atoms(mol):
         An array of shape (n_bonds, 2) where each row contains the indices of the atoms
         in the bond.
     """
-    bonds = np.zeros((mol.NumBonds(), 2))
-    for ix, bond in enumerate(ob.OBMolBondIter(mol)):
+
+    def bond_iter_wrapper(mol: MolType) -> BondIterable:
+        """Wrapper for the openbabel bond iterator."""
+        return ob.OBMolBondIter(mol)
+
+    num_bonds = mol.NumBonds()
+    bonds: NDArray[np.int_] = np.zeros((num_bonds, 2), dtype=int)
+    for ix, bond in enumerate(bond_iter_wrapper(mol)):
+        # assert isinstance(bond, MolBond), "bond is not a MolBond"
         atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
         bonds[ix, :] = (
             (atom_idx1, atom_idx2) if atom_idx1 < atom_idx2 else (atom_idx2, atom_idx1)
