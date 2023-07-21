@@ -74,7 +74,7 @@ class Atoms:
         return self._coordinates
 
     @coordinates.setter
-    def coordinates(self, coordinates: NDArray[np.float_]):
+    def coordinates(self, coordinates: NDArray[np.float_]) -> None:
         self._coordinates = coordinates
 
     def __len__(self):

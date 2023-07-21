@@ -67,8 +67,8 @@ class AtomTypeAssigner:
         # atom_mapping[self.mda.atoms.indices] = np.arange(self.mda.n_atoms)
 
         # TODO: vectorize this
-        hbond_acceptor = self.atypes["hbond_acceptor".upper()].value
-        hbond_donor = self.atypes["hbond_donor".upper()].value
+        hbond_acceptor = self.atypes["hbond_acceptor".upper()]
+        hbond_donor = self.atypes["hbond_donor".upper()]
         for atom in water_ag:
             atypes_array[self.mapping[atom.index], hbond_acceptor] = 1
             atypes_array[self.mapping[atom.index], hbond_donor] = 1

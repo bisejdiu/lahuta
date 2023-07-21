@@ -44,7 +44,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
         resname_str = self.protein_atomgroup.resnames.astype(str)
         atom_name_str = self.protein_atomgroup.names.astype(str)
-        atype_names = [member.name.lower() for member in list(ATypes)]
+        atype_names = [member.lower() for member in list(ATypes)]
 
         atom_id_labels = np.core.defchararray.add(  # type: ignore
             np.core.defchararray.strip(resname_str),  # type: ignore

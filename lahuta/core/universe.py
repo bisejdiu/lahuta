@@ -113,10 +113,8 @@ class Universe:
 
         # self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
-        for atom_type in AVAILABLE_ATOM_TYPES:
-            self._extend_topology(
-                atom_type.name.lower(), full_ag_atypes[:, atom_type.value]
-            )
+        for atom_type, value in AVAILABLE_ATOM_TYPES.items():
+            self._extend_topology(atom_type.lower(), full_ag_atypes[:, value])
 
         self._ready = True
 

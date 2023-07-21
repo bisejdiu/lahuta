@@ -49,7 +49,7 @@ class SmartsMatcher(SmartsMatcherBase):
                     atom = mol.GetAtom(match)
 
                     if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                        atypes_array[atom.GetId(), ATypes[atom_type.name].value] = 1
+                        atypes_array[atom.GetId(), ATypes[atom_type.name]] = 1
 
         return atypes_array
 

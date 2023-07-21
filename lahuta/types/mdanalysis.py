@@ -33,6 +33,10 @@ class AtomGroupType(Protocol):
     def positions(self) -> NDArray[np.float_]:
         ...
 
+    @positions.setter
+    def positions(self, positions: NDArray[np.float_]) -> None:
+        ...
+
     @property
     def universe(self) -> "UniverseType":
         ...
@@ -101,6 +105,9 @@ class UniverseType(Protocol):
         ...
 
     def copy(self) -> "UniverseType":
+        ...
+
+    def add_TopologyAttr(self, name: str, attr: Any) -> None:
         ...
 
     def __iter__(self) -> Any:

@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Literal, Optional, Union
+from typing import Any, Dict, Iterator, Literal, Optional, Union
 
 import gemmi
 import MDAnalysis as mda  # type: ignore
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 
 from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
@@ -48,7 +49,7 @@ class BaseLoader(ABC):
     def to(self, object_type: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
         method_str = f"to_{object_type}"
         if hasattr(self, method_str):
-            return getattr(self, method_str)()
+            return getattr(self, method_str)()  # type: ignore
 
         raise ValueError(f"Object type {object_type} is not supported")
 
@@ -60,7 +61,7 @@ class BaseLoader(ABC):
     def to_mol(self) -> MolType:
         ...
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Union[Atoms, Residues, Chains]]:
         yield self.atoms
         yield self.residues
         yield self.chains
@@ -85,7 +86,7 @@ class GemmiLoader(BaseLoader):
 
         self.ag: AtomGroupType = self._create_mda()
 
-    def extract_positions(self, atom_site_data: Dict[str, Any]):
+    def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float_]:
         coords_array = np.zeros((self.n_atoms, 3), dtype=np.float_)
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
@@ -121,14 +122,14 @@ class GemmiLoader(BaseLoader):
         )
 
         # Add topology attributes
-        uv.add_TopologyAttr("names", self.arc.atoms.names)  # type: ignore
-        uv.add_TopologyAttr("type", self.arc.atoms.types)  # type: ignore
-        uv.add_TopologyAttr("elements", self.arc.atoms.elements)  # type: ignore
-        uv.add_TopologyAttr("resnames", resnames)  # type: ignore
-        uv.add_TopologyAttr("resids", resids)  # type: ignore
-        uv.add_TopologyAttr("segids", chain_ids)  # type: ignore
+        uv.add_TopologyAttr("names", self.arc.atoms.names)
+        uv.add_TopologyAttr("type", self.arc.atoms.types)
+        uv.add_TopologyAttr("elements", self.arc.atoms.elements)
+        uv.add_TopologyAttr("resnames", resnames)
+        uv.add_TopologyAttr("resids", resids)
+        uv.add_TopologyAttr("segids", chain_ids)
 
-        uv.atoms.positions = self.arc.atoms.coordinates  # type: ignore
+        uv.atoms.positions = self.arc.atoms.coordinates
 
         return uv.atoms
 
@@ -137,10 +138,10 @@ class GemmiLoader(BaseLoader):
 
     def to_mol(self) -> MolType:
         assert self.arc is not None, "arc has not been initialized"
-        obmol = OBMol()
+        obmol = OBMol()  # type: ignore
         obmol.create_mol(
             self.arc,
-            self.structure.connections,
+            self.structure.connections,  # type: ignore
         )
         assert obmol.mol is not None
         return obmol.mol
@@ -158,12 +159,12 @@ class TopologyLoader(BaseLoader):
 
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
-    def to_mda(self):
+    def to_mda(self) -> AtomGroupType:
         return self.ag
 
-    def to_mol(self):
+    def to_mol(self) -> MolType:
         assert self.arc is not None, "arc has not been initialized"
-        obmol = OBMol()
+        obmol = OBMol()  # type: ignore
         obmol.create_mol(
             self.arc,
             self.structure,
@@ -172,7 +173,7 @@ class TopologyLoader(BaseLoader):
         return obmol.mol
 
     @classmethod
-    def from_mda(cls, ag: AtomGroupType):
+    def from_mda(cls, ag: AtomGroupType) -> "TopologyLoader":
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # type: ignore
