@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
-    from lahuta.core.loaders import GemmiLoader, TopologyLoader
+    from lahuta.core._loaders import GemmiLoader, TopologyLoader
 
 from lahuta.types.mdanalysis import AtomGroupType, UniverseType
 
@@ -139,9 +139,7 @@ class Residues:
 
 
 class Chains:
-    dtype = np.dtype(
-        {"names": ["label", "auth", "id"], "formats": ["<U10", "<U10", "int"]}
-    )
+    dtype = np.dtype({"names": ["label", "auth", "id"], "formats": ["<U10", "<U10", "int"]})
 
     def __init__(self, name: Optional[str] = None):
         self.name = name
@@ -180,9 +178,7 @@ class Chains:
         )
         cls_instance._data["id"] += 1
 
-        cls_instance.mapping = dict(
-            zip(cls_instance._data["auth"], cls_instance._data["id"])
-        )
+        cls_instance.mapping = dict(zip(cls_instance._data["auth"], cls_instance._data["id"]))
 
         return cls_instance
 
