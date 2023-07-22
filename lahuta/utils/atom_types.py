@@ -125,7 +125,7 @@ def vec_assign_atom_types(
     return atypes_array
 
 
-def assign_radii(mol: MolType) -> NDArray[np.float_]:
+def assign_radii(mol: MolType) -> NDArray[np.float32]:
     """Get the van der Waals and covalent radii for each atom in the molecule.
 
     Parameters
@@ -172,13 +172,13 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
     return hbond_array
 
 
-def v_radii_assignment(elements: NDArray[np.str_]) -> NDArray[np.float_]:
-    vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
+def v_radii_assignment(elements: NDArray[np.str_]) -> NDArray[np.float32]:
+    vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}  # type: ignore
 
     def v_capitalize(
         array: NDArray[np.str_], mapping: Dict[str, int]
-    ) -> NDArray[np.float_]:
+    ) -> NDArray[np.float32]:
         vfunc = np.vectorize(mapping.get)
-        return vfunc(array)
+        return vfunc(array)  # type: ignore
 
     return v_capitalize(elements, vdwradii)

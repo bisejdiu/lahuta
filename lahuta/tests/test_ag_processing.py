@@ -1,7 +1,8 @@
 import warnings
 from pathlib import Path
+from typing import Tuple
 
-import MDAnalysis as mda
+import MDAnalysis as mda  # type: ignore
 import numpy as np
 import pytest
 
@@ -16,7 +17,7 @@ AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
 
 
 class ContactType:
-    def __init__(self, name: str, func, universe):
+    def __init__(self, name: str, func, universe) -> None:
         self.name = name
         self.func = func
         self.universe = universe
@@ -24,22 +25,22 @@ class ContactType:
         self.neighbors = None
         self.neighbors_diff = None
 
-    def compute_neighbors(self, res_dif: int):
+    def compute_neighbors(self, res_dif: int) -> None:
         self.neighbors_ref = self.universe.u_ref.compute_neighbors(res_dif=res_dif)
         self.neighbors = self.universe.u.compute_neighbors(res_dif=res_dif)
 
-    def compute_diff(self):
+    def compute_diff(self) -> None:
         self.neighbors_diff = self.func(self.neighbors_ref) - self.func(self.neighbors)
 
-    def pairs(self):
+    def pairs(self) -> Tuple[int, int]:
         return self.func(self.neighbors).pairs.shape
 
-    def pairs_ref(self):
+    def pairs_ref(self) -> Tuple[int, int]:
         return self.func(self.neighbors_ref).pairs.shape
 
 
 class UniverseWrapper:
-    def __init__(self, mda_u, selection: str):
+    def __init__(self, mda_u, selection: str) -> None:
         self.mda_u = mda_u
         resnames = self.mda_u.select_atoms(
             f"all and not ({selection})"
@@ -52,7 +53,7 @@ class UniverseWrapper:
 
 
 @pytest.fixture(scope="session")
-def mda_universe():
+def mda_universe() -> mda.Universe:
     pdb_path = Path(__file__).parent / "data" / "1KX2.pdb"
     with warnings.catch_warnings(record=True) as _:
         return mda.Universe(str(pdb_path))
@@ -70,7 +71,7 @@ selections_res_difs = [
 
 class TestMDAnalysis:
     @pytest.fixture(params=selections_res_difs, autouse=True)
-    def setup_method(self, request, mda_universe):
+    def setup_method(self, request, mda_universe) -> None:
         selection, res_dif = request.param
         with warnings.catch_warnings(record=True) as _:
             self.universe = UniverseWrapper(mda_universe, selection)
@@ -95,13 +96,13 @@ class TestMDAnalysis:
             contact_type.compute_neighbors(res_dif)
             contact_type.compute_diff()
 
-    def test_subset_check(self):
+    def test_subset_check(self) -> None:
         for contact_type in self.contact_types:
             message = f"{contact_type.name} neighbors are not a subset of the reference neighbors"
             assert contact_type.neighbors is not None, "Neighbors are None"
             assert contact_type.neighbors.issubset(contact_type.neighbors_ref), message
 
-    def test_number_of_pairs(self):
+    def test_number_of_pairs(self) -> None:
         for contact_type in self.contact_types:
             assert (
                 contact_type.pairs() <= contact_type.pairs_ref()
