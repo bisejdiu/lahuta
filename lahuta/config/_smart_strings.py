@@ -33,9 +33,7 @@ SMARTS_STR_PI_METALS = (
 )
 # NEGATIVELY IONISABLE
 SMARTS_STR_NI_ANIONS = "[*-1,*-2]"
-SMARTS_STR_NI_O_ACIDIC_GRP = (
-    "[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]"
-)
+SMARTS_STR_NI_O_ACIDIC_GRP = "[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]"
 
 # HYDROPHOBIC, and CARBONYL
 SMARTS_STR_HYDROPHOBIC = "[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]"

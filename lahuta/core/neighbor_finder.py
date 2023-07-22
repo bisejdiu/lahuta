@@ -67,9 +67,7 @@ class NeighborSearch:
 
         # return NeighborPairs(self.instance, pairs, distances)
 
-    def get_neighbors(
-        self, radius: float = 5.0
-    ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def get_neighbors(self, radius: float = 5.0) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         """
         Get the neighbors of an atomgroup.
 

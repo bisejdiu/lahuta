@@ -1,8 +1,8 @@
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
-from joblib import Memory  # type: ignore
-from MDAnalysis.lib import distances as mda_distances  # type: ignore
+from joblib import Memory
+from MDAnalysis.lib import distances as mda_distances
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
@@ -14,7 +14,7 @@ from lahuta.types.mdanalysis import AtomGroupType
 memory = Memory("cachedir", verbose=0)
 
 
-DEFAULT_CONTACT_DISTS = {
+DEFAULT_CONTACT_DISTS: Dict[str, float] = {
     "cation_pi": CONTACTS["aromatic"]["atom_aromatic_distance"],
     "donor_pi": CONTACTS["aromatic"]["atom_aromatic_distance"],
     "sulphur_pi": CONTACTS["aromatic"]["met_sulphur_aromatic_distance"],
@@ -95,9 +95,7 @@ def compute_neighbors(
 
 
 @memory.cache  # type: ignore
-def compute_angles(
-    ns: NeighborPairs, uv_atoms: AtomGroupType, rings: List[Dict[str, Any]]
-):
+def compute_angles(ns: NeighborPairs, uv_atoms: AtomGroupType, rings: List[Dict[str, Any]]):
     ring_centers = np.array([ring["center"] for ring in rings])
     ring_normals = np.array([ring["normal"] for ring in rings])
 
@@ -120,9 +118,7 @@ def subtract_aromatic_neighbors(
 
 
 def compute_contacts(
-    contact_fn: Callable[
-        [NeighborPairs, NDArray[np.float32], Optional[float]], NeighborPairs
-    ],
+    contact_fn: Callable[[NeighborPairs, NDArray[np.float32], Optional[float]], NeighborPairs],
     angle_cutoff: Optional[float],
     use_cache: bool,
 ) -> Callable[[NeighborPairs], NeighborPairs]:
@@ -155,23 +151,17 @@ def create_contact_function(
 
 
 # user-facing functions
-def cation_pi(
-    n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True
-) -> NeighborPairs:
+def cation_pi(n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
     func = create_contact_function("cation_pi", angle_cutoff, cache)
     return func(n)
 
 
-def carbon_pi(
-    n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True
-) -> NeighborPairs:
+def carbon_pi(n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
     func = create_contact_function("carbon_pi", angle_cutoff, cache)
     return func(n)
 
 
-def donor_pi(
-    n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True
-) -> NeighborPairs:
+def donor_pi(n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
     func = create_contact_function("donor_pi", angle_cutoff, cache)
     return func(n)
 

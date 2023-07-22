@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.typing import NDArray
-from openbabel import openbabel as ob  # type: ignore
+from openbabel import openbabel as ob
 
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
@@ -46,9 +46,7 @@ def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
     for ix, bond in enumerate(bond_iter_wrapper(mol)):
         # assert isinstance(bond, MolBond), "bond is not a MolBond"
         atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-        bonds[ix, :] = (
-            (atom_idx1, atom_idx2) if atom_idx1 < atom_idx2 else (atom_idx2, atom_idx1)
-        )
+        bonds[ix, :] = (atom_idx1, atom_idx2) if atom_idx1 < atom_idx2 else (atom_idx2, atom_idx1)
 
     return bonds
 
@@ -91,20 +89,14 @@ def metalic_neighbors(
     NeighborPairs
         A NeighborPairs object containing only metalic contacts.
     """
-    metal_indices = (
-        ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
-    )
+    metal_indices = ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
 
     acceptor_metal = (
-        ns.type_filter("hbond_acceptor", 1)
-        .index_filter(metal_indices, 2)
-        .distance_filter(distance)
+        ns.type_filter("hbond_acceptor", 1).index_filter(metal_indices, 2).distance_filter(distance)
     )
 
     metal_acceptor = (
-        ns.type_filter("hbond_acceptor", 2)
-        .index_filter(metal_indices, 1)
-        .distance_filter(distance)
+        ns.type_filter("hbond_acceptor", 2).index_filter(metal_indices, 1).distance_filter(distance)
     )
 
     return acceptor_metal + metal_acceptor
@@ -165,15 +157,11 @@ def ionic_neighbors(
 
     """
     contacts_atom12 = (
-        ns.type_filter("pos_ionisable", 1)
-        .type_filter("neg_ionisable", 2)
-        .distance_filter(distance)
+        ns.type_filter("pos_ionisable", 1).type_filter("neg_ionisable", 2).distance_filter(distance)
     )
 
     contacts_atom21 = (
-        ns.type_filter("neg_ionisable", 1)
-        .type_filter("pos_ionisable", 2)
-        .distance_filter(distance)
+        ns.type_filter("neg_ionisable", 1).type_filter("pos_ionisable", 2).distance_filter(distance)
     )
 
     return contacts_atom12 + contacts_atom21
@@ -198,11 +186,7 @@ def aromatic_neighbors(
     NeighborPairs
         A NeighborPairs object containing only aromatic contacts.
     """
-    return (
-        ns.type_filter("aromatic", 1)
-        .type_filter("aromatic", 2)
-        .distance_filter(distance)
-    )
+    return ns.type_filter("aromatic", 1).type_filter("aromatic", 2).distance_filter(distance)
 
 
 def hydrophobic_neighbors(
@@ -224,11 +208,7 @@ def hydrophobic_neighbors(
     NeighborPairs
         A NeighborPairs object containing only hydrophobic contacts.
     """
-    return (
-        ns.type_filter("hydrophobe", 1)
-        .type_filter("hydrophobe", 2)
-        .distance_filter(distance)
-    )
+    return ns.type_filter("hydrophobe", 1).type_filter("hydrophobe", 2).distance_filter(distance)
 
 
 def vdw_neighbors(
@@ -358,15 +338,11 @@ def polar_hbond_neighbors(
     """
 
     hbond_atom12 = (
-        ns.type_filter("hbond_donor", 1)
-        .type_filter("hbond_acceptor", 2)
-        .distance_filter(distance)
+        ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2).distance_filter(distance)
     )
 
     hbond_atom21 = (
-        ns.type_filter("hbond_donor", 2)
-        .type_filter("hbond_acceptor", 1)
-        .distance_filter(distance)
+        ns.type_filter("hbond_donor", 2).type_filter("hbond_acceptor", 1).distance_filter(distance)
     )
 
     return hbond_atom12 + hbond_atom21

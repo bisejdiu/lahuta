@@ -5,10 +5,7 @@ from numpy.typing import NDArray
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core.assigners import (
-    LegacyProteinTypeAssigner,
-    VectorizedProteinTypeAssigner,
-)
+from lahuta.core.assigners import LegacyProteinTypeAssigner, VectorizedProteinTypeAssigner
 from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher, SmartsMatcherBase
 from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.types.openbabel import MolType
@@ -71,9 +68,7 @@ class AtomTypeAssigner:
         types for all water molecules in the atomgroup. Returns the modified
         atypes_array.
         """
-        water_ag = self.mda.select_atoms(
-            "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
-        )
+        water_ag = self.mda.select_atoms("resname SOL HOH TIP3 TIP4 WAT W and not name H*")
         # max_index = np.max(self.mda.universe.atoms.indices)
         # atom_mapping = np.full(max_index + 1, -1)
         # atom_mapping[self.mda.atoms.indices] = np.arange(self.mda.n_atoms)
@@ -87,9 +82,7 @@ class AtomTypeAssigner:
 
         return atypes_array
 
-    def _compute_protein_types(
-        self, atypes_array: NDArray[np.int8]
-    ) -> NDArray[np.int8]:
+    def _compute_protein_types(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
         """
         Assign protein atom types based on the chosen method.
 

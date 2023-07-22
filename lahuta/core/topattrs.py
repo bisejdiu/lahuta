@@ -1,7 +1,7 @@
 from typing import Any, Optional, Type
 
 import numpy as np
-from MDAnalysis.core.topologyattrs import AtomAttr  # type: ignore
+from MDAnalysis.core.topologyattrs import AtomAttr
 from numpy.typing import NDArray
 
 

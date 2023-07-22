@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from openbabel import openbabel as ob  # type: ignore
+from openbabel import openbabel as ob
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.types.openbabel import MolType, ObRingType, ObVector3Wrapper
@@ -28,12 +28,8 @@ class Rings:
         center = ob_vector3_wrapper.center
         normal = ob_vector3_wrapper.normal
         ob_ring.findCenterAndNormal(center, normal, ob.vector3())
-        center_coords: NDArray[np.float32] = np.array(
-            [center.GetX(), center.GetY(), center.GetZ()]
-        )
-        normal_coords: NDArray[np.float32] = np.array(
-            [normal.GetX(), normal.GetY(), normal.GetZ()]
-        )
+        center_coords: NDArray[np.float32] = np.array([center.GetX(), center.GetY(), center.GetZ()])
+        normal_coords: NDArray[np.float32] = np.array([normal.GetX(), normal.GetY(), normal.GetZ()])
         atoms = sorted([atom for atom in ob_ring._path])  # type: ignore
 
         self._centers.append(center_coords)
@@ -86,9 +82,7 @@ class _PlanePlaneContacts:
         pair_ids = self._gen_combinations()
 
         # compute the pairwise distances
-        pair_dists = np.linalg.norm(
-            centers[pair_ids[:, 0]] - centers[pair_ids[:, 1]], axis=1
-        )
+        pair_dists = np.linalg.norm(centers[pair_ids[:, 0]] - centers[pair_ids[:, 1]], axis=1)
 
         # apply the distance mask
         valid_distance_mask = pair_dists <= self.centroid_distance
@@ -97,9 +91,7 @@ class _PlanePlaneContacts:
 
         first_pair_ids, second_pair_ids = pair_ids[:, 0], pair_ids[:, 1]
         pair_diffs = centers[first_pair_ids] - centers[second_pair_ids]
-        normal_angles = vector_angle_1d(
-            normals[first_pair_ids], normals[second_pair_ids]
-        )
+        normal_angles = vector_angle_1d(normals[first_pair_ids], normals[second_pair_ids])
         theta_angles = vector_angle_1d(normals[first_pair_ids], pair_diffs)
 
         int_types = assign_pp_contact_type(normal_angles, theta_angles)
@@ -198,9 +190,7 @@ class PlanePlaneContacts:
         return pp.get_neighbors()
 
 
-def vector_angle_1d(
-    v1: NDArray[np.float32], v2: NDArray[np.float32]
-) -> NDArray[np.float32]:
+def vector_angle_1d(v1: NDArray[np.float32], v2: NDArray[np.float32]) -> NDArray[np.float32]:
     v1_u = v1 / np.linalg.norm(v1, axis=-1, keepdims=True)
     v2_u = v2 / np.linalg.norm(v2, axis=-1, keepdims=True)
     dot = np.einsum("ij,ij->i", v1_u, v2_u)  # type: ignore

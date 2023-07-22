@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterator, Literal, Optional, Union, overload
 
 import gemmi
-import MDAnalysis as mda  # type: ignore
+import MDAnalysis as mda
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
@@ -95,7 +95,7 @@ class GemmiLoader(BaseLoader):
         self.ag: AtomGroupType = self._create_mda()
 
     def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float32]:
-        coords_array = np.zeros((self.n_atoms, 3), dtype=np.float32)
+        coords_array: NDArray[np.float32] = np.zeros((self.n_atoms, 3), dtype=np.float32)
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
         coords_array[:, 2] = atom_site_data.get("Cartn_z")
@@ -113,11 +113,7 @@ class GemmiLoader(BaseLoader):
         # Use factorize to get the labels and unique values
         resindices, uniques = pd.factorize(struct_arr)  # type: ignore
 
-        resnames, resids, chain_ids = (
-            uniques["resnames"],
-            uniques["resids"],
-            uniques["chain_ids"],
-        )
+        resnames, resids, chain_ids = (uniques["resnames"], uniques["resids"], uniques["chain_ids"])
 
         # Create a new Universe
         uv: UniverseType = mda.Universe.empty(  # type: ignore

@@ -6,9 +6,7 @@ from numpy.typing import NDArray
 from lahuta.types.mdanalysis import AtomGroupType
 
 
-def mda_psuedobox_from_atomgroup(
-    ag: AtomGroupType, cutoff: float = 5.0
-) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
+def mda_psuedobox_from_atomgroup(ag: AtomGroupType, cutoff: float = 5.0) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
     Create a psuedobox for MDAnalysis to use with PDB files.
     Also shifts the coordinates so they are within the box definition.

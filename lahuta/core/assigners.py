@@ -63,10 +63,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
         #     prot_atom_types_array.append(list(PROT_ATOM_TYPES[key]))
         assert isinstance(atom_id_labels, np.ndarray)
         mask: NDArray[np.bool_] = np.array(
-            [
-                np.isin(atom_id_labels, prot_atom_types)
-                for prot_atom_types in prot_atom_types_array
-            ]
+            [np.isin(atom_id_labels, prot_atom_types) for prot_atom_types in prot_atom_types_array]
         )
 
         true_indices = np.argwhere(mask)

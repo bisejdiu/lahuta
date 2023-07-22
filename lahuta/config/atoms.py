@@ -6,9 +6,7 @@ HALOGENS = set(["F", "CL", "BR", "I", "AT"])
 
 MAINCHAIN_ATOMS = set(["N", "C", "CA", "O", "OXT"])
 
-STANDARD_NUCLEOTIDES = set(
-    ["A", "C", "G", "I", "U", "DA", "DC", "DG", "DI", "DT", "DU", "N"]
-)
+STANDARD_NUCLEOTIDES = set(["A", "C", "G", "I", "U", "DA", "DC", "DG", "DI", "DT", "DU", "N"])
 
 METALS = at.METALS
 STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS

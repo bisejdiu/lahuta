@@ -39,9 +39,7 @@ class HBondHandler:
     ) -> NDArray[np.float32]:
         return attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
-    def get_hbond_angles(
-        self, col1: AtomGroupType, col2: AtomGroupType
-    ) -> NDArray[np.float32]:
+    def get_hbond_angles(self, col1: AtomGroupType, col2: AtomGroupType) -> NDArray[np.float32]:
         atom1_pos = col1.atoms.positions
         atom2_pos = col2.atoms.positions
 
@@ -74,16 +72,12 @@ class NeighborPairs:
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(
-            self.mda, self.mol
-        )
+        self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(self.mda, self.mol)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles: NDArray[np.float32] = np.array([])
         self._annotations: Dict[str, NDArray[Any]] = {}
 
-    def _validate_inputs(
-        self, pairs: NDArray[np.int32], distances: NDArray[np.float32]
-    ) -> None:
+    def _validate_inputs(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
         message = (
             "The number of pairs and distances must be the same."
             f"Got {pairs.shape[0]} pairs and {distances.shape[0]} distances."
@@ -219,9 +213,7 @@ class NeighborPairs:
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
-    def hbond_distance_filter(
-        self, partner: int, vdw_comp_factor: float = 0.1
-    ) -> "NeighborPairs":
+    def hbond_distance_filter(self, partner: int, vdw_comp_factor: float = 0.1) -> "NeighborPairs":
         """Filter the pairs based on the distance between the hydrogen bonded atoms.
 
         Parameters
@@ -266,9 +258,7 @@ class NeighborPairs:
         attr_partner, hbound_attr_partner = self._get_partners(partner)
 
         # if self.hbond_angles is None:
-        self.hbond_angles = self.hbond_handler.get_hbond_angles(
-            attr_partner, hbound_attr_partner
-        )
+        self.hbond_angles = self.hbond_handler.get_hbond_angles(attr_partner, hbound_attr_partner)
 
         idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)  # type: ignore
         self._pairs = self._pairs[idx]
@@ -461,9 +451,7 @@ class NeighborPairs:
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 
-    def clone(
-        self, pairs: NDArray[np.int32], distances: NDArray[np.float32]
-    ) -> "NeighborPairs":
+    def clone(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> "NeighborPairs":
         """Get a copy of the NeighborPairs object."""
 
         attrs = {attr: getattr(self, attr) for attr in get_class_attributes(self)}
@@ -521,9 +509,7 @@ class NeighborPairs:
 
         # return self._create_df(df_format)
 
-    def to_dict(
-        self, df_format: Literal["compact", "expanded"] = "expanded"
-    ) -> Dict[str, Any]:
+    def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> Dict[str, Any]:
         """Convert the NeighborPairs object to a dictionary.
 
         Parameters
@@ -582,9 +568,7 @@ class NeighborPairs:
         """Get the indices of the atoms that are neighbors."""
         return np.unique([self.partner1.indices, self.partner2.indices])  # type: ignore
 
-    def __getitem__(
-        self, item: Union[int, slice, NDArray[np.int32]]
-    ) -> "NeighborPairs":
+    def __getitem__(self, item: Union[int, slice, NDArray[np.int32]]) -> "NeighborPairs":
         """Get the pair of atoms at the specified index.
 
         Parameters

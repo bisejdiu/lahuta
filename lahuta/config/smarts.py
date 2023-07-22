@@ -39,6 +39,4 @@ class SmartsPatternRegistry(Enum):
 
 
 _Atom_Type_Names: List[str] = [member.name for member in SmartsPatternRegistry]
-AVAILABLE_ATOM_TYPES: Dict[str, int] = {
-    name: i for i, name in enumerate(_Atom_Type_Names)
-}
+AVAILABLE_ATOM_TYPES: Dict[str, int] = {name: i for i, name in enumerate(_Atom_Type_Names)}

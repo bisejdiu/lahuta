@@ -7,7 +7,7 @@ from typing import Dict
 import numpy as np
 from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII  # type: ignore
 from numpy.typing import NDArray
-from openbabel import openbabel as ob  # type: ignore
+from openbabel import openbabel as ob
 
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
@@ -38,16 +38,12 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
                 atypes_array[atom.GetId(), atypes[atom_type.name]] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
-    for atom in atomgroup.select_atoms(
-        "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
-    ):
+    for atom in atomgroup.select_atoms("resname SOL HOH TIP3 TIP4 WAT W and not name H*"):
         atypes_array[atom.index, atypes["hbond_acceptor"]] = 1
         atypes_array[atom.index, atypes["hbond_donor"]] = 1
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
-    for residue in atomgroup.select_atoms(
-        "resname " + " ".join(STANDARD_AMINO_ACIDS)
-    ).residues:
+    for residue in atomgroup.select_atoms("resname " + " ".join(STANDARD_AMINO_ACIDS)).residues:
         for atom in residue.atoms:
             # REMOVE TYPES IF ALREADY ASSIGNED FROM SMARTS
             for prot_atype in list(PROT_ATOM_TYPES.keys()):
@@ -63,7 +59,9 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
 
 
 def vec_assign_atom_types(
-    mol: MolType, atomgroup: AtomGroupType, ta: Dict[str, NDArray[np.str_]]
+    mol: MolType,
+    atomgroup: AtomGroupType,
+    ta: Dict[str, NDArray[np.str_]],
 ) -> NDArray[np.int8]:
     """
     Assign atom types to each atom in the molecule.
@@ -90,9 +88,7 @@ def vec_assign_atom_types(
                     atypes_array[atom.GetId(), atypes[atom_type.name]] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
-    for atom in atomgroup.select_atoms(
-        "resname SOL HOH TIP3 TIP4 WAT W and not name H*"
-    ):
+    for atom in atomgroup.select_atoms("resname SOL HOH TIP3 TIP4 WAT W and not name H*"):
         atypes_array[atom.index, atypes["hbond_acceptor"]] = 1
         atypes_array[atom.index, atypes["hbond_donor"]] = 1
 
@@ -172,12 +168,12 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
     return hbond_array
 
 
-def v_radii_assignment(elements: NDArray[np.str_]) -> NDArray[np.float32]:
+def v_radii_assignment(
+    elements: NDArray[np.str_],
+) -> NDArray[np.float32]:
     vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}  # type: ignore
 
-    def v_capitalize(
-        array: NDArray[np.str_], mapping: Dict[str, int]
-    ) -> NDArray[np.float32]:
+    def v_capitalize(array: NDArray[np.str_], mapping: Dict[str, int]) -> NDArray[np.float32]:
         vfunc = np.vectorize(mapping.get)
         return vfunc(array)  # type: ignore
 

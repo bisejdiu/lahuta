@@ -18,12 +18,7 @@ from .contacts import (
 )
 from .covalent import CovalentContacts
 from .donor_pi import DonorPi
-from .hbonds import (
-    HBondContacts,
-    PolarHBondContacts,
-    WeakHBondContacts,
-    WeakPolarHBondContacts,
-)
+from .hbonds import HBondContacts, PolarHBondContacts, WeakHBondContacts, WeakPolarHBondContacts
 from .hydrophobic import HydrophobicContacts
 from .ionic import IonicContacts
 from .metal import MetalicContacts

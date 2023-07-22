@@ -15,13 +15,6 @@ class MetalicContacts(ContactAnalysis):
 
     distance = CONTACTS["metal"]["distance"]
 
-    # def __init__(self, ns):
-    #     self.metal_indices = (
-    #         ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
-    #     )
-
-    #     super().__init__(ns)
-
     def compute(self) -> NeighborPairs:
         """Compute metal contacts."""
         return F.metalic_neighbors(self.ns, self.distance)

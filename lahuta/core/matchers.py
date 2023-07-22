@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from openbabel import openbabel as ob  # type: ignore
+from openbabel import openbabel as ob
 
 from lahuta.config.atoms import STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
@@ -43,9 +43,7 @@ class SmartsMatcher(SmartsMatcherBase):
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
             for smarts in smartsdict.values():
-                ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(
-                    ob.OBSmartsPattern()
-                )
+                ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(ob.OBSmartsPattern())
                 ob_smart.Init(str(smarts))
                 ob_smart.Match(mol)
 
@@ -77,9 +75,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
             smartsdict = SmartsPatternRegistry[atom_type.name].value
             precomputed_ob_smarts[atom_type.name] = []
             for smarts in smartsdict.values():
-                ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(
-                    ob.OBSmartsPattern()
-                )
+                ob_smart: ObSmartPatternType = OBSmartsPatternWrapper(ob.OBSmartsPattern())
                 ob_smart.Init(str(smarts))
                 precomputed_ob_smarts[atom_type.name].append(ob_smart)
         return precomputed_ob_smarts
@@ -104,9 +100,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         with ThreadPoolExecutor(max_workers=num_threads) as executor:
             for atom_type, ob_smarts_list in self.precomputed_ob_smarts.items():
                 future_matches = [
-                    executor.submit(
-                        self.match_ob_smarts, ob_smart, mol, ATypes, atom_type
-                    )
+                    executor.submit(self.match_ob_smarts, ob_smart, mol, ATypes, atom_type)
                     for ob_smart in ob_smarts_list
                 ]
 

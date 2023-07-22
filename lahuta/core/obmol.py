@@ -4,7 +4,7 @@ import gemmi
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from openbabel import openbabel as ob  # type: ignore
+from openbabel import openbabel as ob
 
 from lahuta.core.arc import ARC
 from lahuta.types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
@@ -121,9 +121,7 @@ class OBMol:
                 ob_res = self.create_residue_obmol(resid, resname, chain_id)
                 added_residues.add(_cra_)
 
-            self.create_atom_obmol(
-                idx, str(atom_name), str(element), coords[idx], ob_res
-            )
+            self.create_atom_obmol(idx, str(atom_name), str(element), coords[idx], ob_res)
 
         self.perceive_bonds()
         for connection in connections:

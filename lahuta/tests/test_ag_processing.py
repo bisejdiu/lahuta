@@ -2,7 +2,7 @@ import warnings
 from pathlib import Path
 from typing import Callable, Optional, Tuple
 
-import MDAnalysis as mda  # type: ignore
+import MDAnalysis as mda
 import numpy as np
 import pytest
 from _pytest.fixtures import FixtureRequest
@@ -54,9 +54,7 @@ class ContactType:
 class UniverseWrapper:
     def __init__(self, mda_u: UniverseType, selection: str) -> None:
         self.mda_u = mda_u
-        resnames = self.mda_u.select_atoms(
-            f"all and not ({selection})"
-        ).residues.resnames
+        resnames = self.mda_u.select_atoms(f"all and not ({selection})").residues.resnames
         self.unique_resnames = np.unique(resnames)
 
         self.u_ref = Universe(self.mda_u.atoms)
@@ -97,9 +95,7 @@ class TestMDAnalysis:
             ContactType("aromatic", C.aromatic_neighbors, self.universe),
             ContactType("hydrophobic", C.hydrophobic_neighbors, self.universe),
             ContactType("polar_hbond", C.polar_hbond_neighbors, self.universe),
-            ContactType(
-                "polar_weak_hbond", C.weak_polar_hbond_neighbors, self.universe
-            ),
+            ContactType("polar_weak_hbond", C.weak_polar_hbond_neighbors, self.universe),
             ContactType("vdw", C.vdw_neighbors, self.universe),
         ]
 

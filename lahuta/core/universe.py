@@ -4,7 +4,7 @@ Placeholder for the universe module.
 
 from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload
 
-import MDAnalysis as mda  # type: ignore
+import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
 
@@ -58,9 +58,7 @@ class Universe:
             )
         return self._initialize_from_files
 
-    def _initialize_from_universe(
-        self, *args: LuniInputType
-    ) -> Tuple[BaseLoader, AtomGroupType]:
+    def _initialize_from_universe(self, *args: LuniInputType) -> Tuple[BaseLoader, AtomGroupType]:
         _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
         _mdag = _file_loader.to("mda")
         return _file_loader, _mdag
