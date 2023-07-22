@@ -94,8 +94,8 @@ class GemmiLoader(BaseLoader):
 
         self.ag: AtomGroupType = self._create_mda()
 
-    def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float_]:
-        coords_array = np.zeros((self.n_atoms, 3), dtype=np.float_)
+    def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float32]:
+        coords_array = np.zeros((self.n_atoms, 3), dtype=np.float32)
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
         coords_array[:, 2] = atom_site_data.get("Cartn_z")

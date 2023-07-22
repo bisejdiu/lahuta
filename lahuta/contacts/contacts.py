@@ -23,7 +23,7 @@ __all__ = [
 ]
 
 
-def get_bonded_atoms(mol: MolType):
+def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
     """Get the bonded atoms of a molecule.
 
     Parameters
@@ -40,10 +40,9 @@ def get_bonded_atoms(mol: MolType):
 
     def bond_iter_wrapper(mol: MolType) -> BondIterable:
         """Wrapper for the openbabel bond iterator."""
-        return ob.OBMolBondIter(mol)
+        return ob.OBMolBondIter(mol)  # type: ignore
 
-    num_bonds = mol.NumBonds()
-    bonds: NDArray[np.int32] = np.zeros((num_bonds, 2), dtype=int)
+    bonds: NDArray[np.int32] = np.zeros((mol.NumBonds(), 2), dtype=int)
     for ix, bond in enumerate(bond_iter_wrapper(mol)):
         # assert isinstance(bond, MolBond), "bond is not a MolBond"
         atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
@@ -54,7 +53,7 @@ def get_bonded_atoms(mol: MolType):
     return bonds
 
 
-def covalent_neighbors(ns: NeighborPairs):
+def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
     """Find neighbors that are covalently bonded.
 
     Parameters
@@ -75,7 +74,7 @@ def covalent_neighbors(ns: NeighborPairs):
 
 def metalic_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["metal"]["distance"]
-):
+) -> NeighborPairs:
     """Find neighbors that form metalic contacts.
 
     Parameters
@@ -113,7 +112,7 @@ def metalic_neighbors(
 
 def carbonyl_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]["distance"]
-):
+) -> NeighborPairs:
     """Find neighbors that form carbonyl contacts.
 
     Parameters
@@ -145,7 +144,9 @@ def carbonyl_neighbors(
     return contacts_atom12 + contacts_atom21
 
 
-def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["distance"]):
+def ionic_neighbors(
+    ns: NeighborPairs, distance: float = CONTACTS["ionic"]["distance"]
+) -> NeighborPairs:
     """Find neighbors that form ionic contacts.
 
     Parameters
@@ -180,7 +181,7 @@ def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["dist
 
 def aromatic_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["aromatic"]["distance"]
-):
+) -> NeighborPairs:
     """Find neighbors that form aromatic contacts.
 
     Parameters
@@ -206,7 +207,7 @@ def aromatic_neighbors(
 
 def hydrophobic_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["hydrophobic"]["distance"]
-):
+) -> NeighborPairs:
     """Find neighbors that form hydrophobic contacts.
 
     Parameters
@@ -232,7 +233,7 @@ def hydrophobic_neighbors(
 
 def vdw_neighbors(
     ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashes: bool = True
-):
+) -> NeighborPairs:
     """Find neighbors that form vdw contacts.
 
     Parameters
@@ -274,7 +275,7 @@ def vdw_neighbors(
     # )
 
 
-def hbond_neighbors(ns: NeighborPairs):
+def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
     """Find neighbors that form hydrogen bonds.
 
     Parameters
@@ -305,7 +306,7 @@ def hbond_neighbors(ns: NeighborPairs):
     return hbond_atom12 + hbond_atom21
 
 
-def weak_hbond_neighbors(ns: NeighborPairs):
+def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
     """Find neighbors that form weak hydrogen bonds.
 
     Parameters
@@ -338,7 +339,7 @@ def weak_hbond_neighbors(ns: NeighborPairs):
 
 def polar_hbond_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["hbond"]["polar distance"]
-):
+) -> NeighborPairs:
     """Find neighbors that form polar hydrogen bonds.
 
     Parameters
@@ -373,7 +374,7 @@ def polar_hbond_neighbors(
 
 def weak_polar_hbond_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["weak hbond"]["weak polar distance"]
-):
+) -> NeighborPairs:
     """Find neighbors that form weak polar hydrogen bonds.
 
     Parameters

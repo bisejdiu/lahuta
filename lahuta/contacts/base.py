@@ -31,10 +31,10 @@ class ContactAnalysis:
 
         self.run()
 
-    def run(self):
+    def run(self) -> None:
         self.run_methods()
 
-    def run_methods(self):
+    def run_methods(self) -> None:
         if isinstance(self, ComputeProtocol):
             self.results = self.compute()
         elif isinstance(self, ComputeElementwiseProtocol):

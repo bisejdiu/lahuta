@@ -36,7 +36,7 @@ class NeighborSearch:
 
     def compute(
         self, radius: float = 5.0, res_dif: int = 1
-    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -69,7 +69,7 @@ class NeighborSearch:
 
     def get_neighbors(
         self, radius: float = 5.0
-    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         """
         Get the neighbors of an atomgroup.
 

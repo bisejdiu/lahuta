@@ -111,7 +111,7 @@ class AtomTypeAssigner:
         pattern matching and protein atom type assignment. Returns an array of
         atom types for the entire molecule.
         """
-        atypes_array: NDArray[np.int32] = np.zeros(
+        atypes_array: NDArray[np.int8] = np.zeros(
             (self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8
         )
 

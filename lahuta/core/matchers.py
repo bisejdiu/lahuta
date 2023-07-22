@@ -38,7 +38,7 @@ class SmartsMatcher(SmartsMatcherBase):
 
     def compute(self, mol: MolType) -> NDArray[np.int8]:
         shape = (mol.NumAtoms(), len(ATypes))
-        atypes_array: NDArray[np.int32] = np.zeros(shape, dtype=np.int8)
+        atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
 
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
@@ -97,7 +97,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
 
     def compute(self, mol: MolType) -> NDArray[np.int8]:
         shape = (mol.NumAtoms(), len(ATypes))
-        atypes_array: NDArray[np.int32] = np.zeros(shape, dtype=np.int8)
+        atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
 
         num_threads = os.cpu_count()
 

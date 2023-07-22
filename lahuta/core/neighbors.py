@@ -2,7 +2,7 @@
 Placeholder for the neighbors module.
 """
 
-from typing import Any, Dict, Literal, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ class HBondHandler:
 
     def get_hbond_distances(
         self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType
-    ) -> NDArray[np.float_]:
+    ) -> NDArray[np.float32]:
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
@@ -36,12 +36,12 @@ class HBondHandler:
 
     def get_vdw_distances(
         self, attr_col: AtomGroupType, vdw_comp_factor: float
-    ) -> NDArray[np.float_]:
+    ) -> NDArray[np.float32]:
         return attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
     def get_hbond_angles(
         self, col1: AtomGroupType, col2: AtomGroupType
-    ) -> NDArray[np.float_]:
+    ) -> NDArray[np.float32]:
         atom1_pos = col1.atoms.positions
         atom2_pos = col2.atoms.positions
 
@@ -65,7 +65,7 @@ class NeighborPairs:
         mda: AtomGroupType,
         mol: MolType,
         pairs: NDArray[np.int32],
-        distances: NDArray[np.float_],
+        distances: NDArray[np.float32],
     ):
         self.mda = mda
         self.mol = mol
@@ -78,11 +78,11 @@ class NeighborPairs:
             self.mda, self.mol
         )
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
-        self.hbond_angles: NDArray[np.float_] = np.array([])
-        self._annotations: Dict[str, Sequence[Any]] = {}
+        self.hbond_angles: NDArray[np.float32] = np.array([])
+        self._annotations: Dict[str, NDArray[Any]] = {}
 
     def _validate_inputs(
-        self, pairs: NDArray[np.int32], distances: NDArray[np.float_]
+        self, pairs: NDArray[np.int32], distances: NDArray[np.float32]
     ) -> None:
         message = (
             "The number of pairs and distances must be the same."
@@ -93,14 +93,14 @@ class NeighborPairs:
     @staticmethod
     def get_sorting_index(pairs: NDArray[np.int32]) -> NDArray[np.int32]:
         sorted_pairs: NDArray[np.int32] = np.sort(pairs, axis=1)
-        indices: NDArray[np.int32] = np.argsort(sorted_pairs[:, 0])
+        indices: NDArray[np.int32] = np.argsort(sorted_pairs[:, 0])  # type: ignore
 
         return indices
 
     @staticmethod
     def sort_inputs(
-        pairs: NDArray[np.int32], distances: NDArray[np.float_]
-    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
+        pairs: NDArray[np.int32], distances: NDArray[np.float32]
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
 
@@ -179,7 +179,7 @@ class NeighborPairs:
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def numeric_filter(
-        self, array: NDArray[np.float_], cutoff: float, lte: bool = True
+        self, array: NDArray[np.float32], cutoff: float, lte: bool = True
     ) -> "NeighborPairs":
         """Select pairs based on a boolean mask.
 
@@ -462,7 +462,7 @@ class NeighborPairs:
         return au.is_strict_superset(self.pairs, other.pairs)
 
     def clone(
-        self, pairs: NDArray[np.int32], distances: NDArray[np.float_]
+        self, pairs: NDArray[np.int32], distances: NDArray[np.float32]
     ) -> "NeighborPairs":
         """Get a copy of the NeighborPairs object."""
 
@@ -479,16 +479,16 @@ class NeighborPairs:
         return child_instance
 
     @property
-    def annotations(self) -> Dict[str, Sequence[Any]]:
+    def annotations(self) -> Dict[str, NDArray[Any]]:
         """Get the annotations of the NeighborPairs object."""
         return self._annotations
 
     @annotations.setter
-    def annotations(self, annotations: Dict[str, Sequence[Any]]) -> None:
+    def annotations(self, annotations: Dict[str, NDArray[Any]]) -> None:
         """Set the annotations of the NeighborPairs object."""
         self._annotations = annotations
 
-    def add_annotations(self, annotations: Dict[str, Sequence[Any]]) -> None:
+    def add_annotations(self, annotations: Dict[str, NDArray[Any]]) -> None:
         """Add annotations to the NeighborPairs object."""
         for value in annotations.values():
             assert len(value) == self.pairs.shape[0]
@@ -541,7 +541,7 @@ class NeighborPairs:
     def _create_df(
         self,
         df_format: Literal["compact", "expanded"] = "expanded",
-        annotations: Optional[Dict[str, Sequence[Any]]] = None,
+        annotations: Optional[Dict[str, NDArray[Any]]] = None,
     ) -> pd.DataFrame:
         """Create a DataFrame from the NeighborPairs object."""
         return DataFrameWriter(self, df_format, annotations).create()
@@ -573,7 +573,7 @@ class NeighborPairs:
         return self._pairs
 
     @property
-    def distances(self) -> NDArray[np.float_]:
+    def distances(self) -> NDArray[np.float32]:
         """Get the distances between the pairs of atoms that are neighbors."""
         return self._distances
 

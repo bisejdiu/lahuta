@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Protocol, Tuple
+from typing import Any, Protocol, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -7,8 +7,8 @@ from numpy.typing import NDArray
 class DistanceType(Protocol):
     def capped_distance(
         self,
-        reference: NDArray[np.float_],
-        configuration: NDArray[np.float_],
+        reference: NDArray[np.float32],
+        configuration: NDArray[np.float32],
         max_cutoff: float,
         min_cutoff: None = None,
         box: None = None,
@@ -24,14 +24,14 @@ class CappedDistance:
 
     def capped_distance(
         self,
-        reference: NDArray[np.float_],
-        configuration: NDArray[np.float_],
+        reference: NDArray[np.float32],
+        configuration: NDArray[np.float32],
         max_cutoff: float,
         min_cutoff: None = None,
         box: None = None,
         method: None = None,
         return_distances: bool = True,
-    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         pairs, distances = self.func.capped_distance(
             reference,
             configuration,

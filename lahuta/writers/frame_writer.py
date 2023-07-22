@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
 import pandas as pd
 from numpy.typing import NDArray
@@ -16,7 +16,7 @@ class DataFrameWriter:
         self,
         ns: "NeighborPairs",
         df_format: Literal["compact", "expanded"] = "expanded",
-        annotations: Optional[Dict[str, Sequence[Any]]] = None,
+        annotations: Optional[Dict[str, NDArray[Any]]] = None,
     ):
         """Initialize the factory with a builder and a format."""
         self.ns = ns

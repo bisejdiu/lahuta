@@ -4,6 +4,7 @@ Placeholder for the universe module.
 
 import lahuta.contacts as F
 from lahuta.config.defaults import CONTACTS
+from lahuta.core.neighbors import NeighborPairs
 
 from .base import ContactAnalysis
 
@@ -11,7 +12,7 @@ from .base import ContactAnalysis
 class HBondContacts(ContactAnalysis):
     """A class to find hbond contacts between atoms in a molecule."""
 
-    def compute(self):
+    def compute(self) -> NeighborPairs:
         """Compute hbond contacts."""
         return F.hbond_neighbors(self.ns)
 
@@ -19,7 +20,7 @@ class HBondContacts(ContactAnalysis):
 class WeakHBondContacts(ContactAnalysis):
     """A class to find weak hbond contacts between atoms in a molecule."""
 
-    def compute(self):
+    def compute(self) -> NeighborPairs:
         """Compute weak hbond contacts."""
         return F.weak_hbond_neighbors(self.ns)
 
@@ -29,7 +30,7 @@ class PolarHBondContacts(ContactAnalysis):
 
     distance = CONTACTS["hbond"]["polar distance"]
 
-    def compute(self):
+    def compute(self) -> NeighborPairs:
         """Compute polar hbond contacts."""
         return F.polar_hbond_neighbors(self.ns, self.distance)
 
@@ -39,6 +40,6 @@ class WeakPolarHBondContacts(ContactAnalysis):
 
     distance = CONTACTS["weak hbond"]["weak polar distance"]
 
-    def compute(self):
+    def compute(self) -> NeighborPairs:
         """Compute weak polar hbond contacts."""
         return F.weak_polar_hbond_neighbors(self.ns, self.distance)

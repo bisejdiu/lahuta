@@ -11,7 +11,7 @@ from numpy.typing import NDArray
 
 # from typing_extensions import TypeVarTuple, Unpack
 
-_DType = TypeVar("_DType", np.float32, np.int_)
+_DType = TypeVar("_DType", np.float32, np.int32)
 NDArrayDType = NDArray[_DType]
 T1 = TypeVar("T1", bound=npt.NBitBase)
 T2 = TypeVar("T2", bound=npt.NBitBase)
@@ -290,7 +290,7 @@ def symmetric_difference(
     return mask_a, mask_b
 
 
-def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int32]:
+def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int_]:
     """Calculate the union of two arrays and return the indices of the
     elements in `arr1` and `arr2`. Duplicate entries are removed. Neighbors indices are sorted.
 
@@ -307,10 +307,10 @@ def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int32]:
         An array of shape (n, 2) where each row is a pair of atom indices that are in `arr1` or `arr2`.
     """
 
-    concat = np.concatenate((arr1, arr2), axis=0)  # type: ignore
+    concat = np.concatenate((arr1, arr2), axis=0)
 
-    unique_indices = np.unique(concat, axis=0, return_index=True)[1]  # type: ignore
-    sorted_indices = np.sort(unique_indices)  # type: ignore
+    unique_indices = np.unique(concat, axis=0, return_index=True)[1]
+    sorted_indices = np.sort(unique_indices)
 
     return sorted_indices
 

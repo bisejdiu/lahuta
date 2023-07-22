@@ -1,4 +1,4 @@
-from typing import Any, List, Protocol
+from typing import Any, Iterator, List, Protocol, Tuple, Union
 
 
 class ObSmartPatternType(Protocol):
@@ -86,6 +86,12 @@ class MolType(Protocol):
     def NumBonds(self) -> int:
         ...
 
+    def GetSSSR(self) -> Iterator["ObRingType"]:
+        ...
+
+    # def __iter__(self) -> Iterator["MolAtomType"]:
+    #     ...
+
 
 class MolTypeWrapper:
     def __init__(self, mol: MolType):
@@ -163,3 +169,34 @@ class BondIterator(Protocol):
 class BondIterable(Protocol):
     def __iter__(self) -> BondIterator:
         ...
+
+
+class ObRingType(Protocol):
+    def IsAromatic(self) -> bool:
+        ...
+
+    def findCenterAndNormal(
+        self, center: "ObVector3Type", normal: "ObVector3Type", point: "ObVector3Type"
+    ) -> None:
+        ...
+
+    @property
+    def _path(self) -> List[int]:
+        ...
+
+
+class ObVector3Type(Protocol):
+    def GetX(self) -> float:
+        ...
+
+    def GetY(self) -> float:
+        ...
+
+    def GetZ(self) -> float:
+        ...
+
+
+class ObVector3Wrapper:
+    def __init__(self, center: ObVector3Type, normal: ObVector3Type) -> None:
+        self.center = center
+        self.normal = normal

@@ -20,7 +20,7 @@ class Atoms:
 
     def __init__(self) -> None:
         self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
-        self._coordinates = np.zeros((0, 3), dtype=np.float_)
+        self._coordinates = np.zeros((0, 3), dtype=np.float32)
 
     @classmethod
     def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Atoms":
@@ -35,7 +35,7 @@ class Atoms:
         data["type"] = np.array(gemmi_block.get("type_symbol"))
 
         cls_instance._data = data
-        cls_instance._coordinates = np.zeros((0, 3))
+        cls_instance._coordinates = np.zeros((0, 3), dtype=np.float32)
 
         return cls_instance
 
@@ -70,11 +70,11 @@ class Atoms:
         return self._data["element"]
 
     @property
-    def coordinates(self) -> NDArray[np.float_]:
+    def coordinates(self) -> NDArray[np.float32]:
         return self._coordinates
 
     @coordinates.setter
-    def coordinates(self, coordinates: NDArray[np.float_]) -> None:
+    def coordinates(self, coordinates: NDArray[np.float32]) -> None:
         self._coordinates = coordinates
 
     def __len__(self) -> int:

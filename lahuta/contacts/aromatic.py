@@ -4,6 +4,7 @@ Placeholder for the universe module.
 
 import lahuta.contacts as F
 from lahuta.config.defaults import CONTACTS
+from lahuta.core.neighbors import NeighborPairs
 
 from .base import ContactAnalysis
 
@@ -21,6 +22,6 @@ class AromaticContacts(ContactAnalysis):
 
     distance = CONTACTS["aromatic"]["distance"]
 
-    def compute(self):
+    def compute(self) -> NeighborPairs:
         """Compute aromatic contacts."""
         return F.aromatic_neighbors(self.ns, self.distance)
