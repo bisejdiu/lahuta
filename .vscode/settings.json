@@ -1,6 +1,6 @@
 {
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": ["--line-length", "100"],
+    "python.formatting.provider": "none",
+    "black-formatter.args": ["--line-length", "100"],
     "python.analysis.extraPaths": [
         "lahuta",
         "lahuta/config",
@@ -16,7 +16,7 @@
         "source.organizeImports": true
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.python"
+        "editor.defaultFormatter": "ms-python.black-formatter"
     },
     "python.analysis.typeCheckingMode": "strict",
     "python.linting.mypyCategorySeverity.error": "Warning",
