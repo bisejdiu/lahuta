@@ -11,14 +11,14 @@ class CompactDataFrame(DataFrame):
     def execute(self) -> pd.DataFrame:
         """Create the dataframe in compact format."""
         df = pd.DataFrame(self.data)
-        df["partner1"] = df.filter(like="partner1_").apply(
+        df["partner1"] = df.filter(like="partner1_").apply(  # type: ignore
             lambda x: "-".join(x.dropna().astype(str)), axis=1
         )
-        df["partner2"] = df.filter(like="partner2_").apply(
+        df["partner2"] = df.filter(like="partner2_").apply(  # type: ignore
             lambda x: "-".join(x.dropna().astype(str)), axis=1
         )
-        df = df.drop(df.filter(like="partner1_").columns, axis=1)
-        df = df.drop(df.filter(like="partner2_").columns, axis=1)
+        df = df.drop(df.filter(like="partner1_").columns, axis=1)  # type: ignore
+        df = df.drop(df.filter(like="partner2_").columns, axis=1)  # type: ignore
 
         return df[["partner1", "partner2", "distances"]]
 

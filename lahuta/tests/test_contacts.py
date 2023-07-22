@@ -1,6 +1,7 @@
 import json
 import warnings
 from pathlib import Path
+from typing import Any, Callable, Type
 
 import numpy as np
 import pytest
@@ -8,10 +9,13 @@ import pytest
 import lahuta.contacts as C
 from lahuta.contacts import F
 from lahuta.contacts.atom_plane import AtomPlaneContacts
+from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
+from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
 # pylint: disable=redefined-outer-name
+ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 
 
 class ExpectedResults:
@@ -37,7 +41,7 @@ class ExpectedResults:
 
 
 @pytest.fixture(scope="session")
-def data_loader():
+def data_loader() -> NeighborPairs:
     """
     Fixture to load the data for the tests.
     """
@@ -50,20 +54,20 @@ def data_loader():
 
 
 @pytest.fixture(scope="session")
-def neighbors(data_loader):
+def neighbors(data_loader: NeighborPairs) -> NeighborPairs:
     """Helper fixture to get neighbor pairs."""
     return data_loader
 
 
 @pytest.fixture(scope="session")
-def atom_plane(data_loader):
+def atom_plane(data_loader: NeighborPairs) -> AtomPlaneContacts:
     """Helper fixture to get atomplane."""
     atomplane = AtomPlaneContacts(data_loader)
     return atomplane
 
 
 @pytest.fixture(scope="session")
-def plane_plane(data_loader):
+def plane_plane(data_loader: NeighborPairs) -> PlanePlaneContacts:
     """Helper fixture to get planeplane."""
     planeplane = PlanePlaneContacts(data_loader)
 
@@ -91,7 +95,11 @@ def plane_plane(data_loader):
         (F.plane_plane_neighbors, ExpectedResults.PLANEPLANE),
     ],
 )
-def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
+def test_atom_atom_neighbor_funcs(
+    neighbor_func: Callable[[NeighborPairs], NeighborPairs],
+    expected_result: Any,
+    neighbors: NeighborPairs,
+) -> None:
     """Test the neighbors."""
     result = neighbor_func(neighbors)
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
@@ -128,7 +136,11 @@ def test_atom_atom_neighbor_funcs(neighbor_func, expected_result, neighbors):
         (C.DonorPi, ExpectedResults.DONORPI),
     ],
 )
-def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
+def test_atom_atom_neighbor_classes(
+    contact_class: Type[ContactAnalysis],
+    expected_result: Any,
+    neighbors: NeighborPairs,
+) -> None:
     """Test the neighbors."""
     instance = contact_class(neighbors)
     # instance.run()
@@ -149,29 +161,22 @@ def test_atom_atom_neighbor_classes(contact_class, expected_result, neighbors):
 
 
 @pytest.mark.parametrize(
-    "contact_func, expected_result",
+    "contact_func_name, expected_result",
     [
-        (
-            lambda ap: ap.cation_pi(),
-            ExpectedResults.CATIONPI,
-        ),
-        (
-            lambda ap: ap.donor_pi(),
-            ExpectedResults.DONORPI,
-        ),
-        (
-            lambda ap: ap.sulphur_pi(),
-            ExpectedResults.SULPHURPI,
-        ),
-        (
-            lambda ap: ap.carbon_pi(),
-            ExpectedResults.CARBONPI,
-        ),
+        ("cation_pi", ExpectedResults.CATIONPI),
+        ("donor_pi", ExpectedResults.DONORPI),
+        ("sulphur_pi", ExpectedResults.SULPHURPI),
+        ("carbon_pi", ExpectedResults.CARBONPI),
     ],
 )
-def test_atomplane_contacts(contact_func, expected_result, atom_plane):
+def test_atomplane_contacts(
+    contact_func_name: str,
+    expected_result: Any,
+    atom_plane: AtomPlaneContacts,
+) -> None:
     """Test the contacts."""
-    result = contact_func(atom_plane)
+    contact_func = getattr(atom_plane, contact_func_name)
+    result = contact_func()
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
 
     expected_pairs = np.array(expected_result["pairs"])
@@ -185,7 +190,7 @@ def test_atomplane_contacts(contact_func, expected_result, atom_plane):
     assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
 
-def test_planeplane_neighbors(plane_plane):
+def test_planeplane_neighbors(plane_plane: PlanePlaneContacts) -> None:
     """Test the plane_plane neighbors."""
     plane_ns = plane_plane.results
     pairs, distances = np.array(plane_ns.pairs), np.array(plane_ns.distances)

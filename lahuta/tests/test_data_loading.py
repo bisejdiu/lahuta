@@ -13,10 +13,11 @@ def read_pdb(pdb_file: str) -> Universe:
         return Universe(pdb_file)
 
 
-def test_read_pdb():
+def test_read_pdb() -> None:
     path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
     u = read_pdb(str(path_obj))
 
+    assert u.arc is not None
     assert u.arc.atoms.ids.size == 1249
     assert u.arc.residues is not None
     assert np.unique(u.arc.residues.resids).size == 82

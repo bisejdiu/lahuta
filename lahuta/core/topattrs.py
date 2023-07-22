@@ -1,5 +1,8 @@
+from typing import Any, Optional, Type
+
 import numpy as np
 from MDAnalysis.core.topologyattrs import AtomAttr
+from numpy.typing import NDArray
 
 
 class AtomAttrClassHandler:
@@ -19,16 +22,16 @@ class AtomAttrClassHandler:
         atomattr_class (AtomAttr subclass): The generated AtomAttr subclass.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the handler."""
-        self.atomattr_class = None
+        self.atomattr_class: Optional[Type[AtomAttr]] = None
 
     @staticmethod
-    def _gen_initial_values(n_atoms, *_):
+    def _gen_initial_values(n_atoms: int, *_: Any) -> NDArray[Any]:
         """Generate the initial values for the attribute."""
         return np.zeros(n_atoms)
 
-    def init_topattr(self, attrname, singular_name):
+    def init_topattr(self, attrname: str, singular_name: str) -> None:
         """Generate the new AtomAttr subclass and add it to the global namespace.
 
         Args:

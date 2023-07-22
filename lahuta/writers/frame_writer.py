@@ -1,7 +1,10 @@
-from typing import Dict, Literal
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
 
-import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
+
+if TYPE_CHECKING:
+    from lahuta.core.neighbors import NeighborPairs
 
 from .commands import FACTORY_DICT
 
@@ -11,12 +14,16 @@ class DataFrameWriter:
 
     def __init__(
         self,
-        ns,
+        ns: "NeighborPairs",
         df_format: Literal["compact", "expanded"] = "expanded",
-        annotations: Dict[str, np.ndarray] = None,
+        annotations: Optional[Dict[str, NDArray[Any]]] = None,
     ):
         """Initialize the factory with a builder and a format."""
         self.ns = ns
+        # assert df_format in [
+        #     "compact",
+        #     "expanded",
+        # ], "Format must be compact or expanded."
         self.format = df_format
         self.annotations = annotations
 
@@ -30,7 +37,7 @@ class DataFrameWriter:
         else:
             raise ValueError("Format must be compact or expanded.")
 
-    def build(self):
+    def build(self) -> Dict[str, NDArray[Any]]:
         """Build the data."""
         attrs = ["resids", "resnames", "names", "indices"]
         p1, p2 = self.ns.partner1, self.ns.partner2
