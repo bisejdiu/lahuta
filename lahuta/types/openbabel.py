@@ -1,4 +1,4 @@
-from typing import Any, Iterator, List, Protocol, Tuple, Union
+from typing import Any, Iterator, List, Protocol
 
 
 class ObSmartPatternType(Protocol):
