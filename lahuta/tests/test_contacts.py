@@ -8,7 +8,7 @@ import pytest
 
 import lahuta.contacts as C
 from lahuta.contacts import F
-from lahuta.contacts.atom_plane import AtomPlaneContacts
+from lahuta.contacts.atom_plane import AtomPlaneContacts, _AtomPlaneContacts
 from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
@@ -161,33 +161,22 @@ def test_atom_atom_neighbor_classes(
 
 
 @pytest.mark.parametrize(
-    "contact_func, expected_result",
+    "contact_func_name, expected_result",
     [
-        (
-            lambda ap: ap.cation_pi(),  # type: ignore
-            ExpectedResults.CATIONPI,
-        ),
-        (
-            lambda ap: ap.donor_pi(),  # type: ignore
-            ExpectedResults.DONORPI,
-        ),
-        (
-            lambda ap: ap.sulphur_pi(),  # type: ignore
-            ExpectedResults.SULPHURPI,
-        ),
-        (
-            lambda ap: ap.carbon_pi(),  # type: ignore
-            ExpectedResults.CARBONPI,
-        ),
+        ("cation_pi", ExpectedResults.CATIONPI),
+        ("donor_pi", ExpectedResults.DONORPI),
+        ("sulphur_pi", ExpectedResults.SULPHURPI),
+        ("carbon_pi", ExpectedResults.CARBONPI),
     ],
 )
 def test_atomplane_contacts(
-    contact_func: Callable[[NeighborPairs], NeighborPairs],
+    contact_func_name: str,
     expected_result: Any,
-    atom_plane: NeighborPairs,
+    atom_plane: AtomPlaneContacts,
 ) -> None:
     """Test the contacts."""
-    result = contact_func(atom_plane)
+    contact_func = getattr(atom_plane, contact_func_name)
+    result = contact_func()
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
 
     expected_pairs = np.array(expected_result["pairs"])
