@@ -163,10 +163,10 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
 
     for atom in ob.OBMolAtomIter(mol):
         if atom.ExplicitHydrogenCount():
-            for ix, atom2 in enumerate(ob.OBAtomAtomIter(atom)):
-                if atom2.GetAtomicNum() == 1:
-                    atom1_id = atom_mapping[atom.GetId()]
-                    atom2_id = atom_mapping[atom2.GetId()]
+            for ix, atom2 in enumerate(ob.OBAtomAtomIter(atom)):  # type: ignore
+                if atom2.GetAtomicNum() == 1:  # type: ignore
+                    atom1_id = atom_mapping[atom.GetId()]  # type: ignore
+                    atom2_id = atom_mapping[atom2.GetId()]  # type: ignore
                     hbond_array[atom1_id, ix] = atom2_id
 
     return hbond_array

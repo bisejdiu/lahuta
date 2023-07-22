@@ -9,6 +9,10 @@ class ResidueGroupType(Protocol):
     def atoms(self) -> "AtomGroupType":
         ...
 
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        ...
+
     def __iter__(self) -> Any:
         ...
 
@@ -102,6 +106,9 @@ class UniverseType(Protocol):
 
     @property
     def universe(self) -> "UniverseType":
+        ...
+
+    def select_atoms(self, selection: str) -> "AtomGroupType":
         ...
 
     def copy(self) -> "UniverseType":

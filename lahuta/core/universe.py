@@ -20,7 +20,7 @@ from lahuta.types.mdanalysis import AtomGroupType
 from lahuta.types.openbabel import MolType
 from lahuta.utils.atom_types import v_radii_assignment
 
-LuniInputType = Union[mda.AtomGroup, str, List[str]]
+LuniInputType = Union[AtomGroupType, str, List[str]]
 
 
 class Universe:

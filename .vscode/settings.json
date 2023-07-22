@@ -1,5 +1,6 @@
 {
-    "python.formatting.provider": "none",
+    "python.formatting.provider": "black",
+    "python.formatting.blackArgs": ["--line-length", "100"],
     "python.analysis.extraPaths": [
         "lahuta",
         "lahuta/config",
@@ -7,20 +8,17 @@
     ],
     "python.linting.pylintArgs": ["--rcfile", ".pylintrc"],
     "python.testing.pytestArgs": [
-        "lahuta", 
+        "lahuta"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
-},
-"[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-},
-"python.analysis.typeCheckingMode": "strict",
-"python.linting.mypyCategorySeverity.error": "Warning",
-"python.linting.mypyEnabled": true
-   
-
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.python"
+    },
+    "python.analysis.typeCheckingMode": "strict",
+    "python.linting.mypyCategorySeverity.error": "Warning",
+    "python.linting.mypyEnabled": true
 }
