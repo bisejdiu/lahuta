@@ -19,7 +19,7 @@ from lahuta.writers.frame_writer import DataFrameWriter
 
 
 class HBondHandler:
-    def __init__(self, atoms: AtomGroupType, hbond_array: NDArray[np.int_]):
+    def __init__(self, atoms: AtomGroupType, hbond_array: NDArray[np.int32]):
         self._atoms = atoms
         self.hbond_array = hbond_array
 
@@ -39,7 +39,9 @@ class HBondHandler:
     ) -> NDArray[np.float_]:
         return attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
-    def get_hbond_angles(self, col1: AtomGroupType, col2: AtomGroupType) -> float:
+    def get_hbond_angles(
+        self, col1: AtomGroupType, col2: AtomGroupType
+    ) -> NDArray[np.float_]:
         atom1_pos = col1.atoms.positions
         atom2_pos = col2.atoms.positions
 
@@ -52,7 +54,7 @@ class HBondHandler:
         point_b = hbound_atom_pos
         point_c = atom2_pos[:, np.newaxis, :]
 
-        return calculate_angle(point_a, point_b, point_c, degrees=False)
+        return calculate_angle(point_b, point_a, point_c, degrees=False)
 
 
 class NeighborPairs:
@@ -62,7 +64,7 @@ class NeighborPairs:
         self,
         mda: AtomGroupType,
         mol: MolType,
-        pairs: NDArray[np.int_],
+        pairs: NDArray[np.int32],
         distances: NDArray[np.float_],
     ):
         self.mda = mda
@@ -72,13 +74,15 @@ class NeighborPairs:
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mda, self.mol)
+        self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(
+            self.mda, self.mol
+        )
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
-        self.hbond_angles: Optional[float] = None  # store values to avoid recomputing
+        self.hbond_angles: NDArray[np.float_] = np.array([])
         self._annotations: Dict[str, Sequence[Any]] = {}
 
     def _validate_inputs(
-        self, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+        self, pairs: NDArray[np.int32], distances: NDArray[np.float_]
     ) -> None:
         message = (
             "The number of pairs and distances must be the same."
@@ -87,16 +91,16 @@ class NeighborPairs:
         assert pairs.shape[0] == distances.shape[0], message
 
     @staticmethod
-    def get_sorting_index(pairs: NDArray[np.int_]) -> NDArray[np.int_]:
-        sorted_pairs: NDArray[np.int_] = np.sort(pairs, axis=1)
-        indices: NDArray[np.int_] = np.argsort(sorted_pairs[:, 0])
+    def get_sorting_index(pairs: NDArray[np.int32]) -> NDArray[np.int32]:
+        sorted_pairs: NDArray[np.int32] = np.sort(pairs, axis=1)
+        indices: NDArray[np.int32] = np.argsort(sorted_pairs[:, 0])
 
         return indices
 
     @staticmethod
     def sort_inputs(
-        pairs: NDArray[np.int_], distances: NDArray[np.float_]
-    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
+        pairs: NDArray[np.int32], distances: NDArray[np.float_]
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
         pairs = np.sort(pairs, axis=1)
         indices = np.argsort(pairs[:, 0])
 
@@ -134,7 +138,7 @@ class NeighborPairs:
 
     def index_filter(
         self,
-        indices: NDArray[np.int_],
+        indices: NDArray[np.int32],
         partner: int,
     ) -> "NeighborPairs":
         """Select pairs based on the atom indices.
@@ -458,7 +462,7 @@ class NeighborPairs:
         return au.is_strict_superset(self.pairs, other.pairs)
 
     def clone(
-        self, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+        self, pairs: NDArray[np.int32], distances: NDArray[np.float_]
     ) -> "NeighborPairs":
         """Get a copy of the NeighborPairs object."""
 
@@ -544,8 +548,8 @@ class NeighborPairs:
 
     def _neighborpairs_equal(self, other: "NeighborPairs") -> bool:
         # Get the indices that would sort each array
-        indices1: NDArray[np.int_] = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))  # type: ignore
-        indices2: NDArray[np.int_] = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))  # type: ignore
+        indices1: NDArray[np.int32] = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))  # type: ignore
+        indices2: NDArray[np.int32] = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))  # type: ignore
 
         # Sort each array using the indices
         pairs, dists = self.pairs[indices1], self.distances[indices1]
@@ -564,7 +568,7 @@ class NeighborPairs:
         return self._get_pair_column(2)
 
     @property
-    def pairs(self) -> NDArray[np.int_]:
+    def pairs(self) -> NDArray[np.int32]:
         """Get the pairs of atoms that are neighbors."""
         return self._pairs
 
@@ -574,11 +578,13 @@ class NeighborPairs:
         return self._distances
 
     @property
-    def indices(self) -> NDArray[np.int_]:
+    def indices(self) -> NDArray[np.int32]:
         """Get the indices of the atoms that are neighbors."""
         return np.unique([self.partner1.indices, self.partner2.indices])  # type: ignore
 
-    def __getitem__(self, item: Union[int, slice, NDArray[np.int_]]) -> "NeighborPairs":
+    def __getitem__(
+        self, item: Union[int, slice, NDArray[np.int32]]
+    ) -> "NeighborPairs":
         """Get the pair of atoms at the specified index.
 
         Parameters

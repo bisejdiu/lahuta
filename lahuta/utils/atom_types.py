@@ -2,12 +2,12 @@
 Placehoder for the atom types and radii.
 """
 
-from typing import Any, Dict, Protocol
+from typing import Dict
 
 import numpy as np
-from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
+from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII  # type: ignore
 from numpy.typing import NDArray
-from openbabel import openbabel as ob
+from openbabel import openbabel as ob  # type: ignore
 
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
@@ -50,21 +50,21 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
     ).residues:
         for atom in residue.atoms:
             # REMOVE TYPES IF ALREADY ASSIGNED FROM SMARTS
-            for atom_type in list(PROT_ATOM_TYPES.keys()):
-                atypes_array[atom.index, atypes[atom_type]] = 0
+            for prot_atype in list(PROT_ATOM_TYPES.keys()):
+                atypes_array[atom.index, atypes[prot_atype]] = 0
 
             # ADD ATOM TYPES FROM DICTIONARY
-            for atom_type, atom_ids in PROT_ATOM_TYPES.items():
+            for prot_atype, atom_ids in PROT_ATOM_TYPES.items():
                 atom_id = residue.resname.strip() + atom.name.strip()
                 if atom_id in atom_ids:
-                    atypes_array[atom.index, atypes[atom_type]] = 1
+                    atypes_array[atom.index, atypes[prot_atype]] = 1
 
     return atypes_array
 
 
 def vec_assign_atom_types(
     mol: MolType, atomgroup: AtomGroupType, ta: Dict[str, NDArray[np.str_]]
-):
+) -> NDArray[np.int8]:
     """
     Assign atom types to each atom in the molecule.
     Atom types are defined in `SmartsPatternRegistry`
@@ -74,7 +74,7 @@ def vec_assign_atom_types(
     # atom_id_to_type_index = {atom_id: atypes[atom_type] for atom_type, atom_ids in PROT_ATOM_TYPES_SET.items() for atom_id in atom_ids}
     atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
-    atypes_array = np.zeros((mol.NumAtoms(), len(atypes)))
+    atypes_array = np.zeros((mol.NumAtoms(), len(atypes)), dtype=np.int8)
     for atom_type in SmartsPatternRegistry:
         smartsdict = SmartsPatternRegistry[atom_type.name].value
         for smarts in smartsdict.values():
@@ -87,7 +87,7 @@ def vec_assign_atom_types(
                 atom = mol.GetAtom(match)
 
                 if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                    atypes_array[atom.GetId(), atypes[atom_type.name].value] = 1
+                    atypes_array[atom.GetId(), atypes[atom_type.name]] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
     for atom in atomgroup.select_atoms(
@@ -109,23 +109,23 @@ def vec_assign_atom_types(
     atom_name_str = atom_name[indices].astype(str)
 
     # Generate atom_id array by concatenating resname and atom_name arrays
-    atom_ids = np.core.defchararray.add(  # type: ignore
+    atom_ids: NDArray[np.int32] = np.core.defchararray.add(  # type: ignore
         np.core.defchararray.strip(resname_str),  # type: ignore
         np.core.defchararray.strip(atom_name_str),  # type: ignore
     )
 
     for idx, atom in enumerate(ag):
-        atom_id = atom_ids[idx]
-        atom_types = ID_TO_TYPES.get(atom_id, None)
+        atom_id: int = atom_ids[idx]  # type: ignore
+        atom_types = ID_TO_TYPES.get(atom_id, None)  # type: ignore
 
         if atom_types is not None:
             for atom_type in atom_types:
-                atypes_array[atom.index, atypes[atom_type]] = 1
+                atypes_array[atom.index, atypes[atom_type]] = 1  # type: ignore
 
     return atypes_array
 
 
-def assign_radii(mol):
+def assign_radii(mol: MolType) -> NDArray[np.float_]:
     """Get the van der Waals and covalent radii for each atom in the molecule.
 
     Parameters
@@ -141,11 +141,11 @@ def assign_radii(mol):
     """
     atom_radii = np.zeros(mol.NumAtoms(), dtype=float)
     for atom in ob.OBMolAtomIter(mol):
-        atom_radii[atom.GetId()] = ob.GetVdwRad(atom.GetAtomicNum())
+        atom_radii[atom.GetId()] = ob.GetVdwRad(atom.GetAtomicNum())  # type: ignore
     return atom_radii
 
 
-def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.int_]:
+def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.int32]:
     """
     Find hydrogen bonded atoms in the molecule.
     """
@@ -153,7 +153,7 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
     # hbond_array = np.zeros((mol.NumAtoms(), 6), dtype=int)
     # mda = luni.to("mda").atoms
     n_atoms: int = mda.universe.atoms.n_atoms
-    hbond_array: NDArray[np.int_] = np.zeros((n_atoms, 6), dtype=int)
+    hbond_array: NDArray[np.int32] = np.zeros((n_atoms, 6), dtype=int)
     # mol = luni.to("mol")
 
     # will give -1 for atoms not in the atomgroup
@@ -175,7 +175,9 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
 def v_radii_assignment(elements: NDArray[np.str_]) -> NDArray[np.float_]:
     vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
 
-    def v_capitalize(array: NDArray[np.str_], mapping: Dict[str, int]):
+    def v_capitalize(
+        array: NDArray[np.str_], mapping: Dict[str, int]
+    ) -> NDArray[np.float_]:
         vfunc = np.vectorize(mapping.get)
         return vfunc(array)
 

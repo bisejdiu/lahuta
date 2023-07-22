@@ -16,7 +16,10 @@ class ComputeProtocol(Protocol):
 @runtime_checkable
 class ComputeElementwiseProtocol(Protocol):
     def compute_elementwise(
-        self, atoms: AtomGroupType, pair: NDArray[np.int_], distance: NDArray[np.float_]
+        self,
+        atoms: AtomGroupType,
+        pair: NDArray[np.int32],
+        distance: NDArray[np.float_],
     ) -> Any:
         ...
 

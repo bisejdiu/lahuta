@@ -62,7 +62,7 @@ class Atoms:
         return self._data["type"]
 
     @property
-    def ids(self) -> NDArray[np.int_]:
+    def ids(self) -> NDArray[np.int32]:
         return self._data["id"]
 
     @property
@@ -124,7 +124,7 @@ class Residues:
         return self._data["resname"]
 
     @property
-    def resids(self) -> NDArray[np.int_]:
+    def resids(self) -> NDArray[np.int32]:
         return self._data["resid"]
 
     def __len__(self) -> int:
@@ -195,7 +195,7 @@ class Chains:
         return self._data["auth"]
 
     @property
-    def ids(self) -> NDArray[np.int_]:
+    def ids(self) -> NDArray[np.int32]:
         return self._data["id"]
 
     def __len__(self) -> int:

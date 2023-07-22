@@ -36,7 +36,7 @@ class NeighborSearch:
 
     def compute(
         self, radius: float = 5.0, res_dif: int = 1
-    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -69,7 +69,7 @@ class NeighborSearch:
 
     def get_neighbors(
         self, radius: float = 5.0
-    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
         """
         Get the neighbors of an atomgroup.
 
@@ -103,7 +103,7 @@ class NeighborSearch:
         )
 
     def _remove_adjacent_residue_pairs(
-        self, pairs: NDArray[np.int_], res_dif: int = 1
+        self, pairs: NDArray[np.int32], res_dif: int = 1
     ) -> NDArray[np.bool_]:
         """
         Remove pairs where the difference in residue ids is less than `res_dif`.

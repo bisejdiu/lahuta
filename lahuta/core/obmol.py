@@ -16,9 +16,9 @@ class OBMol:
 
     def create_residue_obmol(
         self,
-        resid: NDArray[np.int_],
+        resid: NDArray[np.int32],
         resname: NDArray[np.str_],
-        chain_id: NDArray[np.int_],
+        chain_id: NDArray[np.int32],
     ) -> MolResType:
         assert self.mol is not None, "Molecule is not initialized"
         ob_res = self.mol.NewResidue()
@@ -113,8 +113,8 @@ class OBMol:
         for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
             atom_name, element = atom["name"], atom["element"]
             resname: NDArray[np.str_] = residue["resname"]
-            resid: NDArray[np.int_] = residue["resid"]
-            chain_id: NDArray[np.int_] = chain["id"]
+            resid: NDArray[np.int32] = residue["resid"]
+            chain_id: NDArray[np.int32] = chain["id"]
 
             _cra_ = (chain_id, resid, resname)
             if ob_res is None or _cra_ not in added_residues:

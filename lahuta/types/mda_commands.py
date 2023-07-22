@@ -31,7 +31,7 @@ class CappedDistance:
         box: None = None,
         method: None = None,
         return_distances: bool = True,
-    ) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
+    ) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
         pairs, distances = self.func.capped_distance(
             reference,
             configuration,

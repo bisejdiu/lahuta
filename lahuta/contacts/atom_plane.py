@@ -83,7 +83,7 @@ class _AtomPlaneContacts:
 @memory.cache  # type: ignore
 def compute_neighbors(
     positions: NDArray[np.float_], rings: List[Dict[str, Any]]
-) -> Tuple[NDArray[np.int_], NDArray[np.float_]]:
+) -> Tuple[NDArray[np.int32], NDArray[np.float_]]:
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
     reference: NDArray[np.float_] = np.array([ring["center"] for ring in rings])
 
@@ -112,7 +112,7 @@ def compute_angles(
 
 
 def subtract_aromatic_neighbors(
-    ns: NeighborPairs, pairs: NDArray[np.int_], distances: NDArray[np.float_]
+    ns: NeighborPairs, pairs: NDArray[np.int32], distances: NDArray[np.float_]
 ):
     cloned_neighbors = ns.clone(pairs, distances)
     neighbors = cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)

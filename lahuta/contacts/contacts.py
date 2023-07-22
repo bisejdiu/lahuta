@@ -43,7 +43,7 @@ def get_bonded_atoms(mol: MolType):
         return ob.OBMolBondIter(mol)
 
     num_bonds = mol.NumBonds()
-    bonds: NDArray[np.int_] = np.zeros((num_bonds, 2), dtype=int)
+    bonds: NDArray[np.int32] = np.zeros((num_bonds, 2), dtype=int)
     for ix, bond in enumerate(bond_iter_wrapper(mol)):
         # assert isinstance(bond, MolBond), "bond is not a MolBond"
         atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()

@@ -1,57 +1,82 @@
 """
 Placeholder
 """
-from typing import Tuple, TypeVar, Union
+from __future__ import annotations
+
+from typing import Tuple, TypeVar
 
 import numpy as np
+import numpy.typing as npt
 from numpy.typing import NDArray
 
-_DType = TypeVar("_DType", np.float_, np.int_)
+# from typing_extensions import TypeVarTuple, Unpack
+
+_DType = TypeVar("_DType", np.float32, np.int_)
+NDArrayDType = NDArray[_DType]
+T1 = TypeVar("T1", bound=npt.NBitBase)
+T2 = TypeVar("T2", bound=npt.NBitBase)
+NDArrayInt = npt.NDArray[np.int32]
+
+# _NewShape = TypeVarTuple("_NewShape")
+# # Represents an NDArray reshaped with np.newaxis
+# # ReshapedArray = NewType('ReshapedArray', Tuple[NDArray[np.float32], _NewShape])
+# ReshapedArray = NewType("ReshapedArray", Tuple[NDArray[np.float32], Unpack[_NewShape]])
 
 
 # pylint: disable=W1114
 def calculate_angle(
-    point_a: NDArray[np.float_],
-    point_b: NDArray[np.float_],
-    point_c: NDArray[np.float_],
+    vertex: NDArray[np.float32],
+    point1: NDArray[np.float32],
+    point2: NDArray[np.float32],
     degrees: bool = False,
-) -> float:
+) -> NDArray[np.float32]:
     """Calculate the angle between three points.
 
-    Parameters
-    ----------
-    point_a : np.ndarray
-        The first point.
-    point_b : np.ndarray
-        The second point.
-    point_c : np.ndarray
-        The third point.
+    This function calculates the angle at `vertex` created by points `point1` and `point2`.
 
-    Returns
-    -------
-    angle : float
-        The angle in radians.
+    Args:
+        vertex (NDArray[np.float32]): The coordinates of the vertex point, where the angle is being measured.
+        point1 (NDArray[np.float32]): The coordinates of the first point.
+        point2 (NDArray[np.float32]): The coordinates of the second point.
+        degrees (bool, optional): If True, the angle is returned in degrees. Otherwise, it's returned in radians.
+            Default is False (radians).
+
+    Returns:
+        angle (float): The calculated angle in radians (default) or degrees, depending on the value of the `degrees` argument.
+
     """
-    v1 = point_a - point_b
-    v2 = point_c - point_b
+    # Vector from vertex to point1 & point2
+    vector1: NDArray[np.float32] = point1 - vertex
+    vector2: NDArray[np.float32] = point2 - vertex
 
-    v1_mag = np.linalg.norm(v1, axis=-1)  # type: ignore
-    v1_norm = v1 / v1_mag[:, :, np.newaxis]
+    # Normalize vector1
+    magnitude_vector1: NDArray[np.float32] = np.linalg.norm(vector1, axis=-1)
+    normalized_vector1: NDArray[np.float32] = (
+        vector1 / magnitude_vector1[:, :, np.newaxis]
+    )
 
-    v2_mag = np.linalg.norm(v2, axis=-1)  # type: ignore
-    v2_norm = v2 / v2_mag[:, :, np.newaxis]
+    # Normalize vector2
+    magnitude_vector2: NDArray[np.float32] = np.linalg.norm(vector2, axis=-1)
+    normalized_vector2: NDArray[np.float32] = (
+        vector2 / magnitude_vector2[:, :, np.newaxis]
+    )
 
-    res = np.sum(v1_norm * v2_norm, axis=-1)  # type: ignore
+    # Dot product of normalized vectors
+    dot_product: NDArray[np.float32] = np.sum(
+        normalized_vector1 * normalized_vector2, axis=-1
+    )
+
+    angle_rad: NDArray[np.float32] = np.arccos(dot_product)
 
     if degrees:
-        return np.degrees(np.arccos(res))
+        return np.degrees(angle_rad)
 
-    return np.arccos(res)
+    return angle_rad
 
 
 def array_distance(
-    arr1: NDArray[np.float_], arr2: NDArray[np.float_]
-) -> NDArray[np.float_]:
+    arr1: NDArray[np.float32], arr2: NDArray[np.float32]
+) -> NDArray[np.float32]:
     """Takes the difference between the two arrays and calculates the norm of the difference.
 
 
@@ -68,13 +93,14 @@ def array_distance(
     distance_array: np.array
         Shape (n, 6) array
     """
-    distance_array = np.linalg.norm(arr1[:, np.newaxis, :] - arr2, axis=-1)  # type: ignore
+    arr_reshape = arr1[:, np.newaxis, :]
+    distance_array: NDArray[np.float32] = np.linalg.norm(arr_reshape - arr2, axis=-1)
 
     return distance_array
 
 
 def matching_indices(
-    arr1: NDArray[np.int_], arr2: NDArray[np.int_]
+    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
 ) -> NDArray[np.bool_]:
     """Return indices of elements in `arr1` that are in `arr2`.
 
@@ -92,13 +118,14 @@ def matching_indices(
 
     """
 
-    idx = (arr1[:, None] == arr2).all(-1).any(1)
+    arr1_reshape = arr1[:, None]
+    idx: NDArray[np.bool_] = (arr1_reshape == arr2).all(-1).any(1)
     return idx
 
 
 def optimized_matching_pairs(
-    arr1: NDArray[np.int_], arr2: NDArray[np.int_]
-) -> NDArray[np.int_]:
+    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
+) -> NDArray[np.int32]:
     """Return elements in `arr1` that are in `arr2`.
 
     Parameters
@@ -125,7 +152,7 @@ def optimized_matching_pairs(
 
 
 def np_optimized_matching_pairs(
-    arr1: NDArray[np.int_], arr2: NDArray[np.int_]
+    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
 ) -> NDArray[np.bool_]:
     """Return elements in `arr1` that are in `arr2`.
 
@@ -153,7 +180,7 @@ def np_optimized_matching_pairs(
 
 
 def non_matching_indices(
-    arr1: NDArray[np.int_], arr2: NDArray[np.int_]
+    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
 ) -> NDArray[np.bool_]:
     """Return the elements in `arr1` that are not in `arr2`.
 
@@ -170,7 +197,7 @@ def non_matching_indices(
         An array of shape (n, 2) where each row is a pair of atom indices.
 
     """
-    idx = (arr1[:, None] != arr2).any(-1).all(1)
+    idx: NDArray[np.bool_] = (arr1[:, None] != arr2).any(-1).all(1)
 
     return idx
 
@@ -263,7 +290,7 @@ def symmetric_difference(
     return mask_a, mask_b
 
 
-def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int_]:
+def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int32]:
     """Calculate the union of two arrays and return the indices of the
     elements in `arr1` and `arr2`. Duplicate entries are removed. Neighbors indices are sorted.
 
