@@ -5,8 +5,11 @@ target-version = ['py310']
 skip-string-normalization = true
 
 [tool.pyright]
-include = ['lahuta']
-exclude = ['lahuta/scripts']
+include = ["lahuta"]
+exclude = ["lahuta/scripts", "**/__pycache__", "cachedir"]
+defineConstant = { DEBUG = true }
+reportMissingImports = true
+reportMissingTypeStubs = "none"
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -33,7 +36,6 @@ strict_optional = true
 no_implicit_optional = true
 strict_equality = true
 strict = true
-# plugins = numpy.typing.mypy_plugin
 
 [tool.pytest.ini_options]
 testpaths = ["lahuta"]

@@ -27,6 +27,8 @@
         "reportMissingTypeStubs": "none"
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "ms-python.black-formatter",
+    
     },
+    "mypy.configFile": "lahuta.toml",
 }
