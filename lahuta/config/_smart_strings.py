@@ -33,10 +33,12 @@ Notes:
     It is expected to be used as a source of SMARTS strings for other modules and applications
     dealing with molecular structure processing, matching, and analysis.
 """
+# fmt: off
 
 # HYDROGEN BOND ACCEPTOR
 SMARTS_STR_HBA_ACCEPTOR = (
-    "[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);" "!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]"
+    "[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);" 
+    "!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]"
 )
 SMARTS_STR_HBA_ENOL = "[$([nH]:@c(=O))]"
 SMARTS_STR_HBA_TAUTOMERIC_NH = "[$([n;H1;v3;!$([nH]cccc)])]"
@@ -78,7 +80,8 @@ SMARTS_STR_CARBONYL_CARBON = "[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]"
 # AROMATIC
 SMARTS_STR_AROMATIC_4 = "[a;r4,!R1&r3]1:[a;r4,!R1&r3]:[a;r4,!R1&r3]:[a;r4,!R1&r3]:1"
 SMARTS_STR_AROMATIC_5 = (
-    "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:" "[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1"
+    "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:" 
+    "[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1"
 )
 SMARTS_STR_AROMATIC_6 = (
     "[a;r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r6,!R1&r5,!R1&r4,!R1&r3]:"
