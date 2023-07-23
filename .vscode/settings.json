@@ -12,9 +12,6 @@
     "python.testing.pytestArgs": [
         "lahuta"
     ],
-    "python.linting.pylintArgs": [
-        "--rcfile=lahuta.toml"
-    ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "editor.codeActionsOnSave": {
