@@ -1,3 +1,20 @@
+"""
+# Module: config._atom_type_strings.py
+
+This module provides string representations of various atom types and categories.
+
+The various types of atoms represented here include metals, standard amino acids, 
+different types of bond acceptors and donors, ionisable atoms, 
+hydrophobic atoms, carbonyl atoms, and aromatic atoms.
+
+The atom types are initially defined as comma-separated strings. 
+These strings are then processed into sets for easy and efficient access 
+throughout the rest of the library.
+
+This file is licensed under [GNU General Public License](../path/to/license/file). 
+For more details, see also the [GNU General Public License webpage](http://www.gnu.org/licenses/).
+"""
+
 _METALS_STR = (
     "Li,Be,Na,Mg,Aa,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,"
     "Tc,Ru,Rh,Pd,Ag,Cd,In,Sn,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,"
@@ -61,13 +78,11 @@ _HYDROPHOBE_ATOM_TYPES = (
 )
 
 _CARBONYL_OXYGEN_ATOM_TYPES = (
-    "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO,"
-    "LYSO,METO,PHEO,PROO,SERO,THRO,TRPO,TYRO,VALO"
+    "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO," "LYSO,METO,PHEO,PROO,SERO,THRO,TRPO,TYRO,VALO"
 )
 
 _CARBONYL_CARBON_ATOM_TYPES = (
-    "ALAC,ARGC,ASNC,ASPC,CYSC,GLNC,GLUC,GLYC,HISC,ILEC,LEUC,LYSC,"
-    "METC,PHEC,PROC,SERC,THRC,TRPC,TYRC,VALC"
+    "ALAC,ARGC,ASNC,ASPC,CYSC,GLNC,GLUC,GLYC,HISC,ILEC,LEUC,LYSC," "METC,PHEC,PROC,SERC,THRC,TRPC,TYRC,VALC"
 )
 
 _AROMATIC_ATOM_TYPES = (
@@ -76,6 +91,7 @@ _AROMATIC_ATOM_TYPES = (
     "TYRCD2,TYRCE1,TYRCE2,TYRCZ"
 )
 
+# FIXME: update with the residue list provided by MDAnalysis
 METALS = set(_METALS_STR.split(","))
 STANDARD_AMINO_ACIDS = set(_STANDARD_AA_STR.split(","))
 HBOND_ACCEPTORS = set(_HA_ATOM_TYPES.split(","))
