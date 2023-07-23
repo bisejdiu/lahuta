@@ -1,5 +1,39 @@
 [tool.black]
-line-length = 100
+color = true
+line-length = 120
+target-version = ['py310']
+skip-string-normalization = true
+
+[tool.pyright]
+include = ['lahuta']
+exclude = ['lahuta/scripts']
+
+[build-system]
+requires = ["setuptools", "wheel"]
+
+[tool.pylint.basic]
+good-names = [
+    'df', 
+    'ag', 
+    'ns',
+]
 
 [tool.mypy]
+python_version = 3.10
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+warn_no_return = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = false
+disallow_untyped_defs = true
+disallow_untyped_calls = true
+strict_optional = true
+no_implicit_optional = true
+strict_equality = true
 strict = true
+# plugins = numpy.typing.mypy_plugin
+
+[tool.pytest.ini_options]
+testpaths = ["lahuta"]

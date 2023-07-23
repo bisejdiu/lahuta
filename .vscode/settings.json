@@ -1,28 +1,32 @@
 {
     "python.formatting.provider": "none",
-    "black-formatter.args": ["--line-length", "100"],
+    "python.formatting.blackArgs": [
+        "--config",
+        "lahuta.toml"
+    ],
     "python.analysis.extraPaths": [
         "lahuta",
         "lahuta/config",
         "lahuta/contacts"
     ],
-    "python.linting.pylintArgs": ["--rcfile", ".pylintrc"],
     "python.testing.pytestArgs": [
         "lahuta"
+    ],
+    "python.linting.pylintArgs": [
+        "--rcfile=lahuta.toml"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "editor.codeActionsOnSave": {
         "source.organizeImports": true
     },
-    "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
-    },
     "python.analysis.typeCheckingMode": "strict",
     "python.linting.mypyCategorySeverity.error": "Warning",
     "python.linting.mypyEnabled": true, 
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingTypeStubs": "none"
-    }
-    
+    },
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter"
+    },
 }
