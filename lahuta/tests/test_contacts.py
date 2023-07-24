@@ -142,7 +142,9 @@ def test_atom_atom_neighbor_classes(
     neighbors: NeighborPairs,
 ) -> None:
     """Test the neighbors."""
-    instance = contact_class(neighbors)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        instance = contact_class(neighbors)
     # instance.run()
     result = instance.results
 
@@ -175,6 +177,7 @@ def test_atomplane_contacts(
     atom_plane: AtomPlaneContacts,
 ) -> None:
     """Test the contacts."""
+
     contact_func = getattr(atom_plane, contact_func_name)
     result = contact_func()
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])

@@ -13,8 +13,8 @@ from lahuta.core.helpers import get_class_attributes
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
-from lahuta.utils.array_utils import array_distance, calculate_angle
 from lahuta.utils.atom_types import find_hydrogen_bonded_atoms
+from lahuta.utils.math import calc_pairwise_distances, calc_vertex_angles
 from lahuta.writers.frame_writer import DataFrameWriter
 
 
@@ -28,7 +28,7 @@ class HBondHandler:
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan
-        distance_array = array_distance(attr_col.atoms.positions, hbound_atom_pos)
+        distance_array = calc_pairwise_distances(attr_col.atoms.positions, hbound_atom_pos)
 
         return distance_array
 
@@ -48,7 +48,7 @@ class HBondHandler:
         point_b = hbound_atom_pos
         point_c = atom2_pos[:, np.newaxis, :]
 
-        return calculate_angle(point_b, point_a, point_c, degrees=False)
+        return calc_vertex_angles(point_b, point_a, point_c, degrees=False)
 
 
 class NeighborPairs:

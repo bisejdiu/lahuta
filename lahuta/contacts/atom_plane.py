@@ -43,10 +43,11 @@ from MDAnalysis.lib import distances as mda_distances
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
-from lahuta.contacts.plane_plane import perceive_rings, vector_angle
+from lahuta.contacts.plane_plane import perceive_rings
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mda_commands import CappedDistance, DistanceType
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.utils.math import calc_vec_line_angles
 
 memory = Memory("cachedir", verbose=0)
 
@@ -112,16 +113,16 @@ def compute_neighbors(
 
 
 @memory.cache  # type: ignore
-def compute_angles(ns: NeighborPairs, uv_atoms: AtomGroupType, rings: List[Dict[str, Any]]):
+def calc_ringnormal_pos_angle(ns: NeighborPairs, uv_atoms: AtomGroupType, rings: List[Dict[str, Any]]):
     ring_centers = np.array([ring["center"] for ring in rings])
     ring_normals = np.array([ring["normal"] for ring in rings])
 
-    ring_centers = ring_centers[ns.pairs[:, 0]]
-    ring_normals = ring_normals[ns.pairs[:, 0]]
+    selected_ring_centers = ring_centers[ns.pairs[:, 0]]
+    selected_ring_normals = ring_normals[ns.pairs[:, 0]]
 
-    angles = vector_angle(
-        ring_normals,
-        ring_centers - uv_atoms[ns.pairs[:, 1]].positions,
+    angles = calc_vec_line_angles(
+        selected_ring_normals,
+        selected_ring_centers - uv_atoms[ns.pairs[:, 1]].positions,
     )
     return angles
 
@@ -150,7 +151,7 @@ def compute_contacts(
 
         neighbors = subtract_aromatic_neighbors(ns, pairs, distances)
 
-        angles_fn = compute_angles if not use_cache else compute_angles.call  # type: ignore
+        angles_fn = calc_ringnormal_pos_angle if not use_cache else calc_ringnormal_pos_angle.call  # type: ignore
         result = angles_fn(neighbors, mda.universe.atoms, rings)
         angles = result[0] if use_cache else result
 
@@ -206,7 +207,7 @@ class AtomPlaneContacts:
 
         self.neighbors = neighbors - neighbors.type_filter("aromatic", partner=2)
 
-        result = compute_angles.call(self.neighbors, mda.universe.atoms, self.rings)  # type: ignore
+        result = calc_ringnormal_pos_angle.call(self.neighbors, mda.universe.atoms, self.rings)  # type: ignore
         self.angles = result[0]
 
     def donor_pi(self) -> NeighborPairs:

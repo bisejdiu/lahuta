@@ -1,7 +1,6 @@
 """
 Placeholder
 """
-from __future__ import annotations
 
 from typing import Tuple, TypeVar
 
@@ -17,91 +16,8 @@ T1 = TypeVar("T1", bound=npt.NBitBase)
 T2 = TypeVar("T2", bound=npt.NBitBase)
 NDArrayInt = npt.NDArray[np.int32]
 
-# _NewShape = TypeVarTuple("_NewShape")
-# # Represents an NDArray reshaped with np.newaxis
-# # ReshapedArray = NewType('ReshapedArray', Tuple[NDArray[np.float32], _NewShape])
-# ReshapedArray = NewType("ReshapedArray", Tuple[NDArray[np.float32], Unpack[_NewShape]])
 
-
-# pylint: disable=W1114
-def calculate_angle(
-    vertex: NDArray[np.float32],
-    point1: NDArray[np.float32],
-    point2: NDArray[np.float32],
-    degrees: bool = False,
-) -> NDArray[np.float32]:
-    """Calculate the angle between three points.
-
-    This function calculates the angle at `vertex` created by points `point1` and `point2`.
-
-    Args:
-        vertex (NDArray[np.float32]): The coordinates of the vertex point, where the angle is being measured.
-        point1 (NDArray[np.float32]): The coordinates of the first point.
-        point2 (NDArray[np.float32]): The coordinates of the second point.
-        degrees (bool, optional): If True, the angle is returned in degrees. Otherwise, it's returned in radians.
-            Default is False (radians).
-
-    Returns:
-        angle (float): The calculated angle in radians (default) or degrees, depending on the value of the `degrees` argument.
-
-    """
-    # Vector from vertex to point1 & point2
-    vector1: NDArray[np.float32] = point1 - vertex
-    vector2: NDArray[np.float32] = point2 - vertex
-
-    # Normalize vector1
-    magnitude_vector1: NDArray[np.float32] = np.linalg.norm(vector1, axis=-1)
-    normalized_vector1: NDArray[np.float32] = (
-        vector1 / magnitude_vector1[:, :, np.newaxis]
-    )
-
-    # Normalize vector2
-    magnitude_vector2: NDArray[np.float32] = np.linalg.norm(vector2, axis=-1)
-    normalized_vector2: NDArray[np.float32] = (
-        vector2 / magnitude_vector2[:, :, np.newaxis]
-    )
-
-    # Dot product of normalized vectors
-    dot_product: NDArray[np.float32] = np.sum(
-        normalized_vector1 * normalized_vector2, axis=-1
-    )
-
-    angle_rad: NDArray[np.float32] = np.arccos(dot_product)
-
-    if degrees:
-        return np.degrees(angle_rad)
-
-    return angle_rad
-
-
-def array_distance(
-    arr1: NDArray[np.float32], arr2: NDArray[np.float32]
-) -> NDArray[np.float32]:
-    """Takes the difference between the two arrays and calculates the norm of the difference.
-
-
-    Parameters
-    ----------
-    arr1: np.array
-        Shape (n, 3) array
-
-    arr2: np.array
-        Shape (m, 6, 3) array
-
-    Returns
-    -------
-    distance_array: np.array
-        Shape (n, 6) array
-    """
-    arr_reshape = arr1[:, np.newaxis, :]
-    distance_array: NDArray[np.float32] = np.linalg.norm(arr_reshape - arr2, axis=-1)
-
-    return distance_array
-
-
-def matching_indices(
-    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
-) -> NDArray[np.bool_]:
+def matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
     """Return indices of elements in `arr1` that are in `arr2`.
 
     Parameters
@@ -123,9 +39,7 @@ def matching_indices(
     return idx
 
 
-def optimized_matching_pairs(
-    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
-) -> NDArray[np.int32]:
+def optimized_matching_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.int32]:
     """Return elements in `arr1` that are in `arr2`.
 
     Parameters
@@ -151,9 +65,7 @@ def optimized_matching_pairs(
     return common
 
 
-def np_optimized_matching_pairs(
-    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
-) -> NDArray[np.bool_]:
+def np_optimized_matching_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
     """Return elements in `arr1` that are in `arr2`.
 
     Parameters
@@ -179,9 +91,7 @@ def np_optimized_matching_pairs(
     return common_complex
 
 
-def non_matching_indices(
-    arr1: NDArray[np.int32], arr2: NDArray[np.int32]
-) -> NDArray[np.bool_]:
+def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
     """Return the elements in `arr1` that are not in `arr2`.
 
     Parameters
@@ -219,9 +129,7 @@ def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))  # type: ignore
 
 
-def intersection(
-    arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
-) -> NDArray[np.bool_]:
+def intersection(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False) -> NDArray[np.bool_]:
     """Calculate the intersection of two arrays and return the indices of the
     elements in `arr1` that are in `arr2`.
 
@@ -242,9 +150,7 @@ def intersection(
     return np.in1d(arr1_void, arr2_void, assume_unique)  # type: ignore
 
 
-def difference(
-    arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
-) -> NDArray[np.bool_]:
+def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False) -> NDArray[np.bool_]:
     """Calculate the difference of two arrays and return the indices of the
     elements in `arr1` that are not in `arr2`.
 

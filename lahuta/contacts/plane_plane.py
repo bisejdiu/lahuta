@@ -49,6 +49,7 @@ from openbabel import openbabel as ob
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.lahuta_types.openbabel import MolType, ObRingType, ObVector3Wrapper
+from lahuta.utils.math import calc_vec_angle
 
 from ..core.neighbors import NeighborPairs
 
@@ -130,8 +131,8 @@ class _PlanePlaneContacts:
 
         first_pair_ids, second_pair_ids = pair_ids[:, 0], pair_ids[:, 1]
         pair_diffs = centers[first_pair_ids] - centers[second_pair_ids]
-        normal_angles = vector_angle_1d(normals[first_pair_ids], normals[second_pair_ids])
-        theta_angles = vector_angle_1d(normals[first_pair_ids], pair_diffs)
+        normal_angles = calc_vec_angle(normals[first_pair_ids], normals[second_pair_ids])
+        theta_angles = calc_vec_angle(normals[first_pair_ids], pair_diffs)
 
         int_types = assign_pp_contact_type(normal_angles, theta_angles)
 
@@ -229,15 +230,15 @@ class PlanePlaneContacts:
         return pp.get_neighbors()
 
 
-def vector_angle_1d(v1: NDArray[np.float32], v2: NDArray[np.float32]) -> NDArray[np.float32]:
-    v1_u = v1 / np.linalg.norm(v1, axis=-1, keepdims=True)
-    v2_u = v2 / np.linalg.norm(v2, axis=-1, keepdims=True)
-    dot = np.einsum("ij,ij->i", v1_u, v2_u)  # type: ignore
-    angle: NDArray[np.float32] = np.arccos(np.clip(dot, -1.0, 1.0))
-    angle = np.sign(dot) * angle
-    angle_deg: NDArray[np.float32] = np.degrees(angle)
-    angle_deg[angle_deg < 0] = 180 + angle_deg[angle_deg < 0]
-    return angle_deg
+# def vector_angle_1d(v1: NDArray[np.float32], v2: NDArray[np.float32]) -> NDArray[np.float32]:
+#     v1_u = v1 / np.linalg.norm(v1, axis=-1, keepdims=True)
+#     v2_u = v2 / np.linalg.norm(v2, axis=-1, keepdims=True)
+#     dot = np.einsum("ij,ij->i", v1_u, v2_u)  # type: ignore
+#     angle: NDArray[np.float32] = np.arccos(np.clip(dot, -1.0, 1.0))
+#     angle = np.sign(dot) * angle
+#     angle_deg: NDArray[np.float32] = np.degrees(angle)
+#     angle_deg[angle_deg < 0] = 180 + angle_deg[angle_deg < 0]
+#     return angle_deg
 
 
 def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.float32]) -> NDArray[np.str_]:
@@ -266,28 +267,28 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
     return types[indices]  # type: ignore
 
 
-def vector_angle(v1: NDArray[np.float_], v2: NDArray[np.float_]) -> NDArray[np.float_]:
-    """Calculate the angle between two vectors.
+# def vector_angle(v1: NDArray[np.float_], v2: NDArray[np.float_]) -> NDArray[np.float_]:
+#     """Calculate the angle between two vectors.
 
-    Parameters
-    ----------
-    v1 : np.ndarray
-        First vector. It must be already normalized.
-    v2 : np.ndarray
-        Second vector.
+#     Parameters
+#     ----------
+#     v1 : np.ndarray
+#         First vector. It must be already normalized.
+#     v2 : np.ndarray
+#         Second vector.
 
-    Returns
-    -------
-    float
-        Angle between vectors in degrees.
-    """
+#     Returns
+#     -------
+#     float
+#         Angle between vectors in degrees.
+#     """
 
-    dot = np.einsum("ij,ij->i", v1, v2 / np.linalg.norm(v2, axis=1)[..., np.newaxis])  # type: ignore
-    angle = np.sign(dot) * np.arccos(dot)
+#     dot = np.einsum("ij,ij->i", v1, v2 / np.linalg.norm(v2, axis=1)[..., np.newaxis])  # type: ignore
+#     angle = np.sign(dot) * np.arccos(dot)
 
-    angle = np.where(angle < 0, angle + np.pi, angle)
+#     angle = np.where(angle < 0, angle + np.pi, angle)
 
-    return np.degrees(angle)  # type: ignore
+#     return np.degrees(angle)  # type: ignore
 
 
 # FIXME: atom_plane needs to use the Rings class, rather than `perceive_rings`

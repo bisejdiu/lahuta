@@ -58,3 +58,9 @@ strict = true
 
 [tool.pytest.ini_options]
 testpaths = ["lahuta"]
+filterwarnings = [
+    "ignore::RuntimeWarning:lahuta.contacts.sulphur_pi",
+    "ignore::RuntimeWarning:lahuta.contacts.carbon_pi",
+    "ignore::RuntimeWarning:lahuta.contacts.cation_pi",
+    "ignore::RuntimeWarning:lahuta.contacts.donor_pi",
+]
