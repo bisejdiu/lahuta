@@ -10,7 +10,7 @@ from _pytest.fixtures import FixtureRequest
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
-from lahuta.types.mdanalysis import UniverseType
+from lahuta.lahuta_types.mdanalysis import UniverseType
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES

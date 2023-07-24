@@ -5,7 +5,7 @@ from numpy.typing import NDArray
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
-from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
 class ProteinTypeAssignerBase(ABC):

@@ -10,7 +10,7 @@ from openbabel import openbabel as ob
 from lahuta.config.atoms import STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
 from lahuta.config.smarts import SmartsPatternRegistry
-from lahuta.types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
+from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 class SmartsMatcherBase(ABC):

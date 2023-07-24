@@ -10,8 +10,8 @@ from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS, VDW_RADII
 from lahuta.core.helpers import get_class_attributes
-from lahuta.types.mdanalysis import AtomGroupType
-from lahuta.types.openbabel import MolType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
 from lahuta.utils.array_utils import array_distance, calculate_angle
 from lahuta.utils.atom_types import find_hydrogen_bonded_atoms
@@ -23,9 +23,7 @@ class HBondHandler:
         self._atoms = atoms
         self.hbond_array = hbond_array
 
-    def get_hbond_distances(
-        self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType
-    ) -> NDArray[np.float32]:
+    def get_hbond_distances(self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType) -> NDArray[np.float32]:
         hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
         hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
 
@@ -34,9 +32,7 @@ class HBondHandler:
 
         return distance_array
 
-    def get_vdw_distances(
-        self, attr_col: AtomGroupType, vdw_comp_factor: float
-    ) -> NDArray[np.float32]:
+    def get_vdw_distances(self, attr_col: AtomGroupType, vdw_comp_factor: float) -> NDArray[np.float32]:
         return attr_col.atoms.vdw_radii + VDW_RADII["H"] + vdw_comp_factor
 
     def get_hbond_angles(self, col1: AtomGroupType, col2: AtomGroupType) -> NDArray[np.float32]:
@@ -172,9 +168,7 @@ class NeighborPairs:
         mask = self.distances <= distance
         return self.clone(self.pairs[mask], self.distances[mask])
 
-    def numeric_filter(
-        self, array: NDArray[np.float32], cutoff: float, lte: bool = True
-    ) -> "NeighborPairs":
+    def numeric_filter(self, array: NDArray[np.float32], cutoff: float, lte: bool = True) -> "NeighborPairs":
         """Select pairs based on a boolean mask.
 
         Parameters
@@ -336,9 +330,7 @@ class NeighborPairs:
         mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
 
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
-        distances = np.concatenate(  # type: ignore
-            (self.distances[mask_a], other.distances[mask_b]), axis=0
-        )
+        distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)  # type: ignore
 
         unique_indices = np.unique(pairs, axis=0, return_index=True)[1]  # type: ignore
         sorted_indices = np.sort(unique_indices)  # type: ignore

@@ -48,7 +48,7 @@ from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
 from lahuta.config.defaults import CONTACTS
-from lahuta.types.openbabel import MolType, ObRingType, ObVector3Wrapper
+from lahuta.lahuta_types.openbabel import MolType, ObRingType, ObVector3Wrapper
 
 from ..core.neighbors import NeighborPairs
 

@@ -11,8 +11,8 @@ from openbabel import openbabel as ob
 
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
-from lahuta.types.mdanalysis import AtomGroupType
-from lahuta.types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8]:

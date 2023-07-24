@@ -45,8 +45,8 @@ from numpy.typing import NDArray
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts.plane_plane import perceive_rings, vector_angle
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.types.mda_commands import CappedDistance, DistanceType
-from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.mda_commands import CappedDistance, DistanceType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 memory = Memory("cachedir", verbose=0)
 

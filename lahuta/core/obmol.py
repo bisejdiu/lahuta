@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
 from lahuta.core.arc import ARC
-from lahuta.types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
+from lahuta.lahuta_types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
 
 
 class OBMol:
@@ -60,9 +60,7 @@ class OBMol:
 
     def add_atoms_to_residue(self, ob_atom: MolAtomType, ob_res: MolResType) -> None:
         ob_res.AddAtom(ob_atom)
-        ob_res.SetHetAtom(
-            ob_atom, not gemmi.find_tabulated_residue(ob_res.GetName()).is_standard()  # type: ignore
-        )
+        ob_res.SetHetAtom(ob_atom, not gemmi.find_tabulated_residue(ob_res.GetName()).is_standard())  # type: ignore
         ob_res.SetSerialNum(ob_atom, ob_res.GetSerialNum(ob_atom))
 
     def perceive_bonds(self) -> None:

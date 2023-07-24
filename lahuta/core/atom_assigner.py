@@ -7,8 +7,8 @@ from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.assigners import LegacyProteinTypeAssigner, VectorizedProteinTypeAssigner
 from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher, SmartsMatcherBase
-from lahuta.types.mdanalysis import AtomGroupType
-from lahuta.types.openbabel import MolType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.openbabel import MolType
 
 
 class AtomTypeAssigner:
@@ -104,9 +104,7 @@ class AtomTypeAssigner:
         pattern matching and protein atom type assignment. Returns an array of
         atom types for the entire molecule.
         """
-        atypes_array: NDArray[np.int8] = np.zeros(
-            (self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8
-        )
+        atypes_array: NDArray[np.int8] = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # atypes_array = self._compute_smarts_types()
         if self.mda.n_atoms != self.protein_ag.n_atoms:

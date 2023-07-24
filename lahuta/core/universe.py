@@ -16,8 +16,8 @@ from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler
-from lahuta.types.mdanalysis import AtomGroupType
-from lahuta.types.openbabel import MolType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.atom_types import v_radii_assignment
 
 LuniInputType = Union[AtomGroupType, str, List[str]]
@@ -39,23 +39,17 @@ class Universe:
         assert self._mdag is not None
         assert self._file_loader is not None
 
-    def _validate_input(
-        self, *args: LuniInputType
-    ) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
+    def _validate_input(self, *args: LuniInputType) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
         if not args:
             raise ValueError("No input provided")
 
         if isinstance(args[0], mda.AtomGroup):
             if len(args) != 1:
-                raise ValueError(
-                    "When passing an MDAnalysis.AtomGroup instance, no other arguments are allowed"
-                )
+                raise ValueError("When passing an MDAnalysis.AtomGroup instance, no other arguments are allowed")
             return self._initialize_from_universe
 
         if not all(isinstance(arg, str) for arg in args):
-            raise ValueError(
-                "Input must be either an MDAnalysis.AtomGroup instance or a list of file names"
-            )
+            raise ValueError("Input must be either an MDAnalysis.AtomGroup instance or a list of file names")
         return self._initialize_from_files
 
     def _initialize_from_universe(self, *args: LuniInputType) -> Tuple[BaseLoader, AtomGroupType]:

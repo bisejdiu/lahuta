@@ -9,8 +9,8 @@ from numpy.typing import NDArray
 
 from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
-from lahuta.types.mdanalysis import AtomGroupType, UniverseType
-from lahuta.types.openbabel import MolType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
+from lahuta.lahuta_types.openbabel import MolType
 
 
 class BaseLoader(ABC):

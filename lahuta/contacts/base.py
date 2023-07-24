@@ -48,7 +48,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
 @runtime_checkable

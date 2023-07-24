@@ -51,7 +51,7 @@ from openbabel import openbabel as ob
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.types.openbabel import BondIterable, MolType
+from lahuta.lahuta_types.openbabel import BondIterable, MolType
 from lahuta.utils.array_utils import difference, np_optimized_matching_pairs
 
 __all__ = [

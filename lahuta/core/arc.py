@@ -7,7 +7,7 @@ from numpy.typing import NDArray
 if TYPE_CHECKING:
     from lahuta.core._loaders import GemmiLoader, TopologyLoader
 
-from lahuta.types.mdanalysis import AtomGroupType, UniverseType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
 
 
 class Atoms:
@@ -173,9 +173,7 @@ class Chains:
         cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance._data["label"] = mda_universe.atoms.chainIDs
         cls_instance._data["auth"] = mda_universe.atoms.chainIDs
-        _, cls_instance._data["id"] = np.unique(  # type: ignore
-            cls_instance._data["auth"], return_inverse=True
-        )
+        _, cls_instance._data["id"] = np.unique(cls_instance._data["auth"], return_inverse=True)  # type: ignore
         cls_instance._data["id"] += 1
 
         cls_instance.mapping = dict(zip(cls_instance._data["auth"], cls_instance._data["id"]))

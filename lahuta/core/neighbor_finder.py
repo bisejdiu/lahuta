@@ -4,7 +4,7 @@ import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS  # type: ignore
 from numpy.typing import NDArray
 
-from lahuta.types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 
@@ -34,9 +34,7 @@ class NeighborSearch:
 
         # self.instance = instance
 
-    def compute(
-        self, radius: float = 5.0, res_dif: int = 1
-    ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def compute(self, radius: float = 5.0, res_dif: int = 1) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -90,9 +88,7 @@ class NeighborSearch:
         shift_coords, pseudobox = mda_psuedobox_from_atomgroup(self.ag_no_h)
 
         # TODO: handle pbc
-        gridsearch = FastNS(  # type: ignore
-            cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False
-        )
+        gridsearch = FastNS(cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False)  # type: ignore
         neighbors = gridsearch.self_search()  # type: ignore
 
         return (
@@ -100,9 +96,7 @@ class NeighborSearch:
             neighbors.get_pair_distances(),  # type: ignore
         )
 
-    def _remove_adjacent_residue_pairs(
-        self, pairs: NDArray[np.int32], res_dif: int = 1
-    ) -> NDArray[np.bool_]:
+    def _remove_adjacent_residue_pairs(self, pairs: NDArray[np.int32], res_dif: int = 1) -> NDArray[np.bool_]:
         """
         Remove pairs where the difference in residue ids is less than `res_dif`.
 
