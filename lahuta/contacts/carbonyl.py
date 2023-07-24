@@ -1,6 +1,21 @@
 """
-Placeholder for the universe module.
+Module: carbonyl.py
+
+This module defines a class for computing carbonyl contacts using a class-based approach. 
+The CarbonylContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for carbonyl contact computation.
+
+Class:
+    CarbonylContacts(ContactAnalysis): Computes carbonyl contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    cbyl = CarbonylContacts(ns)
+    print(cbyl.results)
 """
+
 
 import lahuta.contacts as F
 from lahuta.config.defaults import CONTACTS

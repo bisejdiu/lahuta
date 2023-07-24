@@ -1,3 +1,40 @@
+"""
+Module: atom_plane.py
+
+This module defines atom-plane contacts, where interactions between atoms and a plane 
+(e.g., aromatic residues or ring structures in ligands) are computed. 
+
+Classes:
+    AtomPlaneContacts: Main class for computing atom-plane contacts.
+
+Examples:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    apc = AtomPlaneContacts(ns)
+    dop = apc.donor_pi()    # for donor-pi contacts
+    sup = apc.sulphur_pi()  # for sulphur-pi contacts
+    cbp = apc.carbon_pi()   # for carbon-pi contacts
+    cap = apc.cation_pi()   # for cation-pi contacts
+
+Functions:
+    cation_pi(n, angle_cutoff=30.0, cache=True): Compute cation-pi contacts.
+    carbon_pi(n, angle_cutoff=30.0, cache=True): Compute carbon-pi contacts.
+    donor_pi(n, angle_cutoff=30.0, cache=True): Compute donor-pi contacts.
+    sulphur_pi(n, cache=True): Compute sulphur-pi contacts.
+
+Note: 
+    Functionals include a caching parameter intended to avoid re-computation 
+    of shared details. However, the impact on performance isn't clear-cut; 
+    thus, users are advised to test this if speed is a priority.
+
+Warning: 
+    While functionals maintain consistency in the contact computation API, 
+    the class-based approach is more efficient as it avoids redundant computations.
+    If speed is a priority, the class-based approach is highly recommended.
+
+"""
+
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -13,6 +50,14 @@ from lahuta.types.mdanalysis import AtomGroupType
 
 memory = Memory("cachedir", verbose=0)
 
+__all__ = [
+    "cation_pi",
+    "carbon_pi",
+    "donor_pi",
+    "sulphur_pi",
+    "AtomPlaneContacts",
+]
+
 
 DEFAULT_CONTACT_DISTS: Dict[str, float] = {
     "cation_pi": CONTACTS["aromatic"]["atom_aromatic_distance"],
@@ -24,16 +69,10 @@ DEFAULT_CONTACT_DISTS: Dict[str, float] = {
 
 class _AtomPlaneContacts:
     @staticmethod
-    def donor_pi(
-        ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0
-    ) -> NeighborPairs:
+    def donor_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the donor pi system."""
         distance = DEFAULT_CONTACT_DISTS["donor_pi"]
-        return (
-            ns.numeric_filter(angles, angle_cutoff)
-            .distance_filter(distance)
-            .type_filter("hbond_donor", partner=2)
-        )
+        return ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("hbond_donor", partner=2)
 
     @staticmethod
     def sulphur_pi(ns: NeighborPairs, *_: Any) -> NeighborPairs:
@@ -43,9 +82,7 @@ class _AtomPlaneContacts:
         return ns.index_filter(indices, partner=2).distance_filter(distance)
 
     @staticmethod
-    def carbon_pi(
-        ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0
-    ) -> NeighborPairs:
+    def carbon_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the carbon pi system."""
         distance = DEFAULT_CONTACT_DISTS["carbon_pi"]
         return (
@@ -56,28 +93,10 @@ class _AtomPlaneContacts:
         )
 
     @staticmethod
-    def cation_pi(
-        ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0
-    ) -> NeighborPairs:
+    def cation_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the cation pi system."""
         distance = DEFAULT_CONTACT_DISTS["cation_pi"]
-        return (
-            ns.numeric_filter(angles, angle_cutoff)
-            .distance_filter(distance)
-            .type_filter("pos_ionisable", partner=2)
-        )
-
-    # def donor_pi(self) -> Callable[..., Any]:
-    #     return self._donor_pi
-
-    # def sulphur_pi(self) -> Callable[..., Any]:
-    #     return self._sulphur_pi
-
-    # def carbon_pi(self) -> Callable[..., Any]:
-    #     return self._carbon_pi
-
-    # def cation_pi(self) -> Callable[..., Any]:
-    #     return self._cation_pi
+        return ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("pos_ionisable", partner=2)
 
 
 @memory.cache  # type: ignore
@@ -88,9 +107,7 @@ def compute_neighbors(
     reference: NDArray[np.float32] = np.array([ring["center"] for ring in rings])
 
     wrapper: DistanceType = CappedDistance(mda_distances)
-    pairs, distances = wrapper.capped_distance(
-        reference, positions, max_cutoff, return_distances=True
-    )
+    pairs, distances = wrapper.capped_distance(reference, positions, max_cutoff, return_distances=True)
     return pairs, distances
 
 

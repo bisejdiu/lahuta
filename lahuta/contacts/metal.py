@@ -1,5 +1,19 @@
 """
-Placeholder for the universe module.
+Module: metal.py
+
+This module defines a class for computing metal contacts using a class-based approach. 
+The MetalicContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for metal contact computation.
+
+Class:
+    MetalicContacts(ContactAnalysis): Computes metal contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    metal_contacts = MetalicContacts(ns)
+    print(metal_contacts.results)
 """
 
 import lahuta.contacts as F

@@ -1,5 +1,19 @@
 """
-Placeholder for the universe module.
+Module: aromatic.py
+
+This module defines a class for computing aromatic contacts using a class-based approach. 
+The AromaticContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for aromatic contact computation.
+
+Class:
+    AromaticContacts(ContactAnalysis): Computes aromatic contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    ac = AromaticContacts(ns)
+    print(ac.results)
 """
 
 import lahuta.contacts as F

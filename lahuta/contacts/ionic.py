@@ -1,5 +1,19 @@
 """
-Placeholder for the universe module.
+Module: ionic.py
+
+This module defines a class for computing ionic contacts using a class-based approach. 
+The IonicContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for ionic contact computation.
+
+Class:
+    IonicContacts(ContactAnalysis): Computes ionic contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    ionic = IonicContacts(ns)
+    print(ionic.results)
 """
 
 import lahuta.contacts as F

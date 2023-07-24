@@ -1,5 +1,44 @@
 """
-Placeholder for the universe module.
+Module: plane_plane.py
+
+This module provides both class and function-level APIs to compute plane-plane contacts 
+between two ring-containing residues or ligands. Each interaction is labeled according 
+to the relative orientations of the planes.
+
+Types of Plane-Plane Contact Orientations:
+    FF (Face-Face): Represents two planes interacting in a face-to-face orientation, where 
+        their flat surfaces are parallel and directly aligned. This typically leads to 
+        maximum pi-pi stacking.
+    OF (Oblique Face): Denotes a skewed face-to-face orientation. One plane is tilted 
+        relative to the other, resulting in partial overlap of their surfaces.
+    EE (Edge-Edge): Describes an interaction where the edges of two planes align parallel, 
+        but their surfaces do not overlap, limiting pi-pi interactions.
+    FT (Face-T-stack): Indicates an interaction where the face of one plane (the base of the 'T') 
+        aligns with the edge of another plane (the stem of the 'T'). The second plane is 
+        oriented in a T-stacked manner.
+    OT (Oblique-T-stack): Represents an interaction where an obliquely oriented face of one 
+        plane (the skewed base of the 'T') aligns with the edge of another plane (the stem of 
+        the 'T'). The second plane is in a T-stacked orientation.
+    ET (Edge-T-stack): Describes an interaction where the edge of one plane aligns with the 
+        edge of another plane. Both are part of the stem in a T-stacked orientation.
+    FE (Face-Edge): Depicts an interaction where the flat surface (face) of one plane aligns 
+        with the edge of another plane, leading to partial pi-pi interactions.
+    OE (Oblique-Edge): Represents an interaction where an obliquely oriented face of one plane 
+        aligns with the edge of another plane, leading to partial and skewed pi-pi interactions.
+    EF (Edge-Face): Indicates an interaction where the edge of one plane aligns with the face of 
+        another plane, creating limited pi-pi interactions.
+
+Classes:
+    PlanePlaneContacts: A class to compute plane-plane contacts.
+
+Functions:
+    plane_plane_neighbors: Function to compute plane-plane contacts.
+
+Usage:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+    plane_plane = PlanePlaneContacts(ns)
+    result = plane_plane.compute().results
 """
 
 from typing import Any, Dict, List, Tuple
@@ -201,9 +240,7 @@ def vector_angle_1d(v1: NDArray[np.float32], v2: NDArray[np.float32]) -> NDArray
     return angle_deg
 
 
-def assign_pp_contact_type(
-    normal_angle: NDArray[np.float32], theta: NDArray[np.float32]
-) -> NDArray[np.str_]:
+def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.float32]) -> NDArray[np.str_]:
     """Assigns a contact type based on the normal angle and theta angle."""
     types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"])
     ranges = np.array(
@@ -221,9 +258,7 @@ def assign_pp_contact_type(
     )
 
     conditions = np.logical_and(
-        np.logical_and(
-            ranges[:, 0] <= normal_angle[:, None], normal_angle[:, None] <= ranges[:, 1]
-        ),
+        np.logical_and(ranges[:, 0] <= normal_angle[:, None], normal_angle[:, None] <= ranges[:, 1]),
         np.logical_and(ranges[:, 2] <= theta[:, None], theta[:, None] <= ranges[:, 3]),
     )
 

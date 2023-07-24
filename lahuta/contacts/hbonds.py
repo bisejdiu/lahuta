@@ -1,5 +1,22 @@
 """
-Placeholder for the universe module.
+Module: hbonds.py
+
+This module defines a class for computing hbond-type contacts using a class-based approach. 
+The HBondContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for hbond contact computation.
+
+Class:
+    HBondContacts(ContactAnalysis): Computes hbond contacts.
+    WeakHBondContacts(ContactAnalysis): Computes weak hbond contacts.
+    PolarHBondContacts(ContactAnalysis): Computes polar hbond contacts.
+    WeakPolarHBondContacts(ContactAnalysis): Computes weak polar hbond contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    hbonds = HBondContacts(ns)
+    print(hbonds.results)
 """
 
 import lahuta.contacts as F

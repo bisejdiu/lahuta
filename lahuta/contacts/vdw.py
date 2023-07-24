@@ -1,5 +1,19 @@
 """
-Placeholder for the universe module.
+Module: vdw.py
+
+This module defines a class for computing vanderwaals contacts using a class-based approach. 
+The VanDerWaalsContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for vanderwaals contact computation.
+
+Class:
+    VanDerWaalsContacts(ContactAnalysis): Computes vanderwaals contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    vdw = VanDerWaalsContacts(ns)
+    print(vdw.results)
 """
 
 import lahuta.contacts as F

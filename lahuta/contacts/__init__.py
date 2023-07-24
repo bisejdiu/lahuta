@@ -1,3 +1,26 @@
+"""
+# Module: contacts
+
+The `contacts` module is part of the `lahuta` package and is designed to provide 
+comprehensive functionality for computing a variety of interactions in molecular 
+structures. These include but are not limited to aromatic, hydrophobic, ionic, 
+covalent, and Van der Waals interactions. It also provides functionalities to 
+compute interactions between atoms and planes, as well as between planes themselves.
+
+**Author**: [Besian I. Sejdiu](../path/to/author/page)
+
+**Institution**: St. Jude Children's Research Hospital
+
+**Contact**: [besian.sejdiu@stjude.org](mailto:besian.sejdiu@stjude.org)
+
+This program is licensed under [GNU General Public License](../path/to/license/file). 
+For more details, see also the [GNU General Public License webpage](http://www.gnu.org/licenses/).
+
+The module consists of several submodules, each responsible for computing a specific 
+type of interaction. In each submodule, you will find the appropriate documentation 
+for the functions provided, including detailed descriptions and usage examples.
+
+"""
 from .aromatic import AromaticContacts
 from .atom_plane import AtomPlaneContacts, carbon_pi, cation_pi, donor_pi, sulphur_pi
 from .carbon_pi import CarbonPi

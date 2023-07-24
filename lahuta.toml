@@ -19,6 +19,7 @@ good-names = [
     'df', 
     'ag', 
     'ns',
+    'ix',
 ]
 
 [tool.pylint.messages_control]

@@ -1,5 +1,19 @@
 """
-Placeholder for the universe module.
+Module: hydrophobic.py
+
+This module defines a class for computing hydrophobic contacts using a class-based approach. 
+The HydrophobicContacts class inherits from the base ContactAnalysis class and 
+implements the `compute` method for hydrophobic contact computation.
+
+Class:
+    HydrophobicContacts(ContactAnalysis): Computes hydrophobic contacts.
+                                       
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+
+    hbc = HydrophobicContacts(ns)
+    print(hbc.results)
 """
 
 import lahuta.contacts as F
