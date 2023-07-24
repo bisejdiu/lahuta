@@ -1,10 +1,41 @@
+"""
+Module: mdanalysis.py
+
+This module provides indirect typing support for MDAnalysis, a library for 
+the analysis of molecular dynamics simulations. Despite the absence of inherent 
+typing support in MDAnalysis, the `mdanalysis.py` module uses Protocols to define 
+interfaces that allow type hinting for MDAnalysis objects.
+
+While currently essential, this module is projected to become obsolete as soon 
+as the MDAnalysis library incorporates typing natively, eliminating the need for 
+indirect typing.
+
+Classes:
+    ResidueGroupType(Protocol): Provides a typing interface for MDAnalysis ResidueGroup objects.
+    AtomGroupType(Protocol): Provides a typing interface for MDAnalysis AtomGroup objects.
+    UniverseType(Protocol): Provides a typing interface for MDAnalysis Universe objects.
+
+Example:
+    def compute_distance(group: AtomGroupType) -> float:
+        # An example function that operates on an mda.AtomGroup object.
+        # The AtomGroupType Protocol allows type hinting for the group parameter.
+        ...
+
+    universe: UniverseType = ...
+    atoms = universe.atoms
+    compute_distance(atoms)
+"""
+
 from typing import Any, Protocol, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
 
+# pylint: disable=missing-function-docstring
 class ResidueGroupType(Protocol):
+    """A typing interface for MDAnalysis ResidueGroup objects."""
+
     @property
     def atoms(self) -> "AtomGroupType":
         ...
@@ -17,7 +48,10 @@ class ResidueGroupType(Protocol):
         ...
 
 
+# pylint: disable=missing-function-docstring
 class AtomGroupType(Protocol):
+    """A typing interface for MDAnalysis AtomGroup objects."""
+
     def select_atoms(self, selection: str) -> "AtomGroupType":
         ...
 
@@ -74,7 +108,7 @@ class AtomGroupType(Protocol):
         ...
 
     @property
-    def chainIDs(self) -> NDArray[np.str_]:
+    def chainIDs(self) -> NDArray[np.str_]:  # pylint: disable=invalid-name
         ...
 
     @property
@@ -90,16 +124,17 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(
-        self, index: Union[int, slice, NDArray[np.int32]]
-    ) -> "AtomGroupType":
+    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
         ...
 
 
+# pylint: disable=missing-function-docstring
 class UniverseType(Protocol):
+    """A typing interface for MDAnalysis Universe objects."""
+
     @property
     def atoms(self) -> "AtomGroupType":
         ...
@@ -114,7 +149,7 @@ class UniverseType(Protocol):
     def copy(self) -> "UniverseType":
         ...
 
-    def add_TopologyAttr(self, name: str, attr: Any) -> None:
+    def add_TopologyAttr(self, name: str, attr: Any) -> None:  # pylint: disable=invalid-name
         ...
 
     def __iter__(self) -> Any:
