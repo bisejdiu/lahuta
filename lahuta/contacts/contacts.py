@@ -52,7 +52,7 @@ from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.openbabel import BondIterable, MolType
-from lahuta.utils.array_utils import difference, np_optimized_matching_pairs
+from lahuta.utils.array_utils import difference, find_shared_pairs
 
 __all__ = [
     "covalent_neighbors",
@@ -111,7 +111,7 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
         A NeighborPairs object containing only covalent neighbors.
     """
     bonds = get_bonded_atoms(ns.mol)
-    indices = np_optimized_matching_pairs(ns.pairs + 1, bonds)
+    indices = find_shared_pairs(ns.pairs + 1, bonds)
 
     return ns.clone(ns.pairs[indices], ns.distances[indices])
 

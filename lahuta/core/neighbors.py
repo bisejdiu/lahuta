@@ -261,54 +261,94 @@ class NeighborPairs:
         return self.clone(self.pairs, self.distances)
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
-        """Return the intersection of two NeighborPairs objects.
-
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
-
-        Returns
-        -------
-        pairs : NeighborPairs
-            A NeighborPairs object containing the intersection of the two NeighborPairs objects.
         """
+        Return the intersection of two NeighborPairs objects.
 
+        The method calculates the intersection of the pairs from `self` and `other`, and then returns a new
+        NeighborPairs object that contains the intersecting pairs along with their corresponding distances.
+
+        Args:
+            other: The other NeighborPairs object.
+
+        Returns:
+            intersected_pairs: A NeighborPairs object containing the pairs and their corresponding distances
+                            that are common between `self` and `other`.
+
+        Example:
+            >>> pairs1 = np.array([[1, 2], [3, 4]])
+            >>> distances1 = np.array([1.0, 2.0])
+            >>> np1 = NeighborPairs(pairs1, distances1)
+            >>> pairs2 = np.array([[1, 2], [5, 6]])
+            >>> distances2 = np.array([1.0, 2.0])
+            >>> np2 = NeighborPairs(pairs2, distances2)
+            >>> np_intersected = np1.intersection(np2)
+            >>> print(np_intersected.pairs)
+            >>> print(np_intersected.distances)
+            [[1, 2]]
+            [1.0]
+        """
         mask = au.intersection(self.pairs, other.pairs)
-
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def union(self, other: "NeighborPairs") -> "NeighborPairs":
-        """Return the union of two NeighborPairs objects.
-
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
-
-        Returns
-        -------
-        pairs : NeighborPairs
-            A NeighborPairs object containing the union of the two NeighborPairs objects.
         """
-        mask = au.union(self.pairs, other.pairs)
-        pairs = np.concatenate((self.pairs, other.pairs), axis=0)[mask]  # type: ignore
-        distances = np.concatenate((self.distances, other.distances), axis=0)[mask]  # type: ignore
+        Return the union of two NeighborPairs objects.
+
+        The method finds the union of the pairs from `self` and `other`. It also ensures that the distances
+        in the resulting object correspond to the union pairs.
+
+        Args:
+            other: The other NeighborPairs object to be unified with.
+
+        Returns:
+            pairs: A NeighborPairs object containing the union of the pairs from `self` and `other`, and
+                with corresponding distances.
+
+        Example:
+            >>> pairs1 = np.array([[1, 2], [3, 4]])
+            >>> distances1 = np.array([1.0, 2.0])
+            >>> np1 = NeighborPairs(pairs1, distances1)
+            >>> pairs2 = np.array([[1, 2], [5, 6]])
+            >>> distances2 = np.array([1.0, 2.0])
+            >>> np2 = NeighborPairs(pairs2, distances2)
+            >>> np_union = np1.union(np2)
+            >>> print(np_union.pairs)
+            >>> print(np_union.distances)
+            [[1, 2], [3, 4], [5, 6]]
+            [1.0, 2.0, 2.0]
+        """
+        pairs, indices = au.union(self.pairs, other.pairs)
+        distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
 
         return self.clone(pairs, distances)
 
     def difference(self, other: "NeighborPairs") -> "NeighborPairs":
-        """Return the difference of two NeighborPairs objects.
+        """
+        Return the difference between two NeighborPairs objects.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        The method calculates the difference between the pairs from `self` and `other`, then returns a new
+        NeighborPairs object that contains the pairs from `self` that are not in `other`, along with their
+        corresponding distances.
 
-        Returns
-        -------
-        pairs : NeighborPairs
-            A NeighborPairs object containing the difference of the two NeighborPairs objects.
+        Args:
+            other: The other NeighborPairs object.
+
+        Returns:
+            difference_pairs: A NeighborPairs object containing the pairs and their corresponding distances
+                            from `self` that are not in `other`.
+
+        Example:
+            >>> pairs1 = np.array([[1, 2], [3, 4]])
+            >>> distances1 = np.array([1.0, 2.0])
+            >>> np1 = NeighborPairs(pairs1, distances1)
+            >>> pairs2 = np.array([[1, 2], [5, 6]])
+            >>> distances2 = np.array([1.0, 2.0])
+            >>> np2 = NeighborPairs(pairs2, distances2)
+            >>> np_difference = np1.difference(np2)
+            >>> print(np_difference.pairs)
+            >>> print(np_difference.distances)
+            [[3, 4]]
+            [2.0]
         """
         mask = au.difference(self.pairs, other.pairs)
 
@@ -317,14 +357,13 @@ class NeighborPairs:
     def symmetric_difference(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the symmetric difference of two NeighborPairs objects.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        This method creates a new `NeighborPairs` object that contains pairs and distances
+        that are unique to `self` or `other`, but not both.
 
-        Returns
-        -------
-        pairs : NeighborPairs
+        Args:
+            other: The other NeighborPairs object.
+
+        Returns:
             A NeighborPairs object containing the symmetric difference of the two NeighborPairs objects.
         """
         mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
@@ -332,114 +371,148 @@ class NeighborPairs:
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
         distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)  # type: ignore
 
-        unique_indices = np.unique(pairs, axis=0, return_index=True)[1]  # type: ignore
-        sorted_indices = np.sort(unique_indices)  # type: ignore
+        # unique_indices = np.unique(pairs, axis=0, return_index=True)[1]  # type: ignore
+        # sorted_indices = np.sort(unique_indices)  # type: ignore
 
+        # pairs = pairs[sorted_indices]
+        # distances = distances[sorted_indices]
+
+        # sorted_pairs = pairs[np.argsort(pairs[:, 0])]  # type: ignore
+        # sorted_distances = distances[np.argsort(pairs[:, 0])]  # type: ignore
+
+        # return self.clone(sorted_pairs, sorted_distances)
+
+        # Sort pairs along the first column and get the sorted indices.
+        sorted_indices = np.argsort(pairs[:, 0])
         pairs = pairs[sorted_indices]
         distances = distances[sorted_indices]
 
-        sorted_pairs = pairs[np.argsort(pairs[:, 0])]  # type: ignore
-        sorted_distances = distances[np.argsort(pairs[:, 0])]  # type: ignore
+        # Get unique pairs and corresponding distances.
+        unique_indices = np.unique(pairs, axis=0, return_index=True)[1]
+        pairs = pairs[unique_indices]
+        distances = distances[unique_indices]
 
-        return self.clone(sorted_pairs, sorted_distances)
+        return self.clone(pairs, distances)
 
-    def isdisjoint(self, other: "NeighborPairs") -> bool:
-        """Test whether two NeighborPairs objects have a null intersection.
-
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
-
-        Returns
-        -------
-        isdisjoint : bool
-            True if the two NeighborPairs objects have a null intersection.
+    def isdisjoint(self, other: "NeighborPairs") -> np.bool_:
         """
+        Checks if the intersection of two NeighborPairs objects is null.
+
+        Args:
+            other (NeighborPairs): The other NeighborPairs object.
+
+        Returns:
+            bool: True if the two NeighborPairs objects are disjoint
+                    (i.e., have no common pairs), and False otherwise.
+        """
+
         return au.isdisjoint(self.pairs, other.pairs)
 
     def issubset(self, other: "NeighborPairs") -> bool:
-        """Test whether all elements of a NeighborPairs object are in another.
+        """
+        Checks if all elements (pairs) of a NeighborPairs object are found in another NeighborPairs object.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        Args:
+            other (NeighborPairs): The other NeighborPairs object.
 
-        Returns
-        -------
-        issubset : bool
-            True if all elements of the NeighborPairs object are in the other NeighborPairs object.
+        Returns:
+            bool: True if every pair in the current NeighborPairs object is found
+                    in the other NeighborPairs object, and False otherwise.
         """
         return au.issubset(self.pairs, other.pairs)
 
     def issuperset(self, other: "NeighborPairs") -> bool:
-        """Test whether all elements of another NeighborPairs object are in this one.
+        """
+        Determines if all pairs from another NeighborPairs object are found in this object.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        This method checks whether every pair of atoms from the 'other' NeighborPairs object
+        is also present in this object, thus determining if this object is a superset of the 'other'.
 
-        Returns
-        -------
-        issuperset : bool
-            True if all elements of the other NeighborPairs object are in this NeighborPairs object.
+        Args:
+            other (NeighborPairs): The other NeighborPairs object.
+
+        Returns:
+            bool: True if all pairs from 'other' are found in this object, False otherwise.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.issuperset(np2)
+            True
         """
         return au.issuperset(self.pairs, other.pairs)
 
     def isequal(self, other: "NeighborPairs") -> bool:
-        """Test whether two NeighborPairs objects contain the same elements.
+        """
+        Checks if this NeighborPairs object is equal to another.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        Two NeighborPairs objects are considered equal if they contain exactly the same pairs.
 
-        Returns
-        -------
-        isequal : bool
-            True if the two NeighborPairs objects contain the same elements.
+        Args:
+            other (NeighborPairs): The other NeighborPairs object.
+
+        Returns:
+            bool: True if the two NeighborPairs objects contain the same pairs, False otherwise.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.isequal(np2)
+            True
         """
         return au.isequal(self.pairs, other.pairs)
 
     def isunique(self) -> bool:
-        """Test whether the NeighborPairs object contains unique pairs.
+        """
+        Checks if all pairs in this NeighborPairs object are unique.
 
-        Returns
-        -------
-        isunique : bool
-            True if the NeighborPairs object contains unique pairs.
+        Returns:
+            bool: True if all pairs in this object are unique, False otherwise.
+
+        Example:
+            >>> np = NeighborPairs(...)
+            >>> np.isunique()
+            False
         """
         return au.isunique(self.pairs)
 
     def is_strict_subset(self, other: "NeighborPairs") -> bool:
-        """Test whether all elements of a NeighborPairs object are in another and the two sets are not equal.
+        """
+        Checks if all pairs of this NeighborPairs object are in another, and the two sets are not equal.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        A strict subset has all pairs in the 'other' object but the two sets are not identical.
 
-        Returns
-        -------
-        is_strict_subset : bool
-            True if all elements of the NeighborPairs object are in the other NeighborPairs object and the two sets are not equal.
+        Args:
+            other (NeighborPairs): The other NeighborPairs object.
+
+        Returns:
+            bool: True if this object is a strict subset of 'other', False otherwise.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.is_strict_subset(np2)
+            True
         """
         return au.is_strict_subset(self.pairs, other.pairs)
 
     def is_strict_superset(self, other: "NeighborPairs") -> bool:
-        """Test whether all elements of another NeighborPairs object are in this one and the two sets are not equal.
+        """
+        Checks if all pairs of another NeighborPairs object are in this one, and the two sets are not equal.
 
-        Parameters
-        ----------
-        other : NeighborPairs
-            The other NeighborPairs object.
+        A strict superset has all pairs from the 'other' object but the two sets are not identical.
 
-        Returns
-        -------
-        is_strict_superset : bool
-            True if all elements of the other NeighborPairs object are in this NeighborPairs object and the two sets are not equal.
+        Args:
+            other (NeighborPairs): The other NeighborPairs object.
+
+        Returns:
+            bool: True if this object is a strict superset of 'other', False otherwise.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.is_strict_superset(np2)
+            True
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 
@@ -596,27 +669,42 @@ class NeighborPairs:
             True if the pair of atoms is in the NeighborPairs object.
         """
 
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
         return au.issubset(other.pairs, self.pairs)
 
     def __add__(self, other: "NeighborPairs") -> "NeighborPairs":
+        if other.__class__ != self.__class__:
+            return NotImplemented
         # TODO:
         # currently this is different from MDAnalysis.
         # The question to answer is if neighbor pairs should be unique or not.
         return self.union(other)
 
     def __sub__(self, other: "NeighborPairs") -> "NeighborPairs":
+        if other.__class__ != self.__class__:
+            return NotImplemented
         return self.difference(other)
 
     def __or__(self, other: "NeighborPairs") -> "NeighborPairs":
+        if other.__class__ != self.__class__:
+            return NotImplemented
         return self.symmetric_difference(other)
 
     def __eq__(self, other: Any) -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
         return self._neighborpairs_equal(other)
 
     def __and__(self, other: "NeighborPairs") -> "NeighborPairs":
+        if other.__class__ != self.__class__:
+            return NotImplemented
         return self.intersection(other)
 
     def __xor__(self, other: "NeighborPairs") -> "NeighborPairs":
+        if other.__class__ != self.__class__:
+            return NotImplemented
         return self.symmetric_difference(other)
 
     def __len__(self) -> int:
