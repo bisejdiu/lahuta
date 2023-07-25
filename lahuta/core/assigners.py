@@ -10,11 +10,17 @@ from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 class ProteinTypeAssignerBase(ABC):
     """
-    Base class for assigning protein atom types.
+    Abstract Base Class for assigning atom types to proteins.
 
-    This class serves as an abstract base class for concrete implementations
-    of protein atom type assignment, such as VectorizedProteinTypeAssigner
-    and LegacyProteinTypeAssigner.
+    This abstract base class (ABC) outlines the necessary structure and interface for child classes that handle
+    the assignment of atom types to proteins.
+
+    Attributes:
+        protein_ag (AtomGroupType): Group of atoms in a protein that will be assigned atom types.
+
+    Child classes:
+        VectorizedProteinTypeAssigner: Efficient, vectorized assignment of atom types.
+        LegacyProteinTypeAssigner: Traditional, loop-based assignment of atom types.
     """
 
     def __init__(self, protein_ag: AtomGroupType) -> None:
@@ -23,26 +29,42 @@ class ProteinTypeAssignerBase(ABC):
     @abstractmethod
     def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
         """
-        Abstract method for computing protein atom types.
+        Abstract method to compute atom types.
+
+        Must be implemented by child classes.
+
+        Args:
+            atypes_array (NDArray[np.int8]): Array of atom types.
+
+        Raises:
+            NotImplementedError: If not implemented by child class.
         """
         raise NotImplementedError
 
 
 class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
     """
-    A class for vectorized assignment of protein atom types.
+    Assigns atom types to proteins in a vectorized manner.
 
-    This class utilizes efficient NumPy array manipulation to assign atom types
-    to proteins in a vectorized manner. Inherits from the ProteinTypeAssignerBase
-    abstract base class.
+    Child class of ProteinTypeAssignerBase that uses NumPy array manipulations
+    for efficient assignment of atom types.
+
+    Overrides:
+        compute method from ProteinTypeAssignerBase.
     """
 
     def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
-        # print("atypes", atypes)
-        # resname, atom_name = self.ta["resname"], self.ta["name"]
+        """
+        Computes atom types in a vectorized manner.
 
-        # resname_str = resname[self.protein_ag.resindices].astype(str)
-        # atom_name_str = atom_name[self.protein_ag.indices].astype(str)
+        Uses NumPy array manipulations for efficient assignment of atom types.
+
+        Args:
+            atypes_array (NDArray[np.int8]): Array of atom types.
+
+        Returns:
+            NDArray[np.int8]: Array of assigned atom types.
+        """
 
         resname_str = self.protein_ag.resnames.astype(str)
         atom_name_str = self.protein_ag.names.astype(str)
@@ -53,14 +75,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
             np.core.defchararray.strip(atom_name_str),  # type: ignore
         )
 
-        # prot_atom_types_array = [
-        #     list(atom_ids_label_set) for atom_ids_label_set in PROT_ATOM_TYPES.values()
-        # ]
         prot_atom_types_array = [list(PROT_ATOM_TYPES[key]) for key in atype_names]
-        # prot_atom_types_array = []
-        # for key in atypes.keys():
-        #     print("adding", key, atypes[key])
-        #     prot_atom_types_array.append(list(PROT_ATOM_TYPES[key]))
         assert isinstance(atom_id_labels, np.ndarray)
         mask: NDArray[np.bool_] = np.array(
             [np.isin(atom_id_labels, prot_atom_types) for prot_atom_types in prot_atom_types_array]
@@ -75,13 +90,27 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
 class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
     """
-    A class for legacy assignment of protein atom types.
+    Assigns atom types to proteins using a loop-based method.
 
-    This class uses a less efficient, loop-based approach to assign atom types
-    to proteins. Inherits from the ProteinTypeAssignerBase abstract base class.
+    Child class of ProteinTypeAssignerBase that uses a traditional, loop-based approach for assignment of atom types.
+
+    Overrides:
+        compute method from ProteinTypeAssignerBase.
     """
 
     def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+        """
+        Computes atom types using a loop-based method.
+
+        Uses a traditional, loop-based approach for assignment of atom types.
+
+        Args:
+            atypes_array (NDArray[np.int8]): Array of atom types.
+
+        Returns:
+            NDArray[np.int8]: Array of assigned atom types.
+        """
+
         for residue in self.protein_ag.residues:
             for atom in residue.atoms:
                 for atom_type in list(PROT_ATOM_TYPES.keys()):
