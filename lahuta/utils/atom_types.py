@@ -33,7 +33,6 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
     Atom types are defined in `SmartsPatternRegistry`
     """
     atypes = AVAILABLE_ATOM_TYPES
-    # uv = atomgroup.universe.atoms.universe
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)), dtype=np.int8)
     for atom_type in SmartsPatternRegistry:
@@ -79,9 +78,7 @@ def vec_assign_atom_types(
     Assign atom types to each atom in the molecule.
     Atom types are defined in `SmartsPatternRegistry`
     """
-    # atypes = AVAILABLE_ATOM_TYPES
 
-    # atom_id_to_type_index = {atom_id: atypes[atom_type] for atom_type, atom_ids in PROT_ATOM_TYPES_SET.items() for atom_id in atom_ids}
     atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)), dtype=np.int8)
