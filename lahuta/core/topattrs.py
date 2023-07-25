@@ -6,40 +6,44 @@ from numpy.typing import NDArray
 
 
 class AtomAttrClassHandler:
-    """A class for generating new AtomAttr subclasses.
+    """
+    A class for dynamically generating new AtomAttr subclasses.
 
-    This class is used to generate new AtomAttr subclasses and add them to the
-    global namespace. The new subclasses are generated based on the name of the
-    attribute and the singular name of the attribute. The singular name is used
-    to generate the name of the class, while the name of the attribute is used
-    to generate the name of the class attribute.
+    This class facilitates the dynamic generation of new subclasses of AtomAttr, based
+    on provided attribute and singular names. The attribute name informs the creation of
+    the class attribute, while the singular name is used to derive the new class name.
 
-    For example, if the attribute name is "atom_types" and the singular name is
-    "atom_type", the new class will be named "AtomTypes" and the class attribute
-    will be named "atom_type".
+    For instance, given an attribute name "atom_types" and a singular name "atom_type",
+    a new subclass named "AtomTypes" with a class attribute "atom_type" will be created.
 
     Attributes:
-        atomattr_class (AtomAttr subclass): The generated AtomAttr subclass.
+        atomattr_class (AtomAttr subclass): The dynamically generated subclass of AtomAttr.
     """
 
     def __init__(self) -> None:
-        """Initialize the handler."""
         self.atomattr_class: Optional[Type[AtomAttr]] = None
 
     @staticmethod
     def _gen_initial_values(n_atoms: int, *_: Any) -> NDArray[Any]:
-        """Generate the initial values for the attribute."""
+        """
+        Generate the initial values for the attribute.
+
+        Args:
+            n_atoms (int): The number of atoms.
+            *_ (Any): Any other arguments are ignored.
+
+        Returns:
+            NDArray[Any]: A numpy array of zeros with a size equal to the number of atoms.
+        """
         return np.zeros(n_atoms)
 
     def init_topattr(self, attrname: str, singular_name: str) -> None:
-        """Generate the new AtomAttr subclass and add it to the global namespace.
+        """
+        Generates a new AtomAttr subclass and adds it to the global namespace.
 
         Args:
-            attr_name (str): The name of the attribute.
-            singular_name (str): The singular name of the attribute.
-
-        Returns:
-            AtomAttr subclass: The created class is added to the global namespace.
+            attrname (str): The name of the attribute.
+            singular_name (str): The singular name of the attribute, used to generate the class name.
         """
 
         attr_dict = {

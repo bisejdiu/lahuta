@@ -5,22 +5,40 @@ if TYPE_CHECKING:
 
 
 def get_class_methods(cls: "NeighborPairs") -> List[str]:
-    """Returns a list of class methods."""
+    """
+    Retrieves all the methods of the specified class.
+
+    Args:
+        cls (NeighborPairs): The class to inspect.
+
+    Returns:
+        List[str]: A list of strings containing the names of all the methods of the specified class.
+    """
     return [attr for attr in dir(cls) if callable(getattr(cls, attr))]
 
 
 def get_class_properties(cls: "NeighborPairs") -> List[str]:
-    """Returns a list of class properties."""
+    """
+    Retrieves all the properties of the specified class.
+
+    Args:
+        cls (NeighborPairs): The class to inspect.
+
+    Returns:
+        List[str]: A list of strings containing the names of all the properties of the specified class.
+    """
     return [attr for attr in dir(cls) if isinstance(getattr(cls, attr), property)]
 
 
 def get_class_attributes(cls: "NeighborPairs") -> List[str]:
-    """Returns a list of class attributes that are not callable."""
-    # properties = get_class_properties(cls)
-    # print("properties", properties)
-    return [
-        attr
-        for attr in dir(cls)
-        if not attr.startswith("__") and not callable(getattr(cls, attr))
-        # and attr not in properties
-    ]
+    """
+    Retrieves all the attributes (not methods or properties) of the specified class.
+
+    Args:
+        cls (NeighborPairs): The class to inspect.
+
+    Returns:
+        List[str]: A list of strings containing the names of all the attributes (not methods or properties)
+        of the specified class.
+    """
+    return [attr for attr in dir(cls) if not attr.startswith("__") and not callable(getattr(cls, attr))]
