@@ -1,5 +1,48 @@
 """
-Placeholder
+Module: array_utils.py
+
+This module contains a suite of utility functions for operations on 2D numpy arrays, particularly arrays 
+representing atom pairs. These operations include finding shared pairs, determining non-matching indices,
+and various set-like operations including intersection, difference, symmetric difference, union, and 
+subset/superset/equality checks. It also provides functions to check for uniqueness and strict subset/superset relations.
+
+Functions:
+    find_shared_pairs(arr1, arr2): Finds shared pairs between two arrays.
+
+    non_matching_indices(arr1, arr2): Finds non-matching indices between two arrays.
+
+    intersection(arr1, arr2): Computes the intersection of two arrays.
+
+    difference(arr1, arr2): Computes the difference of two arrays.
+
+    symmetric_difference(arr1, arr2): Computes the symmetric difference of two arrays.
+
+    union(arr1, arr2): Computes the union of two arrays.
+
+    isdisjoint(arr1, arr2): Checks if two arrays are disjoint.
+
+    issubset(arr1, arr2): Checks if the first array is a subset of the second array.
+
+    issuperset(arr1, arr2): Checks if the first array is a superset of the second array.
+
+    isequal(arr1, arr2): Checks if two arrays are equal.
+
+    isunique(arr: NDArray[_DType]): Checks if an array has unique rows.
+
+    is_strict_subset(arr1, arr2): Checks if the first array is a strict subset of the second array.
+
+    is_strict_superset(arr1, arr2): Checks if the first array is a strict superset of the second array.
+
+Each function operates on numpy arrays (with a shape of (n,2) for most functions, representing pairs of atom indices)
+and returns either a new array resulting from the operation or a boolean value representing the relationship between arrays.
+
+Notes:
+    This module is intended for use with arrays of atom pair indices. However, most of these functions would be applicable 
+    to other data as long as the input is 2D numpy arrays.
+
+    Functions like 'intersection', 'difference', 'union' etc. perform set operations considering each row of the input 
+    arrays as an element of the set. This makes these functions particularly useful for operations on collections of 
+    atom pairs, where each pair is represented by a row in the array.
 """
 
 from typing import Tuple, TypeVar
@@ -15,6 +58,22 @@ NDArrayDType = NDArray[_DType]
 T1 = TypeVar("T1", bound=npt.NBitBase)
 T2 = TypeVar("T2", bound=npt.NBitBase)
 NDArrayInt = npt.NDArray[np.int32]
+
+__all__ = [
+    "find_shared_pairs",
+    "non_matching_indices",
+    "intersection",
+    "difference",
+    "symmetric_difference",
+    "union",
+    "isdisjoint",
+    "issubset",
+    "issuperset",
+    "isequal",
+    "isunique",
+    "is_strict_subset",
+    "is_strict_superset",
+]
 
 
 def find_shared_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
