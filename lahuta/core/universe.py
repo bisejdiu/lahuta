@@ -18,7 +18,7 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
-from lahuta.utils.atom_types import v_radii_assignment
+from lahuta.utils.radii import v_radii_assignment
 
 LuniInputType = Union[AtomGroupType, str, List[str]]
 

@@ -13,7 +13,7 @@ from lahuta.core.helpers import get_class_attributes
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
-from lahuta.utils.atom_types import find_hydrogen_bonded_atoms
+from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.utils.math import calc_pairwise_distances, calc_vertex_angles
 from lahuta.writers.frame_writer import DataFrameWriter
 
