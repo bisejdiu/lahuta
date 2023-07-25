@@ -1,3 +1,26 @@
+"""
+module: _loaders.py
+
+This module provides classes to load and manage biological structure data. 
+
+The two main classes are `GemmiLoader` and `TopologyLoader`, each designed to work with a 
+specific library, Gemmi and MDAnalysis respectively, to load and handle structure data.
+
+Both loaders extend from an abstract base class `BaseLoader` which outlines the necessary 
+methods and properties all loader classes should have.
+
+The module also provides a unified way to manage atoms, residues, and chains information 
+through the ARC class instance. It includes various methods for querying the data and converting 
+them into other common bioinformatics and chemoinformatics formats.
+
+Classes:
+    BaseLoader: Abstract base class that provides a template for the loader classes.
+    GemmiLoader: Class to load and manage biological structure data using the Gemmi library.
+    TopologyLoader: Class to load and manage biological structure data using the MDAnalysis library.
+
+"""
+
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterator, Literal, Optional, Union, overload
 
@@ -14,6 +37,29 @@ from lahuta.lahuta_types.openbabel import MolType
 
 
 class BaseLoader(ABC):
+    """
+    Abstract base class providing a blueprint for loading and handling biological structure data.
+
+    `BaseLoader` forms the basis for other loader classes in the lahuta library, dedicated
+    to handling different formats of biological structural data. It includes the initialization
+    of atomic, residue, and chain data as well as their transformation into different formats.
+
+    The class takes a file path as an input and reads the biological structure data. It offers
+    various properties to access the data, as well as methods to convert the loaded data into
+    different output formats. It also provides an iterator to iterate over atoms, residues, and chains.
+
+    Args:
+        file_path (str): The file path from which to load the biological structure data.
+
+    Attributes:
+        file_path (str): The file path from which the biological structure data is loaded.
+        _chains: Placeholder for chain data.
+        _residues: Placeholder for residue data.
+        _atoms: Placeholder for atom data.
+        structure: A structure object containing biological structure data, currently initialized to None.
+        arc (Optional[ARC]): An instance of ARC class providing combined access to atoms, residues, and chains data.
+    """
+
     def __init__(self, file_path: str):
         self.file_path = file_path
         self._chains = None
@@ -26,22 +72,26 @@ class BaseLoader(ABC):
 
     @property
     def n_atoms(self) -> int:
+        """The number of atoms in the loaded biological structure data."""
         return len(self.atoms)
 
     @property
     def chains(self) -> Chains:
+        """The chains in the loaded biological structure data."""
         if self.arc is None:
             raise ValueError("arc has not been initialized")
         return self.arc.chains
 
     @property
     def residues(self) -> Residues:
+        """The residues in the loaded biological structure data."""
         if self.arc is None:
             raise ValueError("arc has not been initialized")
         return self.arc.residues
 
     @property
     def atoms(self) -> Atoms:
+        """The atoms in the loaded biological structure data."""
         if self.arc is None:
             raise ValueError("arc has not been initialized")
         return self.arc.atoms
@@ -55,6 +105,18 @@ class BaseLoader(ABC):
         ...
 
     def to(self, fmt: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
+        """
+        Convert the loaded biological structure data into a different format.
+
+        Args:
+            fmt (str): The format to which the biological structure data should be converted.
+
+        Returns:
+            Union[MolType, AtomGroupType]: The biological structure data in the specified format.
+
+        Raises:
+            ValueError: If the specified format is not supported.
+        """
         method_str = f"to_{fmt}"
         if hasattr(self, method_str):
             return getattr(self, method_str)()  # type: ignore
@@ -63,21 +125,43 @@ class BaseLoader(ABC):
 
     @abstractmethod
     def to_mda(self) -> AtomGroupType:
-        ...
+        """Convert the loaded biological structure data into an MDAnalysis AtomGroup object."""
 
     @abstractmethod
     def to_mol(self) -> MolType:
-        ...
+        """Convert the loaded biological structure data into an OpenBabel Mol object."""
 
     def __iter__(self) -> Iterator[Union[Atoms, Residues, Chains]]:
+        """Iterate over atoms, residues, and chains."""
         yield self.atoms
         yield self.residues
         yield self.chains
 
 
 class GemmiLoader(BaseLoader):
+    """
+    Class for loading biological structure data using the gemmi library.
+
+    `GemmiLoader` is a subclass of `BaseLoader` and provides the implementation to read,
+    convert, and manage biological structure data specifically from the gemmi library.
+    The class takes a file path as an input and reads the biological structure data either
+    in PDB format or in the format specified in the file. It also offers methods to convert
+    the loaded data into different output formats.
+
+    Args:
+        file_path (str): The file path from which to load the biological structure data.
+        is_pdb (bool): A flag to indicate whether the file is in PDB format. Defaults to False.
+
+    Attributes:
+        structure: A gemmi structure object containing biological structure data.
+        arc (Optional[ARC]): An instance of ARC class providing combined access to atoms,
+                             residues, and chains data.
+        ag (AtomGroupType): An MDAnalysis AtomGroup object created from the loaded data.
+    """
+
     def __init__(self, file_path: str, is_pdb: bool = False):
         super().__init__(file_path)
+        # pylint: disable=no-member
         if is_pdb:
             structure: Any = gemmi.read_pdb(self.file_path)  # type: ignore
             block: Any = structure.make_mmcif_document().sole_block()
@@ -95,6 +179,17 @@ class GemmiLoader(BaseLoader):
         self.ag: AtomGroupType = self._create_mda()
 
     def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float32]:
+        """Extract the coordinates from the atom_site data.
+
+        Args:
+            atom_site_data (Dict[str, Any]): The atom_site data from the gemmi structure object.
+
+        Returns:
+            NDArray[np.float32]: The coordinates of the atoms in the structure.
+
+        Raises:
+            ValueError: If the atom_site data does not contain the required information.
+        """
         coords_array: NDArray[np.float32] = np.zeros((self.n_atoms, 3), dtype=np.float32)
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
@@ -103,6 +198,12 @@ class GemmiLoader(BaseLoader):
         return coords_array
 
     def _create_mda(self) -> AtomGroupType:
+        """Create an MDAnalysis AtomGroup object from the loaded data.
+
+        Returns:
+            AtomGroupType: An MDAnalysis AtomGroup object.
+        """
+
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
         assert self.arc is not None, "arc has not been initialized"
         struct_arr = np.rec.fromarrays(  # type: ignore
@@ -138,9 +239,11 @@ class GemmiLoader(BaseLoader):
         return uv.atoms
 
     def to_mda(self) -> AtomGroupType:
+        """Convert the loaded biological structure data into an MDAnalysis AtomGroup object."""
         return self.ag
 
     def to_mol(self) -> MolType:
+        """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()  # type: ignore
         obmol.create_mol(
@@ -152,6 +255,27 @@ class GemmiLoader(BaseLoader):
 
 
 class TopologyLoader(BaseLoader):
+    """
+    Class for loading and managing biological structure data using the MDAnalysis library.
+
+    `TopologyLoader` is a subclass of `BaseLoader` and provides the implementation to read,
+    convert, and manage biological structure data specifically from the MDAnalysis library.
+    This class accepts one or more file paths and loads the structure data into an
+    MDAnalysis Universe. It also offers methods to convert the loaded data into different output formats.
+
+    Args:
+        *paths (str): One or more file paths from which to load the biological structure data.
+
+    Attributes:
+        ag (AtomGroupType): An MDAnalysis AtomGroup object created from the loaded data.
+        arc (Optional[ARC]): An instance of ARC class providing combined access to atoms,
+                             residues, and chains data.
+
+    Returns:
+        TopologyLoader: A new instance of the TopologyLoader class with the AtomGroup data copied.
+
+    """
+
     def __init__(self, *paths: str):
         file_path: str = paths[0]
         super().__init__(file_path)
@@ -164,9 +288,11 @@ class TopologyLoader(BaseLoader):
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
     def to_mda(self) -> AtomGroupType:
+        """Convert the loaded biological structure data into an MDAnalysis AtomGroup object."""
         return self.ag
 
     def to_mol(self) -> MolType:
+        """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()  # type: ignore
         obmol.create_mol(
@@ -178,6 +304,14 @@ class TopologyLoader(BaseLoader):
 
     @classmethod
     def from_mda(cls, ag: AtomGroupType) -> "TopologyLoader":
+        """Create a new instance of the TopologyLoader class from an MDAnalysis AtomGroup object.
+
+        Args:
+            ag (AtomGroupType): An MDAnalysis AtomGroup object.
+
+        Returns:
+            TopologyLoader: A new instance of the TopologyLoader class with the AtomGroup data copied.
+        """
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # type: ignore

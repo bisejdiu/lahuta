@@ -26,6 +26,9 @@ good-names = [
     'ix',
 ]
 
+[tool.pylint.'MASTER']
+  extension-pkg-allow-list = ["gemmi"]
+
 [tool.pylint.messages_control]
 
 max-line-length = 120
