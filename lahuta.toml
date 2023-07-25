@@ -16,8 +16,12 @@ requires = ["setuptools", "wheel"]
 
 [tool.pylint.basic]
 good-names = [
+    'i', 
+    'j',
+    'k',
     'df', 
-    'ag', 
+    'ag',
+    'uv', 
     'ns',
     'ix',
 ]
