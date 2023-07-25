@@ -1,5 +1,19 @@
 """
-Placeholder for the universe module.
+Module: universe.py
+
+This module defines the Universe class, which is the main class of the Lahuta package. 
+It is the entry point for all computations. It provides an interface for loading files,
+or for initializing the Universe from an existing MDAnalysis.AtomGroup instance. This way
+we can support both file-based loading and indicrectly support all MDAnalysis formats, 
+as well as provide support for reading MD trajectories.
+
+Class:
+    Universe: The main class of the Lahuta package.
+
+Example:
+    universe = Universe(...)
+    ns = universe.compute_neighbors()
+    
 """
 
 from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload

@@ -1,3 +1,9 @@
+"""
+Module: topattrs.py
+
+This module defines a class for dynamically generating new AtomAttr subclasses.
+
+"""
 from typing import Any, Optional, Type
 
 import numpy as np

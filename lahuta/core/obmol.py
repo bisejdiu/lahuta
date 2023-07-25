@@ -1,3 +1,20 @@
+"""
+A module for generating an Open Babel molecule from an ARC object.
+
+Generating an Open Babel molecule from an ARC object is done by creating a new OBMol object and calling the
+create_mol method with the ARC object as an argument. This is necessary because of the quite involved 
+process of creating a molecule using the provided Open Babel API. It, unfortunately, does not support 
+vectorized operations, so we have to create the molecule atom by atom. There is a performance penalty
+for this. 
+
+Classes:
+    OBMol: A class for generating an Open Babel molecule from an ARC object.
+
+Example:
+    obmol = OBMol()
+    obmol.create_mol(arc)
+    obmol.mol
+"""
 from typing import Any, Optional, Set, Tuple, Union
 
 import gemmi
