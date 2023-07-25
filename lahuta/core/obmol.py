@@ -11,6 +11,10 @@ from lahuta.lahuta_types.openbabel import MolAtomType, MolResType, MolType, MolT
 
 
 class OBMol:
+    """
+    A class for generating an Open Babel molecule from an ARC object.
+    """
+
     def __init__(self) -> None:
         self.mol: Optional[MolType] = None
 
@@ -20,6 +24,18 @@ class OBMol:
         resname: NDArray[np.str_],
         chain_id: NDArray[np.int32],
     ) -> MolResType:
+        """
+        Create a new residue in the molecule.
+
+        Args:
+            resid (NDArray[np.int32]): The residue ID.
+            resname (NDArray[np.str_]): The residue name.
+            chain_id (NDArray[np.int32]): The chain ID.
+
+        Returns:
+            MolResType: A new residue instance.
+        """
+
         assert self.mol is not None, "Molecule is not initialized"
         ob_res = self.mol.NewResidue()
         ob_res.SetChainNum(int(chain_id))
@@ -35,6 +51,17 @@ class OBMol:
         atom_pos: NDArray[np.float_],
         ob_residue: MolResType,
     ) -> None:
+        """
+        Create a new atom in the molecule.
+
+        Args:
+            idx (int): The index of the atom.
+            atom_name (str): The name of the atom.
+            atom_element (str): The type of atom to add.
+            atom_pos (NDArray[np.float_]): The position of the atom.
+            ob_residue (MolResType): The residue the atom belongs to.
+        """
+
         assert self.mol is not None, "Molecule is not initialized"
         ob_atom: MolAtomType = self.mol.NewAtom(idx)
         ob_atom.SetAtomicNum(gemmi.Element(atom_element).atomic_number)  # type: ignore
@@ -45,6 +72,14 @@ class OBMol:
         self.add_atoms_to_residue(ob_atom, ob_residue)
 
     def create_bond_obmol(self, atom1_id: int, atom2_id: int) -> None:
+        """
+        Create a bond between two atoms in the molecule.
+
+        Args:
+            atom1_id (int): The ID of the first atom.
+            atom2_id (int): The ID of the second atom.
+        """
+
         assert self.mol is not None, "Molecule is not initialized"
         ob_atom1 = self.mol.GetAtomById(atom1_id)
         ob_atom2 = self.mol.GetAtomById(atom2_id)
@@ -59,16 +94,35 @@ class OBMol:
         # ob_bond.SetBondOrder(1)  # TODO: Research how to set bond order
 
     def add_atoms_to_residue(self, ob_atom: MolAtomType, ob_res: MolResType) -> None:
+        """
+        Add an atom to a residue.
+
+        Args:
+            ob_atom (MolAtomType): The atom to add.
+            ob_res (MolResType): The residue to add the atom to.
+        """
+
         ob_res.AddAtom(ob_atom)
         ob_res.SetHetAtom(ob_atom, not gemmi.find_tabulated_residue(ob_res.GetName()).is_standard())  # type: ignore
         ob_res.SetSerialNum(ob_atom, ob_res.GetSerialNum(ob_atom))
 
     def perceive_bonds(self) -> None:
+        """
+        Identify all the bonds in the molecule.
+        """
+
         if self.mol:
             self.mol.ConnectTheDots()
             self.mol.PerceiveBondOrders()
 
     def perceive_properties(self) -> Union[MolType, None]:
+        """
+        Identify properties of the molecule.
+
+        Returns:
+            Union[MolType, None]: The molecule with its properties perceived.
+        """
+
         # self.mol.SetChainsPerceived()
         if self.mol:
             self.mol.SetAromaticPerceived()
@@ -80,10 +134,25 @@ class OBMol:
         return self.mol
 
     def end_modify(self, nuke_perceived_data: bool = True) -> None:
+        """
+        End the modification of the molecule.
+
+        Args:
+            nuke_perceived_data (bool, optional): If True, perceived data is deleted. Default is True.
+        """
+
         if self.mol:
             self.mol.EndModify(nuke_perceived_data)
 
     def create_mol(self, arc: ARC, connections: Optional[Any] = None) -> None:
+        """
+        Create a new molecule from an ARC (Atomic Record Collection) object.
+
+        Args:
+            arc (ARC): An object representing atomic data.
+            connections (Optional[Any], optional): A list of connections between atoms. Default is None.
+        """
+
         # chains = arc.chains
         # residues = arc.residues
         # atoms = arc.atoms
@@ -154,6 +223,20 @@ class OBMol:
         res_id: int,
         res_name: str,
     ) -> int:
+        """
+        Get the index of an atom in a DataFrame.
+
+        Args:
+            atoms_df (pd.DataFrame): A DataFrame with atomic data.
+            atom_name (str): The name of the atom.
+            chain_name (str): The name of the chain.
+            res_id (int): The residue ID.
+            res_name (str): The name of the residue.
+
+        Returns:
+            int: The index of the atom in the DataFrame.
+        """
+
         index = atoms_df[
             (atoms_df["atom_name"] == atom_name)
             & (atoms_df["chain_name"] == chain_name)
