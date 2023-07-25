@@ -112,58 +112,122 @@ def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> ND
     return idx
 
 
-# These are all set operations we want to implement in our classes
+# def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
+#     """
+#     Reference: https://stackoverflow.com/questions/16216078/test-for-membership-in-a-2d-numpy-array
+#     Based on http://stackoverflow.com/a/16973510/190597 (Jaime, 2013-06)
+#     View the array as dtype np.void (bytes). The items along the last axis are
+#     viewed as one value. This allows comparisons to be performed on the entire row.
+#     """
+#     arr = np.ascontiguousarray(arr)
+#     if np.issubdtype(arr.dtype, np.floating):
+#         # Care needs to be taken here since
+#         # np.array([-0.]).view(np.void) != np.array([0.]).view(np.void)
+#         # Adding 0. converts -0. to 0.
+#         arr += 0.0  # type: ignore
+#     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))  # type: ignore
+
+
 def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
     """
-    Reference: https://stackoverflow.com/questions/16216078/test-for-membership-in-a-2d-numpy-array
-    Based on http://stackoverflow.com/a/16973510/190597 (Jaime, 2013-06)
-    View the array as dtype np.void (bytes). The items along the last axis are
-    viewed as one value. This allows comparisons to be performed on the entire row.
+    Convert a 2D numpy array into a 1D array of type np.void.
+
+    The function views each row in the input array as a single item of type np.void, which effectively
+    converts the 2D array into a 1D array of binary representations of the rows. This can be useful
+    for performing operations that are typically only possible with 1D arrays, such as membership tests.
+
+    Args:
+        arr: A 2D numpy array of shape (n, 2), where each row is a pair of atom indices.
+
+    Returns:
+        arr_void: A 1D numpy array of dtype np.void, where each element is the binary representation
+                  of a pair of atom indices from the input array.
+
+    Example:
+        >>> arr = np.array([[1, 2], [3, 4]])
+        >>> print(asvoid(arr))
+        [(1, 2), (3, 4)]
     """
     arr = np.ascontiguousarray(arr)
     if np.issubdtype(arr.dtype, np.floating):
-        # Care needs to be taken here since
-        # np.array([-0.]).view(np.void) != np.array([0.]).view(np.void)
-        # Adding 0. converts -0. to 0.
         arr += 0.0  # type: ignore
     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))  # type: ignore
 
 
+# def intersection(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False) -> NDArray[np.bool_]:
+#     """Calculate the intersection of two arrays and return the indices of the
+#     elements in `arr1` that are in `arr2`.
+
+#     Parameters
+#     ----------
+#     arr1 : np.ndarray
+#         An array of shape (n, 2) where each row is a pair of atom indices.
+#     arr2 : np.ndarray
+#         An array of shape (n, 2) where each row is a pair of atom indices.
+#     Returns
+#     -------
+#     arr : np.ndarray
+#         An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in both `arr1` and `arr2`.
+#     """
+
+#     arr1_void = asvoid(arr1)
+#     arr2_void = asvoid(arr2)
+#     return np.in1d(arr1_void, arr2_void, assume_unique)  # type: ignore
+
+
 def intersection(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False) -> NDArray[np.bool_]:
-    """Calculate the intersection of two arrays and return the indices of the
-    elements in `arr1` that are in `arr2`.
-
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in both `arr1` and `arr2`.
     """
+    Calculate the intersection of two 2D arrays and return a boolean array that indicates the membership
+    of each pair of atom indices in `arr1` in `arr2`.
 
+    The function first converts `arr1` and `arr2` into 1D arrays of type np.void using the `asvoid` function,
+    then uses `np.in1d` to test the membership of each element in the resulting 1D array from `arr1` in that
+    from `arr2`.
+
+    Args:
+        arr1: A 2D numpy array of shape (n, 2) where each row is a pair of atom indices.
+        arr2: A 2D numpy array of shape (m, 2) where each row is a pair of atom indices.
+        assume_unique: If True, the input arrays are both assumed to be unique, which can speed up the
+                       calculation. Default is False.
+
+    Returns:
+        mask: A 1D boolean numpy array of length n, where each element indicates whether the corresponding
+              pair of atom indices in `arr1` is also in `arr2`.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4]])
+        >>> arr2 = np.array([[1, 2], [5, 6]])
+        >>> print(intersection(arr1, arr2))
+        [True False]
+    """
     arr1_void = asvoid(arr1)
     arr2_void = asvoid(arr2)
-    return np.in1d(arr1_void, arr2_void, assume_unique)  # type: ignore
+    return np.in1d(arr1_void, arr2_void, assume_unique)
 
 
 def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False) -> NDArray[np.bool_]:
-    """Calculate the difference of two arrays and return the indices of the
-    elements in `arr1` that are not in `arr2`.
+    """
+    Calculate the set difference between two 2D arrays, represented as a boolean array.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of `arr1` atom indices that are in `arr1` but not in `arr2`.
+    The function converts the input arrays into 1D arrays of type np.void, then uses `np.in1d` to test
+    the membership of each element in `arr1` in `arr2`. The resulting boolean array is then inverted to
+    represent the elements in `arr1` that are not in `arr2`.
+
+    Args:
+        arr1: A 2D numpy array of shape (n, 2) where each row is a pair of atom indices.
+        arr2: A 2D numpy array of shape (m, 2) where each row is a pair of atom indices.
+        assume_unique: If True, the input arrays are both assumed to be unique, which can speed up the
+                       calculation. Default is False.
+
+    Returns:
+        mask: A 1D boolean numpy array of length n, where each element indicates whether the corresponding
+              pair of atom indices in `arr1` is not in `arr2`.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4]])
+        >>> arr2 = np.array([[1, 2], [5, 6]])
+        >>> print(difference(arr1, arr2))
+        [False True]
     """
 
     arr1_void = asvoid(arr1)
@@ -175,19 +239,19 @@ def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool
 def symmetric_difference(
     arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
 ) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
-    """Calculate the symmetric difference of two arrays and return the indices of the
-    elements in `arr1` that are not in `arr2` and the indices of the elements in `arr2` that are not in `arr1`.
+    """Calculate the symmetric difference of two arrays.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices that are in either `arr1` or `arr2` but not both.
+    This function returns the elements that are in `arr1` but not in `arr2` and vice versa.
+
+    Args:
+        arr1: An array of shape (n, 2) where each row is a pair of atom indices.
+        arr2: An array of shape (m, 2) where each row is a pair of atom indices.
+        assume_unique: If True, the input arrays are both assumed to be unique,
+                       which can speed up the calculation. Default is False.
+
+    Returns:
+        mask_a: A boolean array that can be used to index `arr1` to get the elements unique to `arr1`.
+        mask_b: A boolean array that can be used to index `arr2` to get the elements unique to `arr2`.
     """
 
     mask_a = difference(arr1, arr2, assume_unique)
@@ -196,153 +260,215 @@ def symmetric_difference(
     return mask_a, mask_b
 
 
-def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> NDArray[np.int_]:
-    """Calculate the union of two arrays and return the indices of the
-    elements in `arr1` and `arr2`. Duplicate entries are removed. Neighbors indices are sorted.
-
-
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices that are in `arr1` or `arr2`.
+def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType], NDArray[np.int32]]:
     """
+    Calculate the union of two arrays and return the unique pairs along with their indices.
 
+    The function finds unique pairs from the union of `arr1` and `arr2`, and also returns the
+    indices in the concatenated array which correspond to these unique pairs. The indices can
+    be used to select corresponding elements in another array that has the same order as `arr1`
+    and `arr2`.
+
+    Args:
+        arr1: A 2D numpy array of shape (n, 2) where each row is a pair of atom indices.
+        arr2: A 2D numpy array of shape (m, 2) where each row is a pair of atom indices.
+
+    Returns:
+        union_arr: A 2D numpy array of shape (k, 2) where each row is a unique pair of atom indices
+                   that are in `arr1` or `arr2`.
+        indices: A 1D numpy array of the indices in the concatenated array which correspond to the
+                 unique pairs.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4]])
+        >>> arr2 = np.array([[1, 2], [5, 6]])
+        >>> pairs, indices = union(arr1, arr2)
+        >>> print(pairs)
+        >>> print(indices)
+        [[1, 2], [3, 4], [5, 6]]
+        [0 1 3]
+    """
     concat = np.concatenate((arr1, arr2), axis=0)
 
-    unique_indices = np.unique(concat, axis=0, return_index=True)[1]
+    _, unique_indices = np.unique(concat, axis=0, return_index=True)
     sorted_indices = np.sort(unique_indices)
 
-    return sorted_indices
+    return concat[sorted_indices], sorted_indices
 
 
-def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Return True if two arrays have a null intersection.
+def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> np.bool_:
+    """
+    Determines if two arrays have a null intersection.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    bool
-        True if the arrays have null intersection.
+    This function checks if the two input arrays do not share any common elements. Both arrays are assumed
+    to be 2D with each row being a pair of atom indices.
+
+    Args:
+        arr1 (np.ndarray): A 2D numpy array of shape (n, 2) where each row is a pair of atom indices.
+        arr2 (np.ndarray): A 2D numpy array of shape (m, 2) where each row is a pair of atom indices.
+
+    Returns:
+        np.bool_: True if the two arrays have no common elements (i.e., disjoint), False otherwise.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4]])
+        >>> arr2 = np.array([[5, 6], [7, 8]])
+        >>> isdisjoint(arr1, arr2)
+        True
     """
 
-    return arr1[intersection(arr1, arr2)].size == 0
+    # return arr1[intersection(arr1, arr2)].size == 0
+    return np.any(intersection(arr1, arr2))
 
 
 def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Return True if the first array is a subset of the second array.
+    """
+    Determines if the first array is a subset of the second array.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    bool
-        True if the first array is a subset of the second array.
+    This function checks if all elements of the first array are found within the second array. Both arrays are
+    assumed to be 2D with each row being a pair of atom indices.
+
+    Args:
+        arr1 (np.ndarray): A 2D numpy array of shape (n, 2) where each row is a pair of atom indices.
+        arr2 (np.ndarray): A 2D numpy array of shape (m, 2) where each row is a pair of atom indices.
+
+    Returns:
+        bool: True if all elements of the first array are in the second array
+              (i.e., arr1 is a subset of arr2), False otherwise.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4]])
+        >>> arr2 = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> issubset(arr1, arr2)
+        True
     """
 
-    return bool(np.all(intersection(arr1, arr2)))  # type: ignore
+    # return bool(np.all(intersection(arr1, arr2)))  # type: ignore
+    return np.sum(intersection(arr1, arr2)) == len(arr1)
 
 
+# pylint: disable=arguments-out-of-order
 def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Return True if the first array is a superset of the second array.
+    """
+    Checks if `arr1` is a superset of `arr2`.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    bool
-        True if the first array is a superset of the second array.
+    This function takes two 2D numpy arrays, arr1 and arr2, each with shape (n, 2),
+    and checks if every pair in arr2 is present in arr1. Each row in the arrays represents
+    a pair of atom indices. The function returns True if arr1 is a superset of arr2,
+    and False otherwise.
+
+    Args:
+        arr1 (np.ndarray): A 2D numpy array of shape (n, 2) representing pairs of atom indices.
+        arr2 (np.ndarray): A 2D numpy array of shape (n, 2) representing pairs of atom indices.
+
+    Returns:
+        bool: True if `arr1` is a superset of `arr2`, False otherwise.
+
+    Example:
+        >>> issuperset(np.array([[1, 2], [2, 3]]), np.array([[1, 2]]))
+        True
+        >>> issuperset(np.array([[1, 2], [2, 3]]), np.array([[1, 2], [3, 4]]))
+        False
     """
 
     return issubset(arr2, arr1)
 
 
 def isequal(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Return True if the two arrays are equal.
-
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    bool
-        True if the two arrays are equal.
     """
+    Checks if two 2D arrays, `arr1` and `arr2`, are equal.
+
+    This function verifies the equality of two 2D numpy arrays, `arr1` and `arr2`.
+    Each array has a shape (n, 2), where each row represents a pair of atom indices.
+    The arrays are considered equal if they have the same shape and each pair from
+    `arr1` is found in `arr2`, and vice versa.
+
+    Args:
+        arr1 (np.ndarray): A 2D numpy array of shape (n, 2) representing pairs of atom indices.
+        arr2 (np.ndarray): A 2D numpy array of shape (n, 2) representing pairs of atom indices.
+
+    Returns:
+        bool: True if `arr1` and `arr2` are equal, False otherwise.
+
+    Example:
+        >>> isequal(np.array([[1, 2], [2, 3]]), np.array([[1, 2], [2, 3]]))
+        True
+        >>> isequal(np.array([[1, 2], [2, 3]]), np.array([[1, 2], [3, 4]]))
+        False
+    """
+    if arr1.shape != arr2.shape:
+        return False
 
     return issubset(arr1, arr2) and issubset(arr2, arr1)
 
 
 def isunique(arr: NDArray[_DType]) -> bool:
-    """Return True if the array contains no duplicate entries.
+    """
+    Checks if a 2D array, `arr`, contains no duplicate entries.
 
-    Parameters
-    ----------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    bool
-        True if the array contains no duplicate entries.
+    The function checks if a 2D numpy array, `arr`, of shape (n, 2), has any duplicate rows.
+    Each row represents a pair of atom indices.
+    The function returns True if `arr` contains no duplicate pairs, and False otherwise.
+
+    Args:
+        arr (np.ndarray): A 2D numpy array of shape (n, 2) representing pairs of atom indices.
+
+    Returns:
+        bool: True if `arr` contains no duplicate pairs, False otherwise.
+
+    Example:
+        >>> isunique(np.array([[1, 2], [2, 3]]))
+        True
+        >>> isunique(np.array([[1, 2], [2, 3], [1, 2]]))
+        False
     """
 
     return arr.shape[0] == np.unique(arr, axis=0).shape[0]  # type: ignore
 
 
 def is_strict_subset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Return True if the first array is a strict subset of the second array,
-    but not identical.
+    """
+    Check if the first array is a strict subset of the second array.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
-    bool
-        True if the first array is a strict subset of the second array.
+    The function determines whether every element of the first array is in the second array and the two arrays
+    are not identical. The arrays should be of shape (n, 2), where each row is a pair of atom indices.
+
+    Args:
+        arr1 (np.ndarray): An array of shape (n, 2) where each row is a pair of atom indices.
+        arr2 (np.ndarray): An array of shape (n, 2) where each row is a pair of atom indices.
+
+    Returns:
+        bool: True if the first array is a strict subset of the second array, False otherwise.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4]])
+        >>> arr2 = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> is_strict_subset(arr1, arr2)
+        True
     """
 
     return issubset(arr1, arr2) and not isequal(arr1, arr2)
 
 
 def is_strict_superset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Return True if the first array is a strict superset of the second array,
-    but not identical.
+    """
+    Check if the first array is a strict superset of the second array.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    Returns
-    -------
+    The function determines whether every element of the second array is in the first array and the two arrays
+    are not identical. The arrays should be of shape (n, 2), where each row is a pair of atom indices.
 
-    bool
-        True if the first array is a strict superset of the second array.
+    Args:
+        arr1 (np.ndarray): An array of shape (n, 2) where each row is a pair of atom indices.
+        arr2 (np.ndarray): An array of shape (n, 2) where each row is a pair of atom indices.
+
+    Returns:
+        bool: True if the first array is a strict superset of the second array, False otherwise.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> arr2 = np.array([[1, 2], [3, 4]])
+        >>> is_strict_superset(arr1, arr2)
+        True
     """
 
     return issuperset(arr1, arr2) and not isequal(arr1, arr2)
