@@ -55,8 +55,6 @@ from numpy.typing import NDArray
 
 _DType = TypeVar("_DType", np.float32, np.int32)
 NDArrayDType = NDArray[_DType]
-T1 = TypeVar("T1", bound=npt.NBitBase)
-T2 = TypeVar("T2", bound=npt.NBitBase)
 NDArrayInt = npt.NDArray[np.int32]
 
 __all__ = [

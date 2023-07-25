@@ -1,3 +1,14 @@
+"""
+Module: mda_utils.py
+
+This module includes a single function dedicated to the creation of a pseudo box 
+for PDB files and the shifting of coordinates within that box.
+
+Functions:
+    mda_psuedobox_from_atomgroup(ag, cutoff): 
+        Creates a pseudo box for PDB files and shifts the coordinates.
+"""
+
 from typing import Tuple
 
 import numpy as np
@@ -10,8 +21,21 @@ def mda_psuedobox_from_atomgroup(
     ag: AtomGroupType, cutoff: float = 5.0
 ) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
     """
-    Create a psuedobox for MDAnalysis to use with PDB files.
-    Also shifts the coordinates so they are within the box definition.
+    Constructs a pseudo box and shifts atomic coordinates to fit within this box.
+
+    This function takes an AtomGroup object and a cutoff distance as input, and it creates
+    a pseudo box large enough to include all atoms plus the specified cutoff. It then shifts
+    the coordinates of the atoms to fit within this box.
+
+    Args:
+        ag (AtomGroupType): An AtomGroup object representing the group of atoms for which
+                             the pseudo box is to be created.
+        cutoff (float, optional): The minimum distance that should be allowed between the
+                                  edges of the pseudo box and the atoms. Default is 5.0.
+
+    Returns:
+        Tuple[NDArray[np.float32], NDArray[np.float32]]: The shifted coordinates of the atoms
+                                                        and the dimensions of the pseudo box.
     """
     lmax: float = ag.positions.max(axis=0)
     lmin: float = ag.positions.min(axis=0)
