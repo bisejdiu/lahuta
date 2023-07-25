@@ -24,6 +24,34 @@ LuniInputType = Union[AtomGroupType, str, List[str]]
 
 
 class Universe:
+    """
+    This is the main class of the Lahuta package. It represents a universe of atoms and provides
+    methods for computing various properties of the universe.
+
+    Attributes:
+        _mol (MolType, optional): A molecule in the universe.
+        hbond_array (NoneType): Array to store hydrogen bonds.
+        _ready (bool): State of the universe, whether it's ready for computations.
+        _mapping (NDArray[np.int64]): Maps atom indices to their positions in a flat, 1D array.
+        _topattr_handler (AtomAttrClassHandler): Handles atom attributes.
+        _file_loader (BaseLoader, optional): Handles file loading.
+        _mdag (AtomGroupType, optional): Represents a group of atoms in the Universe.
+
+    Methods:
+        _validate_input(*args: LuniInputType): Validates the input files.
+        _initialize_from_universe(*args: LuniInputType): Initializes the universe from existing Universe.
+        _initialize_from_files(files: str): Initializes the universe from provided files.
+        _get_file_loader(*files: str): Retrieves the appropriate file loader.
+        _extend_topology(attrname: str, values: NDArray[Any]): Adds new topology attributes to the Universe.
+        _build_atom_mapping(ag: AtomGroupType): Builds a mapping of atom indices.
+        ready(): Prepares instance for computations by transforming the molecule and assigning atom types.
+        compute_neighbors(radius: float, res_dif: int): Computes the neighbors of each atom in the Universe.
+        get_format(file_name: str): Retrieves the file format from a file name.
+        to(fmt: Literal["mda", "mol"]): Converts the Universe to a different format.
+        arc(): Retrieves the ARC object from the file loader.
+
+    """
+
     def __init__(self, *args: LuniInputType) -> None:
         self._mol: Optional[MolType] = None
         self.hbond_array = None
@@ -40,6 +68,19 @@ class Universe:
         assert self._file_loader is not None
 
     def _validate_input(self, *args: LuniInputType) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
+        """
+        Validates the input files for Universe initialization.
+
+        Args:
+            *args (LuniInputType): Either an MDAnalysis.AtomGroup instance or a list of file names.
+
+        Raises:
+            ValueError: If no input is provided or if invalid types of inputs are provided.
+
+        Returns:
+            func: A function to initialize the Universe either from an existing Universe or from files.
+        """
+
         if not args:
             raise ValueError("No input provided")
 
@@ -53,16 +94,49 @@ class Universe:
         return self._initialize_from_files
 
     def _initialize_from_universe(self, *args: LuniInputType) -> Tuple[BaseLoader, AtomGroupType]:
+        """
+        Initializes the universe from an existing Universe.
+
+        Args:
+            *args (LuniInputType): An MDAnalysis.AtomGroup instance.
+
+        Returns:
+            tuple: A tuple of the file loader and the AtomGroup instance.
+        """
+
         _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
         _mdag = _file_loader.to("mda")
         return _file_loader, _mdag
 
     def _initialize_from_files(self, files: str) -> Tuple[BaseLoader, AtomGroupType]:
+        """
+        Initializes the universe from provided files.
+
+        Args:
+            files (str): The file name(s).
+
+        Returns:
+            tuple: A tuple of the file loader and the AtomGroup instance.
+        """
+
         _file_loader = self._get_file_loader(files)
         _mdag = _file_loader.to("mda")
         return _file_loader, _mdag
 
     def _get_file_loader(self, *files: str) -> BaseLoader:
+        """
+        Retrieves the appropriate file loader.
+
+        Args:
+            *files (str): The file name(s).
+
+        Raises:
+            ValueError: If no file name is provided or if multiple files are provided.
+
+        Returns:
+            BaseLoader: The appropriate file loader.
+        """
+
         # GemmiLoader can only handle one file and its format should be supported
         if len(files) == 1:
             file_name = files[0]
@@ -75,7 +149,13 @@ class Universe:
         return TopologyLoader(*files)
 
     def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
-        # print("value size", values.size, values.shape)
+        """
+        Adds new topology attributes to the Universe.
+
+        Args:
+            attrname (str): The name of the attribute.
+            values (NDArray[Any]): The values of the attribute.
+        """
 
         self._topattr_handler.init_topattr(attrname, attrname)
         self._mdag.universe.add_TopologyAttr(attrname, values)
@@ -84,6 +164,16 @@ class Universe:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
     def _build_atom_mapping(self, ag: AtomGroupType) -> NDArray[np.int64]:
+        """
+        Builds a mapping of atom indices.
+
+        Args:
+            ag (AtomGroupType): The AtomGroup instance.
+
+        Returns:
+            NDArray[np.int64]: The atom mapping.
+        """
+
         max_index = np.max(ag.universe.atoms.indices)
         atom_mapping = np.full(max_index + 1, -1, dtype=np.int64)
         atom_mapping[ag.indices] = np.arange(ag.n_atoms)
@@ -91,7 +181,10 @@ class Universe:
 
     def ready(self) -> None:
         """
-        Prepare instance for computations by transforming the molecule and assigning atom types.
+        Prepares instance for computations by transforming the molecule and assigning atom types.
+
+        Raises:
+            ValueError: If the Universe is already ready.
         """
 
         assert self._file_loader is not None
@@ -99,27 +192,16 @@ class Universe:
         self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        # self.hbond_array = find_hydrogen_bonded_atoms(self._mdag, self._mol)
-        # print("...", hbond_array)
-        # print("self._mdag", self._mdag, type(self._mdag))
         atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mdag.universe.atoms
 
-        # ag_types = AtomTypeAssigner(self._mol, self._mdag).assign_atom_types()
         reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
-        # reference_hbond_array = np.zeros((og_atoms.n_atoms, 6), dtype=int)
 
         ix = self._mdag.indices
         full_ag_atypes = reference_array.copy()
-        # full_ag_hbonds = reference_array[:, :6].copy()
         full_ag_atypes[ix] = ag_types
-        # reference_hbond_array[ix] = hbond_array
-        # self.hbond_array = reference_hbond_array
 
-        # print("...2", self.hbond_array)
-
-        # self._extend_topology("vdw_radii", v_radii_assignment(self.atoms.elements))
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
         for atom_type, value in AVAILABLE_ATOM_TYPES.items():
             self._extend_topology(atom_type.lower(), full_ag_atypes[:, value])
@@ -135,18 +217,27 @@ class Universe:
         """
         Compute the neighbors of each atom in the Universe.
 
+        This method calculates the neighbors for each atom based on the given radius and residue difference parameters.
+        It returns an object of type `NeighborPairs` where each row in the underlying NumPy array contains the indices
+        of the neighbors for the atom corresponding to that row.
+
+        The method also ensures that the Universe instance is ready for computations by calling the `ready` method if needed.
+
         Args:
-        ----
-        radius (float, optional): The cutoff radius. Default is 5.0.
-        skip_adjacent (bool, optional): Whether to skip adjacent. Default is True.
-        res_dif (int, optional): The residue difference to consider. Default is 1.
+            radius (float, optional): The cutoff radius for considering two atoms as neighbors. Default is 5.0.
+            res_dif (int, optional): The minimum difference in residue numbers for two atoms to be considered neighbors. Default is 1.
 
         Returns:
-        -------
-        NeighborPairs : np.ndarray
-            An array of shape (n_atoms, n_neighbors) where each row contains the indices of the neighbors of the atom in the row.
+            NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). Each row in the array
+                        contains the indices of the neighbors for the atom corresponding to that row.
 
+        Raises:
+            AssertionError: If the Universe instance is not ready for computations.
+
+        Note:
+            The actual computation of the neighbors is delegated to an instance of the `NeighborSearch` class.
         """
+
         if not self._ready:
             self.ready()
 
@@ -160,13 +251,19 @@ class Universe:
 
     @staticmethod
     def get_format(file_name: str) -> Tuple[Union[str, None], bool]:
-        """Retrieve the file format from a file name.
+        """
+        Retrieve the file format from a file name.
+
+        This static method checks the file extension of the provided file name against the list of formats
+        supported by GEMMI (stored in `GEMMI_SUPPRTED_FORMATS`). If the extension matches a supported format,
+        it returns the format and a boolean indicating whether the format is 'pdb' or 'pdb.gz'. If the file
+        extension doesn't match any supported formats, it returns None and False.
 
         Args:
             file_name (str): The name of the file.
 
         Returns:
-            tuple: The file format and a boolean indicating if it is pdb or pdb.gz.
+            tuple: A tuple containing the file format (str or None) and a boolean indicating if it is 'pdb' or 'pdb.gz'.
         """
         file_name_lower = file_name.lower()
         for fmt in GEMMI_SUPPRTED_FORMATS:
@@ -187,20 +284,19 @@ class Universe:
         """
         Convert the Universe to a different format.
 
+        This method converts the internal representation of the Universe to the specified format.
+        Currently, the supported formats are "mda" and "mol". If the desired format is "mol" and
+        the Universe already has a "mol" representation, it returns the existing representation.
+        Otherwise, it uses the `to` method of the file loader to perform the conversion.
+
         Args:
-        ----
-        fmt (str): The format to convert to. Currently supported formats are "mda" and "mol".
-        args (list): Trajectory file name(s). Only required if converting to "mda".
+            fmt (str): The format to convert to. Currently supported formats are "mda" and "mol".
 
         Returns:
-        -------
-        Universe : Universe
-            A new Universe instance in the specified format.
+            Union[MolType, AtomGroupType]: A new Universe instance in the specified format.
         """
         if fmt == "mol" and self._mol is not None:
             return self._mol
-        # if fmt == "mda":
-        #     return self._mdag
         return self._file_loader.to(fmt)
 
     @property
