@@ -15,28 +15,48 @@ from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsP
 
 class SmartsMatcherBase(ABC):
     """
-    Base class for SMARTS pattern matching on molecules.
+    A base class for different implementations of SMARTS pattern matching on molecules.
 
-    This class serves as an abstract base class for concrete implementations
-    of SMARTS pattern matching, such as SmartsMatcher and ParallelSmartsMatcher.
+    This abstract class needs to be inherited by any class that implements SMARTS pattern matching.
+    The subclass must implement the compute method.
     """
 
     @abstractmethod
     def compute(self, mol: MolType) -> NDArray[np.int8]:
-        """Abstract method for SMARTS pattern matching."""
+        """
+        Abstract method for SMARTS pattern matching.
+
+        Args:
+            mol (MolType): A molecule object to match patterns on.
+
+        Raises:
+            NotImplementedError: This is an abstract method that needs to be implemented in the subclass.
+
+        Returns:
+            NDArray[np.int8]: An array of atom types as defined in the SmartsPatternRegistry dictionary.
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
 
 class SmartsMatcher(SmartsMatcherBase):
     """
-    A class for matching SMARTS patterns to atoms in a molecule.
+    Matches SMARTS patterns to atoms in a molecule.
 
-    This class performs sequential SMARTS pattern matching on atoms in a
-    molecule, returning atom types as defined in the atom_types dictionary.
-    Inherits from the SmartsMatcherBase abstract base class.
+    This class performs sequential SMARTS pattern matching on atoms in a molecule.
+    It inherits from the SmartsMatcherBase abstract base class.
     """
 
     def compute(self, mol: MolType) -> NDArray[np.int8]:
+        """
+        Performs SMARTS pattern matching on a molecule.
+
+        Args:
+            mol (MolType): A molecule object to match patterns on.
+
+        Returns:
+            NDArray[np.int8]: An array of atom types that match the SMARTS patterns in the given molecule.
+        """
+
         shape = (mol.NumAtoms(), len(ATypes))
         atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
 
@@ -59,17 +79,24 @@ class SmartsMatcher(SmartsMatcherBase):
 
 class ParallelSmartsMatcher(SmartsMatcherBase):
     """
-    A class for parallel matching of SMARTS patterns to atoms in a molecule.
+    Matches SMARTS patterns to atoms in a molecule using multiple threads.
 
-    This class utilizes multiple threads for parallel SMARTS pattern matching
-    on atoms in a molecule, returning atom types as defined in the atom_types
-    dictionary. Inherits from the SmartsMatcherBase abstract base class.
+    This class performs SMARTS pattern matching on atoms in a molecule using multiple threads for
+    improved performance. It inherits from the SmartsMatcherBase abstract base class.
     """
 
     def __init__(self) -> None:
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
     def precompute_ob_smarts(self) -> Dict[str, List[ObSmartPatternType]]:
+        """
+        Precomputes and stores the Open Babel SMARTS patterns for all atom types.
+
+        Returns:
+            Dict[str, List[ObSmartPatternType]]: A dictionary with atom type names as keys and lists of
+                                                precomputed Open Babel SMARTS patterns as values.
+        """
+
         precomputed_ob_smarts: Dict[str, List[ObSmartPatternType]] = {}
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
@@ -87,11 +114,35 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         atypes: Dict[str, int],
         atom_type: str,
     ) -> List[Tuple[Any, int]]:
+        """
+        Matches an Open Babel SMARTS pattern to a molecule.
+
+        Args:
+            ob_smart (ObSmartPatternType): An Open Babel SMARTS pattern.
+            mol (MolType): A molecule object to match the pattern on.
+            atypes (Dict[str, int]): A dictionary of atom types.
+            atom_type (str): The name of the atom type that the SMARTS pattern represents.
+
+        Returns:
+            List[Tuple[Any, int]]: A list of tuples, where each tuple contains the matched atom's
+                                    index and the corresponding atom type.
+        """
+
         ob_smart.Match(mol)
         matches = [x[0] for x in ob_smart.GetMapList()]
         return [(match, atypes[atom_type]) for match in matches]
 
     def compute(self, mol: MolType) -> NDArray[np.int8]:
+        """
+        Performs SMARTS pattern matching on a molecule using multiple threads.
+
+        Args:
+            mol (MolType): A molecule object to match patterns on.
+
+        Returns:
+            NDArray[np.int8]: An array of atom types that match the SMARTS patterns in the given molecule.
+        """
+
         shape = (mol.NumAtoms(), len(ATypes))
         atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
 
