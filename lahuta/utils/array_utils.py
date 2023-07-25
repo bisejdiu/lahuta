@@ -17,78 +17,29 @@ T2 = TypeVar("T2", bound=npt.NBitBase)
 NDArrayInt = npt.NDArray[np.int32]
 
 
-def matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
-    """Return indices of elements in `arr1` that are in `arr2`.
+def find_shared_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
+    """Find shared elements between two 2D numpy arrays.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
+    This function takes two 2D arrays where each row represents a pair of atom indices and returns a 1D boolean
+    array representing whether each pair in `arr1` also appears in `arr2`.
 
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
+    Args:
+        arr1 (NDArray[np.int32]): A 2D array of shape (n_pairs1, 2) where each row represents a pair of atom indices.
+        arr2 (NDArray[np.int32]): A 2D array of shape (n_pairs2, 2) where each row represents a pair of atom indices.
 
+    Returns:
+        NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element represents whether the corresponding
+            pair in `arr1` appears in `arr2`.
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> arr2 = np.array([[3, 4], [7, 8], [1, 2]])
+        >>> find_shared_pairs(arr1, arr2)
+        array([ True,  True, False])
     """
-
-    arr1_reshape = arr1[:, None]
-    idx: NDArray[np.bool_] = (arr1_reshape == arr2).all(-1).any(1)
-    return idx
-
-
-def optimized_matching_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.int32]:
-    """Return elements in `arr1` that are in `arr2`.
-
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-
-    """
-    # Convert arrays to sets of tuples
-    set1 = set(map(tuple, arr1))
-    set2 = set(map(tuple, arr2))
-
-    # Find common elements
-    common = np.array(list(set1 & set2))
-
-    return common
-
-
-def np_optimized_matching_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
-    """Return elements in `arr1` that are in `arr2`.
-
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    """
-
-    # Convert the pairs in both arrays to complex numbers
     arr1_complex = arr1[:, 0] + 1j * arr1[:, 1]
     arr2_complex = arr2[:, 0] + 1j * arr2[:, 1]
-
-    # Get common complex numbers
-    common_complex = np.in1d(arr1_complex, arr2_complex)  # type: ignore
-
-    return common_complex
+    return np.isin(arr1_complex, arr2_complex)
 
 
 def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
