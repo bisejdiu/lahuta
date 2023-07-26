@@ -256,9 +256,10 @@ class NeighborPairs:
         """
         Sorts the provided pairs and distances arrays based on the first column of the sorted pairs array.
 
-        This method first sorts the `pairs` array along axis 1 and then sorts the `pairs` and `distances` arrays based on
-        the first column of the sorted pairs array. This is done to ensure that the pairs and distances arrays are always
-        in the same order, which is necessary for correctly associating each pair of atoms with its corresponding distance.
+        This method first sorts the `pairs` array along axis 1 and then sorts the `pairs` and `distances`
+        arrays based on the first column of the sorted pairs array. This is done to ensure that the pairs and
+        distances arrays are always in the same order, which is necessary for correctly associating
+        each pair of atoms with its corresponding distance.
 
         Args:
             pairs (NDArray[np.int32]): An array containing the pairs of atoms.
@@ -912,10 +913,12 @@ class NeighborPairs:
         while for a slice or an array of indices, it returns a NeighborPairs object with the corresponding pairs.
 
         Args:
-            item (int, slice, or ndarray): An integer, slice, or array of integers indicating the index/indices of the pair(s).
+            item (int, slice, or ndarray): An integer, slice, or array of integers indicating
+                                            the index/indices of the pair(s).
 
         Returns:
-            NeighborPairs: A new NeighborPairs object containing the specified pair(s) and their corresponding distance(s).
+            NeighborPairs: A new NeighborPairs object containing the specified pair(s) and
+                            their corresponding distance(s).
         """
         if isinstance(item, int):
             return self.clone(
@@ -923,7 +926,6 @@ class NeighborPairs:
                 self.distances[item],
             )
 
-        # return self.__class__(self._atoms, self.pairs[item], self.distances[item])
         return self.clone(self.pairs[item], self.distances[item])
 
     def __contains__(self, other: "NeighborPairs") -> bool:

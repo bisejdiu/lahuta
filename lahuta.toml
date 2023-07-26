@@ -31,6 +31,8 @@ good-names = [
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 120
+disable = 'too-many-lines'
+
 
 [tool.mypy]
 python_version = 3.10
