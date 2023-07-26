@@ -69,6 +69,8 @@ DEFAULT_CONTACT_DISTS: Dict[str, float] = {
 
 
 class _AtomPlaneContacts:
+    """Class for computing atom-plane contacts."""
+
     @staticmethod
     def donor_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the donor pi system."""
@@ -104,6 +106,7 @@ class _AtomPlaneContacts:
 def compute_neighbors(
     positions: NDArray[np.float32], reference: NDArray[np.float32]
 ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    """Compute the neighbors between the reference and positions."""
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
     wrapper: DistanceType = CappedDistance(mda_distances)
@@ -115,6 +118,7 @@ def compute_neighbors(
 def calc_ringnormal_pos_angle(
     ns: NeighborPairs, uv_atoms: AtomGroupType, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
 ) -> NDArray[np.float32]:
+    """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
     selected_ring_centers = ring_centers[ns.pairs[:, 0]]
     selected_ring_normals = ring_normals[ns.pairs[:, 0]]
 
@@ -128,6 +132,7 @@ def calc_ringnormal_pos_angle(
 def subtract_aromatic_neighbors(
     ns: NeighborPairs, pairs: NDArray[np.int32], distances: NDArray[np.float32]
 ) -> NeighborPairs:
+    """Subtract aromatic neighbors from the neighbor pairs."""
     cloned_neighbors = ns.clone(pairs, distances)
     neighbors = cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)
     return neighbors
@@ -138,7 +143,10 @@ def compute_contacts(
     angle_cutoff: Optional[float],
     use_cache: bool,
 ) -> Callable[[NeighborPairs], NeighborPairs]:
+    """Compute the contacts between aromatic rings and the specified atom plane system."""
+
     def wrapped(ns: NeighborPairs) -> NeighborPairs:
+        """Compute the contacts between aromatic rings and the specified atom plane system."""
         mol = ns.mol
         mda: AtomGroupType = ns.mda
         # rings = perceive_rings(mol)
@@ -162,33 +170,182 @@ def compute_contacts(
 def create_contact_function(
     contact_type: str, angle_cutoff: Optional[float], use_cache: bool = True
 ) -> Callable[[NeighborPairs], NeighborPairs]:
+    """Create a contact function based on the contact type."""
     func_name = f"{contact_type}"
     contact_fn = getattr(_AtomPlaneContacts, func_name)
     return compute_contacts(contact_fn, angle_cutoff, use_cache)
 
 
 # user-facing functions
-def cation_pi(n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+    """
+    Handles the computation of cation pi contacts in a molecular system.
+
+    Cation pi contacts are interactions between cations and the π system of atoms in a molecule.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+    method to provide functionality specifically for cation pi contact computation.
+
+    Cation-pi contacts involve interactions between a cation (a positively charged ion)
+    and an electron-rich aromatic ring system. The aromatic system is capable of stabilizing the cation
+    through its delocalized pi electrons.
+
+    We calculate cation-pi contacts based on the following criteria:
+    1. The interaction is between an aromatic ring and a positively ionizable atom.
+    2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+    and the cation is within a defined cutoff.
+    3. The distance between the cation and the aromatic ring system does not exceed a predefined distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        angle_cutoff (float): The maximum angle to consider for a cation pi contact. This value is retrieved
+            from the 'cation_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
+        cache (bool): Determines whether computed results should be stored for later use to improve performance.
+                        Default is `True`.
+
+    Returns:
+        NeighborPairs: The computed cation-pi contacts.
+
+    """
+
     func = create_contact_function("cation_pi", angle_cutoff, cache)
-    return func(n)
+    return func(ns)
 
 
-def carbon_pi(n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+    """
+    Handles the computation of carbon pi contacts in a molecular system.
+
+    Carbon pi contacts are interactions involving the π system of carbon atoms in a molecule.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+    method to provide functionality specifically for carbon pi contact computation.
+
+    Carbon-pi contacts represent interactions between a carbon atom and an aromatic ring system.
+    These contacts arise due to the partial positive charge on the carbon atom interacting with the electron-rich
+    π-system of the aromatic ring.
+
+    We calculate carbon-pi contacts based on the following criteria:
+    1. The interaction is between an aromatic ring and a carbon atom which is a weak hydrogen bond donor.
+    2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+    and the carbon atom is within a specified cutoff.
+    3. The distance between the carbon atom and the aromatic ring system does not exceed a predefined distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        angle_cutoff (float): The maximum angle to consider for a carbon pi contact. This value is retrieved
+            from the 'carbon_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
+        cache (bool): Determines whether computed results should be stored for later use to improve performance.
+                      Default is `True`.
+
+    Returns:
+        NeighborPairs: The computed carbon-pi contacts.
+
+    """
+
     func = create_contact_function("carbon_pi", angle_cutoff, cache)
-    return func(n)
+    return func(ns)
 
 
-def donor_pi(n: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+    """
+    Handles the computation of donor pi contacts in a molecular system.
+
+    Donor pi contacts are interactions between electron donors and the π system of atoms in a molecule.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+    method to provide functionality specifically for donor pi contact computation.
+
+    Donor-pi contacts represent interactions between a hydrogen bond donor and an aromatic ring system.
+    The electron-rich  aromatic ring can interact with the partial positive charge of a hydrogen atom
+    that is involved in a polar bond, creating a stabilizing interaction.
+
+    We computes donor-pi contacts based on the following criteria:
+    1. The interaction is between an aromatic ring and a hydrogen bond donor.
+    2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+    and the hydrogen bond donor is within a predefined cutoff.
+    3. The distance between the hydrogen bond donor and the aromatic ring system does not exceed a specified distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        angle_cutoff (float): The maximum angle to consider for a donor pi contact. This value is retrieved
+            from the 'donor_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
+        cache (bool): Determines whether computed results should be stored for later use to improve performance.
+                        Default is `True`.
+
+    Returns:
+        NeighborPairs: The computed donor-pi contacts.
+
+    """
+
     func = create_contact_function("donor_pi", angle_cutoff, cache)
-    return func(n)
+    return func(ns)
 
 
-def sulphur_pi(n: NeighborPairs, cache: bool = True) -> NeighborPairs:
+def sulphur_pi(ns: NeighborPairs, cache: bool = True) -> NeighborPairs:
+    """
+    Handles the computation of sulphur pi contacts in a molecular system.
+
+    Sulphur pi contacts are interactions involving the π system of sulphur atoms in a molecule.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+    method to provide functionality specifically for sulphur pi contact computation.
+
+    Sulphur-pi interactions involve the interaction between an aromatic ring and a sulphur atom.
+    Sulphur, particularly from methionine residues (MET), can interact with the electron cloud of an aromatic ring,
+    contributing to the stability and specificity of biomolecular structures.
+
+    We compute sulphur-pi contacts based on the following criteria:
+    1. The interaction is between an aromatic ring and a sulphur atom specifically in a methionine residue.
+    2. The distance between the sulphur atom and the aromatic ring system does not exceed a predefined distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        cache (bool): Determines whether computed results should be stored for later use to improve performance.
+                        Default is `True`.
+    Returns:
+        NeighborPairs: The computed sulphur-pi contacts.
+
+    """
+
     func = create_contact_function("sulphur_pi", None, cache)
-    return func(n)
+    return func(ns)
 
 
 class AtomPlaneContacts:
+    """
+    This class calculates and handles special atomic contacts within a molecular system, including
+    carbon-pi, cation-pi, donor-pi, and sulphur-pi interactions. Each interaction type is computed
+    as a method of this class.
+
+    Aromatic rings and their interactions play a pivotal role in this analysis. The general criteria
+    for these computations involve:
+        1. The interaction is between an aromatic ring and a specific type of atom or group.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the
+           aromatic ring and the specific atom or group is within a predefined cutoff (where applicable).
+        3. The distance between the atom or group and the aromatic ring system does not exceed a
+           predefined distance cutoff.
+
+    The computation is based on the neighbors and angles calculated within the molecular system.
+
+    Attributes:
+        max_cutoff (float): The predefined maximum distance cutoff for atom-aromatic ring interactions.
+        angles (array-like): Calculated angles between ring plane and atom vector.
+        rings (array-like): Enumeration of rings in the molecular system.
+        ap_contacts (object): Instance of `_AtomPlaneContacts` class.
+        neighbors (object): Calculated neighbors within the molecular system.
+
+    Methods:
+        donor_pi: Computes the donor-pi contacts, which are interactions between hydrogen bond donors
+                   and the π system of atoms in a molecule.
+        sulphur_pi: Computes the sulphur-pi contacts, which are interactions between a sulphur atom
+                    (specifically in a methionine residue) and the π system of atoms in a molecule.
+        carbon_pi: Computes the carbon-pi contacts, which are interactions between carbon atoms and
+                   the π system of atoms in a molecule.
+        cation_pi: Computes the cation-pi contacts, which are interactions between cations and the π
+                   system of atoms in a molecule.
+
+    Note:
+        An assertion error will be raised if angles are not computed before calling the interaction
+        computation methods.
+    """
+
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
     def __init__(self, ns: NeighborPairs):
@@ -212,17 +369,100 @@ class AtomPlaneContacts:
         self.angles = result[0]
 
     def donor_pi(self) -> NeighborPairs:
+        """
+        Handles the computation of donor pi contacts in a molecular system.
+
+        Donor pi contacts are interactions between electron donors and the π system of atoms in a molecule.
+        This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+        method to provide functionality specifically for donor pi contact computation.
+
+        Donor-pi contacts represent interactions between a hydrogen bond donor and an aromatic ring system.
+        The electron-rich  aromatic ring can interact with the partial positive charge of a hydrogen atom
+        that is involved in a polar bond, creating a stabilizing interaction.
+
+        We computes donor-pi contacts based on the following criteria:
+        1. The interaction is between an aromatic ring and a hydrogen bond donor.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+        and the hydrogen bond donor is within a predefined cutoff.
+        3. The distance between the hydrogen bond donor and the aromatic ring system does not exceed a specified distance cutoff.
+
+        Returns:
+            NeighborPairs: The computed donor-pi contacts.
+
+        """
         assert self.angles is not None
         return self.ap_contacts.donor_pi(self.neighbors, self.angles)
 
     def sulphur_pi(self) -> NeighborPairs:
+        """
+        Handles the computation of sulphur pi contacts in a molecular system.
+
+        Sulphur pi contacts are interactions involving the π system of sulphur atoms in a molecule.
+        This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+        method to provide functionality specifically for sulphur pi contact computation.
+
+        Sulphur-pi interactions involve the interaction between an aromatic ring and a sulphur atom.
+        Sulphur, particularly from methionine residues (MET), can interact with the electron cloud of an aromatic ring,
+        contributing to the stability and specificity of biomolecular structures.
+
+        We compute sulphur-pi contacts based on the following criteria:
+        1. The interaction is between an aromatic ring and a sulphur atom specifically in a methionine residue.
+        2. The distance between the sulphur atom and the aromatic ring system does not exceed a predefined distance cutoff.
+
+        Returns:
+            NeighborPairs: The computed sulphur-pi contacts.
+
+        """
         assert self.angles is not None
         return self.ap_contacts.sulphur_pi(self.neighbors, self.angles)
 
     def carbon_pi(self) -> NeighborPairs:
+        """
+        Handles the computation of carbon pi contacts in a molecular system.
+
+        Carbon pi contacts are interactions involving the π system of carbon atoms in a molecule.
+        This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+        method to provide functionality specifically for carbon pi contact computation.
+
+        Carbon-pi contacts represent interactions between a carbon atom and an aromatic ring system.
+        These contacts arise due to the partial positive charge on the carbon atom interacting with the electron-rich
+        π-system of the aromatic ring.
+
+        We calculate carbon-pi contacts based on the following criteria:
+        1. The interaction is between an aromatic ring and a carbon atom which is a weak hydrogen bond donor.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+        and the carbon atom is within a specified cutoff.
+        3. The distance between the carbon atom and the aromatic ring system does not exceed a predefined distance cutoff.
+
+        Returns:
+            NeighborPairs: The computed carbon-pi contacts.
+
+        """
+
         assert self.angles is not None
         return self.ap_contacts.carbon_pi(self.neighbors, self.angles)
 
     def cation_pi(self) -> NeighborPairs:
+        """
+        Handles the computation of cation pi contacts in a molecular system.
+
+        Cation pi contacts are interactions between cations and the π system of atoms in a molecule.
+        This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+        method to provide functionality specifically for cation pi contact computation.
+
+        Cation-pi contacts involve interactions between a cation (a positively charged ion)
+        and an electron-rich aromatic ring system. The aromatic system is capable of stabilizing the cation
+        through its delocalized pi electrons.
+
+        We calculate cation-pi contacts based on the following criteria:
+        1. The interaction is between an aromatic ring and a positively ionizable atom.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+        and the cation is within a defined cutoff.
+        3. The distance between the cation and the aromatic ring system does not exceed a predefined distance cutoff.
+
+        Returns:
+            NeighborPairs: The computed cation-pi contacts.
+
+        """
         assert self.angles is not None
         return self.ap_contacts.cation_pi(self.neighbors, self.angles)
