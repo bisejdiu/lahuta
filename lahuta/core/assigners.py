@@ -1,3 +1,16 @@
+"""
+Module: assigners.py
+
+This module contains the abstract base class (ABC) for assigning atom types to proteins.
+It also contains two child classes that implement the abstract method from the ABC.
+
+Classes:
+    ProteinTypeAssignerBase: Abstract base class for assigning atom types to proteins.
+    VectorizedProteinTypeAssigner: Efficient, vectorized assignment of atom types.
+    LegacyProteinTypeAssigner: Traditional, loop-based assignment of atom types.
+
+    
+"""
 from abc import ABC, abstractmethod
 
 import numpy as np

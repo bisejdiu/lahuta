@@ -1,3 +1,14 @@
+"""
+A module to handle atom related operations, including finding neighbors and preparation for computation.
+
+This module contains the NeighborSearch class that handles atom related operations, 
+including finding neighbors and preparation for computation.
+
+Classes:
+    NeighborSearch: Class to handle atom related operations, including finding neighbors 
+                    and preparation for computation.
+
+"""
 from typing import Tuple
 
 import numpy as np

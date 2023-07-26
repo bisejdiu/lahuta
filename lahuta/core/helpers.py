@@ -1,3 +1,13 @@
+"""
+This module contains helper functions for the lahuta.core package.
+
+Functions:
+    get_class_methods: Retrieves all the methods of the specified class.
+    get_class_properties: Retrieves all the properties of the specified class.
+    get_class_attributes: Retrieves all the attributes (not methods or properties) 
+                        of the specified class.
+
+"""
 from typing import TYPE_CHECKING, List
 
 if TYPE_CHECKING:

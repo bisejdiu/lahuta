@@ -1,3 +1,15 @@
+"""
+Module for assigning atom types to atoms in a molecule.
+
+This module contains the AtomTypeAssigner class that handles the assignment of atom types to a given molecule.
+The class utilizes multiple methods such as SMARTS pattern matching and protein atom type assignment.
+It can be configured to use different methods for SMARTS pattern matching (sequential or parallel)
+and protein atom type assignment (vectorized or legacy).
+
+Classes:
+    AtomTypeAssigner: Class for assigning atom types to atoms in a molecule.
+"""
+
 from typing import Dict, Type
 
 import numpy as np

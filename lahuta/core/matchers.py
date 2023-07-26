@@ -1,3 +1,15 @@
+"""
+This module contains classes for SMARTS pattern matching on molecules.
+
+The SMARTS pattern matching classes are used to match SMARTS patterns to atoms in a molecule.
+This is how we assign atom types to molecules.
+
+Classes:
+    SmartsMatcherBase: Abstract base class for SMARTS pattern matching.
+    SmartsMatcher: Sequential SMARTS pattern matching.
+    ParallelSmartsMatcher: Parallel SMARTS pattern matching.
+
+"""
 import os
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
