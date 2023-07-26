@@ -48,6 +48,7 @@ from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.utils.array_utils import sorting_indices
 from lahuta.utils.math import calc_vec_angle
 from lahuta.utils.ob import enumerate_rings
 
@@ -118,7 +119,7 @@ class _PlanePlaneContacts:
 
     def _sort_inputs(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         pairs, distances = self._get_pairs_distances()
-        indices_arr = NeighborPairs.get_sorting_index(pairs)
+        indices_arr = sorting_indices(pairs)
         indices: List[int] = indices_arr.tolist()
         pairs, distances = NeighborPairs.sort_inputs(pairs, self.distances)
 

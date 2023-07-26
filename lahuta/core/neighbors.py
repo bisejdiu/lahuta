@@ -223,33 +223,6 @@ class NeighborPairs:
         assert pairs.shape[0] == distances.shape[0], message
 
     @staticmethod
-    def get_sorting_index(pairs: NDArray[np.int32]) -> NDArray[np.int32]:
-        """
-        Generates the indices that would sort the pairs array.
-
-        This method first sorts the `pairs` array along axis 1 and then returns the indices that would sort the first
-        column of the sorted array. These indices are used to ensure the consistency of the order of pairs in subsequent
-        computations.
-
-        Args:
-            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
-
-        Returns:
-            NDArray[np.int32]: The indices that would sort the first column of the sorted pairs array.
-
-        Example:
-            >>> pairs = np.array([[2, 1], [4, 3]])
-            >>> indices = NeighborPairs.get_sorting_index(pairs)
-            >>> print(indices)
-            [1, 0]
-        """
-
-        sorted_pairs: NDArray[np.int32] = np.sort(pairs, axis=1)
-        indices: NDArray[np.int32] = np.argsort(sorted_pairs[:, 0])  # type: ignore
-
-        return indices
-
-    @staticmethod
     def sort_inputs(
         pairs: NDArray[np.int32], distances: NDArray[np.float32]
     ) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
@@ -279,7 +252,7 @@ class NeighborPairs:
         """
 
         pairs = np.sort(pairs, axis=1)
-        indices = np.argsort(pairs[:, 0])
+        indices = au.sorting_indices(pairs)
 
         return pairs[indices], distances[indices]
 

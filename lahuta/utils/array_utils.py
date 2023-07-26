@@ -64,6 +64,41 @@ __all__ = [
 ]
 
 
+def sorting_indices(arr: NDArray[np.int32]) -> NDArray[np.int32]:
+    """
+    Sort pairs in an array such that the smaller index is in the first column.
+
+    Args:
+        arr (NDArray[np.int32]): The array to sort.
+
+    Returns:
+        NDArray[np.int32]: The sorted array.
+    """
+    # Ensure the smaller index is in the first column
+    arr = np.sort(arr, axis=1)
+
+    # Use lexsort to get sorted indices from large to small,
+    # then use it to index into the sorted array
+    indices = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
+
+    return indices
+
+
+def sort_pairs(arr: NDArray[np.int32]) -> NDArray[np.int32]:
+    """
+    Sort pairs in an array such that the smaller index is in the first column.
+
+    Args:
+        arr (NDArray[np.int32]): The array to sort.
+
+    Returns:
+        NDArray[np.int32]: The sorted array.
+    """
+    indices = sorting_indices(arr)
+
+    return arr[indices]
+
+
 def find_shared_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
     """Find shared elements between two 2D numpy arrays.
 
