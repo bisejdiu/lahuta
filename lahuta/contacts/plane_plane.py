@@ -267,30 +267,6 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
     return types[indices]  # type: ignore
 
 
-# def vector_angle(v1: NDArray[np.float_], v2: NDArray[np.float_]) -> NDArray[np.float_]:
-#     """Calculate the angle between two vectors.
-
-#     Parameters
-#     ----------
-#     v1 : np.ndarray
-#         First vector. It must be already normalized.
-#     v2 : np.ndarray
-#         Second vector.
-
-#     Returns
-#     -------
-#     float
-#         Angle between vectors in degrees.
-#     """
-
-#     dot = np.einsum("ij,ij->i", v1, v2 / np.linalg.norm(v2, axis=1)[..., np.newaxis])  # type: ignore
-#     angle = np.sign(dot) * np.arccos(dot)
-
-#     angle = np.where(angle < 0, angle + np.pi, angle)
-
-#     return np.degrees(angle)  # type: ignore
-
-
 # FIXME: atom_plane needs to use the Rings class, rather than `perceive_rings`
 def perceive_rings(mol: MolType) -> List[Dict[str, Any]]:
     aromatics: List[Dict[str, Any]] = []
@@ -316,51 +292,3 @@ def perceive_rings(mol: MolType) -> List[Dict[str, Any]]:
         )
 
     return aromatics
-
-
-# def process_ring_information(indices, rings):
-#     """Process ring information for a given set of indices."""
-#     ring_atoms = {ix: ring["atoms"] for ix, ring in enumerate(rings) if ix in indices}
-#     ring_atoms = [ring_atoms[ix] for ix in indices]
-#     first_ring_atoms = [ring[0] for ring in ring_atoms]
-
-#     return first_ring_atoms, ring_atoms
-
-
-# class APDataFrameFactory:
-#     """A class for storing and manipulating contact data."""
-
-#     def __init__(
-#         self,
-#         apcontacts: Any,
-#         rings: Any,
-#         label: str = "ring",
-#         df_format: Literal["print", "compact", "expanded"] = "print",
-#     ):
-#         """A class for storing and manipulating contact data."""
-
-#         nag = apcontacts._atoms[apcontacts.pairs]
-
-#         first_rings, ring_atoms = process_ring_information(nag[:, 0].indices, rings)
-
-#         col1, col2 = nag.universe.atoms[first_rings], nag[:, 1]
-
-#         self.methods = ["resids", "resnames", "names", "indices"]
-#         self.format = df_format
-
-#         data = {}
-#         for method in self.methods:
-#             data[f"residue1_{method}"] = getattr(col1, method)
-#             data[f"residue2_{method}"] = getattr(col2, method)
-
-#         data["ring_atoms"] = ring_atoms
-#         data["distances"] = apcontacts.distances
-#         data["labels"] = [label] * len(apcontacts.distances)
-
-#         self.data = data
-
-#     def dataframe(self) -> pd.DataFrame:
-#         """Build the dataframe based on input format."""
-
-#         return FACTORY_DICT[self.format].dataframe(self.data)
-#         # return ExpandedDataFrame().dataframe(self.data)
