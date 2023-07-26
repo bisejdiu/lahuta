@@ -7,7 +7,7 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
 
-def test_intersection(repeat: int = 10):
+def test_intersection(repeat: int = 10) -> None:
     """Test the intersection of two NeighborPairs objects."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -16,10 +16,10 @@ def test_intersection(repeat: int = 10):
         n = u.compute_neighbors()
 
     for _ in range(repeat):
-        sample_size = np.random.randint(1, n.pairs.shape[0])
+        sample_size = np.random.randint(1, n.pairs.shape[0])  # type: ignore
         i = np.random.choice(n.pairs.shape[0], sample_size)
         i = np.unique(np.sort(i))
-        m = NeighborPairs(u, n.pairs[i], n.distances[i])
+        m = NeighborPairs(u.to("mda"), u.to("mol"), n.pairs[i], n.distances[i])
 
         assert (
             i.size

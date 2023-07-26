@@ -1,4 +1,54 @@
+"""
+Module: base.py
+
+This module defines base classes and protocols for implementing atomic contact computation using a class-based approach. 
+It provides two main classes: ComputeProtocol and ComputeElementwiseProtocol, and a base class ContactAnalysis which 
+defines the core logic for running contact computation methods.
+
+Protocols:
+    ComputeProtocol: A runtime-checkable protocol which requires classes to implement a `compute` method. 
+
+    ComputeElementwiseProtocol: A runtime-checkable protocol which requires classes to implement 
+    a `compute_elementwise` method.
+
+Class:
+    ContactAnalysis: A base class that provides the structure for running contact computation methods. 
+                     Contact computation classes should inherit from this class and implement methods 
+                     as required by the ComputeProtocol or ComputeElementwiseProtocol.
+
+To compute contacts using the class-based approach, create a new class inheriting from ContactAnalysis and 
+implement the `compute` method or `compute_elementwise` method as per requirements.
+
+Example:
+    class CustomContacts(ContactAnalysis):
+        distance: float = 4.5
+        def compute(self) -> NeighborPairs:
+            "Compute contacts based on a custom distance."
+            return self.ns.distance_filter(self.distance)
+
+    class ElementwiseCustomContacts(ContactAnalysis):
+        distance: float = 4.5
+        def compute_elementwise(self, atom1, atom2, distance) -> bool:
+            "Compute contacts by checking each atom pair one-by-one."
+            return distance <= self.distance
+
+Notes:
+    Implementing the `compute` method enables very fast computation of contacts as it works on the entire 
+    NeighborPairs instance. However, it requires dealing with NeighborPairs arithmetic operations and assumes 
+    familiarity with the overall system and neighbor pairs.
+
+    On the other hand, implementing `compute_elementwise` method can be slower as it checks each atom pair 
+    individually, but it is easier to work with, especially when custom conditions involving specific atom 
+    attributes need to be checked for contact computation.
+"""
+
 from typing import Any, Protocol, runtime_checkable
+
+import numpy as np
+from numpy.typing import NDArray
+
+from lahuta.core.neighbors import NeighborPairs
+from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
 @runtime_checkable
@@ -9,30 +59,35 @@ class ComputeProtocol(Protocol):
 
 @runtime_checkable
 class ComputeElementwiseProtocol(Protocol):
-    def compute_elementwise(self, atoms, pair, distance) -> Any:
+    def compute_elementwise(
+        self,
+        atoms: AtomGroupType,
+        pair: NDArray[np.int32],
+        distance: NDArray[np.float_],
+    ) -> Any:
         ...
 
 
 class ContactAnalysis:
-    def __init__(self, ns):
+    def __init__(self, ns: NeighborPairs):
         self.ns = ns
-        self.partner1_atoms = ns.atoms
         self.results: Any = None
 
         self.run()
 
-    def run(self):
+    def run(self) -> None:
         self.run_methods()
 
-    def run_methods(self):
+    def run_methods(self) -> None:
         if isinstance(self, ComputeProtocol):
             self.results = self.compute()
         elif isinstance(self, ComputeElementwiseProtocol):
             self.results = []
-            p1_atoms, p2_atoms = self.ns.partner1, self.ns.partner2
+            p1_atoms, p2_atoms = (
+                self.ns.partner1,
+                self.ns.partner2,
+            )
             for atom1, atom2, distance in zip(p1_atoms, p2_atoms, self.ns.distances):
                 self.results.append(self.compute_elementwise(atom1, atom2, distance))
         else:
-            raise NotImplementedError(
-                "Object must implement either compute or compute_elementwise methods."
-            )
+            raise NotImplementedError("Object must implement either compute or compute_elementwise methods.")

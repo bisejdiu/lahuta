@@ -1,6 +1,43 @@
+"""
+Module: config._smart_strings.py
+
+This module contains a collection of Simplified Molecular-Input Line-Entry System
+(SMARTS) strings utilized for SMARTS pattern matching.
+
+The SMARTS strings cater to a variety of chemical functionalities and patterns,
+including but not limited to hydrogen bond acceptors and donors, positively and negatively
+ionizable groups, hydrophobic functionalities, carbonyl groups, and aromatic systems.
+
+Variables:
+    Various SMARTS strings (e.g., SMARTS_STR_HBA_ACCEPTOR, SMARTS_STR_HBA_ENOL, etc.)
+    Dictionaries grouping related SMARTS strings (e.g., HBOND_ACCEPTOR_SMARTS, POSITIVELY_IOINISABLE_SMARTS, etc.)
+
+Each SMARTS string represents a specific chemical pattern or functionality, with separate 
+SMARTS strings defined for different types of hydrogen bond acceptors, such as a standard 
+acceptor, enol, tautomeric NH, and terminal amide.
+
+The SMARTS strings are grouped into dictionaries based on their functionality. For example,
+HBOND_ACCEPTOR_SMARTS includes all SMARTS strings for different types of hydrogen bond acceptors,
+while POSITIVELY_IOINISABLE_SMARTS contains SMARTS strings representing different types of
+positively ionizable groups.
+
+The module also defines aromatic systems of varying ring sizes, ranging from 4 to 8.
+
+Notes:
+    SMARTS is a language used to specify substructural patterns in molecules. It extends the
+    simpler SMILES syntax and provides a more flexible way to describe molecular patterns.
+
+    This module does not contain any functions or classes, but only data in the form of strings and
+    dictionaries of strings.
+
+    It is expected to be used as a source of SMARTS strings for other modules and applications
+    dealing with molecular structure processing, matching, and analysis.
+"""
+# fmt: off
+
 # HYDROGEN BOND ACCEPTOR
 SMARTS_STR_HBA_ACCEPTOR = (
-    "[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);"
+    "[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);" 
     "!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]"
 )
 SMARTS_STR_HBA_ENOL = "[$([nH]:@c(=O))]"
@@ -33,9 +70,7 @@ SMARTS_STR_PI_METALS = (
 )
 # NEGATIVELY IONISABLE
 SMARTS_STR_NI_ANIONS = "[*-1,*-2]"
-SMARTS_STR_NI_O_ACIDIC_GRP = (
-    "[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]"
-)
+SMARTS_STR_NI_O_ACIDIC_GRP = "[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]"
 
 # HYDROPHOBIC, and CARBONYL
 SMARTS_STR_HYDROPHOBIC = "[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]"
@@ -45,7 +80,7 @@ SMARTS_STR_CARBONYL_CARBON = "[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]"
 # AROMATIC
 SMARTS_STR_AROMATIC_4 = "[a;r4,!R1&r3]1:[a;r4,!R1&r3]:[a;r4,!R1&r3]:[a;r4,!R1&r3]:1"
 SMARTS_STR_AROMATIC_5 = (
-    "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:"
+    "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:" 
     "[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1"
 )
 SMARTS_STR_AROMATIC_6 = (
