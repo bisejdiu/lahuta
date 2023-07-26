@@ -142,7 +142,7 @@ def check_symmetric_difference(
 
 
 @pytest.fixture(scope="module", name="call_func")
-def generate_test_data():
+def generate_test_data() -> TestFuncCallable:
     """
     Fixture that returns a function that generates test data.
 
