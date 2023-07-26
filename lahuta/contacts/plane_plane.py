@@ -45,11 +45,9 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from openbabel import openbabel as ob
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.math import calc_vec_angle
 from lahuta.utils.ob import enumerate_rings
 
@@ -148,13 +146,51 @@ class _PlanePlaneContacts:
 
 
 def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
+    """
+    Handles the computation of plane-plane contacts in a molecular system.
+
+    This class provides both class and function-level APIs to compute plane-plane contacts
+    between two ring-containing residues or ligands. Each interaction is labeled according
+    to the relative orientations of the planes.
+
+    Types of Plane-Plane Contact Orientations:
+        FF (Face-Face): Represents two planes interacting in a face-to-face orientation, where
+            their flat surfaces are parallel and directly aligned. This typically leads to
+            maximum pi-pi stacking.
+        OF (Oblique Face): Denotes a skewed face-to-face orientation. One plane is tilted
+            relative to the other, resulting in partial overlap of their surfaces.
+        EE (Edge-Edge): Describes an interaction where the edges of two planes align parallel,
+            but their surfaces do not overlap, limiting pi-pi interactions.
+        FT (Face-T-stack): Indicates an interaction where the face of one plane (the base of the 'T')
+            aligns with the edge of another plane (the stem of the 'T'). The second plane is
+            oriented in a T-stacked manner.
+        OT (Oblique-T-stack): Represents an interaction where an obliquely oriented face of one
+            plane (the skewed base of the 'T') aligns with the edge of another plane (the stem of
+            the 'T'). The second plane is in a T-stacked orientation.
+        ET (Edge-T-stack): Describes an interaction where the edge of one plane aligns with the
+            edge of another plane. Both are part of the stem in a T-stacked orientation.
+        FE (Face-Edge): Depicts an interaction where the flat surface (face) of one plane aligns
+            with the edge of another plane, leading to partial pi-pi interactions.
+        OE (Oblique-Edge): Represents an interaction where an obliquely oriented face of one plane
+            aligns with the edge of another plane, leading to partial and skewed pi-pi interactions.
+        EF (Edge-Face): Indicates an interaction where the edge of one plane aligns with the face of
+            another plane, creating limited pi-pi interactions.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+
+    Returns:
+        NeighborPairs: The object containing the pairs of atoms that are considered as plane-plane contacts.
+
+    """
     pp = _PlanePlaneContacts(ns)
     pp.compute()
     return pp.get_neighbors()
 
 
 class PlanePlaneContacts:
-    """Handles the computation of plane-plane contacts in a molecular system.
+    """
+    Handles the computation of plane-plane contacts in a molecular system.
 
     This class provides both class and function-level APIs to compute plane-plane contacts
     between two ring-containing residues or ligands. Each interaction is labeled according
@@ -230,17 +266,6 @@ class PlanePlaneContacts:
         return pp.get_neighbors()
 
 
-# def vector_angle_1d(v1: NDArray[np.float32], v2: NDArray[np.float32]) -> NDArray[np.float32]:
-#     v1_u = v1 / np.linalg.norm(v1, axis=-1, keepdims=True)
-#     v2_u = v2 / np.linalg.norm(v2, axis=-1, keepdims=True)
-#     dot = np.einsum("ij,ij->i", v1_u, v2_u)  # type: ignore
-#     angle: NDArray[np.float32] = np.arccos(np.clip(dot, -1.0, 1.0))
-#     angle = np.sign(dot) * angle
-#     angle_deg: NDArray[np.float32] = np.degrees(angle)
-#     angle_deg[angle_deg < 0] = 180 + angle_deg[angle_deg < 0]
-#     return angle_deg
-
-
 def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.float32]) -> NDArray[np.str_]:
     """Assigns a contact type based on the normal angle and theta angle."""
     types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"])
@@ -265,30 +290,3 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
 
     indices = np.argmax(conditions, axis=1)
     return types[indices]  # type: ignore
-
-
-# FIXME: atom_plane needs to use the Rings class, rather than `perceive_rings`
-def perceive_rings(mol: MolType) -> List[Dict[str, Any]]:
-    aromatics: List[Dict[str, Any]] = []
-
-    for _, ob_ring in enumerate(mol.GetSSSR()):
-        if not ob_ring.IsAromatic():
-            continue
-
-        center = ob.vector3()
-        normal = ob.vector3()
-
-        ob_ring.findCenterAndNormal(center, normal, ob.vector3())
-
-        center = np.array([center.GetX(), center.GetY(), center.GetZ()])  # type: ignore
-        normal = np.array([normal.GetX(), normal.GetY(), normal.GetZ()])  # type: ignore
-        atoms = sorted([atom for atom in ob_ring._path])  # type: ignore
-        aromatics.append(
-            {
-                "atoms": atoms,
-                "center": center,
-                "normal": normal,
-            }
-        )
-
-    return aromatics
