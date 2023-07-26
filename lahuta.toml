@@ -29,23 +29,8 @@ good-names = [
 [tool.pylint.'MASTER']
   extension-pkg-allow-list = ["gemmi"]
 
-[tool.pylint.messages_control]
-
+[tool.pylint.'MESSAGES CONTROL']
 max-line-length = 120
-
-# disable = [
-#    "missing-docstring",
-#    "unused-argument",
-#    "no-value-for-parameter",
-#    "no-member",
-#    "no-else-return",
-#    "bad-whitespace",
-#    "bad-continuation",
-#    "line-too-long",
-#    "fixme",
-#    "protected-access",
-#    "too-few-public-methods",
-# ]
 
 [tool.mypy]
 python_version = 3.10

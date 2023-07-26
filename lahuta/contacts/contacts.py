@@ -7,25 +7,15 @@ carbonyl, ionic, aromatic, hydrophobic, van der Waals, and different kinds of hy
 
 Functions:
     covalent_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes covalent contacts.
-
     metalic_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes metallic contacts.
-
     carbonyl_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes carbonyl contacts.
-
     ionic_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes ionic contacts.
-
     aromatic_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes aromatic contacts.
-
     hydrophobic_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes hydrophobic contacts.
-
     vdw_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes van der Waals contacts.
-
     hbond_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes hydrogen bonds.
-
     weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes weak hydrogen bonds.
-
     polar_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes polar hydrogen bonds.
-
     weak_polar_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes weak polar hydrogen bonds.
 
 Each function takes a `NeighborPairs` object, which represents precomputed neighbor relationships between atoms, 
