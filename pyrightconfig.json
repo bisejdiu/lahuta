@@ -6,6 +6,7 @@
     "exclude": [
       "lahuta/scripts",
       "**/__pycache__",
+      "lahuta/tests",
     ],
     
     "defineConstant": {

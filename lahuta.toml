@@ -6,7 +6,7 @@ skip-string-normalization = true
 
 [tool.pyright]
 include = ["lahuta"]
-exclude = ["lahuta/scripts", "**/__pycache__", "cachedir"]
+exclude = ["lahuta/scripts", "lahuta/tests", "**/__pycache__", "cachedir"]
 defineConstant = { DEBUG = true }
 reportMissingImports = true
 reportMissingTypeStubs = "none"

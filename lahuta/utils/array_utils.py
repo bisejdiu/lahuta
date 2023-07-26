@@ -90,20 +90,23 @@ def find_shared_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArr
 
 
 def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArray[np.bool_]:
-    """Return the elements in `arr1` that are not in `arr2`.
+    """
+    Find the indices of non-matching elements between two 2D numpy arrays.
 
-    Parameters
-    ----------
-    arr1 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
-    arr2 : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
+    This function takes two 2D arrays where each row represents a pair of atom indices and returns a 1D boolean
+    array representing whether each pair in `arr1` does not appear in `arr2`.
 
-    Returns
-    -------
-    arr : np.ndarray
-        An array of shape (n, 2) where each row is a pair of atom indices.
+    Args:
+        arr1 (NDArray[np.int32]): A 2D array of shape (n_pairs1, 2) where each row represents a pair of atom indices.
 
+    Returns:
+        NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element represents whether the corresponding
+
+    Example:
+        >>> arr1 = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> arr2 = np.array([[3, 4], [7, 8], [1, 2]])
+        >>> non_matching_indices(arr1, arr2)
+        array([False, False,  True])
     """
     idx: NDArray[np.bool_] = (arr1[:, None] != arr2).any(-1).all(1)
 
@@ -294,7 +297,7 @@ def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType]
     return concat[sorted_indices], sorted_indices
 
 
-def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> np.bool_:
+def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """
     Determines if two arrays have a null intersection.
 
@@ -316,7 +319,7 @@ def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> np.bool_:
     """
 
     # return arr1[intersection(arr1, arr2)].size == 0
-    return np.any(intersection(arr1, arr2))
+    return not np.any(intersection(arr1, arr2))
 
 
 def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:

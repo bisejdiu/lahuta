@@ -581,7 +581,7 @@ class NeighborPairs:
 
         return self.clone(pairs, distances)
 
-    def isdisjoint(self, other: "NeighborPairs") -> np.bool_:
+    def isdisjoint(self, other: "NeighborPairs") -> bool:
         """
         Checks if the intersection of two NeighborPairs objects is null.
 
