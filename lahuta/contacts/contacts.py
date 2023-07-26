@@ -34,15 +34,11 @@ Notes:
 
 """
 
-import numpy as np
-from numpy.typing import NDArray
-from openbabel import openbabel as ob
-
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.openbabel import BondIterable, MolType
 from lahuta.utils.array_utils import difference, find_shared_pairs
+from lahuta.utils.ob import get_bonded_atoms
 
 __all__ = [
     "covalent_neighbors",
@@ -59,47 +55,28 @@ __all__ = [
 ]
 
 
-def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
-    """Get the bonded atoms of a molecule.
-
-    Parameters
-    ----------
-    mol : openbabel.OBMol
-        The molecule object.
-
-    Returns
-    -------
-    bonds : np.ndarray
-        An array of shape (n_bonds, 2) where each row contains the indices of the atoms
-        in the bond.
-    """
-
-    def bond_iter_wrapper(mol: MolType) -> BondIterable:
-        """Wrapper for the openbabel bond iterator."""
-        return ob.OBMolBondIter(mol)  # type: ignore
-
-    bonds: NDArray[np.int32] = np.zeros((mol.NumBonds(), 2), dtype=int)
-    for ix, bond in enumerate(bond_iter_wrapper(mol)):
-        # assert isinstance(bond, MolBond), "bond is not a MolBond"
-        atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
-        bonds[ix, :] = (atom_idx1, atom_idx2) if atom_idx1 < atom_idx2 else (atom_idx2, atom_idx1)
-
-    return bonds
-
-
 def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """Find neighbors that are covalently bonded.
-
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
-
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only covalent neighbors.
     """
+    Handles the computation of covalent contacts in a molecular system.
+
+    Covalent contacts are interactions based on covalent bonds between atoms in a molecular system.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute` method
+    to provide functionality specifically for covalent contact computation.
+
+    Covalent contacts refer to the interactions between atoms that share an electron pair, forming a covalent bond.
+    We use the OpenBabel library to identify covalent bonds in the structure.
+
+    The algorithm computes the covalent contacts based on the following principle:
+    1. Two atoms are considered to form a covalent contact if they are covalently bonded according to the molecular
+       structure information obtained from OpenBabel.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only covalent contacts.
+    """
+
     bonds = get_bonded_atoms(ns.mol)
     indices = find_shared_pairs(ns.pairs + 1, bonds)
 
@@ -107,22 +84,31 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["distance"]) -> NeighborPairs:
-    """Find neighbors that form metalic contacts.
-
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
-
-    distance : float
-        The distance cutoff for metalic contacts. Check the default value in
-        `lahuta.config.defaults`.
-
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only metalic contacts.
     """
+    Handles the computation of metallic contacts in a molecular system.
+
+    Metallic contacts are interactions involving metal atoms in a molecular system.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+    method to provide functionality specifically for metallic contact computation.
+
+    Metallic contacts are interactions between metal ions and atoms that can act as hydrogen bond acceptors.
+    These contacts play significant roles in the structure and function of many proteins, especially metalloproteins.
+    Metal ions can form coordination bonds with electron-rich atoms (like oxygen, nitrogen, or sulfur),
+    contributing to the structural stability and sometimes the catalytic activity of these proteins.
+
+    We compute metallic contacts according to these criteria:
+    1. The contact involves a metal ion and an atom that is a hydrogen bond acceptor.
+    2. The distance between the metal ion and the hydrogen bond acceptor does not exceed a predefined distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for a metallic contact. This value is retrieved
+            from the 'metal' entry of the global CONTACTS dictionary.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only metallic contacts.
+    """
+
     metal_indices = ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
 
     acceptor_metal = ns.type_filter("hbond_acceptor", 1).index_filter(metal_indices, 2).distance_filter(distance)
@@ -133,20 +119,31 @@ def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["di
 
 
 def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]["distance"]) -> NeighborPairs:
-    """Find neighbors that form carbonyl contacts.
+    """
+    Handles the computation of carbonyl contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Carbonyl contacts involve the interaction between a carbonyl oxygen atom (O) and a carbonyl carbon atom (C)
+    from a carbonyl functional group (C=O) in the context of protein-ligand structures or protein-protein structures.
 
-    distance : float
-        The distance cutoff for carbonyl contacts.
+    In a carbonyl group, the carbon atom has a double bond with the oxygen atom. This arrangement results
+    in a polar bond with the oxygen atom carrying a partial negative charge and the carbon atom a partial positive charge.
+    This polarity can lead to interactions with other polar or charged atoms.
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only carbonyl contacts.
+    In the computation of carbonyl contacts, we consider two atoms to form a contact if:
+
+    1. One atom is a carbonyl oxygen atom (O=C).
+    2. The second atom is a carbonyl carbon atom (O=C).
+    3. The distance between these two atoms does not exceed a defined distance cutoff.
+
+    The directionality of the contact is not considered, meaning that an Oxygen to Carbon contact is equivalent
+    to a Carbon to Oxygen contact.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for a carbonyl contact. This value is retrieved
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only carbonyl contacts.
     """
 
     contacts_atom12 = ns.type_filter("carbonyl_oxygen", 1).type_filter("carbonyl_carbon", 2).distance_filter(distance)
@@ -157,21 +154,27 @@ def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]
 
 
 def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["distance"]) -> NeighborPairs:
-    """Find neighbors that form ionic contacts.
+    """
+    Handles the computation of ionic contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Ionic contacts refer to the interactions between positively and negatively ionizable atoms,
+    forming one of the primary types of electrostatic interactions.
 
-    distance : float
-        The distance cutoff for ionic contacts. Check the default value in
-        `lahuta.config.defaults`.
+    We calculate ionic contacts based on the following criteria:
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only ionic contacts.
+    1. One atom must be positively ionizable.
+    2. The other atom must be negatively ionizable.
+    3. The distance between these two atoms does not exceed a defined distance cutoff.
+
+    These criteria apply regardless of the order of the atoms in the pair, meaning a positively ionizable
+    to negatively ionizable contact is considered equivalent to a negatively ionizable to positively ionizable contact.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for an ionic contact. This value is retrieved from
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only ionic contacts.
 
     """
     contacts_atom12 = ns.type_filter("pos_ionisable", 1).type_filter("neg_ionisable", 2).distance_filter(distance)
@@ -182,64 +185,85 @@ def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["dist
 
 
 def aromatic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["aromatic"]["distance"]) -> NeighborPairs:
-    """Find neighbors that form aromatic contacts.
-
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
-
-    distance : float
-        The distance cutoff for aromatic contacts. Check the default value in
-        `lahuta.config.defaults`.
-
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only aromatic contacts.
     """
+    Handles the computation of aromatic contacts in a molecular structure.
+
+    Aromatic contacts are computed based on the interactions between atoms in
+    aromatic rings found in proteins and ligands. Aromatic interactions,
+    commonly found in biological systems, are characterized by π-stacking
+    (face-to-face), T-shaped or edge-to-face configurations, and cation-π
+    interactions.
+
+    We compute aromatic contacts based on the following criteria:
+
+    1. Both atoms belong to an aromatic ring.
+    2. The distance between these two atoms does not exceed a defined distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for contact. Check the default value in
+            `lahuta.config.defaults`.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only aromatic contacts.
+    """
+
     return ns.type_filter("aromatic", 1).type_filter("aromatic", 2).distance_filter(distance)
 
 
 def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydrophobic"]["distance"]) -> NeighborPairs:
-    """Find neighbors that form hydrophobic contacts.
-
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
-
-    distance : float
-        The distance cutoff for hydrophobic contacts. Check the default value in
-        `lahuta.config.defaults`.
-
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only hydrophobic contacts.
     """
+    Handles the computation of hydrophobic contacts in a molecular system.
+
+    Hydrophobic contacts are interactions between hydrophobic atoms in a molecular system.
+    This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
+    method to provide functionality specifically for hydrophobic contact computation.
+
+    Hydrophobic contacts are interactions between hydrophobic (non-polar) atoms.
+    Hydrophobic interactions occur due to the tendency of hydrophobic molecules to aggregate together
+    in an aqueous environment, minimizing their exposure to water molecules.
+
+    We compute hydrophobic contacts based on the following criteria:
+
+    1. Both atoms must be hydrophobic.
+    2. The distance between these two atoms does not exceed a defined distance cutoff.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for a hydrophobic contact.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only hydrophobic contacts.
+    """
+
     return ns.type_filter("hydrophobe", 1).type_filter("hydrophobe", 2).distance_filter(distance)
 
 
 def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashes: bool = True) -> NeighborPairs:
-    """Find neighbors that form vdw contacts.
+    """
+    Handles the computation of Van der Waals (VdW) contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Van der Waals (VdW) contacts are determined based on the interactions between atoms that come
+    within their combined van der Waals radii, increased by a compensation factor.
+    Van der Waals interactions occur due to induced polarization of atoms and can play a critical role
+    in the stability of biological structures and in molecular recognition processes.
 
-    vdw_comp_factor : float
-        The factor by which the vdw radii are increased to form the vdw contact.
+    The computation of van der Waals contacts relies on the following:
 
-    remove_clashes : bool
-        If True, remove clashes from the NeighborPairs object. Clashes are defined as contact
-        distances less than the sum of the vdw radii of the two atoms.
+    1. The distance between two atoms does not exceed the sum of their van der Waals radii,
+       increased by a defined compensation factor.
+    2. Optionally, if the distance between two atoms is less than the sum of their van der Waals radii
+       (defined as a clash), the contact can be excluded.
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only vdw contacts.
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        vdw_comp_factor (float): The factor by which Van der Waals radii are multiplied during contact computation.
+            This factor is used in the F.vdw_neighbors function to scale the VdW radii. Default value is 0.1.
+        remove_clashes (bool): Flag indicating whether clashes (interactions with distances smaller than
+            the combined Van der Waals radii of two atoms) should be removed. Default value is True.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only Van der Waals contacts.
     """
 
     vdw_radii = ns.atoms.vdw_radii[ns.pairs[:, 0]] + ns.atoms.vdw_radii[ns.pairs[:, 1]]
@@ -250,29 +274,33 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
 
     if not remove_clashes:
         return ns.clone(vdw_comp_pairs, vdw_distances)  # TODO: check if this is correct
-        # return NeighborPairs(ns.luni, vdw_comp_pairs, vdw_distances)
 
     vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
     return ns.clone(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])  # TODO: check if this is correct
-    # return NeighborPairs(
-    #     ns.luni, vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices]
-    # )
 
 
 def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """Find neighbors that form hydrogen bonds.
+    """
+    Handles the computation of hydrogen bond (hbond) contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Hydrogen bonds are pivotal non-covalent interactions that significantly influence the structure, stability,
+    and dynamics of biomolecules such as proteins and nucleic acids. A hydrogen bond forms when a hydrogen atom
+    covalently bonded to a highly electronegative atom (such as oxygen or nitrogen) interacts with another
+    electronegative atom from a different group.
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only hydrogen bonds.
+    We compute hydrogen bonds based on the following criteria:
+    1. It involves a hydrogen bond donor atom and a hydrogen bond acceptor atom.
+    2. The distance between the hydrogen atom and the acceptor atom does not exceed a predefined cutoff distance.
+    3. The angle formed by the donor, hydrogen, and acceptor atoms falls within a predefined range.
+      This accounts for the directional nature of hydrogen bonds.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only hbond contacts.
     """
 
     hbond_atom12 = (
@@ -293,17 +321,26 @@ def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """Find neighbors that form weak hydrogen bonds.
+    """
+    Handles the computation of weak hydrogen bond (weak hbond) contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Weak hydrogen bonds are a type of non-covalent interactions that, despite their reduced strength
+    compared to regular hydrogen bonds, still play important roles in biomolecular structures and functions.
+    These bonds form when a hydrogen atom, covalently linked to a weakly electronegative atom (such as carbon),
+    interacts with an electronegative acceptor atom from a different group. The difference in electronegativity
+    between the donor and acceptor atoms is what makes these bonds relatively weaker than conventional hydrogen bonds.
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only weak hydrogen bonds.
+    We compute weak hydrogen bonds based on these considerations:
+    1. A weak hydrogen bond involves a weak hydrogen bond donor atom and a hydrogen bond acceptor atom.
+    2. The distance between the hydrogen atom and the acceptor atom does not surpass a certain cutoff distance.
+    3. The angle formed by the donor, hydrogen, and acceptor atoms is within a predefined range.
+      This accounts for the directional nature of hydrogen bonds.
+
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only weak hydrogen bonds.
     """
 
     hbond_atom12 = (
@@ -324,21 +361,25 @@ def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]["polar distance"]) -> NeighborPairs:
-    """Find neighbors that form polar hydrogen bonds.
+    """
+    Handles the computation of polar hydrogen bond (polar hbond) contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Polar hydrogen bonds involve a hydrogen atom covalently bonded to a polar atom (hydrogen bond donor),
+    forming an interaction with another polar atom from a different group (hydrogen bond acceptor). In contrast to
+    conventional hydrogen bonds, for polar hydrogen bonds, we do not consider the angle formed by the donor, hydrogen,
+    and acceptor atoms.
 
-    distance : float
-        The distance cutoff for polar hydrogen bonds. Check the default value in
-        `lahuta.config.defaults`.
+    We compute polar hydrogen bonds based on these criteria:
+    1. The presence of a hydrogen bond donor and a hydrogen bond acceptor.
+    2. The distance between the hydrogen bond donor and the hydrogen bond acceptor does not exceed a specific cutoff distance.
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only polar hydrogen bonds.
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for a polar hydrogen bond. Check the default value in
+            `lahuta.config.defaults`.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only polar hydrogen bonds.
     """
 
     hbond_atom12 = ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2).distance_filter(distance)
@@ -351,21 +392,23 @@ def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]
 def weak_polar_hbond_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["weak hbond"]["weak polar distance"]
 ) -> NeighborPairs:
-    """Find neighbors that form weak polar hydrogen bonds.
+    """
+    Handles the computation of weak polar hydrogen bond (weak polar hbond) contacts in a molecular system.
 
-    Parameters
-    ----------
-    ns : NeighborPairs
-        A NeighborPairs object.
+    Weak polar hydrogen bonds rely on a weak hydrogen bond donor, and we also do not consider the angle
+    formed by the donor, hydrogen, and acceptor atoms.
 
-    distance : float
-        The distance cutoff for weak polar hydrogen bonds. Check the default value in
-        `lahuta.config.defaults`.
+    We compute weak polar hydrogen bonds based on these criteria:
+    1. The presence of a hydrogen bond acceptor and a weak hydrogen bond donor.
+    2. The distance between the hydrogen bond acceptor and the weak hydrogen bond donor should not exceed a certain cutoff distance.
 
-    Returns
-    -------
-    NeighborPairs
-        A NeighborPairs object containing only weak polar hydrogen bonds.
+    Args:
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        distance (float): The maximum distance to consider for a weak polar hydrogen bond. Check the default value in
+            `lahuta.config.defaults`.
+
+    Returns:
+        NeighborPairs: A NeighborPairs object containing only weak polar hydrogen bonds.ff
     """
 
     hbond_atom12 = ns.type_filter("hbond_acceptor", 1).type_filter("weak_hbond_donor", 2).distance_filter(distance)

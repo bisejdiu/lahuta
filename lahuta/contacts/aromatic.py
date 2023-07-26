@@ -55,7 +55,7 @@ class AromaticContacts(ContactAnalysis):
     def compute(self) -> NeighborPairs:
         """Computes aromatic contacts based on the neighbor pairs.
 
-        Returns
+        Returns:
             NeighborPairs: A NeighborPairs object containing only aromatic contacts.
         """
         return F.aromatic_neighbors(self.ns, self.distance)
