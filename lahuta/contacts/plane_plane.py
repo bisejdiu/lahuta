@@ -63,6 +63,7 @@ class _PlanePlaneContacts:
         self.distances: NDArray[np.float32] = np.array([])
 
     def compute(self) -> None:
+        """Computes plane-plane contacts based on the neighbor pairs and the set centroid distance."""
         centers = self.rings.centers
         normals = self.rings.normals
 
@@ -128,6 +129,7 @@ class _PlanePlaneContacts:
         return pairs, distances
 
     def get_neighbors(self) -> NeighborPairs:
+        """Returns the plane-plane contacts as a NeighborPairs object."""
         pairs, distances = self._sort_inputs()
         ns = self.ns.clone(pairs, distances)
         ns.annotations = self._annotations
@@ -183,9 +185,9 @@ def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
         NeighborPairs: The object containing the pairs of atoms that are considered as plane-plane contacts.
 
     """
-    pp = _PlanePlaneContacts(ns)
-    pp.compute()
-    return pp.get_neighbors()
+    plane_plane = _PlanePlaneContacts(ns)
+    plane_plane.compute()
+    return plane_plane.get_neighbors()
 
 
 class PlanePlaneContacts:
@@ -267,7 +269,21 @@ class PlanePlaneContacts:
 
 
 def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.float32]) -> NDArray[np.str_]:
-    """Assigns a contact type based on the normal angle and theta angle."""
+    """Assigns a contact type based on the normal angle and theta angle.
+
+    This function assigns a contact type based on the normal angle and theta angle between two planes.
+    The normal angle is the angle between the normals of the two planes, while the theta angle is the
+    angle between the normal of the first plane and the vector connecting the centroids of the two planes.
+
+    Args:
+        normal_angle (NDArray[np.float32]): The angle between the normals of the two planes.
+        theta (NDArray[np.float32]): The angle between the normal of the first plane and the vector
+            connecting the centroids of the two planes.
+
+    Returns:
+        NDArray[np.str_]: An array of strings representing the contact type for each pair of planes.
+
+    """
     types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"])
     ranges = np.array(
         [
