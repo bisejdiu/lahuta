@@ -51,13 +51,19 @@ class ContactType:
         return self.func(self.neighbors_ref).pairs.shape
 
 
+@pytest.fixture(scope="session")
+def universe_ref(mda_universe: UniverseType) -> Universe:
+    with warnings.catch_warnings(record=True) as _:
+        return Universe(mda_universe.atoms)
+
+
 class UniverseWrapper:
-    def __init__(self, mda_u: UniverseType, selection: str) -> None:
+    def __init__(self, mda_u: UniverseType, selection: str, u_ref: Universe) -> None:
         self.mda_u = mda_u
         resnames = self.mda_u.select_atoms(f"all and not ({selection})").residues.resnames
         self.unique_resnames = np.unique(resnames)
 
-        self.u_ref = Universe(self.mda_u.atoms)
+        self.u_ref = u_ref
         self.u = Universe(self.mda_u.select_atoms(selection).atoms)
 
 
@@ -80,10 +86,10 @@ selections_res_difs = [
 
 class TestMDAnalysis:
     @pytest.fixture(params=selections_res_difs, autouse=True)
-    def setup_method(self, request: FixtureRequest, mda_universe: UniverseType) -> None:
+    def setup_method(self, request: FixtureRequest, mda_universe: UniverseType, universe_ref: Universe) -> None:
         selection, res_dif = request.param
         with warnings.catch_warnings(record=True) as _:
-            self.universe = UniverseWrapper(mda_universe, selection)
+            self.universe = UniverseWrapper(mda_universe, selection, universe_ref)
 
         self.contact_types = [
             ContactType("covalent", C.covalent_neighbors, self.universe),
