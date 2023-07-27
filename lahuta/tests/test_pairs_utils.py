@@ -67,24 +67,24 @@ def _generate_test_data(
     return arr1, arr2
 
 
-def sort_pairs(arr: NDArray[np.int32]) -> NDArray[np.int32]:
-    """
-    Sort pairs in an array such that the smaller index is in the first column.
+# def sort_pairs(arr: NDArray[np.int32]) -> NDArray[np.int32]:
+#     """
+#     Sort pairs in an array such that the smaller index is in the first column.
 
-    Args:
-        arr (NDArray[np.int32]): The array to sort.
+#     Args:
+#         arr (NDArray[np.int32]): The array to sort.
 
-    Returns:
-        NDArray[np.int32]: The sorted array.
-    """
-    # Ensure the smaller index is in the first column
-    arr = np.sort(arr, axis=1)
+#     Returns:
+#         NDArray[np.int32]: The sorted array.
+#     """
+#     # Ensure the smaller index is in the first column
+#     arr = np.sort(arr, axis=1)
 
-    # Use lexsort to get sorted indices from large to small,
-    # then use it to index into the sorted array
-    indices = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
+#     # Use lexsort to get sorted indices from large to small,
+#     # then use it to index into the sorted array
+#     indices = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
 
-    return arr[indices]
+#     return arr[indices]
 
 
 def check_mask(mask: NDArray[np.bool_], arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
@@ -124,7 +124,7 @@ def check_union(
     assert union_arr.shape[0] == unique_concat.shape[0]
     assert indices.shape[0] == unique_concat.shape[0]
     assert np.isin(union_arr, unique_concat).all()
-    assert (sort_pairs(union_arr) == sort_pairs(unique_concat)).all()
+    assert (au.sort_pairs(union_arr) == au.sort_pairs(unique_concat)).all()
 
 
 def check_symmetric_difference(
@@ -156,9 +156,9 @@ def generate_test_data() -> TestFuncCallable:
 # params = [(1000, 0.5, 0.1), (2000, 0.7, 0.2), (500, 0.3, 0.05)]
 params: List[Tuple[int, float, float]] = []
 for _ in range(10):
-    a = random.randint(500, 20000)  # parameter a: integer between 500 and 2000
-    b = round(random.uniform(0.05, 0.95), 2)  # parameter b: float between 0.3 and 0.7, rounded to two decimal places
-    c = round(random.uniform(0.05, 0.95), 2)  # parameter c: float between 0.05 and 0.2, rounded to two decimal places
+    a = random.randint(500, 20000)
+    b = round(random.uniform(0.05, 0.95), 2)
+    c = round(random.uniform(0.05, 0.95), 2)
     params.append((a, b, c))
 
 
@@ -234,8 +234,8 @@ def test_union(
     elements from `arr1` and `arr2` and the associated indices.
     """
     arr1, arr2 = call_func(size, subset_ratio, extra_ratio)
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Calculate union
     union_arr, indices = au.union(arr1, arr2)
@@ -255,8 +255,8 @@ def test_symmetric_difference(
     elements in `arr1` and `arr2`.
     """
     arr1, arr2 = call_func(size, subset_ratio, extra_ratio)
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Calculate symmetric difference
     mask_a, mask_b = au.symmetric_difference(arr1, arr2)
@@ -278,8 +278,8 @@ def test_isdisjoint(
     # Generate disjoint data
     arr1, arr2 = call_func(size, 0, extra_ratio)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if they are disjoint
     assert au.isdisjoint(arr1, arr2)
@@ -287,8 +287,8 @@ def test_isdisjoint(
     # Generate non-disjoint data
     arr1, arr2 = call_func(size, subset_ratio, extra_ratio)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if they are not disjoint
     assert not au.isdisjoint(arr1, arr2)
@@ -306,15 +306,15 @@ def test_issubset(
     when given an array and a larger array that contains it.
     """
     arr1, arr2 = call_func(size, subset_ratio, 0)
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr2 is a subset of arr1
     assert au.issubset(arr2, arr1)
 
     arr1, arr2 = call_func(size, subset_ratio, extra_ratio)
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr2 is not a subset of arr1
     assert not au.issubset(arr2, arr1)
@@ -334,8 +334,8 @@ def test_issuperset(
     # Generate test data where arr1 is a superset of arr2
     arr1, arr2 = call_func(size, subset_ratio, 0)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is a superset of arr2
     assert au.issuperset(arr1, arr2)
@@ -343,8 +343,8 @@ def test_issuperset(
     # Generate test data where arr1 is not a superset of arr2
     arr1, arr2 = call_func(size, subset_ratio, extra_ratio)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is not a superset of arr2
     assert not au.issuperset(arr1, arr2)
@@ -364,8 +364,8 @@ def test_isequal(
     # Generate test data where arr1 is equal to arr2
     arr1, arr2 = call_func(size, 1, 0)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is equal to arr2
     assert au.isequal(arr1, arr2)
@@ -373,8 +373,8 @@ def test_isequal(
     # Generate test data where arr1 is not equal to arr2
     arr1, arr2 = call_func(size, subset_ratio, extra_ratio)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is not equal to arr2
     assert not au.isequal(arr1, arr2)
@@ -395,8 +395,8 @@ def test_isunique(
     # arr1 = np.random.randint(0, 10000, size=(1000, 2))
     arr1, arr2 = call_func(size, subset_ratio, 0)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 has no duplicates
     assert au.isunique(arr1)
@@ -419,15 +419,15 @@ def test_is_strict_subset(
     """
 
     arr1, arr2 = call_func(size, subset_ratio, 0)
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is a strict subset of arr2
     assert au.is_strict_subset(arr2, arr1)
 
     arr1, arr2 = call_func(size, 1, 0)
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is not a strict subset of arr2
     assert not au.is_strict_subset(arr2, arr1)
@@ -447,8 +447,8 @@ def test_is_strict_superset(
     # Generate test data where arr1 is a strict superset of arr2
     arr1, arr2 = call_func(size, subset_ratio, 0)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is a strict superset of arr2
     assert au.is_strict_superset(arr1, arr2)
@@ -456,8 +456,8 @@ def test_is_strict_superset(
     # Generate test data where arr1 is equal to arr2
     arr1, arr2 = call_func(size, 1, 0)
 
-    arr1 = sort_pairs(arr1)
-    arr2 = sort_pairs(arr2)
+    # arr1 = sort_pairs(arr1)
+    # arr2 = sort_pairs(arr2)
 
     # Check if arr1 is not a strict superset of arr2
     assert not au.is_strict_superset(arr1, arr2)
