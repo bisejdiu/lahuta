@@ -350,17 +350,11 @@ class NeighborPairs:
                             that are common between `self` and `other`.
 
         Example:
-            >>> pairs1 = np.array([[1, 2], [3, 4]])
-            >>> distances1 = np.array([1.0, 2.0])
-            >>> np1 = NeighborPairs(pairs1, distances1)
-            >>> pairs2 = np.array([[1, 2], [5, 6]])
-            >>> distances2 = np.array([1.0, 2.0])
-            >>> np2 = NeighborPairs(pairs2, distances2)
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the intersection
+            >>> np_intersected = np1 & np2
             >>> np_intersected = np1.intersection(np2)
-            >>> print(np_intersected.pairs)
-            >>> print(np_intersected.distances)
-            [[1, 2]]
-            [1.0]
         """
         mask = au.intersection(self.pairs, other.pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -380,17 +374,11 @@ class NeighborPairs:
                 with corresponding distances.
 
         Example:
-            >>> pairs1 = np.array([[1, 2], [3, 4]])
-            >>> distances1 = np.array([1.0, 2.0])
-            >>> np1 = NeighborPairs(pairs1, distances1)
-            >>> pairs2 = np.array([[1, 2], [5, 6]])
-            >>> distances2 = np.array([1.0, 2.0])
-            >>> np2 = NeighborPairs(pairs2, distances2)
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the union
+            >>> np_union = np1 + np2
             >>> np_union = np1.union(np2)
-            >>> print(np_union.pairs)
-            >>> print(np_union.distances)
-            [[1, 2], [3, 4], [5, 6]]
-            [1.0, 2.0, 2.0]
         """
         pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
@@ -413,17 +401,12 @@ class NeighborPairs:
                             from `self` that are not in `other`.
 
         Example:
-            >>> pairs1 = np.array([[1, 2], [3, 4]])
-            >>> distances1 = np.array([1.0, 2.0])
-            >>> np1 = NeighborPairs(pairs1, distances1)
-            >>> pairs2 = np.array([[1, 2], [5, 6]])
-            >>> distances2 = np.array([1.0, 2.0])
-            >>> np2 = NeighborPairs(pairs2, distances2)
-            >>> np_difference = np1.difference(np2)
-            >>> print(np_difference.pairs)
-            >>> print(np_difference.distances)
-            [[3, 4]]
-            [2.0]
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the difference
+            >>> np_diff = np1 - np2
+            >>> np_diff = np1.difference(np2)
+
         """
         mask = au.difference(self.pairs, other.pairs)
 
@@ -440,6 +423,13 @@ class NeighborPairs:
 
         Returns:
             A NeighborPairs object containing the symmetric difference of the two NeighborPairs objects.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the symmetric difference
+            >>> np_sym_diff = np1 | np2
+            >>> np_sym_diff = np1.symmetric_difference(np2)
         """
         mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
 
@@ -476,6 +466,12 @@ class NeighborPairs:
         Returns:
             bool: True if the two NeighborPairs objects are disjoint
                     (i.e., have no common pairs), and False otherwise.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.isdisjoint(np2)
+            True
         """
 
         return au.isdisjoint(self.pairs, other.pairs)
@@ -493,6 +489,11 @@ class NeighborPairs:
         Returns:
             bool: True if every pair in the current NeighborPairs object is found
                     in the other NeighborPairs object, and False otherwise.
+
+        Example:
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.issubset(np2)
         """
         return au.issubset(self.pairs, other.pairs)
 

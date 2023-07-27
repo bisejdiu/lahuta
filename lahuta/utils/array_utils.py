@@ -110,8 +110,8 @@ def find_shared_pairs(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> NDArr
         arr2 (NDArray[np.int32]): A 2D array of shape (n_pairs2, 2) where each row represents a pair of atom indices.
 
     Returns:
-        NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element represents whether the corresponding
-            pair in `arr1` appears in `arr2`.
+        NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element represents
+        whether the corresponding pair in `arr1` appears in `arr2`.
 
     Example:
         >>> arr1 = np.array([[1, 2], [3, 4], [5, 6]])
@@ -135,7 +135,8 @@ def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> ND
         arr1 (NDArray[np.int32]): A 2D array of shape (n_pairs1, 2) where each row represents a pair of atom indices.
 
     Returns:
-        NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element represents whether the corresponding
+        NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element
+        represents whether the corresponding
 
     Example:
         >>> arr1 = np.array([[1, 2], [3, 4], [5, 6]])
@@ -289,7 +290,7 @@ def symmetric_difference(
         mask_a: A boolean array that can be used to index `arr1` to get the elements unique to `arr1`.
         mask_b: A boolean array that can be used to index `arr2` to get the elements unique to `arr2`.
     """
-
+    # pylint: disable=arguments-out-of-order
     mask_a = difference(arr1, arr2, assume_unique)
     mask_b = difference(arr2, arr1, assume_unique)
 
@@ -383,7 +384,6 @@ def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     return np.sum(intersection(arr1, arr2)) == len(arr1)
 
 
-# pylint: disable=arguments-out-of-order
 def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """
     Checks if `arr1` is a superset of `arr2`.
@@ -406,7 +406,7 @@ def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
         >>> issuperset(np.array([[1, 2], [2, 3]]), np.array([[1, 2], [3, 4]]))
         False
     """
-
+    # pylint: disable=arguments-out-of-order
     return issubset(arr2, arr1)
 
 
