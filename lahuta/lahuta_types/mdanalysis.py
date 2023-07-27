@@ -104,6 +104,10 @@ class AtomGroupType(Protocol):
         ...
 
     @property
+    def resname(self) -> NDArray[np.str_]:
+        ...
+
+    @property
     def resids(self) -> NDArray[np.int32]:
         ...
 

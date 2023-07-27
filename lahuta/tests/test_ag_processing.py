@@ -90,6 +90,7 @@ class TestMDAnalysis:
         selection, res_dif = request.param
         with warnings.catch_warnings(record=True) as _:
             self.universe = UniverseWrapper(mda_universe, selection, universe_ref)
+            self.mda = self.universe.u_ref.to("mda")
 
         self.contact_types = [
             ContactType("covalent", C.covalent_neighbors, self.universe),
@@ -121,3 +122,20 @@ class TestMDAnalysis:
             assert (
                 contact_type.pairs() <= contact_type.pairs_ref()
             ), f"{contact_type.name} neighbors pairs are not less than or equal to the reference neighbors pairs"
+
+    def test_correct_residue_content(self) -> None:
+        atoms = self.mda.universe.atoms
+        assert atoms is not None
+        for contact_type in self.contact_types:
+            if contact_type.name == "covalent":
+                continue
+            assert contact_type.neighbors_diff is not None
+            for pair in contact_type.neighbors_diff.pairs:
+                x1, x2 = atoms[pair[0]], atoms[pair[1]]
+                if x1.resname in self.universe.unique_resnames or x2.resname in self.universe.unique_resnames:
+                    continue
+                # fail test if we get here
+                assert (
+                    False
+                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors"
+            assert True
