@@ -446,26 +446,20 @@ class NeighborPairs:
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
         distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)  # type: ignore
 
-        # unique_indices = np.unique(pairs, axis=0, return_index=True)[1]  # type: ignore
-        # sorted_indices = np.sort(unique_indices)  # type: ignore
+        # return self.clone(sorted_pairs, sorted_distances)
 
+        # FIXME: commented out bc I do not think this is necessary
+        # symmetric_difference, by definition, should not contain duplicates
+
+        # # Sort pairs along the first column and get the sorted indices.
+        # sorted_indices = np.argsort(pairs[:, 0])
         # pairs = pairs[sorted_indices]
         # distances = distances[sorted_indices]
 
-        # sorted_pairs = pairs[np.argsort(pairs[:, 0])]  # type: ignore
-        # sorted_distances = distances[np.argsort(pairs[:, 0])]  # type: ignore
-
-        # return self.clone(sorted_pairs, sorted_distances)
-
-        # Sort pairs along the first column and get the sorted indices.
-        sorted_indices = np.argsort(pairs[:, 0])
-        pairs = pairs[sorted_indices]
-        distances = distances[sorted_indices]
-
-        # Get unique pairs and corresponding distances.
-        unique_indices = np.unique(pairs, axis=0, return_index=True)[1]
-        pairs = pairs[unique_indices]
-        distances = distances[unique_indices]
+        # # Get unique pairs and corresponding distances.
+        # unique_indices = np.unique(pairs, axis=0, return_index=True)[1]
+        # pairs = pairs[unique_indices]
+        # distances = distances[unique_indices]
 
         return self.clone(pairs, distances)
 
@@ -820,6 +814,7 @@ class NeighborPairs:
         Checks whether all pairs in the given NeighborPairs object are also present in this NeighborPairs object.
 
         This method allows using the Python built-in `in` keyword to check for the presence of pairs.
+        This method add support for the `in` operator.
 
         Args:
             other (NeighborPairs): The NeighborPairs object to check.
@@ -841,6 +836,7 @@ class NeighborPairs:
         Combine this NeighborPairs object with another one.
 
         The resulting NeighborPairs object is the union of the two sets, containing all unique pairs from both.
+        This method adds support for the `+` operator.
 
         Args:
             other (NeighborPairs): Another NeighborPairs object.
@@ -865,6 +861,7 @@ class NeighborPairs:
 
         The resulting NeighborPairs object is the difference of the two sets,
         containing pairs present in this object but not in the 'other'.
+        This method adds support for the `-` operator.
 
         Args:
             other (NeighborPairs): Another NeighborPairs object.
@@ -886,6 +883,7 @@ class NeighborPairs:
 
         The resulting NeighborPairs object is the symmetric difference of the two sets,
         containing pairs present in either this object or the 'other', but not in both.
+        This method adds support for the `|` operator.
 
         Args:
             other (NeighborPairs): Another NeighborPairs object.
@@ -906,6 +904,7 @@ class NeighborPairs:
         Check if this NeighborPairs object is equal to the 'other'.
 
         Equality is based on the pairs and their distances.
+        This method adds support for the `==` operator.
 
         Args:
             other (Any): Another object.
@@ -927,6 +926,7 @@ class NeighborPairs:
 
         The resulting NeighborPairs object is the intersection of the two sets,
         containing pairs present in both this object and the 'other'.
+        This method adds support for the `&` operator.
 
         Args:
             other (NeighborPairs): Another NeighborPairs object.
@@ -947,6 +947,7 @@ class NeighborPairs:
         Get the pairs that are in either this NeighborPairs object or the 'other', but not in both.
 
         This method behaves similarly to the `__or__` method.
+        This method adds support for the `^` operator.
 
         Args:
             other (NeighborPairs): Another NeighborPairs object.
