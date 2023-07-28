@@ -45,7 +45,7 @@ from .hbonds import HBondContacts, PolarHBondContacts, WeakHBondContacts, WeakPo
 from .hydrophobic import HydrophobicContacts
 from .ionic import IonicContacts
 from .metal import MetalicContacts
-from .plane_plane import plane_plane_neighbors
+from .plane_plane import PlanePlaneContacts, plane_plane_neighbors
 from .sulphur_pi import SulphurPi
 from .vdw import VanDerWaalsContacts
 
@@ -82,4 +82,5 @@ __all__ = [
     "DonorPi",
     "SulphurPi",
     "AtomPlaneContacts",
+    "PlanePlaneContacts",
 ]
