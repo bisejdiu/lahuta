@@ -209,11 +209,11 @@ class OBMol:
             if tpc is not None:
                 if atom_id < 5:
                     print('atom_id INFO', atom_id, str(atom_name), str(element))
-                self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
+                self.create_atom_obmol(atom_id - 1, str(atom_name), str(element), coords[idx], ob_res)
             else:
                 if idx < 5:
                     print('idx INFO', idx, str(atom_name), str(element))
-                self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
+                self.create_atom_obmol(idx, str(atom_name), str(element), coords[idx], ob_res)
 
         self.perceive_bonds()
         for connection in connections:

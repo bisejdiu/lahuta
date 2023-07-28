@@ -115,8 +115,8 @@ class NeighborPairs:
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        # self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(self.mda, self.mol)
-        # self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
+        self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(self.mda, self.mol)
+        self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles: NDArray[np.float32] = np.array([])
         self._annotations: Dict[str, NDArray[Any]] = {}
 

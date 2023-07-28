@@ -92,6 +92,7 @@ class TestMDAnalysis:
         with warnings.catch_warnings(record=True) as _:
             self.universe = UniverseWrapper(mda_universe, selection, universe_ref)
             self.mda = self.universe.u_ref.to("mda")
+            self.selection = selection
 
         self.contact_types = [
             ContactType("covalent", C.covalent_neighbors, self.universe),
@@ -134,10 +135,7 @@ class TestMDAnalysis:
             assert contact_type.neighbors_diff is not None
             for pair in contact_type.neighbors_diff.pairs:
                 x1, x2 = atoms[pair[0]], atoms[pair[1]]
-                if x1.resname in self.universe.unique_resnames or x2.resname in self.universe.unique_resnames:
-                    continue
-                # fail test if we get here
-                assert (
-                    False
-                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors"
+                assert not (x1.resname in self.universe.unique_resnames) or (
+                    x2.resname in self.universe.unique_resnames
+                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors, for selection {self.selection}, and resnames {self.universe.unique_resnames}"
             assert True

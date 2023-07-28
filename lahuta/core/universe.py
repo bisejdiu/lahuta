@@ -207,7 +207,7 @@ class Universe:
         self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping)
+        atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping, legacy=False)
 
         # print('ARGSSS: ', self._args)
         # new_file_loader, new_mdag = self._initialize_from_files(*self._args)
@@ -216,9 +216,12 @@ class Universe:
 
         print('NEW AGTYPES', type(ag_types), ag_types.sum(axis=0), ag_types.shape)
         # print('Second assigner Starts here')
-        # new_aa = AtomTypeAssigner(new_mdag, new_mol, self._mapping)
+        # new_aa = AtomTypeAssigner(new_mdag, new_mol, self._mapping, legacy=True)
 
         # new_ag_types = new_aa.assign_atom_types()
+
+        # print('ATOM GROUP INDICES', self._mdag.indices, np.diff(self._mdag.indices))
+        # print('incremented by one? ', (np.diff(self._mdag.indices) == 1).all())
 
         # print('ag_types', ag_types.sum(axis=0), ag_types.shape)
         # print('new_ag_types', new_ag_types.sum(axis=0), new_ag_types.shape)
@@ -255,6 +258,17 @@ class Universe:
         #     print('Second check: Atom types are equal')
 
         self.dok_types = ag_types.tocsc()
+        # self.dok_types2 = new_ag_types.tocsc()
+
+        dok1 = ag_types.toarray()
+        # dok2 = new_ag_types.toarray()
+
+        # compare dok1 and dok2 row by row
+        # for i in range(dok1.shape[0]):
+        #     if not np.array_equal(dok1[i], dok2[i]):
+        #         print(f'Row {i}, {dok1[i]} != {dok2[i]}')
+        # if not np.array_equal(dok1, dok2):
+        #     raise ValueError("DOK1 and DOK2 are not equal")
 
         # ag_types_array = ag_types.toarray()
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
