@@ -242,13 +242,14 @@ class GemmiLoader(BaseLoader):
         """Convert the loaded biological structure data into an MDAnalysis AtomGroup object."""
         return self.ag
 
-    def to_mol(self) -> MolType:
+    def to_mol(self, tpc=None) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()  # type: ignore
         obmol.create_mol(
             self.arc,
             self.structure.connections,  # type: ignore
+            tpc,
         )
         assert obmol.mol is not None
         return obmol.mol
@@ -291,13 +292,14 @@ class TopologyLoader(BaseLoader):
         """Convert the loaded biological structure data into an MDAnalysis AtomGroup object."""
         return self.ag
 
-    def to_mol(self) -> MolType:
+    def to_mol(self, tpc=None) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()  # type: ignore
         obmol.create_mol(
             self.arc,
             self.structure,
+            tpc,
         )
         assert obmol.mol is not None
         return obmol.mol

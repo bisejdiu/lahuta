@@ -14,6 +14,7 @@ from typing import Dict, Type
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.sparse import dok_matrix
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
@@ -107,6 +108,8 @@ class AtomTypeAssigner:
         hbond_acceptor = self.atypes["hbond_acceptor".upper()]
         hbond_donor = self.atypes["hbond_donor".upper()]
         for atom in water_ag:
+            # TODO: & FIXME: atom.index now should be sufficient
+            print('FOUND WATER ATOMS')
             atypes_array[self.mapping[atom.index], hbond_acceptor] = 1
             atypes_array[self.mapping[atom.index], hbond_donor] = 1
 
@@ -140,13 +143,14 @@ class AtomTypeAssigner:
         Returns:
             NDArray[np.int8]: Array of atom types for the entire molecule.
         """
-        atypes_array: NDArray[np.int8] = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
+        # atypes_array: NDArray[np.int8] = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
+        dok_atyps = dok_matrix((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # atypes_array = self._compute_smarts_types()
         if self.mda.n_atoms != self.protein_ag.n_atoms:
-            atypes_array = self._compute_smarts_types()
+            dok_atyps = self._compute_smarts_types()
 
-        atypes_array = self._compute_water_types(atypes_array)
-        atypes_array = self._compute_protein_types(atypes_array)
+        dok_atyps = self._compute_water_types(dok_atyps)
+        dok_atyps = self._compute_protein_types(dok_atyps)
 
-        return atypes_array
+        return dok_atyps

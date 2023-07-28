@@ -67,6 +67,7 @@ class Universe:
     """
 
     def __init__(self, *args: LuniInputType) -> None:
+        self._args = args
         self._mol: Optional[MolType] = None
         self.hbond_array = None
         self._ready = False
@@ -207,18 +208,58 @@ class Universe:
 
         # TODO: remove array from the variable names by instead using type hints
         atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping)
+
+        # print('ARGSSS: ', self._args)
+        # new_file_loader, new_mdag = self._initialize_from_files(*self._args)
+        # new_mol = new_file_loader.to_mol(tpc='besi')
         ag_types = atomtype_assigner.assign_atom_types()
+
+        print('NEW AGTYPES', type(ag_types), ag_types.sum(axis=0), ag_types.shape)
+        # print('Second assigner Starts here')
+        # new_aa = AtomTypeAssigner(new_mdag, new_mol, self._mapping)
+
+        # new_ag_types = new_aa.assign_atom_types()
+
+        # print('ag_types', ag_types.sum(axis=0), ag_types.shape)
+        # print('new_ag_types', new_ag_types.sum(axis=0), new_ag_types.shape)
+
+        # print('first 5 entries', ag_types[:5], new_ag_types[:5])
+
+        # compare ag_types and new_ag_types row by row
+        # for i in range(ag_types.shape[0]):
+        #     if not np.array_equal(ag_types[i], new_ag_types[i]):
+        #         print(f'Row {i}, {ag_types[i]} != {new_ag_types[i]}')
+        # if not np.array_equal(ag_types, new_ag_types):
+        #     raise ValueError(" First check: Atom types are not equal")
+        # else:
+        #     print('Atom types are equal')
+        # print('ag_types', ag_types.sum(axis=0))
         og_atoms = self._mdag.universe.atoms
 
-        reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
+        # reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]), dtype=np.int8)
+        # new_reference_array = np.zeros((og_atoms.n_atoms, new_ag_types.shape[1]), dtype=np.int8)
 
-        ix = self._mdag.indices
-        full_ag_atypes = reference_array.copy()
-        full_ag_atypes[ix] = ag_types
+        # ix = self._mdag.indices
+        # new_ix = new_mdag.indices
+        # full_ag_atypes = reference_array.copy()
+        # new_full_ag_atypes = new_reference_array.copy()
+        # full_ag_atypes[ix] = ag_types
+        # new_full_ag_atypes[new_ix] = new_ag_types
+        # print('full_ag_atypes', full_ag_atypes.sum(axis=0), full_ag_atypes.dtype)
 
+        # print('MDA Comparison', (self.to("mda").indices == new_mdag.indices).all())
+
+        # if not np.array_equal(full_ag_atypes, new_full_ag_atypes):
+        #     raise ValueError("Atom types are not equal")
+        # else:
+        #     print('Second check: Atom types are equal')
+
+        self.dok_types = ag_types.tocsc()
+
+        # ag_types_array = ag_types.toarray()
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
-        for atom_type, value in AVAILABLE_ATOM_TYPES.items():
-            self._extend_topology(atom_type.lower(), full_ag_atypes[:, value])
+        # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
+        #     self._extend_topology(atom_type.lower(), ag_types_array[:, value])
 
         self._ready = True
 
@@ -261,7 +302,7 @@ class Universe:
             res_dif=res_dif,
         )
 
-        return NeighborPairs(self.to("mda"), self.to("mol"), pairs, distances)
+        return NeighborPairs(self.to("mda"), self.to("mol"), self.dok_types, pairs, distances)
 
     @staticmethod
     def get_format(file_name: str) -> Tuple[Union[str, None], bool]:

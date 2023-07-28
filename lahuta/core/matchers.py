@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
+from scipy.sparse import dok_matrix
 
 from lahuta.config.atoms import STANDARD_AMINO_ACIDS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
@@ -70,7 +71,8 @@ class SmartsMatcher(SmartsMatcherBase):
         """
 
         shape = (mol.NumAtoms(), len(ATypes))
-        atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
+        # atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
+        dok_atyps = dok_matrix(shape, dtype=np.int8)
 
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
@@ -84,9 +86,12 @@ class SmartsMatcher(SmartsMatcherBase):
                     atom = mol.GetAtom(match)
 
                     if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                        atypes_array[atom.GetId(), ATypes[atom_type.name]] = 1
+                        if atom.GetId() in [1174, 1175, 1179, 1181]:
+                            print('atom.GetId()', atom.GetId(), atom_type.name)
+                        # atypes_array[atom.GetId(), ATypes[atom_type.name]] = 1
+                        dok_atyps[atom.GetId(), ATypes[atom_type.name]] = 1
 
-        return atypes_array
+        return dok_atyps
 
 
 class ParallelSmartsMatcher(SmartsMatcherBase):

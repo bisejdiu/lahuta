@@ -15,6 +15,7 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.helpers import get_class_attributes
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
@@ -102,18 +103,20 @@ class NeighborPairs:
         self,
         mda: AtomGroupType,
         mol: MolType,
+        dok_types,
         pairs: NDArray[np.int32],
         distances: NDArray[np.float32],
     ):
         self.mda = mda
         self.mol = mol
         self.atoms = self.mda.atoms.universe.atoms
+        self.dok_types = dok_types
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(self.mda, self.mol)
-        self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
+        # self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(self.mda, self.mol)
+        # self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles: NDArray[np.float32] = np.array([])
         self._annotations: Dict[str, NDArray[Any]] = {}
 
@@ -172,6 +175,11 @@ class NeighborPairs:
 
     def _get_pair_column(self, partner: int) -> AtomGroupType:
         """Return the column of the pair of atoms depending on the value of partner."""
+        # print('1: ', partner - 1)
+        # print('2: ', self.pairs[:, partner - 1])
+        # print('3: ', self.atoms[self.pairs[:, partner - 1]])
+        # print('4', self.atoms[self.pairs[:, partner - 1]].indices)
+        # print('5', self.atoms[self.pairs[:, partner - 1]].hbond_acceptor)
         return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner: int) -> Tuple[AtomGroupType, AtomGroupType]:
@@ -197,8 +205,14 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
-        col_ag = getattr(self._get_pair_column(partner), atom_type)
-        mask = col_ag.astype(bool)
+        atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
+        nonzeros = self.dok_types.getcol(atom_type_col_num).nonzero()[0]
+        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)
+
+        # col_ag = getattr(self._get_pair_column(partner), atom_type)
+        # mask = col_ag.astype(bool)
+        # print('---:> ', mask.shape[0], mask.sum(), type(mask), mask.dtype, mask)
+        # mask = mask.toarray().flatten()
 
         return self.clone(self.pairs[mask], self.distances[mask])
 

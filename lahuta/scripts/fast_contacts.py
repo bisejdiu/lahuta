@@ -3,9 +3,7 @@ import time
 import MDAnalysis as mda
 
 from lahuta.contacts import AtomPlaneContacts, F
-from lahuta.contacts.plane_plane import (
-    PlanePlaneContacts,
-)  # APDataFrameFactory,; PPDataFrameFactory,
+from lahuta.contacts.plane_plane import PlanePlaneContacts  # APDataFrameFactory,; PPDataFrameFactory,
 from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
@@ -25,7 +23,7 @@ if __name__ == "__main__":
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/8djb.cif")
     start = time.time()
     n = u.compute_neighbors(res_dif=2)
-    print("Finished computing neighbors")
+    print("Finished computing neighbors", n.pairs.shape)
 
     # Compute contacAMIDE_SMARTSts
     cov = F.covalent_neighbors(n)
@@ -37,11 +35,11 @@ if __name__ == "__main__":
     carb = F.carbonyl_neighbors(n)
     print(carb.pairs.shape, "carb")
 
-    hb = F.hbond_neighbors(n)
-    print(hb.pairs.shape, "hb")
+    # hb = F.hbond_neighbors(n)
+    # print(hb.pairs.shape, "hb")
 
-    whb = F.weak_hbond_neighbors(n)
-    print(whb.pairs.shape, "whb")
+    # whb = F.weak_hbond_neighbors(n)
+    # print(whb.pairs.shape, "whb")
 
     ionic = F.ionic_neighbors(n)
     print(ionic.pairs.shape, "ionic")
@@ -52,11 +50,11 @@ if __name__ == "__main__":
     hydrophobic = F.hydrophobic_neighbors(n)
     print(hydrophobic.pairs.shape, "hydrophobic")
 
-    phb = F.polar_hbond_neighbors(n)
-    print(phb.pairs.shape, "phb")
+    # phb = F.polar_hbond_neighbors(n)
+    # print(phb.pairs.shape, "phb")
 
-    wphb = F.weak_polar_hbond_neighbors(n)
-    print(wphb.pairs.shape, "wphb")
+    # wphb = F.weak_polar_hbond_neighbors(n)
+    # print(wphb.pairs.shape, "wphb")
 
     vdw = F.vdw_neighbors(n)
     print(vdw.pairs.shape, "vdw")

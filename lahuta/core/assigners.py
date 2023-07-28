@@ -96,7 +96,9 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
         true_indices = np.argwhere(mask)
 
-        atypes_array[true_indices[:, 1], true_indices[:, 0]] = 1
+        # atypes_array[true_indices[:, 1], true_indices[:, 0]] = 1
+        for i, j in zip(true_indices[:, 1], true_indices[:, 0]):
+            atypes_array[i, j] = 1
 
         return atypes_array
 

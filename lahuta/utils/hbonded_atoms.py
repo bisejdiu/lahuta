@@ -44,6 +44,7 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
     hbond_array: NDArray[np.int32] = np.zeros((n_atoms, 6), dtype=int)
 
     # will give -1 for atoms not in the atomgroup
+    # TODO: & FIXME: We need to use or re-use csc or dok matrix
     max_index = np.max(mda.indices)
     atom_mapping = np.full(max_index + 1, -1)
     atom_mapping[np.arange(mda.n_atoms)] = mda.indices

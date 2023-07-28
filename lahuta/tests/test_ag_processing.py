@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from _pytest.fixtures import FixtureRequest
 
+# from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
@@ -104,6 +105,7 @@ class TestMDAnalysis:
             ContactType("polar_hbond", C.polar_hbond_neighbors, self.universe),
             ContactType("polar_weak_hbond", C.weak_polar_hbond_neighbors, self.universe),
             ContactType("vdw", C.vdw_neighbors, self.universe),
+            # ContactType("plane_plane", F.plane_plane_neighbors, self.universe),
         ]
 
         for contact_type in self.contact_types:
