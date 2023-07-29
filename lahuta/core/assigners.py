@@ -96,15 +96,8 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
 
         true_indices = np.argwhere(mask)
 
-        # FIXME: vectorize
-        # atypes_array[true_indices[:, 1], true_indices[:, 0]] = 1
-        # for i, j in zip(true_indices[:, 1], true_indices[:, 0]):
-        #     atypes_array[i, j] = 1
-
         original_indices = self.protein_ag.indices[true_indices[:, 1]]
-
-        for i, j in zip(original_indices, true_indices[:, 0]):
-            atypes_array[i, j] = 1
+        atypes_array[original_indices, true_indices[:, 0]] = 1
 
         return atypes_array
 
