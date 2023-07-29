@@ -161,7 +161,7 @@ class OBMol:
         if self.mol:
             self.mol.EndModify(nuke_perceived_data)
 
-    def create_mol(self, arc: ARC, connections: Optional[Any] = None, tpc=None) -> None:
+    def create_mol(self, arc: ARC, connections: Optional[Any] = None) -> None:
         """
         Create a new molecule from an ARC (Atomic Record Collection) object.
 
@@ -206,14 +206,7 @@ class OBMol:
                 ob_res = self.create_residue_obmol(resid, resname, chain_id)
                 added_residues.add(_cra_)
 
-            if tpc is not None:
-                if atom_id < 5:
-                    print('atom_id INFO', atom_id, str(atom_name), str(element))
-                self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
-            else:
-                if idx > 1245:
-                    print('idx INFO', idx, atom_id - 1, str(atom_name), str(element))
-                self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
+            self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
 
         self.perceive_bonds()
         for connection in connections:

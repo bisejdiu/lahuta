@@ -16,7 +16,6 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from numpy.typing import NDArray
 from openbabel import openbabel as ob
 from scipy.sparse import dok_matrix
 
@@ -34,8 +33,11 @@ class SmartsMatcherBase(ABC):
     The subclass must implement the compute method.
     """
 
+    def __init__(self, n_atoms: int) -> None:
+        self.n_atoms = n_atoms
+
     @abstractmethod
-    def compute(self, mol: MolType) -> NDArray[np.int8]:
+    def compute(self, mol: MolType) -> dok_matrix:
         """
         Abstract method for SMARTS pattern matching.
 
@@ -46,7 +48,7 @@ class SmartsMatcherBase(ABC):
             NotImplementedError: This is an abstract method that needs to be implemented in the subclass.
 
         Returns:
-            NDArray[np.int8]: An array of atom types as defined in the SmartsPatternRegistry dictionary.
+            dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -59,7 +61,7 @@ class SmartsMatcher(SmartsMatcherBase):
     It inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def compute(self, mol: MolType, mda) -> NDArray[np.int8]:
+    def compute(self, mol: MolType) -> dok_matrix:
         """
         Performs SMARTS pattern matching on a molecule.
 
@@ -67,13 +69,10 @@ class SmartsMatcher(SmartsMatcherBase):
             mol (MolType): A molecule object to match patterns on.
 
         Returns:
-            NDArray[np.int8]: An array of atom types that match the SMARTS patterns in the given molecule.
+            dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
-        shape = (mol.NumAtoms(), len(ATypes))
-        shape = (mda.universe.atoms.n_atoms, len(ATypes))
-        # atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
-        dok_atyps = dok_matrix(shape, dtype=np.int8)
+        dok_atyps = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
 
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
@@ -150,7 +149,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         matches = [x[0] for x in ob_smart.GetMapList()]
         return [(match, atypes[atom_type]) for match in matches]
 
-    def compute(self, mol: MolType) -> NDArray[np.int8]:
+    def compute(self, mol: MolType) -> dok_matrix:
         """
         Performs SMARTS pattern matching on a molecule using multiple threads.
 
@@ -158,11 +157,10 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
             mol (MolType): A molecule object to match patterns on.
 
         Returns:
-            NDArray[np.int8]: An array of atom types that match the SMARTS patterns in the given molecule.
+            dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
-        shape = (mol.NumAtoms(), len(ATypes))
-        atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
+        dok_atyps = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
 
         num_threads = os.cpu_count()
 
@@ -178,6 +176,6 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
                     for match, atype in matches:
                         atom = mol.GetAtom(match)
                         if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                            atypes_array[atom.GetIdx() - 1, atype] = 1
+                            dok_atyps[atom.GetIdx() - 1, atype] = 1
 
-        return atypes_array
+        return dok_atyps
