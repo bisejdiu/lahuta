@@ -23,7 +23,8 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
-from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+
+# from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
@@ -208,69 +209,10 @@ class Universe:
 
         # TODO: remove array from the variable names by instead using type hints
         atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping, legacy=False)
-
-        # print('ARGSSS: ', self._args)
-        # new_file_loader, new_mdag = self._initialize_from_files(*self._args)
-        # new_mol = new_file_loader.to_mol(tpc='besi')
         ag_types = atomtype_assigner.assign_atom_types()
-
-        print('NEW AGTYPES', type(ag_types), ag_types.sum(axis=0), ag_types.shape)
-        # print('Second assigner Starts here')
-        # new_aa = AtomTypeAssigner(new_mdag, new_mol, self._mapping, legacy=True)
-
-        # new_ag_types = new_aa.assign_atom_types()
-
-        # print('ATOM GROUP INDICES', self._mdag.indices, np.diff(self._mdag.indices))
-        # print('incremented by one? ', (np.diff(self._mdag.indices) == 1).all())
-
-        # print('ag_types', ag_types.sum(axis=0), ag_types.shape)
-        # print('new_ag_types', new_ag_types.sum(axis=0), new_ag_types.shape)
-
-        # print('first 5 entries', ag_types[:5], new_ag_types[:5])
-
-        # compare ag_types and new_ag_types row by row
-        # for i in range(ag_types.shape[0]):
-        #     if not np.array_equal(ag_types[i], new_ag_types[i]):
-        #         print(f'Row {i}, {ag_types[i]} != {new_ag_types[i]}')
-        # if not np.array_equal(ag_types, new_ag_types):
-        #     raise ValueError(" First check: Atom types are not equal")
-        # else:
-        #     print('Atom types are equal')
-        # print('ag_types', ag_types.sum(axis=0))
         og_atoms = self._mdag.universe.atoms
-
-        # reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]), dtype=np.int8)
-        # new_reference_array = np.zeros((og_atoms.n_atoms, new_ag_types.shape[1]), dtype=np.int8)
-
-        # ix = self._mdag.indices
-        # new_ix = new_mdag.indices
-        # full_ag_atypes = reference_array.copy()
-        # new_full_ag_atypes = new_reference_array.copy()
-        # full_ag_atypes[ix] = ag_types
-        # new_full_ag_atypes[new_ix] = new_ag_types
-        # print('full_ag_atypes', full_ag_atypes.sum(axis=0), full_ag_atypes.dtype)
-
-        # print('MDA Comparison', (self.to("mda").indices == new_mdag.indices).all())
-
-        # if not np.array_equal(full_ag_atypes, new_full_ag_atypes):
-        #     raise ValueError("Atom types are not equal")
-        # else:
-        #     print('Second check: Atom types are equal')
-
         self.dok_types = ag_types.tocsc()
-        # self.dok_types2 = new_ag_types.tocsc()
 
-        dok1 = ag_types.toarray()
-        # dok2 = new_ag_types.toarray()
-
-        # compare dok1 and dok2 row by row
-        # for i in range(dok1.shape[0]):
-        #     if not np.array_equal(dok1[i], dok2[i]):
-        #         print(f'Row {i}, {dok1[i]} != {dok2[i]}')
-        # if not np.array_equal(dok1, dok2):
-        #     raise ValueError("DOK1 and DOK2 are not equal")
-
-        # ag_types_array = ag_types.toarray()
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
         # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
         #     self._extend_topology(atom_type.lower(), ag_types_array[:, value])
