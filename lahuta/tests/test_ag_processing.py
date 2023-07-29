@@ -135,7 +135,7 @@ class TestMDAnalysis:
             assert contact_type.neighbors_diff is not None
             for pair in contact_type.neighbors_diff.pairs:
                 x1, x2 = atoms[pair[0]], atoms[pair[1]]
-                assert not (x1.resname in self.universe.unique_resnames) or (
+                assert (x1.resname in self.universe.unique_resnames) or (
                     x2.resname in self.universe.unique_resnames
-                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors, for selection {self.selection}, and resnames {self.universe.unique_resnames}"
+                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors, for selection '{self.selection}', and resnames {self.universe.unique_resnames}"
             assert True
