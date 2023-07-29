@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 from numpy.typing import NDArray
+from scipy.sparse import dok_matrix
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
@@ -40,14 +41,14 @@ class ProteinTypeAssignerBase(ABC):
         self.protein_ag = protein_ag
 
     @abstractmethod
-    def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+    def compute(self, atypes_array: dok_matrix) -> dok_matrix:
         """
         Abstract method to compute atom types.
 
         Must be implemented by child classes.
 
         Args:
-            atypes_array (NDArray[np.int8]): Array of atom types.
+            atypes_array (dok_matrix): Sparse array of atom types.
 
         Raises:
             NotImplementedError: If not implemented by child class.
@@ -66,17 +67,17 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
         compute method from ProteinTypeAssignerBase.
     """
 
-    def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+    def compute(self, atypes_array: dok_matrix) -> dok_matrix:
         """
         Computes atom types in a vectorized manner.
 
         Uses NumPy array manipulations for efficient assignment of atom types.
 
         Args:
-            atypes_array (NDArray[np.int8]): Array of atom types.
+            atypes_array (dok_matrix): Sparse array of atom types.
 
         Returns:
-            NDArray[np.int8]: Array of assigned atom types.
+            dok_matrix: Sparse array of assigned atom types.
         """
 
         resname_str = self.protein_ag.resnames.astype(str)
@@ -112,17 +113,17 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
         compute method from ProteinTypeAssignerBase.
     """
 
-    def compute(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+    def compute(self, atypes_array: dok_matrix) -> dok_matrix:
         """
         Computes atom types using a loop-based method.
 
         Uses a traditional, loop-based approach for assignment of atom types.
 
         Args:
-            atypes_array (NDArray[np.int8]): Array of atom types.
+            atypes_array (dok_matrix): Sparse array of atom types.
 
         Returns:
-            NDArray[np.int8]: Array of assigned atom types.
+            dok_matrix: Sparse array of assigned atom types.
         """
 
         for residue in self.protein_ag.residues:

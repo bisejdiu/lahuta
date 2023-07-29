@@ -72,7 +72,7 @@ class AtomTypeAssigner:
             False: VectorizedProteinTypeAssigner,
         }
 
-    def _compute_smarts_types(self) -> NDArray[np.int8]:
+    def _compute_smarts_types(self) -> dok_matrix:
         """
         Compute atom types based on SMARTS pattern matching.
 
@@ -80,13 +80,13 @@ class AtomTypeAssigner:
         class is used for SMARTS pattern matching.
 
         Returns:
-            NDArray[np.int8]: Array of atom types as defined in the SmartsPatternRegistry dictionary.
+            dok_matrix: A sparse matrix of atom types as defined in the SmartsPatternRegistry dictionary.
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
-        smarts_matcher = smarts_matcher_class()
-        return smarts_matcher.compute(self.mol, self.mda)
+        smarts_matcher = smarts_matcher_class(self.mda.universe.atoms.n_atoms)
+        return smarts_matcher.compute(self.mol)
 
-    def _compute_water_types(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+    def _compute_water_types(self, atypes_array: dok_matrix) -> dok_matrix:
         """
         Assign hydrogen bond donor and acceptor types to water molecules.
 
@@ -97,8 +97,14 @@ class AtomTypeAssigner:
             atypes_array (NDArray[np.int8]): Array of atom types.
 
         Returns:
-            NDArray[np.int8]: Modified array of atom types with assigned types for water molecules.
+            dok_matrix: A modified sparse matrix of atom types with assigned types for water molecules
         """
+        # FIXME:
+        # Water assignment won't work anymore with the dok matrix
+        # TODO:
+        # Test if simply assigning using atom.index is sufficient. This of course assumes that
+        # ARC.Atoms.ids, OBMol, and MDA indices are all the same. The former two are guaranteed to be the same.
+
         water_ag = self.mda.select_atoms("resname SOL HOH TIP3 TIP4 WAT W and not name H*")
         # max_index = np.max(self.mda.universe.atoms.indices)
         # atom_mapping = np.full(max_index + 1, -1)
@@ -115,7 +121,7 @@ class AtomTypeAssigner:
 
         return atypes_array
 
-    def _compute_protein_types(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
+    def _compute_protein_types(self, atypes_array: dok_matrix) -> dok_matrix:
         """
         Assign protein atom types based on the chosen method.
 
@@ -126,14 +132,14 @@ class AtomTypeAssigner:
             atypes_array (NDArray[np.int8]): Array of atom types.
 
         Returns:
-            NDArray[np.int8]: Array of protein atom types as defined in PROT_ATOM_TYPES.
+            dok_matrix: A modified sparse matrix of protein atom types as defined in PROT_ATOM_TYPES
         """
         protein_type_assigner_class = self.protein_type_assigner_classes[self.legacy]
 
         protein_type_assigner = protein_type_assigner_class(self.protein_ag)
         return protein_type_assigner.compute(atypes_array)
 
-    def assign_atom_types(self) -> NDArray[np.int8]:
+    def assign_atom_types(self) -> dok_matrix:
         """
         Assign atom types to atoms in the molecule using the configured methods.
 
@@ -141,7 +147,7 @@ class AtomTypeAssigner:
         protein atom type assignment.
 
         Returns:
-            NDArray[np.int8]: Array of atom types for the entire molecule.
+            dok_matrix: A sparse matrix of atom types for the entire molecule.
         """
         # atypes_array: NDArray[np.int8] = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
         # dok_atyps = dok_matrix((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
