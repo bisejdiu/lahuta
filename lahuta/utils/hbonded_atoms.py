@@ -18,6 +18,7 @@ Notes:
 import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
+from scipy.sparse import dok_matrix
 
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
@@ -41,20 +42,23 @@ def find_hydrogen_bonded_atoms(mda: AtomGroupType, mol: MolType) -> NDArray[np.i
                            bonded hydrogen atom for that position.
     """
     n_atoms: int = mda.universe.atoms.n_atoms
-    hbond_array: NDArray[np.int32] = np.zeros((n_atoms, 6), dtype=int)
+    # print('NATOMS', n_atoms)
+    # hbond_array: NDArray[np.int32] = np.zeros((n_atoms, 6), dtype=int)
+    hbond_array = dok_matrix((n_atoms, 6), dtype=np.int32)
 
     # will give -1 for atoms not in the atomgroup
     # TODO: & FIXME: We need to use or re-use csc or dok matrix
     max_index = np.max(mda.indices)
     atom_mapping = np.full(max_index + 1, -1)
     atom_mapping[np.arange(mda.n_atoms)] = mda.indices
+    print("ATOM MAPPING DETAILS: ", atom_mapping.shape)
 
     for atom in ob.OBMolAtomIter(mol):
         if atom.ExplicitHydrogenCount():
             for ix, atom2 in enumerate(ob.OBAtomAtomIter(atom)):  # type: ignore
                 if atom2.GetAtomicNum() == 1:  # type: ignore
-                    atom1_id = atom_mapping[atom.GetId()]  # type: ignore
-                    atom2_id = atom_mapping[atom2.GetId()]  # type: ignore
+                    atom1_id = atom.GetId()  # type: ignore
+                    atom2_id = atom2.GetId()  # type: ignore
                     hbond_array[atom1_id, ix] = atom2_id
 
-    return hbond_array
+    return hbond_array.toarray()
