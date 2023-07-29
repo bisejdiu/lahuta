@@ -235,8 +235,11 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
 
-        col_func = self._get_pair_column(partner)
-        mask = np.isin(col_func.indices, indices)  # type: ignore
+        # nonzeros = self.dok_types.nonzero()[0]
+        mask = np.in1d(self.pairs[:, partner - 1], indices)
+
+        # col_func = self._get_pair_column(partner)
+        # mask = np.isin(col_func.indices, indices)  # type: ignore
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
@@ -256,7 +259,7 @@ class NeighborPairs:
         mask = self.distances <= distance
         return self.clone(self.pairs[mask], self.distances[mask])
 
-    def numeric_filter(self, array: NDArray[np.float32], cutoff: float, lte: bool = True) -> "NeighborPairs":
+    def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> "NeighborPairs":
         """
         Selects pairs based on a numeric cutoff.
 
@@ -272,7 +275,7 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the numeric filter.
         """
-        mask = array <= cutoff if lte else array > cutoff
+        mask = array <= cutoff
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
