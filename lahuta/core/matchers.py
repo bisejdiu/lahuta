@@ -59,7 +59,7 @@ class SmartsMatcher(SmartsMatcherBase):
     It inherits from the SmartsMatcherBase abstract base class.
     """
 
-    def compute(self, mol: MolType) -> NDArray[np.int8]:
+    def compute(self, mol: MolType, mda) -> NDArray[np.int8]:
         """
         Performs SMARTS pattern matching on a molecule.
 
@@ -71,6 +71,7 @@ class SmartsMatcher(SmartsMatcherBase):
         """
 
         shape = (mol.NumAtoms(), len(ATypes))
+        shape = (mda.universe.atoms.n_atoms, len(ATypes))
         # atypes_array: NDArray[np.int8] = np.zeros(shape, dtype=np.int8)
         dok_atyps = dok_matrix(shape, dtype=np.int8)
 

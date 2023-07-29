@@ -84,7 +84,7 @@ class AtomTypeAssigner:
         """
         smarts_matcher_class = self.smarts_matcher_classes[self.parallel]
         smarts_matcher = smarts_matcher_class()
-        return smarts_matcher.compute(self.mol)
+        return smarts_matcher.compute(self.mol, self.mda)
 
     def _compute_water_types(self, atypes_array: NDArray[np.int8]) -> NDArray[np.int8]:
         """
@@ -144,7 +144,8 @@ class AtomTypeAssigner:
             NDArray[np.int8]: Array of atom types for the entire molecule.
         """
         # atypes_array: NDArray[np.int8] = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
-        dok_atyps = dok_matrix((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
+        # dok_atyps = dok_matrix((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
+        dok_atyps = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # atypes_array = self._compute_smarts_types()
         if self.mda.n_atoms != self.protein_ag.n_atoms:
