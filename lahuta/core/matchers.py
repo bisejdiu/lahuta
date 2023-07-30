@@ -72,7 +72,7 @@ class SmartsMatcher(SmartsMatcherBase):
             dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
-        dok_atyps = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
+        dok_atyps = dok_matrix((self.n_atoms + 1, len(ATypes)), dtype=np.int8)
 
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value

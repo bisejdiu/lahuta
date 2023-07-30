@@ -21,6 +21,7 @@ from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overloa
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
+from scipy.sparse import csc_matrix
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 
@@ -68,12 +69,12 @@ class Universe:
     """
 
     def __init__(self, *args: LuniInputType) -> None:
-        self._args = args
         self._mol: Optional[MolType] = None
         self.hbond_array = None
         self._ready = False
         self._mapping: NDArray[np.int64] = np.array([], dtype=np.int64)
         self._topattr_handler = AtomAttrClassHandler()
+        self.dok_types: csc_matrix = csc_matrix((0, 0), dtype=np.int32)
         # self._file_loader: Optional[BaseLoader] = None
         # self._mdag: Optional[AtomGroupType] = None
 
@@ -211,7 +212,7 @@ class Universe:
         atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mdag.universe.atoms
-        self.dok_types = ag_types.tocsc()
+        self.dok_types = ag_types.tocsc()  # type: ignore
 
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
         # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
