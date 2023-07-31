@@ -48,13 +48,13 @@ class AtomTypeAssigner:
         self,
         mda: AtomGroupType,
         mol: MolType,
-        n_atoms: int,
+        # n_atoms: int,
         parallel: bool = False,
         legacy: bool = False,
     ) -> None:
         self.mda = mda
         self.mol = mol
-        self.n_atoms = n_atoms
+        # self.n_atoms = n_atoms
         # self.mapping = mapping
 
         self.protein_ag = self.mda.select_atoms("protein and not name H*")

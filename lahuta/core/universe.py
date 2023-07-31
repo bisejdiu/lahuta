@@ -193,7 +193,7 @@ class Universe:
 
         # TODO: remove array from the variable names by instead using type hints
         assert self.arc is not None
-        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, self.arc.atoms.ids.size, legacy=False)
+        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
         self.dok_types = ag_types.tocsc()  # type: ignore
