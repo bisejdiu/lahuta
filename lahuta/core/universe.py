@@ -51,7 +51,7 @@ class Universe:
         _mapping (NDArray[np.int64]): Maps atom indices to their positions in a flat, 1D array.
         _topattr_handler (AtomAttrClassHandler): Handles atom attributes.
         _file_loader (BaseLoader, optional): Handles file loading.
-        _mdag (AtomGroupType, optional): Represents a group of atoms in the Universe.
+        _mda (AtomGroupType, optional): Represents a group of atoms in the Universe.
 
     Methods:
         _validate_input(*args: LuniInputType): Validates the input files.
@@ -76,12 +76,12 @@ class Universe:
         self._topattr_handler = AtomAttrClassHandler()
         self.dok_types: csc_matrix = csc_matrix((0, 0), dtype=np.int32)
         # self._file_loader: Optional[BaseLoader] = None
-        # self._mdag: Optional[AtomGroupType] = None
+        # self._mda: Optional[AtomGroupType] = None
 
         initializer = self._validate_input(*args)
-        self._file_loader, self._mdag = initializer(*args)
+        self._file_loader, self._mda = initializer(*args)
 
-        assert self._mdag is not None
+        assert self._mda is not None
         assert self._file_loader is not None
 
     def _validate_input(self, *args: LuniInputType) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
@@ -122,8 +122,8 @@ class Universe:
         """
 
         _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
-        _mdag = _file_loader.to("mda")
-        return _file_loader, _mdag
+        _mda = _file_loader.to("mda")
+        return _file_loader, _mda
 
     def _initialize_from_files(self, files: str) -> Tuple[BaseLoader, AtomGroupType]:
         """
@@ -137,8 +137,8 @@ class Universe:
         """
 
         _file_loader = self._get_file_loader(files)
-        _mdag = _file_loader.to("mda")
-        return _file_loader, _mdag
+        _mda = _file_loader.to("mda")
+        return _file_loader, _mda
 
     def _get_file_loader(self, *files: str) -> BaseLoader:
         """
@@ -175,7 +175,7 @@ class Universe:
         """
 
         self._topattr_handler.init_topattr(attrname, attrname)
-        self._mdag.universe.add_TopologyAttr(attrname, values)
+        self._mda.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
@@ -209,11 +209,9 @@ class Universe:
         self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        atomtype_assigner = AtomTypeAssigner(
-            self._mdag, self._mol, self.arc.atoms.ids.size, self._mapping, legacy=False
-        )
+        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, self.arc.atoms.ids.size, self._mapping, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
-        og_atoms = self._mdag.universe.atoms
+        og_atoms = self._mda.universe.atoms
         self.dok_types = ag_types.tocsc()  # type: ignore
 
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
@@ -311,14 +309,16 @@ class Universe:
         """
         if fmt == "mol" and self._mol is not None:
             return self._mol
-        return self._file_loader.to(fmt)
+        if fmt == "mol":
+            self._mol = self._file_loader.to(fmt)
+        return getattr(self, f"_{fmt}")
 
     @property
     def arc(self) -> Union[None, ARC]:
         return self._file_loader.arc
 
     def __repr__(self) -> str:
-        return f"<Lahuta Universe with {self._mdag.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self._mda.n_atoms} atoms>"
 
     def __str__(self) -> str:
         return self.__repr__()
