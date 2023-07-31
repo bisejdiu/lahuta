@@ -209,7 +209,9 @@ class Universe:
         self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping, legacy=False)
+        atomtype_assigner = AtomTypeAssigner(
+            self._mdag, self._mol, self.arc.atoms.ids.size, self._mapping, legacy=False
+        )
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mdag.universe.atoms
         self.dok_types = ag_types.tocsc()  # type: ignore

@@ -49,13 +49,16 @@ class AtomTypeAssigner:
         self,
         mda: AtomGroupType,
         mol: MolType,
+        n_atoms: int,
         mapping: NDArray[np.int64],
         parallel: bool = False,
         legacy: bool = False,
     ) -> None:
         self.mda = mda
         self.mol = mol
+        self.n_atoms = n_atoms
         self.mapping = mapping
+
         self.protein_ag = self.mda.select_atoms("protein")
 
         self.atypes = AVAILABLE_ATOM_TYPES

@@ -233,6 +233,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("segids", chain_ids)
+        uv.add_TopologyAttr("ids", self.arc.atoms.ids)
 
         uv.atoms.positions = self.arc.atoms.coordinates
 

@@ -92,6 +92,10 @@ class AtomGroupType(Protocol):
         ...
 
     @property
+    def ix(self) -> NDArray[np.int32]:
+        ...
+
+    @property
     def elements(self) -> NDArray[np.str_]:
         ...
 
