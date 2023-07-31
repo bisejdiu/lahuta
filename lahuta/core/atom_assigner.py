@@ -118,7 +118,7 @@ class AtomTypeAssigner:
         hbond_donor = self.atypes["hbond_donor".upper()]
         for atom in water_ag:
             # TODO: & FIXME: atom.index now should be sufficient
-            print('FOUND WATER ATOMS')
+            # print('FOUND WATER ATOMS')
             atypes_array[self.mapping[atom.index], hbond_acceptor] = 1
             atypes_array[self.mapping[atom.index], hbond_donor] = 1
 
