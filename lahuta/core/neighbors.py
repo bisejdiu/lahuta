@@ -13,7 +13,7 @@ from typing import Any, Dict, Literal, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
@@ -104,14 +104,14 @@ class NeighborPairs:
         self,
         mda: AtomGroupType,
         mol: MolType,
-        dok_types: csc_matrix,
+        atom_types: csc_array,
         pairs: NDArray[np.int32],
         distances: NDArray[np.float32],
     ):
         self.mda = mda
         self.mol = mol
         self.atoms = self.mda.atoms.universe.atoms
-        self.dok_types = dok_types
+        self.atom_types = atom_types
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
@@ -207,7 +207,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
-        nonzeros: NDArray[np.int32] = self.dok_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
+        nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # type: ignore
 
         # col_ag = getattr(self._get_pair_column(partner), atom_type)
@@ -236,7 +236,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
 
-        # nonzeros = self.dok_types.nonzero()[0]
+        # nonzeros = self.atom_types.nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], indices)
 
         # col_func = self._get_pair_column(partner)

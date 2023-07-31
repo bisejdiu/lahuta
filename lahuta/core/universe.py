@@ -21,11 +21,9 @@ from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overloa
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_array
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
-
-# from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
@@ -74,7 +72,7 @@ class Universe:
         self._ready = False
         self._mapping: NDArray[np.int64] = np.array([], dtype=np.int64)
         self._topattr_handler = AtomAttrClassHandler()
-        self.dok_types: csc_matrix = csc_matrix((0, 0), dtype=np.int32)
+        self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
         # self._file_loader: Optional[BaseLoader] = None
         # self._mda: Optional[AtomGroupType] = None
 
@@ -196,7 +194,7 @@ class Universe:
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
-        self.dok_types = ag_types.tocsc()  # type: ignore
+        self.atom_types = ag_types
 
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
         # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
@@ -243,7 +241,7 @@ class Universe:
             res_dif=res_dif,
         )
 
-        return NeighborPairs(self.to("mda"), self.to("mol"), self.dok_types, pairs, distances)
+        return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
 
     @staticmethod
     def get_format(file_name: str) -> Tuple[Union[str, None], bool]:
@@ -291,6 +289,10 @@ class Universe:
         Returns:
             Union[MolType, AtomGroupType]: A new Universe instance in the specified format.
         """
+
+        if fmt not in {"mda", "mol"}:
+            raise ValueError(f"Invalid format: {fmt}, must be one of 'mda' or 'mol'")
+
         if fmt == "mol" and self._mol is not None:
             return self._mol
         if fmt == "mol":

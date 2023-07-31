@@ -13,7 +13,7 @@ Classes:
 from typing import Dict, Type
 
 import numpy as np
-from scipy.sparse import dok_matrix
+from scipy.sparse import csc_array, dok_matrix
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
@@ -48,14 +48,11 @@ class AtomTypeAssigner:
         self,
         mda: AtomGroupType,
         mol: MolType,
-        # n_atoms: int,
         parallel: bool = False,
         legacy: bool = False,
     ) -> None:
         self.mda = mda
         self.mol = mol
-        # self.n_atoms = n_atoms
-        # self.mapping = mapping
 
         self.protein_ag = self.mda.select_atoms("protein and not name H*")
 
@@ -130,7 +127,7 @@ class AtomTypeAssigner:
         protein_type_assigner = protein_type_assigner_class(self.protein_ag)
         return protein_type_assigner.compute(atypes_array)
 
-    def assign_atom_types(self) -> dok_matrix:
+    def assign_atom_types(self) -> csc_array:
         """
         Assign atom types to atoms in the molecule using the configured methods.
 
@@ -140,15 +137,13 @@ class AtomTypeAssigner:
         Returns:
             dok_matrix: A sparse matrix of atom types for the entire molecule.
         """
-        # atypes_array: NDArray[np.int8] = np.zeros((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
-        # dok_atyps = dok_matrix((self.mol.NumAtoms(), len(PROT_ATOM_TYPES)), dtype=np.int8)
-        dok_atyps = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+        atom_types = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # atypes_array = self._compute_smarts_types()
         if self.mda.n_atoms != self.protein_ag.n_atoms:
-            dok_atyps = self._compute_smarts_types()
+            atom_types = self._compute_smarts_types()
 
-        dok_atyps = self._compute_water_types(dok_atyps)
-        dok_atyps = self._compute_protein_types(dok_atyps)
+        atom_types = self._compute_water_types(atom_types)
+        atom_types = self._compute_protein_types(atom_types)
 
-        return dok_atyps
+        return atom_types.tocsc()
