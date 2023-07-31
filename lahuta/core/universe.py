@@ -180,22 +180,6 @@ class Universe:
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
 
-    def _build_atom_mapping(self, ag: AtomGroupType) -> NDArray[np.int64]:
-        """
-        Builds a mapping of atom indices.
-
-        Args:
-            ag (AtomGroupType): The AtomGroup instance.
-
-        Returns:
-            NDArray[np.int64]: The atom mapping.
-        """
-
-        max_index = np.max(ag.universe.atoms.indices)
-        atom_mapping = np.full(max_index + 1, -1, dtype=np.int64)
-        atom_mapping[ag.indices] = np.arange(ag.n_atoms)
-        return atom_mapping
-
     def ready(self) -> None:
         """
         Prepares instance for computations by transforming the molecule and assigning atom types.
@@ -206,10 +190,10 @@ class Universe:
 
         assert self._file_loader is not None
         self._mol = self._file_loader.to("mol")
-        self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, self.arc.atoms.ids.size, self._mapping, legacy=False)
+        assert self.arc is not None
+        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, self.arc.atoms.ids.size, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
         self.dok_types = ag_types.tocsc()  # type: ignore

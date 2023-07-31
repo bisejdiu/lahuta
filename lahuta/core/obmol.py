@@ -101,8 +101,8 @@ class OBMol:
         ob_atom1 = self.mol.GetAtomById(atom1_id)
         ob_atom2 = self.mol.GetAtomById(atom2_id)
 
-        for neighbor in ob.OBAtomAtomIter(ob_atom1):
-            if neighbor.GetId() == ob_atom2.GetId():
+        for neighbor in ob.OBAtomAtomIter(ob_atom1):  # type: ignore
+            if neighbor.GetId() == ob_atom2.GetId():  # type: ignore
                 continue
 
         ob_bond = self.mol.NewBond()

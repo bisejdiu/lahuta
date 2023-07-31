@@ -13,7 +13,6 @@ Classes:
 from typing import Dict, Type
 
 import numpy as np
-from numpy.typing import NDArray
 from scipy.sparse import dok_matrix
 
 from lahuta.config.atoms import PROT_ATOM_TYPES
@@ -50,16 +49,15 @@ class AtomTypeAssigner:
         mda: AtomGroupType,
         mol: MolType,
         n_atoms: int,
-        mapping: NDArray[np.int64],
         parallel: bool = False,
         legacy: bool = False,
     ) -> None:
         self.mda = mda
         self.mol = mol
         self.n_atoms = n_atoms
-        self.mapping = mapping
+        # self.mapping = mapping
 
-        self.protein_ag = self.mda.select_atoms("protein")
+        self.protein_ag = self.mda.select_atoms("protein and not name H*")
 
         self.atypes = AVAILABLE_ATOM_TYPES
         self.parallel = parallel
@@ -102,25 +100,15 @@ class AtomTypeAssigner:
         Returns:
             dok_matrix: A modified sparse matrix of atom types with assigned types for water molecules
         """
-        # FIXME:
-        # Water assignment won't work anymore with the dok matrix
-        # TODO:
-        # Test if simply assigning using atom.index is sufficient. This of course assumes that
-        # ARC.Atoms.ids, OBMol, and MDA indices are all the same. The former two are guaranteed to be the same.
 
         water_ag = self.mda.select_atoms("resname SOL HOH TIP3 TIP4 WAT W and not name H*")
-        # max_index = np.max(self.mda.universe.atoms.indices)
-        # atom_mapping = np.full(max_index + 1, -1)
-        # atom_mapping[self.mda.atoms.indices] = np.arange(self.mda.n_atoms)
 
         # TODO: vectorize this
         hbond_acceptor = self.atypes["hbond_acceptor".upper()]
         hbond_donor = self.atypes["hbond_donor".upper()]
         for atom in water_ag:
-            # TODO: & FIXME: atom.index now should be sufficient
-            # print('FOUND WATER ATOMS')
-            atypes_array[self.mapping[atom.index], hbond_acceptor] = 1
-            atypes_array[self.mapping[atom.index], hbond_donor] = 1
+            atypes_array[atom.index, hbond_acceptor] = 1
+            atypes_array[atom.index, hbond_donor] = 1
 
         return atypes_array
 
