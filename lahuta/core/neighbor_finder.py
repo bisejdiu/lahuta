@@ -80,10 +80,17 @@ class NeighborSearch:
             The second array of shape (n_pairs,) contains the distances of each pair.
         """
 
-        shift_coords, pseudobox = mda_psuedobox_from_atomgroup(self.ag_no_h)
+        # check for dimensions
+        if not hasattr(self.ag_no_h.universe, "dimensions") or self.ag_no_h.universe.dimensions is None:
+            positions, dimensions = mda_psuedobox_from_atomgroup(self.ag_no_h)
+            pbc = False
+        else:
+            positions = self.ag_no_h.positions
+            dimensions = self.ag_no_h.universe.dimensions
+            pbc = True
 
         # TODO: handle pbc
-        gridsearch = FastNS(cutoff=radius, coords=shift_coords, box=pseudobox, pbc=False)  # type: ignore
+        gridsearch = FastNS(cutoff=radius, coords=positions, box=dimensions, pbc=pbc)  # type: ignore
         neighbors = gridsearch.self_search()  # type: ignore
 
         return (
