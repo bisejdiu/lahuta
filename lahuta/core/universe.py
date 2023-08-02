@@ -21,9 +21,9 @@ from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overloa
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
+from scipy.sparse import csc_array
 
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
-from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
@@ -49,7 +49,7 @@ class Universe:
         _mapping (NDArray[np.int64]): Maps atom indices to their positions in a flat, 1D array.
         _topattr_handler (AtomAttrClassHandler): Handles atom attributes.
         _file_loader (BaseLoader, optional): Handles file loading.
-        _mdag (AtomGroupType, optional): Represents a group of atoms in the Universe.
+        _mda (AtomGroupType, optional): Represents a group of atoms in the Universe.
 
     Methods:
         _validate_input(*args: LuniInputType): Validates the input files.
@@ -72,13 +72,14 @@ class Universe:
         self._ready = False
         self._mapping: NDArray[np.int64] = np.array([], dtype=np.int64)
         self._topattr_handler = AtomAttrClassHandler()
+        self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
         # self._file_loader: Optional[BaseLoader] = None
-        # self._mdag: Optional[AtomGroupType] = None
+        # self._mda: Optional[AtomGroupType] = None
 
         initializer = self._validate_input(*args)
-        self._file_loader, self._mdag = initializer(*args)
+        self._file_loader, self._mda = initializer(*args)
 
-        assert self._mdag is not None
+        assert self._mda is not None
         assert self._file_loader is not None
 
     def _validate_input(self, *args: LuniInputType) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
@@ -119,8 +120,8 @@ class Universe:
         """
 
         _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
-        _mdag = _file_loader.to("mda")
-        return _file_loader, _mdag
+        _mda = _file_loader.to("mda")
+        return _file_loader, _mda
 
     def _initialize_from_files(self, files: str) -> Tuple[BaseLoader, AtomGroupType]:
         """
@@ -134,8 +135,8 @@ class Universe:
         """
 
         _file_loader = self._get_file_loader(files)
-        _mdag = _file_loader.to("mda")
-        return _file_loader, _mdag
+        _mda = _file_loader.to("mda")
+        return _file_loader, _mda
 
     def _get_file_loader(self, *files: str) -> BaseLoader:
         """
@@ -172,26 +173,10 @@ class Universe:
         """
 
         self._topattr_handler.init_topattr(attrname, attrname)
-        self._mdag.universe.add_TopologyAttr(attrname, values)
+        self._mda.universe.add_TopologyAttr(attrname, values)
 
     # def select_atoms(self, *args, **kwargs) -> mda.AtomGroup:
     #     return self.atoms.select_atoms(*args, **kwargs)
-
-    def _build_atom_mapping(self, ag: AtomGroupType) -> NDArray[np.int64]:
-        """
-        Builds a mapping of atom indices.
-
-        Args:
-            ag (AtomGroupType): The AtomGroup instance.
-
-        Returns:
-            NDArray[np.int64]: The atom mapping.
-        """
-
-        max_index = np.max(ag.universe.atoms.indices)
-        atom_mapping = np.full(max_index + 1, -1, dtype=np.int64)
-        atom_mapping[ag.indices] = np.arange(ag.n_atoms)
-        return atom_mapping
 
     def ready(self) -> None:
         """
@@ -203,22 +188,17 @@ class Universe:
 
         assert self._file_loader is not None
         self._mol = self._file_loader.to("mol")
-        self._mapping = self._build_atom_mapping(self.to("mda").universe.atoms)
 
         # TODO: remove array from the variable names by instead using type hints
-        atomtype_assigner = AtomTypeAssigner(self._mdag, self._mol, self._mapping)
+        assert self.arc is not None
+        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
-        og_atoms = self._mdag.universe.atoms
-
-        reference_array = np.zeros((og_atoms.n_atoms, ag_types.shape[1]))
-
-        ix = self._mdag.indices
-        full_ag_atypes = reference_array.copy()
-        full_ag_atypes[ix] = ag_types
+        og_atoms = self._mda.universe.atoms
+        self.atom_types = ag_types
 
         self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
-        for atom_type, value in AVAILABLE_ATOM_TYPES.items():
-            self._extend_topology(atom_type.lower(), full_ag_atypes[:, value])
+        # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
+        #     self._extend_topology(atom_type.lower(), ag_types_array[:, value])
 
         self._ready = True
 
@@ -261,7 +241,7 @@ class Universe:
             res_dif=res_dif,
         )
 
-        return NeighborPairs(self.to("mda"), self.to("mol"), pairs, distances)
+        return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
 
     @staticmethod
     def get_format(file_name: str) -> Tuple[Union[str, None], bool]:
@@ -309,16 +289,22 @@ class Universe:
         Returns:
             Union[MolType, AtomGroupType]: A new Universe instance in the specified format.
         """
+
+        if fmt not in {"mda", "mol"}:
+            raise ValueError(f"Invalid format: {fmt}, must be one of 'mda' or 'mol'")
+
         if fmt == "mol" and self._mol is not None:
             return self._mol
-        return self._file_loader.to(fmt)
+        if fmt == "mol":
+            self._mol = self._file_loader.to(fmt)
+        return getattr(self, f"_{fmt}")
 
     @property
     def arc(self) -> Union[None, ARC]:
         return self._file_loader.arc
 
     def __repr__(self) -> str:
-        return f"<Lahuta Universe with {self._mdag.n_atoms} atoms>"
+        return f"<Lahuta Universe with {self._mda.n_atoms} atoms>"
 
     def __str__(self) -> str:
         return self.__repr__()

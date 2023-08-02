@@ -101,8 +101,8 @@ class OBMol:
         ob_atom1 = self.mol.GetAtomById(atom1_id)
         ob_atom2 = self.mol.GetAtomById(atom2_id)
 
-        for neighbor in ob.OBAtomAtomIter(ob_atom1):
-            if neighbor.GetId() == ob_atom2.GetId():
+        for neighbor in ob.OBAtomAtomIter(ob_atom1):  # type: ignore
+            if neighbor.GetId() == ob_atom2.GetId():  # type: ignore
                 continue
 
         ob_bond = self.mol.NewBond()
@@ -195,6 +195,7 @@ class OBMol:
         ob_res = None
         added_residues: Set[Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]] = set()
         for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
+            atom_id = int(atom["id"])
             atom_name, element = atom["name"], atom["element"]
             resname: NDArray[np.str_] = residue["resname"]
             resid: NDArray[np.int32] = residue["resid"]
@@ -205,7 +206,7 @@ class OBMol:
                 ob_res = self.create_residue_obmol(resid, resname, chain_id)
                 added_residues.add(_cra_)
 
-            self.create_atom_obmol(idx, str(atom_name), str(element), coords[idx], ob_res)
+            self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
 
         self.perceive_bonds()
         for connection in connections:

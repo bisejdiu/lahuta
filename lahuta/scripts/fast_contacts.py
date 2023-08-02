@@ -1,11 +1,6 @@
 import time
 
-import MDAnalysis as mda
-
-from lahuta.contacts import AtomPlaneContacts, F
-from lahuta.contacts.plane_plane import (
-    PlanePlaneContacts,
-)  # APDataFrameFactory,; PPDataFrameFactory,
+from lahuta.contacts import F
 from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
@@ -25,7 +20,7 @@ if __name__ == "__main__":
     # u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/8djb.cif")
     start = time.time()
     n = u.compute_neighbors(res_dif=2)
-    print("Finished computing neighbors")
+    print("Finished computing neighbors", n.pairs.shape)
 
     # Compute contacAMIDE_SMARTSts
     cov = F.covalent_neighbors(n)

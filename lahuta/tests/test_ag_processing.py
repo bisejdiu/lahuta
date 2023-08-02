@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from _pytest.fixtures import FixtureRequest
 
+# from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
@@ -75,6 +76,7 @@ def mda_universe() -> UniverseType:
 
 
 selections_res_difs = [
+    ("all", 1),
     ("protein and not resname ARG", 2),
     ("protein and not resname LYS", 3),
     (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
@@ -91,6 +93,7 @@ class TestMDAnalysis:
         with warnings.catch_warnings(record=True) as _:
             self.universe = UniverseWrapper(mda_universe, selection, universe_ref)
             self.mda = self.universe.u_ref.to("mda")
+            self.selection = selection
 
         self.contact_types = [
             ContactType("covalent", C.covalent_neighbors, self.universe),
@@ -104,6 +107,7 @@ class TestMDAnalysis:
             ContactType("polar_hbond", C.polar_hbond_neighbors, self.universe),
             ContactType("polar_weak_hbond", C.weak_polar_hbond_neighbors, self.universe),
             ContactType("vdw", C.vdw_neighbors, self.universe),
+            # ContactType("plane_plane", F.plane_plane_neighbors, self.universe),
         ]
 
         for contact_type in self.contact_types:
@@ -132,10 +136,7 @@ class TestMDAnalysis:
             assert contact_type.neighbors_diff is not None
             for pair in contact_type.neighbors_diff.pairs:
                 x1, x2 = atoms[pair[0]], atoms[pair[1]]
-                if x1.resname in self.universe.unique_resnames or x2.resname in self.universe.unique_resnames:
-                    continue
-                # fail test if we get here
-                assert (
-                    False
-                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors"
+                assert (x1.resname in self.universe.unique_resnames) or (
+                    x2.resname in self.universe.unique_resnames
+                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors, for selection '{self.selection}', and resnames {self.universe.unique_resnames}"
             assert True

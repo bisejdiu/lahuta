@@ -5,8 +5,11 @@ Classes:
     HBondHandler: A class used to compute various properties of hydrogen bonds for a given atomic group.
 
 """
+from typing import Type
+
 import numpy as np
 from numpy.typing import NDArray
+from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, dok_matrix
 
 from lahuta.config.defaults import VDW_RADII
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
@@ -25,7 +28,7 @@ class HBondHandler:
         The indices of the hydrogen bonded atoms.
     """
 
-    def __init__(self, atoms: AtomGroupType, hbond_array: NDArray[np.int32]):
+    def __init__(self, atoms: AtomGroupType, hbond_array: csr_matrix):
         self._atoms = atoms
         self.hbond_array = hbond_array
 
@@ -45,13 +48,25 @@ class HBondHandler:
                 bonded atom in hbound_attr_col.
         """
 
-        hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices]
-        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+        indices = hbound_attr_col.atoms.indices
+        selected_rows_coo: coo_matrix = self.hbond_array[indices].tocoo()
+        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32)
+        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data
 
+        hbound_atom_pos = np.take(self._atoms.positions, hbound_atom_indices, axis=0)
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+
         distance_array = calc_pairwise_distances(attr_col.atoms.positions, hbound_atom_pos)
 
         return distance_array
+
+        # hbound_atom_indices = self.hbond_array[hbound_attr_col.atoms.indices].toarray()
+        # hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+
+        # hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+        # distance_array = calc_pairwise_distances(attr_col.atoms.positions, hbound_atom_pos)
+
+        # return distance_array
 
     def get_vdw_distances(self, attr_col: AtomGroupType, vdw_comp_factor: float) -> NDArray[np.float32]:
         """
@@ -88,9 +103,11 @@ class HBondHandler:
         atom1_pos = col1.atoms.positions
         atom2_pos = col2.atoms.positions
 
-        hbound_atom_indices = self.hbond_array[col1.atoms.indices]
-        hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+        selected_rows_coo = self.hbond_array[col1.atoms.indices].tocoo()
+        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32)
+        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data
 
+        hbound_atom_pos = np.take(self._atoms.positions, hbound_atom_indices, axis=0)
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan
 
         point_a = atom1_pos[:, np.newaxis, :]
@@ -98,3 +115,14 @@ class HBondHandler:
         point_c = atom2_pos[:, np.newaxis, :]
 
         return calc_vertex_angles(point_b, point_a, point_c, degrees=False)
+
+        # hbound_atom_indices = self.hbond_array[col1.atoms.indices].toarray()
+        # hbound_atom_pos = self._atoms.positions[hbound_atom_indices]
+
+        # hbound_atom_pos[hbound_atom_indices == 0] = np.nan
+
+        # point_a = atom1_pos[:, np.newaxis, :]
+        # point_b = hbound_atom_pos
+        # point_c = atom2_pos[:, np.newaxis, :]
+
+        # return calc_vertex_angles(point_b, point_a, point_c, degrees=False)

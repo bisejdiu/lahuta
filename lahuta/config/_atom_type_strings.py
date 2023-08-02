@@ -14,6 +14,10 @@ throughout the rest of the library.
 This file is licensed under [GNU General Public License](../path/to/license/file). 
 For more details, see also the [GNU General Public License webpage](http://www.gnu.org/licenses/).
 """
+from typing import Dict, List, Set
+
+from MDAnalysis.core.selection import ProteinSelection
+
 # fmt: off
 _METALS_STR = (
     "Li,Be,Na,Mg,Aa,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,"
@@ -21,7 +25,7 @@ _METALS_STR = (
     "Lu,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf"
 )
 
-_STANDARD_AA_STR = "ALA,CYS,ASP,GLU,PHE,GLY,HIS,ILE,LYS,LEU,MET,ASN,PRO,GLN,ARG,SER,THR,VAL,TRP,TYR"
+# _STANDARD_AA_STR = "ALA,CYS,ASP,GLU,PHE,GLY,HIS,HSE,HSD,ILE,LYS,LEU,MET,ASN,PRO,GLN,ARG,SER,THR,VAL,TRP,TYR"
 
 _HA_ATOM_TYPES = (
     "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO,LYSO,METO,PHEO,PROO,"
@@ -41,7 +45,7 @@ _XA_ATOM_TYPES = (
     "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO,LYSO,METO,PHEO,PROO,"
     "SERO,THRO,TRPO,TYRO,VALO,ALAOXT,ARGOXT,ASNOXT,ASPOXT,CYSOXT,GLNOXT,GLUOXT,"
     "GLYOXT,HISOXT,ILEOXT,LEUOXT,LYSOXT,METOXT,PHEOXT,PROOXT,SEROXT,THROXT,TRPOXT,"
-    "TYROXT,VALOXT,ASNOD1,ASNND2,ASPOD1,ASPOD2,GLNOE1GLNNE2,GLUOE1,GLUOE2,HISND1,"
+    "TYROXT,VALOXT,ASNOD1,ASNND2,ASPOD1,ASPOD2,GLNOE1,GLNNE2,GLUOE1,GLUOE2,HISND1,"
     "HISCE1,HISNE2,HISCD2,METSD,CYSSG,SEROG,THROG1,TYROH"
 )
 
@@ -51,7 +55,7 @@ _WHA_ATOM_TYPES = (
     "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO,LYSO,METO,PHEO,"
     "PROO,SERO,THRO,TRPO,TYRO,VALO,ALAOXT,ARGOXT,ASNOXT,ASPOXT,CYSOXT,GLNOXT,"
     "GLUOXT,GLYOXT,HISOXT,ILEOXT,LEUOXT,LYSOXT,METOXT,PHEOXT,PROOXT,SEROXT,THROXT,"
-    "TRPOXT,TYROXT,VALOXT,ASNOD1,ASNND2,ASPOD1,ASPOD2,GLNOE1GLNNE2,GLUOE1,GLUOE2,"
+    "TRPOXT,TYROXT,VALOXT,ASNOD1,ASNND2,ASPOD1,ASPOD2,GLNOE1,GLNNE2,GLUOE1,GLUOE2,"
     "HISND1,HISCE1,HISNE2,HISCD2,METSD,CYSSG,SEROG,THROG1,TYROH"
 )
 
@@ -93,21 +97,94 @@ _AROMATIC_ATOM_TYPES = (
     "TYRCD2,TYRCE1,TYRCE2,TYRCZ"
 )
 
+RESIDUE_SYNONYMS = {
+    "HIS": [
+        "HIS", "HSD", "HSE", "HSP", "HIE", "HIP", "HID", "HIS1", 
+        "HIS2", "HISA", "HISB", "HISD", "HISE", "HISH", "HYP"
+    ],
+    "PHE": ["PHE"],
+    "TYR": ["TYR"],
+    "ALA": ["ALA", "ALAD"],
+    "ARG": ["ARG", "ARGN"],
+    "ASN": ["ASN", "ASN1"],
+    "ASP": ["ASP", "ASPH"],
+    "CYS": ["CYS", "CYS1", "CYS2", "CYSH", "CYX", "CYM"],
+    "GLN": ["GLN", "GLH"],
+    "GLU": ["GLU", "GLUH"],
+    "GLY": ["GLY"],
+    "ILE": ["ILE"],
+    "LEU": ["LEU"],
+    "LYS": ["LYS", "LYSH", "LYN"],
+    "MET": ["MET"],
+    "PRO": ["PRO"],
+    "SER": ["SER"],
+    "THR": ["THR"],
+    "TRP": ["TRP"],
+    "VAL": ["VAL"],
+}
+
+def parse_atom_types_string(_atom_types_string: str) -> Dict[str, List[str]]:
+    """
+    Parse a string of atom types into a dictionary of residue names and atom parts.
+
+    Args:
+        _atom_types_string (str): A string of atom types.
+
+    Returns:
+        Dict[str, List[str]]: A dictionary of residue names and atom parts.
+    """
+
+    atom_parts: Dict[str, List[str]] = {}
+    for atom_type in _atom_types_string.split(","):
+        residue_name = atom_type[:3]
+        atom_part = atom_type[3:]
+
+        if residue_name not in atom_parts:
+            atom_parts[residue_name] = []
+        atom_parts[residue_name].append(atom_part)
+
+    return atom_parts
+
+def parse_atom_types(_atom_types_string: str) -> Set[str]:
+    """
+    Parse a string of atom types into a set of atom types.
+
+    Args:
+        _atom_types_string (str): A string of atom types.
+
+    Returns:
+        Set[str]: A set of atom types.
+    """
+
+    res_atoms = parse_atom_types_string(_atom_types_string)
+
+    atom_types: Set[str] = set()
+    for residue, synonyms in RESIDUE_SYNONYMS.items():
+        for synonym in synonyms:
+            atom_parts = res_atoms.get(residue)
+            if atom_parts is None:
+                continue
+            for atom_part in atom_parts:
+                atom_types.add(synonym + atom_part)
+
+    return atom_types
+
 # FIXME: update with the residue list provided by MDAnalysis
 METALS = set(_METALS_STR.split(","))
-STANDARD_AMINO_ACIDS = set(_STANDARD_AA_STR.split(","))
-HBOND_ACCEPTORS = set(_HA_ATOM_TYPES.split(","))
-HBOND_DONORS = set(_HD_ATOM_TYPES.split(","))
-XBOND_ACCEPTORS = set(_XA_ATOM_TYPES.split(","))
-XBOND_DONORS = set("")
-WEAK_HBOND_ACCEPTORS = set(_WHA_ATOM_TYPES.split(","))
-WEAK_HBOND_DONORS = set(_WHD_ATOM_TYPES.split(","))
-POS_IONISABLE = set(_POS_IONISABLE_ATOM_TYPES.split(","))
-NEG_IONISABLE = set(_NEG_IONISABLE_ATOM_TYPES.split(","))
-HYDROPHOBES = set(_HYDROPHOBE_ATOM_TYPES.split(","))
-CARBONYL_OXYGENS = set(_CARBONYL_OXYGEN_ATOM_TYPES.split(","))
-CARBONYL_CARBONS = set(_CARBONYL_CARBON_ATOM_TYPES.split(","))
-AROMATIC = set(_AROMATIC_ATOM_TYPES.split(","))
+# STANDARD_AMINO_ACIDS = set(_STANDARD_AA_STR.split(","))
+STANDARD_AMINO_ACIDS = ProteinSelection.prot_res
+HBOND_ACCEPTORS = parse_atom_types(_HA_ATOM_TYPES) # set(_HA_ATOM_TYPES.split(","))
+HBOND_DONORS = parse_atom_types(_HD_ATOM_TYPES) #set(_HD_ATOM_TYPES.split(","))
+XBOND_ACCEPTORS = parse_atom_types(_XA_ATOM_TYPES) #set(_XA_ATOM_TYPES.split(","))
+XBOND_DONORS = set("") #set("")
+WEAK_HBOND_ACCEPTORS = parse_atom_types(_WHA_ATOM_TYPES) #set(_WHA_ATOM_TYPES.split(","))
+WEAK_HBOND_DONORS = parse_atom_types(_WHD_ATOM_TYPES) #set(_WHD_ATOM_TYPES.split(","))
+POS_IONISABLE = parse_atom_types(_POS_IONISABLE_ATOM_TYPES) #set(_POS_IONISABLE_ATOM_TYPES.split(","))
+NEG_IONISABLE = parse_atom_types(_NEG_IONISABLE_ATOM_TYPES) #set(_NEG_IONISABLE_ATOM_TYPES.split(","))
+HYDROPHOBES = parse_atom_types(_HYDROPHOBE_ATOM_TYPES) #set(_HYDROPHOBE_ATOM_TYPES.split(","))
+CARBONYL_OXYGENS = parse_atom_types(_CARBONYL_OXYGEN_ATOM_TYPES) #set(_CARBONYL_OXYGEN_ATOM_TYPES.split(","))
+CARBONYL_CARBONS = parse_atom_types(_CARBONYL_CARBON_ATOM_TYPES) #set(_CARBONYL_CARBON_ATOM_TYPES.split(","))
+AROMATIC = parse_atom_types(_AROMATIC_ATOM_TYPES) #set(_AROMATIC_ATOM_TYPES.split(","))
 
 # NOTES
 # "ALAO",    # all the carbonyl Oxygens in the main chain

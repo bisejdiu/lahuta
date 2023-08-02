@@ -13,8 +13,10 @@ from typing import Any, Dict, Literal, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
+from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.helpers import get_class_attributes
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
@@ -102,17 +104,19 @@ class NeighborPairs:
         self,
         mda: AtomGroupType,
         mol: MolType,
+        atom_types: csc_array,
         pairs: NDArray[np.int32],
         distances: NDArray[np.float32],
     ):
         self.mda = mda
         self.mol = mol
         self.atoms = self.mda.atoms.universe.atoms
+        self.atom_types = atom_types
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
-        self.hbond_array: NDArray[np.int32] = find_hydrogen_bonded_atoms(self.mda, self.mol)
+        self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles: NDArray[np.float32] = np.array([])
         self._annotations: Dict[str, NDArray[Any]] = {}
@@ -172,6 +176,11 @@ class NeighborPairs:
 
     def _get_pair_column(self, partner: int) -> AtomGroupType:
         """Return the column of the pair of atoms depending on the value of partner."""
+        # print('1: ', partner - 1)
+        # print('2: ', self.pairs[:, partner - 1])
+        # print('3: ', self.atoms[self.pairs[:, partner - 1]])
+        # print('4', self.atoms[self.pairs[:, partner - 1]].indices)
+        # print('5', self.atoms[self.pairs[:, partner - 1]].hbond_acceptor)
         return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner: int) -> Tuple[AtomGroupType, AtomGroupType]:
@@ -197,8 +206,14 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
-        col_ag = getattr(self._get_pair_column(partner), atom_type)
-        mask = col_ag.astype(bool)
+        atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
+        nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
+        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # type: ignore
+
+        # col_ag = getattr(self._get_pair_column(partner), atom_type)
+        # mask = col_ag.astype(bool)
+        # print('---:> ', mask.shape[0], mask.sum(), type(mask), mask.dtype, mask)
+        # mask = mask.toarray().flatten()
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
@@ -221,8 +236,11 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
 
-        col_func = self._get_pair_column(partner)
-        mask = np.isin(col_func.indices, indices)  # type: ignore
+        # nonzeros = self.atom_types.nonzero()[0]
+        mask = np.in1d(self.pairs[:, partner - 1], indices)
+
+        # col_func = self._get_pair_column(partner)
+        # mask = np.isin(col_func.indices, indices)  # type: ignore
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
@@ -242,7 +260,7 @@ class NeighborPairs:
         mask = self.distances <= distance
         return self.clone(self.pairs[mask], self.distances[mask])
 
-    def numeric_filter(self, array: NDArray[np.float32], cutoff: float, lte: bool = True) -> "NeighborPairs":
+    def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> "NeighborPairs":
         """
         Selects pairs based on a numeric cutoff.
 
@@ -258,7 +276,7 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the numeric filter.
         """
-        mask = array <= cutoff if lte else array > cutoff
+        mask = array <= cutoff
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":

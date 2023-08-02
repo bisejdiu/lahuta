@@ -26,7 +26,7 @@ Example:
     compute_distance(atoms)
 """
 
-from typing import Any, Protocol, Union
+from typing import Any, Optional, Protocol, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -92,6 +92,10 @@ class AtomGroupType(Protocol):
         ...
 
     @property
+    def ix(self) -> NDArray[np.int32]:
+        ...
+
+    @property
     def elements(self) -> NDArray[np.str_]:
         ...
 
@@ -145,6 +149,10 @@ class UniverseType(Protocol):
 
     @property
     def universe(self) -> "UniverseType":
+        ...
+
+    @property
+    def dimensions(self) -> Optional[NDArray[np.float32]]:
         ...
 
     def select_atoms(self, selection: str) -> "AtomGroupType":
