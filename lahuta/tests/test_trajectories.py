@@ -66,23 +66,23 @@ class UniverseWrapper:
 
         self.u_ref = u_ref
         self.u = Universe(self.mda_u.select_atoms(selection).atoms)
+        self.u.ready()
 
 
 @pytest.fixture(scope="session")
 def mda_universe() -> UniverseType:
-    pdb_path = Path(__file__).parent / "data" / "1KX2.pdb"
+    coords = Path(__file__).parent / "data" / "conf0_197_sel.pdb"
+    traj = Path(__file__).parent / "data" / "trj_197_sel.xtc"
     with warnings.catch_warnings(record=True) as _:
-        return mda.Universe(str(pdb_path))  # type: ignore
+        return mda.Universe(str(coords), str(traj))  # type: ignore
 
 
 selections_res_difs = [
-    ("all", 1),
-    ("protein and not resname ARG", 2),
-    ("protein and not resname LYS", 3),
-    (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
-    ("resid 1 to 50", 4),
-    ("resid 1 to 50 or resname HEC", 2),
-    ("(protein and not resname ARG LYS) or resname HEC", 2),
+    ("protein or resname TIP3", 2),
+    ("protein or resname POPC", 2),
+    ("protein or resname POPG", 2),
+    ("protein or resname SOD", 2),
+    ("(protein and not resname ARG LYS) or resname POPC POPG", 2),
 ]
 
 
