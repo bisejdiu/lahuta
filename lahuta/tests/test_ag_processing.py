@@ -76,6 +76,7 @@ def mda_universe() -> UniverseType:
 
 
 selections_res_difs = [
+    ("all", 1),
     ("protein and not resname ARG", 2),
     ("protein and not resname LYS", 3),
     (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),

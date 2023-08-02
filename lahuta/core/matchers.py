@@ -72,7 +72,7 @@ class SmartsMatcher(SmartsMatcherBase):
             dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
-        dok_atyps = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
+        atom_types = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
 
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
@@ -86,12 +86,9 @@ class SmartsMatcher(SmartsMatcherBase):
                     atom = mol.GetAtom(match)
 
                     if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                        if atom.GetId() in [1174, 1175, 1179, 1181]:
-                            print('atom.GetId()', atom.GetId(), atom_type.name)
-                        # atypes_array[atom.GetId(), ATypes[atom_type.name]] = 1
-                        dok_atyps[atom.GetId(), ATypes[atom_type.name]] = 1
+                        atom_types[atom.GetId(), ATypes[atom_type.name]] = 1
 
-        return dok_atyps
+        return atom_types
 
 
 class ParallelSmartsMatcher(SmartsMatcherBase):
@@ -160,7 +157,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
             dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
-        dok_atyps = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
+        atom_types = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
 
         num_threads = os.cpu_count()
 
@@ -176,6 +173,6 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
                     for match, atype in matches:
                         atom = mol.GetAtom(match)
                         if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
-                            dok_atyps[atom.GetIdx() - 1, atype] = 1
+                            atom_types[atom.GetIdx() - 1, atype] = 1
 
-        return dok_atyps
+        return atom_types
