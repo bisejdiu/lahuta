@@ -114,8 +114,33 @@ def compute_neighbors(
     return pairs, distances
 
 
+def compute_neighbors_nocache(
+    positions: NDArray[np.float32], reference: NDArray[np.float32]
+) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    """Compute the neighbors between the reference and positions."""
+    max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
+
+    wrapper: DistanceType = CappedDistance(mda_distances)
+    pairs, distances = wrapper.capped_distance(reference, positions, max_cutoff, return_distances=True)
+    return pairs, distances
+
+
 @memory.cache  # type: ignore
 def calc_ringnormal_pos_angle(
+    ns: NeighborPairs, uv_atoms: AtomGroupType, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
+) -> NDArray[np.float32]:
+    """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
+    selected_ring_centers = ring_centers[ns.pairs[:, 0]]
+    selected_ring_normals = ring_normals[ns.pairs[:, 0]]
+
+    angles = calc_vec_line_angles(
+        selected_ring_normals,
+        selected_ring_centers - uv_atoms[ns.pairs[:, 1]].positions,
+    )
+    return angles
+
+
+def calc_ringnormal_pos_angle_nocache(
     ns: NeighborPairs, uv_atoms: AtomGroupType, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
 ) -> NDArray[np.float32]:
     """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
@@ -177,7 +202,7 @@ def create_contact_function(
 
 
 # user-facing functions
-def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
     """
     Handles the computation of cation pi contacts in a molecular system.
 
@@ -211,7 +236,7 @@ def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True)
     return func(ns)
 
 
-def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
     """
     Handles the computation of carbon pi contacts in a molecular system.
 
@@ -245,7 +270,7 @@ def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True)
     return func(ns)
 
 
-def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) -> NeighborPairs:
+def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
     """
     Handles the computation of donor pi contacts in a molecular system.
 
@@ -279,7 +304,7 @@ def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = True) 
     return func(ns)
 
 
-def sulphur_pi(ns: NeighborPairs, cache: bool = True) -> NeighborPairs:
+def sulphur_pi(ns: NeighborPairs, cache: bool = False) -> NeighborPairs:
     """
     Handles the computation of sulphur pi contacts in a molecular system.
 
@@ -356,17 +381,17 @@ class AtomPlaneContacts:
         self._compute(ns, ns.mda)
 
     def _compute(self, ns: NeighborPairs, mda: AtomGroupType) -> None:
-        result = compute_neighbors.call(mda.atoms.positions, self.rings.centers)  # type: ignore
-        pairs, distances = result[0]
+        result = compute_neighbors_nocache(mda.atoms.positions, self.rings.centers)
+        pairs, distances = result
 
         neighbors = ns.clone(pairs, distances)
 
         self.neighbors = neighbors - neighbors.type_filter("aromatic", partner=2)
 
-        result = calc_ringnormal_pos_angle.call(  # type: ignore
+        result = calc_ringnormal_pos_angle_nocache(
             self.neighbors, mda.universe.atoms, self.rings.centers, self.rings.normals
         )
-        self.angles = result[0]
+        self.angles = result
 
     def donor_pi(self) -> NeighborPairs:
         """
