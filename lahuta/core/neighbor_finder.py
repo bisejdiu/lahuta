@@ -89,12 +89,11 @@ class NeighborSearch:
             dimensions = self.ag_no_h.universe.dimensions
             pbc = True
 
-        # TODO: handle pbc
         gridsearch = FastNS(cutoff=radius, coords=positions, box=dimensions, pbc=pbc)  # type: ignore
         neighbors = gridsearch.self_search()  # type: ignore
 
         return (
-            self.ag_no_h[neighbors.get_pairs()].indices,  # type: ignore
+            self.ag_no_h[neighbors.get_pairs()].ix,  # type: ignore
             neighbors.get_pair_distances(),  # type: ignore
         )
 
