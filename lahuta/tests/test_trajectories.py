@@ -70,9 +70,15 @@ class UniverseWrapper:
 
 
 @pytest.fixture(scope="session")
-def mda_universe() -> UniverseType:
-    coords = Path(__file__).parent / "data" / "conf0_197_sel.pdb"
-    traj = Path(__file__).parent / "data" / "trj_197_sel.xtc"
+def mda_universe(request: FixtureRequest) -> UniverseType:
+    use_large_files = request.config.getoption("--large-files")
+    if use_large_files:
+        coords = Path(__file__).parent / "data" / "197.pdb"
+        traj = Path(__file__).parent / "data" / "197.xtc"
+    else:
+        coords = Path(__file__).parent / "data" / "conf0_197_sel.pdb"
+        traj = Path(__file__).parent / "data" / "trj_197_sel.xtc"
+
     with warnings.catch_warnings(record=True) as _:
         return mda.Universe(str(coords), str(traj))  # type: ignore
 
@@ -107,7 +113,6 @@ class TestMDAnalysis:
             ContactType("polar_hbond", C.polar_hbond_neighbors, self.universe),
             ContactType("polar_weak_hbond", C.weak_polar_hbond_neighbors, self.universe),
             ContactType("vdw", C.vdw_neighbors, self.universe),
-            # ContactType("plane_plane", F.plane_plane_neighbors, self.universe),
         ]
 
         for contact_type in self.contact_types:
