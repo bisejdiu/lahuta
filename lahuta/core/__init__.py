@@ -1,3 +1,4 @@
-# __all__ = ["AtomGroup", "Universe"]
+"""
+The `core` module contains the core functionality of Lahuta.
 
-from .groups import AtomGroup
+"""

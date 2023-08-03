@@ -1,18 +1,25 @@
 import json
 import warnings
 from pathlib import Path
+from typing import Any, Callable, Type
 
 import numpy as np
 import pytest
 
-import lahuta.contacts.contacts as contacts
-from lahuta.contacts.plane import AtomPlaneContacts, PlanePlaneContacts
+import lahuta.contacts as C
+from lahuta.contacts import F
+from lahuta.contacts.atom_plane import AtomPlaneContacts
+from lahuta.contacts.base import ContactAnalysis
+from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
+# pylint: disable=redefined-outer-name
+ContactFunction = Callable[[NeighborPairs], NeighborPairs]
+
 
 class ExpectedResults:
-    with open(Path(__file__).parent / "data" / "1KX2.json") as f:
+    with open(Path(__file__).parent / "data" / "1KX2.json", "r", encoding="utf-8") as f:
         data = json.load(f)
 
     COVALENT = data["COVALENT"]
@@ -33,184 +40,163 @@ class ExpectedResults:
     PLANEPLANE = data["PLANEPLANE"]
 
 
-class DataLoader:
+@pytest.fixture(scope="session")
+def data_loader() -> NeighborPairs:
     """
-    Class to load the data for the tests.
+    Fixture to load the data for the tests.
     """
-
-    def __init__(self):
-        """Load the data for the tests."""
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            self.u = Universe(Path(__file__).parent / "data" / "1KX2.pdb")
-        self.n = self.u.compute_neighbors()
-
-    def __call__(self):
-        """Return the data."""
-        return self.u, self.n
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
+        universe = Universe(str(path_obj))
+    ns = universe.compute_neighbors()
+    return ns
 
 
-@pytest.fixture
-def neighbors():
+@pytest.fixture(scope="session")
+def neighbors(data_loader: NeighborPairs) -> NeighborPairs:
     """Helper fixture to get neighbor pairs."""
-    return DataLoader().n
+    return data_loader
 
 
-@pytest.fixture
-def atomplane():
+@pytest.fixture(scope="session")
+def atom_plane(data_loader: NeighborPairs) -> AtomPlaneContacts:
     """Helper fixture to get atomplane."""
-    atomplane = AtomPlaneContacts(DataLoader().u)
-    atomplane.compute_contacts()
+    atomplane = AtomPlaneContacts(data_loader)
     return atomplane
 
 
-@pytest.fixture
-def planeplane():
+@pytest.fixture(scope="session")
+def plane_plane(data_loader: NeighborPairs) -> PlanePlaneContacts:
     """Helper fixture to get planeplane."""
-    planeplane = PlanePlaneContacts(DataLoader().u)
-    planeplane.compute_contacts()
+    planeplane = PlanePlaneContacts(data_loader)
+
     return planeplane
 
 
-def test_covalent_neighbors(neighbors):
-    """Test the covalent neighbors."""
-    cov = contacts.covalent_neighbors(neighbors)
-    pairs, distances = np.array(cov.pairs[:6]), np.array(cov.distances[:6])
-    assert cov.pairs.shape[0] == ExpectedResults.COVALENT["shapex"]
-    assert np.all(pairs == ExpectedResults.COVALENT["pairs"])
-    assert np.allclose(distances, ExpectedResults.COVALENT["distances"], atol=1e-3)
+@pytest.mark.parametrize(
+    "neighbor_func, expected_result",
+    [
+        (F.covalent_neighbors, ExpectedResults.COVALENT),
+        (F.metalic_neighbors, ExpectedResults.METALIC),
+        (F.carbonyl_neighbors, ExpectedResults.CARBONYL),
+        (F.hbond_neighbors, ExpectedResults.HBOND),
+        (F.weak_hbond_neighbors, ExpectedResults.WEAK_HBOND),
+        (F.ionic_neighbors, ExpectedResults.IONIC),
+        (F.aromatic_neighbors, ExpectedResults.AROMATIC),
+        (F.hydrophobic_neighbors, ExpectedResults.HYDROPHOBIC),
+        (F.polar_hbond_neighbors, ExpectedResults.POLAR_HBOND),
+        (F.weak_polar_hbond_neighbors, ExpectedResults.WEAK_POLAR_HBOND),
+        (F.vdw_neighbors, ExpectedResults.VDW),
+        (F.sulphur_pi, ExpectedResults.SULPHURPI),
+        (F.carbon_pi, ExpectedResults.CARBONPI),
+        (F.cation_pi, ExpectedResults.CATIONPI),
+        (F.donor_pi, ExpectedResults.DONORPI),
+        (F.plane_plane_neighbors, ExpectedResults.PLANEPLANE),
+    ],
+)
+def test_atom_atom_neighbor_funcs(
+    neighbor_func: Callable[[NeighborPairs], NeighborPairs],
+    expected_result: Any,
+    neighbors: NeighborPairs,
+) -> None:
+    """Test the neighbors."""
+    result = neighbor_func(neighbors)
+    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+
+    expected_pairs = np.array(expected_result["pairs"])
+
+    # Reshape the expected_pairs to match the shape of the pairs
+    if expected_pairs.size == 0:
+        expected_pairs = expected_pairs.reshape((0, 2))
+
+    assert result.pairs.shape[1] == 2
+    assert result.pairs.shape[0] == expected_result["shapex"]
+    assert np.all(pairs == expected_pairs)
+    assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
 
-def test_metalic_neighbors(neighbors):
-    """Test the metalic neighbors."""
-    met = contacts.metalic_neighbors(neighbors)
-    pairs, distances = np.array(met.pairs), np.array(met.distances)
-    assert met.pairs.shape[0] == ExpectedResults.METALIC["shapex"]
-    assert np.all(np.array(met.pairs) == ExpectedResults.METALIC["pairs"])
-    assert np.allclose(distances, ExpectedResults.METALIC["distances"], atol=1e-3)
+@pytest.mark.parametrize(
+    "contact_class, expected_result",
+    [
+        (C.CovalentContacts, ExpectedResults.COVALENT),
+        (C.MetalicContacts, ExpectedResults.METALIC),
+        (C.CarbonylContacts, ExpectedResults.CARBONYL),
+        (C.HBondContacts, ExpectedResults.HBOND),
+        (C.WeakHBondContacts, ExpectedResults.WEAK_HBOND),
+        (C.IonicContacts, ExpectedResults.IONIC),
+        (C.AromaticContacts, ExpectedResults.AROMATIC),
+        (C.HydrophobicContacts, ExpectedResults.HYDROPHOBIC),
+        (C.PolarHBondContacts, ExpectedResults.POLAR_HBOND),
+        (C.WeakPolarHBondContacts, ExpectedResults.WEAK_POLAR_HBOND),
+        (C.VanDerWaalsContacts, ExpectedResults.VDW),
+        (C.SulphurPi, ExpectedResults.SULPHURPI),
+        (C.CarbonPi, ExpectedResults.CARBONPI),
+        (C.CationPi, ExpectedResults.CATIONPI),
+        (C.DonorPi, ExpectedResults.DONORPI),
+    ],
+)
+def test_atom_atom_neighbor_classes(
+    contact_class: Type[ContactAnalysis],
+    expected_result: Any,
+    neighbors: NeighborPairs,
+) -> None:
+    """Test the neighbors."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        instance = contact_class(neighbors)
+    # instance.run()
+    result = instance.results
+
+    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+
+    expected_pairs = np.array(expected_result["pairs"])
+
+    # Reshape the expected_pairs to match the shape of the pairs
+    if expected_pairs.size == 0:
+        expected_pairs = expected_pairs.reshape((0, 2))
+
+    assert result.pairs.shape[1] == 2
+    assert result.pairs.shape[0] == expected_result["shapex"]
+    assert np.all(pairs == expected_pairs)
+    assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
 
-def test_carbonyl_neighbors(neighbors):
-    """Test the carbonyl neighbors."""
-    cbnyl = contacts.carbonyl_neighbors(neighbors)
-    pairs, distances = np.array(cbnyl.pairs[:6]), np.array(cbnyl.distances[:6])
-    assert cbnyl.pairs.shape[0] == ExpectedResults.CARBONYL["shapex"]
-    assert np.all(pairs == ExpectedResults.CARBONYL["pairs"])
-    assert np.allclose(distances, ExpectedResults.CARBONYL["distances"], atol=1e-3)
+@pytest.mark.parametrize(
+    "contact_func_name, expected_result",
+    [
+        ("cation_pi", ExpectedResults.CATIONPI),
+        ("donor_pi", ExpectedResults.DONORPI),
+        ("sulphur_pi", ExpectedResults.SULPHURPI),
+        ("carbon_pi", ExpectedResults.CARBONPI),
+    ],
+)
+def test_atomplane_contacts(
+    contact_func_name: str,
+    expected_result: Any,
+    atom_plane: AtomPlaneContacts,
+) -> None:
+    """Test the contacts."""
+
+    contact_func = getattr(atom_plane, contact_func_name)
+    result = contact_func()
+    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+
+    expected_pairs = np.array(expected_result["pairs"])
+
+    # Reshape the expected_pairs to match the shape of the pairs
+    if expected_pairs.size == 0:
+        expected_pairs = expected_pairs.reshape((0, 2))
+
+    assert result.pairs.shape[0] == expected_result["shapex"]
+    assert np.all(pairs == expected_pairs)
+    assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
 
-def test_ionic_neighbors(neighbors):
-    """Test the ionic neighbors."""
-    ionic = contacts.ionic_neighbors(neighbors)
-    pairs, distances = np.array(ionic.pairs[:6]), np.array(ionic.distances[:6])
-    assert ionic.pairs.shape[0] == ExpectedResults.IONIC["shapex"]
-    assert np.all(pairs == ExpectedResults.IONIC["pairs"])
-    assert np.allclose(distances, ExpectedResults.IONIC["distances"], atol=1e-3)
-
-
-def test_aromatic_neighbors(neighbors):
-    """Test the aromatic neighbors."""
-    aromatic = contacts.aromatic_neighbors(neighbors)
-    pairs, distances = np.array(aromatic.pairs[:6]), np.array(aromatic.distances[:6])
-    assert aromatic.pairs.shape[0] == ExpectedResults.AROMATIC["shapex"]
-    assert np.all(pairs == ExpectedResults.AROMATIC["pairs"])
-    assert np.allclose(distances, ExpectedResults.AROMATIC["distances"])
-
-
-def test_hydrophobic_neighbors(neighbors):
-    """Test the hydrophobic neighbors."""
-    hydrophobic = contacts.hydrophobic_neighbors(neighbors)
-    pairs, distances = np.array(hydrophobic.pairs[:6]), np.array(
-        hydrophobic.distances[:6]
-    )
-    assert hydrophobic.pairs.shape[0] == ExpectedResults.HYDROPHOBIC["shapex"]
-    assert np.all(pairs == ExpectedResults.HYDROPHOBIC["pairs"])
-    assert np.allclose(distances, ExpectedResults.HYDROPHOBIC["distances"])
-
-
-def test_vdw_neighbors(neighbors):
-    """Test the vdw neighbors."""
-    vdw = contacts.vdw_neighbors(neighbors)
-    pairs, distances = np.array(vdw.pairs[:6]), np.array(vdw.distances[:6])
-    assert vdw.pairs.shape[0] == ExpectedResults.VDW["shapex"]
-    assert np.all(pairs == ExpectedResults.VDW["pairs"])
-    assert np.allclose(distances, ExpectedResults.VDW["distances"])
-
-
-def test_hbond_neighbors(neighbors):
-    """Test the hbond neighbors."""
-    hb = contacts.hbond_neighbors(neighbors)
-    pairs, distances = np.array(hb.pairs[:6]), np.array(hb.distances[:6])
-    assert hb.pairs.shape[0] == ExpectedResults.HBOND["shapex"]
-    assert np.all(pairs == ExpectedResults.HBOND["pairs"])
-    assert np.allclose(distances, ExpectedResults.HBOND["distances"], atol=1e-3)
-
-
-def test_weak_hbond_neighbors(neighbors):
-    """Test the weak hbond neighbors."""
-    whb = contacts.weak_hbond_neighbors(neighbors)
-    pairs, distances = np.array(whb.pairs[:6]), np.array(whb.distances[:6])
-    assert whb.pairs.shape[0] == ExpectedResults.WEAK_HBOND["shapex"]
-    assert np.all(pairs == ExpectedResults.WEAK_HBOND["pairs"])
-    assert np.allclose(distances, ExpectedResults.WEAK_HBOND["distances"], atol=1e-3)
-
-
-def test_polar_hbond_neighbors(neighbors):
-    """Test the polar hbond neighbors."""
-    phb = contacts.polar_hbond_neighbors(neighbors)
-    pairs, distances = np.array(phb.pairs[:6]), np.array(phb.distances[:6])
-    assert phb.pairs.shape[0] == ExpectedResults.POLAR_HBOND["shapex"]
-    assert np.all(pairs == ExpectedResults.POLAR_HBOND["pairs"])
-    assert np.allclose(distances, ExpectedResults.POLAR_HBOND["distances"])
-
-
-def test_weak_polar_hbond_neighbors(neighbors):
-    """Test the weak polar hbond neighbors."""
-    pwhb = contacts.weak_polar_hbond_neighbors(neighbors)
-    pairs, distances = np.array(pwhb.pairs[:6]), np.array(pwhb.distances[:6])
-    assert pwhb.pairs.shape[0] == ExpectedResults.WEAK_POLAR_HBOND["shapex"]
-    assert np.all(pairs == ExpectedResults.WEAK_POLAR_HBOND["pairs"])
-    assert np.allclose(distances, ExpectedResults.WEAK_POLAR_HBOND["distances"])
-
-
-def test_carbonpi_neighbors(atomplane):
-    """Test the carbonpi neighbors."""
-    cpi = atomplane.carbon_pi.contacts(atomplane.neighbors, atomplane.angles)
-    pairs, distances = np.array(cpi.pairs[:6]), np.array(cpi.distances[:6])
-    assert cpi.pairs.shape[0] == ExpectedResults.CARBONPI["shapex"]
-    assert np.all(pairs == ExpectedResults.CARBONPI["pairs"])
-    assert np.allclose(distances, ExpectedResults.CARBONPI["distances"], atol=1e-3)
-
-
-def test_cationpi_neighbors(atomplane):
-    """Test the cationpi neighbors."""
-    cpi = atomplane.cation_pi.contacts(atomplane.neighbors, atomplane.angles)
-    assert cpi.pairs.shape[0] == ExpectedResults.CATIONPI["shapex"]
-    assert np.all([] == ExpectedResults.CATIONPI["pairs"])
-    assert np.allclose([], ExpectedResults.CATIONPI["distances"], atol=1e-3)
-
-
-def test_donorpi_neighbors(atomplane):
-    """Test the donorpi neighbors."""
-    dpi = atomplane.donor_pi.contacts(atomplane.neighbors, atomplane.angles)
-    pairs, distances = np.array(dpi.pairs[:6]), np.array(dpi.distances[:6])
-    assert dpi.pairs.shape[0] == ExpectedResults.DONORPI["shapex"]
-    assert np.all(pairs == ExpectedResults.DONORPI["pairs"])
-    assert np.allclose(distances, ExpectedResults.DONORPI["distances"], atol=1e-3)
-
-
-def test_sulphurpi_neighbors(atomplane):
-    """Test the sulphurpi neighbors."""
-    spi = atomplane.sulphur_pi.contacts(atomplane.neighbors, atomplane.angles)
-    pairs, distances = np.array(spi.pairs[:6]), np.array(spi.distances[:6])
-    assert spi.pairs.shape[0] == ExpectedResults.SULPHURPI["shapex"]
-    assert np.all(pairs == ExpectedResults.SULPHURPI["pairs"])
-    assert np.allclose(distances, ExpectedResults.SULPHURPI["distances"], atol=1e-3)
-
-
-def test_planeplane_neighbors(planeplane):
-    """Test the planeplane neighbors."""
-    pairs, distances = np.array(planeplane.pairs), np.array(planeplane.distances)
-    assert planeplane.pairs.shape[0] == ExpectedResults.PLANEPLANE["shapex"]
+def test_planeplane_neighbors(plane_plane: PlanePlaneContacts) -> None:
+    """Test the plane_plane neighbors."""
+    plane_ns = plane_plane.results
+    pairs, distances = np.array(plane_ns.pairs), np.array(plane_ns.distances)
+    assert plane_ns.pairs.shape[0] == ExpectedResults.PLANEPLANE["shapex"]
     assert np.all(pairs == ExpectedResults.PLANEPLANE["pairs"])
     assert np.allclose(distances, ExpectedResults.PLANEPLANE["distances"], atol=1e-3)

@@ -1,516 +1,73 @@
-# NAMES
+"""
+Module: atoms.py
+
+This module provides definitions for various sets of atoms and atom types used 
+in chemical and biochemical contexts. Additionally, it includes a helper function 
+for remapping atom types for easier lookups.
+
+Variables:
+    HALOGENS (set): A set of standard halogens.
+    MAINCHAIN_ATOMS (set): A set of atoms usually found in the main chain of a protein.
+    STANDARD_NUCLEOTIDES (set): A set of standard nucleotides in RNA and DNA.
+    METALS (set): A set of metal atoms, sourced from `_atom_type_strings.py`.
+    STANDARD_AMINO_ACIDS (set): A set of standard amino acids, sourced from `_atom_type_strings.py`.
+    PROT_ATOM_TYPES (dict): A dictionary mapping atom types to sets of atom names (strings),
+        as defined in `_atom_type_strings.py`.
+
+Function:
+    remap_prot_atom_types: Takes a dictionary mapping atom types to atom ids and returns a dictionary 
+        mapping atom ids to atom types.
+
+The module is expected to be used for handling and processing biochemical data structures, 
+with specific focuses on proteins and nucleic acids.
+"""
+
+from typing import Dict, Set
+
+import lahuta.config._atom_type_strings as at
+
 HALOGENS = set(["F", "CL", "BR", "I", "AT"])
 
 MAINCHAIN_ATOMS = set(["N", "C", "CA", "O", "OXT"])
 
-METALS = set(
-    [
-        "Li",
-        "Be",
-        "Na",
-        "Mg",
-        "Aa",
-        "K",
-        "Ca",
-        "Sc",
-        "Ti",
-        "V",
-        "Cr",
-        "Mn",
-        "Fe",
-        "Co",
-        "Ni",
-        "Cu",
-        "Zn",
-        "Ga",
-        "Rb",
-        "Sr",
-        "Y",
-        "Zr",
-        "Nb",
-        "Mo",
-        "Tc",
-        "Ru",
-        "Rh",
-        "Pd",
-        "Ag",
-        "Cd",
-        "In",
-        "Sn",
-        "Cs",
-        "Ba",
-        "La",
-        "Ce",
-        "Pr",
-        "Nd",
-        "Pm",
-        "Sm",
-        "Eu",
-        "Gd",
-        "Tb",
-        "Dy",
-        "Ho",
-        "Er",
-        "Tm",
-        "Yb",
-        "Lu",
-        "Hf",
-        "Ta",
-        "W",
-        "Re",
-        "Os",
-        "Ir",
-        "Pt",
-        "Au",
-        "Hg",
-        "Tl",
-        "Pb",
-        "Bi",
-        "Po",
-        "Fr",
-        "Ra",
-        "Ac",
-        "Th",
-        "Pa",
-        "U",
-        "Np",
-        "Pu",
-        "Am",
-        "Cm",
-        "Bk",
-        "Cf",
-    ]
-)
+STANDARD_NUCLEOTIDES = set(["A", "C", "G", "I", "U", "DA", "DC", "DG", "DI", "DT", "DU", "N"])
 
-# TYPES
-PROT_ATOM_TYPES = {
-    "hbond acceptor": [
-        "ALAO",  # all the carbonyl Oxygens in the main chain
-        "ARGO",
-        "ASNO",
-        "ASPO",
-        "CYSO",
-        "GLNO",
-        "GLUO",
-        "GLYO",
-        "HISO",
-        "ILEO",
-        "LEUO",
-        "LYSO",
-        "METO",
-        "PHEO",
-        "PROO",
-        "SERO",
-        "THRO",
-        "TRPO",
-        "TYRO",
-        "VALO",
-        "ALAOXT",  # all the carbonyl Oxygens terminals
-        "ARGOXT",
-        "ASNOXT",
-        "ASPOXT",
-        "CYSOXT",
-        "GLNOXT",
-        "GLUOXT",
-        "GLYOXT",
-        "HISOXT",
-        "ILEOXT",
-        "LEUOXT",
-        "LYSOXT",
-        "METOXT",
-        "PHEOXT",
-        "PROOXT",
-        "SEROXT",
-        "THROXT",
-        "TRPOXT",
-        "TYROXT",
-        "VALOXT",
-        "ASNOD1",
-        "ASNND2",  # for the ambiguity of the position of the N and O
-        "ASPOD1",
-        "ASPOD2",
-        "GLNOE1" "GLNNE2",  # for the ambiguity of the position of the N and O
-        "GLUOE1",
-        "GLUOE2",
-        "HISND1",  # for the ambiguity of the position of the N/C
-        "HISCE1",  # for the ambiguity of the position of the N/C
-        "HISNE2",  # for the ambiguity of the position of the N/C
-        "HISCD2",  # for the ambiguity of the position of the N/C
-        "METSD",  # http://pubs.acs.org/doi/abs/10.1021/jz300207k and pubid 19089987
-        "CYSSG",  # pubid 19089987, also when they from di-sulfide (Cys-Cys, fig 8 paper)
-        "SEROG",  # isostar plots
-        "THROG1",  # isostar plots
-        "TYROH",  # isostar plots
-    ],
-    "hbond donor": [
-        "ALAN",  # all the amide nitrogens in the main chain except proline
-        "ARGN",
-        "ASNN",
-        "ASPN",
-        "CYSN",
-        "GLNN",
-        "GLUN",
-        "GLYN",
-        "HISN",
-        "ILEN",
-        "LEUN",
-        "LYSN",
-        "METN",
-        "PHEN",
-        "SERN",
-        "THRN",
-        "TRPN",
-        "TYRN",
-        "VALN",
-        "ARGNE",
-        "ARGNH1",
-        "ARGNH2",
-        "ASNND2",
-        "ASNOD1",  # for the ambiguity of the position of the N and O
-        "CYSSG",  # http://www.ncbi.nlm.nih.gov/pubmed/19089987
-        "GLNNE2",
-        "GLNOE1",  # for the ambiguity of the position of N/O
-        "HISND1",  # for the ambiguity of the position of the N/C
-        "HISCE1",  # for the ambiguity of the position of the N/C
-        "HISNE2",  # for the ambiguity of the position of the N/C
-        "HISCD2",  # for the ambiguity of the position of the N/C
-        "LYSNZ",
-        "SEROG",
-        "THROG1",
-        "TRPNE1",
-        "TYROH",
-    ],
-    "xbond acceptor": [
-        "ALAO",  # all the carbonyl Oxygens in the main chain
-        "ARGO",
-        "ASNO",
-        "ASPO",
-        "CYSO",
-        "GLNO",
-        "GLUO",
-        "GLYO",
-        "HISO",
-        "ILEO",
-        "LEUO",
-        "LYSO",
-        "METO",
-        "PHEO",
-        "PROO",
-        "SERO",
-        "THRO",
-        "TRPO",
-        "TYRO",
-        "VALO",
-        "ALAOXT",  # all the carbonyl Oxygens terminals
-        "ARGOXT",
-        "ASNOXT",
-        "ASPOXT",
-        "CYSOXT",
-        "GLNOXT",
-        "GLUOXT",
-        "GLYOXT",
-        "HISOXT",
-        "ILEOXT",
-        "LEUOXT",
-        "LYSOXT",
-        "METOXT",
-        "PHEOXT",
-        "PROOXT",
-        "SEROXT",
-        "THROXT",
-        "TRPOXT",
-        "TYROXT",
-        "VALOXT",
-        "ASNOD1",
-        "ASNND2",  # for the ambiguity of the position of the N and O
-        "ASPOD1",
-        "ASPOD2",
-        "GLNOE1" "GLNNE2",  # for the ambiguity of the position of the N and O
-        "GLUOE1",
-        "GLUOE2",
-        "HISND1",  # for the ambiguity of the position of the N/C
-        "HISCE1",  # for the ambiguity of the position of the N/C
-        "HISNE2",  # for the ambiguity of the position of the N/C
-        "HISCD2",  # for the ambiguity of the position of the N/C
-        "METSD",  # http://pubs.acs.org/doi/abs/10.1021/jz300207k and pubid 19089987
-        "CYSSG",  # pubid 19089987, also when they from di-sulfide (Cys-Cys, fig 8 paper)
-        "SEROG",  # isostar plots
-        "THROG1",  # isostar plots
-        "TYROH",  # isostar plots
-    ],
-    "weak hbond acceptor": [
-        "ALAO",  # all the carbonyl Oxygens in the main chain
-        "ARGO",
-        "ASNO",
-        "ASPO",
-        "CYSO",
-        "GLNO",
-        "GLUO",
-        "GLYO",
-        "HISO",
-        "ILEO",
-        "LEUO",
-        "LYSO",
-        "METO",
-        "PHEO",
-        "PROO",
-        "SERO",
-        "THRO",
-        "TRPO",
-        "TYRO",
-        "VALO",
-        "ALAOXT",  # all the carbonyl Oxygens terminals
-        "ARGOXT",
-        "ASNOXT",
-        "ASPOXT",
-        "CYSOXT",
-        "GLNOXT",
-        "GLUOXT",
-        "GLYOXT",
-        "HISOXT",
-        "ILEOXT",
-        "LEUOXT",
-        "LYSOXT",
-        "METOXT",
-        "PHEOXT",
-        "PROOXT",
-        "SEROXT",
-        "THROXT",
-        "TRPOXT",
-        "TYROXT",
-        "VALOXT",
-        "ASNOD1",
-        "ASNND2",  # for the ambiguity of the position of the N and O
-        "ASPOD1",
-        "ASPOD2",
-        "GLNOE1" "GLNNE2",  # for the ambiguity of the position of the N and O
-        "GLUOE1",
-        "GLUOE2",
-        "HISND1",  # for the ambiguity of the position of the N/C
-        "HISCE1",  # for the ambiguity of the position of the N/C
-        "HISNE2",  # for the ambiguity of the position of the N/C
-        "HISCD2",  # for the ambiguity of the position of the N/C
-        "METSD",  # http://pubs.acs.org/doi/abs/10.1021/jz300207k and pubid 19089987
-        "CYSSG",  # pubid 19089987, also when they from di-sulfide (Cys-Cys, fig 8 paper)
-        "SEROG",  # isostar plots
-        "THROG1",  # isostar plots
-        "TYROH",  # isostar plots
-    ],
-    "weak hbond donor": [
-        "ALACA",  # all the c-alphas
-        "ARGCA",
-        "ASNCA",
-        "ASPCA",
-        "CYSCA",
-        "GLNCA",
-        "GLUCA",
-        "GLYCA",
-        "HISCA",
-        "ILECA",
-        "LEUCA",
-        "LYSCA",
-        "METCA",
-        "PHECA",
-        "PROCA",
-        "SERCA",
-        "THRCA",
-        "TRPCA",
-        "TYRCA",
-        "VALCA",
-        "ALACB",  # cb and further down
-        "ARGCB",
-        "ARGCG",
-        "ARGCD",
-        "ASNCB",
-        "ASPCB",
-        "CYSCB",
-        "GLNCB",
-        "GLNCG",
-        "GLUCB",
-        "GLUCG",
-        "GLNCB",
-        "HISCB",
-        "ILECB",
-        "ILECG1",
-        "ILECD1",
-        "ILECG2",
-        "LEUCB",
-        "LEUCG",
-        "LEUCD1",
-        "LEUCD2",
-        "LYSCB",
-        "LYSCG",
-        "LYSCD",
-        "LYSCE",
-        "METCB",
-        "METCG",
-        "METCE",
-        "PHECB",
-        "PHECG",
-        "PHECD1",
-        "PHECD2",
-        "PHECE1",
-        "PHECE2",
-        "PHECZ",
-        "PROCB",
-        "PROCG",
-        "PROCD",
-        "SERCB",
-        "THRCB",
-        "THRCG2",
-        "TRPCB",
-        "TRPCD1" "TRPCE3",
-        "TRPCZ3",
-        "TRPCH2",
-        "TRPCZ2",
-        "TYRCB",
-        "TYRCD1",
-        "TYRCD2",
-        "TYRCE1",
-        "TYRCE2",
-        "TRYCB",
-        "VALCB",
-        "VALCG1",
-        "VALCG2",
-    ],
-    "pos ionisable": [
-        "ARGNE",
-        "ARGCZ",
-        "ARGNH1",
-        "ARGNH2",
-        "HISCG",
-        "HISND1",
-        "HISCE1",
-        "HISNE2",
-        "HISCD2",
-        "LYSNZ",
-    ],
-    "neg ionisable": ["ASPOD1", "ASPOD2", "GLUOE1", "GLUOE2"],
-    "hydrophobe": [
-        "ALACB",
-        "ARGCB",
-        "ARGCG",
-        "ASNCB",
-        "ASPCB",
-        "CYSCB",  # sulfur in Cys has an Hydrogen, it is polarised
-        "GLNCB",
-        "GLNCG",
-        "GLUCB",
-        "GLUCG",
-        "GLNCB",
-        "HISCB",
-        "ILECB",
-        "ILECG1",
-        "ILECD1",
-        "ILECG2",
-        "LEUCB",
-        "LEUCG",
-        "LEUCD1",
-        "LEUCD2",
-        "LYSCB",
-        "LYSCG",
-        "LYSCD",
-        "METCB",
-        "METCG",
-        "METSD",
-        "METCE",
-        "PHECB",
-        "PHECG",
-        "PHECD1",
-        "PHECD2",
-        "PHECE1",
-        "PHECE2",
-        "PHECZ",
-        "PROCB",
-        "PROCG",
-        "THRCG2",
-        "TRPCB",
-        "TRPCG",
-        "TRPCD2",
-        "TRPCE3",
-        "TRPCZ3",
-        "TRPCH2",
-        "TRPCZ2",
-        "TRYCB",
-        "TYRCG",
-        "TYRCD1",
-        "TYRCD2",
-        "TYRCE1",
-        "TYRCE2",
-        "VALCB",
-        "VALCG1",
-        "VALCG2",
-    ],
-    "carbonyl oxygen": [
-        "ALAO",  # all the carbonyl Oxygens in the main chain
-        "ARGO",
-        "ASNO",
-        "ASPO",
-        "CYSO",
-        "GLNO",
-        "GLUO",
-        "GLYO",
-        "HISO",
-        "ILEO",
-        "LEUO",
-        "LYSO",
-        "METO",
-        "PHEO",
-        "PROO",
-        "SERO",
-        "THRO",
-        "TRPO",
-        "TYRO",
-        "VALO",
-    ],
-    "carbonyl carbon": [
-        "ALAC",
-        "ARGC",
-        "ASNC",
-        "ASPC",
-        "CYSC",
-        "GLNC",
-        "GLUC",
-        "GLYC",
-        "HISC",
-        "ILEC",
-        "LEUC",
-        "LYSC",
-        "METC",
-        "PHEC",
-        "PROC",
-        "SERC",
-        "THRC",
-        "TRPC",
-        "TYRC",
-        "VALC",
-    ],
-    "aromatic": [
-        "HISCG",
-        "HISND1",
-        "HISCE1",
-        "HISNE2",
-        "HISCD2",
-        "PHECG",
-        "PHECD1",
-        "PHECD2",
-        "PHECE1",
-        "PHECE2",
-        "PHECZ",
-        "TRPCG",
-        "TRPCD1",
-        "TRPCD2",
-        "TRPNE1",
-        "TRPCE2",
-        "TRPCE3",
-        "TRPCZ2",
-        "TRPCZ3",
-        "TRPCH2",
-        "TYRCG",
-        "TYRCD1",
-        "TYRCD2",
-        "TYRCE1",
-        "TYRCE2",
-        "TYRCZ",
-    ],
+METALS = at.METALS
+STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS
+
+
+PROT_ATOM_TYPES: Dict[str, Set[str]] = {
+    "hbond_acceptor": at.HBOND_ACCEPTORS,
+    "hbond_donor": at.HBOND_DONORS,
+    "xbond_acceptor": at.XBOND_ACCEPTORS,
+    "xbond_donor": set(),
+    "weak_hbond_acceptor": at.WEAK_HBOND_ACCEPTORS,
+    "weak_hbond_donor": at.WEAK_HBOND_DONORS,
+    "pos_ionisable": at.POS_IONISABLE,
+    "neg_ionisable": at.NEG_IONISABLE,
+    "hydrophobe": at.HYDROPHOBES,
+    "carbonyl_oxygen": at.CARBONYL_OXYGENS,
+    "carbonyl_carbon": at.CARBONYL_CARBONS,
+    "aromatic": at.AROMATIC,
 }
+
+
+def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+    """Convert the PROT_ATOM_TYPES dictionary to a dictionary mapping atom ids to atom types.
+
+    Args:
+        prot_atom_types (dict): A dictionary mapping atom types to atom ids.
+
+    Returns:
+        dict: A dictionary mapping atom ids to atom types.
+    """
+    id_to_types: Dict[str, Set[str]] = {}
+    for atom_type, atom_set in prot_atom_types.items():
+        for atom_id in atom_set:
+            if atom_id not in id_to_types:
+                id_to_types[atom_id] = set()
+            id_to_types[atom_id].add(atom_type)
+    return id_to_types
+
+
+ID_TO_TYPES = remap_prot_atom_types(PROT_ATOM_TYPES)

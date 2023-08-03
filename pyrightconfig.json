@@ -1,0 +1,21 @@
+{
+    "include": [
+      "lahuta"
+    ],
+    
+    "exclude": [
+      "lahuta/scripts",
+      "**/__pycache__",
+      "lahuta/tests",
+    ],
+    
+    "defineConstant": {
+      "DEBUG": true
+    },
+    
+    "reportMissingImports": true,
+    "reportMissingTypeStubs": "none",
+  
+    "pythonPlatform": "Linux",
+  
+  }

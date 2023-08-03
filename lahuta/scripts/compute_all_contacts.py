@@ -1,6 +1,12 @@
 import time
 
-from lahuta import AtomGroup
+from plane_plane import (
+    APDataFrameFactory,
+    AtomPlaneContacts,
+    PlanePlaneContacts,
+    PPDataFrameFactory,
+)
+
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts import (
     AromaticContacts,
@@ -13,12 +19,6 @@ from lahuta.contacts import (
     PolarHBondContacts,
     WeakHBondContacts,
     WeakPolarHBondContacts,
-)
-from lahuta.contacts.plane import (
-    APDataFrameFactory,
-    AtomPlaneContacts,
-    PlanePlaneContacts,
-    PPDataFrameFactory,
 )
 from lahuta.contacts.vdw import VanDerWaalsContacts
 from lahuta.core.universe import Universe
