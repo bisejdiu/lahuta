@@ -5,6 +5,41 @@ build-backend = 'hatchling.build'
 [tool.hatch.version]
 path = 'lahuta/_version.py'
 
+[project]
+name = 'lahuta'
+description = 'Analysis of non-covalent interactions in biomolecular systems.'
+authors = [
+    {name = 'Besian I. Sejdiu', email = 'besian.sejdiu@stjude.org'},
+]
+classifiers = [
+    'Development Status :: 5 - Production/Stable',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Programming Language :: Python :: Implementation :: PyPy',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Intended Audience :: Science/Research',
+    'Intended Audience :: Developers',
+    'Operating System :: Unix',
+    'Operating System :: POSIX :: Linux',
+    'Environment :: Console',
+    'Environment :: MacOS X',
+    'Topic :: Scientific/Engineering :: Bio-Informatics :: Molecular Dynamics :: Contacts',
+    'Topic :: Atomic :: Contacts',
+]
+requires-python = '>=3.10'
+dependencies = [
+    'typing-extensions>=4.6.1',
+]
+dynamic = ['version', 'readme']
+
+[project.urls]
+Homepage = 'https://github.com/bisejdiu/lahuta'
+Source = 'https://github.com/bisejdiu/lahuta'
+
 [tool.black]
 color = true
 line-length = 120
