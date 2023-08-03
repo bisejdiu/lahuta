@@ -1,3 +1,10 @@
+[build-system]
+requires = ['hatchling', "setuptools", "wheel"]
+build-backend = 'hatchling.build'
+
+[tool.hatch.version]
+path = 'lahuta/_version.py'
+
 [tool.black]
 color = true
 line-length = 120
@@ -10,9 +17,6 @@ exclude = ["lahuta/scripts", "lahuta/tests", "**/__pycache__", "cachedir"]
 defineConstant = { DEBUG = true }
 reportMissingImports = true
 reportMissingTypeStubs = "none"
-
-[build-system]
-requires = ["setuptools", "wheel"]
 
 [tool.pylint.basic]
 good-names = [
