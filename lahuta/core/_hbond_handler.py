@@ -5,11 +5,11 @@ Classes:
     HBondHandler: A class used to compute various properties of hydrogen bonds for a given atomic group.
 
 """
-from typing import Type
+from typing import cast
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, dok_matrix
+from scipy.sparse import coo_array, csr_matrix
 
 from lahuta.config.defaults import VDW_RADII
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
@@ -49,9 +49,10 @@ class HBondHandler:
         """
 
         indices = hbound_attr_col.atoms.indices
-        selected_rows_coo: coo_matrix = self.hbond_array[indices].tocoo()
-        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32)
-        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data
+        hbond_array = cast(csr_matrix, self.hbond_array[indices])
+        selected_rows_coo: coo_array = hbond_array.tocoo()
+        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32) # type: ignore
+        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data # type: ignore
 
         hbound_atom_pos = np.take(self._atoms.positions, hbound_atom_indices, axis=0)
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan
@@ -103,9 +104,11 @@ class HBondHandler:
         atom1_pos = col1.atoms.positions
         atom2_pos = col2.atoms.positions
 
-        selected_rows_coo = self.hbond_array[col1.atoms.indices].tocoo()
-        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32)
-        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data
+        indices = col1.atoms.indices
+        hbond_array = cast(csr_matrix, self.hbond_array[indices])
+        selected_rows_coo: coo_array = hbond_array.tocoo()
+        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32) # type: ignore
+        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data # type: ignore
 
         hbound_atom_pos = np.take(self._atoms.positions, hbound_atom_indices, axis=0)
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan

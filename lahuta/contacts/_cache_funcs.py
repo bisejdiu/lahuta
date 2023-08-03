@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Callable, Tuple
 
 import numpy as np
 from joblib import Memory
@@ -38,5 +38,9 @@ def calc_ringnormal_pos_angle(
 
 
 memory = Memory("cachedir", verbose=0)
-compute_neighbors_cached = memory.cache(compute_neighbors)  # type: ignore
+compute_neighbors_cached: Callable[[NDArray[np.float32], NDArray[np.float32]], Tuple[NDArray[np.int32], NDArray[np.float32]]]
+compute_neighbors_cached = memory.cache(compute_neighbors) # type: ignore
+calc_ringnormal_pos_angle_cached: Callable[
+    [NeighborPairs, AtomGroupType, NDArray[np.float32], NDArray[np.float32]], NDArray[np.float32]
+]
 calc_ringnormal_pos_angle_cached = memory.cache(calc_ringnormal_pos_angle)  # type: ignore

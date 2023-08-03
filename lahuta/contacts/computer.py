@@ -1,5 +1,6 @@
 import warnings
-from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import (Callable, Dict, Iterable, List, Literal, Optional, Tuple,
+                    Union, cast)
 
 import numpy as np
 import pandas as pd
@@ -93,7 +94,7 @@ class LahutaContacts:
     def _initialize_atom_plane_instance(self, ns: NeighborPairs) -> None:
         self.atom_plane_instance = AtomPlaneContacts(ns)
 
-    def _register_atom_plane_contacts(self):
+    def _register_atom_plane_contacts(self) -> None:
         self.register([self.donor_pi, self.cation_pi, self.sulphur_pi, self.carbon_pi])
 
     def donor_pi(self, ns: NeighborPairs) -> NeighborPairs:
@@ -289,7 +290,7 @@ class LahutaTrajectoryContacts:
         self.radius = radius
         self.results: Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]] = {}
 
-    def _get_block_slices(self, n_frames: int, n_blocks: int):
+    def _get_block_slices(self, n_frames: int, n_blocks: int) -> List[range]:
         n_frames_per_block = n_frames // n_blocks
         blocks = [range(i * n_frames_per_block, (i + 1) * n_frames_per_block) for i in range(n_blocks - 1)]
         blocks.append(range((n_blocks - 1) * n_frames_per_block, n_frames))
@@ -323,7 +324,7 @@ class LahutaTrajectoryContacts:
 
         return results
 
-    def compute(self, luni: Universe, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1):
+    def compute(self, luni: Universe, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1) -> None:
         """
         Compute the contacts for the whole trajectory.
 
@@ -359,7 +360,7 @@ class LahutaTrajectoryContacts:
                     self.results[frame_index] = lahuta_contacts.results
 
 
-class SlowLahutaTrajectoryContacts(AnalysisBase):
+class SlowLahutaTrajectoryContacts(AnalysisBase): # type: ignore
     """
     A class to manage the computation of molecular contacts within MD trajectory data using a slower, but stable method.
 
@@ -404,7 +405,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):
         self.lahuta_contacts: Optional["LahutaContacts"] = None
         AnalysisBase.__init__(self, self._trajectory)  # type: ignore
 
-    def _single_frame(self):
+    def _single_frame(self) -> None:
         ns = self.luni.compute_neighbors(res_dif=self.res_dif, radius=self.radius)
         if self.lahuta_contacts is None:
             self.results[self._frame_index] = ns
@@ -412,7 +413,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):
             self.lahuta_contacts.compute(ns)
             self.results[self._frame_index] = self.lahuta_contacts.results
 
-    def compute(self, lahuta_contacts: Optional["LahutaContacts"] = None):
+    def compute(self, lahuta_contacts: Optional["LahutaContacts"] = None) -> None:
         """
         Compute the contacts for the whole trajectory.
 

@@ -24,7 +24,8 @@ from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
 from lahuta.core.arc import ARC
-from lahuta.lahuta_types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
+from lahuta.lahuta_types.openbabel import (MolAtomType, MolResType, MolType,
+                                           MolTypeWrapper)
 
 
 class OBMol:
@@ -175,8 +176,6 @@ class OBMol:
         # atoms = arc.atoms
         chains, residues, atoms = arc.chains, arc.residues, arc.atoms
         coords = atoms.coordinates
-        if connections is None:
-            connections = []
 
         atoms_df = pd.DataFrame(
             {
@@ -209,6 +208,10 @@ class OBMol:
             self.create_atom_obmol(atom_id, str(atom_name), str(element), coords[idx], ob_res)
 
         self.perceive_bonds()
+
+        if connections is None:
+            connections = []
+        assert connections is not None
         for connection in connections:
             prt1, prt2 = connection.partner1, connection.partner2
             atom1: int = self._get_atom_index(
