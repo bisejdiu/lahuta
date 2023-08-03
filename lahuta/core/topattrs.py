@@ -59,3 +59,34 @@ class AtomAttrClassHandler:
         }
         self.atomattr_class = type(attrname, (AtomAttr,), attr_dict)
         globals()[attrname] = self.atomattr_class
+
+
+class VDWRadiiAtomAttr(AtomAttr):
+    """
+    A statically generated AtomAttr subclass for van der Waals radii.
+
+    The reason for the static definition even though `AtomAttrClassHandler` can dynamically
+    generate subclasses is that the van der Waals radii are used during contact calculations and
+    parallelization is not possible with dynamically generated subclasses.
+
+    Attributes:
+        attrname (str): The name of the attribute.
+        singular (str): The singular name of the attribute.
+    """
+
+    attrname = "vdw_radii"
+    singular = "vdw_radii"
+
+    @staticmethod
+    def _gen_initial_values(n_atoms: int, *_: Any) -> NDArray[Any]:
+        """
+        Generate the initial values for the attribute.
+
+        Args:
+            n_atoms (int): The number of atoms.
+            *_ (Any): Any other arguments are ignored.
+
+        Returns:
+            NDArray[Any]: A numpy array of zeros with a size equal to the number of atoms.
+        """
+        return np.zeros(n_atoms)

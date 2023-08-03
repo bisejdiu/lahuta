@@ -29,7 +29,7 @@ from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.topattrs import AtomAttrClassHandler
+from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
@@ -196,7 +196,8 @@ class Universe:
         og_atoms = self._mda.universe.atoms
         self.atom_types = ag_types
 
-        self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
+        # self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
+        self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
         # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
         #     self._extend_topology(atom_type.lower(), ag_types_array[:, value])
 
