@@ -2,7 +2,7 @@
     "python.formatting.provider": "none",
     "python.formatting.blackArgs": [
         "--config",
-        "lahuta.toml"
+        "pyproject.toml"
     ],
     "python.analysis.extraPaths": [
         "lahuta",
@@ -13,7 +13,7 @@
         "lahuta"
     ],
     "pylint.args": [
-        "--rcfile=lahuta.toml"
+        "--rcfile=pyproject.toml"
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
@@ -30,5 +30,5 @@
         "editor.defaultFormatter": "ms-python.black-formatter",
     
     },
-    "mypy.configFile": "lahuta.toml",
+    "mypy.configFile": "pyproject.toml",
 }
