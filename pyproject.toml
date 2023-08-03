@@ -49,6 +49,9 @@ strict_optional = true
 no_implicit_optional = true
 strict_equality = true
 strict = true
+show_error_codes = true
+
+exclude = "cachedir|scripts|tests|__pycache__"
 
 [tool.pytest.ini_options]
 testpaths = ["lahuta"]
