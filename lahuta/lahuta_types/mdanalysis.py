@@ -155,6 +155,10 @@ class UniverseType(Protocol):
     def dimensions(self) -> Optional[NDArray[np.float32]]:
         ...
 
+    @property
+    def trajectory(self) -> "TrajectoryType":
+        ...
+
     def select_atoms(self, selection: str) -> "AtomGroupType":
         ...
 
@@ -168,4 +172,28 @@ class UniverseType(Protocol):
         ...
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "UniverseType":
+        ...
+
+
+class TrajectoryType(Protocol):
+    @property
+    def n_frames(self) -> int:
+        ...
+
+    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "TimeStepType":
+        ...
+
+    def __iter__(self) -> "TimeStepType":
+        ...
+
+
+class TimeStepType(Protocol):
+    @property
+    def frame(self) -> int:
+        ...
+
+    def __iter__(self) -> "TimeStepType":
+        ...
+
+    def __next__(self) -> "TimeStepType":
         ...
