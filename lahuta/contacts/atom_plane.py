@@ -35,19 +35,23 @@ Warning:
 
 """
 
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional
 
 import numpy as np
 from joblib import Memory
-from MDAnalysis.lib import distances as mda_distances
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.mda_commands import CappedDistance, DistanceType
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.utils.math import calc_vec_line_angles
 from lahuta.utils.ob import enumerate_rings
+
+from ._cache_funcs import (
+    calc_ringnormal_pos_angle,
+    calc_ringnormal_pos_angle_cached,
+    compute_neighbors,
+    compute_neighbors_cached,
+)
 
 memory = Memory("cachedir", verbose=0)
 
@@ -102,58 +106,6 @@ class _AtomPlaneContacts:
         return ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("pos_ionisable", partner=2)
 
 
-@memory.cache  # type: ignore
-def compute_neighbors(
-    positions: NDArray[np.float32], reference: NDArray[np.float32]
-) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
-    """Compute the neighbors between the reference and positions."""
-    max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
-
-    wrapper: DistanceType = CappedDistance(mda_distances)
-    pairs, distances = wrapper.capped_distance(reference, positions, max_cutoff, return_distances=True)
-    return pairs, distances
-
-
-def compute_neighbors_nocache(
-    positions: NDArray[np.float32], reference: NDArray[np.float32]
-) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
-    """Compute the neighbors between the reference and positions."""
-    max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
-
-    wrapper: DistanceType = CappedDistance(mda_distances)
-    pairs, distances = wrapper.capped_distance(reference, positions, max_cutoff, return_distances=True)
-    return pairs, distances
-
-
-@memory.cache  # type: ignore
-def calc_ringnormal_pos_angle(
-    ns: NeighborPairs, uv_atoms: AtomGroupType, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
-) -> NDArray[np.float32]:
-    """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
-    selected_ring_centers = ring_centers[ns.pairs[:, 0]]
-    selected_ring_normals = ring_normals[ns.pairs[:, 0]]
-
-    angles = calc_vec_line_angles(
-        selected_ring_normals,
-        selected_ring_centers - uv_atoms[ns.pairs[:, 1]].positions,
-    )
-    return angles
-
-
-def calc_ringnormal_pos_angle_nocache(
-    ns: NeighborPairs, uv_atoms: AtomGroupType, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
-) -> NDArray[np.float32]:
-    """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
-    selected_ring_centers = ring_centers[ns.pairs[:, 0]]
-    selected_ring_normals = ring_normals[ns.pairs[:, 0]]
-
-    angles = calc_vec_line_angles(
-        selected_ring_normals,
-        selected_ring_centers - uv_atoms[ns.pairs[:, 1]].positions,
-    )
-    return angles
-
-
 def subtract_aromatic_neighbors(
     ns: NeighborPairs, pairs: NDArray[np.int32], distances: NDArray[np.float32]
 ) -> NeighborPairs:
@@ -177,13 +129,13 @@ def compute_contacts(
         # rings = perceive_rings(mol)
         rings = enumerate_rings(mol)
 
-        neighbors_fn = compute_neighbors if not use_cache else compute_neighbors.call  # type: ignore
+        neighbors_fn = compute_neighbors_cached if not use_cache else compute_neighbors_cached.call  # type: ignore
         result = neighbors_fn(mda.atoms.positions, rings.centers)
         pairs, distances = result[0] if use_cache else result
 
         neighbors = subtract_aromatic_neighbors(ns, pairs, distances)
 
-        angles_fn = calc_ringnormal_pos_angle if not use_cache else calc_ringnormal_pos_angle.call  # type: ignore
+        angles_fn = calc_ringnormal_pos_angle_cached if not use_cache else calc_ringnormal_pos_angle_cached.call  # type: ignore
         result = angles_fn(neighbors, mda.universe.atoms, rings.centers, rings.normals)
         angles = result[0] if use_cache else result
 
@@ -381,16 +333,14 @@ class AtomPlaneContacts:
         self._compute(ns, ns.mda)
 
     def _compute(self, ns: NeighborPairs, mda: AtomGroupType) -> None:
-        result = compute_neighbors_nocache(mda.atoms.positions, self.rings.centers)
+        result = compute_neighbors(mda.atoms.positions, self.rings.centers)
         pairs, distances = result
 
         neighbors = ns.clone(pairs, distances)
 
         self.neighbors = neighbors - neighbors.type_filter("aromatic", partner=2)
 
-        result = calc_ringnormal_pos_angle_nocache(
-            self.neighbors, mda.universe.atoms, self.rings.centers, self.rings.normals
-        )
+        result = calc_ringnormal_pos_angle(self.neighbors, mda.universe.atoms, self.rings.centers, self.rings.normals)
         self.angles = result
 
     def donor_pi(self) -> NeighborPairs:
