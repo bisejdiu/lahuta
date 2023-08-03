@@ -79,7 +79,7 @@ def sorting_indices(arr: NDArray[np.int32]) -> NDArray[np.int32]:
 
     # Use lexsort to get sorted indices from large to small,
     # then use it to index into the sorted array
-    indices = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
+    indices: NDArray[np.int32] = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
 
     return indices
 
@@ -381,7 +381,8 @@ def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """
 
     # return bool(np.all(intersection(arr1, arr2)))  # type: ignore
-    return np.sum(intersection(arr1, arr2)) == len(arr1)
+    result: bool = np.sum(intersection(arr1, arr2)) == len(arr1)
+    return result
 
 
 def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:

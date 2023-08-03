@@ -61,7 +61,8 @@ def distance(vector1: NDArray[np.float32], vector2: NDArray[np.float32]) -> NDAr
         >>> distance(vec1, vec2)
         array([1.41421356, 1.        ], dtype=float32)
     """
-    return np.linalg.norm(vector1 - vector2, axis=-1)
+    result: NDArray[np.float32] = np.linalg.norm(vector1 - vector2, axis=-1)
+    return result
 
 
 def normalize(vector: NDArray[np.float32]) -> NDArray[np.float32]:
@@ -84,7 +85,8 @@ def normalize(vector: NDArray[np.float32]) -> NDArray[np.float32]:
         array([[1., 0., 0.],
                [0., 1., 0.]], dtype=float32)
     """
-    return vector / np.linalg.norm(vector, axis=-1, keepdims=True)
+    result: NDArray[np.float32] =  vector / np.linalg.norm(vector, axis=-1, keepdims=True)
+    return result
 
 
 def dot_product(vector1: NDArray[np.float32], vector2: NDArray[np.float32]) -> NDArray[np.float32]:
@@ -248,13 +250,13 @@ def calc_vec_angle(vector1: NDArray[np.float32], vector2: NDArray[np.float32]) -
     dotproduct = dot_product(vector1, vector2)
     raw_angle = np.arccos(np.clip(dotproduct, -1.0, 1.0))
     adjusted_angle = np.sign(dotproduct) * raw_angle
-    angle_in_degrees = np.degrees(adjusted_angle)
+    angle_in_degrees: NDArray[np.float32] = np.degrees(adjusted_angle)
     angle_in_degrees[angle_in_degrees < 0] = 180 + angle_in_degrees[angle_in_degrees < 0]
 
     return angle_in_degrees
 
 
-def calc_vec_line_angles(vector: NDArray[np.float_], line_direction: NDArray[np.float_]) -> NDArray[np.float_]:
+def calc_vec_line_angles(vector: NDArray[np.float32], line_direction: NDArray[np.float32]) -> NDArray[np.float32]:
     """
     Calculate the angle between a vector and a line direction in degrees.
 
@@ -265,11 +267,11 @@ def calc_vec_line_angles(vector: NDArray[np.float_], line_direction: NDArray[np.
     Finally, the angle is converted to degrees.
 
     Args:
-        vector (NDArray[np.float_]): The vector or set of vectors.
-        line_direction (NDArray[np.float_]): The direction or set of directions of the lines.
+        vector (NDArray[np.float32]): The vector or set of vectors.
+        line_direction (NDArray[np.float32]): The direction or set of directions of the lines.
 
     Returns:
-        NDArray[np.float_]: The angles between the vectors and line directions in degrees.
+        NDArray[np.float32]: The angles between the vectors and line directions in degrees.
 
     Example:
         >>> vec = np.array([[1, 0, 0], [0, 1, 0]])
@@ -284,4 +286,5 @@ def calc_vec_line_angles(vector: NDArray[np.float_], line_direction: NDArray[np.
 
     adjusted_angle = np.where(adjusted_angle < 0, adjusted_angle + np.pi, adjusted_angle)
 
-    return np.degrees(adjusted_angle)
+    result: NDArray[np.float32] = np.degrees(adjusted_angle)
+    return result
