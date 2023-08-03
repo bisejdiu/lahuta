@@ -54,6 +54,7 @@ class LahutaContacts:
         result_df = contacts.to_frame(annotations=True)
 
     Note:
+        - The `compute` method can be called multiple times to compute contacts for different NeighborPairs objects.
         - Users can register custom-defined contact functions.
         - Default contact_type is 'all', which will include all predefined contact types.
         - Warnings are generated if attempts are made to register functions that are already registered, or
@@ -245,6 +246,44 @@ class LahutaContacts:
 
 
 class LahutaTrajectoryContacts:
+    """
+    A class to manage the computation of molecular contacts within MD trajectory data.
+
+    LahutaTrajectoryContacts is designed to analyze Molecular Dynamics (MD) trajectory data,
+    and compute various molecular contacts such as atom-atom, atom-plane, or plane-plane contacts,
+    at each frame within a given trajectory.
+
+    Attributes:
+        res_dif (int): Minimum residue difference for considering pairs as neighbors.
+        radius (float): Search radius for neighbors.
+        results (Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]]): Computed results for each frame.
+
+    Methods:
+        compute(luni, lahuta_contacts=None, n_jobs=1): Main method to initiate the contact computation across frames.
+            - luni (Universe): The universe containing the MD trajectory data.
+            - lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+            - n_jobs (int): Number of parallel jobs for computation.
+
+    Examples:
+        luni = Universe(...)
+        traj_contacts = LahutaTrajectoryContacts(res_dif=5, radius=5.0)
+        contacts = LahutaContacts(contact_type='atom-atom') # See the LahutaContacts class for more details.
+        # we provide the both the luni and the contacts instance as well as the number of jobs to use
+        traj_contacts.compute(luni, contacts, n_jobs=4)
+
+        # With custom contacts
+        lahuta_contacts = LahutaContacts(contact_type=None)
+        lahuta_contacts.register(F.custom_contact_function)
+        traj_contacts.compute(luni, lahuta_contacts=lahuta_contacts)
+
+        # With no contacts instance
+        traj_contacts.compute(luni, n_jobs=4) # computes all NeighborPairs for each frame
+
+    Note:
+        - Parallel computation can be achieved by specifying n_jobs greater than 1 when calling the `compute` method.
+        - The `compute` method can be called multiple times to compute contacts for different universes.
+    """
+
     def __init__(self, res_dif: int, radius: float):
         self.res_dif = res_dif
         self.radius = radius
@@ -285,6 +324,20 @@ class LahutaTrajectoryContacts:
         return results
 
     def compute(self, luni: Universe, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1):
+        """
+        Compute the contacts for the whole trajectory.
+
+        This is the main method to initiate the contact computation across frames.
+
+        Args:
+            luni (Universe): The universe containing the MD trajectory data.
+            lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+            n_jobs (int): Number of parallel jobs for computation.
+
+        Returns:
+            None
+
+        """
         if not self.results:
             self.results = {}
 
