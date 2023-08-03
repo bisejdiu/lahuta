@@ -26,6 +26,41 @@ FrameContacts = Dict[int, Tuple[Pairs, Distances]]
 
 # pylint: disable=unsubscriptable-object
 class LahutaContacts:
+    """
+    A class to manage the computation of various molecular contacts.
+
+    LahutaContacts is a class designed to manage the computation of various molecular contacts.
+    It allows users to specify the types of contacts they want to compute, such as atom-atom,
+    atom-plane, or plane-plane contacts, and provides methods to register, unregister, and
+    compute those contacts.
+
+    Methods:
+        register(contact_functions): Registers given contact functions.
+        unregister(contact_function): Unregisters the given contact function.
+        list_registered(): Returns the list of registered contact function names.
+        compute(ns): Computes all the registered contacts.
+        to_frame(df_format="expanded", annotations=False): Converts the computed contacts to a DataFrame.
+        results: Property to access the computed results.
+
+    Examples:
+        ns = NeighborPairs(...)
+
+        contacts = LahutaContacts(contact_type='atom-atom') # or 'all', 'atom-plane', 'plane-plane' or None
+        contacts.register(F.custom_contact_function) # custom_contact_function must be a callable function
+        contacts.unregister(F.vdw_neighbors) # example of unregistering a function (function must be registered first)
+        contacts.list_registered() # returns a list of registered functions
+        contacts.compute(ns)
+        results = contacts.results
+        result_df = contacts.to_frame(annotations=True)
+
+    Note:
+        - Users can register custom-defined contact functions.
+        - Default contact_type is 'all', which will include all predefined contact types.
+        - Warnings are generated if attempts are made to register functions that are already registered, or
+            if non-callable objects are attempted to be registered.
+        - A ValueError is raised if an attempt is made to unregister a function that is not already registered.
+    """
+
     ATOM_ATOM: Dict[str, ContactFunction] = {
         'aromatic': F.aromatic_neighbors,
         'ionic': F.ionic_neighbors,
@@ -47,40 +82,59 @@ class LahutaContacts:
             for func in self.ATOM_ATOM.values():
                 self.register(func)
         if contact_type in ['all', 'atom-plane']:
-            self.register_atom_plane_contacts()
+            self._register_atom_plane_contacts()
         if contact_type in ['all', 'plane-plane']:
             self.register(F.plane_plane_neighbors)
 
         self.atom_plane_instance: Optional[AtomPlaneContacts] = None
         self._results: Dict[str, NeighborPairs] = {}
 
-    def initialize_atom_plane_instance(self, ns: NeighborPairs) -> None:
+    def _initialize_atom_plane_instance(self, ns: NeighborPairs) -> None:
         self.atom_plane_instance = AtomPlaneContacts(ns)
 
-    def register_atom_plane_contacts(self):
+    def _register_atom_plane_contacts(self):
         self.register([self.donor_pi, self.cation_pi, self.sulphur_pi, self.carbon_pi])
 
     def donor_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        self.initialize_atom_plane_instance(ns)
+        """Wrapper for AtomPlaneContacts.donor_pi"""
+        self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.donor_pi()
 
     def cation_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        self.initialize_atom_plane_instance(ns)
+        """Wrapper for AtomPlaneContacts.cation_pi"""
+        self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.cation_pi()
 
     def sulphur_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        self.initialize_atom_plane_instance(ns)
+        """Wrapper for AtomPlaneContacts.sulphur_pi"""
+        self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.sulphur_pi()
 
     def carbon_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        self.initialize_atom_plane_instance(ns)
+        """Wrapper for AtomPlaneContacts.carbon_pi"""
+        self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.carbon_pi()
 
     def register(self, contact_functions: ContactFunctions) -> None:
+        """
+        Register contact functions.
+
+        This method takes in a single contact function or an iterable of contact functions and registers them.
+
+        Args:
+            contact_functions (ContactFunctions): A single contact function or an iterable of contact functions.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If a non-callable object is passed in.
+
+        """
         # Ensure contact_functions is an iterable
         if not isinstance(contact_functions, Iterable):
             contact_functions = [contact_functions]
@@ -95,16 +149,54 @@ class LahutaContacts:
                 warnings.warn(f"{func} is not a callable function and cannot be registered.")
 
     def unregister(self, contact_function: ContactFunction) -> None:
+        """
+        Unregister contact functions.
+
+        This method takes in a single contact function and unregisters it.
+
+        Args:
+            contact_function (ContactFunction): A single contact function.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If the contact function is not registered.
+
+        """
         if contact_function not in self._contacts:
             raise ValueError(f'{contact_function} is not registered')
         # Unregistering contacts
         self._contacts.remove(contact_function)
 
     def list_registered(self) -> List[str]:
+        """
+        List registered contact functions.
+
+        Args:
+            None
+
+        Returns:
+            List[str]: A list of the names of the registered contact functions.
+
+        """
+
         # Getting registered contacts
         return [func.__name__ for func in self._contacts]
 
     def compute(self, ns: NeighborPairs) -> None:
+        """
+        Compute all registered contacts.
+
+        This method takes in a NeighborPairs object and computes all the registered contacts.
+
+        Args:
+            ns (NeighborPairs): A NeighborPairs object.
+
+        Returns:
+            None
+
+        """
         # Computing all contacts
         self._results = {}
         for func in self._contacts:
@@ -113,6 +205,17 @@ class LahutaContacts:
     def to_frame(
         self, df_format: Literal["compact", "expanded"] = "expanded", annotations: bool = False
     ) -> pd.DataFrame:
+        """
+        Convert computed contacts to a DataFrame.
+
+        Args:
+            df_format (Literal["compact", "expanded"], optional): The format of the DataFrame. Default is "expanded".
+            annotations (bool, optional): Whether to include annotations. Default is False.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the computed contacts.
+
+        """
         df = pd.DataFrame()  # type: ignore
         for key, value in self._results.items():
             df_contact = value.to_frame(df_format=df_format, annotations=annotations)
@@ -126,6 +229,9 @@ class LahutaContacts:
 
     @property
     def results(self) -> Dict[str, NeighborPairs]:
+        """
+        Return the computed results.
+        """
         return self._results
 
     def __getitem__(self, key: str) -> NeighborPairs:
