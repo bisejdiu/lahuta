@@ -16,7 +16,8 @@ Example:
     
 """
 
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload
+from typing import (Any, Callable, List, Literal, Optional, Tuple, Union,
+                    overload)
 
 import MDAnalysis as mda
 import numpy as np
@@ -29,7 +30,8 @@ from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
+from lahuta.core.topattrs import \
+    AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
@@ -298,7 +300,7 @@ class Universe:
             return self._mol
         if fmt == "mol":
             self._mol = self._file_loader.to(fmt)
-        return getattr(self, f"_{fmt}")
+        return getattr(self, f"_{fmt}") # type: ignore
 
     @property
     def arc(self) -> Union[None, ARC]:

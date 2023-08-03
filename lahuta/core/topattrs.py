@@ -61,7 +61,7 @@ class AtomAttrClassHandler:
         globals()[attrname] = self.atomattr_class
 
 
-class VDWRadiiAtomAttr(AtomAttr):
+class VDWRadiiAtomAttr(AtomAttr): # type: ignore
     """
     A statically generated AtomAttr subclass for van der Waals radii.
 
