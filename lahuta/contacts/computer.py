@@ -226,7 +226,7 @@ class LahutaContacts:
                 df_contact['contact_labels'] = df_contact_type
 
             df = pd.concat([df, df_contact], axis=0)  # type: ignore
-        return df
+        return df  # type: ignore
 
     @property
     def results(self) -> Dict[str, NeighborPairs]:
@@ -342,13 +342,12 @@ class LahutaTrajectoryContacts:
             self.results = {}
 
         mda = luni.to("mda")
-        # get the very first result from results
         results = self._compute(mda, n_jobs=n_jobs)
 
         ref_ns = None
         for block in results:
             for frame_index, (pairs, distances) in block.items():
-                # Check if this is the first frame to create ref_ns
+                # Create a reference NeighborPairs object, because cloning is faster than creating a new one
                 if ref_ns is None:
                     ref_ns = NeighborPairs(mda, luni.to("mol"), luni.atom_types, pairs, distances)
 
@@ -361,6 +360,41 @@ class LahutaTrajectoryContacts:
 
 
 class SlowLahutaTrajectoryContacts(AnalysisBase):
+    """
+    A class to manage the computation of molecular contacts within MD trajectory data using a slower, but stable method.
+
+    SlowLahutaTrajectoryContacts offers a simplified approach to analyze Molecular Dynamics (MD) trajectory data
+    and compute various molecular contacts. It's designed to be more stable, but it doesn't support parallelization,
+    making it slower compared to other implementations. This class relies on the MDAnalysis AnalysisBase class
+    to handle iteration over trajectory frames.
+
+    Attributes:
+        luni (Universe): The universe containing the MD trajectory data.
+        res_dif (int): Minimum residue difference for considering pairs as neighbors.
+        radius (float): Search radius for neighbors.
+        _trajectory (MDAnalysis.coordinates.base.Timestep): Reference to the trajectory being analyzed.
+        results (Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]]): Computed results for each frame.
+        lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+
+    Methods:
+        compute(lahuta_contacts=None): Main method to initiate the contact computation across frames.
+            - lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+
+    Examples:
+        slow_traj_contacts = SlowLahutaTrajectoryContacts(luni, res_dif=5, radius=4.5)
+        # with no contacts instance
+        slow_traj_contacts.compute()
+
+        # With custom contacts
+        lahuta_contacts = LahutaContacts(contact_type='atom-atom')
+        slow_traj_contacts.compute(lahuta_contacts=lahuta_contacts)
+
+    Note:
+        - This class is particularly useful in scenarios where stability is preferred over speed.
+        - Parallel computation is not supported in this implementation.
+        - The class uses MDAnalysis's AnalysisBase to iterate over trajectory frames.
+    """
+
     def __init__(self, luni: Universe, res_dif: int, radius: float):
         self.luni = luni
         self.res_dif = res_dif
@@ -371,9 +405,6 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):
         AnalysisBase.__init__(self, self._trajectory)  # type: ignore
 
     def _single_frame(self):
-        """
-        Compute the contacts for a single frame.
-        """
         ns = self.luni.compute_neighbors(res_dif=self.res_dif, radius=self.radius)
         if self.lahuta_contacts is None:
             self.results[self._frame_index] = ns
@@ -384,6 +415,13 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):
     def compute(self, lahuta_contacts: Optional["LahutaContacts"] = None):
         """
         Compute the contacts for the whole trajectory.
+
+        Args:
+            lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+
+        Returns:
+            None
+
         """
         self.lahuta_contacts = lahuta_contacts
         self.run()  # type: ignore
