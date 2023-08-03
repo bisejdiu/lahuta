@@ -1,8 +1,6 @@
-import contextlib
 import warnings
-from typing import Any, Callable, Dict, Generator, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
-import joblib
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed  # type: ignore
@@ -15,6 +13,8 @@ from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
+
+from ._ctx_mngrs import tqdm_joblib
 
 Pairs: TypeAlias = NDArray[np.int32]
 Distances: TypeAlias = NDArray[np.float32]
@@ -200,25 +200,3 @@ class LahutaTrajectoryContacts:
                 else:
                     lahuta_contacts.compute(ns)
                     self.results[frame_index] = lahuta_contacts.results
-
-
-@contextlib.contextmanager
-def tqdm_joblib(tqdm_object: Any) -> Generator[Any, None, None]:
-    """Context manager to patch joblib to report into tqdm progress bar given as argument"""
-
-    class TqdmBatchCompletionCallback(joblib.parallel.BatchCompletionCallBack):
-        """
-        Class to patch joblib to report into tqdm progress bar given as argument.
-        """
-
-        def __call__(self, *args: Any, **kwargs: Any):
-            tqdm_object.update(n=self.batch_size)
-            return super().__call__(*args, **kwargs)  # type: ignore
-
-    old_batch_callback = joblib.parallel.BatchCompletionCallBack
-    joblib.parallel.BatchCompletionCallBack = TqdmBatchCompletionCallback
-    try:
-        yield tqdm_object
-    finally:
-        joblib.parallel.BatchCompletionCallBack = old_batch_callback
-        tqdm_object.close()
