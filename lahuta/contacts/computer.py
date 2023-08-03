@@ -4,6 +4,7 @@ from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Uni
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed  # type: ignore
+from MDAnalysis.analysis.base import AnalysisBase
 from numpy.typing import NDArray
 from tqdm import tqdm
 from typing_extensions import TypeAlias
@@ -20,6 +21,7 @@ Pairs: TypeAlias = NDArray[np.int32]
 Distances: TypeAlias = NDArray[np.float32]
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactFunctions = Union[ContactFunction, Iterable[ContactFunction]]
+FrameContacts = Dict[int, Tuple[Pairs, Distances]]
 
 
 # pylint: disable=unsubscriptable-object
@@ -136,9 +138,6 @@ class LahutaContacts:
         return self.__repr__()
 
 
-FrameContacts = Dict[int, Tuple[Pairs, Distances]]
-
-
 class LahutaTrajectoryContacts:
     def __init__(self, res_dif: int, radius: float):
         self.res_dif = res_dif
@@ -200,3 +199,32 @@ class LahutaTrajectoryContacts:
                 else:
                     lahuta_contacts.compute(ns)
                     self.results[frame_index] = lahuta_contacts.results
+
+
+class SlowLahutaTrajectoryContacts(AnalysisBase):
+    def __init__(self, luni: Universe, res_dif: int, radius: float):
+        self.luni = luni
+        self.res_dif = res_dif
+        self.radius = radius
+        self._trajectory = self.luni.to("mda").universe.trajectory
+        self.results: Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]] = {}
+        self.lahuta_contacts: Optional["LahutaContacts"] = None
+        AnalysisBase.__init__(self, self._trajectory)  # type: ignore
+
+    def _single_frame(self):
+        """
+        Compute the contacts for a single frame.
+        """
+        ns = self.luni.compute_neighbors(res_dif=self.res_dif, radius=self.radius)
+        if self.lahuta_contacts is None:
+            self.results[self._frame_index] = ns
+        else:
+            self.lahuta_contacts.compute(ns)
+            self.results[self._frame_index] = self.lahuta_contacts.results
+
+    def compute(self, lahuta_contacts: Optional["LahutaContacts"] = None):
+        """
+        Compute the contacts for the whole trajectory.
+        """
+        self.lahuta_contacts = lahuta_contacts
+        self.run()  # type: ignore
