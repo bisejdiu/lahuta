@@ -46,12 +46,9 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils.ob import enumerate_rings
 
-from ._cache_funcs import (
-    calc_ringnormal_pos_angle,
-    calc_ringnormal_pos_angle_cached,
-    compute_neighbors,
-    compute_neighbors_cached,
-)
+from ._cache_funcs import (calc_ringnormal_pos_angle,
+                           calc_ringnormal_pos_angle_cached, compute_neighbors,
+                           compute_neighbors_cached)
 
 memory = Memory("cachedir", verbose=0)
 
@@ -326,15 +323,14 @@ class AtomPlaneContacts:
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
     def __init__(self, ns: NeighborPairs):
-        self.angles = None
+        self.angles: Optional[NDArray[np.float32]] = None
         self.rings = enumerate_rings(ns.mol)
         self.ap_contacts = _AtomPlaneContacts()
 
         self._compute(ns, ns.mda)
 
     def _compute(self, ns: NeighborPairs, mda: AtomGroupType) -> None:
-        result = compute_neighbors(mda.atoms.positions, self.rings.centers)
-        pairs, distances = result
+        pairs, distances = compute_neighbors(mda.atoms.positions, self.rings.centers)
 
         neighbors = ns.clone(pairs, distances)
 
