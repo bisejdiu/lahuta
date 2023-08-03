@@ -6,12 +6,26 @@ from _pytest.fixtures import FixtureRequest
 
 
 def pytest_addoption(parser: Parser) -> None:
+    """
+    Add command line options to pytest.
+
+    Args:
+        parser (Parser): The pytest parser.
+    """
     parser.addoption("--large-files", action="store_true", default=False, help="Use large files for testing")
 
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup(request: FixtureRequest) -> None:
-    def remove_hidden_files():
+    """
+    Remove hidden files after testing. Specifically, MDAnalysis creates hidden files that end with .lock or .npz
+    in the directory where the tests are run. This fixture removes those files after testing.
+
+    Args:
+        request (FixtureRequest): The pytest fixture request.
+    """
+
+    def remove_hidden_files() -> None:
         test_dir = Path(__file__).parent / "lahuta" / "tests" / "data"
 
         # Find hidden files that end with .lock or .npz in that directory
