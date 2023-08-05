@@ -49,8 +49,6 @@ nav:
   - 'Introduction': usage/intro.md
   - 'Loading Data': usage/loading.md
   - Contacts:
-    - Overview: usage/ns/overview.md
-    - Finding Neighbors: usage/ns/find.md
     - Neighbors: usage/ns/neighbors.md
     - Contacts: usage/ns/contacts.md
   - 'NeighborPairs': usage/neighborpairs.md

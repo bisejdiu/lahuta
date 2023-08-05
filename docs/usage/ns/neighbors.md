@@ -18,24 +18,20 @@ The `NeighborPairs` class in Lahuta is designed to facilitate the transition fro
 ???+ example "Example - Computing Neighbors"
     _Computing neighbors using Lahuta._
     ```py 
-    from lahuta import Luni
-
-    luni = Luni("path/to/file.pdb") # (1)!
 
     ns = luni.compute_neighbors(
-        radius=4.5, # (2)!
-        res_dif=2,  # (3)!
+        radius=4.5, # (1)!
+        res_dif=2,  # (2)!
     )
 
-    print (ns.pairs) # (4)!
-    print (ns.distances) # (5)!
+    print (ns.pairs) # (3)!
+    print (ns.distances) # (4)!
     ```
 
-    1. The `Luni` class is used as the entry point. You can supply a PDB, PDBx/mmCIF, or even a GRO file.
-    2. The `radius` parameter specifies the cutoff distance for the neighbor search.
-    3. The `res_dif` parameter specifies the minimum residue difference between two atoms (i.e. how far apart they are in the sequence).
-    4. The `pairs` attribute contains an array of all pairs of atom indices that are within the specified cutoff distance and satisfy the residue difference constraint.
-    5. The `distances` attribute contains an array of all distances between the pairs of atoms in the `pairs` attribute.
+    1. The `radius` parameter specifies the cutoff distance for the neighbor search.
+    2. The `res_dif` parameter specifies the minimum residue difference between two atoms (i.e. how far apart they are in the sequence).
+    3. The `pairs` attribute contains an array of all pairs of atom indices that are within the specified cutoff distance and satisfy the residue difference constraint.
+    4. The `distances` attribute contains an array of all distances between the pairs of atoms in the `pairs` attribute.
 
 ??? example "Example - Using `NeighborSearch` to compute Neighobrs"
     ```py
@@ -55,8 +51,6 @@ The `pairs` and `distances` attributes of the `NeighborPairs` class are NumPy ar
 ???+ example "Example - Accessing `pairs` and `distances`"
     _Accessing the `pairs` and `distances` attributes of the `NeighborPairs` class._
     ```py
-
-    ns = ...
 
     print (ns.pairs)
     #> array([[  0,   1],
