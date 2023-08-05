@@ -57,6 +57,9 @@ nav:
   - 'Arithmetic Operations': usage/arithmetic.md
   - 'DataFrame': usage/frame.md
   - 'Contact Matrix': usage/contact_plot.md
+  - Pooling Contacts:
+    - 'LahutaContacts': usage/pooling/lahuta.md
+    - 'LahutaTrajectoryContacts': usage/pooling/lahuta_traj.md
 - Blog:
   - blog/lahuta-dev.md
 - API Documentation:
