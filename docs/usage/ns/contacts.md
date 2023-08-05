@@ -9,13 +9,13 @@ As mentioned, contacts are simply neighbor atoms that satisfy some additional cr
     # Load the structure and compute neighbors
     luni = Luni("path/to/file.pdb")
     ns = luni.compute_neighbors()
-    print (ns.pairs.shape)
-    #> (3024, 2) # (1)!
+    print (ns.pairs.shape) # (1)!
+    #> (3024, 2)
 
     # Apply a simple type filter
     aromatic1_ns = ns.type_filter("aromatic", 1) # (2)!
-    print (aromatic1_ns.pairs.shape)
-    #> (287, 2) # (3)!
+    print (aromatic1_ns.pairs.shape) # (3)!
+    #> (287, 2)
 
     ```
     
