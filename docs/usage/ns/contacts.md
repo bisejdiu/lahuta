@@ -66,7 +66,7 @@ Here is another example that demonstrates how to compute ionic contacts:
     3. This will combine the two `NeighborPairs` objects into a single `NeighborPairs` object.
 
 !!! tip "Learn more"
-    See the API documentation on [contacts](usage/contacts.md) for more information.
+    See the API documentation on [contacts](api/contacts.md) for more information.
 
 I hope that these examples show how easy and intuitive it is to use Lahuta to extract contacts from neighboring atoms. I hope you also see how `NeighborPairs` objects can be combined to create more complex `NeighborPairs` objects. This is the core idea behind Lahuta's selection and filtering API. It is designed to be intuitive, flexible, and extensible.
 
@@ -87,3 +87,20 @@ Below are the atom types that are computed by Lahuta:
 - `carbonyl_oxygen`: Carbonyl oxygen atoms
 - `carbonyl_carbon`: Carbonyl carbon atoms
 
+## Types of Filters
+
+`NeighborPairs` objects can be filtered using the following filters:
+
+- `type_filter`: Filter by atom type (e.g. aromatic, hbond_acceptor, etc.)
+- `distance_filter`: Filter by distance
+- `index_filter`: Filter by atom index
+- `numeric_filter`: Filter by numeric value
+- `radius_filter`: Filter by radius
+
+There are also hbond-specific filters:
+
+- `hbond_distance_filter`: Filters based on the distance between the hbonded atoms
+- `hbond_angle_filter`: Filters based on the angle between the hydrogen bonded atoms
+
+!!! tip "Learn more"
+    See the API documentation on [NeighborPairs](api/neighborpairs.md) for more information.
