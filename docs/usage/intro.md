@@ -53,15 +53,3 @@ Writing a parser for even a common file format such as PDB is non-trivial and ti
 Lahuta supports both PDB and PDBx/mmCIF file formats. It also supports loading data from MDAnalysis, a popular Python library for the analysis of MD simulations. This means that you can use Lahuta to analyze MD simulations without having to convert them to PDB or PDBx/mmCIF files. See the [Loading Data]() section for more information.
 
 
-    
-    
-
-
-
-
-## other
-- Section describing the different file formats and list supported file formats + loading data from MDAnalsysis should be a section as well
-  - List supported file formats
-  - Describe how to load data from MDAnalysis
-  - Describe how to load data from a file
-

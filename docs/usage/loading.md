@@ -147,5 +147,5 @@ For MD simulations, which can get very large, and if the user wishes to compute 
     ns = luni.compute_neighbors()
     ```
 
-    1. This method is auto-invoked by `compute_neighbors` and when the `to` method uses `"mol"` as an argument. While it's usually automatic, you can call it directly if desired to make the call explicit.
+    1. This method is auto-invoked by `compute_neighbors` or when the `to` method uses `"mol"` as an argument. While it's usually automatic, you can call it directly if desired to make the computation explicit.
 
