@@ -197,10 +197,10 @@ class NeighborPairs:
         The `partner` parameter specifies the column (1 or 2) from which the atom types are selected.
 
         Args:
-            atom_type (str): Specifies the atom type. Can be one of the following: 'carbonyl_oxygen',
-            'weak_hbond_donor', 'pos_ionisable', 'carbonyl_carbon', 'hbond_acceptor', 'hbond_donor',
-            'neg_ionisable', 'weak_hbond_acceptor', 'xbond_acceptor', 'aromatic', 'hydrophobe'.
-            These names come from the SmartsPatternRegistry Enum.
+            atom_type (str): Specifies the atom type. Can be one of the following:
+                'carbonyl_oxygen', 'weak_hbond_donor', 'pos_ionisable', 'carbonyl_carbon',
+                'hbond_acceptor', 'hbond_donor', 'neg_ionisable', 'weak_hbond_acceptor',
+                'xbond_acceptor', 'aromatic', 'hydrophobe'.
             partner (int): The column to select the atom types from. It can be either 1 or 2.
 
         Returns:
@@ -270,8 +270,6 @@ class NeighborPairs:
         Args:
             array (NDArray[np.float32]): The array containing the values to compare with the cutoff.
             cutoff (float): The cutoff value for the filter.
-            lte (bool, optional): Specifies whether the values in the array should be less than or equal to (True) or
-            greater than (False) the cutoff. Defaults to True.
 
         Returns:
             A NeighborPairs object containing the pairs that meet the numeric filter.
