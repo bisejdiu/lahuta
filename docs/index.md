@@ -28,16 +28,39 @@ Lahuta is written from the ground up in Python. Nevertheless, it relies on a few
 ## Wetting Your Appetite {#quickstart}
 {% endraw %}
 
-The following code snippet provides a brief overview of the library's capabilities. For a more detailed introduction, please refer to the [User Guide](user_guide.md).
+The following example demonstrates how to compute non-covalent interactions using Lahuta.
+For a more detailed introduction, please refer to the [User Guide](user_guide.md).
 
-```python
-from lahuta import Luni
+???+ example "Example - First dive into Lahuta"
+    _The following code snippet shows a simple example of how to use Lahuta._
+    ```py requires="3.9"
+    from lahuta import Luni
 
-# Create a Luni object from a PDB file
-luni = Luni.from_pdb("path/to/file.pdb")
+    luni = Luni("path/to/file.pdb") # (1)!
 
-# Create a Luni object from a PDBx/mmCIF file
-luni = Luni.from_mmcif("path/to/file.cif")
+    ns = luni.compute_neighbors(
+        radius=4.5, # (2)!
+        res_dif=2,  # (3)!
+    )
+
+    print (ns.pairs) # (4)!
+    ```
+
+    1. The `Luni` class is used as the entry point. You can supply a PDB, PDBx/mmCIF, or even a GRO file.
+    2. The `radius` parameter specifies the cutoff distance for the neighbor search.
+    3. The `res_dif` parameter specifies the minimum residue difference between two atoms (i.e. how far apart they are in the sequence).
+    4. The `pairs` attribute contains an array of all pairs of atom indices that are within the specified cutoff distance and satisfy the residue difference constraint.
+
+!!! tip "Learn more"
+    See the [documentation on supported file formats](usage/loading.md#supported-file-formats) for more information.
+
+{% raw %}
+## Performance {#performance}
+{% endraw %}
+
+Lahuta is designed to be fast and efficient. Two overarching design principles are at the core of its architecture:
+
+1. **Vectorization**: Lahuta relies heavily on vectorized operations to perform numerical computations. This is achieved by using NumPy arrays and SciPy sparse matrices.
+2. **Ease of Use & Intuitive Usage**: Written in Python, Lahuta is not only easy to use but also easy to extend. Its high-level API is designed to be intuitive and user-friendly.
 
 
-```
