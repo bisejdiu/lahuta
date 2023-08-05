@@ -1,0 +1,126 @@
+site_name: Lahuta
+site_description: Analysis of non-covalent interactions in biomolecular systems
+strict: false
+site_url: https://docs.lahuta.dev/
+
+theme:
+  name: 'material'
+  palette:
+  - media: "(prefers-color-scheme: light)"
+    scheme: default
+    primary: black
+    accent: pink
+    toggle:
+      icon: material/weather-night
+      name: "Switch to dark mode"
+  - media: "(prefers-color-scheme: dark)"
+    scheme: slate
+    primary: black
+    accent: pink
+    toggle:
+      icon: material/weather-sunny
+      name: "Switch to light mode"
+  features:
+    - content.tabs.link
+    - content.code.annotate
+    - announce.dismiss
+    - navigation.tabs
+  logo: 'small-logo.svg'
+  favicon: 'favicon.png'
+
+repo_name: bisejdiu/lahuta
+repo_url: https://github.com/bisejdiu/lahuta
+edit_uri: edit/main/docs/
+extra:
+  version:
+    provider: mike
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+- Getting Started:
+  - Welcome to Lahuta: index.md
+  - Getting Help: help.md
+  - Installation: install.md
+  - Contributing: contributing.md
+  - changelog.md
+- Usage:
+  - 'Introduction': usage/intro.md
+  - 'Loading Data': usage/loading.md
+  - Contacts:
+    - Overview: usage/ns/overview.md
+    - Finding Neighbors: usage/ns/find.md
+    - Neighbors: usage/ns/neighbors.md
+    - Contacts: usage/ns/contacts.md
+  - 'NeighborPairs': usage/neighborpairs.md
+  - 'Arithmetic Operations': usage/arithmetic.md
+  - 'DataFrame': usage/frame.md
+  - 'Contact Matrix': usage/contact_plot.md
+- Blog:
+  - blog/lahuta-dev.md
+- API Documentation:
+  - Core:
+    - 'Luni': api/luni.md
+    - 'NeighborPairs': api/neighbors.md
+    - 'Finding Neighbors': api/searching.md
+  - Contacts:
+    - Functional:
+      - 'Aromatic Contacts': api/contacts/aromatic.md
+      - 'Carbonyl Contacts': api/contacts/carbonyl.md
+
+    - Class-Based:
+      - 'Aromatic Contacts': api/contacts/aromatic_class.md
+      - 'Carbonyl Contacts': api/contacts/carbonyl_class.md
+
+markdown_extensions:
+- tables
+- toc:
+    permalink: true
+    title: Page contents
+- admonition
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.highlight
+- pymdownx.extra
+- pymdownx.emoji:
+    emoji_index: !!python/name:materialx.emoji.twemoji
+    emoji_generator: !!python/name:materialx.emoji.to_svg
+- pymdownx.tabbed:
+    alternate_style: true
+
+watch:
+- lahuta
+
+plugins:
+- mike:
+    alias_type: symlink
+    canonical_version: latest
+- search
+- exclude:
+    glob:
+    - theme/announce.html
+    - plugins/*
+    - __pycache__/*
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [.]
+        options:
+          members_order: source
+          separate_signature: true
+          filters: ["!^_"]
+          docstring_options:
+            ignore_init_summary: true
+          merge_init_into_class: true
+          extensions:
+            - docs/plugins/griffe_doclinks.py
+- mkdocs-simple-hooks:
+    hooks:
+      on_pre_build: 'docs.plugins.main:on_pre_build'
+      on_files: 'docs.plugins.main:on_files'
+      on_page_markdown: 'docs.plugins.main:on_page_markdown'
+- redirects:
+    redirect_maps:
+      'usage/mypy.md': 'integrations/mypy.md'
+- external-markdown:
