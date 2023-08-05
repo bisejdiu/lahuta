@@ -8,22 +8,6 @@ The library is architected with a user-friendly approach, promoting both intuiti
 
 Its development has been influenced by [arpeggio](https://github.com/harryjubb/arpeggio), which we consider as its predecessor. 
 
-
-{% raw %}
-## Standing on the Shoulders of Giants {#dependencies}
-{% endraw %}
-
-Lahuta is written from the ground up in Python. Nevertheless, it relies on a few external libraries to offload tasks such as I/O and numerical operations. The following list provides a brief overview of the libraries that are used by Lahuta and their respective purposes:
-
-### Bio- and Cheminformatics Libraries:
-- [MDAnalysis](): Used for reading and writing biomolecular structures and trajectories, as well as facilitating rapid neighbor search.
-- [Gemmi](): A specialized library for handling the reading and writing of structures in the PDBx/mmCIF format.
-- [OpenBabel](): Essential for SMARTS pattern matching and advanced chemical perception.
-
-### General-Purpose Libraries:
-- [NumPy](): Used for fast numerical operations on arrays by relying extensively on vectorized operations.
-- [SciPy](): We employ sparse matrices to efficiently store and quickly access atom indices. 
-
 {% raw %}
 ## Wetting Your Appetite {#quickstart}
 {% endraw %}
@@ -145,6 +129,22 @@ For many common tasks, a dedicated API, regardless of how intuitive it is, can b
 We can use Lahuta to compute contacts from related proteins and trace them through evolutionary time. Lahuta is capable of parsing MSA files and generate unique identifiers for each residue. It can then quickly map between real atom & residue indices and MSA-based indices. 
 
 This opens the door to a whole class of applications with a wide range of use cases. We discuss this more in the [Tutorials](tutorials.md) and [Usage](usage.md) sections. We also have a [Blog Post]() that discusses this in more detail in the context of GPCRs.
+
+{% raw %}
+## Standing on the Shoulders of Giants {#dependencies}
+{% endraw %}
+
+Lahuta is written from the ground up in Python. Nevertheless, it relies on a few external libraries to offload tasks such as I/O and numerical operations. The following list provides a brief overview of the libraries that are used by Lahuta and their respective purposes:
+
+### Bio- and Cheminformatics Libraries:
+- [MDAnalysis](): Used for reading and writing biomolecular structures and trajectories, as well as facilitating rapid neighbor search.
+- [Gemmi](): A specialized library for handling the reading and writing of structures in the PDBx/mmCIF format.
+- [OpenBabel](): Essential for SMARTS pattern matching and advanced chemical perception.
+
+### General-Purpose Libraries:
+- [NumPy](): Used for fast numerical operations on arrays by relying extensively on vectorized operations.
+- [SciPy](): We employ sparse matrices to efficiently store and quickly access atom indices. 
+
 
 {% raw %}
 ## Active Development {#active-development}

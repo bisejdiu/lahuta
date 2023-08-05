@@ -55,6 +55,7 @@ nav:
     - Contacts: usage/ns/contacts.md
   - 'NeighborPairs': usage/neighborpairs.md
   - 'Arithmetic Operations': usage/arithmetic.md
+  - 'Selection Language': usage/language.md
   - 'DataFrame': usage/frame.md
   - 'Contact Matrix': usage/contact_plot.md
   - Pooling Contacts:
