@@ -57,6 +57,10 @@ nav:
   - Pooling Contacts:
     - 'LahutaContacts': usage/pooling/lahuta.md
     - 'LahutaTrajectoryContacts': usage/pooling/lahuta_traj.md
+- Tutorials:
+  - 'Getting Started': tutorials/getting_started.md
+  - 'Custom Contacts': tutorials/custom_contacts.md
+  - 'Visualizing Contacts': tutorials/visualizing_contacts.md
 - Blog:
   - blog/lahuta-dev.md
 - API Documentation:
@@ -68,7 +72,6 @@ nav:
     - Functional:
       - 'Aromatic Contacts': api/contacts/aromatic.md
       - 'Carbonyl Contacts': api/contacts/carbonyl.md
-
     - Class-Based:
       - 'Aromatic Contacts': api/contacts/aromatic_class.md
       - 'Carbonyl Contacts': api/contacts/carbonyl_class.md
