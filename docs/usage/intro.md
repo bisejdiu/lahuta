@@ -1,5 +1,7 @@
 # Introduction 
 
+<img src="../big-logo.svg" alt="Alternative text" width="650" height="200">
+
 ## Background and Motivation
 Lahuta is a computational tool that builds on the foundation laid by CREDO, a well-regarded database for understanding complex protein interactions. CREDO categorizes chemical entities according to their interaction with amino acid residues. It calculates these entities' chemical properties and consolidates this data in an easily accessible and comprehensive database.
 
