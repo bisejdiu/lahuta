@@ -51,9 +51,10 @@ nav:
   - Contacts:
     - Neighbors: usage/ns/neighbors.md
     - Contacts: usage/ns/contacts.md
+    - 'Contact Types': usage/ns/contact_types.md
   - 'Complex Operations': usage/arithmetic.md
-  - 'DataFrame': usage/frame.md
-  - 'Contact Matrix': usage/contact_plot.md
+  - 'DataFrame Output': usage/frame.md
+  - 'Plotting Contacts': usage/contact_plot.md
   - Pooling Contacts:
     - 'LahutaContacts': usage/pooling/lahuta.md
     - 'LahutaTrajectoryContacts': usage/pooling/lahuta_traj.md
