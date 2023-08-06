@@ -51,7 +51,6 @@ nav:
   - Contacts:
     - Neighbors: usage/ns/neighbors.md
     - Contacts: usage/ns/contacts.md
-  - 'NeighborPairs': usage/neighborpairs.md
   - 'Arithmetic Operations': usage/arithmetic.md
   - 'Selection Language': usage/language.md
   - 'DataFrame': usage/frame.md
