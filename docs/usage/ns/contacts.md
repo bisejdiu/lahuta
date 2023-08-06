@@ -89,18 +89,25 @@ Below are the atom types that are computed by Lahuta:
 
 ## Types of Filters
 
-`NeighborPairs` objects can be filtered using the following filters:
+`NeighborPairs` objects can be filtered using the following filters (methods):
 
-- `type_filter`: Filter by atom type (e.g. aromatic, hbond_acceptor, etc.)
-- `distance_filter`: Filter by distance
-- `index_filter`: Filter by atom index
-- `numeric_filter`: Filter by numeric value
-- `radius_filter`: Filter by radius
+### Type Filter: `NeighborPairs.type_filter(...)`
+:::lahuta.core.neighbors.NeighborPairs.type_filter
+### Distance Filter: `NeighborPairs.distance_filter(...)`
+:::lahuta.core.neighbors.NeighborPairs.distance_filter
+### Index Filter: `NeighborPairs.index_filter(...)`
+:::lahuta.core.neighbors.NeighborPairs.index_filter
+### Numeric Filter `NeighborPairs.numeric_filter(...)`
+:::lahuta.core.neighbors.NeighborPairs.numeric_filter
+### Radius Filter: `NeighborPairs.radius_filter(...)`
+:::lahuta.core.neighbors.NeighborPairs.radius_filter
 
 There are also hbond-specific filters:
 
 - `hbond_distance_filter`: Filters based on the distance between the hbonded atoms
 - `hbond_angle_filter`: Filters based on the angle between the hydrogen bonded atoms
+
+The last two filters operate on three atoms at a time and Lahuta implements vectorized versions of these filters. This means that they are very fast and efficient, but also that the code is a bit more complicated. For this reason, we will not discuss them here. Please see the API documentation for more information.
 
 !!! tip "Learn more"
     See the API documentation on [NeighborPairs](api/neighborpairs.md) for more information.
