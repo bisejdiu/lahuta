@@ -51,8 +51,7 @@ nav:
   - Contacts:
     - Neighbors: usage/ns/neighbors.md
     - Contacts: usage/ns/contacts.md
-  - 'Arithmetic Operations': usage/arithmetic.md
-  - 'Selection Language': usage/language.md
+  - 'Complex Operations': usage/arithmetic.md
   - 'DataFrame': usage/frame.md
   - 'Contact Matrix': usage/contact_plot.md
   - Pooling Contacts:
