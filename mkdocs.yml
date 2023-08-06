@@ -55,9 +55,7 @@ nav:
   - 'Complex Operations': usage/arithmetic.md
   - 'DataFrame Output': usage/frame.md
   - 'Plotting Contacts': usage/contact_plot.md
-  - Pooling Contacts:
-    - 'LahutaContacts': usage/pooling/lahuta.md
-    - 'LahutaTrajectoryContacts': usage/pooling/lahuta_traj.md
+  - 'Contact Computer': usage/computer.md
 - Tutorials:
   - 'Getting Started': tutorials/getting_started.md
   - 'Custom Contacts': tutorials/custom_contacts.md
