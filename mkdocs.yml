@@ -64,9 +64,16 @@ nav:
   - blog/lahuta-dev.md
 - API Documentation:
   - Core:
-    - 'Luni': api/luni.md
-    - 'NeighborPairs': api/neighbors.md
-    - 'Finding Neighbors': api/searching.md
+    - 'Luni': api/core/luni.md
+    - 'NeighborPairs': api/core/neighbors.md
+    - 'Finding Neighbors': api/core/searching.md
+    - 'ARC': api/core/arc.md
+    - 'Loaders': api/core/loaders.md
+    - 'OpenBabel OBMol': api/core/obmol.md
+    - 'Assigners': api/core/assigners.md
+    - 'Atom Assigner': api/core/atom_assigner.md
+    - 'Matchers': api/core/matchers.md
+    - 'Helpers': api/core/helpers.md
   - Contacts:
     - Functional:
       - 'Aromatic Contacts': api/contacts/aromatic.md
