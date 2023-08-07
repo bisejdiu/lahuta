@@ -1,34 +1,31 @@
 """
-Module: F.py
+Module: `lahuta.contacts.F.py`
 
 This module is designed as the main entry point for users to access the various functionalities
 of the `contacts` package. It imports all necessary functions for computing interactions, thus
 providing an easy and concise way to use the package's functionalities.
 
-Functions:
-    All functions for computing interactions between atoms and planes, and plane-plane interactions
-    are available via this module.
+Each function takes a `NeighborPairs` object, which represents precomputed neighbor relationships between atoms, 
+and an optional distance cutoff parameter for certain types of contacts. Each function returns a new `NeighborPairs` 
+object that represents the specific contacts computed by that function.
 
-Import Example:
-    To use this module, you would typically import it as follows:
-
-    import lahuta.contacts as F
-
-    And then call the desired functions as methods of the imported module. For example, to compute 
-    aromatic neighbors, you would do:
-
-    F.aromatic_neighbors(ns)
-
-    where `ns` is a NeighborPairs object.
+Notes:
+    Each atomic contact type is computed based on a set of conditions, primarily involving the types of the two 
+    interacting atoms and the distance between them. For example, carbonyl contacts are calculated by filtering 
+    for neighbor pairs where one atom is a carbonyl oxygen and the other is a carbonyl carbon, and the distance 
+    between them is less than a predefined cutoff.
     
-Please refer to the individual function documentation for details about their usage and parameters.
+    Most contact calculation functions also accept a `distance` argument specifying the cutoff distance for 
+    considering two atoms as neighbors in the contact type calculation. These cutoffs are defined in the 
+    `lahuta.config.defaults` module and can be adjusted as per user requirements.
 
 Example:
-    import lahuta.contacts as F
+    ``` py
+    from lahuta.contacts import F
 
     # Define your system and compute neighbors
-    universe = Universe(...)
-    ns = universe.compute_neighbors()
+    luni = Luni(...)
+    ns = luni.compute_neighbors()
 
     # Compute aromatic neighbors
     aromatic_nbs = F.aromatic_neighbors(ns)
@@ -41,6 +38,7 @@ Example:
 
     # Compute plane-plane neighbors
     pp_nbs = F.plane_plane_neighbors(ns)
+    ```
 
 """
 

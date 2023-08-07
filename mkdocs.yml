@@ -75,12 +75,11 @@ nav:
     - 'Matchers': api/core/matchers.md
     - 'Helpers': api/core/helpers.md
   - Contacts:
-    - Functional:
-      - 'Aromatic Contacts': api/contacts/aromatic.md
-      - 'Carbonyl Contacts': api/contacts/carbonyl.md
-    - Class-Based:
-      - 'Aromatic Contacts': api/contacts/aromatic_class.md
-      - 'Carbonyl Contacts': api/contacts/carbonyl_class.md
+    - 'Functional API': api/contacts/F.md
+    - 'Object-Oriented API': 
+      - 'Atom-Atom': api/contacts/atom_atom.md
+      - 'Atom-Plane': api/contacts/atom_plane.md
+      - 'Plane-Plane': api/contacts/plane_plane.md
 
 markdown_extensions:
 - tables
