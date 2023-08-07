@@ -1,6 +1,6 @@
 """
 
-module arc.py
+module: `lahuta.core.arc.py`
 
 This module provides classes to model and manage the atomic-level structure of a biological system.
 The atomic-level structure includes atoms, residues, and chains in the system, and their inter-relationships.
@@ -31,12 +31,14 @@ The attributes include, but are not limited to, atom name, ID, element, type,
 residue name, residue ID, chain label, and chain ID.
 
 Example:
+    ``` py
     >>> from arc import ARC, GemmiLoader
     >>> loader = GemmiLoader("path_to_structure")
     >>> arc = ARC(loader, loader.atom_site_data)
     >>> atom_0 = arc.get_atom(0)
     >>> print(atom_0)
     Atom(name=..., id=..., element=..., type=..., resname=..., resid=..., chain_label=..., chain_id=...)
+    ```
 """
 
 from dataclasses import dataclass
@@ -72,14 +74,8 @@ class Atoms:
         _data (NDArray[Any]): A numpy structured array storing atomic properties.
         _coordinates (NDArray[np.float32]): A numpy array storing the coordinates of atoms.
 
-    Properties:
-        names (NDArray[np.str_]): Atom names.
-        types (NDArray[np.str_]): Atom types.
-        ids (NDArray[np.int32]): Atom ids.
-        elements (NDArray[np.str_]): Atom elements.
-        coordinates (NDArray[np.float32]): 3D coordinates of the atoms.
-
     Examples:
+        ``` py
         >>> from arc import Atoms
         >>> atoms_from_gemmi = Atoms.from_gemmi(gemmi_block)
         >>> print(atoms_from_gemmi.names)
@@ -88,6 +84,7 @@ class Atoms:
         >>> atoms_from_mda = Atoms.from_mda(uv)
         >>> print(atoms_from_mda.ids)
         [1, 2, 3, ...]
+        ```
     """
 
     dtype = np.dtype(
@@ -209,11 +206,8 @@ class Residues:
     Attributes:
         _data (NDArray[Any]): A numpy structured array storing residue properties.
 
-    Properties:
-        resnames (NDArray[np.str_]): Returns the names of residues.
-        resids (NDArray[np.int32]): Returns the IDs of residues.
-
     Examples:
+        ``` py
         >>> from arc import Residues
         >>> residues_from_gemmi = Residues.from_gemmi(gemmi_block)
         >>> print(residues_from_gemmi.resnames)
@@ -222,6 +216,7 @@ class Residues:
         >>> residues_from_mda = Residues.from_mda(uv)
         >>> print(residues_from_mda.resids)
         [1, 2, 3, ...]
+        ```
     """
 
     dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
@@ -313,12 +308,8 @@ class Chains:
         _data (NDArray[Any]): A numpy structured array storing chain properties.
         mapping (Dict[str, int]): Mapping from chain auth to chain IDs.
 
-    Properties:
-        labels (NDArray[np.str_]): Returns the labels of chains.
-        auths (NDArray[np.str_]): Returns the auths of chains.
-        ids (NDArray[np.int32]): Returns the IDs of chains.
-
     Examples:
+        ``` py
         >>> from arc import Chains
         >>> chains_from_gemmi = Chains.from_gemmi(gemmi_block)
         >>> print(chains_from_gemmi.labels)
@@ -327,6 +318,7 @@ class Chains:
         >>> chains_from_mda = Chains.from_mda(uv)
         >>> print(chains_from_mda.auths)
         ['A', 'B', 'C', ...]
+        ```
     """
 
     dtype = np.dtype({"names": ["label", "auth", "id"], "formats": ["<U10", "<U10", "int"]})
@@ -430,12 +422,8 @@ class ARC:
         _residues (Residues): An instance of the Residues class.
         _chains (Chains): An instance of the Chains class.
 
-    Properties:
-        atoms (Atoms): Returns the instance of Atoms class.
-        residues (Residues): Returns the instance of Residues class.
-        chains (Chains): Returns the instance of Chains class.
-
     Examples:
+        ``` py
         >>> from arc import ARC, GemmiLoader
         >>> loader = GemmiLoader("path_to_structure")
         >>> arc = ARC(loader, loader.site_data)
@@ -448,6 +436,7 @@ class ARC:
 
         >>> print(arc.residues)
         Residues(resname=..., resid=...)
+        ```
     """
 
     def __init__(
@@ -547,10 +536,12 @@ class Atom:
     Note that all attributes are optional and can be passed as keyword arguments.
 
     Examples:
+        ``` py
         >>> from arc import Atom
         >>> atom = Atom(name='CA', id=1, element='C', type='C.3', resname='ALA', resid=1, chain_label='A', chain_id=1)
         >>> print(atom)
         Atom(name=CA, id=1, element=C, type=C.3, resname=ALA, resid=1, chain_label=A, chain_id=1)
+        ```
     """
 
     # __slots__ = ["name", "id", "element", "type", "resname", "resid", "chain_label", "chain_id"]
