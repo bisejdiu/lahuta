@@ -11,6 +11,7 @@ Lahuta can extract contacts into a tabular format. This is useful for further an
     # Saving the DataFrame to a CSV file
     df.to_csv("contacts.csv", index=False) # (2)!
     ```
+    
     1. The `to_frame` method is used to extract contacts into a Pandas DataFrame.
     2. The `to_csv` method is used to save the DataFrame to a CSV file.
 
