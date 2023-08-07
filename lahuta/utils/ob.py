@@ -1,4 +1,6 @@
 """
+module: `lahuta.utils.ob.py`
+
 Utility functions for OpenBabel.
 """
 
@@ -35,6 +37,14 @@ def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
 
 
 class Rings:
+    """
+    A class for storing information about aromatic rings in a molecule.
+
+    This class stores the center and normal vectors for each aromatic ring in a molecule.
+    It also stores the indices of the atoms in each ring and the index of the first atom
+    in each ring.
+    """
+
     def __init__(self) -> None:
         self._centers: List[NDArray[np.float32]] = []
         self._normals: List[NDArray[np.float32]] = []
@@ -42,6 +52,12 @@ class Rings:
         self._first_atom_idx: List[int] = []
 
     def add_ring(self, ob_ring: ObRingType) -> None:
+        """
+        Adds a ring to the Rings object.
+
+        Args:
+            ob_ring (ObRingType): The ring to be added.
+        """
         ob_vector3_wrapper = ObVector3Wrapper(ob.vector3(), ob.vector3())
         center = ob_vector3_wrapper.center
         normal = ob_vector3_wrapper.normal
@@ -57,18 +73,43 @@ class Rings:
 
     @property
     def centers(self) -> NDArray[np.float32]:
+        """
+        Returns the centers of the rings.
+
+        Returns:
+            NDArray[np.float32]: The centers of the rings.
+        """
         return np.array(self._centers, dtype=np.float32)
 
     @property
     def normals(self) -> NDArray[np.float32]:
+        """
+        Returns the normal vectors of the rings.
+
+        Returns:
+            NDArray[np.float32]: The normal vectors of the rings.
+        """
         return np.array(self._normals, dtype=np.float32)
 
     @property
     def atoms(self) -> NDArray[np.int32]:
+        """
+        Returns the atoms in the rings.
+
+        Returns:
+            NDArray[np.int32]: The atoms in the rings.
+        """
+
         return np.array(self._atoms, dtype=object)
 
     @property
     def first_atom_idx(self) -> NDArray[np.int32]:
+        """
+        Returns the index of the first atom in each ring.
+
+        Returns:
+            NDArray[np.int32]: The index of the first atom in each ring.
+        """
         return np.array(self._first_atom_idx, dtype=np.int32)
 
     def __len__(self) -> int:
@@ -76,6 +117,19 @@ class Rings:
 
 
 def enumerate_rings(mol: MolType) -> Rings:
+    """
+    Enumerates the aromatic rings in a molecule.
+
+    This function takes a molecule as input and returns a Rings object containing information
+    about the aromatic rings in the molecule. It is used by `atom-plane` and `plane-plane`
+    contact calculations.
+
+    Args:
+        mol (MolType): The molecule for which to enumerate the rings.
+
+    Returns:
+        Rings: A Rings object containing information about the rings in the molecule.
+    """
     rings = Rings()
     for ob_ring in mol.GetSSSR():
         if ob_ring.IsAromatic():

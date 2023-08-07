@@ -1,0 +1,34 @@
+:::lahuta.config._smart_strings
+    options:
+        members:
+            - AMIDE_SMARTS
+            - HBOND_ACCEPTOR_SMARTS
+            - POSITIVELY_IOINISABLE_SMARTS
+            - HBOND_DONOR_SMARTS
+            - AROMATIC_SMARTS
+            - SMARTS_STR_HBA_ACCEPTOR
+            - SMARTS_STR_HBA_ENOL
+            - SMARTS_STR_HBA_TAUTOMERIC_NH
+            - SMARTS_STR_HBA_TERMINAL_AMIDE
+            - SMARTS_STR_HBD_DONOR
+            - SMARTS_STR_HBD_OXYGEN_ACID
+            - SMARTS_STR_HBD_TAUTOMERIC_NH
+            - SMARTS_STR_HBD_OXYGEN_AMIDE_TERM
+            - SMARTS_STR_WHBD
+            - SMARTS_STR_XBD
+            - SMARTS_STR_PI_RDKIT_BASIC_GRP
+            - SMARTS_STR_PI_IMIDAZOLE
+            - SMARTS_STR_PI_GUANIDINE_AMIDINE
+            - SMARTS_STR_PI_RDKIT_POSN
+            - SMARTS_STR_PI_CATIONS
+            - SMARTS_STR_PI_METALS
+            - SMARTS_STR_NI_ANIONS
+            - SMARTS_STR_NI_O_ACIDIC_GRP
+            - SMARTS_STR_HYDROPHOBIC
+            - SMARTS_STR_CARBONYL_OXYGEN
+            - SMARTS_STR_CARBONYL_CARBON
+            - SMARTS_STR_AROMATIC_4
+            - SMARTS_STR_AROMATIC_5
+            - SMARTS_STR_AROMATIC_6
+            - SMARTS_STR_AROMATIC_7
+            - SMARTS_STR_AROMATIC_8

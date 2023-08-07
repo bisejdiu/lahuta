@@ -8,20 +8,16 @@ Classes:
     AtomPlaneContacts: Main class for computing atom-plane contacts.
 
 Examples:
-    universe = Universe(...)
-    ns = universe.compute_neighbors()
+    ``` py
+    luni = Luni(...)
+    ns = luni.compute_neighbors()
 
     apc = AtomPlaneContacts(ns)
     dop = apc.donor_pi()    # for donor-pi contacts
     sup = apc.sulphur_pi()  # for sulphur-pi contacts
     cbp = apc.carbon_pi()   # for carbon-pi contacts
     cap = apc.cation_pi()   # for cation-pi contacts
-
-Functions:
-    cation_pi(n, angle_cutoff=30.0, cache=True): Compute cation-pi contacts.
-    carbon_pi(n, angle_cutoff=30.0, cache=True): Compute carbon-pi contacts.
-    donor_pi(n, angle_cutoff=30.0, cache=True): Compute donor-pi contacts.
-    sulphur_pi(n, cache=True): Compute sulphur-pi contacts.
+    ```
 
 Note: 
     Functionals include a caching parameter intended to avoid re-computation 
@@ -46,9 +42,12 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils.ob import enumerate_rings
 
-from ._cache_funcs import (calc_ringnormal_pos_angle,
-                           calc_ringnormal_pos_angle_cached, compute_neighbors,
-                           compute_neighbors_cached)
+from ._cache_funcs import (
+    calc_ringnormal_pos_angle,
+    calc_ringnormal_pos_angle_cached,
+    compute_neighbors,
+    compute_neighbors_cached,
+)
 
 memory = Memory("cachedir", verbose=0)
 
@@ -163,18 +162,17 @@ def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False
     and an electron-rich aromatic ring system. The aromatic system is capable of stabilizing the cation
     through its delocalized pi electrons.
 
-    We calculate cation-pi contacts based on the following criteria:
-    1. The interaction is between an aromatic ring and a positively ionizable atom.
-    2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
-    and the cation is within a defined cutoff.
-    3. The distance between the cation and the aromatic ring system does not exceed a predefined distance cutoff.
+    !!! tip "Definition"
+        1. The interaction is between an aromatic ring and a positively ionizable atom.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+        and the cation is within a defined cutoff.
+        3. The distance between the cation and the aromatic ring system does not
+        exceed a predefined distance cutoff.
 
     Args:
         ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
-        angle_cutoff (float): The maximum angle to consider for a cation pi contact. This value is retrieved
-            from the 'cation_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
+        angle_cutoff (float): The maximum angle to consider for a cation pi contact.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-                        Default is `True`.
 
     Returns:
         NeighborPairs: The computed cation-pi contacts.
@@ -197,18 +195,17 @@ def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False
     These contacts arise due to the partial positive charge on the carbon atom interacting with the electron-rich
     π-system of the aromatic ring.
 
-    We calculate carbon-pi contacts based on the following criteria:
-    1. The interaction is between an aromatic ring and a carbon atom which is a weak hydrogen bond donor.
-    2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
-    and the carbon atom is within a specified cutoff.
-    3. The distance between the carbon atom and the aromatic ring system does not exceed a predefined distance cutoff.
+    !!! tip "Definition"
+        1. The interaction is between an aromatic ring and a carbon atom which is a weak hydrogen bond donor.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+        and the carbon atom is within a specified cutoff.
+        3. The distance between the carbon atom and the aromatic ring system does not
+        exceed a predefined distance cutoff.
 
     Args:
         ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
-        angle_cutoff (float): The maximum angle to consider for a carbon pi contact. This value is retrieved
-            from the 'carbon_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
+        angle_cutoff (float): The maximum angle to consider for a carbon pi contact.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-                      Default is `True`.
 
     Returns:
         NeighborPairs: The computed carbon-pi contacts.
@@ -231,18 +228,17 @@ def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False)
     The electron-rich  aromatic ring can interact with the partial positive charge of a hydrogen atom
     that is involved in a polar bond, creating a stabilizing interaction.
 
-    We computes donor-pi contacts based on the following criteria:
-    1. The interaction is between an aromatic ring and a hydrogen bond donor.
-    2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
-    and the hydrogen bond donor is within a predefined cutoff.
-    3. The distance between the hydrogen bond donor and the aromatic ring system does not exceed a specified distance cutoff.
+    !!! tip "Definition"
+        1. The interaction is between an aromatic ring and a hydrogen bond donor.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+        and the hydrogen bond donor is within a predefined cutoff.
+        3. The distance between the hydrogen bond donor and the aromatic ring system
+            does not exceed a specified distance cutoff.
 
     Args:
         ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
-        angle_cutoff (float): The maximum angle to consider for a donor pi contact. This value is retrieved
-            from the 'donor_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
+        angle_cutoff (float): The maximum angle to consider for a donor pi contact.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-                        Default is `True`.
 
     Returns:
         NeighborPairs: The computed donor-pi contacts.
@@ -265,14 +261,15 @@ def sulphur_pi(ns: NeighborPairs, cache: bool = False) -> NeighborPairs:
     Sulphur, particularly from methionine residues (MET), can interact with the electron cloud of an aromatic ring,
     contributing to the stability and specificity of biomolecular structures.
 
-    We compute sulphur-pi contacts based on the following criteria:
-    1. The interaction is between an aromatic ring and a sulphur atom specifically in a methionine residue.
-    2. The distance between the sulphur atom and the aromatic ring system does not exceed a predefined distance cutoff.
+    !!! tip "Definition"
+        1. The interaction is between an aromatic ring and a sulphur atom specifically in a methionine residue.
+        2. The distance between the sulphur atom and the aromatic ring system
+        does not exceed a predefined distance cutoff.
 
     Args:
         ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-                        Default is `True`.
+
     Returns:
         NeighborPairs: The computed sulphur-pi contacts.
 
@@ -288,8 +285,9 @@ class AtomPlaneContacts:
     carbon-pi, cation-pi, donor-pi, and sulphur-pi interactions. Each interaction type is computed
     as a method of this class.
 
-    Aromatic rings and their interactions play a pivotal role in this analysis. The general criteria
-    for these computations involve:
+    Aromatic rings and their interactions play a pivotal role in this analysis.
+
+    !!! tip "Definition"
         1. The interaction is between an aromatic ring and a specific type of atom or group.
         2. The angle between the aromatic ring plane and the vector connecting the center of the
            aromatic ring and the specific atom or group is within a predefined cutoff (where applicable).
@@ -300,24 +298,22 @@ class AtomPlaneContacts:
 
     Attributes:
         max_cutoff (float): The predefined maximum distance cutoff for atom-aromatic ring interactions.
-        angles (array-like): Calculated angles between ring plane and atom vector.
-        rings (array-like): Enumeration of rings in the molecular system.
-        ap_contacts (object): Instance of `_AtomPlaneContacts` class.
-        neighbors (object): Calculated neighbors within the molecular system.
+        angles (Optional[NDArray[np.float32]]): Calculated angles between ring plane and atom vector.
+        rings (Rings): Enumeration of rings in the molecular system.
+        ap_contacts (_AtomPlaneContacts): Instance of `_AtomPlaneContacts` class.
+        neighbors (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
 
-    Methods:
-        donor_pi: Computes the donor-pi contacts, which are interactions between hydrogen bond donors
-                   and the π system of atoms in a molecule.
-        sulphur_pi: Computes the sulphur-pi contacts, which are interactions between a sulphur atom
-                    (specifically in a methionine residue) and the π system of atoms in a molecule.
-        carbon_pi: Computes the carbon-pi contacts, which are interactions between carbon atoms and
-                   the π system of atoms in a molecule.
-        cation_pi: Computes the cation-pi contacts, which are interactions between cations and the π
-                   system of atoms in a molecule.
+    ??? example "Example"
+        ``` py
+        luni = Luni(...)
+        ns = luni.compute_neighbors()
 
-    Note:
-        An assertion error will be raised if angles are not computed before calling the interaction
-        computation methods.
+        apc = AtomPlaneContacts(ns)
+        dop = apc.donor_pi()    # for donor-pi contacts
+        sup = apc.sulphur_pi()  # for sulphur-pi contacts
+        cbp = apc.carbon_pi()   # for carbon-pi contacts
+        cap = apc.cation_pi()   # for cation-pi contacts
+        ```
     """
 
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
@@ -351,11 +347,12 @@ class AtomPlaneContacts:
         The electron-rich  aromatic ring can interact with the partial positive charge of a hydrogen atom
         that is involved in a polar bond, creating a stabilizing interaction.
 
-        We computes donor-pi contacts based on the following criteria:
-        1. The interaction is between an aromatic ring and a hydrogen bond donor.
-        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
-        and the hydrogen bond donor is within a predefined cutoff.
-        3. The distance between the hydrogen bond donor and the aromatic ring system does not exceed a specified distance cutoff.
+        !!! tip "Definition"
+            1. The interaction is between an aromatic ring and a hydrogen bond donor.
+            2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+            and the hydrogen bond donor is within a predefined cutoff.
+            3. The distance between the hydrogen bond donor and the aromatic ring system
+                does not exceed a specified distance cutoff.
 
         Returns:
             NeighborPairs: The computed donor-pi contacts.
@@ -376,9 +373,10 @@ class AtomPlaneContacts:
         Sulphur, particularly from methionine residues (MET), can interact with the electron cloud of an aromatic ring,
         contributing to the stability and specificity of biomolecular structures.
 
-        We compute sulphur-pi contacts based on the following criteria:
-        1. The interaction is between an aromatic ring and a sulphur atom specifically in a methionine residue.
-        2. The distance between the sulphur atom and the aromatic ring system does not exceed a predefined distance cutoff.
+        !!! tip "Definition"
+            1. The interaction is between an aromatic ring and a sulphur atom specifically in a methionine residue.
+            2. The distance between the sulphur atom and the aromatic ring system
+            does not exceed a predefined distance cutoff.
 
         Returns:
             NeighborPairs: The computed sulphur-pi contacts.
@@ -399,11 +397,12 @@ class AtomPlaneContacts:
         These contacts arise due to the partial positive charge on the carbon atom interacting with the electron-rich
         π-system of the aromatic ring.
 
-        We calculate carbon-pi contacts based on the following criteria:
-        1. The interaction is between an aromatic ring and a carbon atom which is a weak hydrogen bond donor.
-        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
-        and the carbon atom is within a specified cutoff.
-        3. The distance between the carbon atom and the aromatic ring system does not exceed a predefined distance cutoff.
+        !!! tip "Definition"
+            1. The interaction is between an aromatic ring and a carbon atom which is a weak hydrogen bond donor.
+            2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+            and the carbon atom is within a specified cutoff.
+            3. The distance between the carbon atom and the aromatic ring system does not
+            exceed a predefined distance cutoff.
 
         Returns:
             NeighborPairs: The computed carbon-pi contacts.
@@ -425,11 +424,12 @@ class AtomPlaneContacts:
         and an electron-rich aromatic ring system. The aromatic system is capable of stabilizing the cation
         through its delocalized pi electrons.
 
-        We calculate cation-pi contacts based on the following criteria:
-        1. The interaction is between an aromatic ring and a positively ionizable atom.
-        2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
-        and the cation is within a defined cutoff.
-        3. The distance between the cation and the aromatic ring system does not exceed a predefined distance cutoff.
+        !!! tip "Definition"
+            1. The interaction is between an aromatic ring and a positively ionizable atom.
+            2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
+            and the cation is within a defined cutoff.
+            3. The distance between the cation and the aromatic ring system does not
+            exceed a predefined distance cutoff.
 
         Returns:
             NeighborPairs: The computed cation-pi contacts.

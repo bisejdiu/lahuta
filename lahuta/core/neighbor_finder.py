@@ -53,31 +53,27 @@ class NeighborSearch:
             res_dif (int, optional): The residue difference to consider. Default is 1.
 
         Returns:
-            `pairs`, `distances`: A tuple of two arrays. The first array is of shape (n_atoms, n_neighbors) and contains
-            the indices of the neighbors of each atom. The second array contains the distances between the atoms
-            and their respective neighbors.
+            Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices and the distances.
         """
 
         pairs, distances = self.get_neighbors(radius)
 
         if res_dif > 0:
-            idx = self._remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
+            idx = self.remove_adjacent_residue_pairs(pairs, res_dif=res_dif)
             pairs = pairs[idx]
             distances = distances[idx]
 
         return pairs, distances
 
-    def get_neighbors(self, radius: float = 5.0) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def get_neighbors(self, radius) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
         """
         Get the neighbors of an AtomGroup.
 
         Args:
-            radius (float, optional): The cutoff radius. Default is 5.0.
+            radius (float, optional): The cutoff radius.
 
         Returns:
-            `pairs`, `distances`: A tuple of two arrays. The first array of shape (n_pairs, 2)
-            where each row contains the indices of the atoms in the pair.
-            The second array of shape (n_pairs,) contains the distances of each pair.
+            Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices and the distances.
         """
 
         # check for dimensions
@@ -97,7 +93,7 @@ class NeighborSearch:
             neighbors.get_pair_distances(),  # type: ignore
         )
 
-    def _remove_adjacent_residue_pairs(self, pairs: NDArray[np.int32], res_dif: int = 1) -> NDArray[np.bool_]:
+    def remove_adjacent_residue_pairs(self, pairs: NDArray[np.int32], res_dif: int = 1) -> NDArray[np.bool_]:
         """
         Remove pairs where the difference in residue ids is less than `res_dif`.
 

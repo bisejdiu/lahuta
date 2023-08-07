@@ -1,25 +1,10 @@
 """
-Module: smarts.py
+module: `lahuta.config.smarts.py`
 
-This module defines a registry for SMARTS patterns associated with different atom types, and maps 
-atom types to unique integer identifiers.
+This module provides definitions for various sets of SMARTS patterns used in to find and match
+specific atom types. Additionally, it includes a helper function for remapping atom types for
+easier lookups.
 
-Classes:
-    SmartsPatternRegistry(Enum): Enum class that serves as a registry for SMARTS patterns 
-                                 associated with different atom types. Each atom type is represented
-                                 by a string key and a corresponding SMARTS pattern.
-
-Variables:
-    _Atom_Type_Names (list): A list of names of members in the SmartsPatternRegistry.
-
-    AVAILABLE_ATOM_TYPES (dict): Dictionary that maps each atom type to a unique integer identifier.
-                                 The atom types are strings and the identifiers are indices from 
-                                 _Atom_Type_Names.
-
-Notes:
-    SMARTS (SMiles ARbitrary Target Specification) is a language that allows you to specify 
-    substructural patterns in molecules. It is an extension of the simpler SMILES notation. 
-    Each SMARTS pattern in the registry represents a specific type of atom or chemical group.
 """
 
 from enum import Enum
@@ -32,35 +17,96 @@ import lahuta.config._smart_strings as smarts
 class SmartsPatternRegistry(Enum):
     """A registry of SMARTS patterns for atom typing.
 
-    Each atom type is represented by a string key and a SMARTS pattern.
+    Each atom type is represented by a string key and a SMARTS pattern. See the
+    definitions below for further details, and follow the links for the corresponding
+    SMARTS patterns.
     """
 
     HBOND_ACCEPTOR = smarts.HBOND_ACCEPTOR_SMARTS
+    """
+    Hydrogen bond acceptor SMARTS patterns. See 
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) for details.
+    """
     HBOND_DONOR = smarts.HBOND_DONOR_SMARTS
 
     # nonsensical string to avoid duplicate entries in Enum
     XBOND_ACCEPTOR = {**smarts.HBOND_ACCEPTOR_SMARTS, "": "[Xx]"}
+    """
+    Halogen bond acceptor SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) for details.
+    Note that we provide a nonsensical string to avoid duplicate entries in the Enum.
+    """
 
     XBOND_DONOR = {"donor": smarts.SMARTS_STR_XBD}
+    """
+    Halogen bond donor SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_XBD) for details.
+    """
 
     WEAK_HBOND_ACCEPTOR = {
         **smarts.HBOND_ACCEPTOR_SMARTS,
         "c-x halogens": smarts.SMARTS_STR_XBD,
     }
+    """
+    Weak hydrogen bond acceptor SMARTS patterns. In addition to the standard
+    [hydrogen bond acceptor](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS)
+    SMARTS patterns, this also includes
+    [halogen bond acceptor](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) 
+    SMARTS patterns.
+    """
 
     WEAK_HBOND_DONOR = {"donor": smarts.SMARTS_STR_WHBD}
+    """
+    Weak hydrogen bond donor SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_WHBD) for details.
+    """
+
     POS_IONISABLE = smarts.POSITIVELY_IOINISABLE_SMARTS
+    """
+    Positively ionisable SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.POSITIVELY_IOINISABLE_SMARTS) for
+    details.
+    """
 
     NEG_IONISABLE = {
         "O acidic group": smarts.SMARTS_STR_NI_O_ACIDIC_GRP,
         "anions": smarts.SMARTS_STR_NI_ANIONS,
     }
+    """
+    Negatively ionisable SMARTS patterns. It includes two types of patterns: 
+    [acidic oxygen](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_NI_O_ACIDIC_GRP) and
+    [anions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_NI_ANIONS).
+    """
 
     HYDROPHOBE = {"hydrophobe": smarts.SMARTS_STR_HYDROPHOBIC}
+    """
+    Hydrophobic SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HYDROPHOBIC) for details.
+    """
+
     CARBONYL_OXYGEN = {"oxygen": smarts.SMARTS_STR_CARBONYL_OXYGEN}
+    """
+    Carbonyl oxygen SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_CARBONYL_OXYGEN) for
+    details.
+    """
+
     CARBONYL_CARBON = {"carbon": smarts.SMARTS_STR_CARBONYL_CARBON}
+    """
+    Carbonyl carbon SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_CARBONYL_CARBON) for
+    details.
+    """
+
     AROMATIC = smarts.AROMATIC_SMARTS
+    """
+    Aromatic SMARTS patterns. See
+    [definitions](smarts_defs.md#lahuta.config._smart_strings.AROMATIC_SMARTS) for details.
+    """
 
 
 _Atom_Type_Names: List[str] = [member.name for member in SmartsPatternRegistry]
 AVAILABLE_ATOM_TYPES: Dict[str, int] = {name: i for i, name in enumerate(_Atom_Type_Names)}
+"""
+Type: `Dict[str, int]`: A dictionary mapping atom type names (strings) to unique integer identifiers.
+"""

@@ -1,13 +1,15 @@
 """
-This module contains classes for SMARTS pattern matching on molecules.
+module: `lahuta.core.matchers.py`
 
 The SMARTS pattern matching classes are used to match SMARTS patterns to atoms in a molecule.
 This is how we assign atom types to molecules.
 
 Classes:
+    ```
     SmartsMatcherBase: Abstract base class for SMARTS pattern matching.
     SmartsMatcher: Sequential SMARTS pattern matching.
     ParallelSmartsMatcher: Parallel SMARTS pattern matching.
+    ```
 
 """
 import os
@@ -48,7 +50,7 @@ class SmartsMatcherBase(ABC):
             NotImplementedError: This is an abstract method that needs to be implemented in the subclass.
 
         Returns:
-            dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
+            (dok_matrix): A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -69,7 +71,7 @@ class SmartsMatcher(SmartsMatcherBase):
             mol (MolType): A molecule object to match patterns on.
 
         Returns:
-            dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
+            (dok_matrix): A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
         atom_types = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
@@ -107,7 +109,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         Precomputes and stores the Open Babel SMARTS patterns for all atom types.
 
         Returns:
-            Dict[str, List[ObSmartPatternType]]: A dictionary with atom type names as keys and lists of
+            (Dict[str, List[ObSmartPatternType]]): A dictionary with atom type names as keys and lists of
                                                 precomputed Open Babel SMARTS patterns as values.
         """
 
@@ -154,7 +156,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
             mol (MolType): A molecule object to match patterns on.
 
         Returns:
-            dok_matrix: A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
+            (dok_matrix): A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
 
         atom_types = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)

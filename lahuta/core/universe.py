@@ -16,8 +16,7 @@ Example:
     
 """
 
-from typing import (Any, Callable, List, Literal, Optional, Tuple, Union,
-                    overload)
+from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload
 
 import MDAnalysis as mda
 import numpy as np
@@ -30,11 +29,12 @@ from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.topattrs import \
-    AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
+from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
+
+__all__ = ['LuniInputType', 'Universe']
 
 LuniInputType = Union[AtomGroupType, str, List[str]]
 
@@ -46,37 +46,18 @@ class Universe:
 
     Attributes:
         _mol (MolType, optional): A molecule in the universe.
-        hbond_array (NoneType): Array to store hydrogen bonds.
         _ready (bool): State of the universe, whether it's ready for computations.
-        _mapping (NDArray[np.int64]): Maps atom indices to their positions in a flat, 1D array.
         _topattr_handler (AtomAttrClassHandler): Handles atom attributes.
         _file_loader (BaseLoader, optional): Handles file loading.
         _mda (AtomGroupType, optional): Represents a group of atoms in the Universe.
-
-    Methods:
-        _validate_input(*args: LuniInputType): Validates the input files.
-        _initialize_from_universe(*args: LuniInputType): Initializes the universe from existing Universe.
-        _initialize_from_files(files: str): Initializes the universe from provided files.
-        _get_file_loader(*files: str): Retrieves the appropriate file loader.
-        _extend_topology(attrname: str, values: NDArray[Any]): Adds new topology attributes to the Universe.
-        _build_atom_mapping(ag: AtomGroupType): Builds a mapping of atom indices.
-        ready(): Prepares instance for computations by transforming the molecule and assigning atom types.
-        compute_neighbors(radius: float, res_dif: int): Computes the neighbors of each atom in the Universe.
-        get_format(file_name: str): Retrieves the file format from a file name.
-        to(fmt: Literal["mda", "mol"]): Converts the Universe to a different format.
-        arc(): Retrieves the ARC object from the file loader.
 
     """
 
     def __init__(self, *args: LuniInputType) -> None:
         self._mol: Optional[MolType] = None
-        self.hbond_array = None
         self._ready = False
-        self._mapping: NDArray[np.int64] = np.array([], dtype=np.int64)
         self._topattr_handler = AtomAttrClassHandler()
         self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
-        # self._file_loader: Optional[BaseLoader] = None
-        # self._mda: Optional[AtomGroupType] = None
 
         initializer = self._validate_input(*args)
         self._file_loader, self._mda = initializer(*args)
@@ -184,8 +165,6 @@ class Universe:
         """
         Prepares instance for computations by transforming the molecule and assigning atom types.
 
-        Raises:
-            ValueError: If the Universe is already ready.
         """
 
         assert self._file_loader is not None
@@ -228,11 +207,6 @@ class Universe:
             NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). Each row in the array
                         contains the indices of the neighbors for the atom corresponding to that row.
 
-        Raises:
-            AssertionError: If the Universe instance is not ready for computations.
-
-        Note:
-            The actual computation of the neighbors is delegated to an instance of the `NeighborSearch` class.
         """
 
         if not self._ready:
@@ -300,7 +274,7 @@ class Universe:
             return self._mol
         if fmt == "mol":
             self._mol = self._file_loader.to(fmt)
-        return getattr(self, f"_{fmt}") # type: ignore
+        return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
     def arc(self) -> Union[None, ARC]:

@@ -1,12 +1,9 @@
 """
-Module: mda_utils.py
+module: `lahuta.utils.mda.py`
 
 This module includes a single function dedicated to the creation of a pseudo box 
 for PDB files and the shifting of coordinates within that box.
 
-Functions:
-    mda_psuedobox_from_atomgroup(ag, cutoff): 
-        Creates a pseudo box for PDB files and shifts the coordinates.
 """
 
 from typing import Tuple

@@ -1,5 +1,5 @@
 """
-# Module: config._atom_type_strings.py
+module: `config._atom_type_strings.py`
 
 This module provides string representations of various atom types and categories.
 
@@ -7,12 +7,31 @@ The various types of atoms represented here include metals, standard amino acids
 different types of bond acceptors and donors, ionisable atoms, 
 hydrophobic atoms, carbonyl atoms, and aromatic atoms.
 
+Variables:
+    ```
+    _METALS_STR (str): A string of metal atom types.
+    _STANDARD_AA_STR (str): A string of standard amino acid atom types.
+    _HA_ATOM_TYPES (str): A string of hydrogen bond acceptor atom types.
+    _HD_ATOM_TYPES (str): A string of hydrogen bond donor atom types.
+    _XA_ATOM_TYPES (str): A string of halogen bond acceptor atom types.
+    _XD_ATOM_TYPES (str): A string of halogen bond donor atom types.
+    _WHA_ATOM_TYPES (str): A string of weak hydrogen bond acceptor atom types.
+    _WHD_ATOM_TYPES (str): A string of weak hydrogen bond donor atom types.
+    _POS_IONISABLE_ATOM_TYPES (str): A string of positive ionisable atom types.
+    _NEG_IONISABLE_ATOM_TYPES (str): A string of negative ionisable atom types.
+    _HYDROPHOBE_ATOM_TYPES (str): A string of hydrophobic atom types.
+    _CARBONYL_OXYGEN_ATOM_TYPES (str): A string of carbonyl oxygen atom types.
+    _CARBONYL_CARBON_ATOM_TYPES (str): A string of carbonyl carbon atom types.
+    _AROMATIC_ATOM_TYPES (str): A string of aromatic atom types.
+    RESIDUE_SYNONYMS (dict): A dictionary of residue names and their synonyms.
+    STANDARD_AMINO_ACIDS (set): A set of standard amino acids.
+
+    ```
+
 The atom types are initially defined as comma-separated strings. 
 These strings are then processed into sets for easy and efficient access 
 throughout the rest of the library.
 
-This file is licensed under [GNU General Public License](../path/to/license/file). 
-For more details, see also the [GNU General Public License webpage](http://www.gnu.org/licenses/).
 """
 from typing import Dict, List, Set
 
@@ -173,6 +192,11 @@ def parse_atom_types(_atom_types_string: str) -> Set[str]:
 METALS = set(_METALS_STR.split(","))
 # STANDARD_AMINO_ACIDS = set(_STANDARD_AA_STR.split(","))
 STANDARD_AMINO_ACIDS = ProteinSelection.prot_res
+"""
+module: `lahuta.config._atom_type_strings.py`
+
+Type: `Set[str]`: A set of standard amino acids. Taken from `MDAnalysis.core.selection.ProteinSelection`.
+"""
 HBOND_ACCEPTORS = parse_atom_types(_HA_ATOM_TYPES) # set(_HA_ATOM_TYPES.split(","))
 HBOND_DONORS = parse_atom_types(_HD_ATOM_TYPES) #set(_HD_ATOM_TYPES.split(","))
 XBOND_ACCEPTORS = parse_atom_types(_XA_ATOM_TYPES) #set(_XA_ATOM_TYPES.split(","))

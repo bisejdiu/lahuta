@@ -26,6 +26,8 @@ from lahuta.writers.frame_writer import DataFrameWriter
 
 from ._hbond_handler import HBondHandler
 
+__all__ = ["NeighborPairs"]
+
 
 class NeighborPairs:
     """
@@ -42,61 +44,27 @@ class NeighborPairs:
     designed to be extensible and supports the addition of custom annotations to the pairs.
 
     Args:
-        atoms : AtomGroupType
-            The group of atoms under consideration.
-        pairs : NDArray[np.int32]
-            A 2D numpy array of pairs of atom indices that are neighbors.
+        mda (AtomGroupType): The group of atoms under consideration.
+        mol (MolType): The molecule under consideration.
+        atom_types (csc_array): A sparse matrix containing the atom types.
+        pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
+        distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
 
     Attributes:
-        _atoms : AtomGroupType
+        _atoms (AtomGroupType):
             The group of atoms under consideration.
-        _pairs : NDArray[np.int32]
+        _pairs (NDArray[np.int32]):
             A 2D numpy array of pairs of atom indices that are neighbors.
-        _distances : NDArray[np.float32]
+        _distances (NDArray[np.float32]):
             A 1D numpy array of distances between the pairs of atoms.
-        _annotations : Dict[str, NDArray[Any]]
+        _annotations (Dict[str, NDArray[Any]]):
             A dictionary to store custom annotations related to the pairs.
-
-    Properties:
-        annotations : Dict[str, NDArray[Any]]
-            Custom annotations related to the pairs.
-        partner1 : AtomGroupType
-            The first partner of the pairs of atoms that are neighbors.
-        partner2 : AtomGroupType
-            The second partner of the pairs of atoms that are neighbors.
-        pairs : NDArray[np.int32]
-            The pairs of atoms that are neighbors.
-        distances : NDArray[np.float32]
-            The distances between the pairs of atoms that are neighbors.
-        indices : NDArray[np.int32]
-            The indices of the atoms that are neighbors.
-
-    Methods:
-        clone : Creates a copy of the NeighborPairs object.
-        to_dataframe : Converts the pairs to a pandas DataFrame.
-        to_dict : Converts the pairs to a dictionary.
-
-
-    Examples:
-        >>> pairs = np.array([[1, 2], [3, 4]])
-        >>> distances = np.array([1.0, 2.0])
-        >>> np = NeighborPairs(pairs, distances)
-        >>> print(np.pairs)
-        >>> print(np.distances)
-        [[1, 2], [3, 4]]
-        [1.0, 2.0]
-
-        # Get the first partner of the pairs
-        >>> print(np.partner1)
-        <AtomGroup with 2 atoms>
-
-        # clone the object
-        >>> np_clone = np.clone()
-        >>> print(np_clone.pairs)
-
-        # Convert the pairs to a DataFrame
-        >>> df = np.to_dataframe()
-        >>> print(df)
+        _hbond_array (NDArray[np.int32]):
+            A 2D numpy array of hydrogen bonded atom indices.
+        _hbond_handler (HBondHandler):
+            An instance of the HBondHandler class.
+        _hbond_angles (NDArray[np.float32]):
+            A 2D numpy array of hydrogen bond angles.
 
     """
 
@@ -160,13 +128,15 @@ class NeighborPairs:
             Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the sorted pairs and distances arrays.
 
         Example:
-            >>> pairs = np.array([[2, 1], [4, 3]])
-            >>> distances = np.array([1.0, 2.0])
-            >>> sorted_pairs, sorted_distances = NeighborPairs.sort_inputs(pairs, distances)
-            >>> print(sorted_pairs)
-            >>> print(sorted_distances)
+            ``` py
+            pairs = np.array([[2, 1], [4, 3]])
+            distances = np.array([1.0, 2.0])
+            sorted_pairs, sorted_distances = NeighborPairs.sort_inputs(pairs, distances)
+            print(sorted_pairs)
+            print(sorted_distances)
             [[1, 2], [3, 4]]
             [2.0, 1.0]
+            ```
         """
 
         pairs = np.sort(pairs, axis=1)
@@ -197,11 +167,21 @@ class NeighborPairs:
         The `partner` parameter specifies the column (1 or 2) from which the atom types are selected.
 
         Args:
-            atom_type (str): Specifies the atom type. Can be one of the following: 'carbonyl_oxygen',
-            'weak_hbond_donor', 'pos_ionisable', 'carbonyl_carbon', 'hbond_acceptor', 'hbond_donor',
-            'neg_ionisable', 'weak_hbond_acceptor', 'xbond_acceptor', 'aromatic', 'hydrophobe'.
-            These names come from the SmartsPatternRegistry Enum.
-            partner (int): The column to select the atom types from. It can be either 1 or 2.
+            atom_type (str): Specifies the atom type. Must be one of:
+
+                - 'carbonyl_oxygen'
+                - 'weak_hbond_donor'
+                - 'pos_ionisable'
+                - 'carbonyl_carbon'
+                - 'hbond_acceptor'
+                - 'hbond_donor'
+                - 'neg_ionisable'
+                - 'weak_hbond_acceptor'
+                - 'xbond_acceptor'
+                - 'aromatic'
+                - 'hydrophobe'
+
+            partner (int): The column for atom type selection. Can be either 1 or 2.
 
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
@@ -270,8 +250,6 @@ class NeighborPairs:
         Args:
             array (NDArray[np.float32]): The array containing the values to compare with the cutoff.
             cutoff (float): The cutoff value for the filter.
-            lte (bool, optional): Specifies whether the values in the array should be less than or equal to (True) or
-            greater than (False) the cutoff. Defaults to True.
 
         Returns:
             A NeighborPairs object containing the pairs that meet the numeric filter.
@@ -368,11 +346,13 @@ class NeighborPairs:
                             that are common between `self` and `other`.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             # 2 ways to get the intersection
             >>> np_intersected = np1 & np2
             >>> np_intersected = np1.intersection(np2)
+            ```
         """
         mask = au.intersection(self.pairs, other.pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -392,11 +372,13 @@ class NeighborPairs:
                 with corresponding distances.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             # 2 ways to get the union
             >>> np_union = np1 + np2
             >>> np_union = np1.union(np2)
+            ```
         """
         pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
@@ -419,11 +401,13 @@ class NeighborPairs:
                             from `self` that are not in `other`.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             # 2 ways to get the difference
             >>> np_diff = np1 - np2
             >>> np_diff = np1.difference(np2)
+            ```
 
         """
         mask = au.difference(self.pairs, other.pairs)
@@ -443,11 +427,13 @@ class NeighborPairs:
             A NeighborPairs object containing the symmetric difference of the two NeighborPairs objects.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             # 2 ways to get the symmetric difference
             >>> np_sym_diff = np1 | np2
             >>> np_sym_diff = np1.symmetric_difference(np2)
+            ```
         """
         mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
 
@@ -486,9 +472,11 @@ class NeighborPairs:
                     (i.e., have no common pairs), and False otherwise.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             >>> np1.isdisjoint(np2)
+            ```
             True
         """
 
@@ -509,9 +497,11 @@ class NeighborPairs:
                     in the other NeighborPairs object, and False otherwise.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             >>> np1.issubset(np2)
+            ```
         """
         return au.issubset(self.pairs, other.pairs)
 
@@ -529,9 +519,11 @@ class NeighborPairs:
             bool: True if all pairs from 'other' are found in this object, False otherwise.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             >>> np1.issuperset(np2)
+            ```
             True
         """
         return au.issuperset(self.pairs, other.pairs)
@@ -549,10 +541,12 @@ class NeighborPairs:
             bool: True if the two NeighborPairs objects contain the same pairs, False otherwise.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             >>> np1.isequal(np2)
             True
+            ```
         """
         return au.isequal(self.pairs, other.pairs)
 
@@ -566,9 +560,11 @@ class NeighborPairs:
             bool: True if all pairs in this object are unique, False otherwise.
 
         Example:
+            ``` py
             >>> np = NeighborPairs(...)
             >>> np.isunique()
             False
+            ```
         """
         return au.isunique(self.pairs)
 
@@ -585,10 +581,12 @@ class NeighborPairs:
             bool: True if this object is a strict subset of 'other', False otherwise.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             >>> np1.is_strict_subset(np2)
             True
+            ```
         """
         return au.is_strict_subset(self.pairs, other.pairs)
 
@@ -605,10 +603,12 @@ class NeighborPairs:
             bool: True if this object is a strict superset of 'other', False otherwise.
 
         Example:
+            ``` py
             >>> np1 = NeighborPairs(...)
             >>> np2 = NeighborPairs(...)
             >>> np1.is_strict_superset(np2)
             True
+            ```
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 

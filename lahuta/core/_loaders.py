@@ -1,5 +1,5 @@
 """
-module: _loaders.py
+module: `lahuta.core._loaders.py`
 
 This module provides classes to load and manage biological structure data. 
 
@@ -14,9 +14,11 @@ through the ARC class instance. It includes various methods for querying the dat
 them into other common bioinformatics and chemoinformatics formats.
 
 Classes:
+    ```
     BaseLoader: Abstract base class that provides a template for the loader classes.
     GemmiLoader: Class to load and manage biological structure data using the Gemmi library.
     TopologyLoader: Class to load and manage biological structure data using the MDAnalysis library.
+    ```
 
 """
 
@@ -53,9 +55,9 @@ class BaseLoader(ABC):
 
     Attributes:
         file_path (str): The file path from which the biological structure data is loaded.
-        _chains: Placeholder for chain data.
-        _residues: Placeholder for residue data.
-        _atoms: Placeholder for atom data.
+        _chains (Optional[Chains]): An instance of Chains class containing chain data.
+        _residues (Optional[Residues]): An instance of Residues class containing residue data.
+        _atoms (Optional[Atoms]): An instance of Atoms class containing atom data.
         structure: A structure object containing biological structure data, currently initialized to None.
         arc (Optional[ARC]): An instance of ARC class providing combined access to atoms, residues, and chains data.
     """
@@ -271,9 +273,6 @@ class TopologyLoader(BaseLoader):
         ag (AtomGroupType): An MDAnalysis AtomGroup object created from the loaded data.
         arc (Optional[ARC]): An instance of ARC class providing combined access to atoms,
                              residues, and chains data.
-
-    Returns:
-        TopologyLoader: A new instance of the TopologyLoader class with the AtomGroup data copied.
 
     """
 

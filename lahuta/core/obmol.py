@@ -1,4 +1,6 @@
 """
+module: `lahuta.core.obmol.py`
+
 A module for generating an Open Babel molecule from an ARC object.
 
 Generating an Open Babel molecule from an ARC object is done by creating a new OBMol object and calling the
@@ -8,12 +10,16 @@ vectorized operations, so we have to create the molecule atom by atom. There is 
 for this. 
 
 Classes:
+    ```
     OBMol: A class for generating an Open Babel molecule from an ARC object.
+    ```
 
 Example:
+    ``` py
     obmol = OBMol()
     obmol.create_mol(arc)
     obmol.mol
+    ```
 """
 from typing import Any, Optional, Set, Tuple, Union
 
@@ -24,8 +30,7 @@ from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
 from lahuta.core.arc import ARC
-from lahuta.lahuta_types.openbabel import (MolAtomType, MolResType, MolType,
-                                           MolTypeWrapper)
+from lahuta.lahuta_types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
 
 
 class OBMol:

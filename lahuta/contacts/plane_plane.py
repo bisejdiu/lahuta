@@ -35,10 +35,10 @@ Functions:
     plane_plane_neighbors: Function to compute plane-plane contacts.
 
 Usage:
-    universe = Universe(...)
-    ns = universe.compute_neighbors()
+    luni = Luni(...)
+    ns = luni.compute_neighbors()
     plane_plane = PlanePlaneContacts(ns)
-    result = plane_plane.compute().results
+    result = plane_plane.results
 """
 
 from typing import Any, Dict, List, Tuple
@@ -156,34 +156,42 @@ def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
     between two ring-containing residues or ligands. Each interaction is labeled according
     to the relative orientations of the planes.
 
-    Types of Plane-Plane Contact Orientations:
-        FF (Face-Face): Represents two planes interacting in a face-to-face orientation, where
+    !!! tip "Definitions"
+        **FF** _(Face-Face)_: Represents two planes interacting in a face-to-face orientation, where
             their flat surfaces are parallel and directly aligned. This typically leads to
             maximum pi-pi stacking.
-        OF (Oblique Face): Denotes a skewed face-to-face orientation. One plane is tilted
+
+        **OF** _(Oblique Face)_: Denotes a skewed face-to-face orientation. One plane is tilted
             relative to the other, resulting in partial overlap of their surfaces.
-        EE (Edge-Edge): Describes an interaction where the edges of two planes align parallel,
+
+        **EE** _(Edge-Edge)_: Describes an interaction where the edges of two planes align parallel,
             but their surfaces do not overlap, limiting pi-pi interactions.
-        FT (Face-T-stack): Indicates an interaction where the face of one plane (the base of the 'T')
+
+        **FT** _(Face-T-stack)_: Indicates an interaction where the face of one plane (the base of the 'T')
             aligns with the edge of another plane (the stem of the 'T'). The second plane is
             oriented in a T-stacked manner.
-        OT (Oblique-T-stack): Represents an interaction where an obliquely oriented face of one
+
+        **OT** _(Oblique-T-stack)_: Represents an interaction where an obliquely oriented face of one
             plane (the skewed base of the 'T') aligns with the edge of another plane (the stem of
             the 'T'). The second plane is in a T-stacked orientation.
-        ET (Edge-T-stack): Describes an interaction where the edge of one plane aligns with the
+
+        **ET** _(Edge-T-stack)_: Describes an interaction where the edge of one plane aligns with the
             edge of another plane. Both are part of the stem in a T-stacked orientation.
-        FE (Face-Edge): Depicts an interaction where the flat surface (face) of one plane aligns
+
+        **FE** _(Face-Edge)_: Depicts an interaction where the flat surface (face) of one plane aligns
             with the edge of another plane, leading to partial pi-pi interactions.
-        OE (Oblique-Edge): Represents an interaction where an obliquely oriented face of one plane
+
+        **OE** _(Oblique-Edge)_: Represents an interaction where an obliquely oriented face of one plane
             aligns with the edge of another plane, leading to partial and skewed pi-pi interactions.
-        EF (Edge-Face): Indicates an interaction where the edge of one plane aligns with the face of
+
+        **EF** _(Edge-Face)_: Indicates an interaction where the edge of one plane aligns with the face of
             another plane, creating limited pi-pi interactions.
 
     Args:
-        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
 
     Returns:
-        NeighborPairs: The object containing the pairs of atoms that are considered as plane-plane contacts.
+        NeighborPairs: A NeighborPairs object containing only plane-plane contacts.
 
     """
     plane_plane = _PlanePlaneContacts(ns)
@@ -199,48 +207,53 @@ class PlanePlaneContacts:
     between two ring-containing residues or ligands. Each interaction is labeled according
     to the relative orientations of the planes.
 
-    Types of Plane-Plane Contact Orientations:
-        FF (Face-Face): Represents two planes interacting in a face-to-face orientation, where
+    !!! tip "Definitions"
+        **FF** _(Face-Face)_: Represents two planes interacting in a face-to-face orientation, where
             their flat surfaces are parallel and directly aligned. This typically leads to
             maximum pi-pi stacking.
-        OF (Oblique Face): Denotes a skewed face-to-face orientation. One plane is tilted
+
+        **OF** _(Oblique Face)_: Denotes a skewed face-to-face orientation. One plane is tilted
             relative to the other, resulting in partial overlap of their surfaces.
-        EE (Edge-Edge): Describes an interaction where the edges of two planes align parallel,
+
+        **EE** _(Edge-Edge)_: Describes an interaction where the edges of two planes align parallel,
             but their surfaces do not overlap, limiting pi-pi interactions.
-        FT (Face-T-stack): Indicates an interaction where the face of one plane (the base of the 'T')
+
+        **FT** _(Face-T-stack)_: Indicates an interaction where the face of one plane (the base of the 'T')
             aligns with the edge of another plane (the stem of the 'T'). The second plane is
             oriented in a T-stacked manner.
-        OT (Oblique-T-stack): Represents an interaction where an obliquely oriented face of one
+
+        **OT** _(Oblique-T-stack)_: Represents an interaction where an obliquely oriented face of one
             plane (the skewed base of the 'T') aligns with the edge of another plane (the stem of
             the 'T'). The second plane is in a T-stacked orientation.
-        ET (Edge-T-stack): Describes an interaction where the edge of one plane aligns with the
+
+        **ET** _(Edge-T-stack)_: Describes an interaction where the edge of one plane aligns with the
             edge of another plane. Both are part of the stem in a T-stacked orientation.
-        FE (Face-Edge): Depicts an interaction where the flat surface (face) of one plane aligns
+
+        **FE** _(Face-Edge)_: Depicts an interaction where the flat surface (face) of one plane aligns
             with the edge of another plane, leading to partial pi-pi interactions.
-        OE (Oblique-Edge): Represents an interaction where an obliquely oriented face of one plane
+
+        **OE** _(Oblique-Edge)_: Represents an interaction where an obliquely oriented face of one plane
             aligns with the edge of another plane, leading to partial and skewed pi-pi interactions.
-        EF (Edge-Face): Indicates an interaction where the edge of one plane aligns with the face of
+
+        **EF** _(Edge-Face)_: Indicates an interaction where the edge of one plane aligns with the face of
             another plane, creating limited pi-pi interactions.
 
-    Attributes
-    ----------
-    ns : NeighborPairs
-        The object encapsulating pairs of neighboring atoms in the system.
-        This object is usually generated by calling the `compute_neighbors` method
-        on the Lahuta Universe object.
-    centroid_distance : float
-        The maximum distance to consider for the centroid of a plane-plane contact.
-        This value is retrieved from the 'centroid_distance' entry of the 'aromatic'
-        section in the global CONTACTS dictionary.
-    results : NeighborPairs
-        The object containing the pairs of atoms that are considered as plane-plane contacts
-        based on the set centroid_distance criteria. It is computed when the class is instantiated.
+    Args:
+        ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
 
-    Methods
-    -------
-    compute() -> NeighborPairs:
-        Computes and returns the plane-plane contacts, utilizing the `_PlanePlaneContacts` class and
-        setting its `centroid_distance` to match the class's `centroid_distance`.
+    Attributes:
+        centroid_distance (float): The maximum distance to consider for the centroid of a plane-plane contact.
+            See `lahuta.config.defaults.CONTACTS` for default values.
+        results (NeighborPairs): NeighborPairs containing the pairs of atoms found to be forming plane-plane contacts.
+
+    ??? example "Example"
+        ``` py
+        luni = Luni(...)
+        ns = luni.compute_neighbors()
+
+        plane_plane = PlanePlaneContacts(ns)
+        result = plane_plane.results
+        ```
     """
 
     centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
