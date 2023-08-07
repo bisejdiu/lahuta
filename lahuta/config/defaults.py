@@ -1,5 +1,5 @@
 """
-Module: defaults.py
+module: `lahuta.utils.defaults.py`
 
 This module defines various constants and default values related to atomic radii, 
 contact distances, theta angle, contact definitions, and Gemmi supported formats. 

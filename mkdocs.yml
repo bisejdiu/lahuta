@@ -86,6 +86,15 @@ nav:
     - 'Defaults': api/config/defaults.md
     - 'SMARTS': api/config/smarts.md
     - 'SMARTS Definitions': api/config/smarts_defs.md
+  - Utilities:
+    - 'Array-Related Utils': api/utils/array.md
+    - 'Math': api/utils/math.md
+    - 'Atom Typing': api/utils/typing.md
+    - 'H-Bound Atoms': api/utils/hbonded.md
+    - 'MDAnalysis': api/utils/mdanalysis.md
+    - 'OpenBabel': api/utils/openbabel.md
+    - 'Radii Assignment': api/utils/radii.md
+  
 
 markdown_extensions:
 - tables
