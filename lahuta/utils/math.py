@@ -1,11 +1,12 @@
 """
-Module: math.py
+module: `lahuta.utils.math.py`
 
 This module defines several mathematical functions for scientific computations, particularly 
 geometric calculations for molecular structures. The functions are built on the numpy 
 library for efficient vectorized calculations.
 
 Functions:
+    ```
     - calc_pairwise_distances(matrix1, matrix2): Calculates pairwise Euclidean distance between two sets of vectors.
     - calc_vertex_angles(vertex, point1, point2, degrees=False): Calculates the angle between three sets of points.
     - calc_vec_angle(vector1, vector2): Calculates the angle between two vectors in degrees.
@@ -14,8 +15,10 @@ Functions:
     - normalize(vector): Normalizes a vector or a set of vectors.
     - dot_product(vector1, vector2): Calculates the dot product of two 1D vectors or sets of 1D vectors.
     - dot_product_3d(vector1, vector2): Calculates the dot product along the last axis of two 2D vectors or sets of 2D vectors.
+    ```
     
-Example:
+??? example "Example"
+    ```py
     import numpy as np
     from math import calc_pairwise_distances, calc_vertex_angles, calc_vec_angle, calc_vec_line_angles
 
@@ -32,6 +35,7 @@ Example:
     print(f"Vertex Angles: {vertex_angles}")
     print(f"Vector Angles: {vec_angles}")
     print(f"Vector Line Angles: {vec_line_angles}")
+    ```
 """
 
 import numpy as np
@@ -55,11 +59,13 @@ def distance(vector1: NDArray[np.float32], vector2: NDArray[np.float32]) -> NDAr
         NDArray[np.float32]: Euclidean distance between each pair of vectors. The shape is (m,) for a set of m vectors,
             or (k, m) for a set of k groups of m vectors.
 
-    Example:
-        >>> vec1 = np.array([[1, 0, 0], [0, 1, 0]])
-        >>> vec2 = np.array([[0, 1, 0], [0, 0, 1]])
-        >>> distance(vec1, vec2)
+    ??? example "Example"
+        ```py
+        vec1 = np.array([[1, 0, 0], [0, 1, 0]])
+        vec2 = np.array([[0, 1, 0], [0, 0, 1]])
+        distance(vec1, vec2)
         array([1.41421356, 1.        ], dtype=float32)
+        ```
     """
     result: NDArray[np.float32] = np.linalg.norm(vector1 - vector2, axis=-1)
     return result
@@ -79,13 +85,15 @@ def normalize(vector: NDArray[np.float32]) -> NDArray[np.float32]:
     Returns:
         NDArray[np.float32]: Normalized vector or set of vectors. The shape is the same as the input vector.
 
-    Example:
-        >>> vec = np.array([[1, 0, 0], [0, 1, 0]])
-        >>> normalize(vec)
+    ??? example "Example"
+        ```py
+        vec = np.array([[1, 0, 0], [0, 1, 0]])
+        normalize(vec)
         array([[1., 0., 0.],
                [0., 1., 0.]], dtype=float32)
+        ```
     """
-    result: NDArray[np.float32] =  vector / np.linalg.norm(vector, axis=-1, keepdims=True)
+    result: NDArray[np.float32] = vector / np.linalg.norm(vector, axis=-1, keepdims=True)
     return result
 
 
@@ -170,13 +178,14 @@ def calc_pairwise_distances(matrix1: NDArray[np.float32], matrix2: NDArray[np.fl
         NDArray[np.float32]: Shape (n, m). The pairwise distance matrix.
 
 
-    Example:
-        >>> mat1 = np.array([[1, 0, 0], [0, 1, 0]])
-        >>> mat2 = np.array([[[0, 0, 0], [1, 1, 1]], [[1, 1, 1], [0, 0, 0]]])
-        >>> calc_pairwise_distances(mat1, mat2)
+    ??? example "Example"
+        ```py
+        mat1 = np.array([[1, 0, 0], [0, 1, 0]])
+        mat2 = np.array([[[0, 0, 0], [1, 1, 1]], [[1, 1, 1], [0, 0, 0]]])
+        calc_pairwise_distances(mat1, mat2)
         array([[[1.        , 1.41421356],
                 [1.41421356, 1.        ]]])
-
+        ```
     """
     reshaped_matrix1 = matrix1[:, np.newaxis, :]  # type: ignore
     return distance(reshaped_matrix1, matrix2)
@@ -239,11 +248,13 @@ def calc_vec_angle(vector1: NDArray[np.float32], vector2: NDArray[np.float32]) -
     Returns:
         NDArray[np.float32]: The angles between pairs of vectors in degrees.
 
-    Example:
-        >>> v1 = np.array([[1, 0, 0], [0, 1, 0]])
-        >>> v2 = np.array([[0, 1, 0], [0, 0, 1]])
-        >>> calc_vec_angle(v1, v2)
+    ??? example "Example"
+        ```py
+        v1 = np.array([[1, 0, 0], [0, 1, 0]])
+        v2 = np.array([[0, 1, 0], [0, 0, 1]])
+        calc_vec_angle(v1, v2)
         array([90., 90.], dtype=float32)
+        ```
     """
     vector1 = normalize(vector1)
     vector2 = normalize(vector2)
@@ -273,11 +284,13 @@ def calc_vec_line_angles(vector: NDArray[np.float32], line_direction: NDArray[np
     Returns:
         NDArray[np.float32]: The angles between the vectors and line directions in degrees.
 
-    Example:
-        >>> vec = np.array([[1, 0, 0], [0, 1, 0]])
-        >>> line_dir = np.array([[0, 1, 0], [0, 0, 1]])
-        >>> calc_vec_line_angles(vec, line_dir)
+    ??? example "Example"
+        ```py
+        vec = np.array([[1, 0, 0], [0, 1, 0]])
+        line_dir = np.array([[0, 1, 0], [0, 0, 1]])
+        calc_vec_line_angles(vec, line_dir)
         array([90., 90.], dtype=float32)
+        ```
     """
     normalized_line_direction = normalize(line_direction)
     dotproduct = dot_product(vector, normalized_line_direction)
