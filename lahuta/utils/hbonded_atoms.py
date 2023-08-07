@@ -1,18 +1,8 @@
 """
-Module: hbonded_atoms.py
+module: `lahuta.utils.hbonded_atoms.py`
 
-This module provides a utility function to find the hydrogen-bonded atoms in a molecule. It leverages 
-MDAnalysis and OpenBabel libraries to accomplish this.
+This module provides a utility function to find the hydrogen-bonded atoms in a molecule. 
 
-Functions:
-    find_hydrogen_bonded_atoms(mda, mol): Finds the hydrogen-bonded 
-                                            atoms in the molecule.
-
-Notes:
-    The function 'find_hydrogen_bonded_atoms' first establishes a mapping between the atoms in the given 
-    AtomGroup and their respective indices. Then, it iterates over each atom in the molecule and checks if it 
-    has any bonded hydrogen atoms. If yes, it updates the corresponding row in the hydrogen bond array with 
-    the indices of the bonded hydrogen atoms.
 """
 
 import numpy as np
@@ -28,18 +18,15 @@ def find_hydrogen_bonded_atoms(mol: MolType, n_atoms: int) -> csr_matrix:
     """
     Identifies the hydrogen-bonded atoms in a molecule.
 
-    This function first establishes a mapping between the atoms in the given AtomGroup and their respective indices.
-    Then, it iterates over each atom in the molecule and checks if it has any bonded hydrogen atoms. If yes, it
-    updates the corresponding row in the hydrogen bond array with the indices of the bonded hydrogen atoms.
+    This function takes a molecule and the number of atoms in that molecule as input, and it
+    returns a sparse matrix with the indices of the hydrogen-bonded atoms.
 
     Args:
-        mda (AtomGroupType): An AtomGroup from MDAnalysis, representing the atoms in a molecule.
-        mol (MolType): An OpenBabel OBMol object, representing the molecule.
+        mol (MolType): The molecule for which the hydrogen-bonded atoms are to be identified.
+        n_atoms (int): The number of atoms in the molecule.
 
     Returns:
-        NDArray[np.int32]: A 2D numpy array of shape (n_atoms, 6) where each row corresponds to an atom in the molecule
-                           and contains the indices of the hydrogen atoms bonded to it. A value of -1 indicates no
-                           bonded hydrogen atom for that position.
+        (csr_matrix): A sparse matrix with the indices of the hydrogen-bonded atoms.
     """
     hbond_array = dok_matrix((n_atoms, 6), dtype=np.int32)
 
