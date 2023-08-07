@@ -5,8 +5,7 @@ This module defines various constants and default values related to atomic radii
 contact distances, theta angle, contact definitions, and Gemmi supported formats. 
 
 Constants:
-    VDW_RADII (dict): Dictionary mapping atom types to Van der Waals radii. Data is sourced from 
-                      http://en.wikipedia.org/wiki/Atomic_radii_of_the_elements_(data_page).
+    VDW_RADII (dict): A dictionary that defines van der Waals radii for different atom types (currently only H is defined)
 
     CONTACTS_DIST_MAX (float): Maximum distance for contacts.
 
@@ -25,8 +24,9 @@ from typing import Dict
 VDW_RADII = {"H": 1.2}
 
 CONTACTS_DIST_MAX = 4.5
-
-THETA_REQUIRED = set(["CARBONPI", "CATIONPI", "DONORPI", "HALOGENPI"])
+"""
+Type: `float`: Maximum distance for contacts.
+"""
 
 CONTACTS: Dict[str, Dict[str, float]] = {
     "hbond": {
@@ -66,5 +66,13 @@ CONTACTS: Dict[str, Dict[str, float]] = {
     "carbonyl": {"distance": 3.6},
     "metal": {"distance": 2.8},
 }
+"""
+Type: `dict`: A nested dictionary that defines different types of atom-atom interactions
+and their geometric parameters. The outer keys are the interaction types and the
+inner keys are the geometric parameters (distance, angle etc.) with their values.
+"""
 
 GEMMI_SUPPRTED_FORMATS = {"cif", "mmcif", "cif.gz", "pdb", "pdb.gz"}
+"""
+Type: `set`: Set of file formats that are supported by Gemmi library.
+"""
