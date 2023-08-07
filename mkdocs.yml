@@ -80,6 +80,12 @@ nav:
       - 'Atom-Atom': api/contacts/atom_atom.md
       - 'Atom-Plane': api/contacts/atom_plane.md
       - 'Plane-Plane': api/contacts/plane_plane.md
+  - Config:
+    - 'Atom Types': api/config/atoms.md
+    - 'Atom Type Definitions': api/config/atom_types.md
+    - 'Defaults': api/config/defaults.md
+    - 'SMARTS': api/config/smarts.md
+    - 'SMARTS Definitions': api/config/smarts_defs.md
 
 markdown_extensions:
 - tables
