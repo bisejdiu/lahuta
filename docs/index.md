@@ -36,7 +36,7 @@ For a more detailed introduction, please refer to the [Usage Guide](usage/intro.
     4. The `pairs` attribute contains an array of all pairs of atom indices that are within the specified cutoff distance and satisfy the residue difference constraint.
 
 !!! tip "Learn more"
-    See the documentation on [supported file formats](usage/loading.md#supported-file-formats) for more information.
+    See the documentation on [supported file formats](usage/loading.md) for more information.
 
 {% raw %}
 ## Performance {#performance}
@@ -85,7 +85,7 @@ Lahuta provides support for MD simulations by relying on MDAnalysis for reading 
 As you can see, the only difference is that we pass an `MDAnalysis.AtomGroup` object to the `Luni` class instead of a file path. This is the only change that is required to use Lahuta with MDAnalysis. If a trajectory is loaded to the `MDAnalysis.Universe` object, then it will be also available and used by Lahuta. In fact, Lahuta provides dedicated support for extracting contacts from MD trajectories. 
 
 !!! tip "Learn more"
-    See the documentation on [working with MD Simulation data](usage/loading.md#md-contacts) for more information.
+    See the documentation on [working with MD Simulation data](usage/loading.md) for more information.
 
 {% raw %}
 
@@ -137,17 +137,17 @@ This opens the door to a whole class of applications with a wide range of use ca
 Lahuta is written from the ground up in Python. Nevertheless, it relies on a few external libraries to offload tasks such as I/O and numerical operations. The following list provides a brief overview of the libraries that are used by Lahuta and their respective purposes:
 
 ### Bio- and Cheminformatics Libraries:
-- [MDAnalysis](): Used for reading and writing biomolecular structures and trajectories, as well as facilitating rapid neighbor search.
-- [Gemmi](): A specialized library for handling the reading and writing of structures in the PDBx/mmCIF format.
-- [OpenBabel](): Essential for SMARTS pattern matching and advanced chemical perception.
+- [MDAnalysis](https://github.com/MDAnalysis/mdanalysis): Used for reading and writing biomolecular structures and trajectories, as well as facilitating rapid neighbor search.
+- [Gemmi](https://github.com/project-gemmi/gemmi): A specialized library for handling the reading and writing of structures in the PDBx/mmCIF format.
+- [OpenBabel](https://github.com/openbabel/openbabel): Essential for SMARTS pattern matching and advanced chemical perception.
 
 ### General-Purpose Libraries:
-- [NumPy](): Used for fast numerical operations on arrays by relying extensively on vectorized operations.
-- [SciPy](): We employ sparse matrices to efficiently store and quickly access atom indices. 
+- [NumPy](https://github.com/numpy/numpy): Used for fast numerical operations on arrays by relying extensively on vectorized operations.
+- [SciPy](https://github.com/scipy/scipy): We employ sparse matrices to efficiently store and quickly access atom indices. 
 
 
 {% raw %}
 ## Active Development {#active-development}
 {% endraw %}
 
-Lahuta is under active development. We are constantly adding new features and improving existing ones. We are also working on improving the documentation and adding more tutorials. If you have any questions or suggestions, please feel free to [open an issue]() or [contact us](). 
+Lahuta is under active development. We are constantly adding new features and improving existing ones. We are also working on improving the documentation and adding more tutorials. If you have any questions or suggestions, please feel free to [open an issue](https://github.com/bisejdiu/lahuta/issues) or [contact us](). 
