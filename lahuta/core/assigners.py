@@ -1,13 +1,15 @@
 """
-Module: assigners.py
+Module: `lahuta.core.assigners.py`
 
 This module contains the abstract base class (ABC) for assigning atom types to proteins.
 It also contains two child classes that implement the abstract method from the ABC.
 
 Classes:
+    ```
     ProteinTypeAssignerBase: Abstract base class for assigning atom types to proteins.
     VectorizedProteinTypeAssigner: Efficient, vectorized assignment of atom types.
     LegacyProteinTypeAssigner: Traditional, loop-based assignment of atom types.
+    ```
 
     
 """
@@ -33,8 +35,10 @@ class ProteinTypeAssignerBase(ABC):
         protein_ag (AtomGroupType): Group of atoms in a protein that will be assigned atom types.
 
     Child classes:
+        ```
         VectorizedProteinTypeAssigner: Efficient, vectorized assignment of atom types.
         LegacyProteinTypeAssigner: Traditional, loop-based assignment of atom types.
+        ```
     """
 
     def __init__(self, protein_ag: AtomGroupType) -> None:
@@ -63,8 +67,6 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
     Child class of ProteinTypeAssignerBase that uses NumPy array manipulations
     for efficient assignment of atom types.
 
-    Overrides:
-        compute method from ProteinTypeAssignerBase.
     """
 
     def compute(self, atypes_array: dok_matrix) -> dok_matrix:
@@ -77,7 +79,7 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
             atypes_array (dok_matrix): Sparse array of atom types.
 
         Returns:
-            dok_matrix: Sparse array of assigned atom types.
+            (dok_matrix): Sparse array of assigned atom types.
         """
 
         resname_str = self.protein_ag.resnames.astype(str)
@@ -109,8 +111,6 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
 
     Child class of ProteinTypeAssignerBase that uses a traditional, loop-based approach for assignment of atom types.
 
-    Overrides:
-        compute method from ProteinTypeAssignerBase.
     """
 
     def compute(self, atypes_array: dok_matrix) -> dok_matrix:
@@ -123,7 +123,7 @@ class LegacyProteinTypeAssigner(ProteinTypeAssignerBase):
             atypes_array (dok_matrix): Sparse array of atom types.
 
         Returns:
-            dok_matrix: Sparse array of assigned atom types.
+            (dok_matrix): Sparse array of assigned atom types.
         """
 
         for residue in self.protein_ag.residues:
