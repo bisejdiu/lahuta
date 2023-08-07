@@ -240,6 +240,8 @@ class PlanePlaneContacts:
 
     Args:
         ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
+
+    Attributes:
         centroid_distance (float): The maximum distance to consider for the centroid of a plane-plane contact.
             See `lahuta.config.defaults.CONTACTS` for default values.
         results (NeighborPairs): NeighborPairs containing the pairs of atoms found to be forming plane-plane contacts.

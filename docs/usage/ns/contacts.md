@@ -66,7 +66,7 @@ Here is another example that demonstrates how to compute ionic contacts:
     3. This will combine the two `NeighborPairs` objects into a single `NeighborPairs` object.
 
 !!! tip "Learn more"
-    See the API documentation on [contacts](api/contacts.md) for more information.
+    See the API documentation on [contacts](../../api/contacts/F.md) for more information.
 
 I hope that these examples show how easy and intuitive it is to use Lahuta to extract contacts from neighboring atoms. I hope you also see how `NeighborPairs` objects can be combined to create more complex `NeighborPairs` objects. This is the core idea behind Lahuta's selection and filtering API. It is designed to be intuitive, flexible, and extensible.
 
@@ -110,4 +110,4 @@ There are also hbond-specific filters:
 The last two filters operate on three atoms at a time and Lahuta implements vectorized versions of these filters. This means that they are very fast and efficient, but also that the code is a bit more complicated. For this reason, we will not discuss them here. Please see the API documentation for more information.
 
 !!! tip "Learn more"
-    See the API documentation on [NeighborPairs](api/neighborpairs.md) for more information.
+    See the API documentation on [NeighborPairs](../../api/core/neighbors.md) for more information.

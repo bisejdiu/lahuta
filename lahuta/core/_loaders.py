@@ -274,9 +274,6 @@ class TopologyLoader(BaseLoader):
         arc (Optional[ARC]): An instance of ARC class providing combined access to atoms,
                              residues, and chains data.
 
-    Returns:
-        TopologyLoader: A new instance of the TopologyLoader class with the AtomGroup data copied.
-
     """
 
     def __init__(self, *paths: str):

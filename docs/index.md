@@ -13,7 +13,7 @@ Its development has been influenced by [arpeggio](https://github.com/harryjubb/a
 {% endraw %}
 
 The following example demonstrates how to compute non-covalent interactions using Lahuta.
-For a more detailed introduction, please refer to the [User Guide](user_guide.md).
+For a more detailed introduction, please refer to the [Usage Guide](usage/intro.md).
 
 ???+ example "Example - First dive into Lahuta"
     _The following code snippet shows a simple example of how to use Lahuta._
@@ -107,7 +107,7 @@ For many common tasks, a dedicated API, regardless of how intuitive it is, can b
     -h, --help            show this help message and exit
     -o OUTPUT, --output OUTPUT
                             Path to the output file.
-    -r RADIUS, --radius RADIUS
+    -r RADIUS, --radiu RADIUS
                             Cutoff distance for the neighbor search.
     -d RES_DIF, --res-dif RES_DIF
                             Minimum residue difference between two atoms.
@@ -119,7 +119,7 @@ For many common tasks, a dedicated API, regardless of how intuitive it is, can b
     ```
 
 !!! tip "Learn more"
-    See the documentation on the [Command Line Interface (CLI) ](usage/cli.md) for more information.
+    See the documentation on the [Command Line Interface (CLI) ](cli.md) for more information.
 
 
 {% raw %}
@@ -128,7 +128,7 @@ For many common tasks, a dedicated API, regardless of how intuitive it is, can b
 
 We can use Lahuta to compute contacts from related proteins and trace them through evolutionary time. Lahuta is capable of parsing MSA files and generate unique identifiers for each residue. It can then quickly map between real atom & residue indices and MSA-based indices. 
 
-This opens the door to a whole class of applications with a wide range of use cases. We discuss this more in the [Tutorials](tutorials.md) and [Usage](usage.md) sections. We also have a [Blog Post]() that discusses this in more detail in the context of GPCRs.
+This opens the door to a whole class of applications with a wide range of use cases. We discuss this more in the [Tutorials](tutorials/getting_started.md) and [Usage](usage/intro.md) sections. We also have a [Blog Post](blog/lahuta-dev.md) that discusses this in more detail in the context of GPCRs.
 
 {% raw %}
 ## Standing on the Shoulders of Giants {#dependencies}

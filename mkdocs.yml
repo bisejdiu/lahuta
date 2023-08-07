@@ -60,6 +60,7 @@ nav:
   - 'Getting Started': tutorials/getting_started.md
   - 'Custom Contacts': tutorials/custom_contacts.md
   - 'Visualizing Contacts': tutorials/visualizing_contacts.md
+- CLI: cli.md
 - Blog:
   - blog/lahuta-dev.md
 - API Documentation:
@@ -142,7 +143,4 @@ plugins:
       on_pre_build: 'docs.plugins.main:on_pre_build'
       on_files: 'docs.plugins.main:on_files'
       on_page_markdown: 'docs.plugins.main:on_page_markdown'
-- redirects:
-    redirect_maps:
-      'usage/mypy.md': 'integrations/mypy.md'
 - external-markdown:

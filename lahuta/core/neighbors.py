@@ -44,8 +44,11 @@ class NeighborPairs:
     designed to be extensible and supports the addition of custom annotations to the pairs.
 
     Args:
-        atoms (AtomGroupType): The group of atoms under consideration.
+        mda (AtomGroupType): The group of atoms under consideration.
+        mol (MolType): The molecule under consideration.
+        atom_types (csc_array): A sparse matrix containing the atom types.
         pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
+        distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
 
     Attributes:
         _atoms (AtomGroupType):
@@ -56,6 +59,12 @@ class NeighborPairs:
             A 1D numpy array of distances between the pairs of atoms.
         _annotations (Dict[str, NDArray[Any]]):
             A dictionary to store custom annotations related to the pairs.
+        _hbond_array (NDArray[np.int32]):
+            A 2D numpy array of hydrogen bonded atom indices.
+        _hbond_handler (HBondHandler):
+            An instance of the HBondHandler class.
+        _hbond_angles (NDArray[np.float32]):
+            A 2D numpy array of hydrogen bond angles.
 
     """
 
