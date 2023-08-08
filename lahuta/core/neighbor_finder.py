@@ -18,6 +18,10 @@ from numpy.typing import NDArray
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
+IndexPairs = NDArray[np.int32]
+Distances = NDArray[np.float32]
+PairsDistances = Tuple[IndexPairs, Distances]
+
 
 class NeighborSearch:
     """
@@ -44,7 +48,7 @@ class NeighborSearch:
 
         # self.instance = instance
 
-    def compute(self, radius: float = 5.0, res_dif: int = 1) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def compute(self, radius: float = 5.0, res_dif: int = 1) -> PairsDistances:
         """
         Compute the neighbors of each atom in the Universe.
 
@@ -53,7 +57,7 @@ class NeighborSearch:
             res_dif (int, optional): The residue difference to consider. Default is 1.
 
         Returns:
-            Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices and the distances.
+            PairsDistances: A tuple containing the pairs of atom indices and the distances.
         """
 
         pairs, distances = self.get_neighbors(radius)
@@ -65,7 +69,7 @@ class NeighborSearch:
 
         return pairs, distances
 
-    def get_neighbors(self, radius) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def get_neighbors(self, radius: float) -> PairsDistances:
         """
         Get the neighbors of an AtomGroup.
 
@@ -73,7 +77,7 @@ class NeighborSearch:
             radius (float, optional): The cutoff radius.
 
         Returns:
-            Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices and the distances.
+            PairsDistances: A tuple containing the pairs of atom indices and the distances.
         """
 
         # check for dimensions
@@ -107,5 +111,5 @@ class NeighborSearch:
 
         resids = self.og_resids[pairs]
         # return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
-        mask = np.abs(np.diff(resids, axis=1)) > res_dif
+        mask: NDArray[np.bool_] = np.abs(np.diff(resids, axis=1)) > res_dif
         return np.ravel(mask)

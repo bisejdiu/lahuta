@@ -48,7 +48,7 @@ skip-string-normalization = true
 
 [tool.pyright]
 include = ["lahuta"]
-exclude = ["lahuta/scripts", "lahuta/tests", "**/__pycache__", "cachedir"]
+exclude = ["lahuta/scripts", "lahuta/docs", "lahuta/tests", "**/__pycache__", "cachedir"]
 defineConstant = { DEBUG = true }
 reportMissingImports = true
 reportMissingTypeStubs = "none"
@@ -90,7 +90,7 @@ strict_equality = true
 strict = true
 show_error_codes = true
 
-exclude = "cachedir|scripts|tests|__pycache__"
+exclude = "docs|cachedir|scripts|tests|__pycache__"
 
 [tool.pytest.ini_options]
 testpaths = ["lahuta"]
