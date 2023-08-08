@@ -1,6 +1,6 @@
 [GitHub release v0.7.0](https://github.com/bisejdiu/lahuta/releases/tag/v0.8.0)
 
-# Release Notes for Lahuta v0.7.0 (2023-08-03)
+# Release Notes for Lahuta v0.8.0 (2023-08-03)
 This release represents a significant move from a proof-of-concept to a fully-fledged library. Here's a brief overview of everything that's new in this release.
 
 ## Key Highlights
