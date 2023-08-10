@@ -23,13 +23,13 @@ class MSAParser:
         seq = self._sequences.get(seq_id, None)
         if seq is None:
             raise ValueError(f"Sequence with ID {seq_id} not found.")
-        return self._to_indices_array(seq)
+        return self.to_indices_array(seq)
 
     def get_seq_ids(self) -> List[str]:
         return self._seq_ids
 
     @staticmethod
-    def _to_indices_array(seq: Seq) -> NDArray[np.int32]:
+    def to_indices_array(seq: Seq) -> NDArray[np.int32]:
         arr = MSAParser._to_framebuffer(seq)
         return np.nonzero(arr != 45)[0]
 
