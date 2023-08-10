@@ -20,6 +20,7 @@ from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.helpers import get_class_attributes
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
+from lahuta.msa.msa import MSAParser
 from lahuta.utils import array_utils as au
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.writers.frame_writer import DataFrameWriter
@@ -303,6 +304,33 @@ class NeighborPairs:
         hbond_distances = self.distances[distances_mask]
 
         return self.clone(hbond_dist_pairs, hbond_distances)
+
+    def map(self, msa_parser: MSAParser, seq_id: str, same_residue_names: bool = False) -> "NeighborPairs":
+        """
+        Maps the `pairs` indices to indices in the multiple sequence alignment.
+
+        The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
+        using the specified sequence ID.
+
+        Args:
+            msa_parser (MSAParser): The multiple sequence alignment parser.
+            seq_id (str): The sequence ID. See msa_parser.get_seq_id() for more information.
+
+        Returns:
+            A NeighborPairs object containing the mapped pairs.
+        """
+
+        names = self.atoms.names
+        resnames = self.atoms.resnames
+        seq = msa_parser[seq_id]
+        resindices = ns.atoms.resindices
+
+        resids = np.array(MSAParser.to_indices_array(seq), dtype=np.str_)
+        resids = resids[resindices]
+
+        labeled_pairs = (resids + resnames + names)[self.pairs]
+
+        # return self.clone(mapped_pairs, self.distances)
 
     def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
         """
