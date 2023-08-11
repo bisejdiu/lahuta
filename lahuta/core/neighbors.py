@@ -19,6 +19,7 @@ from scipy.sparse import csc_array
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.helpers import get_class_attributes
+from lahuta.core.labeled_neighbors import LabeledNeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.msa.encoder import encode_labels
@@ -326,7 +327,7 @@ class NeighborPairs:
 
         return mapped_pairs  # type: ignore
 
-    def map(self, seq: Seq, force_same_residue_names: bool = False) -> "NeighborPairs":
+    def map(self, seq: Seq, force_same_residue_names: bool = False) -> "LabeledNeighborPairs":
         """
         Maps the `pairs` indices to indices in the multiple sequence alignment.
 
@@ -342,6 +343,7 @@ class NeighborPairs:
         """
 
         remapped = self._map_pairs(seq, force_same_residue_names)
+        return LabeledNeighborPairs(remapped)
 
         clone = self.clone(self.pairs, self.distances)
         clone.target_pairs = remapped
