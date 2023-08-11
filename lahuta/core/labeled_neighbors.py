@@ -640,6 +640,38 @@ class LabeledNeighborPairs:
             return NotImplemented
         return self.symmetric_difference(other)
 
+    def __lt__(self, other: "LabeledNeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+        return self.is_strict_subset(other)
+
+    def __le__(self, other: "LabeledNeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.issubset(other)
+
+    def __gt__(self, other: "LabeledNeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.is_strict_superset(other)
+
+    def __ge__(self, other: "LabeledNeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.issuperset(other)
+
+    def __ne__(self, other: Any) -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+        return not self.isequal(other)
+
+    def __len__(self) -> int:
+        """Get the number of pairs in this LabeledNeighborPairs object."""
+        return self.pairs.shape[0]
+
     def __str__(self) -> str:
         return f"<Lahuta LabeledNeighborPairs class containing {self.pairs.shape[0]} pairs>"
 
