@@ -116,6 +116,10 @@ class AtomGroupType(Protocol):
         ...
 
     @property
+    def resindices(self) -> NDArray[np.int_]:
+        ...
+
+    @property
     def chainIDs(self) -> NDArray[np.str_]:  # pylint: disable=invalid-name
         ...
 
