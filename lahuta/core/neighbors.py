@@ -12,6 +12,7 @@ from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from Bio.Seq import Seq
 from numpy.typing import NDArray
 from scipy.sparse import csc_array
 
@@ -20,6 +21,7 @@ from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.helpers import get_class_attributes
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
+from lahuta.msa.encoder import encode_labels
 from lahuta.msa.msa import MSAParser
 from lahuta.utils import array_utils as au
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
@@ -84,6 +86,7 @@ class NeighborPairs:
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
+        self._remapped: Optional[NDArray[np.str_]] = None
 
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
@@ -305,7 +308,25 @@ class NeighborPairs:
 
         return self.clone(hbond_dist_pairs, hbond_distances)
 
-    def map(self, msa_parser: MSAParser, seq_id: str, same_residue_names: bool = False) -> "NeighborPairs":
+    def _map_pairs(self, seq: Optional[Seq] = None, use_resnames: bool = False) -> NDArray[np.str_]:
+        """TBW"""
+
+        resindices = self.atoms.resindices
+        if seq is None:
+            resids = resindices.astype(np.str_)
+        else:
+            resids = np.array(MSAParser.to_indices_array(seq), dtype=np.str_)
+            resids = resids[resindices]
+
+        labels = self.atoms.names
+        if use_resnames:
+            labels += self.atoms.resnames  # type: ignore
+
+        mapped_pairs: NDArray[np.str_] = (resids + labels)[self.pairs]  # type: ignore
+
+        return mapped_pairs  # type: ignore
+
+    def map(self, seq: Seq, force_same_residue_names: bool = False) -> "NeighborPairs":
         """
         Maps the `pairs` indices to indices in the multiple sequence alignment.
 
@@ -320,15 +341,21 @@ class NeighborPairs:
             A NeighborPairs object containing the mapped pairs.
         """
 
-        names = self.atoms.names
-        resnames = self.atoms.resnames
-        seq = msa_parser[seq_id]
-        resindices = ns.atoms.resindices
+        remapped = self._map_pairs(seq, force_same_residue_names)
 
-        resids = np.array(MSAParser.to_indices_array(seq), dtype=np.str_)
-        resids = resids[resindices]
+        clone = self.clone(self.pairs, self.distances)
+        clone.target_pairs = remapped
+        return clone
 
-        labeled_pairs = (resids + resnames + names)[self.pairs]
+        # all_values = np.concatenate((arr1, arr2)).flatten()
+
+        # # Get unique strings and their corresponding indices
+        # # unique_values, inverse_indices = np.unique(all_values, return_inverse=True)
+        # inverse_indices, _ = pd.factorize(all_values)
+
+        # # Reshape the inverse_indices back to original shape
+        # encoded_arr1 = inverse_indices[: arr1.size].reshape(arr1.shape)
+        # encoded_arr2 = inverse_indices[arr1.size :].reshape(arr2.shape)
 
         # return self.clone(mapped_pairs, self.distances)
 
@@ -359,6 +386,21 @@ class NeighborPairs:
 
         return self.clone(self.pairs, self.distances)
 
+    def _get_pairs(self, other: "NeighborPairs") -> Tuple[NDArray[np.int_], NDArray[np.int_]]:
+        """TBW"""
+        if self.target_pairs is None and other.target_pairs is None:
+            return self.pairs, other.pairs
+
+        if self.target_pairs is not None and other.target_pairs is not None:
+            pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
+
+        if self.target_pairs is None or other.target_pairs is None:
+            raise ValueError("Both NeighborPairs objects must have target_pairs set or unset.")
+
+        pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
+
+        return pairs, other_pairs
+
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """
         Return the intersection of two NeighborPairs objects.
@@ -382,7 +424,13 @@ class NeighborPairs:
             >>> np_intersected = np1.intersection(np2)
             ```
         """
-        mask = au.intersection(self.pairs, other.pairs)
+
+        if self.target_pairs is not None and other.target_pairs is not None:
+            pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
+        else:
+            pairs, other_pairs = self.pairs, other.pairs
+
+        mask = au.intersection(pairs, other_pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def union(self, other: "NeighborPairs") -> "NeighborPairs":
@@ -408,7 +456,13 @@ class NeighborPairs:
             >>> np_union = np1.union(np2)
             ```
         """
-        pairs, indices = au.union(self.pairs, other.pairs)
+
+        if self.target_pairs is not None and other.target_pairs is not None:
+            pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
+        else:
+            pairs, other_pairs = self.pairs, other.pairs
+
+        pairs, indices = au.union(self.pairs, other_pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
 
         return self.clone(pairs, distances)
@@ -811,6 +865,36 @@ class NeighborPairs:
             An array containing the pairs of indices of neighboring atoms.
         """
         return self._pairs
+
+    @property
+    def source_pairs(self) -> NDArray[np.str_]:
+        """
+        Get the pairs of atoms that are neighbors.
+
+        Returns:
+            An array containing the pairs of indices of neighboring atoms.
+        """
+        return self._map_pairs(use_resnames=True)
+
+    @property
+    def target_pairs(self) -> Optional[NDArray[np.str_]]:
+        """
+        Get the pairs of atoms that are neighbors.
+
+        Returns:
+            An array containing the pairs of indices of neighboring atoms.
+        """
+        return self._remapped
+
+    @target_pairs.setter
+    def target_pairs(self, value: NDArray[np.str_]) -> None:
+        """
+        Set the pairs of atoms that are neighbors.
+
+        Returns:
+            An array containing the pairs of indices of neighboring atoms.
+        """
+        self._remapped = value
 
     @property
     def distances(self) -> NDArray[np.float32]:
