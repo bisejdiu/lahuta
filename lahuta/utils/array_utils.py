@@ -326,6 +326,31 @@ def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType]
     return concat[sorted_indices], sorted_indices
 
 
+def union_masks(
+    arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
+) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
+    """Calculate the union of two arrays.
+
+    Args:
+        arr1: An array of shape (n, 2) where each row is a pair of atom indices.
+        arr2: An array of shape (m, 2) where each row is a pair of atom indices.
+        assume_unique: If True, the input arrays are both assumed to be unique,
+                       which can speed up the calculation. Default is False.
+
+    Returns:
+        mask_a: A boolean array that can be used to index `arr1` to get the elements of the union from `arr1`.
+        mask_b: A boolean array that can be used to index `arr2` to get the elements of the union from `arr2`.
+    """
+    # pylint: disable=arguments-out-of-order
+    mask_a_diff, mask_b_diff = symmetric_difference(arr1, arr2, assume_unique)
+    mask_a_int = intersection(arr1, arr2, assume_unique)
+
+    mask_a_union = mask_a_diff | mask_a_int
+    mask_b_union = mask_b_diff 
+
+    return mask_a_union, mask_b_union
+
+
 def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """
     Determines if two arrays have a null intersection.
@@ -378,8 +403,8 @@ def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
     """
 
     # return bool(np.all(intersection(arr1, arr2)))  # type: ignore
-    result: bool = np.sum(intersection(arr1, arr2)) == len(arr1)
-    return result
+    result = np.sum(intersection(arr1, arr2)) == len(arr1)
+    return bool(result)
 
 
 def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
