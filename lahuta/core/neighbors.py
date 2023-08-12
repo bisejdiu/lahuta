@@ -973,6 +973,34 @@ class NeighborPairs:
             return NotImplemented
         return self.symmetric_difference(other)
 
+    def __lt__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+        return self.is_strict_subset(other)
+
+    def __le__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.issubset(other)
+
+    def __gt__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.is_strict_superset(other)
+
+    def __ge__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.issuperset(other)
+
+    def __ne__(self, other: Any) -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+        return not self._neighborpairs_equal(other)
+
     def __len__(self) -> int:
         """Get the number of pairs in this NeighborPairs object."""
         return self.pairs.shape[0]
