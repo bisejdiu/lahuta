@@ -151,11 +151,6 @@ class NeighborPairs:
 
     def _get_pair_column(self, partner: int) -> AtomGroupType:
         """Return the column of the pair of atoms depending on the value of partner."""
-        # print('1: ', partner - 1)
-        # print('2: ', self.pairs[:, partner - 1])
-        # print('3: ', self.atoms[self.pairs[:, partner - 1]])
-        # print('4', self.atoms[self.pairs[:, partner - 1]].indices)
-        # print('5', self.atoms[self.pairs[:, partner - 1]].hbond_acceptor)
         return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner: int) -> Tuple[AtomGroupType, AtomGroupType]:
@@ -195,11 +190,6 @@ class NeighborPairs:
         nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # type: ignore
 
-        # col_ag = getattr(self._get_pair_column(partner), atom_type)
-        # mask = col_ag.astype(bool)
-        # print('---:> ', mask.shape[0], mask.sum(), type(mask), mask.dtype, mask)
-        # mask = mask.toarray().flatten()
-
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def index_filter(
@@ -221,12 +211,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
 
-        # nonzeros = self.atom_types.nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], indices)
-
-        # col_func = self._get_pair_column(partner)
-        # mask = np.isin(col_func.indices, indices)  # type: ignore
-
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def distance_filter(self, distance: float) -> "NeighborPairs":
@@ -309,7 +294,34 @@ class NeighborPairs:
 
         return self.clone(hbond_dist_pairs, hbond_distances)
 
-    def _map_pairs(self, seq: Optional[Seq] = None, use_resnames: bool = False) -> NDArray[np.str_]:
+    def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
+        """
+        Filters the pairs based on the angle between the hydrogen bonded atoms.
+
+        The method filters pairs from the NeighborPairs object where the hydrogen bond angles are greater
+        than or equal to the specified contact angle. The `partner` parameter specifies the column of hydrogen
+        bonded atom indices in the `hbond_array`. If `weak` is True, the function will accept weaker hydrogen bonds.
+
+        Args:
+            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
+            weak (bool, optional): If True, accept weaker hydrogen bonds. Defaults to False.
+
+        Returns:
+            A NeighborPairs object containing the pairs that meet the hydrogen bond angle filter.
+        """
+        contact_type = "weak hbond" if weak else "hbond"
+        attr_partner, hbound_attr_partner = self._get_partners(partner)
+
+        # if self.hbond_angles is None:
+        self.hbond_angles = self.hbond_handler.get_hbond_angles(attr_partner, hbound_attr_partner)
+
+        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)  # type: ignore
+        self._pairs = self._pairs[idx]
+        self._distances = self._distances[idx]
+
+        return self.clone(self.pairs, self.distances)
+
+    def _map_pairs(self, seq: Optional[Seq] = None, use_resnames: bool = False) -> Tuple[NDArray[np.str_], ...]:
         """TBW"""
 
         resindices = self.atoms.resindices
@@ -324,10 +336,6 @@ class NeighborPairs:
             labels += '-' + self.atoms.resnames  # type: ignore
 
         return self.atoms.names, self.atoms.resnames, resids
-
-        mapped_pairs: NDArray[np.str_] = (resids.astype(object) + '-' + labels)[self.pairs]  # type: ignore
-
-        return mapped_pairs  # type: ignore
 
     def map(self, seq: Seq, force_same_residue_names: bool = False) -> "LabeledNeighborPairs":
         """
@@ -357,52 +365,7 @@ class NeighborPairs:
         data['resnames'] = resnames
         data['resids'] = resids
 
-        
         return LabeledNeighborPairs(data[self.pairs])
-
-
-        clone = self.clone(self.pairs, self.distances)
-        clone.target_pairs = remapped
-        return clone
-
-        # all_values = np.concatenate((arr1, arr2)).flatten()
-
-        # # Get unique strings and their corresponding indices
-        # # unique_values, inverse_indices = np.unique(all_values, return_inverse=True)
-        # inverse_indices, _ = pd.factorize(all_values)
-
-        # # Reshape the inverse_indices back to original shape
-        # encoded_arr1 = inverse_indices[: arr1.size].reshape(arr1.shape)
-        # encoded_arr2 = inverse_indices[arr1.size :].reshape(arr2.shape)
-
-        # return self.clone(mapped_pairs, self.distances)
-
-    def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
-        """
-        Filters the pairs based on the angle between the hydrogen bonded atoms.
-
-        The method filters pairs from the NeighborPairs object where the hydrogen bond angles are greater
-        than or equal to the specified contact angle. The `partner` parameter specifies the column of hydrogen
-        bonded atom indices in the `hbond_array`. If `weak` is True, the function will accept weaker hydrogen bonds.
-
-        Args:
-            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-            weak (bool, optional): If True, accept weaker hydrogen bonds. Defaults to False.
-
-        Returns:
-            A NeighborPairs object containing the pairs that meet the hydrogen bond angle filter.
-        """
-        contact_type = "weak hbond" if weak else "hbond"
-        attr_partner, hbound_attr_partner = self._get_partners(partner)
-
-        # if self.hbond_angles is None:
-        self.hbond_angles = self.hbond_handler.get_hbond_angles(attr_partner, hbound_attr_partner)
-
-        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)  # type: ignore
-        self._pairs = self._pairs[idx]
-        self._distances = self._distances[idx]
-
-        return self.clone(self.pairs, self.distances)
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """
@@ -427,11 +390,6 @@ class NeighborPairs:
             >>> np_intersected = np1.intersection(np2)
             ```
         """
-
-        if self.target_pairs is not None and other.target_pairs is not None:
-            pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
-        else:
-            pairs, other_pairs = self.pairs, other.pairs
 
         mask = au.intersection(pairs, other_pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -459,11 +417,6 @@ class NeighborPairs:
             >>> np_union = np1.union(np2)
             ```
         """
-
-        if self.target_pairs is not None and other.target_pairs is not None:
-            pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
-        else:
-            pairs, other_pairs = self.pairs, other.pairs
 
         pairs, indices = au.union(self.pairs, other_pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
@@ -524,21 +477,6 @@ class NeighborPairs:
 
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
         distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)  # type: ignore
-
-        # return self.clone(sorted_pairs, sorted_distances)
-
-        # FIXME: commented out bc I do not think this is necessary
-        # symmetric_difference, by definition, should not contain duplicates
-
-        # # Sort pairs along the first column and get the sorted indices.
-        # sorted_indices = np.argsort(pairs[:, 0])
-        # pairs = pairs[sorted_indices]
-        # distances = distances[sorted_indices]
-
-        # # Get unique pairs and corresponding distances.
-        # unique_indices = np.unique(pairs, axis=0, return_index=True)[1]
-        # pairs = pairs[unique_indices]
-        # distances = distances[unique_indices]
 
         return self.clone(pairs, distances)
 
@@ -780,8 +718,6 @@ class NeighborPairs:
         else:
             return self._create_df(df_format)
 
-        # return self._create_df(df_format)
-
     def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> Dict[str, Any]:
         """
         Converts the NeighborPairs object to a dictionary.
@@ -868,36 +804,6 @@ class NeighborPairs:
             An array containing the pairs of indices of neighboring atoms.
         """
         return self._pairs
-
-    @property
-    def source_pairs(self) -> NDArray[np.str_]:
-        """
-        Get the pairs of atoms that are neighbors.
-
-        Returns:
-            An array containing the pairs of indices of neighboring atoms.
-        """
-        return self._map_pairs(use_resnames=True)
-
-    @property
-    def target_pairs(self) -> Optional[NDArray[np.str_]]:
-        """
-        Get the pairs of atoms that are neighbors.
-
-        Returns:
-            An array containing the pairs of indices of neighboring atoms.
-        """
-        return self._remapped
-
-    @target_pairs.setter
-    def target_pairs(self, value: NDArray[np.str_]) -> None:
-        """
-        Set the pairs of atoms that are neighbors.
-
-        Returns:
-            An array containing the pairs of indices of neighboring atoms.
-        """
-        self._remapped = value
 
     @property
     def distances(self) -> NDArray[np.float32]:
