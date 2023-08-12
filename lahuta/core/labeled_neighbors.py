@@ -8,7 +8,7 @@ methods to manipulate, analyze, and export these pairs.
 
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -44,9 +44,10 @@ class LabeledNeighborPairs:
 
     """
 
-    def __init__(self, pairs: NDArray[np.void]):
+    def __init__(self, pairs: NDArray[np.void], mask1: Optional[NDArray[np.bool_]]=None, mask2: Optional[NDArray[np.bool_]]=None):
         self._pairs = pairs
-        # self._data = data
+        self._mask1 = mask1 if mask1 is not None else np.ones(self._pairs.shape[0], dtype=bool)
+        self._mask2 = mask2 if mask2 is not None else np.ones(self._pairs.shape[0], dtype=bool)
 
     def type_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
         """Not implemented."""
@@ -82,6 +83,42 @@ class LabeledNeighborPairs:
         """Not implemented."""
 
         raise NotImplementedError(f"{self.__class__.__name__} does not support hydrogen bond angle filtering.")
+
+    def _filter(self, mode: str, inverse: bool=False, **kwargs: List[str]) -> "LabeledNeighborPairs":
+        masks: List[NDArray[np.bool_]] = []
+        for mask in [self._mask1, self._mask2]:
+            new_mask = np.copy(mask)
+            assert self._pairs.dtype.names is not None
+            for key, values in kwargs.items():
+                if key not in self._pairs.dtype.names:
+                    raise ValueError(f'Field {key} not found in pairs')
+                field_mask = np.isin(self._pairs[key][:, 0 if mask is self._mask1 else 1], values)
+                new_mask &= ~field_mask if mode == 'exclude' or inverse else field_mask
+
+            masks.append(new_mask)
+        return LabeledNeighborPairs(self._pairs, *masks)
+
+    def select(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+        return self._filter('select', False, **kwargs)
+
+    def exclude(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+        return self._filter('exclude', False, **kwargs)
+
+    def inverse(self) -> "LabeledNeighborPairs":
+        # pylint: disable=invalid-unary-operand-type
+        return LabeledNeighborPairs(self._pairs, ~self._mask1, ~self._mask2)
+
+    def remove(self, field: str) -> "LabeledNeighborPairs":
+        assert self._pairs.dtype.names is not None
+        if field not in self._pairs.dtype.names:
+            raise ValueError(f'Field {field} not found in pairs')
+        new_data = np.empty(self._pairs.shape, dtype=self._pairs.dtype.descr)
+        for name in self._pairs.dtype.names:
+            new_data[name] = self._pairs[name]
+            if name == field:
+                new_data[name][self._mask1, 0] = ''
+                new_data[name][self._mask2, 1] = ''
+        return LabeledNeighborPairs(new_data)
 
     def intersection(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
         """
