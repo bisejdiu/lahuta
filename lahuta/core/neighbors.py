@@ -321,9 +321,11 @@ class NeighborPairs:
 
         labels = self.atoms.names
         if use_resnames:
-            labels += self.atoms.resnames  # type: ignore
+            labels += '-' + self.atoms.resnames  # type: ignore
 
-        mapped_pairs: NDArray[np.str_] = (resids + labels)[self.pairs]  # type: ignore
+        return self.atoms.names, self.atoms.resnames, resids
+
+        mapped_pairs: NDArray[np.str_] = (resids.astype(object) + '-' + labels)[self.pairs]  # type: ignore
 
         return mapped_pairs  # type: ignore
 
@@ -343,7 +345,21 @@ class NeighborPairs:
         """
 
         remapped = self._map_pairs(seq, force_same_residue_names)
-        return LabeledNeighborPairs(remapped)
+        
+        dtype = np.dtype({
+                "names": ["atom_names", "resids", "resnames"],
+                "formats": ["<U10", "<U10", "<U10"],
+            })
+    
+        names, resnames, resids = remapped
+        data = np.empty(names.shape[0], dtype=dtype)
+        data['atom_names'] = names
+        data['resnames'] = resnames
+        data['resids'] = resids
+
+        
+        return LabeledNeighborPairs(data[self.pairs])
+
 
         clone = self.clone(self.pairs, self.distances)
         clone.target_pairs = remapped
@@ -387,21 +403,6 @@ class NeighborPairs:
         self._distances = self._distances[idx]
 
         return self.clone(self.pairs, self.distances)
-
-    def _get_pairs(self, other: "NeighborPairs") -> Tuple[NDArray[np.int_], NDArray[np.int_]]:
-        """TBW"""
-        if self.target_pairs is None and other.target_pairs is None:
-            return self.pairs, other.pairs
-
-        if self.target_pairs is not None and other.target_pairs is not None:
-            pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
-
-        if self.target_pairs is None or other.target_pairs is None:
-            raise ValueError("Both NeighborPairs objects must have target_pairs set or unset.")
-
-        pairs, other_pairs = encode_labels(self.target_pairs, other.target_pairs)
-
-        return pairs, other_pairs
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """
