@@ -55,8 +55,9 @@ class LabeledNeighborPairs:
 
     """
 
-    def __init__(self, labeled_pairs: NDArray[np.str_]):
-        self._pairs = labeled_pairs
+    def __init__(self, pairs: NDArray[np.void]):
+        self._pairs = pairs
+        # self._data = data
 
     def type_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
         """Not implemented."""
@@ -119,6 +120,11 @@ class LabeledNeighborPairs:
 
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask = au.intersection(pairs, other_pairs)
+        # print ('pairs and other pairs', pairs, pairs.shape, other_pairs.shape)
+        # print ('mask: ', mask, mask.shape)
+        # indices = pairs[mask].ravel()
+        # print ('---> ', indices, indices.shape)
+        # return LabeledNeighborPairs(self._pairs[mask])
         return LabeledNeighborPairs(self.pairs[mask])
 
     def union(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
@@ -151,7 +157,11 @@ class LabeledNeighborPairs:
         mask_a, mask_b = au.union_masks(pairs, other_pairs)
 
         merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
+        # indices_a = pairs[mask_a].ravel()
+        # indices_b = other_pairs[mask_b].ravel()
+        # data = np.concatenate((self._data, other._data), axis=0)
 
+        # print ('merged_pairs', merged_pairs)
         return LabeledNeighborPairs(merged_pairs)
 
     def difference(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
@@ -381,7 +391,8 @@ class LabeledNeighborPairs:
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         return au.is_strict_superset(pairs, other_pairs)
 
-    def create_new(self, pairs: NDArray[np.str_]) -> "LabeledNeighborPairs":
+    @classmethod
+    def create_new(cls, pairs: NDArray[np.str_], atom_names: NDArray[np.str_], resids: NDArray[np.int32], resnames: NDArray[np.str_]) -> "LabeledNeighborPairs":
         """
         Returns a new LabeledNeighborPairs object that is a copy of the current object,
         but with specified pairs.
@@ -393,7 +404,20 @@ class LabeledNeighborPairs:
             A new LabeledNeighborPairs object with the provided pairs.
         """
 
-        return LabeledNeighborPairs(pairs)
+        cls_instance = cls.__new__(cls)
+        cls_instance._pairs = pairs
+        cls_instance.atom_names = atom_names
+        cls_instance.resids = resids
+        cls_instance.resnames = resnames
+
+        data = np.empty(atom_names.shape[0], dtype=cls.dtype)
+        data['atom_names'] = atom_names
+        data['resnames'] = resnames
+        data['resids'] = resids
+        cls_instance._data = data
+
+        return cls_instance
+        
 
     def to_frame(self) -> pd.DataFrame:
         """
@@ -434,7 +458,7 @@ class LabeledNeighborPairs:
         raise NotImplementedError("This method is not implemented for LabeledNeighborPairs.")
 
     @property
-    def pairs(self) -> NDArray[np.str_]:
+    def pairs(self) -> Any:
         """
         Get the pairs of atoms that are neighbors.
 
@@ -442,6 +466,9 @@ class LabeledNeighborPairs:
             An array containing the pairs of indices of neighboring atoms.
         """
         return self._pairs
+
+        # return self._data[self._pairs]
+        # return (self.resids + '-' + self.resnames + '-' + self.atom_names)[self._pairs]
 
     @property
     def distances(self) -> NDArray[np.float32]:
