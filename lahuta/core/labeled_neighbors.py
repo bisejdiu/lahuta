@@ -99,16 +99,94 @@ class LabeledNeighborPairs:
         return LabeledNeighborPairs(self._pairs, *masks)
 
     def select(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+        """
+        Select pairs based on their attributes. 
+
+        Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
+        should be provided as lists of strings. The method returns a new LabeledNeighborPairs object
+        containing the pairs that match the provided attributes.
+
+        Args:
+            **kwargs: The attributes to filter by. Possible attributes are: `atom_names`, `resnames`, and `resids`.
+
+        Returns:
+            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that match the provided attributes.
+
+        Example:
+            ``` py
+            >>> np = LabeledNeighborPairs(...)
+            >>> np.select(atom_names=['CA', 'CB']) # select all pairs with CA or CB for atom_names
+            >>> np.select(resnames=['ALA', 'GLY']) # select all pairs with ALA or GLY for resnames
+            >>> np.select(atom_names=['CA', 'CB'], resnames=['ALA', 'GLY'])
+            ```
+        """
+        
         return self._filter('select', False, **kwargs)
 
     def exclude(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+        """
+        Exclude pairs based on their attributes.
+
+        Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
+        should be provided as lists of strings. The method returns a new LabeledNeighborPairs object
+        containing the pairs that do not match the provided attributes.
+
+        Args:
+            **kwargs: The attributes to filter by. Possible attributes are: `atom_names`, `resnames`, and `resids`.
+
+        Returns:
+            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that do not match the provided attributes.
+
+        Example:
+            ``` py
+            >>> np = LabeledNeighborPairs(...)
+            >>> np.exclude(atom_names=['CA', 'CB']) # exclude all pairs with CA or CB for atom_names
+            >>> np.exclude(resnames=['ALA', 'GLY']) # exclude all pairs with ALA or GLY for resnames
+            >>> np.exclude(atom_names=['CA', 'CB'], resnames=['ALA', 'GLY'])
+            ```
+
+        """
         return self._filter('exclude', False, **kwargs)
 
     def inverse(self) -> "LabeledNeighborPairs":
+        """
+        Invert the selection.
+
+        This method returns a new LabeledNeighborPairs object containing the pairs that are not selected
+        by the current object.
+
+        Returns:
+            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that are not selected by the current object. 
+
+        Example:
+            ``` py
+            >>> np = LabeledNeighborPairs(...)
+            >>> np.select(atom_names=['CA', 'CB']).inverse() # select all pairs that do not have CA or CB for atom_names
+            ```
+        """
         # pylint: disable=invalid-unary-operand-type
         return LabeledNeighborPairs(self._pairs, ~self._mask1, ~self._mask2)
 
     def remove(self, field: str) -> "LabeledNeighborPairs":
+        """
+        Remove an attribute from the pairs.
+
+        This method removes the specified attribute from the pairs. The method returns a new LabeledNeighborPairs object
+        with the specified attribute removed.
+
+        Args:
+            field (str): The attribute to remove.
+
+        Returns:
+            LabeledNeighborPairs: A new LabeledNeighborPairs object with the specified attribute removed.
+
+        Example:
+            ``` py
+            >>> np = LabeledNeighborPairs(...)
+            >>> np.remove('atom_names')
+            ```
+        """
+
         assert self._pairs.dtype.names is not None
         if field not in self._pairs.dtype.names:
             raise ValueError(f'Field {field} not found in pairs')
