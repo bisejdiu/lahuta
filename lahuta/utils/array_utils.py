@@ -45,7 +45,7 @@ from numpy.typing import NDArray
 
 # from typing_extensions import TypeVarTuple, Unpack
 
-_DType = TypeVar("_DType", np.float32, np.int32)
+_DType = TypeVar("_DType", np.float32, np.int32, np.void)
 NDArrayDType = NDArray[_DType]
 NDArrayInt = npt.NDArray[np.int32]
 

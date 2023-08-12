@@ -8,6 +8,7 @@ DType = TypeVar("DType", np.str_, np.void)
 EncoderArray = NDArray[DType]
 
 # pyright: reportUnknownMemberType=false
+# pyright: reportUnknownVariableType=false
 def encode_labels(
     source_labels: NDArray[np.void], target_labels: NDArray[np.void]
 ) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
