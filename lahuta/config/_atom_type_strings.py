@@ -142,6 +142,29 @@ RESIDUE_SYNONYMS = {
     "VAL": ["VAL"],
 }
 
+BASE_AA_CONVERSION: Dict[str, str] = {
+    'ALA': 'A',
+    'ARG': 'R',
+    'ASN': 'N',
+    'ASP': 'D',
+    'CYS': 'C',
+    'GLN': 'Q',
+    'GLU': 'E',
+    'GLY': 'G',
+    'HIS': 'H',
+    'ILE': 'I',
+    'LEU': 'L',
+    'LYS': 'K',
+    'MET': 'M',
+    'PHE': 'F',
+    'PRO': 'P',
+    'SER': 'S',
+    'THR': 'T',
+    'TRP': 'W',
+    'TYR': 'Y',
+    'VAL': 'V'
+}
+
 def parse_atom_types_string(_atom_types_string: str) -> Dict[str, List[str]]:
     """
     Parse a string of atom types into a dictionary of residue names and atom parts.
