@@ -18,12 +18,11 @@ from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.core.builder import LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
 from lahuta.core.labeled_neighbors import LabeledNeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
-from lahuta.msa.encoder import encode_labels
-from lahuta.msa.msa import MSAParser
 from lahuta.utils import array_utils as au
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.writers.frame_writer import DataFrameWriter
@@ -321,23 +320,7 @@ class NeighborPairs:
 
         return self.clone(self.pairs, self.distances)
 
-    def _map_pairs(self, seq: Optional[Seq] = None, use_resnames: bool = False) -> Tuple[NDArray[np.str_], ...]:
-        """TBW"""
-
-        resindices = self.atoms.resindices
-        if seq is None:
-            resids = resindices.astype(np.str_)
-        else:
-            resids = np.array(MSAParser.to_indices_array(seq), dtype=np.str_)
-            resids = resids[resindices]
-
-        labels = self.atoms.names
-        if use_resnames:
-            labels += '-' + self.atoms.resnames  # type: ignore
-
-        return self.atoms.names, self.atoms.resnames, resids
-
-    def map(self, seq: Seq, force_same_residue_names: bool = False) -> "LabeledNeighborPairs":
+    def map(self, seq: Seq) -> "LabeledNeighborPairs":
         """
         Maps the `pairs` indices to indices in the multiple sequence alignment.
 
@@ -352,20 +335,7 @@ class NeighborPairs:
             A NeighborPairs object containing the mapped pairs.
         """
 
-        remapped = self._map_pairs(seq, force_same_residue_names)
-        
-        dtype = np.dtype({
-                "names": ["atom_names", "resids", "resnames"],
-                "formats": ["<U10", "<U10", "<U10"],
-            })
-    
-        names, resnames, resids = remapped
-        data = np.empty(names.shape[0], dtype=dtype)
-        data['atom_names'] = names
-        data['resnames'] = resnames
-        data['resids'] = resids
-
-        return LabeledNeighborPairs(data[self.pairs])
+        return LabeledNeighborPairsBuilder.build(self.pairs, self.atoms, seq)
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """
@@ -391,7 +361,7 @@ class NeighborPairs:
             ```
         """
 
-        mask = au.intersection(pairs, other_pairs)
+        mask = au.intersection(self.pairs, other.pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def union(self, other: "NeighborPairs") -> "NeighborPairs":
@@ -418,7 +388,7 @@ class NeighborPairs:
             ```
         """
 
-        pairs, indices = au.union(self.pairs, other_pairs)
+        pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
 
         return self.clone(pairs, distances)
