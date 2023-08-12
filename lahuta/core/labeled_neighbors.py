@@ -8,7 +8,7 @@ methods to manipulate, analyze, and export these pairs.
 
 """
 
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -167,6 +167,17 @@ class LabeledNeighborPairs:
         # pylint: disable=invalid-unary-operand-type
         return LabeledNeighborPairs(self._pairs, ~self._mask1, ~self._mask2)
 
+    def _apply_func(self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]) -> "LabeledNeighborPairs":
+        assert self._pairs.dtype.names is not None
+        if field not in self._pairs.dtype.names:
+            raise ValueError(f'Field {field} not found in pairs')
+
+        new_data = np.copy(self._pairs)
+        new_data[field][self._mask1, 0] = func(new_data[field][self._mask1, 0])
+        new_data[field][self._mask2, 1] = func(new_data[field][self._mask2, 1])
+
+        return LabeledNeighborPairs(new_data)
+
     def remove(self, field: str) -> "LabeledNeighborPairs":
         """
         Remove an attribute from the pairs.
@@ -187,16 +198,31 @@ class LabeledNeighborPairs:
             ```
         """
 
-        assert self._pairs.dtype.names is not None
-        if field not in self._pairs.dtype.names:
-            raise ValueError(f'Field {field} not found in pairs')
-        new_data = np.empty(self._pairs.shape, dtype=self._pairs.dtype.descr)
-        for name in self._pairs.dtype.names:
-            new_data[name] = self._pairs[name]
-            if name == field:
-                new_data[name][self._mask1, 0] = ''
-                new_data[name][self._mask2, 1] = ''
-        return LabeledNeighborPairs(new_data)
+        return self._apply_func(field, lambda _: '')
+
+    def rename(self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]) -> "LabeledNeighborPairs":
+        """
+        Rename an attribute of the pairs.
+
+        This method renames the specified attribute of the pairs using the provided function. The method returns a new
+        LabeledNeighborPairs object with the specified attribute renamed.
+
+        Args:
+            field (str): The attribute to rename.
+            func (Callable[[Any], Any]): The function to use for renaming.
+
+        Returns:
+            LabeledNeighborPairs: A new LabeledNeighborPairs object with the specified attribute renamed.
+
+        Example:
+            ``` py
+            >>> np = LabeledNeighborPairs(...)
+            >>> np.rename('atom_names', lambda x: x + '_new')
+            ```
+        """
+
+        return self._apply_func(field, func)
+
 
     def intersection(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
         """
