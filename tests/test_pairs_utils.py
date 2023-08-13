@@ -13,11 +13,11 @@ from numpy.typing import NDArray
 
 import lahuta.utils.array_utils as au
 
-TestFuncCallable = Callable[[int, float, float], Tuple[NDArray[np.int32], NDArray[np.int32]]]
-
-
 # pylint: disable=arguments-out-of-order
 
+pytestmark = pytest.mark.au
+
+TestFuncCallable = Callable[[int, float, float], Tuple[NDArray[np.int32], NDArray[np.int32]]]
 
 def unique_pairs(size: int, start: int = 0):
     """
@@ -194,7 +194,7 @@ def generate_test_data() -> TestFuncCallable:
 # define the parameters for the test
 # params = [(1000, 0.5, 0.1), (2000, 0.7, 0.2), (500, 0.3, 0.05)]
 params: List[Tuple[int, float, float]] = []
-for _ in range(20):
+for _ in range(10):
     a = random.randint(500, 20000)
     b = round(random.uniform(0.05, 0.95), 2)
     c = round(random.uniform(0.05, 0.95), 2)

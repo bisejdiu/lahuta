@@ -13,6 +13,8 @@ from lahuta.msa.msa import MSAParser
 # pylint: disable=invalid-name
 # pylint: disable=missing-function-docstring
 
+pytestmark = pytest.mark.nb
+
 # Type variables
 T = Tuple[LabeledNeighborPairs, LabeledNeighborPairs]
 

@@ -15,6 +15,9 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
 # pylint: disable=redefined-outer-name
+# pylint: disable=missing-class-docstring
+# pylint: disable=missing-function-docstring
+
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 
 pytestmark = pytest.mark.contacts

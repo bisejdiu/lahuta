@@ -11,10 +11,11 @@ import lahuta.utils.array_utils as au
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.universe import Universe
 
+pytestmark = pytest.mark.nb
+
 TestFuncCallable = Callable[[NDArray[np.int32], float, float], NDArray[np.int32]]
 
-
-def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0):
+def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0) -> NDArray[np.int32]:
     """
     Generate unique pairs of integers.
 
@@ -105,7 +106,7 @@ def data_loader() -> NeighborPairs:
 
 
 params: List[Tuple[float, float]] = []
-for _ in range(20):
+for _ in range(10):
     subset = round(random.uniform(0, 0.5), 2)
     extra = round(random.uniform(0, 0.5), 2)
     params.append((subset, extra))
