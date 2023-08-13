@@ -12,12 +12,15 @@ from typing import Any, Dict, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from Bio.Seq import Seq
 from numpy.typing import NDArray
 from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.core.builder import LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
+from lahuta.core.labeled_neighbors import LabeledNeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
@@ -83,6 +86,7 @@ class NeighborPairs:
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
+        self._remapped: Optional[NDArray[np.str_]] = None
 
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
@@ -146,11 +150,6 @@ class NeighborPairs:
 
     def _get_pair_column(self, partner: int) -> AtomGroupType:
         """Return the column of the pair of atoms depending on the value of partner."""
-        # print('1: ', partner - 1)
-        # print('2: ', self.pairs[:, partner - 1])
-        # print('3: ', self.atoms[self.pairs[:, partner - 1]])
-        # print('4', self.atoms[self.pairs[:, partner - 1]].indices)
-        # print('5', self.atoms[self.pairs[:, partner - 1]].hbond_acceptor)
         return self.atoms[self.pairs[:, partner - 1]]
 
     def _get_partners(self, partner: int) -> Tuple[AtomGroupType, AtomGroupType]:
@@ -190,11 +189,6 @@ class NeighborPairs:
         nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # type: ignore
 
-        # col_ag = getattr(self._get_pair_column(partner), atom_type)
-        # mask = col_ag.astype(bool)
-        # print('---:> ', mask.shape[0], mask.sum(), type(mask), mask.dtype, mask)
-        # mask = mask.toarray().flatten()
-
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def index_filter(
@@ -216,12 +210,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
 
-        # nonzeros = self.atom_types.nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], indices)
-
-        # col_func = self._get_pair_column(partner)
-        # mask = np.isin(col_func.indices, indices)  # type: ignore
-
         return self.clone(self.pairs[mask], self.distances[mask])
 
     def distance_filter(self, distance: float) -> "NeighborPairs":
@@ -331,6 +320,23 @@ class NeighborPairs:
 
         return self.clone(self.pairs, self.distances)
 
+    def map(self, seq: Seq) -> "LabeledNeighborPairs":
+        """
+        Maps the `pairs` indices to indices in the multiple sequence alignment.
+
+        The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
+        using the specified sequence ID.
+
+        Args:
+            msa_parser (MSAParser): The multiple sequence alignment parser.
+            seq_id (str): The sequence ID. See msa_parser.get_seq_id() for more information.
+
+        Returns:
+            A NeighborPairs object containing the mapped pairs.
+        """
+
+        return LabeledNeighborPairsBuilder.build(self.pairs, self.atoms, seq)
+
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """
         Return the intersection of two NeighborPairs objects.
@@ -354,6 +360,7 @@ class NeighborPairs:
             >>> np_intersected = np1.intersection(np2)
             ```
         """
+
         mask = au.intersection(self.pairs, other.pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
 
@@ -380,6 +387,7 @@ class NeighborPairs:
             >>> np_union = np1.union(np2)
             ```
         """
+
         pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
 
@@ -439,21 +447,6 @@ class NeighborPairs:
 
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
         distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)  # type: ignore
-
-        # return self.clone(sorted_pairs, sorted_distances)
-
-        # FIXME: commented out bc I do not think this is necessary
-        # symmetric_difference, by definition, should not contain duplicates
-
-        # # Sort pairs along the first column and get the sorted indices.
-        # sorted_indices = np.argsort(pairs[:, 0])
-        # pairs = pairs[sorted_indices]
-        # distances = distances[sorted_indices]
-
-        # # Get unique pairs and corresponding distances.
-        # unique_indices = np.unique(pairs, axis=0, return_index=True)[1]
-        # pairs = pairs[unique_indices]
-        # distances = distances[unique_indices]
 
         return self.clone(pairs, distances)
 
@@ -694,8 +687,6 @@ class NeighborPairs:
             return self._create_df(df_format, self.annotations)
         else:
             return self._create_df(df_format)
-
-        # return self._create_df(df_format)
 
     def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> Dict[str, Any]:
         """
@@ -981,6 +972,34 @@ class NeighborPairs:
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.symmetric_difference(other)
+
+    def __lt__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+        return self.is_strict_subset(other)
+
+    def __le__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.issubset(other)
+
+    def __gt__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.is_strict_superset(other)
+
+    def __ge__(self, other: "NeighborPairs") -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+
+        return self.issuperset(other)
+
+    def __ne__(self, other: Any) -> bool:
+        if other.__class__ != self.__class__:
+            return NotImplemented
+        return not self._neighborpairs_equal(other)
 
     def __len__(self) -> int:
         """Get the number of pairs in this NeighborPairs object."""

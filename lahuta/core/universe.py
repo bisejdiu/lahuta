@@ -16,20 +16,24 @@ Example:
     
 """
 
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload
+from typing import (Any, Callable, List, Literal, Optional, Tuple, Union,
+                    overload)
 
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse import csc_array
 
+from lahuta.config._atom_type_strings import (BASE_AA_CONVERSION,
+                                              RESIDUE_SYNONYMS)
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
+from lahuta.core.topattrs import \
+    AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
@@ -219,6 +223,28 @@ class Universe:
         )
 
         return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
+
+    def sequence(self) -> str:
+        """
+        Retrieve the sequence of the Universe.
+
+        This method retrieves the sequence of the Universe from the underlying MDA AtomGroup instance.
+        It returns a NumPy array of shape (n_atoms,) containing the one-letter amino acid codes.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the one-letter amino acid codes of the Universe.
+        """
+
+        assert self.arc is not None
+        three_letter_codes = self.to("mda").residues.resnames
+        conversion_dict: dict[str, str] = {}
+        for key, synonyms in RESIDUE_SYNONYMS.items():
+            for synonym in synonyms:
+                conversion_dict[synonym] = BASE_AA_CONVERSION[key]
+
+        single_letter_codes = np.vectorize(lambda x: conversion_dict.get(x, 'X'))(three_letter_codes)
+
+        return "".join(single_letter_codes)
 
     @staticmethod
     def get_format(file_name: str) -> Tuple[Union[str, None], bool]:
