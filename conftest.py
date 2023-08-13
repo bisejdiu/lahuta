@@ -9,8 +9,18 @@ from pytest import Item
 
 
 def pytest_configure(config: Config) -> None:
+    """
+    Add custom markers to pytest.
+
+    Args:
+        config (Config): The pytest config.
+    """
+    
     config.addinivalue_line("markers", "contacts: mark test as contacts test")
     config.addinivalue_line("markers", "ag: mark test as MDAnalysis AtomGroup support test")
+    config.addinivalue_line("markers", "nb: mark test as NeighborPairs test")
+    config.addinivalue_line("markers", "au: mark test as array_utils test")
+    config.addinivalue_line("markers", "trajs: mark test as trajectory test")
 
 def pytest_addoption(parser: Parser) -> None:
     """
@@ -22,6 +32,9 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addoption("--large-files", action="store_true", default=False, help="Use large files for testing")
     parser.addoption("--contacts", action="store_true", default=False, help="Run contacts tests")
     parser.addoption("--ag", action="store_true", default=False, help="Run MDAnalysis AtomGroup support tests")
+    parser.addoption("--nb", action="store_true", default=False, help="Run NeighborPairs tests")
+    parser.addoption("--au", action="store_true", default=False, help="Run array_utils tests")
+    parser.addoption("--trajs", action="store_true", default=False, help="Run trajectory tests")
 
 def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
     """
@@ -36,6 +49,13 @@ def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
         items[:] = [item for item in items if item.get_closest_marker("contacts")]
     elif config.getoption("--ag"):
         items[:] = [item for item in items if item.get_closest_marker("ag")]
+    elif config.getoption("--nb"):
+        items[:] = [item for item in items if item.get_closest_marker("nb")]
+    elif config.getoption("--au"):
+        items[:] = [item for item in items if item.get_closest_marker("au")]
+    elif config.getoption("--trajs"):
+        items[:] = [item for item in items if item.get_closest_marker("trajs")]
+
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup(request: FixtureRequest) -> None:
