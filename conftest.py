@@ -26,7 +26,7 @@ def cleanup(request: FixtureRequest) -> None:
     """
 
     def remove_hidden_files() -> None:
-        test_dir = Path(__file__).parent / "lahuta" / "tests" / "data"
+        test_dir = Path(__file__).parent / "tests" / "data"
 
         # Find hidden files that end with .lock or .npz in that directory
         for pattern in ('.*.lock', '.*.npz'):
