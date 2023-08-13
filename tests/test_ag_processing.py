@@ -19,6 +19,7 @@ AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
 # pylint: disable=attribute-defined-outside-init
 # pylint: disable=redefined-outer-name
 
+pytestmark = pytest.mark.ag
 
 class ContactType:
     def __init__(

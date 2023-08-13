@@ -17,7 +17,7 @@ from lahuta.core.universe import Universe
 # pylint: disable=redefined-outer-name
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 
-
+pytestmark = pytest.mark.contacts
 class ExpectedResults:
     with open(Path(__file__).parent / "data" / "1KX2.json", "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -73,7 +73,6 @@ def plane_plane(data_loader: NeighborPairs) -> PlanePlaneContacts:
 
     return planeplane
 
-
 @pytest.mark.parametrize(
     "neighbor_func, expected_result",
     [
@@ -114,7 +113,6 @@ def test_atom_atom_neighbor_funcs(
     assert result.pairs.shape[0] == expected_result["shapex"]
     assert np.all(pairs == expected_pairs)
     assert np.allclose(distances, expected_result["distances"], atol=1e-3)
-
 
 @pytest.mark.parametrize(
     "contact_class, expected_result",
@@ -161,7 +159,6 @@ def test_atom_atom_neighbor_classes(
     assert np.all(pairs == expected_pairs)
     assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
-
 @pytest.mark.parametrize(
     "contact_func_name, expected_result",
     [
@@ -191,7 +188,6 @@ def test_atomplane_contacts(
     assert result.pairs.shape[0] == expected_result["shapex"]
     assert np.all(pairs == expected_pairs)
     assert np.allclose(distances, expected_result["distances"], atol=1e-3)
-
 
 def test_planeplane_neighbors(plane_plane: PlanePlaneContacts) -> None:
     """Test the plane_plane neighbors."""
