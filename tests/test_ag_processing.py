@@ -10,7 +10,7 @@ from _pytest.fixtures import FixtureRequest
 # from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Universe
+from lahuta.core.universe import Luni
 from lahuta.lahuta_types.mdanalysis import UniverseType
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
@@ -20,6 +20,7 @@ AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
 # pylint: disable=redefined-outer-name
 
 pytestmark = pytest.mark.ag
+
 
 class ContactType:
     def __init__(
@@ -54,19 +55,19 @@ class ContactType:
 
 
 @pytest.fixture(scope="session")
-def universe_ref(mda_universe: UniverseType) -> Universe:
+def universe_ref(mda_universe: UniverseType) -> Luni:
     with warnings.catch_warnings(record=True) as _:
-        return Universe(mda_universe.atoms)
+        return Luni(mda_universe.atoms)
 
 
 class UniverseWrapper:
-    def __init__(self, mda_u: UniverseType, selection: str, u_ref: Universe) -> None:
+    def __init__(self, mda_u: UniverseType, selection: str, u_ref: Luni) -> None:
         self.mda_u = mda_u
         resnames = self.mda_u.select_atoms(f"all and not ({selection})").residues.resnames
         self.unique_resnames = np.unique(resnames)
 
         self.u_ref = u_ref
-        self.u = Universe(self.mda_u.select_atoms(selection).atoms)
+        self.u = Luni(self.mda_u.select_atoms(selection).atoms)
 
 
 @pytest.fixture(scope="session")
@@ -89,7 +90,7 @@ selections_res_difs = [
 
 class TestMDAnalysis:
     @pytest.fixture(params=selections_res_difs, autouse=True)
-    def setup_method(self, request: FixtureRequest, mda_universe: UniverseType, universe_ref: Universe) -> None:
+    def setup_method(self, request: FixtureRequest, mda_universe: UniverseType, universe_ref: Luni) -> None:
         selection, res_dif = request.param
         with warnings.catch_warnings(record=True) as _:
             self.universe = UniverseWrapper(mda_universe, selection, universe_ref)

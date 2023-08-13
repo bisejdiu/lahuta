@@ -3,7 +3,7 @@ from pathlib import Path
 import MDAnalysis as mda
 
 from lahuta.contacts.computer import LahutaContacts, LahutaTrajectoryContacts
-from lahuta.core.universe import Universe
+from lahuta.core.universe import Luni
 
 
 def remove_hidden_files(test_dir):
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     selection = 'protein'
     u = mda.Universe(coords, traj).select_atoms(selection)
 
-    luni = Universe(u.atoms)
+    luni = Luni(u.atoms)
     luni.ready()
 
     ct = LahutaContacts(contact_type='atom-atom')

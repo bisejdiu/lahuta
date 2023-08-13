@@ -1,11 +1,6 @@
 import time
 
-from plane_plane import (
-    APDataFrameFactory,
-    AtomPlaneContacts,
-    PlanePlaneContacts,
-    PPDataFrameFactory,
-)
+from plane_plane import APDataFrameFactory, AtomPlaneContacts, PlanePlaneContacts, PPDataFrameFactory
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.contacts import (
@@ -21,12 +16,12 @@ from lahuta.contacts import (
     WeakPolarHBondContacts,
 )
 from lahuta.contacts.vdw import VanDerWaalsContacts
-from lahuta.core.universe import Universe
+from lahuta.core.universe import Luni
 
 # measure time
 start = time.time()
 # Load the universe
-u = Universe("/home/bisejdiu/p/lahuta/lahuta/notebooks/2RH1.pdb")
+u = Luni("/home/bisejdiu/p/lahuta/lahuta/notebooks/2RH1.pdb")
 n = u.compute_neighbors()
 
 # Compute contacts

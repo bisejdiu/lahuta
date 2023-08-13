@@ -9,11 +9,12 @@ from numpy.typing import NDArray
 
 import lahuta.utils.array_utils as au
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Universe
+from lahuta.core.universe import Luni
 
 pytestmark = pytest.mark.nb
 
 TestFuncCallable = Callable[[NDArray[np.int32], float, float], NDArray[np.int32]]
+
 
 def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0) -> NDArray[np.int32]:
     """
@@ -100,7 +101,7 @@ def data_loader() -> NeighborPairs:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
-        universe = Universe(str(path_obj))
+        universe = Luni(str(path_obj))
     ns = universe.compute_neighbors()
     return ns
 

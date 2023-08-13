@@ -10,7 +10,7 @@ from _pytest.fixtures import FixtureRequest
 # from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Universe
+from lahuta.core.universe import Luni
 from lahuta.lahuta_types.mdanalysis import UniverseType
 
 # pylint: disable=attribute-defined-outside-init
@@ -21,8 +21,10 @@ pytestmark = pytest.mark.trajs
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
 
+
 class ContactType:
     """Helper class to compute and store the neighbors of a given type"""
+
     def __init__(
         self,
         name: str,
@@ -59,21 +61,22 @@ class ContactType:
 
 
 @pytest.fixture(scope="session")
-def universe_ref(mda_universe: UniverseType) -> Universe:
+def universe_ref(mda_universe: UniverseType) -> Luni:
     """Create a reference universe"""
     with warnings.catch_warnings(record=True) as _:
-        return Universe(mda_universe.atoms)
+        return Luni(mda_universe.atoms)
 
 
 class UniverseWrapper:
     """Helper class to store the universe and the selection"""
-    def __init__(self, mda_u: UniverseType, selection: str, u_ref: Universe) -> None:
+
+    def __init__(self, mda_u: UniverseType, selection: str, u_ref: Luni) -> None:
         self.mda_u = mda_u
         resnames = self.mda_u.select_atoms(f"all and not ({selection})").residues.resnames
         self.unique_resnames = np.unique(resnames)
 
         self.u_ref = u_ref
-        self.u = Universe(self.mda_u.select_atoms(selection).atoms)
+        self.u = Luni(self.mda_u.select_atoms(selection).atoms)
         self.u.ready()
 
 
@@ -103,8 +106,9 @@ selections_res_difs = [
 
 class TestMDAnalysis:
     """Test the MDAnalysis implementation of the contacts"""
+
     @pytest.fixture(params=selections_res_difs, autouse=True)
-    def setup_method(self, request: FixtureRequest, mda_universe: UniverseType, universe_ref: Universe) -> None:
+    def setup_method(self, request: FixtureRequest, mda_universe: UniverseType, universe_ref: Luni) -> None:
         """Setup the test"""
         selection, res_dif = request.param
         with warnings.catch_warnings(record=True) as _:
@@ -155,9 +159,7 @@ class TestMDAnalysis:
             assert contact_type.neighbors_diff is not None
             for pair in contact_type.neighbors_diff.pairs:
                 x1, x2 = atoms[pair[0]], atoms[pair[1]]
-                assert (x1.resname in self.universe.unique_resnames) or (
-                    x2.resname in self.universe.unique_resnames
-                ), (
+                assert (x1.resname in self.universe.unique_resnames) or (x2.resname in self.universe.unique_resnames), (
                     f"Pair {pair} with resnames {x1.resname} and {x2.resname} "
                     f"got wrongly picked up by {contact_type.name} neighbors, "
                     f"for selection '{self.selection}', and resnames {self.universe.unique_resnames}"
