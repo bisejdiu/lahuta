@@ -25,6 +25,7 @@ from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
+from lahuta.viz.contact_matrix import ContactMap
 from lahuta.writers.frame_writer import DataFrameWriter
 
 from ._hbond_handler import HBondHandler
@@ -629,6 +630,17 @@ class NeighborPairs:
                 setattr(child_instance, attr, value)
 
         return child_instance
+
+    def plot(self, which: Literal['matching', 'full'] = 'matching', half_only: bool = False) -> None:
+        """
+        Plots the contact map of the NeighborPairs object.
+
+        Args:
+            which (str, optional): Which contact map to plot. Can be either 'matching' or 'full'. Defaults to 'matching'.
+            half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
+        """
+        return ContactMap(self.pairs).plot(which, False, half_only)
+    
 
     @property
     def annotations(self) -> Dict[str, NDArray[Any]]:
