@@ -167,6 +167,26 @@ class LabeledNeighborPairs:
         # pylint: disable=invalid-unary-operand-type
         return LabeledNeighborPairs(self._pairs, ~self._mask1, ~self._mask2)
 
+    @staticmethod
+    def remove_duplicates(pairs: NDArray[np.void]) -> NDArray[np.void]:
+        """
+        Remove duplicate pairs.
+
+        This method removes duplicate pairs from the provided array of pairs. The method returns a new array
+        containing the unique pairs.
+
+        Args:
+            pairs (NDArray[np.str_]): The array of pairs to remove duplicates from.
+
+        Returns:
+            NDArray[np.void]: A new array containing the unique pairs.
+
+        """
+
+        _, unique_idx = np.unique(pairs, axis=0, return_index=True)
+        z_unique = pairs[np.sort(unique_idx)]
+        return z_unique
+
     def _apply_func(self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]) -> "LabeledNeighborPairs":
         assert self._pairs.dtype.names is not None
         if field not in self._pairs.dtype.names:
@@ -176,7 +196,7 @@ class LabeledNeighborPairs:
         new_data[field][self._mask1, 0] = func(new_data[field][self._mask1, 0])
         new_data[field][self._mask2, 1] = func(new_data[field][self._mask2, 1])
 
-        return LabeledNeighborPairs(new_data)
+        return LabeledNeighborPairs(self.remove_duplicates(new_data))
 
     def remove(self, field: str) -> "LabeledNeighborPairs":
         """
