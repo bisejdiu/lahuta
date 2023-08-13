@@ -1,9 +1,26 @@
 from pathlib import Path
+from typing import List
 
 import pytest
+from _pytest.config import Config
 from _pytest.config.argparsing import Parser
 from _pytest.fixtures import FixtureRequest
+from pytest import Item
 
+
+def pytest_configure(config: Config) -> None:
+    """
+    Add custom markers to pytest.
+
+    Args:
+        config (Config): The pytest config.
+    """
+    
+    config.addinivalue_line("markers", "contacts: mark test as contacts test")
+    config.addinivalue_line("markers", "ag: mark test as MDAnalysis AtomGroup support test")
+    config.addinivalue_line("markers", "nb: mark test as NeighborPairs test")
+    config.addinivalue_line("markers", "au: mark test as array_utils test")
+    config.addinivalue_line("markers", "trajs: mark test as trajectory test")
 
 def pytest_addoption(parser: Parser) -> None:
     """
@@ -13,6 +30,31 @@ def pytest_addoption(parser: Parser) -> None:
         parser (Parser): The pytest parser.
     """
     parser.addoption("--large-files", action="store_true", default=False, help="Use large files for testing")
+    parser.addoption("--contacts", action="store_true", default=False, help="Run contacts tests")
+    parser.addoption("--ag", action="store_true", default=False, help="Run MDAnalysis AtomGroup support tests")
+    parser.addoption("--nb", action="store_true", default=False, help="Run NeighborPairs tests")
+    parser.addoption("--au", action="store_true", default=False, help="Run array_utils tests")
+    parser.addoption("--trajs", action="store_true", default=False, help="Run trajectory tests")
+
+def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
+    """
+    Modify the list of tests to run based on command line options.
+
+    Args:
+        config (Config): The pytest config.
+        items (List[Item]): The list of tests to run.
+    """
+
+    if config.getoption("--contacts"):
+        items[:] = [item for item in items if item.get_closest_marker("contacts")]
+    elif config.getoption("--ag"):
+        items[:] = [item for item in items if item.get_closest_marker("ag")]
+    elif config.getoption("--nb"):
+        items[:] = [item for item in items if item.get_closest_marker("nb")]
+    elif config.getoption("--au"):
+        items[:] = [item for item in items if item.get_closest_marker("au")]
+    elif config.getoption("--trajs"):
+        items[:] = [item for item in items if item.get_closest_marker("trajs")]
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -26,7 +68,7 @@ def cleanup(request: FixtureRequest) -> None:
     """
 
     def remove_hidden_files() -> None:
-        test_dir = Path(__file__).parent / "lahuta" / "tests" / "data"
+        test_dir = Path(__file__).parent / "tests" / "data"
 
         # Find hidden files that end with .lock or .npz in that directory
         for pattern in ('.*.lock', '.*.npz'):
