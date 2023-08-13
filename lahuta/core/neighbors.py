@@ -639,7 +639,7 @@ class NeighborPairs:
             which (str, optional): Which contact map to plot. Can be either 'matching' or 'full'. Defaults to 'matching'.
             half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
-        return ContactMap(self.pairs).plot(which, False, half_only)
+        return ContactMap(self.pairs).plot(which, half_only)
     
 
     @property

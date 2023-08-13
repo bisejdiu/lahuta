@@ -4,6 +4,7 @@ import numpy as np
 from .base import BasePlotter
 
 
+# pylint: disable=missing-class-docstring, missing-function-docstring
 class FullPlotter(BasePlotter):
     def plot(self, outline: bool = False, half_only: bool = False) -> None:
         self.half_only = half_only
@@ -11,13 +12,13 @@ class FullPlotter(BasePlotter):
         min_idx = np.min(self.pairs)
         max_idx = np.max(self.pairs)
         shape = (max_idx - min_idx + 1, max_idx - min_idx + 1)
-        offset_pairs = [(x-min_idx, y-min_idx) for x, y in self.pairs]
-        contact_map = self._initialize_map(shape, offset_pairs) 
-        
+        offset_pairs = [(x - min_idx, y - min_idx) for x, y in self.pairs]
+        contact_map = self._initialize_map(shape, offset_pairs)
+
         plt.imshow(contact_map, cmap=self.binary_cmap, interpolation='none', origin='lower')
         if outline:
             self._add_outlines(min_idx, min_idx)
-        
+
         plt.xlabel("Atom Indices")
         plt.ylabel("Atom Indices")
         plt.show()
@@ -37,7 +38,7 @@ class MatchingIndicesPlotter(BasePlotter):
         x_indices = np.unique(self.pairs[:, 0])
         y_indices = np.unique(self.pairs[:, 1])
         shape = (len(x_indices), len(y_indices))
-                
+
         x_mapped = np.searchsorted(x_indices, self.pairs[:, 0])
         y_mapped = np.searchsorted(y_indices, self.pairs[:, 1])
 
@@ -45,7 +46,7 @@ class MatchingIndicesPlotter(BasePlotter):
 
         contact_map = self._initialize_map(shape, mapped_pairs)
         plt.imshow(contact_map, cmap=self.binary_cmap, interpolation='none', origin='lower')
-        
+
         n_points = min(x_indices.shape[0], y_indices.shape[0])
         if n_points < 10:
             plt.xticks(ticks=np.arange(len(y_indices)), labels=y_indices)
