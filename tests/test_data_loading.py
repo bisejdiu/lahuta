@@ -3,14 +3,14 @@ from pathlib import Path
 
 import numpy as np
 
-from lahuta.core.universe import Universe
+from lahuta import Luni
 
 
-def read_pdb(pdb_file: str) -> Universe:
-    """Read a PDB file and return a Universe object."""
+def read_pdb(pdb_file: str) -> Luni:
+    """Read a PDB file and return a Luni object."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return Universe(pdb_file)
+        return Luni(pdb_file)
 
 
 def test_read_pdb() -> None:

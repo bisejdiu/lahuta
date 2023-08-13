@@ -1,9 +1,9 @@
 import warnings
-from typing import (Callable, Dict, Iterable, List, Literal, Optional, Tuple,
-                    Union, cast)
+from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
+from core.luni import Luni
 from joblib import Parallel, delayed  # type: ignore
 from MDAnalysis.analysis.base import AnalysisBase
 from numpy.typing import NDArray
@@ -13,7 +13,6 @@ from typing_extensions import TypeAlias
 from lahuta.contacts import AtomPlaneContacts, F
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Universe
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 from ._ctx_mngrs import tqdm_joblib
@@ -261,12 +260,12 @@ class LahutaTrajectoryContacts:
 
     Methods:
         compute(luni, lahuta_contacts=None, n_jobs=1): Main method to initiate the contact computation across frames.
-            - luni (Universe): The universe containing the MD trajectory data.
+            - luni (Luni): The universe containing the MD trajectory data.
             - lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
             - n_jobs (int): Number of parallel jobs for computation.
 
     Examples:
-        luni = Universe(...)
+        luni = Luni(...)
         traj_contacts = LahutaTrajectoryContacts(res_dif=5, radius=5.0)
         contacts = LahutaContacts(contact_type='atom-atom') # See the LahutaContacts class for more details.
         # we provide the both the luni and the contacts instance as well as the number of jobs to use
@@ -324,14 +323,14 @@ class LahutaTrajectoryContacts:
 
         return results
 
-    def compute(self, luni: Universe, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1) -> None:
+    def compute(self, luni: Luni, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1) -> None:
         """
         Compute the contacts for the whole trajectory.
 
         This is the main method to initiate the contact computation across frames.
 
         Args:
-            luni (Universe): The universe containing the MD trajectory data.
+            luni (Luni): The universe containing the MD trajectory data.
             lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
             n_jobs (int): Number of parallel jobs for computation.
 
@@ -360,7 +359,7 @@ class LahutaTrajectoryContacts:
                     self.results[frame_index] = lahuta_contacts.results
 
 
-class SlowLahutaTrajectoryContacts(AnalysisBase): # type: ignore
+class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
     """
     A class to manage the computation of molecular contacts within MD trajectory data using a slower, but stable method.
 
@@ -370,7 +369,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase): # type: ignore
     to handle iteration over trajectory frames.
 
     Attributes:
-        luni (Universe): The universe containing the MD trajectory data.
+        luni (Luni): The universe containing the MD trajectory data.
         res_dif (int): Minimum residue difference for considering pairs as neighbors.
         radius (float): Search radius for neighbors.
         _trajectory (MDAnalysis.coordinates.base.Timestep): Reference to the trajectory being analyzed.
@@ -396,7 +395,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase): # type: ignore
         - The class uses MDAnalysis's AnalysisBase to iterate over trajectory frames.
     """
 
-    def __init__(self, luni: Universe, res_dif: int, radius: float):
+    def __init__(self, luni: Luni, res_dif: int, radius: float):
         self.luni = luni
         self.res_dif = res_dif
         self.radius = radius

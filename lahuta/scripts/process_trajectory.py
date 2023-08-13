@@ -2,11 +2,17 @@ from pathlib import Path
 
 import MDAnalysis as mda
 
+from lahuta import Luni
 from lahuta.contacts.computer import LahutaContacts, LahutaTrajectoryContacts
-from lahuta.core.universe import Universe
 
 
-def remove_hidden_files(test_dir):
+def remove_hidden_files(test_dir: Path):
+    """Remove hidden files that are created by the tests.
+
+    Args:
+        test_dir (Path): Path to the test directory.
+    """
+
     # Find hidden files that end with .lock or .npz in that directory
     for pattern in ('.*.lock', '.*.npz'):
         hidden_files = test_dir.glob(pattern)
@@ -24,7 +30,7 @@ if __name__ == "__main__":
     selection = 'protein'
     u = mda.Universe(coords, traj).select_atoms(selection)
 
-    luni = Universe(u.atoms)
+    luni = Luni(u.atoms)  # type: ignore
     luni.ready()
 
     ct = LahutaContacts(contact_type='atom-atom')
