@@ -53,6 +53,9 @@ defineConstant = { DEBUG = true }
 reportMissingImports = true
 reportMissingTypeStubs = "none"
 
+reportUnknownVariableType = false
+reportUnknownMemberType = false
+
 [tool.pylint.basic]
 good-names = [
     'i', 

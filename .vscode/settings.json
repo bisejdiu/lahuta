@@ -24,10 +24,12 @@
     "python.linting.mypyCategorySeverity.error": "Warning",
     "python.linting.mypyEnabled": true, 
     "python.analysis.diagnosticSeverityOverrides": {
-        "reportMissingTypeStubs": "none"
+        "reportMissingTypeStubs": "none",
+        "reportUnknownVariableType": "none",
+        "reportUnknownMemberType": "none",
     },
     "[python]": {
-        "editor.defaultFormatter": "ms-python.python",
+        "editor.defaultFormatter": "ms-python.black-formatter",
     
     },
     "mypy.configFile": "pyproject.toml",
