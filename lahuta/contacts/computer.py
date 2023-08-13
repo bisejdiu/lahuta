@@ -3,6 +3,7 @@ from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Uni
 
 import numpy as np
 import pandas as pd
+from core.luni import Luni
 from joblib import Parallel, delayed  # type: ignore
 from MDAnalysis.analysis.base import AnalysisBase
 from numpy.typing import NDArray
@@ -12,7 +13,6 @@ from typing_extensions import TypeAlias
 from lahuta.contacts import AtomPlaneContacts, F
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Luni
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 from ._ctx_mngrs import tqdm_joblib

@@ -8,8 +8,8 @@ import pytest
 from numpy.typing import NDArray
 
 import lahuta.utils.array_utils as au
+from lahuta.core.luni import Luni
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Luni
 
 pytestmark = pytest.mark.nb
 

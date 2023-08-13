@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 
 import lahuta.contacts as C
+from lahuta import Luni
 from lahuta.contacts import F
 from lahuta.contacts.atom_plane import AtomPlaneContacts
 from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Luni
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-class-docstring

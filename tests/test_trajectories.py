@@ -7,10 +7,11 @@ import numpy as np
 import pytest
 from _pytest.fixtures import FixtureRequest
 
+from lahuta import Luni
+
 # from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.universe import Luni
 from lahuta.lahuta_types.mdanalysis import UniverseType
 
 # pylint: disable=attribute-defined-outside-init

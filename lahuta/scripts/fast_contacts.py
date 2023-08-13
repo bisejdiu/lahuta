@@ -1,7 +1,7 @@
 import time
 
+from lahuta import Luni
 from lahuta.contacts import F
-from lahuta.core.universe import Luni
 
 if __name__ == "__main__":
     # Load the universe

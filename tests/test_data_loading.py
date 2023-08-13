@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from lahuta.core.universe import Luni
+from lahuta import Luni
 
 
 def read_pdb(pdb_file: str) -> Luni:
