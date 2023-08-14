@@ -23,8 +23,8 @@ class PrettyDataFrame:
     FLOAT_COLOR = "green"
     OTHER_COLOR = "blue"
 
-    def __init__(self, df: pd.DataFrame, n_rows: int = 20):
-        self.total_rows = len(df)
+    def __init__(self, df: pd.DataFrame, n_rows: int = 20, total_rows: int = 0):
+        self.total_rows = total_rows
         self.n_rows = n_rows if n_rows < self.total_rows else self.total_rows
         self.df = df.reset_index().rename(columns={"index": ""}).head(self.n_rows)
         self.console = Console()
@@ -38,7 +38,7 @@ class PrettyDataFrame:
         for row in self.df.values:
             formatted_row = self._format_row(row)
             self.table.add_row(*formatted_row)
-        if self.n_rows < self.total_rows:
+        if self.n_rows <= self.total_rows:
             self.table.add_row(*["..." for _ in range(len(self.df.columns))])
 
     def _format_row(self, row: List[Any]) -> List[str]:
@@ -118,17 +118,6 @@ def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup):
     contacts = LahutaContacts(contact_type=contact_group.value)
     contacts.compute(ns)
     return contacts.results
-    contact_results: Dict[str, NeighborPairs] = {}
-    for contact_type in CONTACT_GROUP_MAPPING[contact_group]:
-        func = CONTACT_FUNCTIONS[contact_type]
-        func_result = func(ns)
-        contact_results[contact_type] = func_result
-        # df = func_result.to_frame(df_format='compact')
-        # df['distances'] = df['distances'].round(4)
-        # pretty_df = PrettyDataFrame(df)
-        # pretty_df.prettify()
-
-    return contact_results
 
 
 def compute_neighbors(file_name: str, radius: float, res_dif: int) -> NeighborPairs:
@@ -160,7 +149,6 @@ def run(
         "-to",
         help="How to output results.",
     ),
-    # export: Annotated[List[str], Option(..., "--export", "-to", help="How to output results")] = ["screen"],
     n_rows: int = Option(20, "--n-rows", "-n", help="Number of rows to display."),
     format: FormatGroup = Option(
         'compact',
@@ -206,7 +194,7 @@ def run(
                     total_rows += result.pairs.shape[0]
                     if total_rows > n_rows:
                         new_result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
-                        df = new_result.to_frame(df_format=format.value, annotations=False)
+                        df = new_result.to_frame(df_format=format.value)
                         df['contact_type'] = np.array([contact_type] * new_result.pairs.shape[0])
                         if collect_dfs is None:
                             collect_dfs = df
@@ -214,7 +202,7 @@ def run(
                             collect_dfs = pd.concat([collect_dfs, df])
                         break
                     else:
-                        df = result.to_frame(df_format=format.value, annotations=False)
+                        df = result.to_frame(df_format=format.value)
                         df['contact_type'] = np.array([contact_type] * result.pairs.shape[0])
                         if collect_dfs is None:
                             collect_dfs = df
@@ -225,7 +213,9 @@ def run(
                 break
 
             assert collect_dfs is not None
-            pretty_df = PrettyDataFrame(collect_dfs)
+            print ('collect_dfs.shape', collect_dfs.shape)
+            total_rows = sum([result.pairs.shape[0] for result in results.values()])
+            pretty_df = PrettyDataFrame(collect_dfs, n_rows=n_rows, total_rows=total_rows)
             pretty_df.prettify()
 
 
