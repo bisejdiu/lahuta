@@ -1,6 +1,6 @@
 from enum import Enum
 from time import perf_counter
-from typing import List
+from typing import Dict, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,9 @@ from lahuta.core import NeighborPairs
 from lahuta.writers.pretty import PrettyDataFrame
 
 # pylint: disable=redefined-builtin
+
+FORMAT = Literal["compact", "expanded"] 
+RESIDUE_DIFF_DEFAULT = 2
 
 class ContactGroup(str, Enum):
     all = "all"
@@ -39,9 +42,6 @@ lahuta = Typer(
 )
 
 
-RESIDUE_DIFF_DEFAULT = 2
-
-
 def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup):
     contacts = LahutaContacts(contact_type=contact_group.value)
     contacts.compute(ns)
@@ -52,6 +52,47 @@ def compute_neighbors(file_name: str, radius: float, res_dif: int) -> NeighborPa
     luni = Luni(file_name)
     ns = luni.compute_neighbors(radius=radius, res_dif=res_dif)
     return ns
+
+
+def create_dataframe(result: NeighborPairs, label: str, df_format: FORMAT, n_rows: Optional[int] = None) -> pd.DataFrame:
+    if n_rows:
+        result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
+    df = result.to_frame(df_format=df_format)
+    df['contact_type'] = np.array([label] * result.pairs.shape[0])
+    return df
+
+def export_to_screen(results: Dict[str, NeighborPairs], df_format: FORMAT, n_rows: int) -> None:
+    total_rows = 0
+    collect_dfs = []
+
+    for contact_type, result in results.items():
+        contact_label = contact_type.split('_')[0]
+        row_count = result.pairs.shape[0]
+        total_rows += row_count
+
+        if total_rows > n_rows:
+            df = create_dataframe(result, contact_label, df_format, n_rows)
+            collect_dfs.append(df)
+            break
+        else:
+            df = create_dataframe(result, contact_label, df_format=df_format)
+            collect_dfs.append(df)
+
+    assert collect_dfs
+    total_rows = sum([result.pairs.shape[0] for result in results.values()])
+    pretty_df = PrettyDataFrame(pd.concat(collect_dfs), n_rows=n_rows, total_rows=total_rows)
+    pretty_df.prettify()
+
+def export_to_csv(results: Dict[str, NeighborPairs], df_format: FORMAT) -> None:
+    print('Printing to csv')
+    # Implement the CSV export logic here
+
+def export_results(export: List[ExportGroup], results: Dict[str, NeighborPairs], df_format: FORMAT, n_rows: int) -> None:
+    for export_type in export:
+        if export_type == ExportGroup.screen:
+            export_to_screen(results, df_format, n_rows)
+        elif export_type == ExportGroup.csv:
+            export_to_csv(results, df_format=df_format)
 
 
 @lahuta.command(
@@ -79,7 +120,7 @@ def run(
     ),
     n_rows: int = Option(20, "--n-rows", "-n", help="Number of rows to display."),
     format: FormatGroup = Option(
-        'compact',
+        'expanded',
         "--format",
         "-f",
         help="Format of the output.",
@@ -111,42 +152,8 @@ def run(
 
     results = compute_contacts(ns, contact_group)
 
-    for export_type in export:
-        if export_type == ExportGroup.screen:
-            collect_dfs = None
-            total_rows = 0
-            while total_rows < n_rows:
-                for contact_type, result in results.items():
-                    contact_type_name = contact_type.split('_')[0]
-                    total_rows += result.pairs.shape[0]
-                    if total_rows > n_rows:
-                        new_result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
-                        df = new_result.to_frame(df_format=format.value)
-                        df['contact_type'] = np.array([contact_type_name] * new_result.pairs.shape[0])
-                        if collect_dfs is None:
-                            collect_dfs = df
-                        else:
-                            collect_dfs = pd.concat([collect_dfs, df])
-                        break
-                    else:
-                        df = result.to_frame(df_format=format.value)
-                        df['contact_type'] = np.array([contact_type_name] * result.pairs.shape[0])
-                        if collect_dfs is None:
-                            collect_dfs = df
-                        else:
-                            collect_dfs = pd.concat([collect_dfs, df])
-                        total_rows += result.pairs.shape[0]
-                # only one run
-                break
+    export_results(export, results, df_format=format.value, n_rows=n_rows)
 
-            assert collect_dfs is not None
-            total_rows = sum([result.pairs.shape[0] for result in results.values()])
-            pretty_df = PrettyDataFrame(collect_dfs, n_rows=n_rows, total_rows=total_rows)
-            pretty_df.prettify()
-
-
-        elif export_type == ExportGroup.csv:
-            print('Printing to csv')
 
     end = perf_counter()
     print()
