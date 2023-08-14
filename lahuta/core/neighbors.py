@@ -329,8 +329,7 @@ class NeighborPairs:
         using the specified sequence ID.
 
         Args:
-            msa_parser (MSAParser): The multiple sequence alignment parser.
-            seq_id (str): The sequence ID. See msa_parser.get_seq_id() for more information.
+            seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
 
         Returns:
             A NeighborPairs object containing the mapped pairs.
