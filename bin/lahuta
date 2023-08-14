@@ -206,20 +206,16 @@ def run(
                     total_rows += result.pairs.shape[0]
                     if total_rows > n_rows:
                         new_result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
-                        new_result.add_annotations({
-                            'contact_type': np.array([contact_type] * new_result.pairs.shape[0])
-                        })
-                        df = new_result.to_frame(df_format=format.value, annotations=True)
+                        df = new_result.to_frame(df_format=format.value, annotations=False)
+                        df['contact_type'] = np.array([contact_type] * new_result.pairs.shape[0])
                         if collect_dfs is None:
                             collect_dfs = df
                         else:
                             collect_dfs = pd.concat([collect_dfs, df])
                         break
                     else:
-                        result.add_annotations({
-                            'contact_type': np.array([contact_type] * result.pairs.shape[0])
-                        })
-                        df = result.to_frame(df_format=format.value, annotations=True)
+                        df = result.to_frame(df_format=format.value, annotations=False)
+                        df['contact_type'] = np.array([contact_type] * result.pairs.shape[0])
                         if collect_dfs is None:
                             collect_dfs = df
                         else:
