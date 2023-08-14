@@ -113,12 +113,8 @@ def compute_contacts(n, contact_group: ContactGroup):
 
 def compute_neighbors(file_name: str, res_dif: int, contact_group: ContactGroup):
     u = Luni(file_name)
-    start = perf_counter()
     n = u.compute_neighbors(res_dif=res_dif)
-    compute_contacts(n, contact_group)
-    end = perf_counter()
-    print()
-    print(f"Done in: {end - start:.5f} seconds.")
+    return n
 
 
 @lahuta.command(
@@ -137,6 +133,7 @@ def run(
         "-cg",
         help="Contact group to compute.",
     ),
+    n_rows: int = Option(20, "--n-rows", "-n", help="Number of rows to display."),
 ):
     """
     [blue][bold red]WELCOME TO LAHUTA[/bold red][/blue] :sparkles:
@@ -158,7 +155,12 @@ def run(
     Should you encounter a bug or want to request a feature, please don't hesitate to open an issue at github.com/bisejdiu/lahuta.
 
     """
-    compute_neighbors(input, res_dif, contact_group)
+    start = perf_counter()
+    n = compute_neighbors(input, res_dif, contact_group)
+    compute_contacts(n, contact_group)
+    end = perf_counter()
+    print()
+    print(f"Done in: {end - start:.5f} seconds.")
 
 
 if __name__ == "__main__":
