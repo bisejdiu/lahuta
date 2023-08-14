@@ -1,6 +1,6 @@
 from enum import Enum
 from time import perf_counter
-from typing import Dict, List, Literal, Optional
+from typing import Callable, Dict, List, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -28,6 +28,8 @@ class ContactGroup(str, Enum):
 class ExportGroup(str, Enum):
     screen = "screen"
     csv = "csv"
+    html = "html"
+    json = "json"
 
 class FormatGroup(str, Enum):
     compact = "compact"
@@ -61,6 +63,9 @@ def create_dataframe(result: NeighborPairs, label: str, df_format: FORMAT, n_row
     df['contact_type'] = np.array([label] * result.pairs.shape[0])
     return df
 
+# def dataframe_from_ns(ns: NeighborPairs, df_format: FORMAT) -> pd.DataFrame:
+
+
 def export_to_screen(results: Dict[str, NeighborPairs], df_format: FORMAT, n_rows: int) -> None:
     total_rows = 0
     collect_dfs = []
@@ -83,16 +88,40 @@ def export_to_screen(results: Dict[str, NeighborPairs], df_format: FORMAT, n_row
     pretty_df = PrettyDataFrame(pd.concat(collect_dfs), n_rows=n_rows, total_rows=total_rows)
     pretty_df.prettify()
 
-def export_to_csv(results: Dict[str, NeighborPairs], df_format: FORMAT) -> None:
-    print('Printing to csv')
-    # Implement the CSV export logic here
+def create_result_dataframe(results: Dict[str, NeighborPairs], df_format: FORMAT) -> pd.DataFrame:
+    collect_dfs = []
 
-def export_results(export: List[ExportGroup], results: Dict[str, NeighborPairs], df_format: FORMAT, n_rows: int) -> None:
+    for contact_type, result in results.items():
+        contact_label = contact_type.split('_')[0]
+        df = create_dataframe(result, contact_label, df_format)
+        collect_dfs.append(df)
+
+    return pd.concat(collect_dfs).reset_index(drop=True)
+
+def export_to_csv(results: Dict[str, NeighborPairs], df_format: FORMAT) -> None:
+    df = create_result_dataframe(results, df_format)
+    df.to_csv('lahuta.csv', index=False)
+
+def export_to_file(results: Dict[str, NeighborPairs], export_type: str, df_format: FORMAT, output: Optional[str]) -> None:
+    export_functions: Dict[str, Callable[[pd.DataFrame, str], None]] = {
+        'csv': lambda df, filename: df.to_csv(filename, index=False),
+        'html': lambda df, filename: df.to_html(filename),
+        'json': lambda df, filename: df.to_json(filename)
+    }
+    
+    if export_type not in export_functions:
+        raise ValueError(f"Unsupported export type: {export_type}")
+    
+    df = create_result_dataframe(results, df_format)
+    filename = f'{output or "lahuta"}.{export_type}'
+    export_functions[export_type](df, filename)
+
+def export_results(export: List[ExportGroup], results: Dict[str, NeighborPairs], df_format: FORMAT, n_rows: int, output: Optional[str] = None) -> None:
     for export_type in export:
         if export_type == ExportGroup.screen:
             export_to_screen(results, df_format, n_rows)
-        elif export_type == ExportGroup.csv:
-            export_to_csv(results, df_format=df_format)
+        else:
+            export_to_file(results, export_type, df_format=df_format, output=output)
 
 
 @lahuta.command(
@@ -112,12 +141,6 @@ def run(
         "-cg",
         help="Contact group to compute.",
     ),
-    export: List[ExportGroup] = Option(
-        ['screen'],
-        "--export",
-        "-to",
-        help="How to output results.",
-    ),
     n_rows: int = Option(20, "--n-rows", "-n", help="Number of rows to display."),
     format: FormatGroup = Option(
         'expanded',
@@ -125,6 +148,19 @@ def run(
         "-f",
         help="Format of the output.",
     ),
+    export: List[ExportGroup] = Option(
+        ['screen'],
+        "--export",
+        "-to",
+        help="How to output results.",
+    ),
+    output: Optional[str] = Option(
+        'lahuta', 
+        "--output",
+        "-o",
+        help="Name of the output file.",
+    ),
+
 
 ) -> None:
     """
@@ -152,7 +188,7 @@ def run(
 
     results = compute_contacts(ns, contact_group)
 
-    export_results(export, results, df_format=format.value, n_rows=n_rows)
+    export_results(export, results, df_format=format.value, n_rows=n_rows, output=output)
 
 
     end = perf_counter()
