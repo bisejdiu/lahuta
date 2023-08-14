@@ -2,6 +2,7 @@ from enum import Enum
 from time import perf_counter
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
+import numpy as np
 import pandas as pd
 from rich import print
 from rich.console import Console
@@ -57,7 +58,7 @@ class PrettyDataFrame:
         return formatted_row
 
     def _add_caption(self) -> None:
-        self.table.caption = f"Showing {self.n_rows} rows out of {self.total_rows} ..."
+        self.table.caption = f"Showing {self.n_rows} rows out of {self.total_rows} computed rows"
 
     def prettify(self) -> None:
         """
@@ -79,6 +80,9 @@ class ExportGroup(str, Enum):
     screen = "screen"
     csv = "csv"
 
+class FormatGroup(str, Enum):
+    compact = "compact"
+    expanded = "expanded"
 
 lahuta = Typer(
     help="[blue]Lahuta CLI.[/blue] :sparkles:",
@@ -153,6 +157,13 @@ def run(
     ),
     # export: Annotated[List[str], Option(..., "--export", "-to", help="How to output results")] = ["screen"],
     n_rows: int = Option(20, "--n-rows", "-n", help="Number of rows to display."),
+    format: FormatGroup = Option(
+        'compact',
+        "--format",
+        "-f",
+        help="Format of the output.",
+    ),
+
 ) -> None:
     """
     [blue][bold red]WELCOME TO LAHUTA[/bold red][/blue] :sparkles:
@@ -178,11 +189,47 @@ def run(
     ns = compute_neighbors(input, radius=radius, res_dif=res_dif)
 
     results = compute_contacts(ns, contact_group)
+    print ('format', format)
 
     for export_type in export:
         print(export_type)
         if export_type == ExportGroup.screen:
             print('Printing to screen')
+            collect_dfs = None
+            total_rows = 0
+            while total_rows < n_rows:
+                for contact_type, result in results.items():
+                    print ('Contact type', contact_type)
+                    total_rows += result.pairs.shape[0]
+                    if total_rows > n_rows:
+                        new_result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
+                        new_result.add_annotations({
+                            'contact_type': np.array([contact_type] * new_result.pairs.shape[0])
+                        })
+                        df = new_result.to_frame(df_format=format.value, annotations=True)
+                        df['distances'] = df['distances'].round(4)
+                        if collect_dfs is None:
+                            collect_dfs = df
+                        else:
+                            collect_dfs = pd.concat([collect_dfs, df])
+                        break
+                    else:
+                        result.add_annotations({
+                            'contact_type': np.array([contact_type] * result.pairs.shape[0])
+                        })
+                        df = result.to_frame(df_format=format.value, annotations=True)
+                        df['distances'] = df['distances'].round(4)
+                        if collect_dfs is None:
+                            collect_dfs = df
+                        else:
+                            collect_dfs = pd.concat([collect_dfs, df])
+                        total_rows += result.pairs.shape[0]
+
+            assert collect_dfs is not None
+            pretty_df = PrettyDataFrame(collect_dfs)
+            pretty_df.prettify()
+
+
         elif export_type == ExportGroup.csv:
             print('Printing to csv')
 
