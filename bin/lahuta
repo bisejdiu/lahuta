@@ -1,75 +1,19 @@
 from enum import Enum
 from time import perf_counter
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd
 from rich import print
-from rich.console import Console
-from rich.table import Table
-from typer import Argument, Option, Typer
-from typer.core import TyperGroup
+from typer import Option, Typer
 from typing_extensions import Annotated
 
 from lahuta import Luni
-from lahuta.contacts import F
 from lahuta.contacts.computer import LahutaContacts
 from lahuta.core import NeighborPairs
+from lahuta.writers.pretty import PrettyDataFrame
 
 # pylint: disable=redefined-builtin
-
-class PrettyDataFrame:
-    INT_COLOR = "red"
-    FLOAT_COLOR = "green"
-    OTHER_COLOR = "blue"
-
-    def __init__(self, df: pd.DataFrame, n_rows: int = 20, total_rows: int = 0):
-        self.total_rows = total_rows
-        self.n_rows = n_rows if n_rows < self.total_rows else self.total_rows
-        self.df = df.reset_index().rename(columns={"index": ""}).head(self.n_rows)
-        self.console = Console()
-        self.table = Table(show_footer=False)
-
-    def _add_columns(self) -> None:
-        for col in self.df.columns:
-            self.table.add_column(str(col))
-
-    def _add_rows(self) -> None:
-        for row in self.df.values:
-            formatted_row = self._format_row(row)
-            self.table.add_row(*formatted_row)
-        if self.n_rows <= self.total_rows:
-            self.table.add_row(*["..." for _ in range(len(self.df.columns))])
-
-    def _format_row(self, row: List[Any]) -> List[str]:
-        formatted_row = []
-        for index, item in enumerate(row):
-            # Index without color change
-            if index == 0:
-                formatted_row.append(str(item))
-                continue
-
-            if isinstance(item, int):
-                formatted_row.append(f"[{self.INT_COLOR}]{item}[/{self.INT_COLOR}]")
-            elif isinstance(item, float):
-                formatted_row.append(f"[{self.FLOAT_COLOR}]{item:.4f}[/{self.FLOAT_COLOR}]")
-            else:
-                formatted_row.append(f"[{self.OTHER_COLOR}]{item}[/{self.OTHER_COLOR}]")
-
-        return formatted_row
-
-    def _add_caption(self) -> None:
-        self.table.caption = f"Showing {self.n_rows} rows out of {self.total_rows} computed rows"
-
-    def prettify(self) -> None:
-        """
-        Prettify the dataframe and print it to the console.
-        """
-        self._add_columns()
-        self._add_rows()
-        self._add_caption()
-        self.console.print(self.table)
-
 
 class ContactGroup(str, Enum):
     all = "all"
@@ -166,7 +110,6 @@ def run(
     ns = compute_neighbors(input, radius=radius, res_dif=res_dif)
 
     results = compute_contacts(ns, contact_group)
-    print ('results', results)
 
     for export_type in export:
         if export_type == ExportGroup.screen:
