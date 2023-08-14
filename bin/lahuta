@@ -1,3 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Lahuta CLI
+==========
+Lahuta is a modern computational tool designed to calculate atom-atom interactions with high performance, scalability, and extensibility.
+
+Authors: Besian I. Sejdiu, PhD, Mag. Pharm. 
+Center for Data Driven Discovery
+Department of Structural Biology
+Developed at and with ❤️ by St. Jude Children's Research Hospital
+"""
+
 from enum import Enum
 from time import perf_counter
 from typing import Callable, Dict, List, Literal, Optional
@@ -183,6 +196,7 @@ def run(
     Should you encounter a bug or want to request a feature, please don't hesitate to open an issue at github.com/bisejdiu/lahuta.
 
     """
+
     start = perf_counter()
     ns = compute_neighbors(input, radius=radius, res_dif=res_dif)
 
