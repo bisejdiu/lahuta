@@ -629,6 +629,10 @@ class NeighborPairs:
             if not isinstance(getattr(cls, attr, None), property):
                 setattr(child_instance, attr, value)
 
+        if self.annotations:
+            for key, value in self.annotations.items():
+                child_instance.annotations[key] = value[:child_instance.pairs.shape[0]]
+                
         return child_instance
 
     def plot(self, which: Literal['matching', 'full'] = 'matching', half_only: bool = False) -> None:
