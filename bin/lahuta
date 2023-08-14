@@ -1,6 +1,6 @@
 from enum import Enum
 from time import perf_counter
-from typing import Any, List, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import pandas as pd
 from rich import print
@@ -75,6 +75,11 @@ class ContactGroup(str, Enum):
     atom_atom = "atom-atom"
 
 
+class ExportGroup(str, Enum):
+    screen = "screen"
+    csv = "csv"
+
+
 lahuta = Typer(
     help="[blue]Lahuta CLI.[/blue] :sparkles:",
     rich_markup_mode="rich",
@@ -85,7 +90,7 @@ lahuta = Typer(
 
 # app = Typer()
 
-CONTACT_FUNCTIONS = {
+CONTACT_FUNCTIONS: Dict[str, Callable[[NeighborPairs], NeighborPairs]] = {
     "carb": F.carbonyl_neighbors,
     "hb": F.hbond_neighbors,
     "ionic": F.ionic_neighbors,
@@ -104,13 +109,17 @@ RESIDUE_DIFF_DEFAULT = 2
 
 
 def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup):
+    contact_results: Dict[str, NeighborPairs] = {}
     for contact_type in CONTACT_GROUP_MAPPING[contact_group]:
         func = CONTACT_FUNCTIONS[contact_type]
         func_result = func(ns)
-        df = func_result.to_frame(df_format='compact')
-        df['distances'] = df['distances'].round(4)
-        pretty_df = PrettyDataFrame(df)
-        pretty_df.prettify()
+        contact_results[contact_type] = func_result
+        # df = func_result.to_frame(df_format='compact')
+        # df['distances'] = df['distances'].round(4)
+        # pretty_df = PrettyDataFrame(df)
+        # pretty_df.prettify()
+
+    return contact_results
 
 
 def compute_neighbors(file_name: str, res_dif: int) -> NeighborPairs:
@@ -133,6 +142,16 @@ def run(
         "-cg",
         help="Contact group to compute.",
     ),
+    # to: Annotated[
+    #     Tuple[str], Option("--export", show_default=True, help="Output file name for Luni.", multiple=True)
+    # ] = 'screen',
+    export: List[ExportGroup] = Option(
+        ['screen'],
+        "--export",
+        "-to",
+        help="How to output results.",
+    ),
+    # export: Annotated[List[str], Option(..., "--export", "-to", help="How to output results")] = ["screen"],
     n_rows: int = Option(20, "--n-rows", "-n", help="Number of rows to display."),
 ) -> None:
     """
@@ -157,7 +176,16 @@ def run(
     """
     start = perf_counter()
     ns = compute_neighbors(input, res_dif)
-    compute_contacts(ns, contact_group)
+
+    results = compute_contacts(ns, contact_group)
+
+    for export_type in export:
+        print(export_type)
+        if export_type == ExportGroup.screen:
+            print('Printing to screen')
+        elif export_type == ExportGroup.csv:
+            print('Printing to csv')
+
     end = perf_counter()
     print()
     print(f"Done in: {end - start:.5f} seconds.")
