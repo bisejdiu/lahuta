@@ -1,9 +1,9 @@
 import warnings
-from typing import Callable, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import (Callable, Dict, Iterable, List, Literal, Optional, Tuple,
+                    Union, cast)
 
 import numpy as np
 import pandas as pd
-from core.luni import Luni
 from joblib import Parallel, delayed  # type: ignore
 from MDAnalysis.analysis.base import AnalysisBase
 from numpy.typing import NDArray
@@ -11,6 +11,7 @@ from tqdm import tqdm
 from typing_extensions import TypeAlias
 
 from lahuta.contacts import AtomPlaneContacts, F
+from lahuta.core.luni import Luni
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
