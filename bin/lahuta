@@ -201,14 +201,12 @@ def run(
     ns = compute_neighbors(input, radius=radius, res_dif=res_dif)
 
     results = compute_contacts(ns, contact_group)
+    end = perf_counter()
 
     export_results(export, results, df_format=format.value, n_rows=n_rows, output=output)
 
-
-    end = perf_counter()
     print()
     print(f"Done in: {end - start:.5f} seconds.")
-
 
 if __name__ == "__main__":
     lahuta()
