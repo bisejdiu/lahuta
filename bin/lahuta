@@ -94,22 +94,6 @@ lahuta = Typer(
     # no_args_is_help=True,
 )
 
-CONTACT_FUNCTIONS: Dict[str, Callable[[NeighborPairs], NeighborPairs]] = {
-    "carb": F.carbonyl_neighbors,
-    "hb": F.hbond_neighbors,
-    "ionic": F.ionic_neighbors,
-    "aromatic": F.aromatic_neighbors,
-    "hydrophobic": F.hydrophobic_neighbors,
-    "vdw": F.vdw_neighbors,
-}
-
-CONTACT_GROUP_MAPPING = {
-    ContactGroup.all: CONTACT_FUNCTIONS.keys(),
-    # ContactGroup.hydrophobic: ["hydrophobic", "vdw"],
-    # ContactGroup.atom_atom: ["carb", "hb", "ionic", "aromatic", "hydrophobic", "vdw"],
-    ContactGroup.atom_atom: LahutaContacts.ATOM_ATOM
-    # ContactGroup.atom_plane 
-}
 
 RESIDUE_DIFF_DEFAULT = 2
 
@@ -190,12 +174,12 @@ def run(
             total_rows = 0
             while total_rows < n_rows:
                 for contact_type, result in results.items():
-                    print ('Contact type', contact_type)
+                    contact_type_name = contact_type.split('_')[0]
                     total_rows += result.pairs.shape[0]
                     if total_rows > n_rows:
                         new_result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
                         df = new_result.to_frame(df_format=format.value)
-                        df['contact_type'] = np.array([contact_type] * new_result.pairs.shape[0])
+                        df['contact_type'] = np.array([contact_type_name] * new_result.pairs.shape[0])
                         if collect_dfs is None:
                             collect_dfs = df
                         else:
@@ -203,7 +187,7 @@ def run(
                         break
                     else:
                         df = result.to_frame(df_format=format.value)
-                        df['contact_type'] = np.array([contact_type] * result.pairs.shape[0])
+                        df['contact_type'] = np.array([contact_type_name] * result.pairs.shape[0])
                         if collect_dfs is None:
                             collect_dfs = df
                         else:
@@ -213,7 +197,6 @@ def run(
                 break
 
             assert collect_dfs is not None
-            print ('collect_dfs.shape', collect_dfs.shape)
             total_rows = sum([result.pairs.shape[0] for result in results.values()])
             pretty_df = PrettyDataFrame(collect_dfs, n_rows=n_rows, total_rows=total_rows)
             pretty_df.prettify()
