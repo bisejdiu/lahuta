@@ -122,9 +122,9 @@ def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup):
     return contact_results
 
 
-def compute_neighbors(file_name: str, res_dif: int) -> NeighborPairs:
+def compute_neighbors(file_name: str, radius: float, res_dif: int) -> NeighborPairs:
     luni = Luni(file_name)
-    ns = luni.compute_neighbors(res_dif=res_dif)
+    ns = luni.compute_neighbors(radius=radius, res_dif=res_dif)
     return ns
 
 
@@ -133,8 +133,11 @@ def compute_neighbors(file_name: str, res_dif: int) -> NeighborPairs:
 )
 def run(
     input: str = Option(..., "--input", "-i", help="Input file name for Luni"),
+    radius: Annotated[
+        float, Option(..., "--radius", "-r", show_default=True, help="Radius for neighbor computation.")
+    ] = 5.0,
     res_dif: Annotated[
-        int, Option(show_default=True, help="Residue difference for neighbor computation.")
+        int, Option(..., "--res_dif", "-d", show_default=True, help="Residue difference for neighbor computation.")
     ] = RESIDUE_DIFF_DEFAULT,
     contact_group: ContactGroup = Option(
         'all',
@@ -142,9 +145,6 @@ def run(
         "-cg",
         help="Contact group to compute.",
     ),
-    # to: Annotated[
-    #     Tuple[str], Option("--export", show_default=True, help="Output file name for Luni.", multiple=True)
-    # ] = 'screen',
     export: List[ExportGroup] = Option(
         ['screen'],
         "--export",
@@ -175,7 +175,7 @@ def run(
 
     """
     start = perf_counter()
-    ns = compute_neighbors(input, res_dif)
+    ns = compute_neighbors(input, radius=radius, res_dif=res_dif)
 
     results = compute_contacts(ns, contact_group)
 
