@@ -14,8 +14,6 @@ authors = [
 classifiers = [
     'Development Status :: 5 - Production/Stable',
     'Programming Language :: Python',
-    'Programming Language :: Python :: Implementation :: CPython',
-    'Programming Language :: Python :: Implementation :: PyPy',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3 :: Only',
     'Programming Language :: Python :: 3.10',
@@ -27,12 +25,19 @@ classifiers = [
     'Operating System :: POSIX :: Linux',
     'Environment :: Console',
     'Environment :: MacOS X',
-    'Topic :: Scientific/Engineering :: Bio-Informatics :: Molecular Dynamics :: Contacts',
-    'Topic :: Atomic :: Contacts',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Bio-Informatics',
+    'Topic :: Scientific/Engineering :: Chemistry',
 ]
-requires-python = '>=3.10'
+requires-python = '>=3.8'
 dependencies = [
-    'typing-extensions>=4.6.1',
+    # core
+    'gemmi>0.6.0',
+    'MDAnalysis>=2.5.0, <3.0.0',
+    'openbabel>=3.1.0',
+    'typer>=0.9.0',
+    'rich>=13.5.1',
+    # 'typing-extensions>=4.6.1',
 ]
 dynamic = ['version', 'readme']
 
