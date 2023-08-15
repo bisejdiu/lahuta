@@ -13,6 +13,12 @@ For two `NeighborPairs` objects `a` and `b`, the following arithmetic operators 
 | `&` | `a & b` | Intersection | `a.intersection(b)` |
 | `|` | `a | b` | Symmetric difference | `a.symmetric_difference(b)` |
 | `^` | `a ^ b` | XOR | `a.symmetric_difference(b)` |
+| `>` | `a > b` | Strict superset | `a.issuperset(b)` |
+| `<` | `a < b` | Strict subset | `a.issubset(b)` |
+| `>=` | `a >= b` | Superset | `a.issuperset(b)` |
+| `<=` | `a <= b` | Subset | `a.issubset(b)` |
+| `==` | `a == b` | Equality | `a.isequal(b)` |
+| `!=` | `a != b` | Inequality | `not a.isequal(b)` |
 
 The following example illustrates the use of these operators:
 

@@ -97,7 +97,7 @@ For many common tasks, a dedicated API, regardless of how intuitive it is, can b
 ???+ example "Example - Using the CLI"
     _The following code snippet shows how to use the CLI to compute contacts._
     ```bash
-    $ lahuta contacts -h
+    $ lahuta -h
     usage: lahuta contacts [-h] [-o OUTPUT] [-r RADIUS] [-d RES_DIF] [-v] input
 
     positional arguments:
@@ -115,7 +115,7 @@ For many common tasks, a dedicated API, regardless of how intuitive it is, can b
     ```
 
     ```bash
-    $ lahuta contacts path/to/file.pdb -o contacts.csv -r 4.5 -d 2
+    $ lahuta -i path/to/file.pdb -r 4.5 -d 2
     ```
 
 !!! tip "Learn more"
