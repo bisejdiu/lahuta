@@ -25,7 +25,7 @@ class PrettyDataFrame:
         for row in self.df.values:
             formatted_row = self._format_row(row)
             self.table.add_row(*formatted_row)
-        if self.n_rows <= self.total_rows:
+        if self.n_rows < self.total_rows:
             self.table.add_row(*["..." for _ in range(len(self.df.columns))])
 
     def _format_row(self, row: List[Any]) -> List[str]:
