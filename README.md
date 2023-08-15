@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="#"><img src="https://github.com/bisejdiu/lahuta/blob/dev/docs/usage/big-logo.svg" alt="Lahuta"></a>
+</p>
+
 # lahuta
 
 # Installation
