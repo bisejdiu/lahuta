@@ -1,5 +1,4 @@
 import warnings
-from pathlib import Path
 from typing import Callable, Optional, Tuple
 
 import MDAnalysis as mda
@@ -13,6 +12,7 @@ from lahuta import Luni
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mdanalysis import UniverseType
+from lahuta.tests import X2
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
@@ -73,9 +73,8 @@ class UniverseWrapper:
 
 @pytest.fixture(scope="session")
 def mda_universe() -> UniverseType:
-    pdb_path = Path(__file__).parent / "data" / "1KX2.pdb"
     with warnings.catch_warnings(record=True) as _:
-        return mda.Universe(str(pdb_path))  # type: ignore
+        return mda.Universe(str(X2()))  # type: ignore
 
 
 selections_res_difs = [

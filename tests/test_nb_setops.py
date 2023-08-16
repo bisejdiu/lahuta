@@ -1,6 +1,5 @@
 import random
 import warnings
-from pathlib import Path
 from typing import Callable, List, Tuple
 
 import numpy as np
@@ -10,6 +9,7 @@ from numpy.typing import NDArray
 import lahuta.utils.array_utils as au
 from lahuta.core.luni import Luni
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.tests import X2
 
 pytestmark = pytest.mark.nb
 
@@ -100,8 +100,7 @@ def data_loader() -> NeighborPairs:
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
-        universe = Luni(str(path_obj))
+        universe = Luni(str(X2()))
     ns = universe.compute_neighbors()
     return ns
 
