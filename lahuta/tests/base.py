@@ -1,6 +1,5 @@
 import logging
 import os
-import re
 from pathlib import Path
 from urllib.request import urlretrieve
 
@@ -32,6 +31,7 @@ class BaseFile:
 
     def _get_or_download(self) -> Path:
         if not os.path.exists(self.local_path):
+            print('downloading')
             self._download_file()
         return self.local_path
 
@@ -41,7 +41,7 @@ class BaseFile:
 
     def _download_file(self) -> None:
         logging.info("Downloading %s from %s", self.FILE_NAME, self.URL)
-        urlretrieve(self.URL, self.local_path)
+        urlretrieve(self.URL + self.FILE_NAME, self.local_path)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(file_loc={self.file_loc})"
