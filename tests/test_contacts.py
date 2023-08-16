@@ -24,10 +24,10 @@ ContactDict = Dict[str, Union[List[int], int]]
 
 pytestmark = pytest.mark.contacts
 
-file_pairs = [("1kx2.json", "1kx2.pdb"), ("1gzm.json", "1gzm.cif")]
+FILE_PAIRS = [("1kx2.json", "1kx2.pdb"), ("1gzm.json", "1gzm.cif")]
 
 
-@pytest.fixture(scope="session", params=file_pairs)
+@pytest.fixture(scope="session", params=FILE_PAIRS)
 def data_loader(request: FixtureRequest) -> Tuple[NeighborPairs, Dict[str, ContactDict]]:
     json_file, pdb_file = request.param
 
@@ -38,10 +38,10 @@ def data_loader(request: FixtureRequest) -> Tuple[NeighborPairs, Dict[str, Conta
     # Load universe from the pdb_file
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        path_obj = Path(__file__).parent / "data" / "results" / pdb_file
+        path_obj = Path(__file__).parent / "data" / pdb_file
         universe = Luni(str(path_obj))
 
-    ns = universe.compute_neighbors()
+    ns = universe.compute_neighbors(res_dif=1)
     return ns, data
 
 
@@ -99,18 +99,18 @@ def test_atom_atom_neighbor_funcs(
     expected_result = expected_results[expected_key]
 
     result = neighbor_func(neighbors)
-    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+    pairs, distances = result.pairs, result.distances
 
     expected_pairs = np.array(expected_result["pairs"])
 
-    # Reshape the expected_pairs to match the shape of the pairs
+    # # Reshape the expected_pairs to match the shape of the pairs
     if expected_pairs.size == 0:
         expected_pairs = expected_pairs.reshape((0, 2))
 
     assert result.pairs.shape[1] == 2
     assert result.pairs.shape[0] == expected_result["shapex"]
     assert np.all(pairs == expected_pairs)
-    assert np.allclose(distances, expected_result["distances"], atol=1e-3)
+    assert np.allclose(distances.tolist(), expected_result["distances"], atol=1e-3)
 
 
 @pytest.mark.parametrize(
@@ -149,7 +149,7 @@ def test_atom_atom_neighbor_classes(
     _, expected_results = data_loader
     expected_result = expected_results[expected_key]
 
-    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+    pairs, distances = result.pairs, result.distances
 
     expected_pairs = np.array(expected_result["pairs"])
 
@@ -182,7 +182,7 @@ def test_atomplane_contacts(
 
     contact_func = getattr(atom_plane, contact_func_name)
     result = contact_func()
-    pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+    pairs, distances = result.pairs, result.distances
 
     _, expected_results = data_loader
     expected_result = expected_results[expected_key]
@@ -203,12 +203,12 @@ def test_planeplane_neighbors(
 ) -> None:
     """Test the plane_plane neighbors."""
     plane_ns = plane_plane.results
-    pairs, distances = np.array(plane_ns.pairs), np.array(plane_ns.distances)
+    pairs, distances = plane_ns.pairs, plane_ns.distances
 
     # Get the expected result from data_loader
     _, expected_results = data_loader
     expected_plane_plane = expected_results["PLANEPLANE"]
 
     assert plane_ns.pairs.shape[0] == expected_plane_plane["shapex"]
-    assert np.all(pairs[:6] == expected_plane_plane["pairs"])
-    assert np.allclose(distances[:6], expected_plane_plane["distances"], atol=1e-3)
+    assert np.all(pairs == expected_plane_plane["pairs"])
+    assert np.allclose(distances, expected_plane_plane["distances"], atol=1e-3)
