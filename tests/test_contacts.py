@@ -1,3 +1,4 @@
+import gzip
 import json
 import warnings
 from pathlib import Path
@@ -14,6 +15,7 @@ from lahuta.contacts.atom_plane import AtomPlaneContacts
 from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.tests import X2, Rhodopsin
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-class-docstring
@@ -24,22 +26,21 @@ ContactDict = Dict[str, Union[List[int], int]]
 
 pytestmark = pytest.mark.contacts
 
-FILE_PAIRS = [("1kx2.json", "1kx2.pdb"), ("1gzm.json", "1gzm.cif")]
+FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin())]
 
 
 @pytest.fixture(scope="session", params=FILE_PAIRS)
 def data_loader(request: FixtureRequest) -> Tuple[NeighborPairs, Dict[str, ContactDict]]:
-    json_file, pdb_file = request.param
+    json_file, file_obj = request.param
 
     # Load ExpectedResults from the JSON file
-    with open(Path(__file__).parent / "data" / "results" / json_file, "r", encoding="utf-8") as file:
+    with gzip.open(Path(__file__).parent / "data" / "results" / json_file, "rt", encoding="utf-8") as file:
         data = json.load(file)
 
     # Load universe from the pdb_file
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        path_obj = Path(__file__).parent / "data" / pdb_file
-        universe = Luni(str(path_obj))
+        universe = Luni(str(file_obj))
 
     ns = universe.compute_neighbors(res_dif=1)
     return ns, data
