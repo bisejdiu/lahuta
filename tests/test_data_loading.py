@@ -1,9 +1,9 @@
 import warnings
-from pathlib import Path
 
 import numpy as np
 
 from lahuta import Luni
+from lahuta.tests import X2
 
 
 def read_pdb(pdb_file: str) -> Luni:
@@ -14,8 +14,7 @@ def read_pdb(pdb_file: str) -> Luni:
 
 
 def test_read_pdb() -> None:
-    path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
-    u = read_pdb(str(path_obj))
+    u = read_pdb(str(X2()))
 
     assert u.arc is not None
     assert u.arc.atoms.ids.size == 1249
