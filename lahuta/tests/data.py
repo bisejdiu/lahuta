@@ -1,6 +1,6 @@
 from .base import BaseFile
 
-__all__ = ["X2", "Rhodopsin"]
+__all__ = ["X2", "Rhodopsin", "DNABound"]
 
 
 class X2(BaseFile):
@@ -12,3 +12,7 @@ class X2(BaseFile):
 
 class Rhodopsin(BaseFile):
     FILE_NAME = "1GZM"
+
+
+class DNABound(BaseFile):
+    FILE_NAME = "3Q2Y"

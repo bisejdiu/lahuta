@@ -15,7 +15,7 @@ from lahuta.contacts.atom_plane import AtomPlaneContacts
 from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.tests import X2, Rhodopsin
+from lahuta.tests import X2, DNABound, Rhodopsin
 
 # pylint: disable=redefined-outer-name
 # pylint: disable=missing-class-docstring
@@ -26,7 +26,7 @@ ContactDict = Dict[str, Union[List[int], int]]
 
 pytestmark = pytest.mark.contacts
 
-FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin())]
+FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin()), ("3q2y.json.gz", DNABound())]
 
 
 @pytest.fixture(scope="session", params=FILE_PAIRS)
