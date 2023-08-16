@@ -10,8 +10,10 @@
 
 ---
 
-Lahuta is a Python package for chemically-aware contact analysis in biomolecular systems. It is highly performant and scalable, enabling the analysis of large-scale molecular dynamics simulations or structural databases. 
+**Lahuta** is a Python package for chemically-aware contact analysis in biomolecular systems. It is highly performant and scalable, enabling the analysis of large-scale molecular dynamics simulations or structural databases. 
 
+Key features include:
+... 
 # Installation
 We strongly recommend using [conda](https://docs.conda.io/en/latest/) to install Lahuta.
 

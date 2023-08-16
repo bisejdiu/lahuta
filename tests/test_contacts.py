@@ -1,10 +1,11 @@
 import json
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Type
+from typing import Callable, Dict, List, Tuple, Type, Union
 
 import numpy as np
 import pytest
+from _pytest.fixtures import FixtureRequest
 
 import lahuta.contacts as C
 from lahuta import Luni
@@ -19,93 +20,84 @@ from lahuta.core.neighbors import NeighborPairs
 # pylint: disable=missing-function-docstring
 
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
+ContactDict = Dict[str, Union[List[int], int]]
 
 pytestmark = pytest.mark.contacts
 
-
-class ExpectedResults:
-    with open(Path(__file__).parent / "data" / "1KX2.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-
-    COVALENT = data["COVALENT"]
-    METALIC = data["METALIC"]
-    CARBONYL = data["CARBONYL"]
-    HBOND = data["HBOND"]
-    WEAK_HBOND = data["WEAK_HBOND"]
-    IONIC = data["IONIC"]
-    AROMATIC = data["AROMATIC"]
-    HYDROPHOBIC = data["HYDROPHOBIC"]
-    POLAR_HBOND = data["POLAR_HBOND"]
-    WEAK_POLAR_HBOND = data["WEAK_POLAR_HBOND"]
-    VDW = data["VDW"]
-    CARBONPI = data["CARBONPI"]
-    CATIONPI = data["CATIONPI"]
-    DONORPI = data["DONORPI"]
-    SULPHURPI = data["SULPHURPI"]
-    PLANEPLANE = data["PLANEPLANE"]
+file_pairs = [("1kx2.json", "1kx2.pdb"), ("1gzm.json", "1gzm.cif")]
 
 
-@pytest.fixture(scope="session")
-def data_loader() -> NeighborPairs:
-    """
-    Fixture to load the data for the tests.
-    """
+@pytest.fixture(scope="session", params=file_pairs)
+def data_loader(request: FixtureRequest) -> Tuple[NeighborPairs, Dict[str, ContactDict]]:
+    json_file, pdb_file = request.param
+
+    # Load ExpectedResults from the JSON file
+    with open(Path(__file__).parent / "data" / "results" / json_file, "r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    # Load universe from the pdb_file
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        path_obj = Path(__file__).parent / "data" / "1KX2.pdb"
+        path_obj = Path(__file__).parent / "data" / "results" / pdb_file
         universe = Luni(str(path_obj))
+
     ns = universe.compute_neighbors()
-    return ns
+    return ns, data
 
 
 @pytest.fixture(scope="session")
-def neighbors(data_loader: NeighborPairs) -> NeighborPairs:
+def neighbors(data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]) -> NeighborPairs:
     """Helper fixture to get neighbor pairs."""
-    return data_loader
+    return data_loader[0]
 
 
 @pytest.fixture(scope="session")
-def atom_plane(data_loader: NeighborPairs) -> AtomPlaneContacts:
+def atom_plane(data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]) -> AtomPlaneContacts:
     """Helper fixture to get atomplane."""
-    atomplane = AtomPlaneContacts(data_loader)
+    atomplane = AtomPlaneContacts(data_loader[0])
     return atomplane
 
 
 @pytest.fixture(scope="session")
-def plane_plane(data_loader: NeighborPairs) -> PlanePlaneContacts:
+def plane_plane(data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]) -> PlanePlaneContacts:
     """Helper fixture to get planeplane."""
-    planeplane = PlanePlaneContacts(data_loader)
+    planeplane = PlanePlaneContacts(data_loader[0])
 
     return planeplane
 
 
 @pytest.mark.parametrize(
-    "neighbor_func, expected_result",
+    "neighbor_func, expected_key",
     [
-        (F.covalent_neighbors, ExpectedResults.COVALENT),
-        (F.metalic_neighbors, ExpectedResults.METALIC),
-        (F.carbonyl_neighbors, ExpectedResults.CARBONYL),
-        (F.hbond_neighbors, ExpectedResults.HBOND),
-        (F.weak_hbond_neighbors, ExpectedResults.WEAK_HBOND),
-        (F.ionic_neighbors, ExpectedResults.IONIC),
-        (F.aromatic_neighbors, ExpectedResults.AROMATIC),
-        (F.hydrophobic_neighbors, ExpectedResults.HYDROPHOBIC),
-        (F.polar_hbond_neighbors, ExpectedResults.POLAR_HBOND),
-        (F.weak_polar_hbond_neighbors, ExpectedResults.WEAK_POLAR_HBOND),
-        (F.vdw_neighbors, ExpectedResults.VDW),
-        (F.sulphur_pi, ExpectedResults.SULPHURPI),
-        (F.carbon_pi, ExpectedResults.CARBONPI),
-        (F.cation_pi, ExpectedResults.CATIONPI),
-        (F.donor_pi, ExpectedResults.DONORPI),
-        (F.plane_plane_neighbors, ExpectedResults.PLANEPLANE),
+        (F.covalent_neighbors, "COVALENT"),
+        (F.metalic_neighbors, "METALIC"),
+        (F.carbonyl_neighbors, "CARBONYL"),
+        (F.hbond_neighbors, "HBOND"),
+        (F.weak_hbond_neighbors, "WEAK_HBOND"),
+        (F.ionic_neighbors, "IONIC"),
+        (F.aromatic_neighbors, "AROMATIC"),
+        (F.hydrophobic_neighbors, "HYDROPHOBIC"),
+        (F.polar_hbond_neighbors, "POLAR_HBOND"),
+        (F.weak_polar_hbond_neighbors, "WEAK_POLAR_HBOND"),
+        (F.vdw_neighbors, "VDW"),
+        (F.sulphur_pi, "SULPHURPI"),
+        (F.carbon_pi, "CARBONPI"),
+        (F.cation_pi, "CATIONPI"),
+        (F.donor_pi, "DONORPI"),
+        (F.plane_plane_neighbors, "PLANEPLANE"),
     ],
 )
 def test_atom_atom_neighbor_funcs(
     neighbor_func: Callable[[NeighborPairs], NeighborPairs],
-    expected_result: Any,
+    expected_key: str,
     neighbors: NeighborPairs,
+    data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]],
 ) -> None:
     """Test the neighbors."""
+
+    _, expected_results = data_loader
+    expected_result = expected_results[expected_key]
+
     result = neighbor_func(neighbors)
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
 
@@ -122,29 +114,30 @@ def test_atom_atom_neighbor_funcs(
 
 
 @pytest.mark.parametrize(
-    "contact_class, expected_result",
+    "contact_class, expected_key",
     [
-        (C.CovalentContacts, ExpectedResults.COVALENT),
-        (C.MetalicContacts, ExpectedResults.METALIC),
-        (C.CarbonylContacts, ExpectedResults.CARBONYL),
-        (C.HBondContacts, ExpectedResults.HBOND),
-        (C.WeakHBondContacts, ExpectedResults.WEAK_HBOND),
-        (C.IonicContacts, ExpectedResults.IONIC),
-        (C.AromaticContacts, ExpectedResults.AROMATIC),
-        (C.HydrophobicContacts, ExpectedResults.HYDROPHOBIC),
-        (C.PolarHBondContacts, ExpectedResults.POLAR_HBOND),
-        (C.WeakPolarHBondContacts, ExpectedResults.WEAK_POLAR_HBOND),
-        (C.VanDerWaalsContacts, ExpectedResults.VDW),
-        (C.SulphurPi, ExpectedResults.SULPHURPI),
-        (C.CarbonPi, ExpectedResults.CARBONPI),
-        (C.CationPi, ExpectedResults.CATIONPI),
-        (C.DonorPi, ExpectedResults.DONORPI),
+        (C.CovalentContacts, "COVALENT"),
+        (C.MetalicContacts, "METALIC"),
+        (C.CarbonylContacts, "CARBONYL"),
+        (C.HBondContacts, "HBOND"),
+        (C.WeakHBondContacts, "WEAK_HBOND"),
+        (C.IonicContacts, "IONIC"),
+        (C.AromaticContacts, "AROMATIC"),
+        (C.HydrophobicContacts, "HYDROPHOBIC"),
+        (C.PolarHBondContacts, "POLAR_HBOND"),
+        (C.WeakPolarHBondContacts, "WEAK_POLAR_HBOND"),
+        (C.VanDerWaalsContacts, "VDW"),
+        (C.SulphurPi, "SULPHURPI"),
+        (C.CarbonPi, "CARBONPI"),
+        (C.CationPi, "CATIONPI"),
+        (C.DonorPi, "DONORPI"),
     ],
 )
 def test_atom_atom_neighbor_classes(
     contact_class: Type[ContactAnalysis],
-    expected_result: Any,
+    expected_key: str,
     neighbors: NeighborPairs,
+    data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]],
 ) -> None:
     """Test the neighbors."""
     with warnings.catch_warnings():
@@ -152,6 +145,9 @@ def test_atom_atom_neighbor_classes(
         instance = contact_class(neighbors)
     # instance.run()
     result = instance.results
+
+    _, expected_results = data_loader
+    expected_result = expected_results[expected_key]
 
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
 
@@ -168,24 +164,28 @@ def test_atom_atom_neighbor_classes(
 
 
 @pytest.mark.parametrize(
-    "contact_func_name, expected_result",
+    "contact_func_name, expected_key",
     [
-        ("cation_pi", ExpectedResults.CATIONPI),
-        ("donor_pi", ExpectedResults.DONORPI),
-        ("sulphur_pi", ExpectedResults.SULPHURPI),
-        ("carbon_pi", ExpectedResults.CARBONPI),
+        ("cation_pi", "CATIONPI"),
+        ("donor_pi", "DONORPI"),
+        ("sulphur_pi", "SULPHURPI"),
+        ("carbon_pi", "CARBONPI"),
     ],
 )
 def test_atomplane_contacts(
     contact_func_name: str,
-    expected_result: Any,
+    expected_key: str,
     atom_plane: AtomPlaneContacts,
+    data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]],
 ) -> None:
     """Test the contacts."""
 
     contact_func = getattr(atom_plane, contact_func_name)
     result = contact_func()
     pairs, distances = np.array(result.pairs[:6]), np.array(result.distances[:6])
+
+    _, expected_results = data_loader
+    expected_result = expected_results[expected_key]
 
     expected_pairs = np.array(expected_result["pairs"])
 
@@ -198,10 +198,17 @@ def test_atomplane_contacts(
     assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
 
-def test_planeplane_neighbors(plane_plane: PlanePlaneContacts) -> None:
+def test_planeplane_neighbors(
+    plane_plane: PlanePlaneContacts, data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]
+) -> None:
     """Test the plane_plane neighbors."""
     plane_ns = plane_plane.results
     pairs, distances = np.array(plane_ns.pairs), np.array(plane_ns.distances)
-    assert plane_ns.pairs.shape[0] == ExpectedResults.PLANEPLANE["shapex"]
-    assert np.all(pairs == ExpectedResults.PLANEPLANE["pairs"])
-    assert np.allclose(distances, ExpectedResults.PLANEPLANE["distances"], atol=1e-3)
+
+    # Get the expected result from data_loader
+    _, expected_results = data_loader
+    expected_plane_plane = expected_results["PLANEPLANE"]
+
+    assert plane_ns.pairs.shape[0] == expected_plane_plane["shapex"]
+    assert np.all(pairs[:6] == expected_plane_plane["pairs"])
+    assert np.allclose(distances[:6], expected_plane_plane["distances"], atol=1e-3)
