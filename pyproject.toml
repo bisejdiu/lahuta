@@ -96,6 +96,7 @@ ignore = [
 'TD003', 
 'COM812', 
 'PLR2004',
+'TRY003',
 'D105', 'D107', 'D205', 'D415'
 ] # 'E501'
 # flake8-quotes = {inline-quotes = 'single', multiline-quotes = 'double'}

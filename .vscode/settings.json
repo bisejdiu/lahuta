@@ -18,11 +18,11 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": true
+        "source.organizeImports": false
     },
     "python.analysis.typeCheckingMode": "strict",
     "python.linting.mypyCategorySeverity.error": "Warning",
-    "python.linting.mypyEnabled": true, 
+    "python.linting.mypyEnabled": false, 
     "python.analysis.diagnosticSeverityOverrides": {
         "reportMissingTypeStubs": "none",
         "reportUnknownVariableType": "none",
