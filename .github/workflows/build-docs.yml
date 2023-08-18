@@ -28,4 +28,5 @@ jobs:
                       mkdocs-embed-external-markdown \
                       git+https://github.com/jimporter/mike.git
       - run: mkdocs build 
+      - run: touch site/.nojekyll
       - run: mkdocs gh-deploy --force
