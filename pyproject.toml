@@ -80,6 +80,36 @@ good-names = [
 max-line-length = 120
 disable = 'too-many-lines'
 
+[tool.ruff]
+line-length = 120
+extend-select = [
+    'Q', 'RUF100', 'C90', 'I', 'D', 'TID', 'B', 'A', 'COM', 'C4', 
+    'ARG', 'TCH', 'PTH', 'NPY', 'SLF', 'ANN', 'BLE', #'FBT001',
+    'PYI', 'PT', 'RET', 'SIM', 'INT', 'TD', 'FIX', 
+    'ERA', 'PD', 'PL',  'TRY', 'FLY', 'PERF', 'RUF'
+]
+# E501 is handled by black
+ignore = [
+'A003', 
+'ANN101',
+'ANN204', 
+'TD003', 
+'COM812', 
+'PLR2004',
+'D105', 'D107', 'D205', 'D415'
+] # 'E501'
+# flake8-quotes = {inline-quotes = 'single', multiline-quotes = 'double'}
+mccabe = { max-complexity = 14 }
+isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
+target-version = "py39"
+exclude=['lahuta/cachedir']
+
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.pylint]
+max-args = 6
+
+
 
 [tool.mypy]
 python_version = "3.10"
