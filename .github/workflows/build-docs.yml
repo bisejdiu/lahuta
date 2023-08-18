@@ -1,32 +1,65 @@
-name: Build and Deploy Docs 
+name: Deploy MkDocs to GitHub Pages
+
 on:
   push:
-    branches:
-      - docs 
+    branches: ["docs"]
+  workflow_dispatch:
+
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV 
-      - uses: actions/cache@v3
+      
+      - name: Cache Dependencies
+        uses: actions/cache@v3
         with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: .cache
+          key: mkdocs-material-${{ runner.os }}-${{ hashFiles('**/requirements.txt') }}
+          path: ~/.cache/pip
           restore-keys: |
-            mkdocs-material-
-      - run: |
+            mkdocs-material-${{ runner.os }}-
+      
+      - name: Install MkDocs and Dependencies
+        run: |
           pip install mkdocs-material \
                       mkdocs-exclude \
                       mkdocstrings-python \
                       mkdocs-simple-hooks \
                       mkdocs-embed-external-markdown \
                       git+https://github.com/jimporter/mike.git
-      - run: mkdocs build 
-      - run: touch site/.nojekyll
-      - run: mkdocs gh-deploy --force
+      
+      - name: Build MkDocs Site
+        run: mkdocs build
+      
+      - name: Add .nojekyll File
+        run: touch site/.nojekyll
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: 'site' 
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
