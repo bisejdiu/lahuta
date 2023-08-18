@@ -1,4 +1,4 @@
-name: Build Docs 
+name: Build and Deploy Docs 
 on:
   push:
     branches:
@@ -27,4 +27,5 @@ jobs:
                       mkdocs-simple-hooks \
                       mkdocs-embed-external-markdown \
                       git+https://github.com/jimporter/mike.git
+      - run: mkdocs build 
       - run: mkdocs gh-deploy --force
