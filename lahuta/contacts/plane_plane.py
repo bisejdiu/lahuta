@@ -111,7 +111,7 @@ class _PlanePlaneContacts:
             ring_atom_indices[:, 1],
         )
 
-        pairs = np.array(list(zip(first_ring_indices, second_ring_indices)))
+        pairs = np.array(list(zip(first_ring_indices, second_ring_indices, strict=True)))
 
         return pairs, self.distances
 

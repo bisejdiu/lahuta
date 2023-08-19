@@ -172,7 +172,7 @@ class Atoms:
     def __len__(self) -> int:
         return self.data.size
 
-    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
+    def __getitem__(self, index: int | slice) -> NDArray[Any]:
         return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
@@ -270,7 +270,7 @@ class Residues:
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
+    def __getitem__(self, index: int | slice) -> NDArray[Any]:
         return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
@@ -342,7 +342,7 @@ class Chains:
         data["id"] = ids
 
         cls_instance.data = data
-        cls_instance.mapping = dict(zip(auths, ids))
+        cls_instance.mapping = dict(zip(auths, ids, strict=True))
 
         return cls_instance
 
@@ -363,7 +363,7 @@ class Chains:
         _, cls_instance.data["id"] = np.unique(cls_instance.data["auth"], return_inverse=True)
         cls_instance.data["id"] += 1
 
-        cls_instance.mapping = dict(zip(cls_instance.data["auth"], cls_instance.data["id"]))
+        cls_instance.mapping = dict(zip(cls_instance.data["auth"], cls_instance.data["id"], strict=True))
 
         return cls_instance
 
@@ -385,7 +385,7 @@ class Chains:
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
+    def __getitem__(self, index: int | slice) -> NDArray[Any]:
         return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
@@ -430,7 +430,7 @@ class ARC:
     def __init__(
         self,
         obj: Union["GemmiLoader", "TopologyLoader"],
-        site_data: Union[dict[str, Any], AtomGroupType],
+        site_data: dict[str, Any] | AtomGroupType,
     ):
         obj_name: str = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
@@ -497,7 +497,7 @@ class ARC:
     def __len__(self) -> int:
         return len(self._atoms)
 
-    def __getitem__(self, index: Union[int, slice]) -> Union["Atom", list["Atom"]]:
+    def __getitem__(self, index: int | slice) -> Union["Atom", list["Atom"]]:
         if isinstance(index, int):
             return self.get_atom(index)
 
