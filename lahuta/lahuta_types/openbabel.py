@@ -28,9 +28,7 @@ Example:
 
 """
 
-from typing import Any, Iterator, List, Protocol
-
-# pylint: disable=C0116, C0115, C0103
+from typing import Any, Iterator, Protocol
 
 
 class ObSmartPatternType(Protocol):
@@ -40,7 +38,7 @@ class ObSmartPatternType(Protocol):
     def Match(self, mol: Any) -> None:
         ...
 
-    def GetMapList(self) -> List[Any]:
+    def GetMapList(self) -> list[Any]:
         ...
 
 
@@ -56,7 +54,7 @@ class OBSmartsPatternWrapper:
         """Match the SMARTS pattern to a molecule."""
         return self.ob_smarts_pattern.Match(mol)
 
-    def GetMapList(self) -> List[Any]:
+    def GetMapList(self) -> list[Any]:
         """Get the map list of the SMARTS pattern."""
         return self.ob_smarts_pattern.GetMapList()
 
@@ -210,7 +208,7 @@ class ObRingType(Protocol):
         ...
 
     @property
-    def _path(self) -> List[int]:
+    def _path(self) -> list[int]:
         ...
 
 

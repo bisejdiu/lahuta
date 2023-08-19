@@ -1,5 +1,5 @@
 import warnings
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 
 import MDAnalysis as mda
 import numpy as np
@@ -16,9 +16,6 @@ from lahuta.tests import X2
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
-
-# pylint: disable=attribute-defined-outside-init
-# pylint: disable=redefined-outer-name
 
 pytestmark = pytest.mark.ag
 
@@ -46,11 +43,11 @@ class ContactType:
         assert self.neighbors_ref is not None
         self.neighbors_diff = self.func(self.neighbors_ref) - self.func(self.neighbors)
 
-    def pairs(self) -> Tuple[int, ...]:
+    def pairs(self) -> tuple[int, ...]:
         assert self.neighbors is not None
         return self.func(self.neighbors).pairs.shape
 
-    def pairs_ref(self) -> Tuple[int, ...]:
+    def pairs_ref(self) -> tuple[int, ...]:
         assert self.neighbors_ref is not None
         return self.func(self.neighbors_ref).pairs.shape
 

@@ -9,7 +9,7 @@ Classes:
     ```
 """
 
-from typing import Dict, Type
+from typing import Type
 
 import numpy as np
 from scipy.sparse import csc_array, dok_matrix
@@ -57,7 +57,7 @@ class AtomTypeAssigner:
         self.parallel = parallel
         self.legacy = legacy
 
-        self.smarts_matcher_classes: Dict[bool, Type[SmartsMatcherBase]] = {
+        self.smarts_matcher_classes: dict[bool, Type[SmartsMatcherBase]] = {
             True: ParallelSmartsMatcher,
             False: SmartsMatcher,
         }

@@ -24,13 +24,12 @@ Example:
 
 """
 
-from typing import Any, Optional, Protocol, Union
+from typing import Any, Optional, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 
 
-# pylint: disable=missing-function-docstring
 class ResidueGroupType(Protocol):
     """A typing interface for MDAnalysis ResidueGroup objects."""
 
@@ -46,7 +45,6 @@ class ResidueGroupType(Protocol):
         ...
 
 
-# pylint: disable=missing-function-docstring
 class AtomGroupType(Protocol):
     """A typing interface for MDAnalysis AtomGroup objects."""
 
@@ -118,7 +116,7 @@ class AtomGroupType(Protocol):
         ...
 
     @property
-    def chainIDs(self) -> NDArray[np.str_]:  # pylint: disable=invalid-name
+    def chainIDs(self) -> NDArray[np.str_]:
         ...
 
     @property
@@ -142,14 +140,13 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "AtomGroupType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
         ...
 
 
-# pylint: disable=missing-function-docstring
 class UniverseType(Protocol):
     """A typing interface for MDAnalysis Universe objects."""
 
@@ -175,7 +172,10 @@ class UniverseType(Protocol):
     def copy(self) -> "UniverseType":
         ...
 
-    def add_TopologyAttr(self, name: str, attr: Any) -> None:  # pylint: disable=invalid-name
+    def add_TopologyAttr(self, name: str, attr: Any) -> None:
+        ...
+
+    def load_new(self, filenames: tuple[str, ...], **kwargs: Any) -> None:
         ...
 
     def __iter__(self) -> Any:
@@ -190,7 +190,7 @@ class TrajectoryType(Protocol):
     def n_frames(self) -> int:
         ...
 
-    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "TimeStepType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "TimeStepType":
         ...
 
     def __iter__(self) -> "TimeStepType":

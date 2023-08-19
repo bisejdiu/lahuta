@@ -8,7 +8,6 @@ Classes:
                     and preparation for computation.
 
 """
-from typing import Tuple
 
 import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS
@@ -19,7 +18,7 @@ from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 IndexPairs = NDArray[np.int32]
 Distances = NDArray[np.float32]
-PairsDistances = Tuple[IndexPairs, Distances]
+PairsDistances = tuple[IndexPairs, Distances]
 
 
 class NeighborSearch:

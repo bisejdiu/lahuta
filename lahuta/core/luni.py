@@ -14,7 +14,7 @@ Example:
     
 """
 
-from typing import Any, Callable, List, Literal, Optional, Tuple, Union, overload
+from typing import Any, Callable, Literal, Optional, overload
 
 import MDAnalysis as mda
 import numpy as np
@@ -35,7 +35,7 @@ from lahuta.utils.radii import v_radii_assignment
 
 __all__ = ["LuniInputType", "Luni"]
 
-LuniInputType = Union[AtomGroupType, str, List[str]]
+LuniInputType = AtomGroupType | str | list[str]
 
 
 class Luni:
@@ -71,7 +71,7 @@ class Luni:
         assert self._mda is not None
         assert self._file_loader is not None
 
-    def _validate_input(self, *args: LuniInputType) -> Callable[..., Tuple[BaseLoader, AtomGroupType]]:
+    def _validate_input(self, *args: LuniInputType) -> Callable[..., tuple[BaseLoader, AtomGroupType]]:
         """Validate the input files for Luni initialization.
 
         Args:
@@ -96,20 +96,20 @@ class Luni:
             raise ValueError("Input must be either an MDAnalysis.AtomGroup instance or a list of file names")
         return self._initialize_from_files
 
-    def _initialize_from_universe(self, *args: LuniInputType) -> Tuple[BaseLoader, AtomGroupType]:
+    def _initialize_from_universe(self, *args: AtomGroupType) -> tuple[BaseLoader, AtomGroupType]:
         """Initialize the universe from an existing Luni.
 
         Args:
-            *args (LuniInputType): An MDAnalysis.AtomGroup instance.
+            *args (AtomGroupType): An MDAnalysis.AtomGroup instance.
 
         Returns:
             tuple: A tuple of the file loader and the AtomGroup instance.
         """
-        _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
+        _file_loader = TopologyLoader.from_mda(args[0])
         _mda = _file_loader.to("mda")
         return _file_loader, _mda
 
-    def _initialize_from_files(self, files: str) -> Tuple[BaseLoader, AtomGroupType]:
+    def _initialize_from_files(self, files: str) -> tuple[BaseLoader, AtomGroupType]:
         """Initialize the universe from provided files.
 
         Args:
@@ -227,7 +227,7 @@ class Luni:
         return "".join(single_letter_codes)
 
     @staticmethod
-    def get_format(file_name: str) -> Tuple[Union[str, None], bool]:
+    def get_format(file_name: str) -> tuple[str | None, bool]:
         """Retrieve the file format from a file name.
 
         This static method checks the file extension of the provided file name against the list of formats
@@ -256,7 +256,7 @@ class Luni:
     def to(self, fmt: Literal["mol"]) -> MolType:
         ...
 
-    def to(self, fmt: Literal["mda", "mol"]) -> Union[MolType, AtomGroupType]:
+    def to(self, fmt: Literal["mda", "mol"]) -> MolType | AtomGroupType:
         """Convert the Luni to a different format.
 
         This method converts the internal representation of the Luni to the specified format.
@@ -268,7 +268,7 @@ class Luni:
             fmt (str): The format to convert to. Currently supported formats are "mda" and "mol".
 
         Returns:
-            Union[MolType, AtomGroupType]: A new Luni instance in the specified format.
+            MolType | AtomGroupType: A new Luni instance in the specified format.
         """
         if fmt not in {"mda", "mol"}:
             raise ValueError(f"Invalid format: {fmt}, must be one of 'mda' or 'mol'")
@@ -280,11 +280,11 @@ class Luni:
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
-    def arc(self) -> Union[None, ARC]:
+    def arc(self) -> None | ARC:
         """Retrieve the ARC instance used to load the files.
 
         Returns:
-            Union[None, ARC]: The ARC instance used to load the files.
+            None | ARC: The ARC instance used to load the files.
         """
         return self._file_loader.arc
 

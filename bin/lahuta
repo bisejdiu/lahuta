@@ -13,7 +13,7 @@ Developed at and with ❤️ by St. Jude Children's Research Hospital
 
 from enum import Enum
 from time import perf_counter
-from typing import Callable, Dict, List, Literal, Optional
+from typing import Callable, Literal, Optional, list
 
 import numpy as np
 import pandas as pd
@@ -25,8 +25,6 @@ from lahuta import Luni
 from lahuta.contacts.computer import LahutaContacts
 from lahuta.core import NeighborPairs
 from lahuta.writers.pretty import PrettyDataFrame
-
-# pylint: disable=redefined-builtin
 
 FORMAT = Literal["compact", "expanded"]
 RESIDUE_DIFF_DEFAULT = 2
@@ -65,7 +63,7 @@ lahuta = Typer(
 )
 
 
-def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup) -> Dict[str, NeighborPairs]:
+def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup) -> dict[str, NeighborPairs]:
     """Compute contacts.
 
 
@@ -75,7 +73,7 @@ def compute_contacts(ns: NeighborPairs, contact_group: ContactGroup) -> Dict[str
 
 
     Returns:
-        Dict[str, NeighborPairs]: Dictionary of contact type and neighbor pairs.
+        dict[str, NeighborPairs]: Dictionary of contact type and neighbor pairs.
 
     """
     contacts = LahutaContacts(contact_type=contact_group.value)
@@ -124,11 +122,11 @@ def create_dataframe(
 # def dataframe_from_ns(ns: NeighborPairs, df_format: FORMAT) -> pd.DataFrame:
 
 
-def export_to_screen(results: Dict[str, NeighborPairs], df_format: FORMAT, n_rows: int) -> None:
+def export_to_screen(results: dict[str, NeighborPairs], df_format: FORMAT, n_rows: int) -> None:
     """Export to screen.
 
     Args:
-        results (Dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
+        results (dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
         df_format (FORMAT): Dataframe format.
         n_rows (int): Number of rows.
 
@@ -155,11 +153,11 @@ def export_to_screen(results: Dict[str, NeighborPairs], df_format: FORMAT, n_row
     pretty_df.prettify()
 
 
-def create_result_dataframe(results: Dict[str, NeighborPairs], df_format: FORMAT) -> pd.DataFrame:
+def create_result_dataframe(results: dict[str, NeighborPairs], df_format: FORMAT) -> pd.DataFrame:
     """Create result dataframe.
 
     Args:
-        results (Dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
+        results (dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
         df_format (FORMAT): Dataframe format.
 
     Returns:
@@ -176,11 +174,11 @@ def create_result_dataframe(results: Dict[str, NeighborPairs], df_format: FORMAT
     return pd.concat(collect_dfs).reset_index(drop=True)
 
 
-def export_to_csv(results: Dict[str, NeighborPairs], df_format: FORMAT) -> None:
+def export_to_csv(results: dict[str, NeighborPairs], df_format: FORMAT) -> None:
     """Export to csv.
 
     Args:
-        results (Dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
+        results (dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
         df_format (FORMAT): Dataframe format.
 
     """
@@ -189,18 +187,18 @@ def export_to_csv(results: Dict[str, NeighborPairs], df_format: FORMAT) -> None:
 
 
 def export_to_file(
-    results: Dict[str, NeighborPairs], export_type: str, df_format: FORMAT, output: Optional[str]
+    results: dict[str, NeighborPairs], export_type: str, df_format: FORMAT, output: Optional[str]
 ) -> None:
     """Export to file.
 
     Args:
-        results (Dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
+        results (dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
         export_type (str): Export type.
         df_format (FORMAT): Dataframe format.
         output (Optional[str], optional): Output file name. Defaults to None.
 
     """
-    export_functions: Dict[str, Callable[[pd.DataFrame, str], None]] = {
+    export_functions: dict[str, Callable[[pd.DataFrame, str], None]] = {
         "csv": lambda df, filename: df.to_csv(filename, index=False),
         "html": lambda df, filename: df.to_html(filename),
         "json": lambda df, filename: df.to_json(filename),
@@ -215,8 +213,8 @@ def export_to_file(
 
 
 def export_results(
-    export: List[ExportGroup],
-    results: Dict[str, NeighborPairs],
+    export: list[ExportGroup],
+    results: dict[str, NeighborPairs],
     df_format: FORMAT,
     n_rows: int,
     output: Optional[str] = None,
@@ -224,8 +222,8 @@ def export_results(
     """Export results.
 
     Args:
-        export (List[ExportGroup]): List of export types.
-        results (Dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
+        export (list[ExportGroup]): list of export types.
+        results (dict[str, NeighborPairs]): Dictionary of contact type and neighbor pairs.
         df_format (FORMAT): Dataframe format.
         n_rows (int): Number of rows.
         output (Optional[str], optional): Output file name. Defaults to None.
@@ -262,7 +260,7 @@ def run(
         "-f",
         help="Format of the output.",
     ),
-    export: List[ExportGroup] = Option(
+    export: list[ExportGroup] = Option(
         ["screen"],
         "--export",
         "-to",

@@ -5,7 +5,7 @@ The tests are parameterized to test the functions with different input sizes and
 shared elements between the arrays.
 """
 import random
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import numpy as np
 import pytest
@@ -13,11 +13,10 @@ from numpy.typing import NDArray
 
 import lahuta.utils.array_utils as au
 
-# pylint: disable=arguments-out-of-order
 
 pytestmark = pytest.mark.au
 
-TestFuncCallable = Callable[[int, float, float], Tuple[NDArray[np.int32], NDArray[np.int32]]]
+TestFuncCallable = Callable[[int, float, float], tuple[NDArray[np.int32], NDArray[np.int32]]]
 
 
 def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
@@ -48,7 +47,7 @@ def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
 
 def _generate_test_data(
     size: int, subset_ratio: float = 0.5, extra_ratio: float = 0.1
-) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
+) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
     """
     Generate test data for the array_utils tests.
 
@@ -62,7 +61,7 @@ def _generate_test_data(
         extra_ratio (float): The ratio of additional elements in `arr2` that are not in `arr1`.
 
     Returns:
-        Tuple[NDArray[np.int32], NDArray[np.int32]]: The two arrays.
+        tuple[NDArray[np.int32], NDArray[np.int32]]: The two arrays.
     """
     if not 0 <= subset_ratio <= 1 or not 0 <= extra_ratio <= 1:
         raise ValueError("subset_ratio and extra_ratio must be a float between 0 and 1.")
@@ -81,10 +80,10 @@ def _generate_test_data(
 
     if subset_ratio > 0:
         # Assign the first 'subset_size' pairs of arr1 to arr2
-        arr2_subset = arr1[:subset_size]  # type: ignore
+        arr2_subset = arr1[:subset_size]
 
         # Add additional unique pairs to arr2
-        arr2_extra = all_data[size : size + extra_size]  # type: ignore
+        arr2_extra = all_data[size : size + extra_size]
 
         arr2 = np.concatenate((arr2_subset, arr2_extra), axis=0)
     else:
@@ -128,7 +127,7 @@ def check_edge_cases(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
     assert mask.sum() == 0
 
     # Test with identical arrays
-    arr1 = np.random.randint(0, 10000, size=(1000, 2))  # type: ignore
+    arr1 = np.random.randint(0, 10000, size=(1000, 2))
     arr2 = arr1.copy()
     mask = au.find_shared_pairs(arr1, arr2)
     assert mask.all()
@@ -194,7 +193,7 @@ def generate_test_data() -> TestFuncCallable:
 
 # define the parameters for the test
 # params = [(1000, 0.5, 0.1), (2000, 0.7, 0.2), (500, 0.3, 0.05)]
-params: List[Tuple[int, float, float]] = []
+params: list[tuple[int, float, float]] = []
 for _ in range(10):
     a = random.randint(500, 20000)
     b = round(random.uniform(0.05, 0.95), 2)

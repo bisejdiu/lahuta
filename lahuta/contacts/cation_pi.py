@@ -47,7 +47,7 @@ class CationPi(ContactAnalysis):
         distance (float): The maximum distance to consider for a cation pi contact. This value is retrieved
             from the 'cation_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-            Set to `False` by default, meaning results will not be cached.
+            set to `False` by default, meaning results will not be cached.
 
     Methods:
         compute() -> NeighborPairs: Computes and returns the cation pi contacts, utilizing the `cation_pi` function.

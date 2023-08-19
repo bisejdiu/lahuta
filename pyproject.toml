@@ -29,7 +29,7 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Bio-Informatics',
     'Topic :: Scientific/Engineering :: Chemistry',
 ]
-requires-python = '>=3.8'
+requires-python = '>=3.10'
 dependencies = [
     # core
     'gemmi>=0.6.0',
@@ -67,7 +67,7 @@ ignore = [
 
 mccabe = { max-complexity = 14 }
 isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
-target-version = "py39"
+target-version = "py310"
 exclude=['lahuta/scripts', 'cachedir', 'tests', 'docs/plugins']
 
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
@@ -103,3 +103,6 @@ exclude = "docs|cachedir|scripts|__pycache__"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+minversion = 7.4
+addopts = "--maxfail=4"
+log_level = "INFO"

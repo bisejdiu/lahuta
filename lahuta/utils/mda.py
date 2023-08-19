@@ -1,7 +1,5 @@
 """Create a pseudo box for PDB files and the shifting of coordinates within that box."""
 
-from typing import Tuple
-
 import numpy as np
 from numpy.typing import NDArray
 
@@ -10,7 +8,7 @@ from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 def mda_psuedobox_from_atomgroup(
     ag: AtomGroupType, cutoff: float = 5.0
-) -> Tuple[NDArray[np.float32], NDArray[np.float32]]:
+) -> tuple[NDArray[np.float32], NDArray[np.float32]]:
     """Construct a pseudo box and shifts atomic coordinates to fit within this box.
 
     This function takes an AtomGroup object and a cutoff distance as input, and it creates
@@ -24,7 +22,7 @@ def mda_psuedobox_from_atomgroup(
                                   edges of the pseudo box and the atoms. Default is 5.0.
 
     Returns:
-        Tuple[NDArray[np.float32], NDArray[np.float32]]: The shifted coordinates of the atoms \
+        tuple[NDArray[np.float32], NDArray[np.float32]]: The shifted coordinates of the atoms \
                                                         and the dimensions of the pseudo box.
     """
     lmax: float = ag.positions.max(axis=0)

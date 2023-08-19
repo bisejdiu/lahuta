@@ -2,8 +2,6 @@
 
 __all__ = ["VERSION"]
 
-from typing import Tuple
-
 VERSION = "0.7.0"
 """The version of Lahuta."""
 
@@ -17,7 +15,7 @@ def get_version() -> str:
     return VERSION
 
 
-def version_info() -> Tuple[int, int, int]:
+def version_info() -> tuple[int, int, int]:
     """Get the version of Lahuta as a tuple of integers.
 
     Returns:

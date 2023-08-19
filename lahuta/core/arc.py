@@ -39,7 +39,7 @@ Example:
 """
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Iterator, Optional, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -94,11 +94,11 @@ class Atoms:
         self.coords = np.zeros((0, 3), dtype=np.float32)
 
     @classmethod
-    def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Atoms":
+    def from_gemmi(cls, gemmi_block: dict[str, Any]) -> "Atoms":
         """Create an Atoms instance from a Gemmi block.
 
         Args:
-            gemmi_block (Dict[str, Any]): A Gemmi block.
+            gemmi_block (dict[str, Any]): A Gemmi block.
 
         Returns:
             Atoms: An Atoms instance.
@@ -106,7 +106,7 @@ class Atoms:
         cls_instance = cls.__new__(cls)
 
         # Create structured array
-        label_atom_id: List[str] = gemmi_block["label_atom_id"]
+        label_atom_id: list[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
         data["id"] = np.arange(data["name"].size)
@@ -172,7 +172,7 @@ class Atoms:
     def __len__(self) -> int:
         return self.data.size
 
-    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
+    def __getitem__(self, index: int | slice) -> NDArray[Any]:
         return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
@@ -217,11 +217,11 @@ class Residues:
         self.data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
     @classmethod
-    def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Residues":
+    def from_gemmi(cls, gemmi_block: dict[str, Any]) -> "Residues":
         """Create a Residues instance from a Gemmi block.
 
         Args:
-            gemmi_block (Dict[str, Any]): A Gemmi block.
+            gemmi_block (dict[str, Any]): A Gemmi block.
 
         Returns:
             Residues: A Residues instance.
@@ -270,7 +270,7 @@ class Residues:
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
+    def __getitem__(self, index: int | slice) -> NDArray[Any]:
         return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
@@ -295,7 +295,7 @@ class Chains:
 
     Attributes:
         _data (NDArray[Any]): A numpy structured array storing chain properties.
-        mapping (Dict[str, int]): Mapping from chain auth to chain IDs.
+        mapping (dict[str, int]): Mapping from chain auth to chain IDs.
 
     Examples:
         ``` py
@@ -316,14 +316,14 @@ class Chains:
         self.name = name
         self.data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
-        self.mapping: Dict[str, int] = {}
+        self.mapping: dict[str, int] = {}
 
     @classmethod
-    def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Chains":
+    def from_gemmi(cls, gemmi_block: dict[str, Any]) -> "Chains":
         """Create a Chains instance from a Gemmi block.
 
         Args:
-            gemmi_block (Dict[str, Any]): A Gemmi block.
+            gemmi_block (dict[str, Any]): A Gemmi block.
 
         Returns:
             Chains: A Chains instance.
@@ -333,7 +333,7 @@ class Chains:
         # Create structured array
         labels: NDArray[np.str_] = np.array(gemmi_block["label_asym_id"])
         auths: NDArray[np.str_] = np.array(gemmi_block["auth_asym_id"])
-        _, ids = np.unique(auths, return_inverse=True)  # type: ignore
+        _, ids = np.unique(auths, return_inverse=True)
         ids += 1
 
         data = np.empty(len(labels), dtype=cls.dtype)
@@ -342,7 +342,7 @@ class Chains:
         data["id"] = ids
 
         cls_instance.data = data
-        cls_instance.mapping = dict(zip(auths, ids))
+        cls_instance.mapping = dict(zip(auths, ids, strict=True))
 
         return cls_instance
 
@@ -360,10 +360,10 @@ class Chains:
         cls_instance.data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance.data["label"] = mda_universe.atoms.chainIDs
         cls_instance.data["auth"] = mda_universe.atoms.chainIDs
-        _, cls_instance.data["id"] = np.unique(cls_instance.data["auth"], return_inverse=True)  # type: ignore
+        _, cls_instance.data["id"] = np.unique(cls_instance.data["auth"], return_inverse=True)
         cls_instance.data["id"] += 1
 
-        cls_instance.mapping = dict(zip(cls_instance.data["auth"], cls_instance.data["id"]))
+        cls_instance.mapping = dict(zip(cls_instance.data["auth"], cls_instance.data["id"], strict=True))
 
         return cls_instance
 
@@ -385,7 +385,7 @@ class Chains:
     def __len__(self) -> int:
         return len(self.data)
 
-    def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
+    def __getitem__(self, index: int | slice) -> NDArray[Any]:
         return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
@@ -430,7 +430,7 @@ class ARC:
     def __init__(
         self,
         obj: Union["GemmiLoader", "TopologyLoader"],
-        site_data: Union[Dict[str, Any], AtomGroupType],
+        site_data: dict[str, Any] | AtomGroupType,
     ):
         obj_name: str = obj.__class__.__name__
         obj_map = self._obj_map(obj_name)
@@ -497,11 +497,11 @@ class ARC:
     def __len__(self) -> int:
         return len(self._atoms)
 
-    def __getitem__(self, index: Union[int, slice]) -> Union["Atom", List["Atom"]]:
+    def __getitem__(self, index: int | slice) -> Union["Atom", list["Atom"]]:
         if isinstance(index, int):
             return self.get_atom(index)
 
-        indices = np.arange(len(self))[index]  # type: ignore
+        indices = np.arange(len(self))[index]
         return [self.get_atom(i) for i in indices]
 
     def __iter__(self) -> Iterator["Atom"]:

@@ -103,7 +103,7 @@ class ContactAnalysis:
                 self.ns.partner1,
                 self.ns.partner2,
             )
-            for atom1, atom2, distance in zip(p1_atoms, p2_atoms, self.ns.distances):
+            for atom1, atom2, distance in zip(p1_atoms, p2_atoms, self.ns.distances, strict=True):
                 self.results.append(self.compute_elementwise(atom1, atom2, distance))
         else:
             raise NotImplementedError("Object must implement either compute or compute_elementwise methods.")

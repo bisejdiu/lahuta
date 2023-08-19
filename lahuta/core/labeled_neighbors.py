@@ -6,7 +6,7 @@ methods to manipulate, analyze, and export these pairs.
 
 """
 import warnings
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, Type, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -85,8 +85,8 @@ class LabeledNeighborPairs:
         """Not implemented."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support hydrogen bond angle filtering.")
 
-    def _filter(self, mode: str, inverse: bool = False, **kwargs: List[str]) -> "LabeledNeighborPairs":
-        masks: List[NDArray[np.bool_]] = []
+    def _filter(self, mode: str, inverse: bool = False, **kwargs: list[str]) -> "LabeledNeighborPairs":
+        masks: list[NDArray[np.bool_]] = []
         for mask in [self._mask1, self._mask2]:
             new_mask = np.copy(mask)
             assert self._pairs.dtype.names is not None
@@ -99,7 +99,7 @@ class LabeledNeighborPairs:
             masks.append(new_mask)
         return LabeledNeighborPairs(self._pairs, *masks)
 
-    def select(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+    def select(self, **kwargs: list[str]) -> "LabeledNeighborPairs":
         """Select pairs based on their attributes.
 
         Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
@@ -123,7 +123,7 @@ class LabeledNeighborPairs:
         """
         return self._filter("select", False, **kwargs)
 
-    def exclude(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+    def exclude(self, **kwargs: list[str]) -> "LabeledNeighborPairs":
         """Exclude pairs based on their attributes.
 
         Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
@@ -183,9 +183,7 @@ class LabeledNeighborPairs:
         _, unique_idx = np.unique(pairs, axis=0, return_index=True)
         return pairs[np.sort(unique_idx)]
 
-    def _apply_func(
-        self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]
-    ) -> "LabeledNeighborPairs":
+    def _apply_func(self, field: str, func: Callable[[NDArray[np.str_]], str | np.str_]) -> "LabeledNeighborPairs":
         assert self._pairs.dtype.names is not None
         if field not in self._pairs.dtype.names:
             raise ValueError(f"Field {field} not found in pairs")
@@ -216,7 +214,7 @@ class LabeledNeighborPairs:
         """
         return self._apply_func(field, lambda _: "")
 
-    def rename(self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]) -> "LabeledNeighborPairs":
+    def rename(self, field: str, func: Callable[[NDArray[np.str_]], str | np.str_]) -> "LabeledNeighborPairs":
         """Rename an attribute of the pairs.
 
         This method renames the specified attribute of the pairs using the provided function. The method returns a new
@@ -288,7 +286,7 @@ class LabeledNeighborPairs:
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask_a, mask_b = au.union_masks(pairs, other_pairs)
 
-        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
+        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
         return LabeledNeighborPairs(merged_pairs)
 
     def difference(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
@@ -345,7 +343,7 @@ class LabeledNeighborPairs:
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask_a, mask_b = au.symmetric_difference(pairs, other_pairs)
 
-        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
+        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
 
         return LabeledNeighborPairs(merged_pairs)
 
@@ -420,7 +418,7 @@ class LabeledNeighborPairs:
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         return au.issuperset(pairs, other_pairs)
 
-    def isequal(self, other: Union["LabeledNeighborPairs", object]) -> bool:
+    def isequal(self, other: Type["LabeledNeighborPairs"] | object) -> bool:
         """Check if this LabeledNeighborPairs object is equal to another.
 
         Two LabeledNeighborPairs objects are considered equal if they contain exactly the same pairs.
@@ -465,9 +463,9 @@ class LabeledNeighborPairs:
             False
             ```
         """
-        indices, _ = pd.factorize(self.pairs.ravel())  # type: ignore
-        pairs = indices.reshape(self.pairs.shape)  # type: ignore
-        return au.isunique(pairs)  # type: ignore
+        indices, _ = pd.factorize(self.pairs.ravel())
+        pairs = indices.reshape(self.pairs.shape)
+        return au.isunique(pairs)
 
     def is_strict_subset(self, other: "LabeledNeighborPairs") -> bool:
         """Check if all pairs of this LabeledNeighborPairs object are in another, and the two sets are not equal.
@@ -537,7 +535,7 @@ class LabeledNeighborPairs:
         """
         return pd.DataFrame(self.pairs, columns=["atom1", "atom2"])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the LabeledNeighborPairs object to a dictionary.
 
         Returns:
@@ -590,7 +588,7 @@ class LabeledNeighborPairs:
         """
         raise NotImplementedError("This method is not implemented for LabeledNeighborPairs.")
 
-    def __getitem__(self, item: Union[int, slice, NDArray[np.int32]]) -> "LabeledNeighborPairs":
+    def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "LabeledNeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.
 
         This method allows accessing the neighbor pairs similar to elements in a list.

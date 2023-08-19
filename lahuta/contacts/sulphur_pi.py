@@ -45,7 +45,7 @@ class SulphurPi(ContactAnalysis):
         distance (float): The maximum distance to consider for a sulphur pi contact. This value is retrieved
             from the 'sulphur_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-            Set to `False` by default, meaning results will not be cached.
+            set to `False` by default, meaning results will not be cached.
 
     Methods:
         compute() -> NeighborPairs: Computes and returns the sulphur pi contacts, utilizing the `sulphur_pi` function.

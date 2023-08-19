@@ -1,6 +1,5 @@
 """Pytest configuration file."""
 from pathlib import Path
-from typing import List
 
 import pytest
 from _pytest.config import Config
@@ -35,12 +34,12 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addoption("--trajs", action="store_true", default=False, help="Run trajectory tests")
 
 
-def pytest_collection_modifyitems(config: Config, items: List[pytest.Item]) -> None:
+def pytest_collection_modifyitems(config: Config, items: list[pytest.Item]) -> None:
     """Modify the list of tests to run based on command line options.
 
     Args:
         config (Config): The pytest config.
-        items (List[pytest.Item]): The list of tests to run.
+        items (list[pytest.Item]): The list of tests to run.
     """
     if config.getoption("--contacts"):
         items[:] = [item for item in items if item.get_closest_marker("contacts")]

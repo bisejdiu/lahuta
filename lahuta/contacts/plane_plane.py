@@ -38,7 +38,7 @@ Usage:
     result = plane_plane.results
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -55,7 +55,7 @@ class _PlanePlaneContacts:
         self.ns = ns
         self.rings = enumerate_rings(self.ns.mol)
         self.centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
-        self._annotations: Dict[str, NDArray[Any]] = {}
+        self._annotations: dict[str, NDArray[Any]] = {}
 
         self._pair_ids: NDArray[np.int32] = np.array([])
         self.distances: NDArray[np.float32] = np.array([])
@@ -104,21 +104,21 @@ class _PlanePlaneContacts:
         self._annotations["ring2_atoms"] = ring_atoms[:, 1]
         self._annotations["contact_labels"] = int_types
 
-    def _get_pairs_distances(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def _get_pairs_distances(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
         ring_atom_indices = self.rings.first_atom_idx[self._pair_ids]
         first_ring_indices, second_ring_indices = (
             ring_atom_indices[:, 0],
             ring_atom_indices[:, 1],
         )
 
-        pairs = np.array(list(zip(first_ring_indices, second_ring_indices)))
+        pairs = np.array(list(zip(first_ring_indices, second_ring_indices, strict=True)))
 
         return pairs, self.distances
 
-    def _sort_inputs(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def _sort_inputs(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
         pairs, distances = self._get_pairs_distances()
         indices_arr = sorting_indices(pairs)
-        indices: List[int] = indices_arr.tolist()
+        indices: list[int] = indices_arr.tolist()
         pairs, distances = NeighborPairs.sort_inputs(pairs, self.distances)
 
         self._pair_ids = self._pair_ids[indices]
@@ -137,8 +137,7 @@ class _PlanePlaneContacts:
     def _gen_combinations(self, use_itertools: bool = False) -> NDArray[np.int32]:
         """Generate all combinations of pairs of indices in the form (i, j) where i < j."""
         if use_itertools:
-            # pylint: disable=import-outside-toplevel
-            from itertools import combinations  # type: ignore
+            from itertools import combinations
 
             return np.array(list(combinations(range(len(self.rings)), 2)))
 
@@ -294,7 +293,7 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
         NDArray[np.str_]: An array of strings representing the contact type for each pair of planes.
 
     """
-    types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"])
+    types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"], dtype=np.str_)
     ranges = np.array(
         [
             (0, 30, 0, 30),
@@ -306,7 +305,8 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
             (60, 90, 0, 30),
             (60, 90, 30, 60),
             (60, 90, 60, 90),
-        ]
+        ],
+        dtype=np.int32,
     )
 
     conditions = np.logical_and(
@@ -314,5 +314,5 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
         np.logical_and(ranges[:, 2] <= theta[:, None], theta[:, None] <= ranges[:, 3]),
     )
 
-    indices = np.argmax(conditions, axis=1)
-    return types[indices]  # type: ignore
+    indices: NDArray[np.int32] = np.argmax(conditions, axis=1)
+    return types[indices]

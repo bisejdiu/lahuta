@@ -19,7 +19,7 @@ Example:
     ```
 
 """
-from typing import Any, Optional, Set, Tuple, Union
+from typing import Any, Optional
 
 import gemmi
 import numpy as np
@@ -122,11 +122,11 @@ class OBMol:
             self.mol.ConnectTheDots()
             self.mol.PerceiveBondOrders()
 
-    def perceive_properties(self) -> Union[MolType, None]:
+    def perceive_properties(self) -> MolType | None:
         """Identify properties of the molecule.
 
         Returns:
-            Union[MolType, None]: The molecule with its properties perceived.
+            MolType | None: The molecule with its properties perceived.
         """
         if self.mol:
             self.mol.SetAromaticPerceived()
@@ -170,8 +170,8 @@ class OBMol:
         self.mol.BeginModify()
 
         ob_res = None
-        added_residues: Set[Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]] = set()
-        for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
+        added_residues: set[tuple[NDArray[Any], NDArray[Any], NDArray[Any]]] = set()
+        for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms, strict=True)):
             atom_id = int(atom["id"])
             atom_name, element = atom["name"], atom["element"]
             resname: NDArray[np.str_] = residue["resname"]
@@ -212,7 +212,7 @@ class OBMol:
         self.perceive_properties()
 
         self.end_modify(True)
-        self.mol.SetChainsPerceived()  # type: ignore
+        self.mol.SetChainsPerceived()
 
     def _get_atom_index(
         self,

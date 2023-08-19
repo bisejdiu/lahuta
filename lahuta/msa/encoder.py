@@ -1,5 +1,4 @@
 """Encoder for MSA labels."""
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -8,7 +7,7 @@ from numpy.typing import NDArray
 
 def encode_labels(
     source_labels: NDArray[np.void], target_labels: NDArray[np.void]
-) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
+) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
     """Encode the labels of the source and target sequences.
 
     Args:
@@ -16,7 +15,7 @@ def encode_labels(
         target_labels (NDArray[np.void]): The labels of the target sequence.
 
     Returns:
-        Tuple[NDArray[np.int32], NDArray[np.int32]]: The encoded labels of the source and target sequences.
+        tuple[NDArray[np.int32], NDArray[np.int32]]: The encoded labels of the source and target sequences.
 
     """
     labels: NDArray[np.str_] = np.concatenate((source_labels.ravel(), target_labels.ravel()))

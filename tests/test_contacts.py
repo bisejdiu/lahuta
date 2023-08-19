@@ -2,7 +2,7 @@ import gzip
 import json
 import warnings
 from pathlib import Path
-from typing import Callable, Dict, List, Tuple, Type, Union
+from typing import Callable, Type
 
 import numpy as np
 import pytest
@@ -17,12 +17,9 @@ from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.tests import X2, DNABound, Rhodopsin
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
 
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
-ContactDict = Dict[str, Union[List[int], int]]
+ContactDict = dict[str, list[int] | int]
 
 pytestmark = pytest.mark.contacts
 
@@ -30,7 +27,7 @@ FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin()), ("3q2y.json
 
 
 @pytest.fixture(scope="session", params=FILE_PAIRS)
-def data_loader(request: FixtureRequest) -> Tuple[NeighborPairs, Dict[str, ContactDict]]:
+def data_loader(request: FixtureRequest) -> tuple[NeighborPairs, dict[str, ContactDict]]:
     json_file, file_obj = request.param
 
     # Load ExpectedResults from the JSON file
@@ -47,20 +44,20 @@ def data_loader(request: FixtureRequest) -> Tuple[NeighborPairs, Dict[str, Conta
 
 
 @pytest.fixture(scope="session")
-def neighbors(data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]) -> NeighborPairs:
+def neighbors(data_loader: tuple[NeighborPairs, dict[str, ContactDict]]) -> NeighborPairs:
     """Helper fixture to get neighbor pairs."""
     return data_loader[0]
 
 
 @pytest.fixture(scope="session")
-def atom_plane(data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]) -> AtomPlaneContacts:
+def atom_plane(data_loader: tuple[NeighborPairs, dict[str, ContactDict]]) -> AtomPlaneContacts:
     """Helper fixture to get atomplane."""
     atomplane = AtomPlaneContacts(data_loader[0])
     return atomplane
 
 
 @pytest.fixture(scope="session")
-def plane_plane(data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]) -> PlanePlaneContacts:
+def plane_plane(data_loader: tuple[NeighborPairs, dict[str, ContactDict]]) -> PlanePlaneContacts:
     """Helper fixture to get planeplane."""
     planeplane = PlanePlaneContacts(data_loader[0])
 
@@ -92,7 +89,7 @@ def test_atom_atom_neighbor_funcs(
     neighbor_func: Callable[[NeighborPairs], NeighborPairs],
     expected_key: str,
     neighbors: NeighborPairs,
-    data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]],
+    data_loader: tuple[NeighborPairs, dict[str, ContactDict]],
 ) -> None:
     """Test the neighbors."""
 
@@ -138,7 +135,7 @@ def test_atom_atom_neighbor_classes(
     contact_class: Type[ContactAnalysis],
     expected_key: str,
     neighbors: NeighborPairs,
-    data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]],
+    data_loader: tuple[NeighborPairs, dict[str, ContactDict]],
 ) -> None:
     """Test the neighbors."""
     with warnings.catch_warnings():
@@ -177,7 +174,7 @@ def test_atomplane_contacts(
     contact_func_name: str,
     expected_key: str,
     atom_plane: AtomPlaneContacts,
-    data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]],
+    data_loader: tuple[NeighborPairs, dict[str, ContactDict]],
 ) -> None:
     """Test the contacts."""
 
@@ -200,7 +197,7 @@ def test_atomplane_contacts(
 
 
 def test_planeplane_neighbors(
-    plane_plane: PlanePlaneContacts, data_loader: Tuple[NeighborPairs, Dict[str, ContactDict]]
+    plane_plane: PlanePlaneContacts, data_loader: tuple[NeighborPairs, dict[str, ContactDict]]
 ) -> None:
     """Test the plane_plane neighbors."""
     plane_ns = plane_plane.results

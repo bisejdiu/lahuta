@@ -5,7 +5,6 @@ import numpy as np
 from .base import BasePlotter
 
 
-# pylint: disable=missing-class-docstring, missing-function-docstring
 class FullPlotter(BasePlotter):
     """Plot the full contact map.
 
@@ -62,7 +61,7 @@ class MatchingIndicesPlotter(BasePlotter):
         x_mapped = np.searchsorted(x_indices, self.pairs[:, 0])
         y_mapped = np.searchsorted(y_indices, self.pairs[:, 1])
 
-        mapped_pairs = list(zip(x_mapped, y_mapped))
+        mapped_pairs = list(zip(x_mapped, y_mapped, strict=True))
 
         contact_map = self._initialize_map(shape, mapped_pairs)
         plt.imshow(contact_map, cmap=self.binary_cmap, interpolation="none", origin="lower")

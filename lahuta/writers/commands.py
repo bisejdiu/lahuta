@@ -23,7 +23,7 @@ Example usage:
 """
 
 
-from typing import Dict, Type
+from typing import Type
 
 import pandas as pd
 
@@ -88,7 +88,7 @@ class ExpandedDataFrame(DataFrame):
         return pd.DataFrame(self.data)
 
 
-FACTORY_DICT: Dict[str, Type[DataFrame]] = {
+FACTORY_DICT: dict[str, Type[DataFrame]] = {
     "compact": CompactDataFrame,
     "expanded": ExpandedDataFrame,
 }

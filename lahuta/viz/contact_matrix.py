@@ -1,5 +1,5 @@
 """Contains the ContactMap class for plotting contact maps."""
-from typing import Literal, Tuple
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +16,7 @@ class ContactMap:
         figsize: The size of the figure to plot.
     """
 
-    def __init__(self, pairs: NDArray[np.int32], figsize: Tuple[int, int] = (10, 10)) -> None:
+    def __init__(self, pairs: NDArray[np.int32], figsize: tuple[int, int] = (10, 10)) -> None:
         self.pairs = pairs
         plt.figure(figsize=figsize)
 

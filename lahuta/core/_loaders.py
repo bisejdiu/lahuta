@@ -20,7 +20,7 @@ Classes:
 
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterator, Literal, Optional, Union, overload
+from typing import Any, Iterator, Literal, Optional, overload
 
 import gemmi
 import MDAnalysis as mda
@@ -100,14 +100,14 @@ class BaseLoader(ABC):
     def to(self, fmt: Literal["mol"]) -> MolType:
         ...
 
-    def to(self, fmt: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
+    def to(self, fmt: Literal["mol", "mda"]) -> MolType | AtomGroupType:
         """Convert the loaded biological structure data into a different format.
 
         Args:
             fmt (str): The format to which the biological structure data should be converted.
 
         Returns:
-            Union[MolType, AtomGroupType]: The biological structure data in the specified format.
+            MolType | AtomGroupType: The biological structure data in the specified format.
 
         Raises:
             ValueError: If the specified format is not supported.
@@ -126,7 +126,7 @@ class BaseLoader(ABC):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
 
-    def __iter__(self) -> Iterator[Union[Atoms, Residues, Chains]]:
+    def __iter__(self) -> Iterator[Atoms | Residues | Chains]:
         """Iterate over atoms, residues, and chains."""
         yield self.atoms
         yield self.residues
@@ -163,18 +163,18 @@ class GemmiLoader(BaseLoader):
             structure: Any = gemmi.make_structure_from_block(block)  # type: ignore
 
         self.structure = structure
-        atom_site_data: Dict[str, Any] = block.get_mmcif_category("_atom_site.")
+        atom_site_data: dict[str, Any] = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
         self.arc.atoms.coordinates = self.extract_positions(atom_site_data)
 
         self.ag: AtomGroupType = self._create_mda()
 
-    def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float32]:
+    def extract_positions(self, atom_site_data: dict[str, Any]) -> NDArray[np.float32]:
         """Extract the coordinates from the atom_site data.
 
         Args:
-            atom_site_data (Dict[str, Any]): The atom_site data from the gemmi structure object.
+            atom_site_data (dict[str, Any]): The atom_site data from the gemmi structure object.
 
         Returns:
             NDArray[np.float32]: The coordinates of the atoms in the structure.
@@ -199,16 +199,16 @@ class GemmiLoader(BaseLoader):
         assert self.arc is not None, "arc has not been initialized"
         struct_arr = np.rec.fromarrays(  # type: ignore
             [self.arc.residues.resnames, self.arc.residues.resids, self.arc.chains.ids],
-            names=str("resnames, resids, chain_ids"),  # type: ignore
+            names=str("resnames, resids, chain_ids"),
         )
 
         # Use factorize to get the labels and unique values
-        resindices, uniques = pd.factorize(struct_arr)  # type: ignore
+        resindices, uniques = pd.factorize(struct_arr)
 
         resnames, resids, chain_ids = (uniques["resnames"], uniques["resids"], uniques["chain_ids"])
 
         # Create a new Universe
-        uv: UniverseType = mda.Universe.empty(  # type: ignore
+        uv: UniverseType = mda.Universe.empty(
             n_atoms=self.arc.atoms.ids.size,
             n_residues=uniques.size,
             n_segments=chain_ids.size,
@@ -237,10 +237,11 @@ class GemmiLoader(BaseLoader):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
-        obmol = OBMol()  # type: ignore
+        assert self.structure is not None, "structure should not be None"
+        obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            self.structure.connections,  # type: ignore
+            self.structure.connections,
         )
         assert obmol.mol is not None
         return obmol.mol
@@ -268,10 +269,10 @@ class TopologyLoader(BaseLoader):
         file_path: str = paths[0]
         super().__init__(file_path)
         universe = mda.Universe(self.file_path)
-        self.ag: AtomGroupType = universe.atoms  # type: ignore
+        self.ag: AtomGroupType = universe.atoms
         assert self.ag is not None
         if len(paths) > 1:
-            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)  # type: ignore
+            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
 
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
@@ -282,7 +283,7 @@ class TopologyLoader(BaseLoader):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
-        obmol = OBMol()  # type: ignore
+        obmol = OBMol()
         obmol.create_mol(
             self.arc,
             self.structure,

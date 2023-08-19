@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Tuple
 
 import pytest
 from _pytest.fixtures import FixtureRequest
@@ -9,14 +8,11 @@ from lahuta import Luni
 from lahuta.core.labeled_neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=invalid-name
-# pylint: disable=missing-function-docstring
 
 pytestmark = pytest.mark.nb
 
 # Type variables
-T = Tuple[LabeledNeighborPairs, LabeledNeighborPairs]
+T = tuple[LabeledNeighborPairs, LabeledNeighborPairs]
 
 file_triplets = [
     ('data/b2.cif', 'data/s5.cif', 'data/alig_b2s5.fasta'),

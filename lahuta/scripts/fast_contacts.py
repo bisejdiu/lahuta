@@ -71,16 +71,16 @@ if __name__ == "__main__":
     # ap = AtomPlaneContacts(u)
     # ap.compute_contacts()
 
-    # cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)
     # print(cp.pairs.shape, "cp")
 
-    # cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)
     # print(cp2.pairs.shape, "cp2")
 
-    # dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)
     # print(dp.pairs.shape, "dp")
 
-    # sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)  # type: ignore
+    # sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)
     # print(sp.pairs.shape, "sp")
 
     # pp = PlanePlaneContacts(n)

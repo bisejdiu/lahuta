@@ -19,40 +19,39 @@ The module is expected to be used for handling and processing biochemical data s
 with specific focuses on proteins and nucleic acids.
 """
 
-from typing import Dict, Set
 
 import lahuta.config._atom_type_strings as at
 
 HALOGENS = {"F", "CL", "BR", "I", "AT"}
 """
-Type: `Set[str]`: A set of standard halogens.
+Type: `set[str]`: A set of standard halogens.
 """
 
 MAINCHAIN_ATOMS = {"N", "C", "CA", "O", "OXT"}
 """
-Type: `Set[str]`: A set of atoms usually found in the main chain of a protein.
+Type: `set[str]`: A set of atoms usually found in the main chain of a protein.
 """
 
 
 STANDARD_NUCLEOTIDES = {"A", "C", "G", "I", "U", "DA", "DC", "DG", "DI", "DT", "DU", "N"}
 """
-Type: `Set[str]`: A set of standard nucleotides in RNA and DNA.
+Type: `set[str]`: A set of standard nucleotides in RNA and DNA.
 """
 
 
 METALS = at.METALS
 """
-Type: `Set[str]`: A set of metal atoms, sourced from `lahuta.config._atom_type_strings.py`.
+Type: `set[str]`: A set of metal atoms, sourced from `lahuta.config._atom_type_strings.py`.
 """
 
 STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS
 """
-Type: `Set[str]`: A set of standard amino acids. See the 
+Type: `set[str]`: A set of standard amino acids. See the 
 [source](atom_types.md#lahuta.config._atom_type_strings.STANDARD_AMINO_ACIDS).
 """
 
 
-PROT_ATOM_TYPES: Dict[str, Set[str]] = {
+PROT_ATOM_TYPES: dict[str, set[str]] = {
     "hbond_acceptor": at.HBOND_ACCEPTORS,
     "hbond_donor": at.HBOND_DONORS,
     "xbond_acceptor": at.XBOND_ACCEPTORS,
@@ -67,7 +66,7 @@ PROT_ATOM_TYPES: Dict[str, Set[str]] = {
     "aromatic": at.AROMATIC,
 }
 """
-Type: `Dict[str, Set[str]]`: A dictionary mapping atom types to sets of atom names (strings).
+Type: `dict[str, set[str]]`: A dictionary mapping atom types to sets of atom names (strings).
 
 !!! tip "Definitions"
 
@@ -91,7 +90,7 @@ Type: `Dict[str, Set[str]]`: A dictionary mapping atom types to sets of atom nam
 """
 
 
-def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+def remap_prot_atom_types(prot_atom_types: dict[str, set[str]]) -> dict[str, set[str]]:
     """Convert the PROT_ATOM_TYPES dictionary to a dictionary mapping atom ids to atom types.
 
     Args:
@@ -100,7 +99,7 @@ def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set
     Returns:
         dict: A dictionary mapping atom ids to atom types.
     """
-    id_to_types: Dict[str, Set[str]] = {}
+    id_to_types: dict[str, set[str]] = {}
     for atom_type, atom_set in prot_atom_types.items():
         for atom_id in atom_set:
             if atom_id not in id_to_types:
@@ -111,7 +110,7 @@ def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set
 
 ID_TO_TYPES = remap_prot_atom_types(PROT_ATOM_TYPES)
 """
-Type: `Dict[str, Set[str]]`: A dictionary mapping atom names (strings) to sets of atom types.
+Type: `dict[str, set[str]]`: A dictionary mapping atom names (strings) to sets of atom types.
 
 !!! tip "Definitions"
     See [`PROT_ATOM_TYPES`](#lahuta.config.atoms.PROT_ATOM_TYPES) for the definitions of atom types.

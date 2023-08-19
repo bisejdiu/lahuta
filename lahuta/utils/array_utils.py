@@ -35,7 +35,7 @@ Notes:
 
 """
 
-from typing import Tuple, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -76,7 +76,7 @@ def sorting_indices(arr: NDArray[np.int32]) -> NDArray[np.int32]:
 
     # Use lexsort to get sorted indices from large to small,
     # then use it to index into the sorted array
-    indices: NDArray[np.int32] = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
+    indices: NDArray[np.int32] = np.lexsort((arr[:, 1], arr[:, 0]))
 
     return indices
 
@@ -239,12 +239,12 @@ def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool
     arr1_void = asvoid(arr1)
     arr2_void = asvoid(arr2)
 
-    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)  # type: ignore
+    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)
 
 
 def symmetric_difference(
     arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
-) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
+) -> tuple[NDArray[np.bool_], NDArray[np.bool_]]:
     """Calculate the symmetric difference of two arrays.
 
     This function returns the elements that are in `arr1` but not in `arr2` and vice versa.
@@ -259,14 +259,13 @@ def symmetric_difference(
         mask_a: A boolean array that can be used to index `arr1` to get the elements unique to `arr1`.
         mask_b: A boolean array that can be used to index `arr2` to get the elements unique to `arr2`.
     """
-    # pylint: disable=arguments-out-of-order
     mask_a = difference(arr1, arr2, assume_unique)
     mask_b = difference(arr2, arr1, assume_unique)
 
     return mask_a, mask_b
 
 
-def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType], NDArray[np.int32]]:
+def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> tuple[NDArray[_DType], NDArray[np.int32]]:
     """Calculate the union of two arrays and return the unique pairs along with their indices.
 
     The function finds unique pairs from the union of `arr1` and `arr2`, and also returns the
@@ -305,7 +304,7 @@ def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType]
 
 def union_masks(
     arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
-) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
+) -> tuple[NDArray[np.bool_], NDArray[np.bool_]]:
     """Calculate the union of two arrays.
 
     Args:
@@ -318,7 +317,6 @@ def union_masks(
         mask_a: A boolean array that can be used to index `arr1` to get the elements of the union from `arr1`.
         mask_b: A boolean array that can be used to index `arr2` to get the elements of the union from `arr2`.
     """
-    # pylint: disable=arguments-out-of-order
     mask_a_diff, mask_b_diff = symmetric_difference(arr1, arr2, assume_unique)
     mask_a_int = intersection(arr1, arr2, assume_unique)
 
@@ -401,7 +399,6 @@ def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
         False
         ```
     """
-    # pylint: disable=arguments-out-of-order
     return issubset(arr2, arr1)
 
 
@@ -455,7 +452,7 @@ def isunique(arr: NDArray[_DType]) -> bool:
         False
         ```
     """
-    return arr.shape[0] == np.unique(arr, axis=0).shape[0]  # type: ignore
+    return arr.shape[0] == np.unique(arr, axis=0).shape[0]
 
 
 def is_strict_subset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
