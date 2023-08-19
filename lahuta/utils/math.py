@@ -153,7 +153,7 @@ def calc_pairwise_distances(matrix1: NDArray[np.float32], matrix2: NDArray[np.fl
                 [1.41421356, 1.        ]]])
         ```
     """
-    reshaped_matrix1 = matrix1[:, np.newaxis, :]  # type: ignore
+    reshaped_matrix1 = matrix1[:, np.newaxis, :]
     return distance(reshaped_matrix1, matrix2)
 
 

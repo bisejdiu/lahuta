@@ -6,7 +6,7 @@ from lahuta import Luni
 from lahuta.contacts.computer import LahutaContacts, LahutaTrajectoryContacts
 
 
-def remove_hidden_files(test_dir: Path):
+def remove_hidden_files(test_dir: Path) -> None:
     """Remove hidden files that are created by the tests.
 
     Args:
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     selection = 'protein'
     u = mda.Universe(coords, traj).select_atoms(selection)
 
-    luni = Luni(u.atoms)  # type: ignore
+    luni = Luni(u.atoms)
     luni.ready()
 
     ct = LahutaContacts(contact_type='atom-atom')

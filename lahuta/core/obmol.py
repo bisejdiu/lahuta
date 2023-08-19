@@ -212,7 +212,7 @@ class OBMol:
         self.perceive_properties()
 
         self.end_modify(True)
-        self.mol.SetChainsPerceived()  # type: ignore
+        self.mol.SetChainsPerceived()
 
     def _get_atom_index(
         self,

@@ -117,17 +117,19 @@ def vec_assign_atom_types(
     atom_name_str = atom_name[indices].astype(str)
 
     # Generate atom_id array by concatenating resname and atom_name arrays
-    atom_ids: NDArray[np.int32] = np.core.defchararray.add(  # type: ignore
-        np.core.defchararray.strip(resname_str),  # type: ignore
-        np.core.defchararray.strip(atom_name_str),  # type: ignore
+    atom_ids: NDArray[np.str_] = np.core.defchararray.add(
+        np.core.defchararray.strip(resname_str),
+        np.core.defchararray.strip(atom_name_str),
     )
 
     for idx, atom in enumerate(ag):
-        atom_id: int = atom_ids[idx]  # type: ignore
-        atom_types = ID_TO_TYPES.get(atom_id, None)  # type: ignore
+        atom_id = atom_ids[idx]
+        atom_types = ID_TO_TYPES.get(atom_id, None)
 
-        if atom_types is not None:
-            for atom_type in atom_types:
-                atypes_array[atom.index, atypes[atom_type]] = 1  # type: ignore
+        if atom_types is None:
+            continue
+
+        for atom_type_x in atom_types:
+            atypes_array[atom.index, atypes[atom_type_x]] = 1
 
     return atypes_array

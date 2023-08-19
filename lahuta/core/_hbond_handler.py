@@ -47,8 +47,8 @@ class HBondHandler:
         indices = hbound_attr_col.atoms.indices
         hbond_array = cast(csr_matrix, self.hbond_array[indices])
         selected_rows_coo: coo_array = hbond_array.tocoo()
-        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32) # type: ignore
-        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data # type: ignore
+        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32)
+        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data
 
         hbound_atom_pos = np.take(self._atoms.positions, hbound_atom_indices, axis=0)
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan
@@ -89,8 +89,8 @@ class HBondHandler:
         indices = col1.atoms.indices
         hbond_array = cast(csr_matrix, self.hbond_array[indices])
         selected_rows_coo: coo_array = hbond_array.tocoo()
-        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32) # type: ignore
-        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data # type: ignore
+        hbound_atom_indices = np.zeros_like(selected_rows_coo.toarray(), dtype=np.int32)
+        hbound_atom_indices[selected_rows_coo.row, selected_rows_coo.col] = selected_rows_coo.data
 
         hbound_atom_pos = np.take(self._atoms.positions, hbound_atom_indices, axis=0)
         hbound_atom_pos[hbound_atom_indices == 0] = np.nan

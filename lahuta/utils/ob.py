@@ -6,7 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.lahuta_types.openbabel import BondIterable, MolType, ObRingType, ObVector3Wrapper
+from lahuta.lahuta_types.openbabel import MolType, ObRingType, ObVector3Wrapper
 
 
 def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
@@ -18,13 +18,8 @@ def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
     Returns:
         NDArray[np.int32]: A numpy array containing the indices of bonded atoms.
     """
-
-    def bond_iter_wrapper(mol: MolType) -> BondIterable:
-        """Iterate over the bonds in the given molecule using openbabel."""
-        return ob.OBMolBondIter(mol)  # type: ignore
-
     bonds: NDArray[np.int32] = np.zeros((mol.NumBonds(), 2), dtype=int)
-    for ix, bond in enumerate(bond_iter_wrapper(mol)):
+    for ix, bond in enumerate(ob.OBMolBondIter(mol)):
         atom_idx1, atom_idx2 = bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()
         bonds[ix, :] = (atom_idx1, atom_idx2) if atom_idx1 < atom_idx2 else (atom_idx2, atom_idx1)
 

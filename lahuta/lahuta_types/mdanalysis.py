@@ -24,7 +24,7 @@ Example:
 
 """
 
-from typing import Any, Optional, Protocol, Union
+from typing import Any, Optional, Protocol, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
@@ -173,6 +173,9 @@ class UniverseType(Protocol):
         ...
 
     def add_TopologyAttr(self, name: str, attr: Any) -> None:
+        ...
+
+    def load_new(self, filenames: Tuple[str, ...], **kwargs: Any) -> None:
         ...
 
     def __iter__(self) -> Any:

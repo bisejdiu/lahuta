@@ -7,7 +7,7 @@ while the second one utilizes a vectorized operation for faster performance.
 from typing import Dict
 
 import numpy as np
-from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII  # type: ignore
+from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
@@ -27,7 +27,7 @@ def assign_radii(mol: MolType) -> NDArray[np.float32]:
     """
     atom_radii = np.zeros(mol.NumAtoms(), dtype=float)
     for atom in ob.OBMolAtomIter(mol):
-        atom_radii[atom.GetId()] = ob.GetVdwRad(atom.GetAtomicNum())  # type: ignore
+        atom_radii[atom.GetId()] = ob.GetVdwRad(atom.GetAtomicNum())
     return atom_radii
 
 
@@ -43,10 +43,11 @@ def v_radii_assignment(elements: NDArray[np.str_]) -> NDArray[np.float32]:
     Returns:
         NDArray[np.float32]: An array of shape (n_atoms, ) where each element is the van der Waals radius.
     """
-    vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}  # type: ignore
+    vdwradii: Dict[str, int] = {k.capitalize(): v for k, v in MDA_VDW_RADII.items()}
 
-    def v_capitalize(array: NDArray[np.str_], mapping: Dict[str, int]) -> NDArray[np.float32]:
-        vfunc = np.vectorize(mapping.get)
-        return vfunc(array)  # type: ignore
+    def v_capitalize(array: NDArray[np.str_], mapping: dict[str, int]) -> NDArray[np.float32]:
+        vfunc = np.vectorize(mapping.get, otypes=[np.float32])
+        radii: NDArray[np.float32] = vfunc(array)
+        return radii
 
     return v_capitalize(elements, vdwradii)

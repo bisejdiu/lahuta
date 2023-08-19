@@ -19,7 +19,6 @@ The module is expected to be used for handling and processing biochemical data s
 with specific focuses on proteins and nucleic acids.
 """
 
-from typing import Dict, Set
 
 import lahuta.config._atom_type_strings as at
 
@@ -52,7 +51,7 @@ Type: `Set[str]`: A set of standard amino acids. See the
 """
 
 
-PROT_ATOM_TYPES: Dict[str, Set[str]] = {
+PROT_ATOM_TYPES: dict[str, set[str]] = {
     "hbond_acceptor": at.HBOND_ACCEPTORS,
     "hbond_donor": at.HBOND_DONORS,
     "xbond_acceptor": at.XBOND_ACCEPTORS,
@@ -91,7 +90,7 @@ Type: `Dict[str, Set[str]]`: A dictionary mapping atom types to sets of atom nam
 """
 
 
-def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set[str]]:
+def remap_prot_atom_types(prot_atom_types: dict[str, set[str]]) -> dict[str, set[str]]:
     """Convert the PROT_ATOM_TYPES dictionary to a dictionary mapping atom ids to atom types.
 
     Args:
@@ -100,7 +99,7 @@ def remap_prot_atom_types(prot_atom_types: Dict[str, Set[str]]) -> Dict[str, Set
     Returns:
         dict: A dictionary mapping atom ids to atom types.
     """
-    id_to_types: Dict[str, Set[str]] = {}
+    id_to_types: dict[str, set[str]] = {}
     for atom_type, atom_set in prot_atom_types.items():
         for atom_id in atom_set:
             if atom_id not in id_to_types:

@@ -76,7 +76,7 @@ def sorting_indices(arr: NDArray[np.int32]) -> NDArray[np.int32]:
 
     # Use lexsort to get sorted indices from large to small,
     # then use it to index into the sorted array
-    indices: NDArray[np.int32] = np.lexsort((arr[:, 1], arr[:, 0]))  # type: ignore
+    indices: NDArray[np.int32] = np.lexsort((arr[:, 1], arr[:, 0]))
 
     return indices
 
@@ -239,7 +239,7 @@ def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool
     arr1_void = asvoid(arr1)
     arr2_void = asvoid(arr2)
 
-    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)  # type: ignore
+    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)
 
 
 def symmetric_difference(
@@ -452,7 +452,7 @@ def isunique(arr: NDArray[_DType]) -> bool:
         False
         ```
     """
-    return arr.shape[0] == np.unique(arr, axis=0).shape[0]  # type: ignore
+    return arr.shape[0] == np.unique(arr, axis=0).shape[0]
 
 
 def is_strict_subset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:

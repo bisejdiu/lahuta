@@ -80,10 +80,10 @@ def _generate_test_data(
 
     if subset_ratio > 0:
         # Assign the first 'subset_size' pairs of arr1 to arr2
-        arr2_subset = arr1[:subset_size]  # type: ignore
+        arr2_subset = arr1[:subset_size]
 
         # Add additional unique pairs to arr2
-        arr2_extra = all_data[size : size + extra_size]  # type: ignore
+        arr2_extra = all_data[size : size + extra_size]
 
         arr2 = np.concatenate((arr2_subset, arr2_extra), axis=0)
     else:
@@ -127,7 +127,7 @@ def check_edge_cases(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
     assert mask.sum() == 0
 
     # Test with identical arrays
-    arr1 = np.random.randint(0, 10000, size=(1000, 2))  # type: ignore
+    arr1 = np.random.randint(0, 10000, size=(1000, 2))
     arr2 = arr1.copy()
     mask = au.find_shared_pairs(arr1, arr2)
     assert mask.all()

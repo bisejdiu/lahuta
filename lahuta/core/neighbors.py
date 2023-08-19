@@ -175,8 +175,8 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
-        nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
-        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # type: ignore
+        nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]
+        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)
 
         return self.clone(self.pairs[mask], self.distances[mask])
 
@@ -269,7 +269,7 @@ class NeighborPairs:
         vdw_distances = self.hbond_handler.get_vdw_distances(attr_col, vdw_comp_factor)
         hbond_dist = self.hbond_handler.get_hbond_distances(attr_col, hbound_attr_col)
 
-        distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)  # type: ignore
+        distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
         hbond_dist_pairs = self.pairs[distances_mask]
         hbond_distances = self.distances[distances_mask]
 
@@ -295,7 +295,7 @@ class NeighborPairs:
         # if self.hbond_angles is None:
         self.hbond_angles = self.hbond_handler.get_hbond_angles(attr_partner, hbound_attr_partner)
 
-        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)  # type: ignore
+        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
         self._pairs = self._pairs[idx]
         self._distances = self._distances[idx]
 
@@ -363,7 +363,7 @@ class NeighborPairs:
             ```
         """
         pairs, indices = au.union(self.pairs, other.pairs)
-        distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
+        distances = np.concatenate((self.distances, other.distances), axis=0)[indices]
 
         return self.clone(pairs, distances)
 
@@ -418,8 +418,8 @@ class NeighborPairs:
         """
         mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
 
-        pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
-        distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)  # type: ignore
+        pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
+        distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)
 
         return self.clone(pairs, distances)
 
@@ -705,14 +705,14 @@ class NeighborPairs:
         Returns:
             True if the other object is equal to this one; False otherwise.
         """
-        indices1: NDArray[np.int32] = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))  # type: ignore
-        indices2: NDArray[np.int32] = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))  # type: ignore
+        indices1: NDArray[np.int32] = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))
+        indices2: NDArray[np.int32] = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))
 
         # Sort each array using the indices
         pairs, dists = self.pairs[indices1], self.distances[indices1]
         other_pairs, other_dists = other.pairs[indices2], other.distances[indices2]
 
-        return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)  # type: ignore
+        return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)
 
     @property
     def partner1(self) -> AtomGroupType:
@@ -757,7 +757,8 @@ class NeighborPairs:
         Returns
             An array containing the unique indices of the neighboring atoms.
         """
-        return np.unique([self.partner1.indices, self.partner2.indices])  # type: ignore
+        arr: NDArray[np.int32] = np.array([self.partner1.indices, self.partner2.indices])
+        return np.unique(arr)
 
     def __getitem__(self, item: Union[int, slice, NDArray[np.int32]]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.

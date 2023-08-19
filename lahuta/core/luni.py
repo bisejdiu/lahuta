@@ -96,16 +96,16 @@ class Luni:
             raise ValueError("Input must be either an MDAnalysis.AtomGroup instance or a list of file names")
         return self._initialize_from_files
 
-    def _initialize_from_universe(self, *args: LuniInputType) -> Tuple[BaseLoader, AtomGroupType]:
+    def _initialize_from_universe(self, *args: AtomGroupType) -> Tuple[BaseLoader, AtomGroupType]:
         """Initialize the universe from an existing Luni.
 
         Args:
-            *args (LuniInputType): An MDAnalysis.AtomGroup instance.
+            *args (AtomGroupType): An MDAnalysis.AtomGroup instance.
 
         Returns:
             tuple: A tuple of the file loader and the AtomGroup instance.
         """
-        _file_loader = TopologyLoader.from_mda(args[0])  # type: ignore
+        _file_loader = TopologyLoader.from_mda(args[0])
         _mda = _file_loader.to("mda")
         return _file_loader, _mda
 

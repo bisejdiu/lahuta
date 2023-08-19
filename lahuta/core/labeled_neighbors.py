@@ -288,7 +288,7 @@ class LabeledNeighborPairs:
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask_a, mask_b = au.union_masks(pairs, other_pairs)
 
-        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
+        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
         return LabeledNeighborPairs(merged_pairs)
 
     def difference(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
@@ -345,7 +345,7 @@ class LabeledNeighborPairs:
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask_a, mask_b = au.symmetric_difference(pairs, other_pairs)
 
-        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)  # type: ignore
+        merged_pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
 
         return LabeledNeighborPairs(merged_pairs)
 
@@ -465,9 +465,9 @@ class LabeledNeighborPairs:
             False
             ```
         """
-        indices, _ = pd.factorize(self.pairs.ravel())  # type: ignore
-        pairs = indices.reshape(self.pairs.shape)  # type: ignore
-        return au.isunique(pairs)  # type: ignore
+        indices, _ = pd.factorize(self.pairs.ravel())
+        pairs = indices.reshape(self.pairs.shape)
+        return au.isunique(pairs)
 
     def is_strict_subset(self, other: "LabeledNeighborPairs") -> bool:
         """Check if all pairs of this LabeledNeighborPairs object are in another, and the two sets are not equal.

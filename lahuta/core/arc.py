@@ -333,7 +333,7 @@ class Chains:
         # Create structured array
         labels: NDArray[np.str_] = np.array(gemmi_block["label_asym_id"])
         auths: NDArray[np.str_] = np.array(gemmi_block["auth_asym_id"])
-        _, ids = np.unique(auths, return_inverse=True)  # type: ignore
+        _, ids = np.unique(auths, return_inverse=True)
         ids += 1
 
         data = np.empty(len(labels), dtype=cls.dtype)
@@ -360,7 +360,7 @@ class Chains:
         cls_instance.data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance.data["label"] = mda_universe.atoms.chainIDs
         cls_instance.data["auth"] = mda_universe.atoms.chainIDs
-        _, cls_instance.data["id"] = np.unique(cls_instance.data["auth"], return_inverse=True)  # type: ignore
+        _, cls_instance.data["id"] = np.unique(cls_instance.data["auth"], return_inverse=True)
         cls_instance.data["id"] += 1
 
         cls_instance.mapping = dict(zip(cls_instance.data["auth"], cls_instance.data["id"]))
@@ -501,7 +501,7 @@ class ARC:
         if isinstance(index, int):
             return self.get_atom(index)
 
-        indices = np.arange(len(self))[index]  # type: ignore
+        indices = np.arange(len(self))[index]
         return [self.get_atom(i) for i in indices]
 
     def __iter__(self) -> Iterator["Atom"]:

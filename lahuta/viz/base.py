@@ -18,7 +18,7 @@ class BasePlotter:
     def __init__(self, pairs: NDArray[np.int32]) -> None:
         self.pairs = pairs
         self.half_only = False
-        self.binary_cmap = ListedColormap(["white", "black"])  # type: ignore
+        self.binary_cmap = ListedColormap(["white", "black"])
 
     def plot(self) -> None:
         """Plot the contact map."""

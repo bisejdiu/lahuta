@@ -81,9 +81,9 @@ class VectorizedProteinTypeAssigner(ProteinTypeAssignerBase):
         atom_name_str = self.protein_ag.names.astype(str)
         atype_names = [member.lower() for member in list(ATypes)]
 
-        atom_id_labels: NDArray[np.str_] = np.core.defchararray.add(  # type: ignore
-            np.core.defchararray.strip(resname_str),  # type: ignore
-            np.core.defchararray.strip(atom_name_str),  # type: ignore
+        atom_id_labels: NDArray[np.str_] = np.core.defchararray.add(
+            np.core.defchararray.strip(resname_str),
+            np.core.defchararray.strip(atom_name_str),
         )
 
         prot_atom_types_array = [list(PROT_ATOM_TYPES[key]) for key in atype_names]

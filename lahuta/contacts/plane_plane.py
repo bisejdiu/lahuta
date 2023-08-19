@@ -137,7 +137,7 @@ class _PlanePlaneContacts:
     def _gen_combinations(self, use_itertools: bool = False) -> NDArray[np.int32]:
         """Generate all combinations of pairs of indices in the form (i, j) where i < j."""
         if use_itertools:
-            from itertools import combinations  # type: ignore
+            from itertools import combinations
 
             return np.array(list(combinations(range(len(self.rings)), 2)))
 
@@ -293,7 +293,7 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
         NDArray[np.str_]: An array of strings representing the contact type for each pair of planes.
 
     """
-    types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"])
+    types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"], dtype=np.str_)
     ranges = np.array(
         [
             (0, 30, 0, 30),
@@ -305,7 +305,8 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
             (60, 90, 0, 30),
             (60, 90, 30, 60),
             (60, 90, 60, 90),
-        ]
+        ],
+        dtype=np.int32,
     )
 
     conditions = np.logical_and(
@@ -313,5 +314,5 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
         np.logical_and(ranges[:, 2] <= theta[:, None], theta[:, None] <= ranges[:, 3]),
     )
 
-    indices = np.argmax(conditions, axis=1)
-    return types[indices]  # type: ignore
+    indices: NDArray[np.int32] = np.argmax(conditions, axis=1)
+    return types[indices]
