@@ -302,7 +302,7 @@ class TopologyLoader(BaseLoader):
         """
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
-        top_loader.ag._u = ag.universe.copy()  # noqa: SLFS001
+        top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
         top_loader.structure = None
 
         top_loader.arc = ARC(top_loader, top_loader.ag)

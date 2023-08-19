@@ -96,7 +96,7 @@ class NeighborPairs:
 
         Raises:
             AssertionError: If the first dimension of the `pairs` and `distances` arrays are not equal.
-            
+
         """
         message = (
             "The number of pairs and distances must be the same."
@@ -222,7 +222,7 @@ class NeighborPairs:
         equal to the cutoff (if `lte` is True) or greater than the cutoff (if `lte` is False).
 
         Args:
-             (NDArray[np.float32]): The array containing the values to compare with the cutoff.
+            array (NDArray[np.float32]): The array containing the values to compare with the cutoff.
             cutoff (float): The cutoff value for the filter.
 
         Returns:
@@ -593,19 +593,18 @@ class NeighborPairs:
 
         if self.annotations:
             for key, value in self.annotations.items():
-                child_instance.annotations[key] = value[:child_instance.pairs.shape[0]]
-                
+                child_instance.annotations[key] = value[: child_instance.pairs.shape[0]]
+
         return child_instance
 
     def plot(self, which: Literal["matching", "full"] = "matching", half_only: bool = False) -> None:
         """Plot the contact map of the NeighborPairs object.
 
         Args:
-            which (str, optional): Which contact map to plot. Can be either 'matching' or 'full'. Defaults to 'matching'.
+            which (str, optional): Which contact map to plot ('matching' or 'full'). Defaults to 'matching'.
             half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
         return ContactMap(self.pairs).plot(which, half_only)
-    
 
     @property
     def annotations(self) -> dict[str, NDArray[Any]]:
@@ -658,7 +657,7 @@ class NeighborPairs:
         """
         if annotations:
             return self._create_df(df_format, self.annotations)
-        
+
         return self._create_df(df_format)
 
     def to_dict(self, df_format: Literal["compact", "expanded"] = "expanded") -> dict[str, Any]:
@@ -862,7 +861,7 @@ class NeighborPairs:
             return NotImplemented
         return self.symmetric_difference(other)
 
-    def __eq__(self, other: Any) -> bool: # noqa: PYI032, ANN401
+    def __eq__(self, other: Any) -> bool:  # noqa: PYI032, ANN401
         """Check if this NeighborPairs object is equal to the 'other'.
 
         Equality is based on the pairs and their distances.
@@ -943,7 +942,7 @@ class NeighborPairs:
 
         return self.issuperset(other)
 
-    def __ne__(self, other: Any) -> bool: # noqa: PYI032, ANN401
+    def __ne__(self, other: Any) -> bool:  # noqa: PYI032, ANN401
         if other.__class__ != self.__class__:
             return NotImplemented
         return not self._neighborpairs_equal(other)

@@ -37,6 +37,7 @@ __all__ = ["LuniInputType", "Luni"]
 
 LuniInputType = Union[AtomGroupType, str, List[str]]
 
+
 class Luni:
     """The main class of the Lahuta package. It represents a universe of atoms and provides
     methods for computing various properties of the universe.
@@ -159,21 +160,18 @@ class Luni:
         assert self._file_loader is not None
         self._mol = self._file_loader.to("mol")
 
-        # TODO: remove array from the variable names by instead using type hints
         assert self.arc is not None
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
         self.atom_types = ag_types
 
-        # self._extend_topology("vdw_radii", v_radii_assignment(og_atoms.elements))
         self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
-        # for atom_type, value in AVAILABLE_ATOM_TYPES.items():
-        #     self._extend_topology(atom_type.lower(), ag_types_array[:, value])
 
         self._ready = True
 
-    # TODO: rename to find_neighbors
+    # TODO @bisejdiu: rename to
+    # https://github.com/bisejdiu/lahuta/issues/52
     def compute_neighbors(
         self,
         radius: float = 5.0,
@@ -185,15 +183,16 @@ class Luni:
         It returns an object of type `NeighborPairs` where each row in the underlying NumPy array contains the indices
         of the neighbors for the atom corresponding to that row.
 
-        The method also ensures that the Luni instance is ready for computations by calling the `ready` method if needed.
+        Ensures that the Luni instance is ready for computations by calling the `ready` method if needed.
 
         Args:
             radius (float, optional): The cutoff radius for considering two atoms as neighbors. Default is 5.0.
-            res_dif (int, optional): The minimum difference in residue numbers for two atoms to be considered neighbors. Default is 1.
+            res_dif (int, optional): The minimum difference in residue numbers for two atoms to be \
+            considered neighbors. Default is 1.
 
         Returns:
-            NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). Each row in the array
-                        contains the indices of the neighbors for the atom corresponding to that row.
+            NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). \
+            Each row in the array contains the indices of the neighbors for the atom corresponding to that row.
         """
         if not self._ready:
             self.ready()
@@ -223,7 +222,7 @@ class Luni:
             for synonym in synonyms:
                 conversion_dict[synonym] = BASE_AA_CONVERSION[key]
 
-        single_letter_codes = np.vectorize(lambda x: conversion_dict.get(x, 'X'))(three_letter_codes)
+        single_letter_codes = np.vectorize(lambda x: conversion_dict.get(x, "X"))(three_letter_codes)
 
         return "".join(single_letter_codes)
 

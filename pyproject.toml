@@ -51,34 +51,34 @@ line-length = 120
 target-version = ['py310']
 skip-string-normalization = true
 
-[tool.pyright]
-include = ["lahuta"]
-exclude = ["lahuta/scripts", "lahuta/docs", "lahuta/tests", "**/__pycache__", "cachedir"]
-defineConstant = { DEBUG = true }
-reportMissingImports = true
-reportMissingTypeStubs = "none"
+# [tool.pyright]
+# include = ["lahuta"]
+# exclude = ["lahuta/scripts", "lahuta/docs", "lahuta/tests", "**/__pycache__", "cachedir"]
+# defineConstant = { DEBUG = true }
+# reportMissingImports = true
+# reportMissingTypeStubs = "none"
 
-reportUnknownVariableType = false
-reportUnknownMemberType = false
+# reportUnknownVariableType = false
+# reportUnknownMemberType = false
 
-[tool.pylint.basic]
-good-names = [
-    'i', 
-    'j',
-    'k',
-    'df', 
-    'ag',
-    'uv', 
-    'ns',
-    'ix',
-]
+# [tool.pylint.basic]
+# good-names = [
+#     'i', 
+#     'j',
+#     'k',
+#     'df', 
+#     'ag',
+#     'uv', 
+#     'ns',
+#     'ix',
+# ]
 
-[tool.pylint.'MASTER']
-  extension-pkg-allow-list = ["gemmi"]
+# [tool.pylint.'MASTER']
+#   extension-pkg-allow-list = ["gemmi"]
 
-[tool.pylint.'MESSAGES CONTROL']
-max-line-length = 120
-disable = 'too-many-lines'
+# [tool.pylint.'MESSAGES CONTROL']
+# max-line-length = 120
+# disable = 'too-many-lines'
 
 [tool.ruff]
 line-length = 120
@@ -92,6 +92,7 @@ extend-select = [
 ignore = [
 'A003', 
 'ANN101',
+'ANN102',
 'ANN204', 
 'D406', 
 'D407',
@@ -99,6 +100,9 @@ ignore = [
 'COM812', 
 'PLR2004',
 'TRY003',
+'FIX002', 
+'D203',
+'D213',
 'D105', 'D107', 'D205', 'D415'
 ] # 'E501'
 # flake8-quotes = {inline-quotes = 'single', multiline-quotes = 'double'}

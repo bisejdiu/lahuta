@@ -130,6 +130,14 @@ class AtomGroupType(Protocol):
     def copy(self) -> "AtomGroupType":
         ...
 
+    @property
+    def _u(self) -> "UniverseType":
+        ...
+
+    @_u.setter
+    def _u(self, universe: "UniverseType") -> None:
+        ...
+
     def __iter__(self) -> Any:
         ...
 

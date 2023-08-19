@@ -1,14 +1,12 @@
-"""
-This module, `neighbors.py`, is responsible for defining and managing the concept of "neighbors" 
-within a molecular or biological context. 
+"""Defines and manages the concept of "neighbors" within a molecular or biological context.
 
 The primary class in this module is `LabeledNeighborPairs`, which represents pairs of atoms that are 
 considered as "neighbors" based on a certain distance criterion. This class provides a suite of 
 methods to manipulate, analyze, and export these pairs.
 
 """
-
-from typing import Any, Callable, Dict, List, Optional, Union
+import warnings
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -20,10 +18,11 @@ from lahuta.utils import array_utils as au
 
 __all__ = ["LabeledNeighborPairs"]
 
+T = TypeVar("T")
+
 
 class LabeledNeighborPairs:
-    """
-    A class that manages pairs of atoms that are considered "neighbors" within a defined distance threshold.
+    """Manages pairs of atoms that are considered "neighbors" within a defined distance threshold.
 
     The `LabeledNeighborPairs` class stores atom pairs (identified by their indices) and the corresponding distances
     between them, which represent the concept of "neighbors" in the context of molecular simulations or structural
@@ -36,71 +35,72 @@ class LabeledNeighborPairs:
     designed to be extensible and supports the addition of custom annotations to the pairs.
 
     Args:
-        pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
+        pairs (NDArray[np.void]): The array of pairs.
+        mask1 (Optional[NDArray[np.bool_]], optional): A mask to select the first atom of each pair. Defaults to None.
+        mask2 (Optional[NDArray[np.bool_]], optional): A mask to select the second atom of each pair. Defaults to None.
+
 
     Attributes:
-        _pairs (NDArray[np.int32]):
-            A 2D numpy array of pairs of atom indices that are neighbors.
+        _pairs (NDArray[np.void]): The array of pairs.
+        _mask1 (NDArray[np.bool_]): A mask to select the first atom of each pair.
+        _mask2 (NDArray[np.bool_]): A mask to select the second atom of each pair.
 
     """
 
-    def __init__(self, pairs: NDArray[np.void], mask1: Optional[NDArray[np.bool_]]=None, mask2: Optional[NDArray[np.bool_]]=None):
+    def __init__(
+        self,
+        pairs: NDArray[np.void],
+        mask1: Optional[NDArray[np.bool_]] = None,
+        mask2: Optional[NDArray[np.bool_]] = None,
+    ):
         self._pairs = pairs
         self._mask1 = mask1 if mask1 is not None else np.ones(self._pairs.shape[0], dtype=bool)
         self._mask2 = mask2 if mask2 is not None else np.ones(self._pairs.shape[0], dtype=bool)
 
-    def type_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def type_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support type filtering.")
 
-    def index_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def index_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support index filtering.")
 
-    def distance_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def distance_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support distance filtering.")
 
-    def numeric_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def numeric_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support numeric filtering.")
 
-    def radius_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def radius_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support radius filtering.")
 
-    def hbond_distance_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def hbond_distance_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support hydrogen bond distance filtering.")
 
-    def hbond_angle_filter(self, *args: Any, **kwargs: Any) -> "LabeledNeighborPairs":
+    def hbond_angle_filter(self, *_: T) -> "LabeledNeighborPairs":
         """Not implemented."""
-
         raise NotImplementedError(f"{self.__class__.__name__} does not support hydrogen bond angle filtering.")
 
-    def _filter(self, mode: str, inverse: bool=False, **kwargs: List[str]) -> "LabeledNeighborPairs":
+    def _filter(self, mode: str, inverse: bool = False, **kwargs: List[str]) -> "LabeledNeighborPairs":
         masks: List[NDArray[np.bool_]] = []
         for mask in [self._mask1, self._mask2]:
             new_mask = np.copy(mask)
             assert self._pairs.dtype.names is not None
             for key, values in kwargs.items():
                 if key not in self._pairs.dtype.names:
-                    raise ValueError(f'Field {key} not found in pairs')
+                    raise ValueError(f"Field {key} not found in pairs")
                 field_mask = np.isin(self._pairs[key][:, 0 if mask is self._mask1 else 1], values)
-                new_mask &= ~field_mask if mode == 'exclude' or inverse else field_mask
+                new_mask &= ~field_mask if mode == "exclude" or inverse else field_mask
 
             masks.append(new_mask)
         return LabeledNeighborPairs(self._pairs, *masks)
 
     def select(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
-        """
-        Select pairs based on their attributes. 
+        """Select pairs based on their attributes.
 
         Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
         should be provided as lists of strings. The method returns a new LabeledNeighborPairs object
@@ -110,7 +110,8 @@ class LabeledNeighborPairs:
             **kwargs: The attributes to filter by. Possible attributes are: `atom_names`, `resnames`, and `resids`.
 
         Returns:
-            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that match the provided attributes.
+            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that \
+                match the provided attributes.
 
         Example:
             ``` py
@@ -120,12 +121,10 @@ class LabeledNeighborPairs:
             >>> np.select(atom_names=['CA', 'CB'], resnames=['ALA', 'GLY'])
             ```
         """
-        
-        return self._filter('select', False, **kwargs)
+        return self._filter("select", False, **kwargs)
 
     def exclude(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
-        """
-        Exclude pairs based on their attributes.
+        """Exclude pairs based on their attributes.
 
         Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
         should be provided as lists of strings. The method returns a new LabeledNeighborPairs object
@@ -135,7 +134,8 @@ class LabeledNeighborPairs:
             **kwargs: The attributes to filter by. Possible attributes are: `atom_names`, `resnames`, and `resids`.
 
         Returns:
-            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that do not match the provided attributes.
+            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that \
+                do not match the provided attributes.
 
         Example:
             ``` py
@@ -146,17 +146,17 @@ class LabeledNeighborPairs:
             ```
 
         """
-        return self._filter('exclude', False, **kwargs)
+        return self._filter("exclude", False, **kwargs)
 
     def inverse(self) -> "LabeledNeighborPairs":
-        """
-        Invert the selection.
+        """Invert the selection.
 
         This method returns a new LabeledNeighborPairs object containing the pairs that are not selected
         by the current object.
 
         Returns:
-            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that are not selected by the current object. 
+            LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs \
+                that are not selected by the current object.
 
         Example:
             ``` py
@@ -164,13 +164,11 @@ class LabeledNeighborPairs:
             >>> np.select(atom_names=['CA', 'CB']).inverse() # select all pairs that do not have CA or CB for atom_names
             ```
         """
-        # pylint: disable=invalid-unary-operand-type
         return LabeledNeighborPairs(self._pairs, ~self._mask1, ~self._mask2)
 
     @staticmethod
     def remove_duplicates(pairs: NDArray[np.void]) -> NDArray[np.void]:
-        """
-        Remove duplicate pairs.
+        """Remove duplicate pairs.
 
         This method removes duplicate pairs from the provided array of pairs. The method returns a new array
         containing the unique pairs.
@@ -182,15 +180,15 @@ class LabeledNeighborPairs:
             NDArray[np.void]: A new array containing the unique pairs.
 
         """
-
         _, unique_idx = np.unique(pairs, axis=0, return_index=True)
-        z_unique = pairs[np.sort(unique_idx)]
-        return z_unique
+        return pairs[np.sort(unique_idx)]
 
-    def _apply_func(self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]) -> "LabeledNeighborPairs":
+    def _apply_func(
+        self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]
+    ) -> "LabeledNeighborPairs":
         assert self._pairs.dtype.names is not None
         if field not in self._pairs.dtype.names:
-            raise ValueError(f'Field {field} not found in pairs')
+            raise ValueError(f"Field {field} not found in pairs")
 
         new_data = np.copy(self._pairs)
         new_data[field][self._mask1, 0] = func(new_data[field][self._mask1, 0])
@@ -199,8 +197,7 @@ class LabeledNeighborPairs:
         return LabeledNeighborPairs(self.remove_duplicates(new_data))
 
     def remove(self, field: str) -> "LabeledNeighborPairs":
-        """
-        Remove an attribute from the pairs.
+        """Remove an attribute from the pairs.
 
         This method removes the specified attribute from the pairs. The method returns a new LabeledNeighborPairs object
         with the specified attribute removed.
@@ -217,12 +214,10 @@ class LabeledNeighborPairs:
             >>> np.remove('atom_names')
             ```
         """
-
-        return self._apply_func(field, lambda _: '')
+        return self._apply_func(field, lambda _: "")
 
     def rename(self, field: str, func: Callable[[NDArray[np.str_]], Union[str, np.str_]]) -> "LabeledNeighborPairs":
-        """
-        Rename an attribute of the pairs.
+        """Rename an attribute of the pairs.
 
         This method renames the specified attribute of the pairs using the provided function. The method returns a new
         LabeledNeighborPairs object with the specified attribute renamed.
@@ -240,13 +235,10 @@ class LabeledNeighborPairs:
             >>> np.rename('atom_names', lambda x: x + '_new')
             ```
         """
-
         return self._apply_func(field, func)
 
-
     def intersection(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Return the intersection of two LabeledNeighborPairs objects.
+        """Return the intersection of two LabeledNeighborPairs objects.
 
         The method calculates the intersection of the pairs from `self` and `other`, and then returns a new
         LabeledNeighborPairs object that contains the intersecting pairs along with their corresponding distances.
@@ -255,8 +247,8 @@ class LabeledNeighborPairs:
             other: The other LabeledNeighborPairs object.
 
         Returns:
-            intersected_pairs: A LabeledNeighborPairs object containing the pairs and their corresponding distances
-                            that are common between `self` and `other`.
+            intersected_pairs: A LabeledNeighborPairs object containing the pairs and their corresponding \
+                distances that are common between `self` and `other`.
 
         Example:
             ``` py
@@ -267,14 +259,12 @@ class LabeledNeighborPairs:
             >>> np_intersected = np1.intersection(np2)
             ```
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask = au.intersection(pairs, other_pairs)
         return LabeledNeighborPairs(self.pairs[mask])
 
     def union(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Return the union of two LabeledNeighborPairs objects.
+        """Return the union of two LabeledNeighborPairs objects.
 
         The method finds the union of the pairs from `self` and `other`. It also ensures that the distances
         in the resulting object correspond to the union pairs.
@@ -283,8 +273,8 @@ class LabeledNeighborPairs:
             other: The other LabeledNeighborPairs object to be unified with.
 
         Returns:
-            pairs: A LabeledNeighborPairs object containing the union of the pairs from `self` and `other`, and
-                with corresponding distances.
+            pairs: A LabeledNeighborPairs object containing the union of the pairs from `self` and `other`, \
+                and with corresponding distances.
 
         Example:
             ``` py
@@ -295,7 +285,6 @@ class LabeledNeighborPairs:
             >>> np_union = np1.union(np2)
             ```
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask_a, mask_b = au.union_masks(pairs, other_pairs)
 
@@ -303,8 +292,7 @@ class LabeledNeighborPairs:
         return LabeledNeighborPairs(merged_pairs)
 
     def difference(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Return the difference between two LabeledNeighborPairs objects.
+        """Return the difference between two LabeledNeighborPairs objects.
 
         The method calculates the difference between the pairs from `self` and `other`, then returns a new
         LabeledNeighborPairs object that contains the pairs from `self` that are not in `other`, along with their
@@ -314,8 +302,8 @@ class LabeledNeighborPairs:
             other: The other LabeledNeighborPairs object.
 
         Returns:
-            difference_pairs: A LabeledNeighborPairs object containing the pairs and their corresponding distances
-                            from `self` that are not in `other`.
+            difference_pairs: A LabeledNeighborPairs object containing the pairs and their corresponding \
+                distances from `self` that are not in `other`.
 
         Example:
             ``` py
@@ -327,7 +315,6 @@ class LabeledNeighborPairs:
             ```
 
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask = au.difference(pairs, other_pairs)
 
@@ -343,7 +330,8 @@ class LabeledNeighborPairs:
             other: The other LabeledNeighborPairs object.
 
         Returns:
-            A LabeledNeighborPairs object containing the symmetric difference of the two LabeledNeighborPairs objects.
+            A LabeledNeighborPairs object containing the symmetric difference of the two \
+                LabeledNeighborPairs objects.
 
         Example:
             ``` py
@@ -354,7 +342,6 @@ class LabeledNeighborPairs:
             >>> np_sym_diff = np1.symmetric_difference(np2)
             ```
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         mask_a, mask_b = au.symmetric_difference(pairs, other_pairs)
 
@@ -363,8 +350,7 @@ class LabeledNeighborPairs:
         return LabeledNeighborPairs(merged_pairs)
 
     def isdisjoint(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Checks if the intersection of two LabeledNeighborPairs objects is null.
+        """Check if the intersection of two LabeledNeighborPairs objects is null.
 
         This method checks whether the intersection of the two LabeledNeighborPairs objects is null,
         thus determining if the two objects are disjoint.
@@ -373,7 +359,7 @@ class LabeledNeighborPairs:
             other (LabeledNeighborPairs): The other LabeledNeighborPairs object.
 
         Returns:
-            bool: True if the two LabeledNeighborPairs objects are disjoint
+            bool: True if the two LabeledNeighborPairs objects are disjoint \
                     (i.e., have no common pairs), and False otherwise.
 
         Example:
@@ -384,16 +370,15 @@ class LabeledNeighborPairs:
             ```
             True
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         return au.isdisjoint(pairs, other_pairs)
 
     def issubset(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Checks if all elements (pairs) of a LabeledNeighborPairs object are found in another LabeledNeighborPairs object.
+        """Check if all elements (pairs) of a LabeledNeighborPairs object are found in another LabeledNeighborPairs.
 
         This method checks whether every pair of atoms from the current LabeledNeighborPairs object
-        is also present in the other LabeledNeighborPairs object, thus determining if this object is a subset of the 'other'.
+        is also present in the other LabeledNeighborPairs object, \
+            thus determining if this object is a subset of the 'other'.
 
         Args:
             other (LabeledNeighborPairs): The other LabeledNeighborPairs object.
@@ -409,13 +394,11 @@ class LabeledNeighborPairs:
             >>> np1.issubset(np2)
             ```
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         return au.issubset(pairs, other_pairs)
 
     def issuperset(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Determines if all pairs from another LabeledNeighborPairs object are found in this object.
+        """Determine if all pairs from another LabeledNeighborPairs object are found in this object.
 
         This method checks whether every pair of atoms from the 'other' LabeledNeighborPairs object
         is also present in this object, thus determining if this object is a superset of the 'other'.
@@ -434,13 +417,11 @@ class LabeledNeighborPairs:
             ```
             True
         """
-
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         return au.issuperset(pairs, other_pairs)
 
-    def isequal(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Checks if this LabeledNeighborPairs object is equal to another.
+    def isequal(self, other: Union["LabeledNeighborPairs", object]) -> bool:
+        """Check if this LabeledNeighborPairs object is equal to another.
 
         Two LabeledNeighborPairs objects are considered equal if they contain exactly the same pairs.
 
@@ -458,15 +439,21 @@ class LabeledNeighborPairs:
             True
             ```
         """
-
+        if not isinstance(other, LabeledNeighborPairs):
+            warnings.warn(
+                f"Comparing {self.__class__.__name__} to {other.__class__.__name__} is not supported.",
+                UserWarning,
+                stacklevel=2,
+            )
+            return False
         pairs, other_pairs = encode_labels(self.pairs, other.pairs)
         return au.isequal(pairs, other_pairs)
 
     def isunique(self) -> bool:
-        """
-        Checks if all pairs in this LabeledNeighborPairs object are unique.
+        """Check if all pairs in this LabeledNeighborPairs object are unique.
 
-        This method checks if all pairs in this LabeledNeighborPairs object are unique, i.e., there are no duplicate pairs.
+        This method checks if all pairs in this LabeledNeighborPairs object are unique, i.e., \
+            there are no duplicate pairs.
 
         Returns:
             bool: True if all pairs in this object are unique, False otherwise.
@@ -478,14 +465,12 @@ class LabeledNeighborPairs:
             False
             ```
         """
-
         indices, _ = pd.factorize(self.pairs.ravel())  # type: ignore
         pairs = indices.reshape(self.pairs.shape)  # type: ignore
         return au.isunique(pairs)  # type: ignore
 
     def is_strict_subset(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Checks if all pairs of this LabeledNeighborPairs object are in another, and the two sets are not equal.
+        """Check if all pairs of this LabeledNeighborPairs object are in another, and the two sets are not equal.
 
         A strict subset has all pairs in the 'other' object but the two sets are not identical.
 
@@ -507,8 +492,7 @@ class LabeledNeighborPairs:
         return au.is_strict_subset(pairs, other_pairs)
 
     def is_strict_superset(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Checks if all pairs of another LabeledNeighborPairs object are in this one, and the two sets are not equal.
+        """Check if all pairs of another LabeledNeighborPairs object are in this one, and the two sets are not equal.
 
         A strict superset has all pairs from the 'other' object but the two sets are not identical.
 
@@ -531,8 +515,7 @@ class LabeledNeighborPairs:
 
     @classmethod
     def create_new(cls, pairs: NDArray[np.void]) -> "LabeledNeighborPairs":
-        """
-        Returns a new LabeledNeighborPairs object that is a copy of the current object,
+        """Return a new LabeledNeighborPairs object that is a copy of the current object,
         but with specified pairs.
 
         Args:
@@ -541,25 +524,21 @@ class LabeledNeighborPairs:
         Returns:
             A new LabeledNeighborPairs object with the provided pairs.
         """
-
         cls_instance = cls.__new__(cls)
-        cls_instance._pairs = pairs
+        cls_instance._pairs = pairs  # noqa: SLF001
 
         return cls_instance
-        
 
     def to_frame(self) -> pd.DataFrame:
-        """
-        Converts the LabeledNeighborPairs object to a pandas DataFrame.
+        """Convert the LabeledNeighborPairs object to a pandas DataFrame.
 
         Returns:
             A pandas DataFrame containing the atom pairs.
         """
-        return pd.DataFrame(self.pairs, columns=['atom1', 'atom2'])
+        return pd.DataFrame(self.pairs, columns=["atom1", "atom2"])
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Converts the LabeledNeighborPairs object to a dictionary.
+        """Convert the LabeledNeighborPairs object to a dictionary.
 
         Returns:
             A dictionary representation of the LabeledNeighborPairs object.
@@ -568,8 +547,7 @@ class LabeledNeighborPairs:
 
     @property
     def partner1(self) -> AtomGroupType:
-        """
-        Get the first partner of the pairs of indices of atoms that are neighbors.
+        """Get the first partner of the pairs of indices of atoms that are neighbors.
 
         Returns:
             The first partner of the atom pairs.
@@ -578,8 +556,7 @@ class LabeledNeighborPairs:
 
     @property
     def partner2(self) -> AtomGroupType:
-        """
-        Get the second partner of the pairs of indices of atoms that are neighbors.
+        """Get the second partner of the pairs of indices of atoms that are neighbors.
 
         Returns:
             The second partner of the atom pairs.
@@ -588,8 +565,7 @@ class LabeledNeighborPairs:
 
     @property
     def pairs(self) -> NDArray[np.void]:
-        """
-        Get the pairs of atoms that are neighbors.
+        """Get the pairs of atoms that are neighbors.
 
         Returns:
             An array containing the pairs of indices of neighboring atoms.
@@ -598,8 +574,7 @@ class LabeledNeighborPairs:
 
     @property
     def distances(self) -> NDArray[np.float32]:
-        """
-        Get the distances between the pairs of indices of atoms that are neighbors.
+        """Get the distances between the pairs of indices of atoms that are neighbors.
 
         Returns:
             An array containing the distances between the pairs of indices of neighboring atoms.
@@ -608,8 +583,7 @@ class LabeledNeighborPairs:
 
     @property
     def indices(self) -> NDArray[np.int32]:
-        """
-        Get the indices of the atoms that are neighbors.
+        """Get the indices of the atoms that are neighbors.
 
         Returns:
             An array containing the unique indices of the neighboring atoms.
@@ -617,11 +591,10 @@ class LabeledNeighborPairs:
         raise NotImplementedError("This method is not implemented for LabeledNeighborPairs.")
 
     def __getitem__(self, item: Union[int, slice, NDArray[np.int32]]) -> "LabeledNeighborPairs":
-        """
-        Retrieves the neighbor pairs at the specified index or indices.
+        """Retrieve the neighbor pairs at the specified index or indices.
 
         This method allows accessing the neighbor pairs similar to elements in a list.
-        For an integer input, it returns a LabeledNeighborPairs object containing a single pair,
+        For an integer input, it returns a LabeledNeighborPairs object containing a single pair,\
         while for a slice or an array of indices, it returns a LabeledNeighborPairs object with the corresponding pairs.
 
         Args:
@@ -640,8 +613,7 @@ class LabeledNeighborPairs:
         return self.create_new(self.pairs[item])
 
     def __contains__(self, other: "LabeledNeighborPairs") -> bool:
-        """
-        Checks whether all pairs in the given LabeledNeighborPairs object are also present in this LabeledNeighborPairs object.
+        """Check whether all pairs in the 'other' LabeledNeighborPairs object are found in this one.
 
         This method allows using the Python built-in `in` keyword to check for the presence of pairs.
         This method add support for the `in` operator.
@@ -655,15 +627,13 @@ class LabeledNeighborPairs:
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
 
         return au.issubset(other.pairs, self.pairs)
 
     def __add__(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Combine this LabeledNeighborPairs object with another one.
+        """Combine this LabeledNeighborPairs object with another one.
 
         The resulting LabeledNeighborPairs object is the union of the two sets, containing all unique pairs from both.
         This method adds support for the `+` operator.
@@ -677,17 +647,12 @@ class LabeledNeighborPairs:
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
-        # TODO:
-        # currently this is different from MDAnalysis.
-        # The question to answer is if neighbor pairs should be unique or not.
         return self.union(other)
 
     def __sub__(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Get the pairs in this LabeledNeighborPairs object that are not in the 'other'.
+        """Get the pairs in this LabeledNeighborPairs object that are not in the 'other'.
 
         The resulting LabeledNeighborPairs object is the difference of the two sets,
         containing pairs present in this object but not in the 'other'.
@@ -702,14 +667,12 @@ class LabeledNeighborPairs:
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.difference(other)
 
     def __or__(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Get the pairs that are in either this LabeledNeighborPairs object or the 'other', but not in both.
+        """Get the pairs that are in either this LabeledNeighborPairs object or the 'other', but not in both.
 
         The resulting LabeledNeighborPairs object is the symmetric difference of the two sets,
         containing pairs present in either this object or the 'other', but not in both.
@@ -719,19 +682,18 @@ class LabeledNeighborPairs:
             other (LabeledNeighborPairs): Another LabeledNeighborPairs object.
 
         Returns:
-            LabeledNeighborPairs: A new LabeledNeighborPairs object that is the symmetric difference of this one and the 'other'.
+            LabeledNeighborPairs: A new LabeledNeighborPairs object that is the \
+                symmetric difference of this one and the 'other'.
 
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.symmetric_difference(other)
 
-    def __eq__(self, other: Any) -> bool:
-        """
-        Check if this LabeledNeighborPairs object is equal to the 'other'.
+    def __eq__(self, other: object) -> bool:
+        """Check if this LabeledNeighborPairs object is equal to the 'other'.
 
         Equality is based on the pairs and their distances.
         This method adds support for the `==` operator.
@@ -745,14 +707,12 @@ class LabeledNeighborPairs:
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.isequal(other)
 
     def __and__(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Get the pairs that are common to both this LabeledNeighborPairs object and the 'other'.
+        """Get the pairs that are common to both this LabeledNeighborPairs object and the 'other'.
 
         The resulting LabeledNeighborPairs object is the intersection of the two sets,
         containing pairs present in both this object and the 'other'.
@@ -762,19 +722,18 @@ class LabeledNeighborPairs:
             other (LabeledNeighborPairs): Another LabeledNeighborPairs object.
 
         Returns:
-            LabeledNeighborPairs: A new LabeledNeighborPairs object that is the intersection of this one and the 'other'.
+            LabeledNeighborPairs: A new LabeledNeighborPairs object that is the \
+                intersection of this one and the 'other'.
 
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.intersection(other)
 
     def __xor__(self, other: "LabeledNeighborPairs") -> "LabeledNeighborPairs":
-        """
-        Get the pairs that are in either this LabeledNeighborPairs object or the 'other', but not in both.
+        """Get the pairs that are in either this LabeledNeighborPairs object or the 'other', but not in both.
 
         This method behaves similarly to the `__or__` method.
         This method adds support for the `^` operator.
@@ -783,12 +742,12 @@ class LabeledNeighborPairs:
             other (LabeledNeighborPairs): Another LabeledNeighborPairs object.
 
         Returns:
-            LabeledNeighborPairs: A new LabeledNeighborPairs object that is the symmetric difference of this one and the 'other'.
+            LabeledNeighborPairs: A new LabeledNeighborPairs object that is the \
+                symmetric difference of this one and the 'other'.
 
         Raises:
             NotImplemented: If the 'other' object is not an instance of the LabeledNeighborPairs class.
         """
-
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.symmetric_difference(other)
@@ -816,7 +775,7 @@ class LabeledNeighborPairs:
 
         return self.issuperset(other)
 
-    def __ne__(self, other: Any) -> bool:
+    def __ne__(self, other: object) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
         return not self.isequal(other)

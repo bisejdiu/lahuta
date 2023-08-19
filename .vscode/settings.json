@@ -12,15 +12,16 @@
     "python.testing.pytestArgs": [
         "lahuta"
     ],
-    "pylint.args": [
-        "--rcfile=pyproject.toml"
-    ],
+    // "pylint.args": [
+    //     "--rcfile=pyproject.toml"
+    // ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "editor.codeActionsOnSave": {
-        "source.organizeImports": false
+        // remove trailing whitespace
+        "source.fixAll": true,
     },
-    "python.analysis.typeCheckingMode": "strict",
+    "python.analysis.typeCheckingMode": "off",
     "python.linting.mypyCategorySeverity.error": "Warning",
     "python.linting.mypyEnabled": false, 
     "python.analysis.diagnosticSeverityOverrides": {
