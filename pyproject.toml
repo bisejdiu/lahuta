@@ -99,7 +99,7 @@ strict_equality = true
 strict = true
 show_error_codes = true
 
-exclude = "docs|cachedir|scripts|tests|__pycache__"
+exclude = "docs|cachedir|scripts|__pycache__"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
