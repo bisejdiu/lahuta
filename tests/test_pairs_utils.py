@@ -5,7 +5,7 @@ The tests are parameterized to test the functions with different input sizes and
 shared elements between the arrays.
 """
 import random
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import numpy as np
 import pytest
@@ -16,7 +16,7 @@ import lahuta.utils.array_utils as au
 
 pytestmark = pytest.mark.au
 
-TestFuncCallable = Callable[[int, float, float], Tuple[NDArray[np.int32], NDArray[np.int32]]]
+TestFuncCallable = Callable[[int, float, float], tuple[NDArray[np.int32], NDArray[np.int32]]]
 
 
 def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
@@ -47,7 +47,7 @@ def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
 
 def _generate_test_data(
     size: int, subset_ratio: float = 0.5, extra_ratio: float = 0.1
-) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
+) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
     """
     Generate test data for the array_utils tests.
 
@@ -61,7 +61,7 @@ def _generate_test_data(
         extra_ratio (float): The ratio of additional elements in `arr2` that are not in `arr1`.
 
     Returns:
-        Tuple[NDArray[np.int32], NDArray[np.int32]]: The two arrays.
+        tuple[NDArray[np.int32], NDArray[np.int32]]: The two arrays.
     """
     if not 0 <= subset_ratio <= 1 or not 0 <= extra_ratio <= 1:
         raise ValueError("subset_ratio and extra_ratio must be a float between 0 and 1.")
@@ -193,7 +193,7 @@ def generate_test_data() -> TestFuncCallable:
 
 # define the parameters for the test
 # params = [(1000, 0.5, 0.1), (2000, 0.7, 0.2), (500, 0.3, 0.05)]
-params: List[Tuple[int, float, float]] = []
+params: list[tuple[int, float, float]] = []
 for _ in range(10):
     a = random.randint(500, 20000)
     b = round(random.uniform(0.05, 0.95), 2)

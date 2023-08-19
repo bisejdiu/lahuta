@@ -6,7 +6,7 @@ methods to manipulate, analyze, and export these pairs.
 
 """
 import warnings
-from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from typing import Any, Callable, Optional, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -85,8 +85,8 @@ class LabeledNeighborPairs:
         """Not implemented."""
         raise NotImplementedError(f"{self.__class__.__name__} does not support hydrogen bond angle filtering.")
 
-    def _filter(self, mode: str, inverse: bool = False, **kwargs: List[str]) -> "LabeledNeighborPairs":
-        masks: List[NDArray[np.bool_]] = []
+    def _filter(self, mode: str, inverse: bool = False, **kwargs: list[str]) -> "LabeledNeighborPairs":
+        masks: list[NDArray[np.bool_]] = []
         for mask in [self._mask1, self._mask2]:
             new_mask = np.copy(mask)
             assert self._pairs.dtype.names is not None
@@ -99,7 +99,7 @@ class LabeledNeighborPairs:
             masks.append(new_mask)
         return LabeledNeighborPairs(self._pairs, *masks)
 
-    def select(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+    def select(self, **kwargs: list[str]) -> "LabeledNeighborPairs":
         """Select pairs based on their attributes.
 
         Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
@@ -123,7 +123,7 @@ class LabeledNeighborPairs:
         """
         return self._filter("select", False, **kwargs)
 
-    def exclude(self, **kwargs: List[str]) -> "LabeledNeighborPairs":
+    def exclude(self, **kwargs: list[str]) -> "LabeledNeighborPairs":
         """Exclude pairs based on their attributes.
 
         Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
@@ -537,7 +537,7 @@ class LabeledNeighborPairs:
         """
         return pd.DataFrame(self.pairs, columns=["atom1", "atom2"])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the LabeledNeighborPairs object to a dictionary.
 
         Returns:

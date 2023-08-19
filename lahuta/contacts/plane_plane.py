@@ -38,7 +38,7 @@ Usage:
     result = plane_plane.results
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -55,7 +55,7 @@ class _PlanePlaneContacts:
         self.ns = ns
         self.rings = enumerate_rings(self.ns.mol)
         self.centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
-        self._annotations: Dict[str, NDArray[Any]] = {}
+        self._annotations: dict[str, NDArray[Any]] = {}
 
         self._pair_ids: NDArray[np.int32] = np.array([])
         self.distances: NDArray[np.float32] = np.array([])
@@ -104,7 +104,7 @@ class _PlanePlaneContacts:
         self._annotations["ring2_atoms"] = ring_atoms[:, 1]
         self._annotations["contact_labels"] = int_types
 
-    def _get_pairs_distances(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def _get_pairs_distances(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
         ring_atom_indices = self.rings.first_atom_idx[self._pair_ids]
         first_ring_indices, second_ring_indices = (
             ring_atom_indices[:, 0],
@@ -115,10 +115,10 @@ class _PlanePlaneContacts:
 
         return pairs, self.distances
 
-    def _sort_inputs(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def _sort_inputs(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
         pairs, distances = self._get_pairs_distances()
         indices_arr = sorting_indices(pairs)
-        indices: List[int] = indices_arr.tolist()
+        indices: list[int] = indices_arr.tolist()
         pairs, distances = NeighborPairs.sort_inputs(pairs, self.distances)
 
         self._pair_ids = self._pair_ids[indices]

@@ -14,7 +14,7 @@ Example usage:
     df = df_writer.create()
 """
 
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import pandas as pd
 from numpy.typing import NDArray
@@ -38,7 +38,7 @@ class DataFrameWriter:
             transformed into a DataFrame.
         format (Literal["compact", "expanded"]): The format in which to create the DataFrame. \
             Must be either 'compact' or 'expanded'. Defaults to 'expanded'.
-        annotations (Optional[Dict[str, NDArray[Any]]]): Optional additional annotations to \
+        annotations (Optional[dict[str, NDArray[Any]]]): Optional additional annotations to \
             be included in the DataFrame. The annotations should be a dictionary mapping column \
             names (str) to N-dimensional array-like structures.
 
@@ -51,7 +51,7 @@ class DataFrameWriter:
         self,
         ns: "NeighborPairs",
         df_format: Literal["compact", "expanded"] = "expanded",
-        annotations: Optional[Dict[str, NDArray[Any]]] = None,
+        annotations: Optional[dict[str, NDArray[Any]]] = None,
     ):
         """Initialize the factory with a builder and a format."""
         self.ns = ns
@@ -76,7 +76,7 @@ class DataFrameWriter:
 
         raise ValueError("Format must be compact or expanded.")
 
-    def build(self) -> Dict[str, NDArray[Any]]:
+    def build(self) -> dict[str, NDArray[Any]]:
         """Assemble the data to be used for DataFrame construction.
 
         The method constructs a dictionary where the keys are column names and the values are the
@@ -84,7 +84,7 @@ class DataFrameWriter:
         instance and optional additional annotations.
 
         Returns:
-            Dict[str, NDArray[Any]]: The assembled data to be transformed into a DataFrame.
+            dict[str, NDArray[Any]]: The assembled data to be transformed into a DataFrame.
         """
         attrs = ["resids", "resnames", "names", "indices"]
         p1, p2 = self.ns.partner1, self.ns.partner2

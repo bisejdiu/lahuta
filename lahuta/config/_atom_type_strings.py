@@ -30,7 +30,6 @@ These strings are then processed into sets for easy and efficient access
 throughout the rest of the library.
 
 """
-from typing import Dict, List, Set
 
 from MDAnalysis.core.selection import ProteinSelection
 
@@ -148,7 +147,7 @@ RESIDUE_SYNONYMS = {
     "VAL": ["VAL"],
 }
 
-BASE_AA_CONVERSION: Dict[str, str] = {
+BASE_AA_CONVERSION: dict[str, str] = {
     "ALA": "A",
     "ARG": "R",
     "ASN": "N",
@@ -172,16 +171,16 @@ BASE_AA_CONVERSION: Dict[str, str] = {
 }
 
 
-def parse_atom_types_string(_atom_types_string: str) -> Dict[str, List[str]]:
+def parse_atom_types_string(_atom_types_string: str) -> dict[str, list[str]]:
     """Parse a string of atom types into a dictionary of residue names and atom parts.
 
     Args:
         _atom_types_string (str): A string of atom types.
 
     Returns:
-        Dict[str, List[str]]: A dictionary of residue names and atom parts.
+        dict[str, list[str]]: A dictionary of residue names and atom parts.
     """
-    atom_parts: Dict[str, List[str]] = {}
+    atom_parts: dict[str, list[str]] = {}
     for atom_type in _atom_types_string.split(","):
         residue_name = atom_type[:3]
         atom_part = atom_type[3:]
@@ -193,18 +192,18 @@ def parse_atom_types_string(_atom_types_string: str) -> Dict[str, List[str]]:
     return atom_parts
 
 
-def parse_atom_types(_atom_types_string: str) -> Set[str]:
+def parse_atom_types(_atom_types_string: str) -> set[str]:
     """Parse a string of atom types into a set of atom types.
 
     Args:
         _atom_types_string (str): A string of atom types.
 
     Returns:
-        Set[str]: A set of atom types.
+        set[str]: A set of atom types.
     """
     res_atoms = parse_atom_types_string(_atom_types_string)
 
-    atom_types: Set[str] = set()
+    atom_types: set[str] = set()
     for residue, synonyms in RESIDUE_SYNONYMS.items():
         for synonym in synonyms:
             atom_parts = res_atoms.get(residue)
@@ -221,7 +220,7 @@ STANDARD_AMINO_ACIDS = ProteinSelection.prot_res
 """
 module: `lahuta.config._atom_type_strings.py`
 
-Type: `Set[str]`: A set of standard amino acids. Taken from `MDAnalysis.core.selection.ProteinSelection`.
+Type: `set[str]`: A set of standard amino acids. Taken from `MDAnalysis.core.selection.ProteinSelection`.
 """
 HBOND_ACCEPTORS = parse_atom_types(_HA_ATOM_TYPES)  # set(_HA_ATOM_TYPES.split(","))
 HBOND_DONORS = parse_atom_types(_HD_ATOM_TYPES)  # set(_HD_ATOM_TYPES.split(","))

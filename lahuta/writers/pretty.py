@@ -1,5 +1,5 @@
 """Prettify a pandas dataframe and print it to the console."""
-from typing import Any, List
+from typing import Any
 
 import pandas as pd
 from rich.console import Console
@@ -42,7 +42,7 @@ class PrettyDataFrame:
         if self.n_rows < self.total_rows:
             self.table.add_row(*["..." for _ in range(len(self.df.columns))])
 
-    def _format_row(self, row: List[Any]) -> List[str]:
+    def _format_row(self, row: list[Any]) -> list[str]:
         formatted_row = []
         for index, item in enumerate(row):
             # Index without color change

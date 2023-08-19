@@ -19,7 +19,7 @@ Example:
     ```
 
 """
-from typing import Any, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 import gemmi
 import numpy as np
@@ -170,7 +170,7 @@ class OBMol:
         self.mol.BeginModify()
 
         ob_res = None
-        added_residues: Set[Tuple[NDArray[Any], NDArray[Any], NDArray[Any]]] = set()
+        added_residues: set[tuple[NDArray[Any], NDArray[Any], NDArray[Any]]] = set()
         for idx, (chain, residue, atom) in enumerate(zip(chains, residues, atoms)):
             atom_id = int(atom["id"])
             atom_name, element = atom["name"], atom["element"]

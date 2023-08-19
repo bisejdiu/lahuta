@@ -1,4 +1,4 @@
-"""Set definitions for theorems.
+"""set definitions for theorems.
 
 This module defines theorems that can be checked for labeled neighbor pairs.
 """

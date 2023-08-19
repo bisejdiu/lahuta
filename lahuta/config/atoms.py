@@ -24,29 +24,29 @@ import lahuta.config._atom_type_strings as at
 
 HALOGENS = {"F", "CL", "BR", "I", "AT"}
 """
-Type: `Set[str]`: A set of standard halogens.
+Type: `set[str]`: A set of standard halogens.
 """
 
 MAINCHAIN_ATOMS = {"N", "C", "CA", "O", "OXT"}
 """
-Type: `Set[str]`: A set of atoms usually found in the main chain of a protein.
+Type: `set[str]`: A set of atoms usually found in the main chain of a protein.
 """
 
 
 STANDARD_NUCLEOTIDES = {"A", "C", "G", "I", "U", "DA", "DC", "DG", "DI", "DT", "DU", "N"}
 """
-Type: `Set[str]`: A set of standard nucleotides in RNA and DNA.
+Type: `set[str]`: A set of standard nucleotides in RNA and DNA.
 """
 
 
 METALS = at.METALS
 """
-Type: `Set[str]`: A set of metal atoms, sourced from `lahuta.config._atom_type_strings.py`.
+Type: `set[str]`: A set of metal atoms, sourced from `lahuta.config._atom_type_strings.py`.
 """
 
 STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS
 """
-Type: `Set[str]`: A set of standard amino acids. See the 
+Type: `set[str]`: A set of standard amino acids. See the 
 [source](atom_types.md#lahuta.config._atom_type_strings.STANDARD_AMINO_ACIDS).
 """
 
@@ -66,7 +66,7 @@ PROT_ATOM_TYPES: dict[str, set[str]] = {
     "aromatic": at.AROMATIC,
 }
 """
-Type: `Dict[str, Set[str]]`: A dictionary mapping atom types to sets of atom names (strings).
+Type: `dict[str, set[str]]`: A dictionary mapping atom types to sets of atom names (strings).
 
 !!! tip "Definitions"
 
@@ -110,7 +110,7 @@ def remap_prot_atom_types(prot_atom_types: dict[str, set[str]]) -> dict[str, set
 
 ID_TO_TYPES = remap_prot_atom_types(PROT_ATOM_TYPES)
 """
-Type: `Dict[str, Set[str]]`: A dictionary mapping atom names (strings) to sets of atom types.
+Type: `dict[str, set[str]]`: A dictionary mapping atom names (strings) to sets of atom types.
 
 !!! tip "Definitions"
     See [`PROT_ATOM_TYPES`](#lahuta.config.atoms.PROT_ATOM_TYPES) for the definitions of atom types.

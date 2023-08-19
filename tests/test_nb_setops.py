@@ -1,6 +1,6 @@
 import random
 import warnings
-from typing import Callable, List, Tuple
+from typing import Callable
 
 import numpy as np
 import pytest
@@ -105,7 +105,7 @@ def data_loader() -> NeighborPairs:
     return ns
 
 
-params: List[Tuple[float, float]] = []
+params: list[tuple[float, float]] = []
 for _ in range(10):
     subset = round(random.uniform(0, 0.5), 2)
     extra = round(random.uniform(0, 0.5), 2)

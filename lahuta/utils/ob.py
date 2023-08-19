@@ -1,7 +1,5 @@
 """Utility functions for OpenBabel."""
 
-from typing import List
-
 import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
@@ -35,10 +33,10 @@ class Rings:
     """
 
     def __init__(self) -> None:
-        self._centers: List[NDArray[np.float32]] = []
-        self._normals: List[NDArray[np.float32]] = []
-        self._atoms: List[List[int]] = []
-        self._first_atom_idx: List[int] = []
+        self._centers: list[NDArray[np.float32]] = []
+        self._normals: list[NDArray[np.float32]] = []
+        self._atoms: list[list[int]] = []
+        self._first_atom_idx: list[int] = []
 
     def add_ring(self, ob_ring: ObRingType) -> None:
         """Add a ring to the Rings object.

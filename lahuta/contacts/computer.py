@@ -2,7 +2,7 @@
 in a molecular system or trajectory data. 
 """
 import warnings
-from typing import Callable, ClassVar, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
+from typing import Callable, ClassVar, Iterable, Literal, Optional, Union, cast
 
 import numpy as np
 import pandas as pd
@@ -24,7 +24,7 @@ Pairs: TypeAlias = NDArray[np.int32]
 Distances: TypeAlias = NDArray[np.float32]
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactFunctions = Union[ContactFunction, Iterable[ContactFunction]]
-FrameContacts = Dict[int, Tuple[Pairs, Distances]]
+FrameContacts = dict[int, tuple[Pairs, Distances]]
 
 
 class LahutaContacts:
@@ -63,7 +63,7 @@ class LahutaContacts:
         - A ValueError is raised if an attempt is made to unregister a function that is not already registered.
     """
 
-    ATOM_ATOM: ClassVar[Dict[str, ContactFunction]] = {
+    ATOM_ATOM: ClassVar[dict[str, ContactFunction]] = {
         "aromatic": F.aromatic_neighbors,
         "ionic": F.ionic_neighbors,
         "carbonyl": F.carbonyl_neighbors,
@@ -79,7 +79,7 @@ class LahutaContacts:
     def __init__(
         self, contact_type: Optional[Literal["all", "atom-atom", "atom-plane", "plane-plane"]] = "all"
     ) -> None:
-        self._contacts: List[ContactFunction] = []
+        self._contacts: list[ContactFunction] = []
         if contact_type in ["all", "atom-atom"]:
             for func in self.ATOM_ATOM.values():
                 self.register(func)
@@ -89,7 +89,7 @@ class LahutaContacts:
             self.register(F.plane_plane_neighbors)
 
         self.atom_plane_instance: Optional[AtomPlaneContacts] = None
-        self._results: Dict[str, NeighborPairs] = {}
+        self._results: dict[str, NeighborPairs] = {}
 
     def _initialize_atom_plane_instance(self, ns: NeighborPairs) -> None:
         self.atom_plane_instance = AtomPlaneContacts(ns)
@@ -171,14 +171,14 @@ class LahutaContacts:
         # Unregistering contacts
         self._contacts.remove(contact_function)
 
-    def list_registered(self) -> List[str]:
+    def list_registered(self) -> list[str]:
         """List registered contact functions.
 
         Args:
             None
 
         Returns:
-            List[str]: A list of the names of the registered contact functions.
+            list[str]: A list of the names of the registered contact functions.
 
         """
         # Getting registered contacts
@@ -226,7 +226,7 @@ class LahutaContacts:
         return contacts
 
     @property
-    def results(self) -> Dict[str, NeighborPairs]:
+    def results(self) -> dict[str, NeighborPairs]:
         """Return the computed results."""
         return self._results
 
@@ -250,7 +250,7 @@ class LahutaTrajectoryContacts:
     Attributes:
         res_dif (int): Minimum residue difference for considering pairs as neighbors.
         radius (float): Search radius for neighbors.
-        results (Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]]): Computed results for each frame.
+        results (dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]]): Computed results for each frame.
 
     Methods:
         compute(luni, lahuta_contacts=None, n_jobs=1): Main method to initiate the contact computation across frames.
@@ -281,9 +281,9 @@ class LahutaTrajectoryContacts:
     def __init__(self, res_dif: int, radius: float):
         self.res_dif = res_dif
         self.radius = radius
-        self.results: Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]] = {}
+        self.results: dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]] = {}
 
-    def _get_block_slices(self, n_frames: int, n_blocks: int) -> List[range]:
+    def _get_block_slices(self, n_frames: int, n_blocks: int) -> list[range]:
         n_frames_per_block = n_frames // n_blocks
         blocks = [range(i * n_frames_per_block, (i + 1) * n_frames_per_block) for i in range(n_blocks - 1)]
         blocks.append(range((n_blocks - 1) * n_frames_per_block, n_frames))
@@ -307,12 +307,12 @@ class LahutaTrajectoryContacts:
 
         return result
 
-    def _compute(self, mda: AtomGroupType, n_jobs: int) -> List[FrameContacts]:
+    def _compute(self, mda: AtomGroupType, n_jobs: int) -> list[FrameContacts]:
         n_frames = mda.universe.trajectory.n_frames
         blocks = self._get_block_slices(n_frames, n_blocks=n_jobs)
         with tqdm_joblib(tqdm(total=n_jobs)) as _:
-            results: List[FrameContacts] = cast(
-                List[FrameContacts], Parallel(n_jobs=n_jobs)(delayed(self._frame_iter)(mda, bs) for bs in blocks)
+            results: list[FrameContacts] = cast(
+                list[FrameContacts], Parallel(n_jobs=n_jobs)(delayed(self._frame_iter)(mda, bs) for bs in blocks)
             )
 
         return results
@@ -365,7 +365,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         res_dif (int): Minimum residue difference for considering pairs as neighbors.
         radius (float): Search radius for neighbors.
         _trajectory (MDAnalysis.coordinates.base.Timestep): Reference to the trajectory being analyzed.
-        results (Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]]): Computed results for each frame.
+        results (dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]]): Computed results for each frame.
         lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
 
     Methods:
@@ -392,7 +392,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         self.res_dif = res_dif
         self.radius = radius
         self._trajectory = self.luni.to("mda").universe.trajectory
-        self.results: Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]] = {}
+        self.results: dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]] = {}
         self.lahuta_contacts: Optional["LahutaContacts"] = None
         AnalysisBase.__init__(self, self._trajectory)
 

@@ -12,7 +12,7 @@ Classes:
 import os
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from openbabel import openbabel as ob
@@ -95,14 +95,14 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
     def __init__(self) -> None:
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
-    def precompute_ob_smarts(self) -> Dict[str, List[ObSmartPatternType]]:
+    def precompute_ob_smarts(self) -> dict[str, list[ObSmartPatternType]]:
         """Precompute and stores the Open Babel SMARTS patterns for all atom types.
 
         Returns:
-            (Dict[str, List[ObSmartPatternType]]): A dictionary with atom type names as keys and lists of
+            (dict[str, list[ObSmartPatternType]]): A dictionary with atom type names as keys and lists of
                                                 precomputed Open Babel SMARTS patterns as values.
         """
-        precomputed_ob_smarts: Dict[str, List[ObSmartPatternType]] = {}
+        precomputed_ob_smarts: dict[str, list[ObSmartPatternType]] = {}
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
             precomputed_ob_smarts[atom_type.name] = []
@@ -116,19 +116,19 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         self,
         ob_smart: ObSmartPatternType,
         mol: MolType,
-        atypes: Dict[str, int],
+        atypes: dict[str, int],
         atom_type: str,
-    ) -> List[Tuple[Any, int]]:
+    ) -> list[tuple[Any, int]]:
         """Match an Open Babel SMARTS pattern to a molecule.
 
         Args:
             ob_smart (ObSmartPatternType): An Open Babel SMARTS pattern.
             mol (MolType): A molecule object to match the pattern on.
-            atypes (Dict[str, int]): A dictionary of atom types.
+            atypes (dict[str, int]): A dictionary of atom types.
             atom_type (str): The name of the atom type that the SMARTS pattern represents.
 
         Returns:
-            List[Tuple[Any, int]]: A list of tuples, where each tuple contains the matched atom's
+            list[tuple[Any, int]]: A list of tuples, where each tuple contains the matched atom's
                                     index and the corresponding atom type.
         """
         ob_smart.Match(mol)

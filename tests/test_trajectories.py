@@ -1,6 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Callable, Optional
 
 import MDAnalysis as mda
 import numpy as np
@@ -47,12 +47,12 @@ class ContactType:
         assert self.neighbors_ref is not None
         self.neighbors_diff = self.func(self.neighbors_ref) - self.func(self.neighbors)
 
-    def pairs(self) -> Tuple[int, ...]:
+    def pairs(self) -> tuple[int, ...]:
         """Return the number of pairs"""
         assert self.neighbors is not None
         return self.func(self.neighbors).pairs.shape
 
-    def pairs_ref(self) -> Tuple[int, ...]:
+    def pairs_ref(self) -> tuple[int, ...]:
         """Return the number of pairs in the reference"""
         assert self.neighbors_ref is not None
         return self.func(self.neighbors_ref).pairs.shape

@@ -1,5 +1,5 @@
 """Base class for all plotter classes."""
-from typing import List, Tuple, Union
+from typing import Union
 
 import numpy as np
 from matplotlib.colors import ListedColormap
@@ -25,7 +25,7 @@ class BasePlotter:
         raise NotImplementedError()
 
     def _initialize_map(
-        self, shape: Tuple[AnyInt, AnyInt], pairs: List[Tuple[np.int32, np.int32]]
+        self, shape: tuple[AnyInt, AnyInt], pairs: list[tuple[np.int32, np.int32]]
     ) -> NDArray[np.int32]:
         contact_map = np.zeros(shape, dtype=int)
         for x, y in pairs:
@@ -35,7 +35,7 @@ class BasePlotter:
         return contact_map
 
     @staticmethod
-    def get_ticks_and_labels(indices: NDArray[np.int32], n_points: int) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
+    def get_ticks_and_labels(indices: NDArray[np.int32], n_points: int) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
         """Return the positions and labels of the ticks for the given indices.
         The number of ticks is limited to 10.
         """

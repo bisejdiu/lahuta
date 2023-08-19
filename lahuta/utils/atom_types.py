@@ -7,8 +7,6 @@ Warning:
 
 """
 
-from typing import Dict
-
 import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
@@ -69,14 +67,14 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
 def vec_assign_atom_types(
     mol: MolType,
     atomgroup: AtomGroupType,
-    ta: Dict[str, NDArray[np.str_]],
+    ta: dict[str, NDArray[np.str_]],
 ) -> NDArray[np.int8]:
     """Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`.
 
     Args:
         mol (MolType): The molecule for which to assign atom types.
         atomgroup (AtomGroupType): The atomgroup for which to assign atom types.
-        ta (Dict[str, NDArray[np.str_]]): A dictionary containing the atom names and residue names.
+        ta (dict[str, NDArray[np.str_]]): A dictionary containing the atom names and residue names.
 
     Returns:
         NDArray[np.int8]: An array of shape (n_atoms, n_atom_types) where each element is either 0 or 1.

@@ -20,7 +20,7 @@ Classes:
 
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Iterator, Literal, Optional, Union, overload
+from typing import Any, Iterator, Literal, Optional, Union, overload
 
 import gemmi
 import MDAnalysis as mda
@@ -163,18 +163,18 @@ class GemmiLoader(BaseLoader):
             structure: Any = gemmi.make_structure_from_block(block)  # type: ignore
 
         self.structure = structure
-        atom_site_data: Dict[str, Any] = block.get_mmcif_category("_atom_site.")
+        atom_site_data: dict[str, Any] = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
         self.arc.atoms.coordinates = self.extract_positions(atom_site_data)
 
         self.ag: AtomGroupType = self._create_mda()
 
-    def extract_positions(self, atom_site_data: Dict[str, Any]) -> NDArray[np.float32]:
+    def extract_positions(self, atom_site_data: dict[str, Any]) -> NDArray[np.float32]:
         """Extract the coordinates from the atom_site data.
 
         Args:
-            atom_site_data (Dict[str, Any]): The atom_site data from the gemmi structure object.
+            atom_site_data (dict[str, Any]): The atom_site data from the gemmi structure object.
 
         Returns:
             NDArray[np.float32]: The coordinates of the atoms in the structure.

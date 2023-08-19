@@ -4,7 +4,7 @@ Classes:
     LabeledNeighborPairsBuilder: A class to build LabeledNeighborPairs objects.
 """
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from Bio.Seq import Seq
@@ -39,7 +39,7 @@ class LabeledNeighborPairsBuilder:
     )
 
     @staticmethod
-    def map_pairs(atoms: AtomGroupType, seq: Optional[Seq] = None) -> Tuple[NDArray[np.str_], ...]:
+    def map_pairs(atoms: AtomGroupType, seq: Optional[Seq] = None) -> tuple[NDArray[np.str_], ...]:
         """Map the pairs of atom indices to their corresponding atom names, residue IDs, and residue names.
 
         Args:
@@ -47,7 +47,7 @@ class LabeledNeighborPairsBuilder:
             seq (Optional[Seq], optional): The sequence of the AtomGroup. Defaults to None.
 
         Returns:
-            Tuple[NDArray[np.str_], ...]: A tuple containing the atom names, residue IDs, and residue names.
+            tuple[NDArray[np.str_], ...]: A tuple containing the atom names, residue IDs, and residue names.
         """
         resindices = atoms.resindices
         if seq is None:

@@ -35,7 +35,7 @@ Notes:
 
 """
 
-from typing import Tuple, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -244,7 +244,7 @@ def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool
 
 def symmetric_difference(
     arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
-) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
+) -> tuple[NDArray[np.bool_], NDArray[np.bool_]]:
     """Calculate the symmetric difference of two arrays.
 
     This function returns the elements that are in `arr1` but not in `arr2` and vice versa.
@@ -265,7 +265,7 @@ def symmetric_difference(
     return mask_a, mask_b
 
 
-def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType], NDArray[np.int32]]:
+def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> tuple[NDArray[_DType], NDArray[np.int32]]:
     """Calculate the union of two arrays and return the unique pairs along with their indices.
 
     The function finds unique pairs from the union of `arr1` and `arr2`, and also returns the
@@ -304,7 +304,7 @@ def union(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> Tuple[NDArray[_DType]
 
 def union_masks(
     arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False
-) -> Tuple[NDArray[np.bool_], NDArray[np.bool_]]:
+) -> tuple[NDArray[np.bool_], NDArray[np.bool_]]:
     """Calculate the union of two arrays.
 
     Args:

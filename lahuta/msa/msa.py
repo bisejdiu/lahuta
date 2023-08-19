@@ -12,7 +12,7 @@ Example:
     seq_id = seq_ids[0]
 
 """
-from typing import Dict, Iterator, List
+from typing import Iterator
 
 import numpy as np
 from Bio import SeqIO
@@ -25,14 +25,14 @@ class MSAParser:
     """A parser for multiple sequence alignment (MSA) files.
 
     Attributes:
-        seq_ids (List[str]): The sequence IDs.
-        sequences (Dict[str, Seq]): The sequences.
+        seq_ids (list[str]): The sequence IDs.
+        sequences (dict[str, Seq]): The sequences.
 
     """
 
     def __init__(self, filepath: str) -> None:
-        self._sequences: Dict[str, Seq] = {}
-        self._seq_ids: List[str] = []
+        self._sequences: dict[str, Seq] = {}
+        self._seq_ids: list[str] = []
         self._parse_file(filepath)
 
     def _parse_file(self, filepath: str) -> None:
@@ -59,11 +59,11 @@ class MSAParser:
             raise ValueError(f"Sequence with ID {seq_id} not found.")
         return self.to_indices_array(seq)
 
-    def get_seq_ids(self) -> List[str]:
+    def get_seq_ids(self) -> list[str]:
         """Get the sequence IDs.
 
         Returns:
-            List[str]: The sequence IDs.
+            list[str]: The sequence IDs.
 
         """
         return self._seq_ids
@@ -87,21 +87,21 @@ class MSAParser:
         return np.frombuffer(bytes(seq), dtype=np.ubyte)
 
     @property
-    def seq_ids(self) -> List[str]:
+    def seq_ids(self) -> list[str]:
         """Get the sequence IDs.
 
         Returns:
-            List[str]: The sequence IDs.
+            list[str]: The sequence IDs.
 
         """
         return self._seq_ids
 
     @property
-    def sequences(self) -> Dict[str, Seq]:
+    def sequences(self) -> dict[str, Seq]:
         """Get the sequences.
 
         Returns:
-            Dict[str, Seq]: The sequences.
+            dict[str, Seq]: The sequences.
 
         """
         return self._sequences

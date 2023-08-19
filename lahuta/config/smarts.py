@@ -5,7 +5,7 @@ easier lookups.
 """
 
 from enum import Enum
-from typing import ClassVar, Dict, List
+from typing import ClassVar
 
 import lahuta.config._smart_strings as smarts
 
@@ -102,8 +102,8 @@ class SmartsPatternRegistry(Enum):
     """
 
 
-_Atom_Type_Names: List[str] = [member.name for member in SmartsPatternRegistry]
-AVAILABLE_ATOM_TYPES: Dict[str, int] = {name: i for i, name in enumerate(_Atom_Type_Names)}
+_Atom_Type_Names: list[str] = [member.name for member in SmartsPatternRegistry]
+AVAILABLE_ATOM_TYPES: dict[str, int] = {name: i for i, name in enumerate(_Atom_Type_Names)}
 """
-Type: `Dict[str, int]`: A dictionary mapping atom type names (strings) to unique integer identifiers.
+Type: `dict[str, int]`: A dictionary mapping atom type names (strings) to unique integer identifiers.
 """

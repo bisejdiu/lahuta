@@ -120,7 +120,7 @@ class NeighborPairs:
             distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
 
         Returns:
-            Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the sorted pairs and distances arrays.
+            tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the sorted pairs and distances arrays.
 
         Example:
             ``` py
@@ -620,7 +620,7 @@ class NeighborPairs:
         """Set the annotations of the NeighborPairs object.
 
         Args:
-            annotations (Dict[str, NDArray[Any]]): A dictionary containing the annotations to be set.
+            annotations (dict[str, NDArray[Any]]): A dictionary containing the annotations to be set.
         """
         self._annotations = annotations
 
@@ -628,7 +628,7 @@ class NeighborPairs:
         """Add annotations to the existing NeighborPairs object.
 
         Args:
-            annotations (Dict[str, NDArray[Any]]): A dictionary containing the annotations to be added.
+            annotations (dict[str, NDArray[Any]]): A dictionary containing the annotations to be added.
         """
         for value in annotations.values():
             assert len(value) == self.pairs.shape[0]

@@ -28,7 +28,7 @@ Warning:
 
 """
 
-from typing import Callable, Dict, Optional, TypeVar
+from typing import Callable, Optional, TypeVar
 
 import numpy as np
 from joblib import Memory
@@ -58,7 +58,7 @@ __all__ = [
 ]
 
 
-DEFAULT_CONTACT_DISTS: Dict[str, float] = {
+DEFAULT_CONTACT_DISTS: dict[str, float] = {
     "cation_pi": CONTACTS["aromatic"]["atom_aromatic_distance"],
     "donor_pi": CONTACTS["aromatic"]["atom_aromatic_distance"],
     "sulphur_pi": CONTACTS["aromatic"]["met_sulphur_aromatic_distance"],

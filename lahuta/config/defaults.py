@@ -7,16 +7,14 @@ Constants:
 
     CONTACTS_DIST_MAX (float): Maximum distance for contacts.
 
-    THETA_REQUIRED (set): Set of atom types that require theta for calculation.
+    THETA_REQUIRED (set): set of atom types that require theta for calculation.
 
     CONTACTS (dict): A nested dictionary that defines different types of atom-atom interactions 
                      and their geometric parameters. The outer keys are the interaction types and the 
                      inner keys are the geometric parameters (distance, angle etc.) with their values.
 
-    GEMMI_SUPPRTED_FORMATS (set): Set of file formats that are supported by Gemmi library.
+    GEMMI_SUPPRTED_FORMATS (set): set of file formats that are supported by Gemmi library.
 """
-
-from typing import Dict
 
 # http://en.wikipedia.org/wiki/Atomic_radii_of_the_elements_(data_page)
 VDW_RADII = {"H": 1.2}
@@ -26,7 +24,7 @@ CONTACTS_DIST_MAX = 4.5
 Type: `float`: Maximum distance for contacts.
 """
 
-CONTACTS: Dict[str, Dict[str, float]] = {
+CONTACTS: dict[str, dict[str, float]] = {
     "hbond": {
         "distance": 3.9,
         "polar distance": 3.5,
@@ -72,5 +70,5 @@ inner keys are the geometric parameters (distance, angle etc.) with their values
 
 GEMMI_SUPPRTED_FORMATS = {"cif", "mmcif", "cif.gz", "pdb", "pdb.gz"}
 """
-Type: `set`: Set of file formats that are supported by Gemmi library.
+Type: `set`: set of file formats that are supported by Gemmi library.
 """
