@@ -2,7 +2,7 @@ name: Linting, Typechecking & Testing
 
 on:
   push:
-    branches: ["main", "dev"]
+    branches: ["main", "dev", "feature/*"]
 
 jobs:
   test_lint_typecheck:
