@@ -3,7 +3,7 @@ name: Linting, Typechecking & Testing
 on:
   push:
     branches:
-      - testing_workflow
+      - build_testing_workflow
 
 jobs:
   build-linux:
