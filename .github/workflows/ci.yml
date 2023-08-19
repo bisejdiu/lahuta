@@ -2,8 +2,7 @@ name: Linting, Typechecking & Testing
 
 on:
   push:
-    branches:
-      - build_testing_workflow
+    branches: ["main", "dev"]
 
 jobs:
   test_lint_typecheck:
