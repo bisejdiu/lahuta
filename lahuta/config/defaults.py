@@ -1,11 +1,9 @@
-"""
-module: `lahuta.utils.defaults.py`
-
-This module defines various constants and default values related to atomic radii, 
+"""Defines various constants and default values related to atomic radii,
 contact distances, theta angle, contact definitions, and Gemmi supported formats. 
 
 Constants:
-    VDW_RADII (dict): A dictionary that defines van der Waals radii for different atom types (currently only H is defined)
+    VDW_RADII (dict): A dictionary that defines van der Waals radii for different atom types \
+        (currently only H is defined)
 
     CONTACTS_DIST_MAX (float): Maximum distance for contacts.
 
