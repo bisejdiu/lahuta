@@ -106,8 +106,6 @@ ignore = [
 'D105', 'D107', 'D205', 'D415'
 ] # 'E501'
 
-# flake8-quotes = {inline-quotes = 'single', multiline-quotes = 'double'}
-
 mccabe = { max-complexity = 14 }
 isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
 target-version = "py39"
@@ -123,6 +121,7 @@ max-args = 6
 'lahuta/lahuta_types/mda_commands.py' = ['PLR0913']
 'lahuta/lahuta_types/mdanalysis.py' = ['D101', 'D102', 'ANN401']
 'lahuta/lahuta_types/openbabel.py' = ['D101', 'D102', 'ANN401']
+'bin/lahuta' = ['A002', 'B008', 'PLR0913']
 
 [tool.mypy]
 python_version = "3.10"
