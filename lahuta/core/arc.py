@@ -1,8 +1,4 @@
-"""
-
-module: `lahuta.core.arc.py`
-
-This module provides classes to model and manage the atomic-level structure of a biological system.
+"""Classes to model and manage the atomic-level structure of a biological system.
 The atomic-level structure includes atoms, residues, and chains in the system, and their inter-relationships.
 
 This module provides the following classes:
@@ -39,6 +35,7 @@ Example:
     >>> print(atom_0)
     Atom(name=..., id=..., element=..., type=..., resname=..., resid=..., chain_label=..., chain_id=...)
     ```
+
 """
 
 from dataclasses import dataclass
@@ -54,9 +51,7 @@ if TYPE_CHECKING:
 
 
 class Atoms:
-    """
-
-    Atoms is a class that models and manages the properties and coordinates of atoms in a system.
+    """Atoms is a class that models and manages the properties and coordinates of atoms in a system.
 
     The Atoms class is part of the Atoms, Residues, Chains (ARC) module. It leverages structured
     numpy arrays to effectively handle, store and manipulate atomic information for speed optimization.
@@ -114,7 +109,6 @@ class Atoms:
         label_atom_id: List[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
-        # data["id"] = np.array(gemmi_block.get("id"), dtype=int) - 1
         data["id"] = np.arange(data["name"].size)
         data["element"] = np.array(gemmi_block.get("type_symbol"))
         data["type"] = np.array(gemmi_block.get("type_symbol"))
@@ -134,7 +128,6 @@ class Atoms:
         Returns:
             Atoms: An Atoms instance.
         """
-
         cls_instance = cls.__new__(cls)
         data: NDArray[Any] = np.empty(len(uv.atoms), dtype=cls_instance.dtype)
         data["name"] = uv.atoms.names
@@ -189,8 +182,7 @@ class Atoms:
 
 
 class Residues:
-    """
-    The Residues class models and manages the properties of residues in a system.
+    """The Residues class models and manages the properties of residues in a system.
 
     The Residues class is part of the Atoms, Residues, Chains (ARC) module. It utilizes structured
     numpy arrays for effective handling, storage, and manipulation of residue-related data. This
@@ -234,7 +226,6 @@ class Residues:
         Returns:
             Residues: A Residues instance.
         """
-
         cls_instance = cls.__new__(cls)
 
         # Create structured array
@@ -259,7 +250,6 @@ class Residues:
         Returns:
             Residues: A Residues instance.
         """
-
         cls_instance = cls.__new__(cls)
         cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance._data["resname"] = mda_universe.atoms.resnames
@@ -290,8 +280,7 @@ class Residues:
 
 
 class Chains:
-    """
-    The Chains class models and manages the properties of chains in a system.
+    """The Chains class models and manages the properties of chains in a system.
 
     The Chains class is part of the Atoms, Residues, Chains (ARC) module. It utilizes structured
     numpy arrays for effective handling, storage, and manipulation of chain-related data. This
@@ -367,7 +356,6 @@ class Chains:
         Returns:
             Chains: A Chains instance.
         """
-
         cls_instance = cls.__new__(cls)
         cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
         cls_instance._data["label"] = mda_universe.atoms.chainIDs
@@ -406,8 +394,7 @@ class Chains:
 
 
 class ARC:
-    """
-    The ARC class models and manages the properties of a biological system consisting of atoms, residues, and chains.
+    """The ARC class models and manages the properties of a biological system consisting of atoms, residues, and chains.
 
     The ARC class integrates the Atoms, Residues, and Chains (ARC) module, by creating and storing
     instances of Atoms, Residues, and Chains classes.
@@ -474,7 +461,6 @@ class ARC:
         Returns:
             Atom: An Atom instance.
         """
-
         atom_info = self._atoms[index]
         residue_info = self._residues[index]
         chain_info = self._chains[index]
@@ -524,8 +510,7 @@ class ARC:
 
 @dataclass
 class Atom:
-    """
-    The Atom class models and manages the properties of an atom in a system.
+    """The Atom class models and manages the properties of an atom in a system.
 
     The Atom class stores information related to a single atom in a system.
     It's created using keyword arguments, which allows it to dynamically store any attributes passed.
@@ -543,8 +528,6 @@ class Atom:
         Atom(name=CA, id=1, element=C, type=C.3, resname=ALA, resid=1, chain_label=A, chain_id=1)
         ```
     """
-
-    # __slots__ = ["name", "id", "element", "type", "resname", "resid", "chain_label", "chain_id"]
 
     def __init__(self, **kwargs: Any):  # FIXME: specify the type of kwargs
         self.__dict__.update(kwargs)

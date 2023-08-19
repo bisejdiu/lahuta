@@ -1,7 +1,4 @@
-"""
-module: `lahuta.core._loaders.py`
-
-This module provides classes to load and manage biological structure data. 
+"""Classes to load and manage biological structure data.
 
 The two main classes are `GemmiLoader` and `TopologyLoader`, each designed to work with a 
 specific library, Gemmi and MDAnalysis respectively, to load and handle structure data.
@@ -19,7 +16,6 @@ Classes:
     GemmiLoader: Class to load and manage biological structure data using the Gemmi library.
     TopologyLoader: Class to load and manage biological structure data using the MDAnalysis library.
     ```
-
 """
 
 
@@ -39,8 +35,7 @@ from lahuta.lahuta_types.openbabel import MolType
 
 
 class BaseLoader(ABC):
-    """
-    Abstract base class providing a blueprint for loading and handling biological structure data.
+    """Abstract base class providing a blueprint for loading and handling biological structure data.
 
     `BaseLoader` forms the basis for other loader classes in the lahuta library, dedicated
     to handling different formats of biological structural data. It includes the initialization
@@ -69,7 +64,6 @@ class BaseLoader(ABC):
         self._atoms = None
 
         self.structure = None
-        # self.ag = None
         self.arc: Optional[ARC] = None
 
     @property
@@ -107,8 +101,7 @@ class BaseLoader(ABC):
         ...
 
     def to(self, fmt: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
-        """
-        Convert the loaded biological structure data into a different format.
+        """Convert the loaded biological structure data into a different format.
 
         Args:
             fmt (str): The format to which the biological structure data should be converted.
@@ -141,8 +134,7 @@ class BaseLoader(ABC):
 
 
 class GemmiLoader(BaseLoader):
-    """
-    Class for loading biological structure data using the gemmi library.
+    """Class for loading biological structure data using the gemmi library.
 
     `GemmiLoader` is a subclass of `BaseLoader` and provides the implementation to read,
     convert, and manage biological structure data specifically from the gemmi library.
@@ -163,7 +155,6 @@ class GemmiLoader(BaseLoader):
 
     def __init__(self, file_path: str, is_pdb: bool = False):
         super().__init__(file_path)
-        # pylint: disable=no-member
         if is_pdb:
             structure: Any = gemmi.read_pdb(self.file_path)  # type: ignore
             block: Any = structure.make_mmcif_document().sole_block()
@@ -175,7 +166,6 @@ class GemmiLoader(BaseLoader):
         atom_site_data: Dict[str, Any] = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
-        # self._coords_array = self.extract_positions(atom_site_data)
         self.arc.atoms.coordinates = self.extract_positions(atom_site_data)
 
         self.ag: AtomGroupType = self._create_mda()
@@ -205,7 +195,6 @@ class GemmiLoader(BaseLoader):
         Returns:
             AtomGroupType: An MDAnalysis AtomGroup object.
         """
-
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
         assert self.arc is not None, "arc has not been initialized"
         struct_arr = np.rec.fromarrays(  # type: ignore
@@ -258,8 +247,7 @@ class GemmiLoader(BaseLoader):
 
 
 class TopologyLoader(BaseLoader):
-    """
-    Class for loading and managing biological structure data using the MDAnalysis library.
+    """Class for loading and managing biological structure data using the MDAnalysis library.
 
     `TopologyLoader` is a subclass of `BaseLoader` and provides the implementation to read,
     convert, and manage biological structure data specifically from the MDAnalysis library.
@@ -314,7 +302,7 @@ class TopologyLoader(BaseLoader):
         """
         top_loader = cls.__new__(cls)
         top_loader.ag = ag.copy()
-        top_loader.ag._u = ag.universe.copy()  # type: ignore
+        top_loader.ag._u = ag.universe.copy()  # noqa: SLFS001
         top_loader.structure = None
 
         top_loader.arc = ARC(top_loader, top_loader.ag)
