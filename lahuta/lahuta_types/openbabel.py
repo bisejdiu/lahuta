@@ -1,7 +1,4 @@
-"""
-Module: openbabel.py
-
-This module provides a typed interface and typed wrappers for OpenBabel, a chemical toolbox 
+"""Provides a typed interface and typed wrappers for OpenBabel, a chemical toolbox
 for chemical data. This module allows for static typing support when working with OpenBabel objects.
 
 The module is comprised of several classes that correspond to various aspects of OpenBabel's functionality. 
@@ -28,6 +25,7 @@ Example:
     ob_pattern.Init('c1ccccc1')
     ob_pattern.Match(mol)
     ob_pattern.GetMapList()
+
 """
 
 from typing import Any, Iterator, List, Protocol
