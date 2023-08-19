@@ -2,7 +2,7 @@
 in a molecular system or trajectory data. 
 """
 import warnings
-from typing import Callable, ClassVar, Iterable, Literal, Optional, Union, cast
+from typing import Callable, ClassVar, Iterable, Literal, Optional, cast
 
 import numpy as np
 import pandas as pd
@@ -23,7 +23,7 @@ from ._ctx_mngrs import tqdm_joblib
 Pairs: TypeAlias = NDArray[np.int32]
 Distances: TypeAlias = NDArray[np.float32]
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
-ContactFunctions = Union[ContactFunction, Iterable[ContactFunction]]
+ContactFunctions = ContactFunction | Iterable[ContactFunction]
 FrameContacts = dict[int, tuple[Pairs, Distances]]
 
 
@@ -250,7 +250,7 @@ class LahutaTrajectoryContacts:
     Attributes:
         res_dif (int): Minimum residue difference for considering pairs as neighbors.
         radius (float): Search radius for neighbors.
-        results (dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]]): Computed results for each frame.
+        results (dict[int, NeighborPairs | dict[str, NeighborPairs]]): Computed results for each frame.
 
     Methods:
         compute(luni, lahuta_contacts=None, n_jobs=1): Main method to initiate the contact computation across frames.
@@ -281,7 +281,7 @@ class LahutaTrajectoryContacts:
     def __init__(self, res_dif: int, radius: float):
         self.res_dif = res_dif
         self.radius = radius
-        self.results: dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]] = {}
+        self.results: dict[int, NeighborPairs | dict[str, NeighborPairs]] = {}
 
     def _get_block_slices(self, n_frames: int, n_blocks: int) -> list[range]:
         n_frames_per_block = n_frames // n_blocks
@@ -365,7 +365,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         res_dif (int): Minimum residue difference for considering pairs as neighbors.
         radius (float): Search radius for neighbors.
         _trajectory (MDAnalysis.coordinates.base.Timestep): Reference to the trajectory being analyzed.
-        results (dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]]): Computed results for each frame.
+        results (dict[int, NeighborPairs | dict[str, NeighborPairs]]): Computed results for each frame.
         lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
 
     Methods:
@@ -392,7 +392,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         self.res_dif = res_dif
         self.radius = radius
         self._trajectory = self.luni.to("mda").universe.trajectory
-        self.results: dict[int, Union[NeighborPairs, dict[str, NeighborPairs]]] = {}
+        self.results: dict[int, NeighborPairs | dict[str, NeighborPairs]] = {}
         self.lahuta_contacts: Optional["LahutaContacts"] = None
         AnalysisBase.__init__(self, self._trajectory)
 

@@ -2,7 +2,7 @@ import gzip
 import json
 import warnings
 from pathlib import Path
-from typing import Callable, Type, Union
+from typing import Callable, Type
 
 import numpy as np
 import pytest
@@ -19,7 +19,7 @@ from lahuta.tests import X2, DNABound, Rhodopsin
 
 
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
-ContactDict = dict[str, Union[list[int], int]]
+ContactDict = dict[str, list[int] | int]
 
 pytestmark = pytest.mark.contacts
 

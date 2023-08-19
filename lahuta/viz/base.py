@@ -1,11 +1,10 @@
 """Base class for all plotter classes."""
-from typing import Union
 
 import numpy as np
 from matplotlib.colors import ListedColormap
 from numpy.typing import NDArray
 
-AnyInt = Union[int, np.int32]
+AnyInt = int | np.int32
 
 
 class BasePlotter:

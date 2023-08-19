@@ -14,7 +14,7 @@ Example:
     
 """
 
-from typing import Any, Callable, Literal, Optional, Union, overload
+from typing import Any, Callable, Literal, Optional, overload
 
 import MDAnalysis as mda
 import numpy as np
@@ -35,7 +35,7 @@ from lahuta.utils.radii import v_radii_assignment
 
 __all__ = ["LuniInputType", "Luni"]
 
-LuniInputType = Union[AtomGroupType, str, list[str]]
+LuniInputType = AtomGroupType | str | list[str]
 
 
 class Luni:
@@ -227,7 +227,7 @@ class Luni:
         return "".join(single_letter_codes)
 
     @staticmethod
-    def get_format(file_name: str) -> tuple[Union[str, None], bool]:
+    def get_format(file_name: str) -> tuple[str | None, bool]:
         """Retrieve the file format from a file name.
 
         This static method checks the file extension of the provided file name against the list of formats
@@ -256,7 +256,7 @@ class Luni:
     def to(self, fmt: Literal["mol"]) -> MolType:
         ...
 
-    def to(self, fmt: Literal["mda", "mol"]) -> Union[MolType, AtomGroupType]:
+    def to(self, fmt: Literal["mda", "mol"]) -> MolType | AtomGroupType:
         """Convert the Luni to a different format.
 
         This method converts the internal representation of the Luni to the specified format.
@@ -268,7 +268,7 @@ class Luni:
             fmt (str): The format to convert to. Currently supported formats are "mda" and "mol".
 
         Returns:
-            Union[MolType, AtomGroupType]: A new Luni instance in the specified format.
+            MolType | AtomGroupType: A new Luni instance in the specified format.
         """
         if fmt not in {"mda", "mol"}:
             raise ValueError(f"Invalid format: {fmt}, must be one of 'mda' or 'mol'")
@@ -280,11 +280,11 @@ class Luni:
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
-    def arc(self) -> Union[None, ARC]:
+    def arc(self) -> None | ARC:
         """Retrieve the ARC instance used to load the files.
 
         Returns:
-            Union[None, ARC]: The ARC instance used to load the files.
+            None | ARC: The ARC instance used to load the files.
         """
         return self._file_loader.arc
 

@@ -20,7 +20,7 @@ Classes:
 
 
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, Literal, Optional, Union, overload
+from typing import Any, Iterator, Literal, Optional, overload
 
 import gemmi
 import MDAnalysis as mda
@@ -100,14 +100,14 @@ class BaseLoader(ABC):
     def to(self, fmt: Literal["mol"]) -> MolType:
         ...
 
-    def to(self, fmt: Literal["mol", "mda"]) -> Union[MolType, AtomGroupType]:
+    def to(self, fmt: Literal["mol", "mda"]) -> MolType | AtomGroupType:
         """Convert the loaded biological structure data into a different format.
 
         Args:
             fmt (str): The format to which the biological structure data should be converted.
 
         Returns:
-            Union[MolType, AtomGroupType]: The biological structure data in the specified format.
+            MolType | AtomGroupType: The biological structure data in the specified format.
 
         Raises:
             ValueError: If the specified format is not supported.
@@ -126,7 +126,7 @@ class BaseLoader(ABC):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
 
-    def __iter__(self) -> Iterator[Union[Atoms, Residues, Chains]]:
+    def __iter__(self) -> Iterator[Atoms | Residues | Chains]:
         """Iterate over atoms, residues, and chains."""
         yield self.atoms
         yield self.residues

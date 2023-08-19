@@ -24,7 +24,7 @@ Example:
 
 """
 
-from typing import Any, Optional, Protocol, Union
+from typing import Any, Optional, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
@@ -140,7 +140,7 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "AtomGroupType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
@@ -190,7 +190,7 @@ class TrajectoryType(Protocol):
     def n_frames(self) -> int:
         ...
 
-    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "TimeStepType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "TimeStepType":
         ...
 
     def __iter__(self) -> "TimeStepType":

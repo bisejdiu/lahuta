@@ -3,7 +3,7 @@ considered as "neighbors" based on a certain distance criterion. This class prov
 methods to manipulate, analyze, and export these pairs.
 """
 
-from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -760,7 +760,7 @@ class NeighborPairs:
         arr: NDArray[np.int32] = np.array([self.partner1.indices, self.partner2.indices])
         return np.unique(arr)
 
-    def __getitem__(self, item: Union[int, slice, NDArray[np.int32]]) -> "NeighborPairs":
+    def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.
 
         This method allows accessing the neighbor pairs similar to elements in a list.
