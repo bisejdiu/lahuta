@@ -71,8 +71,8 @@ class MolType(Protocol):
     def GetAtom(self, index: int) -> Any:
         ...
 
-    # def GetId(self) -> Any:
-    #     ...
+    def GetId(self) -> int:
+        ...
 
     def GetAtomById(self, index: int) -> Any:
         ...
@@ -128,7 +128,8 @@ class MolTypeWrapper:
         self.mol = mol
 
     def GetId(self) -> int:
-        ...
+        """Get the molecule's ID."""
+        return self.mol.GetId()
 
 
 class MolAtomType(Protocol):
