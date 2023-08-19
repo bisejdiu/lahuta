@@ -13,7 +13,6 @@ from numpy.typing import NDArray
 
 import lahuta.utils.array_utils as au
 
-# pylint: disable=arguments-out-of-order
 
 pytestmark = pytest.mark.au
 

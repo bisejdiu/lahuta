@@ -9,9 +9,6 @@ from lahuta import Luni
 from lahuta.core.labeled_neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=invalid-name
-# pylint: disable=missing-function-docstring
 
 pytestmark = pytest.mark.nb
 

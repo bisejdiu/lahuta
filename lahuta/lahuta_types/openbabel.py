@@ -30,8 +30,6 @@ Example:
 
 from typing import Any, Iterator, List, Protocol
 
-# pylint: disable=C0116, C0115, C0103
-
 
 class ObSmartPatternType(Protocol):
     def Init(self, smarts: str) -> None:

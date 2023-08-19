@@ -144,7 +144,6 @@ def check_disjoint(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     Returns:
         bool: True if the theorem holds, False otherwise.
     """
-    # pylint: disable=import-outside-toplevel
     from lahuta.core.builder import LabeledNeighborPairsBuilder
 
     empty = s1.create_new(np.empty((0, 2), dtype=LabeledNeighborPairsBuilder.DTYPE))

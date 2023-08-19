@@ -137,7 +137,6 @@ class _PlanePlaneContacts:
     def _gen_combinations(self, use_itertools: bool = False) -> NDArray[np.int32]:
         """Generate all combinations of pairs of indices in the form (i, j) where i < j."""
         if use_itertools:
-            # pylint: disable=import-outside-toplevel
             from itertools import combinations  # type: ignore
 
             return np.array(list(combinations(range(len(self.rings)), 2)))

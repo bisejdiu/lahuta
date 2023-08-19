@@ -17,9 +17,6 @@ from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.tests import X2, DNABound, Rhodopsin
 
-# pylint: disable=redefined-outer-name
-# pylint: disable=missing-class-docstring
-# pylint: disable=missing-function-docstring
 
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactDict = Dict[str, Union[List[int], int]]

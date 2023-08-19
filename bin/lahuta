@@ -26,8 +26,6 @@ from lahuta.contacts.computer import LahutaContacts
 from lahuta.core import NeighborPairs
 from lahuta.writers.pretty import PrettyDataFrame
 
-# pylint: disable=redefined-builtin
-
 FORMAT = Literal["compact", "expanded"]
 RESIDUE_DIFF_DEFAULT = 2
 

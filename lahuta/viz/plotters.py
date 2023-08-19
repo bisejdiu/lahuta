@@ -5,7 +5,6 @@ import numpy as np
 from .base import BasePlotter
 
 
-# pylint: disable=missing-class-docstring, missing-function-docstring
 class FullPlotter(BasePlotter):
     """Plot the full contact map.
 

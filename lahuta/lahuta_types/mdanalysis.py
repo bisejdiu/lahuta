@@ -30,7 +30,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-# pylint: disable=missing-function-docstring
 class ResidueGroupType(Protocol):
     """A typing interface for MDAnalysis ResidueGroup objects."""
 
@@ -46,7 +45,6 @@ class ResidueGroupType(Protocol):
         ...
 
 
-# pylint: disable=missing-function-docstring
 class AtomGroupType(Protocol):
     """A typing interface for MDAnalysis AtomGroup objects."""
 
@@ -118,7 +116,7 @@ class AtomGroupType(Protocol):
         ...
 
     @property
-    def chainIDs(self) -> NDArray[np.str_]:  # pylint: disable=invalid-name
+    def chainIDs(self) -> NDArray[np.str_]:
         ...
 
     @property
@@ -149,7 +147,6 @@ class AtomGroupType(Protocol):
         ...
 
 
-# pylint: disable=missing-function-docstring
 class UniverseType(Protocol):
     """A typing interface for MDAnalysis Universe objects."""
 
@@ -175,7 +172,7 @@ class UniverseType(Protocol):
     def copy(self) -> "UniverseType":
         ...
 
-    def add_TopologyAttr(self, name: str, attr: Any) -> None:  # pylint: disable=invalid-name
+    def add_TopologyAttr(self, name: str, attr: Any) -> None:
         ...
 
     def __iter__(self) -> Any:

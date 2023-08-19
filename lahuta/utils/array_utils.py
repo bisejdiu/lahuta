@@ -259,7 +259,6 @@ def symmetric_difference(
         mask_a: A boolean array that can be used to index `arr1` to get the elements unique to `arr1`.
         mask_b: A boolean array that can be used to index `arr2` to get the elements unique to `arr2`.
     """
-    # pylint: disable=arguments-out-of-order
     mask_a = difference(arr1, arr2, assume_unique)
     mask_b = difference(arr2, arr1, assume_unique)
 
@@ -318,7 +317,6 @@ def union_masks(
         mask_a: A boolean array that can be used to index `arr1` to get the elements of the union from `arr1`.
         mask_b: A boolean array that can be used to index `arr2` to get the elements of the union from `arr2`.
     """
-    # pylint: disable=arguments-out-of-order
     mask_a_diff, mask_b_diff = symmetric_difference(arr1, arr2, assume_unique)
     mask_a_int = intersection(arr1, arr2, assume_unique)
 
@@ -401,7 +399,6 @@ def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
         False
         ```
     """
-    # pylint: disable=arguments-out-of-order
     return issubset(arr2, arr1)
 
 

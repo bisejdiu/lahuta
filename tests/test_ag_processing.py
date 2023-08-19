@@ -17,9 +17,6 @@ from lahuta.tests import X2
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
 
-# pylint: disable=attribute-defined-outside-init
-# pylint: disable=redefined-outer-name
-
 pytestmark = pytest.mark.ag
 
 

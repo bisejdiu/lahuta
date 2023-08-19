@@ -9,13 +9,10 @@ from _pytest.fixtures import FixtureRequest
 
 from lahuta import Luni
 
-# from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mdanalysis import UniverseType
 
-# pylint: disable=attribute-defined-outside-init
-# pylint: disable=redefined-outer-name
 
 pytestmark = pytest.mark.trajs
 

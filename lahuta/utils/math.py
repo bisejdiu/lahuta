@@ -157,7 +157,6 @@ def calc_pairwise_distances(matrix1: NDArray[np.float32], matrix2: NDArray[np.fl
     return distance(reshaped_matrix1, matrix2)
 
 
-# pylint: disable=W1114
 def calc_vertex_angles(
     vertex: NDArray[np.float32],
     point1: NDArray[np.float32],
