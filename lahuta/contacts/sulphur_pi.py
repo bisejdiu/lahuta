@@ -1,9 +1,6 @@
-"""
-Module: sulphur_pi.py
+"""Provides class-level API for computing sulphur-pi contacts, based on atom-plane interactions.
 
-This module provides class-level API for computing sulphur-pi contacts, based on atom-plane interactions. 
-
-Warning: 
+Warning:
     Due to re-computation, using the `SulphurPi` class may result in slower performance. 
     We recommend using the `AtomPlaneContacts` class from the `atom_plane` module for 
     improved efficiency. 
@@ -17,8 +14,9 @@ Usage:
     ns = universe.compute_neighbors()
     sulphur_pi = SulphurPi(ns)
     results = sulphur_pi.compute().results
+
 """
-from warnings import warn
+import warnings
 
 from lahuta.core.neighbors import NeighborPairs
 
@@ -27,8 +25,7 @@ from .base import ContactAnalysis
 
 
 class SulphurPi(ContactAnalysis):
-    """
-    Handles the computation of sulphur pi contacts in a molecular system.
+    """Handle the computation of sulphur pi contacts in a molecular system.
 
     Sulphur pi contacts are interactions involving the π system of sulphur atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -59,15 +56,16 @@ class SulphurPi(ContactAnalysis):
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
-        warn(
+        warnings.warn(
             "Using the `SulphurPi` class may result in slower performance due to "
             "re-computation. Consider using the `AtomPlaneContacts` class from the "
             "`atom_plane` module for improved efficiency.",
             RuntimeWarning,
+            stacklevel=2,
         )
 
     def compute(self) -> NeighborPairs:
-        """Computes sulphur pi contacts based on the neighbor pairs.
+        """Compute sulphur pi contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only sulphur pi contacts.

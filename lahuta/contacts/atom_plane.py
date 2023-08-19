@@ -1,7 +1,4 @@
-"""
-Module: atom_plane.py
-
-This module defines atom-plane contacts, where interactions between atoms and a plane 
+"""Defines atom-plane contacts, where interactions between atoms and a plane
 (e.g., aromatic residues or ring structures in ligands) are computed. 
 
 Classes:
@@ -19,19 +16,19 @@ Examples:
     cap = apc.cation_pi()   # for cation-pi contacts
     ```
 
-Note: 
+Note:
     Functionals include a caching parameter intended to avoid re-computation 
     of shared details. However, the impact on performance isn't clear-cut; 
     thus, users are advised to test this if speed is a priority.
 
-Warning: 
+Warning:
     While functionals maintain consistency in the contact computation API, 
     the class-based approach is more efficient as it avoids redundant computations.
     If speed is a priority, the class-based approach is highly recommended.
 
 """
 
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Dict, Optional, TypeVar
 
 import numpy as np
 from joblib import Memory
@@ -50,6 +47,7 @@ from ._cache_funcs import (
 )
 
 memory = Memory("cachedir", verbose=0)
+T = TypeVar("T")
 
 __all__ = [
     "cation_pi",
@@ -78,7 +76,7 @@ class _AtomPlaneContacts:
         return ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("hbond_donor", partner=2)
 
     @staticmethod
-    def sulphur_pi(ns: NeighborPairs, *_: Any) -> NeighborPairs:
+    def sulphur_pi(ns: NeighborPairs, *_: T) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the sulphur pi system."""
         distance = DEFAULT_CONTACT_DISTS["sulphur_pi"]
         indices = ns.partner2.select_atoms("resname MET and element S").indices
@@ -107,8 +105,7 @@ def subtract_aromatic_neighbors(
 ) -> NeighborPairs:
     """Subtract aromatic neighbors from the neighbor pairs."""
     cloned_neighbors = ns.clone(pairs, distances)
-    neighbors = cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)
-    return neighbors
+    return cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)
 
 
 def compute_contacts(
@@ -122,7 +119,6 @@ def compute_contacts(
         """Compute the contacts between aromatic rings and the specified atom plane system."""
         mol = ns.mol
         mda: AtomGroupType = ns.mda
-        # rings = perceive_rings(mol)
         rings = enumerate_rings(mol)
 
         neighbors_fn = compute_neighbors_cached if not use_cache else compute_neighbors_cached.call  # type: ignore
@@ -131,7 +127,9 @@ def compute_contacts(
 
         neighbors = subtract_aromatic_neighbors(ns, pairs, distances)
 
-        angles_fn = calc_ringnormal_pos_angle_cached if not use_cache else calc_ringnormal_pos_angle_cached.call  # type: ignore
+        angles_fn = (
+            calc_ringnormal_pos_angle_cached if not use_cache else calc_ringnormal_pos_angle_cached.call  # type: ignore
+        )
         result = angles_fn(neighbors, mda.universe.atoms, rings.centers, rings.normals)
         angles = result[0] if use_cache else result
 
@@ -151,8 +149,7 @@ def create_contact_function(
 
 # user-facing functions
 def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
-    """
-    Handles the computation of cation pi contacts in a molecular system.
+    """Handle the computation of cation pi contacts in a molecular system.
 
     Cation pi contacts are interactions between cations and the π system of atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -178,14 +175,12 @@ def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False
         NeighborPairs: The computed cation-pi contacts.
 
     """
-
     func = create_contact_function("cation_pi", angle_cutoff, cache)
     return func(ns)
 
 
 def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
-    """
-    Handles the computation of carbon pi contacts in a molecular system.
+    """Handle the computation of carbon pi contacts in a molecular system.
 
     Carbon pi contacts are interactions involving the π system of carbon atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -211,14 +206,12 @@ def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False
         NeighborPairs: The computed carbon-pi contacts.
 
     """
-
     func = create_contact_function("carbon_pi", angle_cutoff, cache)
     return func(ns)
 
 
 def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
-    """
-    Handles the computation of donor pi contacts in a molecular system.
+    """Handle the computation of donor pi contacts in a molecular system.
 
     Donor pi contacts are interactions between electron donors and the π system of atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -244,14 +237,12 @@ def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False)
         NeighborPairs: The computed donor-pi contacts.
 
     """
-
     func = create_contact_function("donor_pi", angle_cutoff, cache)
     return func(ns)
 
 
 def sulphur_pi(ns: NeighborPairs, cache: bool = False) -> NeighborPairs:
-    """
-    Handles the computation of sulphur pi contacts in a molecular system.
+    """Handle the computation of sulphur pi contacts in a molecular system.
 
     Sulphur pi contacts are interactions involving the π system of sulphur atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -274,14 +265,12 @@ def sulphur_pi(ns: NeighborPairs, cache: bool = False) -> NeighborPairs:
         NeighborPairs: The computed sulphur-pi contacts.
 
     """
-
     func = create_contact_function("sulphur_pi", None, cache)
     return func(ns)
 
 
 class AtomPlaneContacts:
-    """
-    This class calculates and handles special atomic contacts within a molecular system, including
+    """Calculate and handles special atomic contacts within a molecular system, including
     carbon-pi, cation-pi, donor-pi, and sulphur-pi interactions. Each interaction type is computed
     as a method of this class.
 
@@ -336,8 +325,7 @@ class AtomPlaneContacts:
         self.angles = result
 
     def donor_pi(self) -> NeighborPairs:
-        """
-        Handles the computation of donor pi contacts in a molecular system.
+        """Handle the computation of donor pi contacts in a molecular system.
 
         Donor pi contacts are interactions between electron donors and the π system of atoms in a molecule.
         This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -362,8 +350,7 @@ class AtomPlaneContacts:
         return self.ap_contacts.donor_pi(self.neighbors, self.angles)
 
     def sulphur_pi(self) -> NeighborPairs:
-        """
-        Handles the computation of sulphur pi contacts in a molecular system.
+        """Handle the computation of sulphur pi contacts in a molecular system.
 
         Sulphur pi contacts are interactions involving the π system of sulphur atoms in a molecule.
         This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -386,8 +373,7 @@ class AtomPlaneContacts:
         return self.ap_contacts.sulphur_pi(self.neighbors, self.angles)
 
     def carbon_pi(self) -> NeighborPairs:
-        """
-        Handles the computation of carbon pi contacts in a molecular system.
+        """Handle the computation of carbon pi contacts in a molecular system.
 
         Carbon pi contacts are interactions involving the π system of carbon atoms in a molecule.
         This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -408,13 +394,11 @@ class AtomPlaneContacts:
             NeighborPairs: The computed carbon-pi contacts.
 
         """
-
         assert self.angles is not None
         return self.ap_contacts.carbon_pi(self.neighbors, self.angles)
 
     def cation_pi(self) -> NeighborPairs:
-        """
-        Handles the computation of cation pi contacts in a molecular system.
+        """Handle the computation of cation pi contacts in a molecular system.
 
         Cation pi contacts are interactions between cations and the π system of atoms in a molecule.
         This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`

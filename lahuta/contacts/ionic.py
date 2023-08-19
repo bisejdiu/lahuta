@@ -1,19 +1,18 @@
-"""
-Module: ionic.py
-
-This module defines a class for computing ionic contacts using a class-based approach. 
+"""Defines a class for computing ionic contacts using a class-based approach.
 The IonicContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for ionic contact computation.
 
 Class:
     IonicContacts(ContactAnalysis): Computes ionic contacts.
                                        
+
 Example:
     luni = Luni(...)
     ns = luni.compute_neighbors()
 
     ionic = IonicContacts(ns)
     print(ionic.results)
+
 """
 
 import lahuta.contacts as F
@@ -24,8 +23,7 @@ from .base import ContactAnalysis
 
 
 class IonicContacts(ContactAnalysis):
-    """
-    Handles the computation of ionic contacts in a molecular system.
+    """Handle the computation of ionic contacts in a molecular system.
 
     Ionic contacts refer to the interactions between positively and negatively ionizable atoms,
     forming one of the primary types of electrostatic interactions.
@@ -56,7 +54,7 @@ class IonicContacts(ContactAnalysis):
     distance = CONTACTS["ionic"]["distance"]
 
     def compute(self) -> NeighborPairs:
-        """Computes ionic contacts based on the neighbor pairs.
+        """Compute ionic contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only ionic contacts.

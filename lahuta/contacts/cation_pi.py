@@ -1,9 +1,6 @@
-"""
-Module: cation_pi.py
+"""Provides class-level API for computing cation-pi contacts, based on atom-plane interactions.
 
-This module provides class-level API for computing cation-pi contacts, based on atom-plane interactions. 
-
-Warning: 
+Warning:
     Due to re-computation, using the `CationPi` class may result in slower performance. 
     We recommend using the `AtomPlaneContacts` class from the `atom_plane` module for 
     improved efficiency. 
@@ -17,8 +14,9 @@ Usage:
     ns = universe.compute_neighbors()
     cation_pi = CationPi(ns)
     results = cation_pi.compute().results
+
 """
-from warnings import warn
+import warnings
 
 from lahuta.core.neighbors import NeighborPairs
 
@@ -27,8 +25,7 @@ from .base import ContactAnalysis
 
 
 class CationPi(ContactAnalysis):
-    """
-    Handles the computation of cation pi contacts in a molecular system.
+    """Handle the computation of cation pi contacts in a molecular system.
 
     Cation pi contacts are interactions between cations and the π system of atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -61,15 +58,16 @@ class CationPi(ContactAnalysis):
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
-        warn(
+        warnings.warn(
             "Using the `CationPi` class may result in slower performance due to "
             "re-computation. Consider using the `AtomPlaneContacts` class from the "
             "`atom_plane` module for improved efficiency.",
             RuntimeWarning,
+            stacklevel=2,
         )
 
     def compute(self) -> NeighborPairs:
-        """Computes cation pi contacts based on the neighbor pairs.
+        """Compute cation pi contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only cation pi contacts.

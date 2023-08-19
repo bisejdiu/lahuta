@@ -1,7 +1,4 @@
-"""
-Module: covalent.py
-
-This module defines a class for computing covalent contacts using a class-based approach. 
+"""Defines a class for computing covalent contacts using a class-based approach.
 The CovalentContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for covalent contact computation.
 
@@ -9,6 +6,7 @@ Note:
     This contact is slightly slower because it requires a loop over all atoms in the molecule 
     to check for pairs that are covalently bonded. 
                                
+
 Example:
     ``` py
     universe = Universe(...)
@@ -17,6 +15,7 @@ Example:
     cov = CovalentContacts(ns)
     print(cov.results)
     ```
+
 """
 
 
@@ -27,8 +26,7 @@ from .base import ContactAnalysis
 
 
 class CovalentContacts(ContactAnalysis):
-    """
-    Handles the computation of covalent contacts in a molecular system.
+    """Handle the computation of covalent contacts in a molecular system.
 
     Covalent contacts are interactions based on covalent bonds between atoms in a molecular system.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute` method
@@ -57,7 +55,7 @@ class CovalentContacts(ContactAnalysis):
     """
 
     def compute(self) -> NeighborPairs:
-        """Computes covalent contacts based on the neighbor pairs.
+        """Compute covalent contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only covalent contacts.

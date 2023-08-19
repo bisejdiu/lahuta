@@ -1,7 +1,4 @@
-"""
-Module: hbonds.py
-
-This module defines a class for computing hbond-type contacts using a class-based approach. 
+"""Defines a class for computing hbond-type contacts using a class-based approach.
 The HBondContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for hbond contact computation.
 
@@ -13,12 +10,14 @@ Class:
     WeakPolarHBondContacts(ContactAnalysis): Computes weak polar hbond contacts.
     ```
                                        
+
 Example:
     luni = Luni(...)
     ns = luni.compute_neighbors()
 
     hbonds = HBondContacts(ns)
     print(hbonds.results)
+
 """
 
 import lahuta.contacts as F
@@ -29,8 +28,7 @@ from .base import ContactAnalysis
 
 
 class HBondContacts(ContactAnalysis):
-    """
-    Handles the computation of hydrogen bond (hbond) contacts in a molecular system.
+    """Handle the computation of hydrogen bond (hbond) contacts in a molecular system.
 
     Hydrogen bonds are pivotal non-covalent interactions that significantly influence the structure, stability,
     and dynamics of biomolecules such as proteins and nucleic acids. A hydrogen bond forms when a hydrogen atom
@@ -58,7 +56,7 @@ class HBondContacts(ContactAnalysis):
     """
 
     def compute(self) -> NeighborPairs:
-        """Computes hydrogen bond (hbond) contacts based on the neighbor pairs.
+        """Compute hydrogen bond (hbond) contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only hbond contacts.
@@ -67,8 +65,7 @@ class HBondContacts(ContactAnalysis):
 
 
 class WeakHBondContacts(ContactAnalysis):
-    """
-    Handles the computation of weak hydrogen bond (weak hbond) contacts in a molecular system.
+    """Handle the computation of weak hydrogen bond (weak hbond) contacts in a molecular system.
 
     Weak hydrogen bonds are a type of non-covalent interactions that, despite their reduced strength
     compared to regular hydrogen bonds, still play important roles in biomolecular structures and functions.
@@ -96,7 +93,7 @@ class WeakHBondContacts(ContactAnalysis):
     """
 
     def compute(self) -> NeighborPairs:
-        """Computes weak hydrogen bond (weak hbond) contacts based on the neighbor pairs.
+        """Compute weak hydrogen bond (weak hbond) contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only weak hbond contacts.
@@ -105,8 +102,7 @@ class WeakHBondContacts(ContactAnalysis):
 
 
 class PolarHBondContacts(ContactAnalysis):
-    """
-    Handles the computation of polar hydrogen bond (polar hbond) contacts in a molecular system.
+    """Handle the computation of polar hydrogen bond (polar hbond) contacts in a molecular system.
 
     Polar hydrogen bonds involve a hydrogen atom covalently bonded to a polar atom (hydrogen bond donor),
     forming an interaction with another polar atom from a different group (hydrogen bond acceptor). In contrast to
@@ -120,7 +116,8 @@ class PolarHBondContacts(ContactAnalysis):
 
     Attributes:
         ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
-        distance (float): The maximum distance to consider for a polar hbond contact. See `lahuta.config.defaults.CONTACTS`
+        distance (float): The maximum distance to consider for a polar hbond contact. \
+            See `lahuta.config.defaults.CONTACTS`
             for default values.
 
     ??? example "Example"
@@ -136,7 +133,7 @@ class PolarHBondContacts(ContactAnalysis):
     distance = CONTACTS["hbond"]["polar distance"]
 
     def compute(self) -> NeighborPairs:
-        """Computes polar hydrogen bond (polar hbond) contacts based on the neighbor pairs and the set distance.
+        """Compute polar hydrogen bond (polar hbond) contacts based on the neighbor pairs and the set distance.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only polar hbond contacts.
@@ -145,8 +142,7 @@ class PolarHBondContacts(ContactAnalysis):
 
 
 class WeakPolarHBondContacts(ContactAnalysis):
-    """
-    Handles the computation of weak polar hydrogen bond (weak polar hbond) contacts in a molecular system.
+    """Handle the computation of weak polar hydrogen bond (weak polar hbond) contacts in a molecular system.
 
     Weak polar hydrogen bonds rely on a weak hydrogen bond donor, and we also do not consider the angle
     formed by the donor, hydrogen, and acceptor atoms.
@@ -158,7 +154,8 @@ class WeakPolarHBondContacts(ContactAnalysis):
 
     Attributes:
         ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
-        distance (float): The maximum distance to consider for a weak polar hbond contact. See `lahuta.config.defaults.CONTACTS`
+        distance (float): The maximum distance to consider for a weak polar hbond contact. \
+            See `lahuta.config.defaults.CONTACTS`
             for default values.
 
     ??? example "Example"
@@ -174,7 +171,7 @@ class WeakPolarHBondContacts(ContactAnalysis):
     distance = CONTACTS["weak hbond"]["weak polar distance"]
 
     def compute(self) -> NeighborPairs:
-        """Computes weak polar hydrogen bond (weak polar hbond) contacts based on the neighbor pairs and the set distance.
+        """Compute weak polar hydrogen bond contacts based on the neighbor pairs and the set distance.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only weak polar hbond contacts.

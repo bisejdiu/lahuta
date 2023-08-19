@@ -1,10 +1,12 @@
+"""Contains the LahutaContacts and LahutaTrajectoryContacts classes for computing molecular contacts
+in a molecular system or trajectory data. 
+"""
 import warnings
-from typing import (Callable, Dict, Iterable, List, Literal, Optional, Tuple,
-                    Union, cast)
+from typing import Callable, ClassVar, Dict, Iterable, List, Literal, Optional, Tuple, Union, cast
 
 import numpy as np
 import pandas as pd
-from joblib import Parallel, delayed  # type: ignore
+from joblib import Parallel, delayed
 from MDAnalysis.analysis.base import AnalysisBase
 from numpy.typing import NDArray
 from tqdm import tqdm
@@ -25,10 +27,8 @@ ContactFunctions = Union[ContactFunction, Iterable[ContactFunction]]
 FrameContacts = Dict[int, Tuple[Pairs, Distances]]
 
 
-# pylint: disable=unsubscriptable-object
 class LahutaContacts:
-    """
-    A class to manage the computation of various molecular contacts.
+    """Manages the computation of various molecular contacts.
 
     LahutaContacts is a class designed to manage the computation of various molecular contacts.
     It allows users to specify the types of contacts they want to compute, such as atom-atom,
@@ -63,29 +63,29 @@ class LahutaContacts:
         - A ValueError is raised if an attempt is made to unregister a function that is not already registered.
     """
 
-    ATOM_ATOM: Dict[str, ContactFunction] = {
-        'aromatic': F.aromatic_neighbors,
-        'ionic': F.ionic_neighbors,
-        'carbonyl': F.carbonyl_neighbors,
-        'vdw': F.vdw_neighbors,
-        'hydrophobic': F.hydrophobic_neighbors,
-        'hbond': F.hbond_neighbors,
-        'weak_hbond': F.weak_hbond_neighbors,
-        'polar_hbond': F.polar_hbond_neighbors,
-        'weak_polar_hbond': F.weak_polar_hbond_neighbors,
-        'metalic': F.metalic_neighbors,
+    ATOM_ATOM: ClassVar[Dict[str, ContactFunction]] = {
+        "aromatic": F.aromatic_neighbors,
+        "ionic": F.ionic_neighbors,
+        "carbonyl": F.carbonyl_neighbors,
+        "vdw": F.vdw_neighbors,
+        "hydrophobic": F.hydrophobic_neighbors,
+        "hbond": F.hbond_neighbors,
+        "weak_hbond": F.weak_hbond_neighbors,
+        "polar_hbond": F.polar_hbond_neighbors,
+        "weak_polar_hbond": F.weak_polar_hbond_neighbors,
+        "metalic": F.metalic_neighbors,
     }
 
     def __init__(
-        self, contact_type: Optional[Literal['all', 'atom-atom', 'atom-plane', 'plane-plane']] = 'all'
+        self, contact_type: Optional[Literal["all", "atom-atom", "atom-plane", "plane-plane"]] = "all"
     ) -> None:
         self._contacts: List[ContactFunction] = []
-        if contact_type in ['all', 'atom-atom']:
+        if contact_type in ["all", "atom-atom"]:
             for func in self.ATOM_ATOM.values():
                 self.register(func)
-        if contact_type in ['all', 'atom-plane']:
+        if contact_type in ["all", "atom-plane"]:
             self._register_atom_plane_contacts()
-        if contact_type in ['all', 'plane-plane']:
+        if contact_type in ["all", "plane-plane"]:
             self.register(F.plane_plane_neighbors)
 
         self.atom_plane_instance: Optional[AtomPlaneContacts] = None
@@ -98,32 +98,31 @@ class LahutaContacts:
         self.register([self.donor_pi, self.cation_pi, self.sulphur_pi, self.carbon_pi])
 
     def donor_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        """Wrapper for AtomPlaneContacts.donor_pi"""
+        """Compute the donor-pi contacts using the AtomPlaneContacts.donor_pi method."""
         self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.donor_pi()
 
     def cation_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        """Wrapper for AtomPlaneContacts.cation_pi"""
+        """Compute the cation-pi contacts using the AtomPlaneContacts.cation_pi method."""
         self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.cation_pi()
 
     def sulphur_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        """Wrapper for AtomPlaneContacts.sulphur_pi"""
+        """Compute the sulphur-pi contacts using the AtomPlaneContacts.sulphur_pi method."""
         self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.sulphur_pi()
 
     def carbon_pi(self, ns: NeighborPairs) -> NeighborPairs:
-        """Wrapper for AtomPlaneContacts.carbon_pi"""
+        """Compute the carbon-pi contacts using the AtomPlaneContacts.carbon_pi method."""
         self._initialize_atom_plane_instance(ns)
         assert isinstance(self.atom_plane_instance, AtomPlaneContacts)
         return self.atom_plane_instance.carbon_pi()
 
     def register(self, contact_functions: ContactFunctions) -> None:
-        """
-        Register contact functions.
+        """Register contact functions.
 
         This method takes in a single contact function or an iterable of contact functions and registers them.
 
@@ -144,15 +143,16 @@ class LahutaContacts:
         for func in contact_functions:
             if callable(func):
                 if func in self._contacts:
-                    warnings.warn(f"{func.__name__} is already registered. Skipping.")
+                    warnings.warn(f"{func.__name__} is already registered. Skipping.", RuntimeWarning, stacklevel=2)
                 else:
                     self._contacts.append(func)
             else:
-                warnings.warn(f"{func} is not a callable function and cannot be registered.")
+                warnings.warn(
+                    f"{func} is not a callable function and cannot be registered.", RuntimeWarning, stacklevel=2
+                )
 
     def unregister(self, contact_function: ContactFunction) -> None:
-        """
-        Unregister contact functions.
+        """Unregister contact functions.
 
         This method takes in a single contact function and unregisters it.
 
@@ -167,13 +167,12 @@ class LahutaContacts:
 
         """
         if contact_function not in self._contacts:
-            raise ValueError(f'{contact_function} is not registered')
+            raise ValueError(f"{contact_function} is not registered")
         # Unregistering contacts
         self._contacts.remove(contact_function)
 
     def list_registered(self) -> List[str]:
-        """
-        List registered contact functions.
+        """List registered contact functions.
 
         Args:
             None
@@ -182,13 +181,11 @@ class LahutaContacts:
             List[str]: A list of the names of the registered contact functions.
 
         """
-
         # Getting registered contacts
         return [func.__name__ for func in self._contacts]
 
     def compute(self, ns: NeighborPairs) -> None:
-        """
-        Compute all registered contacts.
+        """Compute all registered contacts.
 
         This method takes in a NeighborPairs object and computes all the registered contacts.
 
@@ -207,8 +204,7 @@ class LahutaContacts:
     def to_frame(
         self, df_format: Literal["compact", "expanded"] = "expanded", annotations: bool = False
     ) -> pd.DataFrame:
-        """
-        Convert computed contacts to a DataFrame.
+        """Convert computed contacts to a DataFrame.
 
         Args:
             df_format (Literal["compact", "expanded"], optional): The format of the DataFrame. Default is "expanded".
@@ -218,37 +214,34 @@ class LahutaContacts:
             pd.DataFrame: A DataFrame containing the computed contacts.
 
         """
-        df = pd.DataFrame()  # type: ignore
+        contacts = pd.DataFrame()
         for key, value in self._results.items():
             df_contact = value.to_frame(df_format=df_format, annotations=annotations)
-            df_contact['contact_type'] = key
-            if key == 'plane_plane_neighbors':
-                df_contact_type = value.to_frame(df_format='expanded', annotations=True)['contact_labels']  # type: ignore
-                df_contact['contact_labels'] = df_contact_type
+            df_contact["contact_type"] = key
+            if key == "plane_plane_neighbors":
+                df_contact_type = value.to_frame(df_format="expanded", annotations=True)["contact_labels"]
+                df_contact["contact_labels"] = df_contact_type
 
-            df = pd.concat([df, df_contact], axis=0)  # type: ignore
-        return df  # type: ignore
+            contacts = pd.concat([contacts, df_contact], axis=0)
+        return contacts
 
     @property
     def results(self) -> Dict[str, NeighborPairs]:
-        """
-        Return the computed results.
-        """
+        """Return the computed results."""
         return self._results
 
     def __getitem__(self, key: str) -> NeighborPairs:
         return self._results[key]
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(contacts={self.list_registered()})'
+        return f"{self.__class__.__name__}(contacts={self.list_registered()})"
 
     def __str__(self) -> str:
         return self.__repr__()
 
 
 class LahutaTrajectoryContacts:
-    """
-    A class to manage the computation of molecular contacts within MD trajectory data.
+    """A class to manage the computation of molecular contacts within MD trajectory data.
 
     LahutaTrajectoryContacts is designed to analyze Molecular Dynamics (MD) trajectory data,
     and compute various molecular contacts such as atom-atom, atom-plane, or plane-plane contacts,
@@ -262,7 +255,7 @@ class LahutaTrajectoryContacts:
     Methods:
         compute(luni, lahuta_contacts=None, n_jobs=1): Main method to initiate the contact computation across frames.
             - luni (Luni): The universe containing the MD trajectory data.
-            - lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+            - lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
             - n_jobs (int): Number of parallel jobs for computation.
 
     Examples:
@@ -325,14 +318,13 @@ class LahutaTrajectoryContacts:
         return results
 
     def compute(self, luni: Luni, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1) -> None:
-        """
-        Compute the contacts for the whole trajectory.
+        """Compute the contacts for the whole trajectory.
 
         This is the main method to initiate the contact computation across frames.
 
         Args:
             luni (Luni): The universe containing the MD trajectory data.
-            lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+            lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
             n_jobs (int): Number of parallel jobs for computation.
 
         Returns:
@@ -361,8 +353,7 @@ class LahutaTrajectoryContacts:
 
 
 class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
-    """
-    A class to manage the computation of molecular contacts within MD trajectory data using a slower, but stable method.
+    """Manage the computation of molecular contacts within MD trajectory data using a slower, but stable method.
 
     SlowLahutaTrajectoryContacts offers a simplified approach to analyze Molecular Dynamics (MD) trajectory data
     and compute various molecular contacts. It's designed to be more stable, but it doesn't support parallelization,
@@ -375,11 +366,11 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         radius (float): Search radius for neighbors.
         _trajectory (MDAnalysis.coordinates.base.Timestep): Reference to the trajectory being analyzed.
         results (Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]]): Computed results for each frame.
-        lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+        lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
 
     Methods:
         compute(lahuta_contacts=None): Main method to initiate the contact computation across frames.
-            - lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+            - lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
 
     Examples:
         slow_traj_contacts = SlowLahutaTrajectoryContacts(luni, res_dif=5, radius=4.5)
@@ -403,7 +394,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         self._trajectory = self.luni.to("mda").universe.trajectory
         self.results: Dict[int, Union[NeighborPairs, Dict[str, NeighborPairs]]] = {}
         self.lahuta_contacts: Optional["LahutaContacts"] = None
-        AnalysisBase.__init__(self, self._trajectory)  # type: ignore
+        AnalysisBase.__init__(self, self._trajectory)
 
     def _single_frame(self) -> None:
         ns = self.luni.compute_neighbors(res_dif=self.res_dif, radius=self.radius)
@@ -414,15 +405,14 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
             self.results[self._frame_index] = self.lahuta_contacts.results
 
     def compute(self, lahuta_contacts: Optional["LahutaContacts"] = None) -> None:
-        """
-        Compute the contacts for the whole trajectory.
+        """Compute the contacts for the whole trajectory.
 
         Args:
-            lahuta_contacts (Optional["LahutaContacts"]): An optional instance of LahutaContacts to use predefined contacts.
+            lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
 
         Returns:
             None
 
         """
         self.lahuta_contacts = lahuta_contacts
-        self.run()  # type: ignore
+        self.run()

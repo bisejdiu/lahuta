@@ -1,7 +1,4 @@
-"""
-Module: plane_plane.py
-
-This module provides both class and function-level APIs to compute plane-plane contacts 
+"""Provides both class and function-level APIs to compute plane-plane contacts
 between two ring-containing residues or ligands. Each interaction is labeled according 
 to the relative orientations of the planes.
 
@@ -64,7 +61,7 @@ class _PlanePlaneContacts:
         self.distances: NDArray[np.float32] = np.array([])
 
     def compute(self) -> None:
-        """Computes plane-plane contacts based on the neighbor pairs and the set centroid distance."""
+        """Compute plane-plane contacts based on the neighbor pairs and the set centroid distance."""
         centers = self.rings.centers
         normals = self.rings.normals
 
@@ -86,7 +83,8 @@ class _PlanePlaneContacts:
         int_types = assign_pp_contact_type(normal_angles, theta_angles)
 
         # check for int_type is not None
-        mask = int_types != "None"  # FIXME: Shouldn't this be None, without quotes?
+        # TODO @bisejdiu: Shouldn't this be None, without quotes?
+        mask = int_types != "None"
 
         self._pair_ids = pair_ids[mask]
         self.distances = pair_dists[mask]
@@ -130,27 +128,26 @@ class _PlanePlaneContacts:
         return pairs, distances
 
     def get_neighbors(self) -> NeighborPairs:
-        """Returns the plane-plane contacts as a NeighborPairs object."""
+        """Return the plane-plane contacts as a NeighborPairs object."""
         pairs, distances = self._sort_inputs()
         ns = self.ns.clone(pairs, distances)
         ns.annotations = self._annotations
         return ns
 
     def _gen_combinations(self, use_itertools: bool = False) -> NDArray[np.int32]:
-        """Generate all combinations of pairs of indices in the form (i, j) where i < j"""
+        """Generate all combinations of pairs of indices in the form (i, j) where i < j."""
         if use_itertools:
             # pylint: disable=import-outside-toplevel
             from itertools import combinations  # type: ignore
 
             return np.array(list(combinations(range(len(self.rings)), 2)))
-        else:
-            # scales better with the number of rings
-            return np.column_stack(np.triu_indices(len(self.rings), k=1))
+
+        # scales better with the number of rings
+        return np.column_stack(np.triu_indices(len(self.rings), k=1))
 
 
 def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """
-    Handles the computation of plane-plane contacts in a molecular system.
+    """Handle the computation of plane-plane contacts in a molecular system.
 
     This class provides both class and function-level APIs to compute plane-plane contacts
     between two ring-containing residues or ligands. Each interaction is labeled according
@@ -200,8 +197,7 @@ def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 class PlanePlaneContacts:
-    """
-    Handles the computation of plane-plane contacts in a molecular system.
+    """Handle the computation of plane-plane contacts in a molecular system.
 
     This class provides both class and function-level APIs to compute plane-plane contacts
     between two ring-containing residues or ligands. Each interaction is labeled according
@@ -263,7 +259,7 @@ class PlanePlaneContacts:
         self.results = self.compute()
 
     def compute(self) -> NeighborPairs:
-        """Computes plane-plane contacts based on the neighbor pairs and the set centroid distance.
+        """Compute plane-plane contacts based on the neighbor pairs and the set centroid distance.
 
         This method initializes a `_PlanePlaneContacts` object with the neighbor pairs object (`ns`),
         sets its `centroid_distance` to match the class's `centroid_distance`, calls its `compute`
@@ -283,7 +279,7 @@ class PlanePlaneContacts:
 
 
 def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.float32]) -> NDArray[np.str_]:
-    """Assigns a contact type based on the normal angle and theta angle.
+    """Assign a contact type based on the normal angle and theta angle.
 
     This function assigns a contact type based on the normal angle and theta angle between two planes.
     The normal angle is the angle between the normals of the two planes, while the theta angle is the
