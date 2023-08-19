@@ -45,7 +45,6 @@ class NeighborPairs:
     designed to be extensible and supports the addition of custom annotations to the pairs.
 
     Args:
-    ----
         mda (AtomGroupType): The group of atoms under consideration.
         mol (MolType): The molecule under consideration.
         atom_types (csc_array): A sparse matrix containing the atom types.
@@ -53,21 +52,12 @@ class NeighborPairs:
         distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
 
     Attributes:
-    ----------
-        _atoms (AtomGroupType):
-            The group of atoms under consideration.
-        _pairs (NDArray[np.int32]):
-            A 2D numpy array of pairs of atom indices that are neighbors.
-        _distances (NDArray[np.float32]):
-            A 1D numpy array of distances between the pairs of atoms.
-        _annotations (Dict[str, NDArray[Any]]):
-            A dictionary to store custom annotations related to the pairs.
-        _hbond_array (NDArray[np.int32]):
-            A 2D numpy array of hydrogen bonded atom indices.
-        _hbond_handler (HBondHandler):
-            An instance of the HBondHandler class.
-        _hbond_angles (NDArray[np.float32]):
-            A 2D numpy array of hydrogen bond angles.
+        pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
+        distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
+        annotations (dict[str, NDArray[Any]]): A dictionary containing the annotations of the NeighborPairs object.
+        partner1 (AtomGroupType): The first column of the pairs of atoms.
+        partner2 (AtomGroupType): The second column of the pairs of atoms.
+        indices (NDArray[np.int32]): A 2D numpy array of the indices of the pairs of atoms.
 
     """
 
@@ -101,13 +91,11 @@ class NeighborPairs:
         and their respective distances. If the dimensions are not equal, the method raises an assertion error.
 
         Args:
-        ----
-        pairs (NDArray[np.int32]): An array containing the pairs of atoms.
-        distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
+            distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
 
         Raises:
-        ------
-        AssertionError: If the first dimension of the `pairs` and `distances` arrays are not equal.
+            AssertionError: If the first dimension of the `pairs` and `distances` arrays are not equal.
             
         """
         message = (
@@ -128,16 +116,13 @@ class NeighborPairs:
         each pair of atoms with its corresponding distance.
 
         Args:
-        ----
-        pairs (NDArray[np.int32]): An array containing the pairs of atoms.
-        distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
+            distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
 
         Returns:
-        -------
-        Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the sorted pairs and distances arrays.
+            Tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the sorted pairs and distances arrays.
 
         Example:
-        -------
             ``` py
             pairs = np.array([[2, 1], [4, 3]])
             distances = np.array([1.0, 2.0])
@@ -170,26 +155,24 @@ class NeighborPairs:
         The `partner` parameter specifies the column (1 or 2) from which the atom types are selected.
 
         Args:
-        ----
-        atom_type (str): Specifies the atom type. Must be one of:
+            atom_type (str): Specifies the atom type. Must be one of:
 
-            - 'carbonyl_oxygen'
-            - 'weak_hbond_donor'
-            - 'pos_ionisable'
-            - 'carbonyl_carbon'
-            - 'hbond_acceptor'
-            - 'hbond_donor'
-            - 'neg_ionisable'
-            - 'weak_hbond_acceptor'
-            - 'xbond_acceptor'
-            - 'aromatic'
-            - 'hydrophobe'
+                - 'carbonyl_oxygen'
+                - 'weak_hbond_donor'
+                - 'pos_ionisable'
+                - 'carbonyl_carbon'
+                - 'hbond_acceptor'
+                - 'hbond_donor'
+                - 'neg_ionisable'
+                - 'weak_hbond_acceptor'
+                - 'xbond_acceptor'
+                - 'aromatic'
+                - 'hydrophobe'
 
-        partner (int): The column for atom type selection. Can be either 1 or 2.
+            partner (int): The column for atom type selection. Can be either 1 or 2.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the atom type filter.
+            A NeighborPairs object containing the pairs that meet the atom type filter.
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
         nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]  # type: ignore
@@ -208,13 +191,11 @@ class NeighborPairs:
         The `partner` parameter specifies the column (1 or 2) from which the atom indices are selected.
 
         Args:
-        ----
-        indices (NDArray[np.int32]): The atom indices to select.
-        partner (int): The column to select the atom indices from. It can be either 1 or 2.
+            indices (NDArray[np.int32]): The atom indices to select.
+            partner (int): The column to select the atom indices from. It can be either 1 or 2.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the index filter.
+            A NeighborPairs object containing the pairs that meet the index filter.
         """
         mask = np.in1d(self.pairs[:, partner - 1], indices)
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -226,12 +207,10 @@ class NeighborPairs:
         less than or equal to the specified distance.
 
         Args:
-        ----
-        distance (float): The distance to select.
+            distance (float): The distance to select.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the distance filter.
+            A NeighborPairs object containing the pairs that meet the distance filter.
         """
         mask = self.distances <= distance
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -243,13 +222,11 @@ class NeighborPairs:
         equal to the cutoff (if `lte` is True) or greater than the cutoff (if `lte` is False).
 
         Args:
-        ----
-        array (NDArray[np.float32]): The array containing the values to compare with the cutoff.
-        cutoff (float): The cutoff value for the filter.
+             (NDArray[np.float32]): The array containing the values to compare with the cutoff.
+            cutoff (float): The cutoff value for the filter.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the numeric filter.
+            A NeighborPairs object containing the pairs that meet the numeric filter.
         """
         mask = array <= cutoff
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -262,13 +239,11 @@ class NeighborPairs:
         from which the radii are selected.
 
         Args:
-        ----
-        radius (float): The radius to select.
-        partner (int): The column to select the radii from. It can be either 1 or 2.
+            radius (float): The radius to select.
+            partner (int): The column to select the radii from. It can be either 1 or 2.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the radius filter.
+            A NeighborPairs object containing the pairs that meet the radius filter.
         """
         col_func = self._get_pair_column(partner)
         mask = col_func.atoms.vdw_radii <= radius
@@ -283,13 +258,11 @@ class NeighborPairs:
         the column of hydrogen bonded atom indices in the `hbond_array`.
 
         Args:
-        ----
-        partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-        vdw_comp_factor (float, optional): The van der Waals complementarity factor. Defaults to 0.1.
+            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
+            vdw_comp_factor (float, optional): The van der Waals complementarity factor. Defaults to 0.1.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the hydrogen bond distance filter.
+            A NeighborPairs object containing the pairs that meet the hydrogen bond distance filter.
         """
         attr_col, hbound_attr_col = self._get_partners(partner)
 
@@ -310,13 +283,11 @@ class NeighborPairs:
         bonded atom indices in the `hbond_array`. If `weak` is True, the function will accept weaker hydrogen bonds.
 
         Args:
-        ----
-        partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-        weak (bool, optional): If True, accept weaker hydrogen bonds. Defaults to False.
+            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
+            weak (bool, optional): If True, accept weaker hydrogen bonds. Defaults to False.
 
         Returns:
-        -------
-        A NeighborPairs object containing the pairs that meet the hydrogen bond angle filter.
+            A NeighborPairs object containing the pairs that meet the hydrogen bond angle filter.
         """
         contact_type = "weak hbond" if weak else "hbond"
         attr_partner, hbound_attr_partner = self._get_partners(partner)
@@ -337,12 +308,10 @@ class NeighborPairs:
         using the specified sequence ID.
 
         Args:
-        ----
-        seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
+            seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
 
         Returns:
-        -------
-        A NeighborPairs object containing the mapped pairs.
+            A NeighborPairs object containing the mapped pairs.
         """
         return LabeledNeighborPairsBuilder.build(self.pairs, self.atoms, seq)
 
@@ -353,23 +322,20 @@ class NeighborPairs:
         NeighborPairs object that contains the intersecting pairs along with their corresponding distances.
 
         Args:
-        ----
-        other: The other NeighborPairs object.
+            other: The other NeighborPairs object.
 
         Returns:
-        -------
-        intersected_pairs: A NeighborPairs object containing the pairs and their corresponding distances
-                        that are common between `self` and `other`.
+            intersected_pairs: A NeighborPairs object containing the pairs and their corresponding distances
+                            that are common between `self` and `other`.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        # 2 ways to get the intersection
-        >>> np_intersected = np1 & np2
-        >>> np_intersected = np1.intersection(np2)
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the intersection
+            >>> np_intersected = np1 & np2
+            >>> np_intersected = np1.intersection(np2)
+            ```
         """
         mask = au.intersection(self.pairs, other.pairs)
         return self.clone(self.pairs[mask], self.distances[mask])
@@ -381,23 +347,20 @@ class NeighborPairs:
         in the resulting object correspond to the union pairs.
 
         Args:
-        ----
-        other: The other NeighborPairs object to be unified with.
+            other: The other NeighborPairs object to be unified with.
 
         Returns:
-        -------
-        pairs: A NeighborPairs object containing the union of the pairs from `self` and `other`, and
-            with corresponding distances.
+            pairs: A NeighborPairs object containing the union of the pairs from `self` and `other`, and
+                with corresponding distances.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        # 2 ways to get the union
-        >>> np_union = np1 + np2
-        >>> np_union = np1.union(np2)
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the union
+            >>> np_union = np1 + np2
+            >>> np_union = np1.union(np2)
+            ```
         """
         pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]  # type: ignore
@@ -412,23 +375,20 @@ class NeighborPairs:
         corresponding distances.
 
         Args:
-        ----
-        other: The other NeighborPairs object.
+            other: The other NeighborPairs object.
 
         Returns:
-        -------
-        difference_pairs: A NeighborPairs object containing the pairs and their corresponding distances
-                        from `self` that are not in `other`.
+            difference_pairs: A NeighborPairs object containing the pairs and their corresponding distances
+                            from `self` that are not in `other`.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        # 2 ways to get the difference
-        >>> np_diff = np1 - np2
-        >>> np_diff = np1.difference(np2)
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the difference
+            >>> np_diff = np1 - np2
+            >>> np_diff = np1.difference(np2)
+            ```
 
         """
         mask = au.difference(self.pairs, other.pairs)
@@ -442,22 +402,19 @@ class NeighborPairs:
         that are unique to `self` or `other`, but not both.
 
         Args:
-        ----
-        other: The other NeighborPairs object.
+            other: The other NeighborPairs object.
 
         Returns:
-        -------
-        A NeighborPairs object containing the symmetric difference of the two NeighborPairs objects.
+            A NeighborPairs object containing the symmetric difference of the two NeighborPairs objects.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        # 2 ways to get the symmetric difference
-        >>> np_sym_diff = np1 | np2
-        >>> np_sym_diff = np1.symmetric_difference(np2)
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            # 2 ways to get the symmetric difference
+            >>> np_sym_diff = np1 | np2
+            >>> np_sym_diff = np1.symmetric_difference(np2)
+            ```
         """
         mask_a, mask_b = au.symmetric_difference(self.pairs, other.pairs)
 
@@ -473,22 +430,19 @@ class NeighborPairs:
         thus determining if the two objects are disjoint.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object.
+            other (NeighborPairs): The other NeighborPairs object.
 
         Returns:
-        -------
-        bool: True if the two NeighborPairs objects are disjoint
-                (i.e., have no common pairs), and False otherwise.
+            bool: True if the two NeighborPairs objects are disjoint
+                    (i.e., have no common pairs), and False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        >>> np1.isdisjoint(np2)
-        ```
-        True
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.isdisjoint(np2)
+            True
+            ```
         """
         return au.isdisjoint(self.pairs, other.pairs)
 
@@ -499,21 +453,18 @@ class NeighborPairs:
         is also present in the other NeighborPairs object, thus determining if this object is a subset of the 'other'.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object.
+            other (NeighborPairs): The other NeighborPairs object.
 
         Returns:
-        -------
-        bool: True if every pair in the current NeighborPairs object is found
-                in the other NeighborPairs object, and False otherwise.
+            bool: True if every pair in the current NeighborPairs object is found
+                    in the other NeighborPairs object, and False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        >>> np1.issubset(np2)
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.issubset(np2)
+            ```
         """
         return au.issubset(self.pairs, other.pairs)
 
@@ -524,21 +475,18 @@ class NeighborPairs:
         is also present in this object, thus determining if this object is a superset of the 'other'.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object.
+            other (NeighborPairs): The other NeighborPairs object.
 
         Returns:
-        -------
-        bool: True if all pairs from 'other' are found in this object, False otherwise.
+            bool: True if all pairs from 'other' are found in this object, False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        >>> np1.issuperset(np2)
-        ```
-        True
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.issuperset(np2)
+            True
+            ```
         """
         return au.issuperset(self.pairs, other.pairs)
 
@@ -548,21 +496,18 @@ class NeighborPairs:
         Two NeighborPairs objects are considered equal if they contain exactly the same pairs.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object.
+            other (NeighborPairs): The other NeighborPairs object.
 
         Returns:
-        -------
-        bool: True if the two NeighborPairs objects contain the same pairs, False otherwise.
+            bool: True if the two NeighborPairs objects contain the same pairs, False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        >>> np1.isequal(np2)
-        True
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.isequal(np2)
+            True
+            ```
         """
         return au.isequal(self.pairs, other.pairs)
 
@@ -572,16 +517,14 @@ class NeighborPairs:
         This method checks if all pairs in this NeighborPairs object are unique, i.e., there are no duplicate pairs.
 
         Returns:
-        -------
-        bool: True if all pairs in this object are unique, False otherwise.
+            bool: True if all pairs in this object are unique, False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np = NeighborPairs(...)
-        >>> np.isunique()
-        False
-        ```
+            ``` py
+            >>> np = NeighborPairs(...)
+            >>> np.isunique()
+            False
+            ```
         """
         return au.isunique(self.pairs)
 
@@ -591,21 +534,18 @@ class NeighborPairs:
         A strict subset has all pairs in the 'other' object but the two sets are not identical.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object.
+            other (NeighborPairs): The other NeighborPairs object.
 
         Returns:
-        -------
-        bool: True if this object is a strict subset of 'other', False otherwise.
+            bool: True if this object is a strict subset of 'other', False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        >>> np1.is_strict_subset(np2)
-        True
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.is_strict_subset(np2)
+            True
+            ```
         """
         return au.is_strict_subset(self.pairs, other.pairs)
 
@@ -615,21 +555,18 @@ class NeighborPairs:
         A strict superset has all pairs from the 'other' object but the two sets are not identical.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object.
+            other (NeighborPairs): The other NeighborPairs object.
 
         Returns:
-        -------
-        bool: True if this object is a strict superset of 'other', False otherwise.
+            bool: True if this object is a strict superset of 'other', False otherwise.
 
         Example:
-        -------
-        ``` py
-        >>> np1 = NeighborPairs(...)
-        >>> np2 = NeighborPairs(...)
-        >>> np1.is_strict_superset(np2)
-        True
-        ```
+            ``` py
+            >>> np1 = NeighborPairs(...)
+            >>> np2 = NeighborPairs(...)
+            >>> np1.is_strict_superset(np2)
+            True
+            ```
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 
@@ -638,13 +575,11 @@ class NeighborPairs:
         but with specified pairs and distances.
 
         Args:
-        ----
-        pairs (NDArray[np.int32]): The atom pairs for the new object.
-        distances (NDArray[np.float32]): The corresponding distances for the new object.
+            pairs (NDArray[np.int32]): The atom pairs for the new object.
+            distances (NDArray[np.float32]): The corresponding distances for the new object.
 
         Returns:
-        -------
-        A new NeighborPairs object with the provided pairs and distances.
+            A new NeighborPairs object with the provided pairs and distances.
         """
         attrs = {attr: getattr(self, attr) for attr in get_class_attributes(self)}
         attrs.update({"_pairs": pairs, "_distances": distances})
@@ -666,9 +601,8 @@ class NeighborPairs:
         """Plot the contact map of the NeighborPairs object.
 
         Args:
-        ----
-        which (str, optional): Which contact map to plot. Can be either 'matching' or 'full'. Defaults to 'matching'.
-        half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
+            which (str, optional): Which contact map to plot. Can be either 'matching' or 'full'. Defaults to 'matching'.
+            half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
         return ContactMap(self.pairs).plot(which, half_only)
     
@@ -677,9 +611,8 @@ class NeighborPairs:
     def annotations(self) -> dict[str, NDArray[Any]]:
         """Get the annotations of the NeighborPairs object.
 
-        Returns
-        -------
-        A dictionary containing the annotations of the NeighborPairs object.
+        Returns:
+            A dictionary containing the annotations of the NeighborPairs object.
         """
         return self._annotations
 
@@ -688,8 +621,7 @@ class NeighborPairs:
         """Set the annotations of the NeighborPairs object.
 
         Args:
-        ----
-        annotations (Dict[str, NDArray[Any]]): A dictionary containing the annotations to be set.
+            annotations (Dict[str, NDArray[Any]]): A dictionary containing the annotations to be set.
         """
         self._annotations = annotations
 
@@ -697,8 +629,7 @@ class NeighborPairs:
         """Add annotations to the existing NeighborPairs object.
 
         Args:
-        ----
-        annotations (Dict[str, NDArray[Any]]): A dictionary containing the annotations to be added.
+            annotations (Dict[str, NDArray[Any]]): A dictionary containing the annotations to be added.
         """
         for value in annotations.values():
             assert len(value) == self.pairs.shape[0]
@@ -718,14 +649,12 @@ class NeighborPairs:
         If `annotations` is True, the resulting DataFrame will also include annotation columns.
 
         Args:
-        ----
-        df_format (str, optional): The format of the DataFrame. It can be either "compact" or "expanded".
-                                    Defaults to "expanded".
-        annotations (bool, optional): Whether to include annotations in the DataFrame. Defaults to False.
+            df_format (str, optional): The format of the DataFrame. It can be either "compact" or "expanded".
+                                        Defaults to "expanded".
+            annotations (bool, optional): Whether to include annotations in the DataFrame. Defaults to False.
 
         Returns:
-        -------
-        A pandas DataFrame containing the atom pairs and their distances.
+            A pandas DataFrame containing the atom pairs and their distances.
         """
         if annotations:
             return self._create_df(df_format, self.annotations)
@@ -739,13 +668,11 @@ class NeighborPairs:
         (using the specified format), and then converts that DataFrame to a dictionary.
 
         Args:
-        ----
-        df_format (str, optional): The format of the DataFrame. It can be either "compact" or "expanded".
-                                    Defaults to "expanded".
+            df_format (str, optional): The format of the DataFrame. It can be either "compact" or "expanded".
+                                        Defaults to "expanded".
 
         Returns:
-        -------
-        A dictionary representation of the NeighborPairs object.
+            A dictionary representation of the NeighborPairs object.
         """
         return self._create_df(df_format).to_dict(orient="list")  # type: ignore
 
@@ -757,15 +684,13 @@ class NeighborPairs:
         """Create a pandas DataFrame from the NeighborPairs object.
 
         Args:
-        ----
-        df_format (str, optional): The format of the DataFrame.
-        It can be either "compact" or "expanded". Defaults to "expanded".
-        annotations: Dictionary containing additional information
-                    to be added to DataFrame. Defaults to None.
+            df_format (str, optional): The format of the DataFrame.
+            It can be either "compact" or "expanded". Defaults to "expanded".
+            annotations: Dictionary containing additional information
+                        to be added to DataFrame. Defaults to None.
 
         Returns:
-        -------
-        A pandas DataFrame representing the NeighborPairs object.
+            A pandas DataFrame representing the NeighborPairs object.
         """
         return DataFrameWriter(self, df_format, annotations).create()
 
@@ -776,12 +701,10 @@ class NeighborPairs:
         and the same corresponding distances.
 
         Args:
-        ----
-        other (NeighborPairs): The other NeighborPairs object to compare to this one.
+            other (NeighborPairs): The other NeighborPairs object to compare to this one.
 
         Returns:
-        -------
-        True if the other object is equal to this one; False otherwise.
+            True if the other object is equal to this one; False otherwise.
         """
         indices1: NDArray[np.int32] = np.lexsort((self.pairs[:, 1], self.pairs[:, 0]))  # type: ignore
         indices2: NDArray[np.int32] = np.lexsort((other.pairs[:, 1], other.pairs[:, 0]))  # type: ignore
@@ -796,8 +719,7 @@ class NeighborPairs:
     def partner1(self) -> AtomGroupType:
         """Get the first partner of the pairs of indices of atoms that are neighbors.
 
-        Returns
-        -------
+        Returns:
             The first partner of the atom pairs.
         """
         return self._get_pair_column(1)
@@ -806,8 +728,7 @@ class NeighborPairs:
     def partner2(self) -> AtomGroupType:
         """Get the second partner of the pairs of indices of atoms that are neighbors.
 
-        Returns
-        -------
+        Returns:
             The second partner of the atom pairs.
         """
         return self._get_pair_column(2)
@@ -816,8 +737,7 @@ class NeighborPairs:
     def pairs(self) -> NDArray[np.int32]:
         """Get the pairs of atoms that are neighbors.
 
-        Returns
-        -------
+        Returns:
             An array containing the pairs of indices of neighboring atoms.
         """
         return self._pairs
@@ -827,7 +747,6 @@ class NeighborPairs:
         """Get the distances between the pairs of indices of atoms that are neighbors.
 
         Returns
-        -------
             An array containing the distances between the pairs of indices of neighboring atoms.
         """
         return self._distances
@@ -837,7 +756,6 @@ class NeighborPairs:
         """Get the indices of the atoms that are neighbors.
 
         Returns
-        -------
             An array containing the unique indices of the neighboring atoms.
         """
         return np.unique([self.partner1.indices, self.partner2.indices])  # type: ignore
@@ -850,14 +768,12 @@ class NeighborPairs:
         while for a slice or an array of indices, it returns a NeighborPairs object with the corresponding pairs.
 
         Args:
-        ----
-        item (int, slice, or ndarray): An integer, slice, or array of integers indicating
+            item (int, slice, or ndarray): An integer, slice, or array of integers indicating
                                         the index/indices of the pair(s).
 
         Returns:
-        -------
-        NeighborPairs: A new NeighborPairs object containing the specified pair(s) and
-                        their corresponding distance(s).
+            NeighborPairs: A new NeighborPairs object containing the specified pair(s) and
+                            their corresponding distance(s).
         """
         if isinstance(item, int):
             return self.clone(
@@ -874,16 +790,13 @@ class NeighborPairs:
         This method add support for the `in` operator.
 
         Args:
-        ----
-        other (NeighborPairs): The NeighborPairs object to check.
+            other (NeighborPairs): The NeighborPairs object to check.
 
         Returns:
-        -------
-        bool: True if all pairs from the 'other' NeighborPairs object are found in this one; False otherwise.
+            bool: True if all pairs from the 'other' NeighborPairs object are found in this one; False otherwise.
 
         Raises:
-        ------
-        NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
+            NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
             return NotImplemented
@@ -897,15 +810,12 @@ class NeighborPairs:
         This method adds support for the `+` operator.
 
         Args:
-        ----
-        other (NeighborPairs): Another NeighborPairs object.
+            other (NeighborPairs): Another NeighborPairs object.
 
         Returns:
-        -------
-        NeighborPairs: A new NeighborPairs object that is the union of this one and the 'other'.
+            NeighborPairs: A new NeighborPairs object that is the union of this one and the 'other'.
 
         Raises:
-        ------
             NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
@@ -920,16 +830,13 @@ class NeighborPairs:
         This method adds support for the `-` operator.
 
         Args:
-        ----
-        other (NeighborPairs): Another NeighborPairs object.
+            other (NeighborPairs): Another NeighborPairs object.
 
         Returns:
-        -------
-        NeighborPairs: A new NeighborPairs object that is the difference of this one and the 'other'.
+            NeighborPairs: A new NeighborPairs object that is the difference of this one and the 'other'.
 
         Raises:
-        ------
-        NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
+            NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
             return NotImplemented
@@ -943,16 +850,13 @@ class NeighborPairs:
         This method adds support for the `|` operator.
 
         Args:
-        ----
-        other (NeighborPairs): Another NeighborPairs object.
+            other (NeighborPairs): Another NeighborPairs object.
 
         Returns:
-        -------
-        NeighborPairs: A new NeighborPairs object that is the symmetric difference of this one and the 'other'.
+            NeighborPairs: A new NeighborPairs object that is the symmetric difference of this one and the 'other'.
 
         Raises:
-        ------
-        NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
+            NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
             return NotImplemented
@@ -965,16 +869,13 @@ class NeighborPairs:
         This method adds support for the `==` operator.
 
         Args:
-        ----
-        other (Any): Another object.
+            other (Any): Another object.
 
         Returns:
-        -------
-        bool: True if 'other' is an identical NeighborPairs object; False otherwise.
+            bool: True if 'other' is an identical NeighborPairs object; False otherwise.
 
         Raises:
-        ------
-        NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
+            NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
             return NotImplemented
@@ -988,16 +889,13 @@ class NeighborPairs:
         This method adds support for the `&` operator.
 
         Args:
-        ----
-        other (NeighborPairs): Another NeighborPairs object.
+            other (NeighborPairs): Another NeighborPairs object.
 
         Returns:
-        -------
-        NeighborPairs: A new NeighborPairs object that is the intersection of this one and the 'other'.
+            NeighborPairs: A new NeighborPairs object that is the intersection of this one and the 'other'.
 
         Raises:
-        ------
-        NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
+            NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
             return NotImplemented
@@ -1010,16 +908,13 @@ class NeighborPairs:
         This method adds support for the `^` operator.
 
         Args:
-        ----
-        other (NeighborPairs): Another NeighborPairs object.
+            other (NeighborPairs): Another NeighborPairs object.
 
         Returns:
-        -------
-        NeighborPairs: A new NeighborPairs object that is the symmetric difference of this one and the 'other'.
+            NeighborPairs: A new NeighborPairs object that is the symmetric difference of this one and the 'other'.
 
         Raises:
-        ------
-        NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
+            NotImplemented: If the 'other' object is not an instance of the NeighborPairs class.
         """
         if other.__class__ != self.__class__:
             return NotImplemented
@@ -1061,5 +956,4 @@ class NeighborPairs:
         return f"<Lahuta NeighborPairs class containing {self.indices.size} atoms and {self.pairs.shape[0]} pairs>"
 
     def __repr__(self) -> str:
-        return self.__str__()
         return self.__str__()
