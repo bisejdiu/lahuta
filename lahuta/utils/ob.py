@@ -1,8 +1,4 @@
-"""
-module: `lahuta.utils.ob.py`
-
-Utility functions for OpenBabel.
-"""
+"""Utility functions for OpenBabel."""
 
 from typing import List
 
@@ -14,8 +10,7 @@ from lahuta.lahuta_types.openbabel import BondIterable, MolType, ObRingType, ObV
 
 
 def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
-    """
-    Returns an array of bonded atoms in a molecule.
+    """Return an array of bonded atoms in a molecule.
 
     Args:
         mol (MolType): The molecule for which to find bonded atoms.
@@ -25,7 +20,7 @@ def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
     """
 
     def bond_iter_wrapper(mol: MolType) -> BondIterable:
-        """Wrapper for the openbabel bond iterator."""
+        """Iterate over the bonds in the given molecule using openbabel."""
         return ob.OBMolBondIter(mol)  # type: ignore
 
     bonds: NDArray[np.int32] = np.zeros((mol.NumBonds(), 2), dtype=int)
@@ -37,8 +32,7 @@ def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:
 
 
 class Rings:
-    """
-    A class for storing information about aromatic rings in a molecule.
+    """A class for storing information about aromatic rings in a molecule.
 
     This class stores the center and normal vectors for each aromatic ring in a molecule.
     It also stores the indices of the atoms in each ring and the index of the first atom
@@ -52,8 +46,7 @@ class Rings:
         self._first_atom_idx: List[int] = []
 
     def add_ring(self, ob_ring: ObRingType) -> None:
-        """
-        Adds a ring to the Rings object.
+        """Add a ring to the Rings object.
 
         Args:
             ob_ring (ObRingType): The ring to be added.
@@ -64,7 +57,7 @@ class Rings:
         ob_ring.findCenterAndNormal(center, normal, ob.vector3())
         center_coords: NDArray[np.float32] = np.array([center.GetX(), center.GetY(), center.GetZ()])
         normal_coords: NDArray[np.float32] = np.array([normal.GetX(), normal.GetY(), normal.GetZ()])
-        atoms = sorted([atom for atom in ob_ring._path])  # type: ignore
+        atoms = sorted(ob_ring._path)  # noqa: SLF001
 
         self._centers.append(center_coords)
         self._normals.append(normal_coords)
@@ -73,8 +66,7 @@ class Rings:
 
     @property
     def centers(self) -> NDArray[np.float32]:
-        """
-        Returns the centers of the rings.
+        """Returns the centers of the rings.
 
         Returns:
             NDArray[np.float32]: The centers of the rings.
@@ -83,8 +75,7 @@ class Rings:
 
     @property
     def normals(self) -> NDArray[np.float32]:
-        """
-        Returns the normal vectors of the rings.
+        """Returns the normal vectors of the rings.
 
         Returns:
             NDArray[np.float32]: The normal vectors of the rings.
@@ -93,19 +84,16 @@ class Rings:
 
     @property
     def atoms(self) -> NDArray[np.int32]:
-        """
-        Returns the atoms in the rings.
+        """Returns the atoms in the rings.
 
         Returns:
             NDArray[np.int32]: The atoms in the rings.
         """
-
         return np.array(self._atoms, dtype=object)
 
     @property
     def first_atom_idx(self) -> NDArray[np.int32]:
-        """
-        Returns the index of the first atom in each ring.
+        """Returns the index of the first atom in each ring.
 
         Returns:
             NDArray[np.int32]: The index of the first atom in each ring.
@@ -117,8 +105,7 @@ class Rings:
 
 
 def enumerate_rings(mol: MolType) -> Rings:
-    """
-    Enumerates the aromatic rings in a molecule.
+    """Enumerate the aromatic rings in a molecule.
 
     This function takes a molecule as input and returns a Rings object containing information
     about the aromatic rings in the molecule. It is used by `atom-plane` and `plane-plane`

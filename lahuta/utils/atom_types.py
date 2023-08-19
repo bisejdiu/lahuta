@@ -1,12 +1,10 @@
-"""
-module: `lahuta.utils.atom_types.py`
-
-This module provides utility functions for assigning atom types to each atom in a molecule. 
+"""Provides utility functions for assigning atom types to each atom in a molecule.
 Atom types are defined in the `SmartsPatternRegistry`. 
 
-WARNING: 
+Warning:
     As of the current version of the library, these functions are not used in the main code. 
     They are kept for comparison and testing with earlier versions of the library. 
+
 """
 
 from typing import Dict
@@ -22,8 +20,7 @@ from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsP
 
 
 def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8]:
-    """
-    Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`
+    """Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`.
 
     Args:
         mol (MolType): The molecule for which to assign atom types.
@@ -74,8 +71,7 @@ def vec_assign_atom_types(
     atomgroup: AtomGroupType,
     ta: Dict[str, NDArray[np.str_]],
 ) -> NDArray[np.int8]:
-    """
-    Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`
+    """Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`.
 
     Args:
         mol (MolType): The molecule for which to assign atom types.
@@ -86,7 +82,6 @@ def vec_assign_atom_types(
         NDArray[np.int8]: An array of shape (n_atoms, n_atom_types) where each element is either 0 or 1.
 
     """
-
     atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)), dtype=np.int8)

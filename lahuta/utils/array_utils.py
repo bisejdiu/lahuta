@@ -1,6 +1,4 @@
-"""module: `lahuta.utils.array_utils.py`.
-
-This module contains a suite of utility functions for operations on 2D numpy arrays, particularly arrays 
+"""Contains a suite of utility functions for operations on 2D numpy arrays, particularly arrays
 representing atom pairs. These operations include finding shared pairs, determining non-matching indices,
 and various set-like operations including intersection, difference, symmetric difference, union, and 
 subset/superset/equality checks. It also provides functions to check for uniqueness 
@@ -132,6 +130,7 @@ def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> ND
 
     Args:
         arr1 (NDArray[np.int32]): A 2D array of shape (n_pairs1, 2) where each row represents a pair of atom indices.
+        arr2 (NDArray[np.int32]): A 2D array of shape (n_pairs2, 2) where each row represents a pair of atom indices.
 
     Returns:
         NDArray[np.bool_]: A 1D boolean array of shape (n_pairs1,) where each element
@@ -150,24 +149,16 @@ def non_matching_indices(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> ND
     return idx
 
 
-# def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
-#     """
-#     Reference: https://stackoverflow.com/questions/16216078/test-for-membership-in-a-2d-numpy-array
-#     Based on http://stackoverflow.com/a/16973510/190597 (Jaime, 2013-06)
-#     View the array as dtype np.void (bytes). The items along the last axis are
-#     viewed as one value. This allows comparisons to be performed on the entire row.
-#     """
-#     if np.issubdtype(arr.dtype, np.floating):
-#         # Care needs to be taken here since
-#         # Adding 0. converts -0. to 0.
-
-
 def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
     """Convert a 2D numpy array into a 1D array of type np.void.
 
     The function views each row in the input array as a single item of type np.void, which effectively
     converts the 2D array into a 1D array of binary representations of the rows. This can be useful
     for performing operations that are typically only possible with 1D arrays, such as membership tests.
+
+    Based on:
+        1. https://stackoverflow.com/questions/16216078/test-for-membership-in-a-2d-numpy-array
+        2. http://stackoverflow.com/a/16973510/190597
 
     Args:
         arr: A 2D numpy array of shape (n, 2), where each row is a pair of atom indices.
@@ -185,7 +176,7 @@ def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
     """
     arr = np.ascontiguousarray(arr)
     if np.issubdtype(arr.dtype, np.floating):
-        arr += 0.0
+        arr += 0.0  # type: ignore
     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))
 
 
@@ -338,7 +329,7 @@ def union_masks(
 
 
 def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Determines if two arrays have a null intersection.
+    """Determine if two arrays have a null intersection.
 
     This function checks if the two input arrays do not share any common elements. Both arrays are assumed
     to be 2D with each row being a pair of atom indices.
@@ -362,7 +353,7 @@ def isdisjoint(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
 
 
 def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Determines if the first array is a subset of the second array.
+    """Determine if the first array is a subset of the second array.
 
     This function checks if all elements of the first array are found within the second array. Both arrays are
     assumed to be 2D with each row being a pair of atom indices.
@@ -388,7 +379,7 @@ def issubset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
 
 
 def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Checks if `arr1` is a superset of `arr2`.
+    """Check if `arr1` is a superset of `arr2`.
 
     This function takes two 2D numpy arrays, arr1 and arr2, each with shape (n, 2),
     and checks if every pair in arr2 is present in arr1. Each row in the arrays represents
@@ -415,7 +406,7 @@ def issuperset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
 
 
 def isequal(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
-    """Checks if two 2D arrays, `arr1` and `arr2`, are equal.
+    """Check if two 2D arrays, `arr1` and `arr2`, are equal.
 
     This function verifies the equality of two 2D numpy arrays, `arr1` and `arr2`.
     Each array has a shape (n, 2), where each row represents a pair of atom indices.
@@ -444,7 +435,7 @@ def isequal(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
 
 
 def isunique(arr: NDArray[_DType]) -> bool:
-    """Checks if a 2D array, `arr`, contains no duplicate entries.
+    """Check if a 2D array, `arr`, contains no duplicate entries.
 
     The function checks if a 2D numpy array, `arr`, of shape (n, 2), has any duplicate rows.
     Each row represents a pair of atom indices.
