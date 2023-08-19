@@ -7,7 +7,6 @@ from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.mda_commands import CappedDistance, DistanceType
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils.math import calc_vec_line_angles
 
@@ -18,8 +17,7 @@ def compute_neighbors(
     """Compute the neighbors between the reference and positions."""
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
-    wrapper: DistanceType = CappedDistance(mda_distances)
-    pairs, distances = wrapper.capped_distance(reference, positions, max_cutoff, return_distances=True)
+    pairs, distances = mda_distances.capped_distance(reference, positions, max_cutoff, return_distances=True)
     return pairs, distances
 
 
@@ -30,17 +28,18 @@ def calc_ringnormal_pos_angle(
     selected_ring_centers = ring_centers[ns.pairs[:, 0]]
     selected_ring_normals = ring_normals[ns.pairs[:, 0]]
 
-    angles = calc_vec_line_angles(
+    return calc_vec_line_angles(
         selected_ring_normals,
         selected_ring_centers - uv_atoms[ns.pairs[:, 1]].positions,
     )
-    return angles
 
 
 memory = Memory("cachedir", verbose=0)
-compute_neighbors_cached: Callable[[NDArray[np.float32], NDArray[np.float32]], Tuple[NDArray[np.int32], NDArray[np.float32]]]
-compute_neighbors_cached = memory.cache(compute_neighbors) # type: ignore
+compute_neighbors_cached: Callable[
+    [NDArray[np.float32], NDArray[np.float32]], Tuple[NDArray[np.int32], NDArray[np.float32]]
+]
+compute_neighbors_cached = memory.cache(compute_neighbors)
 calc_ringnormal_pos_angle_cached: Callable[
     [NeighborPairs, AtomGroupType, NDArray[np.float32], NDArray[np.float32]], NDArray[np.float32]
 ]
-calc_ringnormal_pos_angle_cached = memory.cache(calc_ringnormal_pos_angle)  # type: ignore
+calc_ringnormal_pos_angle_cached = memory.cache(calc_ringnormal_pos_angle)

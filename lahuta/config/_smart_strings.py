@@ -1,7 +1,4 @@
-"""
-module: `lahuta.config._smart_strings.py`
-
-This module contains a collection of Simplified Molecular-Input Line-Entry System
+"""Contains a collection of Simplified Molecular-Input Line-Entry System
 (SMARTS) strings used for SMARTS pattern matching.
 
 The SMARTS strings cater to a variety of chemical functionalities and patterns,
@@ -28,13 +25,11 @@ Notes:
 
     It is expected to be used as a source of SMARTS strings for other modules and applications
     dealing with molecular structure processing, matching, and analysis.
-"""
-# fmt: off
 
+"""
 # HYDROGEN BOND ACCEPTOR
 SMARTS_STR_HBA_ACCEPTOR = (
-    "[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);" 
-    "!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]"
+    "[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);" "!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]"
 )
 """
 Type: `str`: Standard hydrogen bond acceptor. Helps define 
@@ -164,8 +159,7 @@ Type: `str`: Aromatic 4. Helps define
 [AROMATIC_SMARTS](smarts_defs.md#lahuta.config._smart_strings.AROMATIC_SMARTS).
 """
 SMARTS_STR_AROMATIC_5 = (
-    "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:" 
-    "[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1"
+    "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:" "[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1"
 )
 """
 Type: `str`: Aromatic 5. Helps define
@@ -212,10 +206,13 @@ HBOND_ACCEPTOR_SMARTS = {
 """
 A dictionary of hydrogen bond acceptor SMARTS patterns.
 !!! tip "Definitions"
-    - `acceptor`: Standard hydrogen bond acceptor ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_ACCEPTOR))
+    - `acceptor`: Standard hydrogen bond acceptor \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_ACCEPTOR))
     - `enol`: Enol ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_ENOL))
-    - `tautomeric nH`: Tautomeric NH ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_TAUTOMERIC_NH))
-    - `NH2 terminal amide`: NH2 terminal amide ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_TERMINAL_AMIDE))
+    - `tautomeric nH`: Tautomeric NH \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_TAUTOMERIC_NH))
+    - `NH2 terminal amide`: NH2 terminal amide \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBA_TERMINAL_AMIDE))
 """
 
 POSITIVELY_IOINISABLE_SMARTS = {
@@ -229,10 +226,13 @@ POSITIVELY_IOINISABLE_SMARTS = {
 """
 A dictionary of positively ionizable SMARTS patterns.
 !!! tip "Definitions"
-    - `rdkit basic group`: RDKIT basic group ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_RDKIT_BASIC_GRP))
+    - `rdkit basic group`: RDKIT basic group \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_RDKIT_BASIC_GRP))
     - `imidazole`: Imidazole ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_IMIDAZOLE))
-    - `guanidine amidine`: Guanidine amidine ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_GUANIDINE_AMIDINE))
-    - `rdkit posn`: RDKIT positive nitrogen ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_RDKIT_POSN))
+    - `guanidine amidine`: Guanidine amidine \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_GUANIDINE_AMIDINE))
+    - `rdkit posn`: RDKIT positive nitrogen \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_RDKIT_POSN))
     - `cations`: Cations ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_CATIONS))
     - `metals`: Metals ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_PI_METALS))
 """
@@ -249,7 +249,8 @@ A dictionary of hydrogen bond donor SMARTS patterns.
     - `donor`: Standard hydrogen bond donor ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBD_DONOR))
     - `oxygen acid`: Oxygen acid ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBD_OXYGEN_ACID))
     - `tautomer nH`: Tautomer NH ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBD_TAUTOMERIC_NH))
-    - `oxygen amide term`: Oxygen amide terminal ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBD_OXYGEN_AMIDE_TERM))
+    - `oxygen amide term`: Oxygen amide terminal \
+        ([source](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HBD_OXYGEN_AMIDE_TERM))
 """
 
 AROMATIC_SMARTS = {

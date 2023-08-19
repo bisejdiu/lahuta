@@ -1,5 +1,4 @@
-"""
-This module defines the DataFrame abstract base class (ABC). 
+"""Defines the DataFrame abstract base class (ABC).
 
 The DataFrame class establishes an interface for creating pandas DataFrame objects from data 
 that is encapsulated in the class. The primary method that subclasses need to implement is 

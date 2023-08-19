@@ -1,9 +1,5 @@
-"""
-module: `lahuta.core.helpers.py`
-
-Helper functions to retrieve class methods and/or attributes. It is intended to be 
-used by and for NeighborPairs, even though the functions are generic. 
-                        
+"""Helper functions to retrieve class methods and/or attributes. It is intended to be
+used by and for NeighborPairs, even though the functions are generic.                
 """
 from typing import TYPE_CHECKING, List
 
@@ -12,8 +8,7 @@ if TYPE_CHECKING:
 
 
 def get_class_methods(cls: "NeighborPairs") -> List[str]:
-    """
-    Retrieves all the methods of the specified class.
+    """Retrieve all the methods of the specified class.
 
     Args:
         cls (NeighborPairs): The class to inspect.
@@ -25,8 +20,7 @@ def get_class_methods(cls: "NeighborPairs") -> List[str]:
 
 
 def get_class_properties(cls: "NeighborPairs") -> List[str]:
-    """
-    Retrieves all the properties of the specified class.
+    """Retrieve all the properties of the specified class.
 
     Args:
         cls (NeighborPairs): The class to inspect.
@@ -38,8 +32,7 @@ def get_class_properties(cls: "NeighborPairs") -> List[str]:
 
 
 def get_class_attributes(cls: "NeighborPairs") -> List[str]:
-    """
-    Retrieves all the attributes (not methods or properties) of the specified class.
+    """Retrieve all the attributes (not methods or properties) of the specified class.
 
     Args:
         cls (NeighborPairs): The class to inspect.

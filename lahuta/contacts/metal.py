@@ -1,16 +1,15 @@
-"""
-Module: metal.py
-
-This module defines a class for computing metal contacts using a class-based approach. 
+"""Defines a class for computing metal contacts using a class-based approach.
 The MetalicContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for metal contact computation.
                                        
+
 Example:
     luni = Luni(...)
     ns = luni.compute_neighbors()
 
     metal_contacts = MetalicContacts(ns)
     print(metal_contacts.results)
+
 """
 
 import lahuta.contacts as F
@@ -21,8 +20,7 @@ from .base import ContactAnalysis
 
 
 class MetalicContacts(ContactAnalysis):
-    """
-    Handles the computation of metallic contacts in a molecular system.
+    """Handle the computation of metallic contacts in a molecular system.
 
     Metallic contacts are interactions involving metal atoms in a molecular system.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -36,7 +34,8 @@ class MetalicContacts(ContactAnalysis):
 
     !!! tip "Definition"
         1. The contact involves a metal ion and an atom that is a hydrogen bond acceptor.
-        2. The distance between the metal ion and the hydrogen bond acceptor does not exceed a predefined distance cutoff.
+        2. The distance between the metal ion and the hydrogen bond acceptor does not exceed \
+            a predefined distance cutoff.
 
     Attributes:
         ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
@@ -56,7 +55,7 @@ class MetalicContacts(ContactAnalysis):
     distance = CONTACTS["metal"]["distance"]
 
     def compute(self) -> NeighborPairs:
-        """Computes metalic contacts based on the neighbor pairs.
+        """Compute metalic contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only metalic contacts.

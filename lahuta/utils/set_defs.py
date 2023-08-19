@@ -1,17 +1,21 @@
+"""Set definitions for theorems.
+
+This module defines theorems that can be checked for labeled neighbor pairs.
+"""
 import numpy as np
 from numpy.typing import NDArray
 
 from lahuta.core.labeled_neighbors import LabeledNeighborPairs
 
 
-# pylint: disable=invalid-name
 def check_union(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     """Check Union theorem.
-    
-    Definition: |s1 ∪ s2| = |s1| + |s2| - |s1 ∩ s2|
+
+    Definition: |s1 U s2| = |s1| + |s2| - |s1 ∩ s2|
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -21,11 +25,12 @@ def check_union(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
 
 def check_intersection(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     """Check Intersection theorem.
-    
-    Definition: |s1 ∩ s2| = |s1| + |s2| - |s1 ∪ s2|
+
+    Definition: |s1 ∩ s2| = |s1| + |s2| - |s1 U s2|
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -35,11 +40,12 @@ def check_intersection(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bo
 
 def check_difference(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     """Check Difference theorem.
-    
+
     Definition: |s1 - s2| = |s1| - |s1 ∩ s2|
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -49,11 +55,12 @@ def check_difference(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool
 
 def check_symmetric_difference(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     """Check Symmetric Difference theorem.
-    
+
     Definition: |s1 △ s2| = |s1| + |s2| - 2 * |s1 ∩ s2|
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -63,11 +70,12 @@ def check_symmetric_difference(s1: LabeledNeighborPairs, s2: LabeledNeighborPair
 
 def check_subset(s1: LabeledNeighborPairs) -> bool:
     """Check Subset theorem.
-    
+
     Definition: |s1| ≤ |s2| ⇔ s1 ⊆ s2
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -78,11 +86,12 @@ def check_subset(s1: LabeledNeighborPairs) -> bool:
 
 def check_superset(s1: LabeledNeighborPairs) -> bool:
     """Check Superset theorem.
-    
+
     Definition: |s1| ≥ |s2| ⇔ s1 ⊇ s2
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -93,11 +102,12 @@ def check_superset(s1: LabeledNeighborPairs) -> bool:
 
 def check_proper_subset(s1: LabeledNeighborPairs) -> bool:
     """Check Proper Subset theorem.
-    
+
     Definition: |s1| < |s2| ⇔ s1 ⊂ s2
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -108,11 +118,12 @@ def check_proper_subset(s1: LabeledNeighborPairs) -> bool:
 
 def check_proper_superset(s1: LabeledNeighborPairs) -> bool:
     """Check Proper Superset theorem.
-    
+
     Definition: |s1| > |s2| ⇔ s1 ⊃ s2
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -123,11 +134,12 @@ def check_proper_superset(s1: LabeledNeighborPairs) -> bool:
 
 def check_disjoint(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     """Check Disjoint theorem.
-    
+
     Definition: |s1 ∩ s2| = 0 ⇔ s1 ∩ s2 = ∅
 
     Args:
-        s1, s2: Objects to check.
+        s1 (LabeledNeighborPairs): The first object to check.
+        s2 (LabeledNeighborPairs): The second object to check.
 
     Returns:
         bool: True if the theorem holds, False otherwise.
@@ -140,9 +152,9 @@ def check_disjoint(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     m1_altered = m1_subset - s2
     return empty.isdisjoint(s2) == (len(empty & s2) == 0) and len(m1_altered & s2) == 0
 
-def random_subset(s: LabeledNeighborPairs, size_ratio: float=0.1) -> NDArray[np.void]:
-    """
-    Returns a random subset of the given object.
+
+def random_subset(s: LabeledNeighborPairs, size_ratio: float = 0.1) -> NDArray[np.void]:
+    """Return a random subset of the given object.
 
     Args:
         s: The object from which the subset is to be taken.
@@ -152,5 +164,6 @@ def random_subset(s: LabeledNeighborPairs, size_ratio: float=0.1) -> NDArray[np.
         The randomly selected subset of the given object.
     """
     size = s.pairs.shape[0]
-    subset_indices = np.random.choice(np.arange(size), size=int(size * size_ratio), replace=False)
-    return s.pairs[subset_indices] # type: ignore
+    generator = np.random.default_rng()
+    subset_indices = generator.choice(np.arange(size), size=int(size * size_ratio), replace=False)
+    return s.pairs[subset_indices]  # type: ignore

@@ -1,7 +1,4 @@
-"""
-Module: contacts.py
-
-This module implements the core logic for calculating different types of atomic contacts in proteins. It provides 
+"""Implements the core logic for calculating different types of atomic contacts in proteins. It provides
 a variety of functions, each corresponding to a specific type of atomic contact including covalent, metallic, 
 carbonyl, ionic, aromatic, hydrophobic, van der Waals, and different kinds of hydrogen bonds. 
 
@@ -56,8 +53,7 @@ __all__ = [
 
 
 def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """
-    Handles the computation of covalent contacts in a molecular system.
+    """Handle the computation of covalent contacts in a molecular system.
 
     Covalent contacts are interactions based on covalent bonds between atoms in a molecular system.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute` method
@@ -76,7 +72,6 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only covalent contacts.
     """
-
     bonds = get_bonded_atoms(ns.mol)
     indices = find_shared_pairs(ns.pairs + 1, bonds)
 
@@ -84,8 +79,7 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["distance"]) -> NeighborPairs:
-    """
-    Handles the computation of metallic contacts in a molecular system.
+    """Handle the computation of metallic contacts in a molecular system.
 
     Metallic contacts are interactions involving metal atoms in a molecular system.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -98,7 +92,8 @@ def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["di
 
     !!! tip "Definition"
         1. The contact involves a metal ion and an atom that is a hydrogen bond acceptor.
-        2. The distance between the metal ion and the hydrogen bond acceptor does not exceed a predefined distance cutoff.
+        2. The distance between the metal ion and the hydrogen bond acceptor \
+            does not exceed the predefined distance cutoff.
 
     Args:
         ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
@@ -108,7 +103,6 @@ def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["di
     Returns:
         (NeighborPairs): A NeighborPairs object containing only metallic contacts.
     """
-
     metal_indices = ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
 
     acceptor_metal = ns.type_filter("hbond_acceptor", 1).index_filter(metal_indices, 2).distance_filter(distance)
@@ -119,14 +113,13 @@ def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["di
 
 
 def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]["distance"]) -> NeighborPairs:
-    """
-    Handles the computation of carbonyl contacts in a molecular system.
+    """Handle the computation of carbonyl contacts in a molecular system.
 
     Carbonyl contacts involve the interaction between a carbonyl oxygen atom (O) and a carbonyl carbon atom (C)
     from a carbonyl functional group (C=O) in the context of protein-ligand structures or protein-protein structures.
 
-    In a carbonyl group, the carbon atom has a double bond with the oxygen atom. This arrangement results
-    in a polar bond with the oxygen atom carrying a partial negative charge and the carbon atom a partial positive charge.
+    In a carbonyl group, the carbon atom has a double bond with the oxygen atom. This arrangement results in a polar
+    bond with the oxygen atom carrying a partial negative charge and the carbon atom a partial positive charge.
     This polarity can lead to interactions with other polar or charged atoms.
 
     !!! tip "Definition"
@@ -144,7 +137,6 @@ def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]
     Returns:
         (NeighborPairs): A NeighborPairs object containing only carbonyl contacts.
     """
-
     contacts_atom12 = ns.type_filter("carbonyl_oxygen", 1).type_filter("carbonyl_carbon", 2).distance_filter(distance)
 
     contacts_atom21 = ns.type_filter("carbonyl_carbon", 1).type_filter("carbonyl_oxygen", 2).distance_filter(distance)
@@ -153,8 +145,7 @@ def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]
 
 
 def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["distance"]) -> NeighborPairs:
-    """
-    Handles the computation of ionic contacts in a molecular system.
+    """Handle the computation of ionic contacts in a molecular system.
 
     Ionic contacts refer to the interactions between positively and negatively ionizable atoms,
     forming one of the primary types of electrostatic interactions.
@@ -183,8 +174,7 @@ def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["dist
 
 
 def aromatic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["aromatic"]["distance"]) -> NeighborPairs:
-    """
-    Handles the computation of aromatic contacts in a molecular structure.
+    """Handle the computation of aromatic contacts in a molecular structure.
 
     Aromatic contacts are computed based on the interactions between atoms in
     aromatic rings found in proteins and ligands. Aromatic interactions,
@@ -204,13 +194,11 @@ def aromatic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["aromatic"]
     Returns:
         (NeighborPairs): A NeighborPairs object containing only aromatic contacts.
     """
-
     return ns.type_filter("aromatic", 1).type_filter("aromatic", 2).distance_filter(distance)
 
 
 def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydrophobic"]["distance"]) -> NeighborPairs:
-    """
-    Handles the computation of hydrophobic contacts in a molecular system.
+    """Handle the computation of hydrophobic contacts in a molecular system.
 
     Hydrophobic contacts are interactions between hydrophobic atoms in a molecular system.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -231,13 +219,11 @@ def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydroph
     Returns:
         (NeighborPairs): A NeighborPairs object containing only hydrophobic contacts.
     """
-
     return ns.type_filter("hydrophobe", 1).type_filter("hydrophobe", 2).distance_filter(distance)
 
 
 def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashes: bool = True) -> NeighborPairs:
-    """
-    Handles the computation of Van der Waals (VdW) contacts in a molecular system.
+    """Handle the computation of Van der Waals (VdW) contacts in a molecular system.
 
     Van der Waals (VdW) contacts are determined based on the interactions between atoms that come
     within their combined van der Waals radii, increased by a compensation factor.
@@ -260,7 +246,6 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
     Returns:
         (NeighborPairs): A NeighborPairs object containing only Van der Waals contacts.
     """
-
     vdw_radii = ns.atoms.vdw_radii[ns.pairs[:, 0]] + ns.atoms.vdw_radii[ns.pairs[:, 1]]
 
     distance_mask = ns.distances <= vdw_radii + vdw_comp_factor
@@ -268,17 +253,16 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
-        return ns.clone(vdw_comp_pairs, vdw_distances)  # TODO: check if this is correct
+        return ns.clone(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
 
     vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
-    return ns.clone(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])  # TODO: check if this is correct
+    return ns.clone(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])
 
 
 def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """
-    Handles the computation of hydrogen bond (hbond) contacts in a molecular system.
+    """Handle the computation of hydrogen bond (hbond) contacts in a molecular system.
 
     Hydrogen bonds are pivotal non-covalent interactions that significantly influence the structure, stability,
     and dynamics of biomolecules such as proteins and nucleic acids. A hydrogen bond forms when a hydrogen atom
@@ -297,7 +281,6 @@ def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only hbond contacts.
     """
-
     hbond_atom12 = (
         ns.type_filter("hbond_donor", 1)
         .type_filter("hbond_acceptor", 2)
@@ -316,8 +299,7 @@ def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """
-    Handles the computation of weak hydrogen bond (weak hbond) contacts in a molecular system.
+    """Handle the computation of weak hydrogen bond (weak hbond) contacts in a molecular system.
 
     Weak hydrogen bonds are a type of non-covalent interactions that, despite their reduced strength
     compared to regular hydrogen bonds, still play important roles in biomolecular structures and functions.
@@ -337,7 +319,6 @@ def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only weak hydrogen bonds.
     """
-
     hbond_atom12 = (
         ns.type_filter("hbond_acceptor", 1)
         .type_filter("weak_hbond_donor", 2)
@@ -356,8 +337,7 @@ def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]["polar distance"]) -> NeighborPairs:
-    """
-    Handles the computation of polar hydrogen bond (polar hbond) contacts in a molecular system.
+    """Handle the computation of polar hydrogen bond (polar hbond) contacts in a molecular system.
 
     Polar hydrogen bonds involve a hydrogen atom covalently bonded to a polar atom (hydrogen bond donor),
     forming an interaction with another polar atom from a different group (hydrogen bond acceptor). In contrast to
@@ -377,7 +357,6 @@ def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]
     Returns:
         (NeighborPairs): A NeighborPairs object containing only polar hydrogen bonds.
     """
-
     hbond_atom12 = ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2).distance_filter(distance)
 
     hbond_atom21 = ns.type_filter("hbond_donor", 2).type_filter("hbond_acceptor", 1).distance_filter(distance)
@@ -388,8 +367,7 @@ def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]
 def weak_polar_hbond_neighbors(
     ns: NeighborPairs, distance: float = CONTACTS["weak hbond"]["weak polar distance"]
 ) -> NeighborPairs:
-    """
-    Handles the computation of weak polar hydrogen bond (weak polar hbond) contacts in a molecular system.
+    """Handle the computation of weak polar hydrogen bond (weak polar hbond) contacts in a molecular system.
 
     Weak polar hydrogen bonds rely on a weak hydrogen bond donor, and we also do not consider the angle
     formed by the donor, hydrogen, and acceptor atoms.
@@ -407,7 +385,6 @@ def weak_polar_hbond_neighbors(
     Returns:
         (NeighborPairs): A NeighborPairs object containing only weak polar hydrogen bonds.ff
     """
-
     hbond_atom12 = ns.type_filter("hbond_acceptor", 1).type_filter("weak_hbond_donor", 2).distance_filter(distance)
 
     hbond_atom21 = ns.type_filter("hbond_acceptor", 2).type_filter("weak_hbond_donor", 1).distance_filter(distance)

@@ -1,13 +1,6 @@
-"""
-module: `lahuta.utils.hbonded_atoms.py`
-
-This module provides a utility function to find the hydrogen-bonded atoms in a molecule. 
-
-"""
+"""Provides a utility function to find the hydrogen-bonded atoms in a molecule."""
 
 import numpy as np
-
-# from numpy.typing import NDArray
 from openbabel import openbabel as ob
 from scipy.sparse import csr_matrix, dok_matrix
 
@@ -15,8 +8,7 @@ from lahuta.lahuta_types.openbabel import MolType
 
 
 def find_hydrogen_bonded_atoms(mol: MolType, n_atoms: int) -> csr_matrix:
-    """
-    Identifies the hydrogen-bonded atoms in a molecule.
+    """Identify the hydrogen-bonded atoms in a molecule.
 
     This function takes a molecule and the number of atoms in that molecule as input, and it
     returns a sparse matrix with the indices of the hydrogen-bonded atoms.

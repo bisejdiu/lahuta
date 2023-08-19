@@ -1,10 +1,5 @@
-"""
-Module: topattrs.py
-
-This module defines a class for dynamically generating new AtomAttr subclasses.
-
-"""
-from typing import Any, Optional, Type
+"""Defines a class for dynamically generating new AtomAttr subclasses."""
+from typing import Optional, Type
 
 import numpy as np
 from MDAnalysis.core.topologyattrs import AtomAttr
@@ -12,8 +7,7 @@ from numpy.typing import NDArray
 
 
 class AtomAttrClassHandler:
-    """
-    A class for dynamically generating new AtomAttr subclasses.
+    """A class for dynamically generating new AtomAttr subclasses.
 
     This class facilitates the dynamic generation of new subclasses of AtomAttr, based
     on provided attribute and singular names. The attribute name informs the creation of
@@ -30,9 +24,8 @@ class AtomAttrClassHandler:
         self.atomattr_class: Optional[Type[AtomAttr]] = None
 
     @staticmethod
-    def _gen_initial_values(n_atoms: int, *_: Any) -> NDArray[Any]:
-        """
-        Generate the initial values for the attribute.
+    def _gen_initial_values(n_atoms: int, *_: np.int32) -> NDArray[np.int32]:
+        """Generate the initial values for the attribute.
 
         Args:
             n_atoms (int): The number of atoms.
@@ -41,17 +34,15 @@ class AtomAttrClassHandler:
         Returns:
             NDArray[Any]: A numpy array of zeros with a size equal to the number of atoms.
         """
-        return np.zeros(n_atoms)
+        return np.zeros(n_atoms, dtype=np.int32)
 
     def init_topattr(self, attrname: str, singular_name: str) -> None:
-        """
-        Generates a new AtomAttr subclass and adds it to the global namespace.
+        """Generate a new AtomAttr subclass and adds it to the global namespace.
 
         Args:
             attrname (str): The name of the attribute.
             singular_name (str): The singular name of the attribute, used to generate the class name.
         """
-
         attr_dict = {
             "attrname": attrname,
             "singular": singular_name,
@@ -61,9 +52,8 @@ class AtomAttrClassHandler:
         globals()[attrname] = self.atomattr_class
 
 
-class VDWRadiiAtomAttr(AtomAttr): # type: ignore
-    """
-    A statically generated AtomAttr subclass for van der Waals radii.
+class VDWRadiiAtomAttr(AtomAttr):  # type: ignore
+    """A statically generated AtomAttr subclass for van der Waals radii.
 
     The reason for the static definition even though `AtomAttrClassHandler` can dynamically
     generate subclasses is that the van der Waals radii are used during contact calculations and
@@ -78,9 +68,8 @@ class VDWRadiiAtomAttr(AtomAttr): # type: ignore
     singular = "vdw_radii"
 
     @staticmethod
-    def _gen_initial_values(n_atoms: int, *_: Any) -> NDArray[Any]:
-        """
-        Generate the initial values for the attribute.
+    def _gen_initial_values(n_atoms: int, *_: np.int32) -> NDArray[np.int32]:
+        """Generate the initial values for the attribute.
 
         Args:
             n_atoms (int): The number of atoms.
@@ -89,4 +78,4 @@ class VDWRadiiAtomAttr(AtomAttr): # type: ignore
         Returns:
             NDArray[Any]: A numpy array of zeros with a size equal to the number of atoms.
         """
-        return np.zeros(n_atoms)
+        return np.zeros(n_atoms, dtype=np.int32)

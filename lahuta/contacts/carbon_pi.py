@@ -1,9 +1,6 @@
-"""
-Module: carbon_pi.py
+"""Provides class-level API for computing carbon-pi contacts, based on atom-plane interactions.
 
-This module provides class-level API for computing carbon-pi contacts, based on atom-plane interactions. 
-
-Warning: 
+Warning:
     Due to re-computation, using the `CarbonPi` class may result in slower performance. 
     We recommend using the `AtomPlaneContacts` class from the `atom_plane` module for 
     improved efficiency. 
@@ -17,9 +14,10 @@ Usage:
     ns = universe.compute_neighbors()
     carbon_pi = CarbonPi(ns)
     results = carbon_pi.compute().results
+
 """
 
-from warnings import warn
+import warnings
 
 from lahuta.core.neighbors import NeighborPairs
 
@@ -28,8 +26,7 @@ from .base import ContactAnalysis
 
 
 class CarbonPi(ContactAnalysis):
-    """
-    Handles the computation of carbon pi contacts in a molecular system.
+    """Handle the computation of carbon pi contacts in a molecular system.
 
     Carbon pi contacts are interactions involving the π system of carbon atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -63,15 +60,16 @@ class CarbonPi(ContactAnalysis):
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
-        warn(
+        warnings.warn(
             "Using the `CarbonPi` class may result in slower performance due to "
             "re-computation. Consider using the `AtomPlaneContacts` class from the "
             "`atom_plane` module for improved efficiency.",
             RuntimeWarning,
+            stacklevel=2,
         )
 
     def compute(self) -> NeighborPairs:
-        """Computes carbon pi contacts based on the neighbor pairs.
+        """Compute carbon pi contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only carbon pi contacts.

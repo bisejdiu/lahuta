@@ -1,8 +1,4 @@
-"""
-
-module: `lahuta.core.arc.py`
-
-This module provides classes to model and manage the atomic-level structure of a biological system.
+"""Classes to model and manage the atomic-level structure of a biological system.
 The atomic-level structure includes atoms, residues, and chains in the system, and their inter-relationships.
 
 This module provides the following classes:
@@ -39,6 +35,7 @@ Example:
     >>> print(atom_0)
     Atom(name=..., id=..., element=..., type=..., resname=..., resid=..., chain_label=..., chain_id=...)
     ```
+
 """
 
 from dataclasses import dataclass
@@ -54,9 +51,7 @@ if TYPE_CHECKING:
 
 
 class Atoms:
-    """
-
-    Atoms is a class that models and manages the properties and coordinates of atoms in a system.
+    """Models and manages the properties and coordinates of atoms in a system.
 
     The Atoms class is part of the Atoms, Residues, Chains (ARC) module. It leverages structured
     numpy arrays to effectively handle, store and manipulate atomic information for speed optimization.
@@ -71,8 +66,8 @@ class Atoms:
     elements, and coordinates, and provides methods to iterate over and access the atomic data.
 
     Attributes:
-        _data (NDArray[Any]): A numpy structured array storing atomic properties.
-        _coordinates (NDArray[np.float32]): A numpy array storing the coordinates of atoms.
+        data (NDArray[Any]): A numpy structured array storing atomic properties.
+        coords (NDArray[np.float32]): A numpy array storing the coordinates of atoms.
 
     Examples:
         ``` py
@@ -95,8 +90,8 @@ class Atoms:
     )
 
     def __init__(self) -> None:
-        self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
-        self._coordinates = np.zeros((0, 3), dtype=np.float32)
+        self.data: NDArray[Any] = np.empty(0, dtype=self.dtype)
+        self.coords = np.zeros((0, 3), dtype=np.float32)
 
     @classmethod
     def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Atoms":
@@ -114,13 +109,12 @@ class Atoms:
         label_atom_id: List[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
-        # data["id"] = np.array(gemmi_block.get("id"), dtype=int) - 1
         data["id"] = np.arange(data["name"].size)
         data["element"] = np.array(gemmi_block.get("type_symbol"))
         data["type"] = np.array(gemmi_block.get("type_symbol"))
 
-        cls_instance._data = data
-        cls_instance._coordinates = np.zeros((0, 3), dtype=np.float32)
+        cls_instance.data = data
+        cls_instance.coords = np.zeros((0, 3), dtype=np.float32)
 
         return cls_instance
 
@@ -134,7 +128,6 @@ class Atoms:
         Returns:
             Atoms: An Atoms instance.
         """
-
         cls_instance = cls.__new__(cls)
         data: NDArray[Any] = np.empty(len(uv.atoms), dtype=cls_instance.dtype)
         data["name"] = uv.atoms.names
@@ -142,45 +135,45 @@ class Atoms:
         data["element"] = uv.atoms.elements
         data["type"] = uv.atoms.types
 
-        cls_instance._data = data
-        cls_instance._coordinates = uv.atoms.positions
+        cls_instance.data = data
+        cls_instance.coords = uv.atoms.positions
 
         return cls_instance
 
     @property
     def names(self) -> NDArray[np.str_]:
         """Atom names."""
-        return self._data["name"]
+        return self.data["name"]
 
     @property
     def types(self) -> NDArray[np.str_]:
         """Atom types."""
-        return self._data["type"]
+        return self.data["type"]
 
     @property
     def ids(self) -> NDArray[np.int32]:
         """Atom ids."""
-        return self._data["id"]
+        return self.data["id"]
 
     @property
     def elements(self) -> NDArray[np.str_]:
         """Atom elements."""
-        return self._data["element"]
+        return self.data["element"]
 
     @property
     def coordinates(self) -> NDArray[np.float32]:
         """3D coordinates of the atoms."""
-        return self._coordinates
+        return self.coords
 
     @coordinates.setter
     def coordinates(self, coordinates: NDArray[np.float32]) -> None:
-        self._coordinates = coordinates
+        self.coords = coordinates
 
     def __len__(self) -> int:
-        return self._data.size
+        return self.data.size
 
     def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
-        return self._data[index]
+        return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
         """Iterate over atoms."""
@@ -189,8 +182,7 @@ class Atoms:
 
 
 class Residues:
-    """
-    The Residues class models and manages the properties of residues in a system.
+    """The Residues class models and manages the properties of residues in a system.
 
     The Residues class is part of the Atoms, Residues, Chains (ARC) module. It utilizes structured
     numpy arrays for effective handling, storage, and manipulation of residue-related data. This
@@ -222,7 +214,7 @@ class Residues:
     dtype = np.dtype({"names": ["resname", "resid"], "formats": ["<U10", "int"]})
 
     def __init__(self) -> None:
-        self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
+        self.data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
     @classmethod
     def from_gemmi(cls, gemmi_block: Dict[str, Any]) -> "Residues":
@@ -234,7 +226,6 @@ class Residues:
         Returns:
             Residues: A Residues instance.
         """
-
         cls_instance = cls.__new__(cls)
 
         # Create structured array
@@ -245,7 +236,7 @@ class Residues:
         data["resname"] = resnames
         data["resid"] = resids
 
-        cls_instance._data = data
+        cls_instance.data = data
 
         return cls_instance
 
@@ -259,29 +250,28 @@ class Residues:
         Returns:
             Residues: A Residues instance.
         """
-
         cls_instance = cls.__new__(cls)
-        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
-        cls_instance._data["resname"] = mda_universe.atoms.resnames
-        cls_instance._data["resid"] = mda_universe.atoms.resids
+        cls_instance.data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
+        cls_instance.data["resname"] = mda_universe.atoms.resnames
+        cls_instance.data["resid"] = mda_universe.atoms.resids
 
         return cls_instance
 
     @property
     def resnames(self) -> NDArray[np.str_]:
         """Residue names."""
-        return self._data["resname"]
+        return self.data["resname"]
 
     @property
     def resids(self) -> NDArray[np.int32]:
         """Residue IDs."""
-        return self._data["resid"]
+        return self.data["resid"]
 
     def __len__(self) -> int:
-        return len(self._data)
+        return len(self.data)
 
     def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
-        return self._data[index]
+        return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
         """Iterate over residues."""
@@ -290,8 +280,7 @@ class Residues:
 
 
 class Chains:
-    """
-    The Chains class models and manages the properties of chains in a system.
+    """The Chains class models and manages the properties of chains in a system.
 
     The Chains class is part of the Atoms, Residues, Chains (ARC) module. It utilizes structured
     numpy arrays for effective handling, storage, and manipulation of chain-related data. This
@@ -325,7 +314,7 @@ class Chains:
 
     def __init__(self, name: Optional[str] = None):
         self.name = name
-        self._data: NDArray[Any] = np.empty(0, dtype=self.dtype)
+        self.data: NDArray[Any] = np.empty(0, dtype=self.dtype)
 
         self.mapping: Dict[str, int] = {}
 
@@ -352,7 +341,7 @@ class Chains:
         data["auth"] = auths
         data["id"] = ids
 
-        cls_instance._data = data
+        cls_instance.data = data
         cls_instance.mapping = dict(zip(auths, ids))
 
         return cls_instance
@@ -367,37 +356,37 @@ class Chains:
         Returns:
             Chains: A Chains instance.
         """
-
         cls_instance = cls.__new__(cls)
-        cls_instance._data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
-        cls_instance._data["label"] = mda_universe.atoms.chainIDs
-        cls_instance._data["auth"] = mda_universe.atoms.chainIDs
-        _, cls_instance._data["id"] = np.unique(cls_instance._data["auth"], return_inverse=True)  # type: ignore
-        cls_instance._data["id"] += 1
+        cls_instance.data = np.empty(len(mda_universe.atoms), dtype=cls_instance.dtype)
+        cls_instance.data["label"] = mda_universe.atoms.chainIDs
+        cls_instance.data["auth"] = mda_universe.atoms.chainIDs
+        _, cls_instance.data["id"] = np.unique(cls_instance.data["auth"], return_inverse=True)  # type: ignore
+        cls_instance.data["id"] += 1
 
-        cls_instance.mapping = dict(zip(cls_instance._data["auth"], cls_instance._data["id"]))
+        cls_instance.mapping = dict(zip(cls_instance.data["auth"], cls_instance.data["id"]))
 
         return cls_instance
 
     @property
     def labels(self) -> NDArray[np.str_]:
         """Chain labels."""
-        return self._data["label"]
+        return self.data["label"]
 
     @property
     def auths(self) -> NDArray[np.str_]:
         """Chain auths."""
-        return self._data["auth"]
+        return self.data["auth"]
 
     @property
     def ids(self) -> NDArray[np.int32]:
-        return self._data["id"]
+        """Chain IDs."""
+        return self.data["id"]
 
     def __len__(self) -> int:
-        return len(self._data)
+        return len(self.data)
 
     def __getitem__(self, index: Union[int, slice]) -> NDArray[Any]:
-        return self._data[index]
+        return self.data[index]
 
     def __iter__(self) -> Iterator[NDArray[Any]]:
         """Iterate over chains."""
@@ -406,8 +395,7 @@ class Chains:
 
 
 class ARC:
-    """
-    The ARC class models and manages the properties of a biological system consisting of atoms, residues, and chains.
+    """The ARC class models and manages the properties of a biological system consisting of atoms, residues, and chains.
 
     The ARC class integrates the Atoms, Residues, and Chains (ARC) module, by creating and storing
     instances of Atoms, Residues, and Chains classes.
@@ -474,7 +462,6 @@ class ARC:
         Returns:
             Atom: An Atom instance.
         """
-
         atom_info = self._atoms[index]
         residue_info = self._residues[index]
         chain_info = self._chains[index]
@@ -513,9 +500,9 @@ class ARC:
     def __getitem__(self, index: Union[int, slice]) -> Union["Atom", List["Atom"]]:
         if isinstance(index, int):
             return self.get_atom(index)
-        else:
-            indices = np.arange(len(self))[index]  # type: ignore
-            return [self.get_atom(i) for i in indices]
+
+        indices = np.arange(len(self))[index]  # type: ignore
+        return [self.get_atom(i) for i in indices]
 
     def __iter__(self) -> Iterator["Atom"]:
         """Iterate over atoms."""
@@ -524,8 +511,7 @@ class ARC:
 
 @dataclass
 class Atom:
-    """
-    The Atom class models and manages the properties of an atom in a system.
+    """The Atom class models and manages the properties of an atom in a system.
 
     The Atom class stores information related to a single atom in a system.
     It's created using keyword arguments, which allows it to dynamically store any attributes passed.
@@ -544,9 +530,8 @@ class Atom:
         ```
     """
 
-    # __slots__ = ["name", "id", "element", "type", "resname", "resid", "chain_label", "chain_id"]
-
-    def __init__(self, **kwargs: Any):  # FIXME: specify the type of kwargs
+    # TODO @bisejdiu: specify the type of kwargs
+    def __init__(self, **kwargs: Any):  # noqa: ANN401
         self.__dict__.update(kwargs)
 
     def __repr__(self) -> str:

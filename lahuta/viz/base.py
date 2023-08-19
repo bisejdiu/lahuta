@@ -1,3 +1,4 @@
+"""Base class for all plotter classes."""
 from typing import List, Tuple, Union
 
 import numpy as np
@@ -8,8 +9,7 @@ AnyInt = Union[int, np.int32]
 
 
 class BasePlotter:
-    """
-    Base class for all plotter classes.
+    """Base class for all plotter classes.
 
     Args:
         pairs: A list of pairs of indices that should be plotted.
@@ -18,9 +18,10 @@ class BasePlotter:
     def __init__(self, pairs: NDArray[np.int32]) -> None:
         self.pairs = pairs
         self.half_only = False
-        self.binary_cmap = ListedColormap(['white', 'black'])  # type: ignore
+        self.binary_cmap = ListedColormap(["white", "black"])  # type: ignore
 
     def plot(self) -> None:
+        """Plot the contact map."""
         raise NotImplementedError()
 
     def _initialize_map(
@@ -35,8 +36,7 @@ class BasePlotter:
 
     @staticmethod
     def get_ticks_and_labels(indices: NDArray[np.int32], n_points: int) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
-        """
-        Returns the positions and labels of the ticks for the given indices.
+        """Return the positions and labels of the ticks for the given indices.
         The number of ticks is limited to 10.
         """
         n_points = min(10, n_points)

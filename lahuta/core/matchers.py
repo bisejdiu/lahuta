@@ -1,7 +1,4 @@
-"""
-module: `lahuta.core.matchers.py`
-
-The SMARTS pattern matching classes are used to match SMARTS patterns to atoms in a molecule.
+"""The SMARTS pattern matching classes are used to match SMARTS patterns to atoms in a molecule.
 This is how we assign atom types to molecules.
 
 Classes:
@@ -28,8 +25,7 @@ from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsP
 
 
 class SmartsMatcherBase(ABC):
-    """
-    A base class for different implementations of SMARTS pattern matching on molecules.
+    """A base class for different implementations of SMARTS pattern matching on molecules.
 
     This abstract class needs to be inherited by any class that implements SMARTS pattern matching.
     The subclass must implement the compute method.
@@ -40,8 +36,7 @@ class SmartsMatcherBase(ABC):
 
     @abstractmethod
     def compute(self, mol: MolType) -> dok_matrix:
-        """
-        Abstract method for SMARTS pattern matching.
+        """Abstract method for SMARTS pattern matching.
 
         Args:
             mol (MolType): A molecule object to match patterns on.
@@ -56,16 +51,14 @@ class SmartsMatcherBase(ABC):
 
 
 class SmartsMatcher(SmartsMatcherBase):
-    """
-    Matches SMARTS patterns to atoms in a molecule.
+    """Matches SMARTS patterns to atoms in a molecule.
 
     This class performs sequential SMARTS pattern matching on atoms in a molecule.
     It inherits from the SmartsMatcherBase abstract base class.
     """
 
     def compute(self, mol: MolType) -> dok_matrix:
-        """
-        Performs SMARTS pattern matching on a molecule.
+        """Perform SMARTS pattern matching on a molecule.
 
         Args:
             mol (MolType): A molecule object to match patterns on.
@@ -73,7 +66,6 @@ class SmartsMatcher(SmartsMatcherBase):
         Returns:
             (dok_matrix): A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
-
         atom_types = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
 
         for atom_type in SmartsPatternRegistry:
@@ -94,8 +86,7 @@ class SmartsMatcher(SmartsMatcherBase):
 
 
 class ParallelSmartsMatcher(SmartsMatcherBase):
-    """
-    Matches SMARTS patterns to atoms in a molecule using multiple threads.
+    """Matches SMARTS patterns to atoms in a molecule using multiple threads.
 
     This class performs SMARTS pattern matching on atoms in a molecule using multiple threads for
     improved performance. It inherits from the SmartsMatcherBase abstract base class.
@@ -105,14 +96,12 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         self.precomputed_ob_smarts = self.precompute_ob_smarts()
 
     def precompute_ob_smarts(self) -> Dict[str, List[ObSmartPatternType]]:
-        """
-        Precomputes and stores the Open Babel SMARTS patterns for all atom types.
+        """Precompute and stores the Open Babel SMARTS patterns for all atom types.
 
         Returns:
             (Dict[str, List[ObSmartPatternType]]): A dictionary with atom type names as keys and lists of
                                                 precomputed Open Babel SMARTS patterns as values.
         """
-
         precomputed_ob_smarts: Dict[str, List[ObSmartPatternType]] = {}
         for atom_type in SmartsPatternRegistry:
             smartsdict = SmartsPatternRegistry[atom_type.name].value
@@ -130,8 +119,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         atypes: Dict[str, int],
         atom_type: str,
     ) -> List[Tuple[Any, int]]:
-        """
-        Matches an Open Babel SMARTS pattern to a molecule.
+        """Match an Open Babel SMARTS pattern to a molecule.
 
         Args:
             ob_smart (ObSmartPatternType): An Open Babel SMARTS pattern.
@@ -143,14 +131,12 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
             List[Tuple[Any, int]]: A list of tuples, where each tuple contains the matched atom's
                                     index and the corresponding atom type.
         """
-
         ob_smart.Match(mol)
         matches = [x[0] for x in ob_smart.GetMapList()]
         return [(match, atypes[atom_type]) for match in matches]
 
     def compute(self, mol: MolType) -> dok_matrix:
-        """
-        Performs SMARTS pattern matching on a molecule using multiple threads.
+        """Perform SMARTS pattern matching on a molecule using multiple threads.
 
         Args:
             mol (MolType): A molecule object to match patterns on.
@@ -158,7 +144,6 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
         Returns:
             (dok_matrix): A sparse matrix of atom types that match the SMARTS patterns in the given molecule.
         """
-
         atom_types = dok_matrix((self.n_atoms, len(ATypes)), dtype=np.int8)
 
         num_threads = os.cpu_count()

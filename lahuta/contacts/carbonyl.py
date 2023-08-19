@@ -1,13 +1,11 @@
-"""
-Module: carbonyl.py
-
-This module defines a class for computing carbonyl contacts using a class-based approach. 
+"""Defines a class for computing carbonyl contacts using a class-based approach.
 The CarbonylContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for carbonyl contact computation.
 
 Class:
     CarbonylContacts(ContactAnalysis): Computes carbonyl contacts.
                                        
+
 Example:
     ``` py
     luni = Luni(...)
@@ -16,6 +14,7 @@ Example:
     cbyl = CarbonylContacts(ns)
     print(cbyl.results)
     ```
+
 """
 
 
@@ -27,14 +26,13 @@ from .base import ContactAnalysis
 
 
 class CarbonylContacts(ContactAnalysis):
-    """
-    Handles the computation of carbonyl contacts in a molecular system.
+    """Handle the computation of carbonyl contacts in a molecular system.
 
     Carbonyl contacts involve the interaction between a carbonyl oxygen atom (O) and a carbonyl carbon atom (C)
     from a carbonyl functional group (C=O) in the context of protein-ligand structures or protein-protein structures.
 
-    In a carbonyl group, the carbon atom has a double bond with the oxygen atom. This arrangement results
-    in a polar bond with the oxygen atom carrying a partial negative charge and the carbon atom a partial positive charge.
+    In a carbonyl group, the carbon atom has a double bond with the oxygen atom. This arrangement results in a polar
+    bond with the oxygen atom carrying a partial negative charge and the carbon atom a partial positive charge.
     This polarity can lead to interactions with other polar or charged atoms.
 
 
@@ -64,7 +62,7 @@ class CarbonylContacts(ContactAnalysis):
     distance = CONTACTS["carbonyl"]["distance"]
 
     def compute(self) -> NeighborPairs:
-        """Computes carbonyl contacts based on the neighbor pairs.
+        """Compute carbonyl contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only carbonyl contacts.

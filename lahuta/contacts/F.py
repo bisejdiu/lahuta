@@ -1,7 +1,4 @@
-"""
-Module: `lahuta.contacts.F.py`
-
-This module is designed as the main entry point for users to access the various functionalities
+"""The main entry point for users to access the various functionalities
 of the `contacts` package. It imports all necessary functions for computing interactions, thus
 providing an easy and concise way to use the package's functionalities.
 

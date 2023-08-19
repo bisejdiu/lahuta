@@ -1,19 +1,18 @@
-"""
-Module: vdw.py
-
-This module defines a class for computing vanderwaals contacts using a class-based approach. 
+"""Defines a class for computing vanderwaals contacts using a class-based approach.
 The VanDerWaalsContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for vanderwaals contact computation.
 
 Class:
     VanDerWaalsContacts(ContactAnalysis): Computes vanderwaals contacts.
                                        
+
 Example:
     universe = Universe(...)
     ns = universe.compute_neighbors()
 
     vdw = VanDerWaalsContacts(ns)
     print(vdw.results)
+
 """
 
 import lahuta.contacts as F
@@ -23,8 +22,7 @@ from .base import ContactAnalysis
 
 
 class VanDerWaalsContacts(ContactAnalysis):
-    """
-    Handles the computation of Van der Waals (VdW) contacts in a molecular system.
+    """Handle the computation of Van der Waals (VdW) contacts in a molecular system.
 
     Van der Waals (VdW) contacts are determined based on the interactions between atoms that come
     within their combined van der Waals radii, increased by a compensation factor.
@@ -50,10 +48,9 @@ class VanDerWaalsContacts(ContactAnalysis):
     remove_clashes = True
 
     def compute(self) -> NeighborPairs:
-        """Computes Van der Waals contacts based on the neighbor pairs.
+        """Compute Van der Waals contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only Van der Waals contacts.
         """
-
         return F.vdw_neighbors(self.ns, self.vdw_comp_factor, self.remove_clashes)

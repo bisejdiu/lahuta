@@ -1,3 +1,4 @@
+"""Classes for plotting contact maps."""
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -6,7 +7,19 @@ from .base import BasePlotter
 
 # pylint: disable=missing-class-docstring, missing-function-docstring
 class FullPlotter(BasePlotter):
+    """Plot the full contact map.
+
+    Args:
+        pairs: A list of pairs of indices that should be plotted.
+    """
+
     def plot(self, outline: bool = False, half_only: bool = False) -> None:
+        """Plot the full contact map.
+
+        Args:
+            outline: Whether to outline the contact map.
+            half_only: Whether to plot only the upper half of the contact map.
+        """
         self.half_only = half_only
 
         min_idx = np.min(self.pairs)
@@ -15,7 +28,7 @@ class FullPlotter(BasePlotter):
         offset_pairs = [(x - min_idx, y - min_idx) for x, y in self.pairs]
         contact_map = self._initialize_map(shape, offset_pairs)
 
-        plt.imshow(contact_map, cmap=self.binary_cmap, interpolation='none', origin='lower')
+        plt.imshow(contact_map, cmap=self.binary_cmap, interpolation="none", origin="lower")
         if outline:
             self._add_outlines(min_idx, min_idx)
 
@@ -27,13 +40,20 @@ class FullPlotter(BasePlotter):
         unique_x = np.unique(self.pairs[:, 0]) - x_offset
         unique_y = np.unique(self.pairs[:, 1]) - y_offset
         for x in unique_x:
-            plt.axhline(y=x, color='grey', linestyle='--', lw=0.3)
+            plt.axhline(y=x, color="grey", linestyle="--", lw=0.3)
         for y in unique_y:
-            plt.axvline(x=y, color='grey', linestyle='--', lw=0.3)
+            plt.axvline(x=y, color="grey", linestyle="--", lw=0.3)
 
 
 class MatchingIndicesPlotter(BasePlotter):
+    """Plot the contact map for only indices that are in contact.
+
+    Args:
+        pairs: A list of pairs of indices that should be plotted.
+    """
+
     def plot(self) -> None:
+        """Plot the contact map for only indices that are in contact."""
         self.half_only = True
         x_indices = np.unique(self.pairs[:, 0])
         y_indices = np.unique(self.pairs[:, 1])
@@ -45,7 +65,7 @@ class MatchingIndicesPlotter(BasePlotter):
         mapped_pairs = list(zip(x_mapped, y_mapped))
 
         contact_map = self._initialize_map(shape, mapped_pairs)
-        plt.imshow(contact_map, cmap=self.binary_cmap, interpolation='none', origin='lower')
+        plt.imshow(contact_map, cmap=self.binary_cmap, interpolation="none", origin="lower")
 
         n_points = min(x_indices.shape[0], y_indices.shape[0])
         if n_points < 10:

@@ -1,19 +1,18 @@
-"""
-Module: aromatic.py
-
-This module defines a class for computing aromatic contacts using a class-based approach. 
+"""Defines a class for computing aromatic contacts using a class-based approach.
 The AromaticContacts class inherits from the base ContactAnalysis class and 
 implements the `compute` method for aromatic contact computation.
 
 Class:
     AromaticContacts(ContactAnalysis): Computes aromatic contacts.
                                        
+
 Example:
     luni = Luni(...)
     ns = luni.compute_neighbors()
 
     ac = AromaticContacts(ns)
     print(ac.results)
+
 """
 
 import lahuta.contacts as F
@@ -24,8 +23,7 @@ from .base import ContactAnalysis
 
 
 class AromaticContacts(ContactAnalysis):
-    """
-    Handles the computation of aromatic contacts in a molecular structure.
+    """Handles the computation of aromatic contacts in a molecular structure.
 
     Aromatic contacts are computed based on the interactions between atoms in
     aromatic rings found in proteins and ligands. Aromatic interactions,
@@ -55,7 +53,7 @@ class AromaticContacts(ContactAnalysis):
     distance = CONTACTS["aromatic"]["distance"]
 
     def compute(self) -> NeighborPairs:
-        """Computes aromatic contacts based on the neighbor pairs.
+        """Compute aromatic contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only aromatic contacts.

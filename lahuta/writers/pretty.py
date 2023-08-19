@@ -1,3 +1,4 @@
+"""Prettify a pandas dataframe and print it to the console."""
 from typing import Any, List
 
 import pandas as pd
@@ -6,6 +7,19 @@ from rich.table import Table
 
 
 class PrettyDataFrame:
+    """Prettify a pandas dataframe and print it to the console.
+
+    Attributes:
+        df (pd.DataFrame): The dataframe to be prettified.
+        n_rows (int): The number of rows to be printed.
+        total_rows (int): The total number of rows in the dataframe.
+        console (Console): The rich console object.
+        table (Table): The rich table object.
+
+    Methods:
+        prettify: Prettify the dataframe and print it to the console.
+    """
+
     INT_COLOR = "red"
     FLOAT_COLOR = "green"
     OTHER_COLOR = "blue"
@@ -22,7 +36,7 @@ class PrettyDataFrame:
             self.table.add_column(str(col))
 
     def _add_rows(self) -> None:
-        for row in self.df.values:
+        for row in self.df.to_numpy():
             formatted_row = self._format_row(row)
             self.table.add_row(*formatted_row)
         if self.n_rows < self.total_rows:
@@ -49,9 +63,7 @@ class PrettyDataFrame:
         self.table.caption = f"Showing {self.n_rows} rows out of {self.total_rows} computed rows"
 
     def prettify(self) -> None:
-        """
-        Prettify the dataframe and print it to the console.
-        """
+        """Prettify the dataframe and print it to the console."""
         self._add_columns()
         self._add_rows()
         self._add_caption()

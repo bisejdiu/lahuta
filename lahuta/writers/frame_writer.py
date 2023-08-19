@@ -1,5 +1,4 @@
-"""
-This module defines the DataFrameWriter class, which serves as a factory for creating 
+"""Defines the DataFrameWriter class, which serves as a factory for creating
 dataframes in either 'compact' or 'expanded' format from instances of the `NeighborPairs` 
 class. 
 
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
 
 
 class DataFrameWriter:
-    """Class for creating DataFrame operations in either compact or expanded formats.
+    """Create DataFrame operations in either compact or expanded formats.
 
     This class serves as a factory for creating dataframes in specific formats from
     `NeighborPairs` instances. The formats can be either 'compact' or 'expanded', which
@@ -35,12 +34,12 @@ class DataFrameWriter:
     can be added as well, which will be included in the final dataframe.
 
     Attributes:
-        ns (NeighborPairs): Instance of NeighborPairs containing partner information to be
+        ns (NeighborPairs): Instance of NeighborPairs containing partner information to be \
             transformed into a DataFrame.
-        format (Literal["compact", "expanded"]): The format in which to create the DataFrame.
+        format (Literal["compact", "expanded"]): The format in which to create the DataFrame. \
             Must be either 'compact' or 'expanded'. Defaults to 'expanded'.
-        annotations (Optional[Dict[str, NDArray[Any]]]): Optional additional annotations to
-            be included in the DataFrame. The annotations should be a dictionary mapping column
+        annotations (Optional[Dict[str, NDArray[Any]]]): Optional additional annotations to \
+            be included in the DataFrame. The annotations should be a dictionary mapping column \
             names (str) to N-dimensional array-like structures.
 
     Methods:
@@ -56,15 +55,11 @@ class DataFrameWriter:
     ):
         """Initialize the factory with a builder and a format."""
         self.ns = ns
-        # assert df_format in [
-        #     "compact",
-        #     "expanded",
-        # ], "Format must be compact or expanded."
         self.format = df_format
         self.annotations = annotations
 
     def create(self) -> pd.DataFrame:
-        """Creates the DataFrame operation in the requested format.
+        """Create the DataFrame operation in the requested format.
 
         The method first builds the data using the `build` method and then creates a DataFrame
         in the requested format. If the format is not 'compact' or 'expanded', a ValueError is raised.
@@ -76,15 +71,13 @@ class DataFrameWriter:
             ValueError: If the format is not 'compact' or 'expanded'.
         """
         data = self.build()
-        if self.format == "compact":
+        if self.format in {"compact", "expanded"}:
             return FACTORY_DICT[self.format](data).execute()
-        elif self.format == "expanded":
-            return FACTORY_DICT[self.format](data).execute()
-        else:
-            raise ValueError("Format must be compact or expanded.")
+
+        raise ValueError("Format must be compact or expanded.")
 
     def build(self) -> Dict[str, NDArray[Any]]:
-        """Assembles the data to be used for DataFrame construction.
+        """Assemble the data to be used for DataFrame construction.
 
         The method constructs a dictionary where the keys are column names and the values are the
         corresponding data arrays. It includes partner information and distances from the NeighborPairs

@@ -1,19 +1,26 @@
-from typing import Tuple, TypeVar
+"""Encoder for MSA labels."""
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-DType = TypeVar("DType", np.str_, np.void)
-EncoderArray = NDArray[DType]
 
-# pyright: reportUnknownMemberType=false
-# pyright: reportUnknownVariableType=false
 def encode_labels(
     source_labels: NDArray[np.void], target_labels: NDArray[np.void]
 ) -> Tuple[NDArray[np.int32], NDArray[np.int32]]:
+    """Encode the labels of the source and target sequences.
+
+    Args:
+        source_labels (NDArray[np.void]): The labels of the source sequence.
+        target_labels (NDArray[np.void]): The labels of the target sequence.
+
+    Returns:
+        Tuple[NDArray[np.int32], NDArray[np.int32]]: The encoded labels of the source and target sequences.
+
+    """
     labels: NDArray[np.str_] = np.concatenate((source_labels.ravel(), target_labels.ravel()))
-    indices, _ = pd.factorize(labels)  # type: ignore
+    indices, _ = pd.factorize(labels)
     source_pairs = indices[: source_labels.size].reshape(source_labels.shape)
     target_pairs: NDArray[np.int32] = indices[source_labels.size :].reshape(target_labels.shape)
 

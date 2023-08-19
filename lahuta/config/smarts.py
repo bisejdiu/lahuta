@@ -1,14 +1,11 @@
-"""
-module: `lahuta.config.smarts.py`
-
-This module provides definitions for various sets of SMARTS patterns used in to find and match
+"""Provides definitions for various sets of SMARTS patterns used in to find and match
 specific atom types. Additionally, it includes a helper function for remapping atom types for
 easier lookups.
 
 """
 
 from enum import Enum
-from typing import Dict, List
+from typing import ClassVar, Dict, List
 
 import lahuta.config._smart_strings as smarts
 
@@ -30,20 +27,20 @@ class SmartsPatternRegistry(Enum):
     HBOND_DONOR = smarts.HBOND_DONOR_SMARTS
 
     # nonsensical string to avoid duplicate entries in Enum
-    XBOND_ACCEPTOR = {**smarts.HBOND_ACCEPTOR_SMARTS, "": "[Xx]"}
+    XBOND_ACCEPTOR: ClassVar = {**smarts.HBOND_ACCEPTOR_SMARTS, "": "[Xx]"}
     """
     Halogen bond acceptor SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) for details.
     Note that we provide a nonsensical string to avoid duplicate entries in the Enum.
     """
 
-    XBOND_DONOR = {"donor": smarts.SMARTS_STR_XBD}
+    XBOND_DONOR: ClassVar = {"donor": smarts.SMARTS_STR_XBD}
     """
     Halogen bond donor SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_XBD) for details.
     """
 
-    WEAK_HBOND_ACCEPTOR = {
+    WEAK_HBOND_ACCEPTOR: ClassVar = {
         **smarts.HBOND_ACCEPTOR_SMARTS,
         "c-x halogens": smarts.SMARTS_STR_XBD,
     }
@@ -55,20 +52,20 @@ class SmartsPatternRegistry(Enum):
     SMARTS patterns.
     """
 
-    WEAK_HBOND_DONOR = {"donor": smarts.SMARTS_STR_WHBD}
+    WEAK_HBOND_DONOR: ClassVar = {"donor": smarts.SMARTS_STR_WHBD}
     """
     Weak hydrogen bond donor SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_WHBD) for details.
     """
 
-    POS_IONISABLE = smarts.POSITIVELY_IOINISABLE_SMARTS
+    POS_IONISABLE: ClassVar = smarts.POSITIVELY_IOINISABLE_SMARTS
     """
     Positively ionisable SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.POSITIVELY_IOINISABLE_SMARTS) for
     details.
     """
 
-    NEG_IONISABLE = {
+    NEG_IONISABLE: ClassVar = {
         "O acidic group": smarts.SMARTS_STR_NI_O_ACIDIC_GRP,
         "anions": smarts.SMARTS_STR_NI_ANIONS,
     }
@@ -78,20 +75,20 @@ class SmartsPatternRegistry(Enum):
     [anions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_NI_ANIONS).
     """
 
-    HYDROPHOBE = {"hydrophobe": smarts.SMARTS_STR_HYDROPHOBIC}
+    HYDROPHOBE: ClassVar = {"hydrophobe": smarts.SMARTS_STR_HYDROPHOBIC}
     """
     Hydrophobic SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HYDROPHOBIC) for details.
     """
 
-    CARBONYL_OXYGEN = {"oxygen": smarts.SMARTS_STR_CARBONYL_OXYGEN}
+    CARBONYL_OXYGEN: ClassVar = {"oxygen": smarts.SMARTS_STR_CARBONYL_OXYGEN}
     """
     Carbonyl oxygen SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_CARBONYL_OXYGEN) for
     details.
     """
 
-    CARBONYL_CARBON = {"carbon": smarts.SMARTS_STR_CARBONYL_CARBON}
+    CARBONYL_CARBON: ClassVar = {"carbon": smarts.SMARTS_STR_CARBONYL_CARBON}
     """
     Carbonyl carbon SMARTS patterns. See
     [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_CARBONYL_CARBON) for

@@ -1,7 +1,4 @@
-"""
-Module: mdanalysis.py
-
-This module provides indirect typing support for MDAnalysis, a library for 
+"""Provides indirect typing support for MDAnalysis, a library for
 the analysis of molecular dynamics simulations. Despite the absence of inherent 
 typing support in MDAnalysis, the `mdanalysis.py` module uses Protocols to define 
 interfaces that allow type hinting for MDAnalysis objects.
@@ -24,6 +21,7 @@ Example:
     universe: UniverseType = ...
     atoms = universe.atoms
     compute_distance(atoms)
+
 """
 
 from typing import Any, Optional, Protocol, Union
@@ -128,6 +126,14 @@ class AtomGroupType(Protocol):
         ...
 
     def copy(self) -> "AtomGroupType":
+        ...
+
+    @property
+    def _u(self) -> "UniverseType":
+        ...
+
+    @_u.setter
+    def _u(self, universe: "UniverseType") -> None:
         ...
 
     def __iter__(self) -> Any:
