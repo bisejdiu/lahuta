@@ -19,7 +19,8 @@ pytestmark = pytest.mark.au
 
 TestFuncCallable = Callable[[int, float, float], Tuple[NDArray[np.int32], NDArray[np.int32]]]
 
-def unique_pairs(size: int, start: int = 0):
+
+def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
     """
     Generate an array of unique pairs.
 

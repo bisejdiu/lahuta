@@ -184,8 +184,8 @@ def export_to_csv(results: Dict[str, NeighborPairs], df_format: FORMAT) -> None:
         df_format (FORMAT): Dataframe format.
 
     """
-    results = create_result_dataframe(results, df_format)
-    results.to_csv("lahuta.csv", index=False)
+    results_df = create_result_dataframe(results, df_format)
+    results_df.to_csv("lahuta.csv", index=False)
 
 
 def export_to_file(
