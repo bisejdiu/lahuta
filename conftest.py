@@ -1,3 +1,4 @@
+"""Pytest configuration file."""
 from pathlib import Path
 from typing import List
 
@@ -5,26 +6,23 @@ import pytest
 from _pytest.config import Config
 from _pytest.config.argparsing import Parser
 from _pytest.fixtures import FixtureRequest
-from pytest import Item
 
 
 def pytest_configure(config: Config) -> None:
-    """
-    Add custom markers to pytest.
+    """Add custom markers to pytest.
 
     Args:
         config (Config): The pytest config.
     """
-    
     config.addinivalue_line("markers", "contacts: mark test as contacts test")
     config.addinivalue_line("markers", "ag: mark test as MDAnalysis AtomGroup support test")
     config.addinivalue_line("markers", "nb: mark test as NeighborPairs test")
     config.addinivalue_line("markers", "au: mark test as array_utils test")
     config.addinivalue_line("markers", "trajs: mark test as trajectory test")
 
+
 def pytest_addoption(parser: Parser) -> None:
-    """
-    Add command line options to pytest.
+    """Add command line options to pytest.
 
     Args:
         parser (Parser): The pytest parser.
@@ -36,15 +34,14 @@ def pytest_addoption(parser: Parser) -> None:
     parser.addoption("--au", action="store_true", default=False, help="Run array_utils tests")
     parser.addoption("--trajs", action="store_true", default=False, help="Run trajectory tests")
 
-def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
-    """
-    Modify the list of tests to run based on command line options.
+
+def pytest_collection_modifyitems(config: Config, items: List[pytest.Item]) -> None:
+    """Modify the list of tests to run based on command line options.
 
     Args:
         config (Config): The pytest config.
-        items (List[Item]): The list of tests to run.
+        items (List[pytest.Item]): The list of tests to run.
     """
-
     if config.getoption("--contacts"):
         items[:] = [item for item in items if item.get_closest_marker("contacts")]
     elif config.getoption("--ag"):
@@ -58,9 +55,8 @@ def pytest_collection_modifyitems(config: Config, items: List[Item]) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def cleanup(request: FixtureRequest) -> None:
-    """
-    Remove hidden files after testing. Specifically, MDAnalysis creates hidden files that end with .lock or .npz
+def cleanup(request: FixtureRequest) -> None:  # noqa: PT004
+    """Remove hidden files after testing. Specifically, MDAnalysis creates hidden files that end with .lock or .npz
     in the directory where the tests are run. This fixture removes those files after testing.
 
     Args:
@@ -71,10 +67,10 @@ def cleanup(request: FixtureRequest) -> None:
         test_dir = Path(__file__).parent / "tests" / "data"
 
         # Find hidden files that end with .lock or .npz in that directory
-        for pattern in ('.*.lock', '.*.npz'):
+        for pattern in (".*.lock", ".*.npz"):
             hidden_files = test_dir.glob(pattern)
             for file_path in hidden_files:
                 if file_path.is_file():
                     file_path.unlink()
 
-    request.addfinalizer(remove_hidden_files)
+    request.addfinalizer(remove_hidden_files)  # noqa: PT021

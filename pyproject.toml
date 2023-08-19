@@ -32,7 +32,7 @@ classifiers = [
 requires-python = '>=3.8'
 dependencies = [
     # core
-    'gemmi>0.6.0',
+    'gemmi>=0.6.0',
     'MDAnalysis>=2.5.0, <3.0.0',
     'openbabel>=3.1.0',
     'typer>=0.9.0',
@@ -51,65 +51,24 @@ line-length = 120
 target-version = ['py310']
 skip-string-normalization = true
 
-# [tool.pyright]
-# include = ["lahuta"]
-# exclude = ["lahuta/scripts", "lahuta/docs", "lahuta/tests", "**/__pycache__", "cachedir"]
-# defineConstant = { DEBUG = true }
-# reportMissingImports = true
-# reportMissingTypeStubs = "none"
-
-# reportUnknownVariableType = false
-# reportUnknownMemberType = false
-
-# [tool.pylint.basic]
-# good-names = [
-#     'i', 
-#     'j',
-#     'k',
-#     'df', 
-#     'ag',
-#     'uv', 
-#     'ns',
-#     'ix',
-# ]
-
-# [tool.pylint.'MASTER']
-#   extension-pkg-allow-list = ["gemmi"]
-
-# [tool.pylint.'MESSAGES CONTROL']
-# max-line-length = 120
-# disable = 'too-many-lines'
-
 [tool.ruff]
 line-length = 120
 extend-select = [
-    'Q', 'RUF100', 'C90', 'I', 'D', 'TID', 'B', 'A', 'COM', 'C4', 
-    'ARG', 'TCH', 'PTH', 'NPY', 'SLF', 'ANN', 'BLE', #'FBT001',
-    'PYI', 'PT', 'RET', 'SIM', 'INT', 'TD', 'FIX', 
-    'ERA', 'PD', 'PL',  'TRY', 'FLY', 'PERF', 'RUF'
+    'A', 'ANN', 'ARG', 'B', 'BLE', 'C4', 'C90', 'COM', 'D', 'ERA',
+    'FIX', 'FLY', 'I', 'INT', 'NPY', 'PD', 'PERF', 'PL', 'PT', 'PTH',
+    'PYI', 'Q', 'RET', 'RUF', 'RUF100', 'SIM', 'SLF', 'TD', 'TCH', 'TID',
+    'TRY'
 ]
-# E501 is handled by black
 ignore = [
-'A003', 
-'ANN101',
-'ANN102',
-'ANN204', 
-'D406', 
-'D407',
-'TD003', 
-'COM812', 
-'PLR2004',
-'TRY003',
-'FIX002', 
-'D203',
-'D213',
-'D105', 'D107', 'D205', 'D415'
-] # 'E501'
+    'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
+    'D205', 'D213', 'D406', 'D407', 'D415', 'FIX002', 'PLR2004', 'TD003',
+    'TRY003'
+]
 
 mccabe = { max-complexity = 14 }
 isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
 target-version = "py39"
-exclude=['lahuta/cachedir']
+exclude=['lahuta/scripts', 'cachedir', 'tests', 'docs/plugins']
 
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
@@ -119,8 +78,8 @@ max-args = 6
 [tool.ruff.per-file-ignores]
 'lahuta/contacts/_ctx_mngrs.py' = ['ANN']
 'lahuta/lahuta_types/mda_commands.py' = ['PLR0913']
-'lahuta/lahuta_types/mdanalysis.py' = ['D101', 'D102', 'ANN401']
-'lahuta/lahuta_types/openbabel.py' = ['D101', 'D102', 'ANN401']
+'lahuta/lahuta_types/mdanalysis.py' = ['ANN401', 'D101', 'D102']
+'lahuta/lahuta_types/openbabel.py' = ['ANN401', 'D101', 'D102']
 'bin/lahuta' = ['A002', 'B008', 'PLR0913']
 
 [tool.mypy]
