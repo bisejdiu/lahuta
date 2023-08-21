@@ -1,9 +1,8 @@
-name: Publish Conda Package on Release
+name: Publish Conda Package
 
 on:
-  push:
-    branches: ["dev_publish"]
-
+  release:
+    types: [published]
 
 jobs:
   trigger:
