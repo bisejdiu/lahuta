@@ -42,6 +42,7 @@ dynamic = ['version', 'readme']
 [project.urls]
 Homepage = 'https://github.com/bisejdiu/lahuta'
 Source = 'https://github.com/bisejdiu/lahuta'
+Documentation = 'https://bisejdiu.github.io/lahuta'
 
 [project.scripts]
 lahuta = "lahuta.bin:lahuta"
@@ -81,7 +82,7 @@ max-args = 6
 'lahuta/lahuta_types/mda_commands.py' = ['PLR0913']
 'lahuta/lahuta_types/mdanalysis.py' = ['ANN401', 'D101', 'D102']
 'lahuta/lahuta_types/openbabel.py' = ['ANN401', 'D101', 'D102']
-'bin/lahuta' = ['A002', 'B008', 'PLR0913']
+'lahuta/bin.py' = ['A002', 'B008', 'PLR0913']
 
 [tool.mypy]
 python_version = "3.10"

@@ -13,7 +13,7 @@ Developed at and with ❤️ by St. Jude Children's Research Hospital
 
 from enum import Enum
 from time import perf_counter
-from typing import Callable, Literal, Optional, list
+from typing import Callable, Literal, Optional
 
 import numpy as np
 import pandas as pd
