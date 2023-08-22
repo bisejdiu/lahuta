@@ -278,10 +278,9 @@ def run(
         help="Name of the output file.",
     ),
 ) -> None:
-    """[blue][bold red]WELCOME TO LAHUTA[/bold red][/blue] :sparkles:
-    (v0.9.0).
+    """[blue][bold red]WELCOME TO LAHUTA[/bold red][/blue]
 
-    -----------------------------
+    -----------------
 
     Authors: Besian I. Sejdiu
     Developed with ❤️ by St. Jude Children's Research Hospital

@@ -82,7 +82,7 @@ max-args = 6
 'lahuta/lahuta_types/mda_commands.py' = ['PLR0913']
 'lahuta/lahuta_types/mdanalysis.py' = ['ANN401', 'D101', 'D102']
 'lahuta/lahuta_types/openbabel.py' = ['ANN401', 'D101', 'D102']
-'lahuta/bin.py' = ['A002', 'B008', 'PLR0913']
+'lahuta/bin.py' = ['A002', 'B008', 'D400', 'PLR0913']
 
 [tool.mypy]
 python_version = "3.10"
