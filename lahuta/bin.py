@@ -10,10 +10,10 @@ Center for Data Driven Discovery
 Department of Structural Biology
 Developed at and with ❤️ by St. Jude Children's Research Hospital
 """
-
+import random
 from enum import Enum
 from time import perf_counter
-from typing import Callable, Literal, Optional
+from typing import Any, Callable, Literal, Optional
 
 import numpy as np
 import pandas as pd
@@ -24,10 +24,12 @@ from typing_extensions import Annotated
 from lahuta import Luni
 from lahuta.contacts.computer import LahutaContacts
 from lahuta.core import NeighborPairs
+from lahuta.utils.quote_parser import GROMACS_QUOTES
 from lahuta.writers.pretty import PrettyDataFrame
 
 FORMAT = Literal["compact", "expanded"]
 RESIDUE_DIFF_DEFAULT = 2
+RANDOM_QUOTE = random.choice(GROMACS_QUOTES)
 
 
 class ContactGroup(str, Enum):
@@ -198,7 +200,7 @@ def export_to_file(
         output (Optional[str], optional): Output file name. Defaults to None.
 
     """
-    export_functions: dict[str, Callable[[pd.DataFrame, str], None]] = {
+    export_functions: dict[str, Callable[[pd.DataFrame, str], None | Any]] = {
         "csv": lambda df, filename: df.to_csv(filename, index=False),
         "html": lambda df, filename: df.to_html(filename),
         "json": lambda df, filename: df.to_json(filename),
@@ -237,7 +239,7 @@ def export_results(
 
 
 @lahuta.command(
-    epilog="[blue]Cheers![/blue]",
+    epilog=f'[blue]"{RANDOM_QUOTE[0]}" - {RANDOM_QUOTE[1]}[/blue]',
 )
 def run(
     input: str = Option(..., "--input", "-i", help="Input file name for Luni"),
