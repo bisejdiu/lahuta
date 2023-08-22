@@ -238,8 +238,11 @@ def export_results(
             export_to_file(results, export_type, df_format=df_format, output=output)
 
 
+ccc = f'[blue]GROMACS quote:\n"{RANDOM_QUOTE[0]}" - {RANDOM_QUOTE[1]}[/blue]'
+
+
 @lahuta.command(
-    epilog=f'[blue]"{RANDOM_QUOTE[0]}" - {RANDOM_QUOTE[1]}[/blue]',
+    epilog=f'[blue]"{RANDOM_QUOTE[0]}" - {RANDOM_QUOTE[1]} (via GROMACS quotes)[/blue]',
 )
 def run(
     input: str = Option(..., "--input", "-i", help="Input file name for Luni"),
