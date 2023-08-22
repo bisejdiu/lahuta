@@ -120,7 +120,11 @@ class OBMol:
         """Identify all the bonds in the molecule."""
         if self.mol:
             self.mol.ConnectTheDots()
+            log_level = ob.cvar.obErrorLog.GetOutputLevel()
+            ob.cvar.obErrorLog.SetOutputLevel(0)
+
             self.mol.PerceiveBondOrders()
+            ob.cvar.obErrorLog.SetOutputLevel(log_level)
 
     def perceive_properties(self) -> MolType | None:
         """Identify properties of the molecule.
