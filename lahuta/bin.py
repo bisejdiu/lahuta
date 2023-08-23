@@ -5,7 +5,7 @@
 Lahuta is a modern computational tool designed to calculate atom-atom interactions with \
     high performance, scalability, and extensibility.
 
-Authors: Besian I. Sejdiu, PhD, Mag. Pharm. 
+Authors: Besian I. Sejdiu, PhD
 Center for Data Driven Discovery
 Department of Structural Biology
 Developed at and with ❤️ by St. Jude Children's Research Hospital
@@ -236,9 +236,6 @@ def export_results(
             export_to_screen(results, df_format, n_rows)
         else:
             export_to_file(results, export_type, df_format=df_format, output=output)
-
-
-ccc = f'[blue]GROMACS quote:\n"{RANDOM_QUOTE[0]}" - {RANDOM_QUOTE[1]}[/blue]'
 
 
 @lahuta.command(
