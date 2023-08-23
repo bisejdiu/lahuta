@@ -1,3 +1,14 @@
+# Lahuta
+[![Github-CI][github-ci]][github-link]
+[![Code style: black][black-badge]][black-link]
+[![Conda][conda-badge]][conda-link]
+[![Update Date][Anaconda-Update Badge]][update-link]
+[![Downloads][Anaconda-Server Badge]][down-link]
+
+
+<!-- [![Coverage Status][codecov-badge]][codecov-link] -->
+
+
 <p align="center">
   <a href="#"><img src="https://github.com/bisejdiu/lahuta/blob/dev/docs/usage/big-logo.svg" alt="Lahuta"></a>
 </p>
@@ -45,3 +56,15 @@ We highly recommend you go through the examples and usage guide in the documenta
 
 ## Reporting Issues
 If you encounter any issues, please report them in the [issues](https://github.com/bisejdiu/lahuta/issues) section of this project. 
+
+[github-ci]: https://github.com/bisejdiu/lahuta/actions/workflows/ci.yml/badge.svg?branch=dev
+[github-link]: https://github.com/bisejdiu/lahuta
+[conda-badge]: https://anaconda.org/bisejdiu/lahuta/badges/version.svg
+[conda-link]: https://anaconda.org/bisejdiu/lahuta
+<!-- [codecov-badge]: https://codecov.io/gh/bisejdiu/lahuta/branch/main/graph/badge.svg -->
+[black-badge]: https://img.shields.io/badge/code%20style-black-000000.svg
+[black-link]: https://github.com/ambv/black
+[Anaconda-Server Badge]: https://anaconda.org/bisejdiu/lahuta/badges/downloads.svg
+[down-link]: https://anaconda.org/bisejdiu/lahuta
+[Anaconda-Update Badge]: https://anaconda.org/bisejdiu/lahuta/badges/latest_release_relative_date.svg
+[update-link]: https://anaconda.org/bisejdiu/lahuta
