@@ -66,5 +66,5 @@ If you encounter any issues, please report them in the [issues](https://github.c
 [black-link]: https://github.com/ambv/black
 [Anaconda-Server Badge]: https://anaconda.org/bisejdiu/lahuta/badges/downloads.svg
 [down-link]: https://anaconda.org/bisejdiu/lahuta
-[Anaconda-Update Badge]: https://anaconda.org/bisejdiu/lahuta/badges/latest_release_relative_date.svg
+[Anaconda-Update Badge]: https://anaconda.org/bisejdiu/lahuta/badges/latest_release_date.svg
 [update-link]: https://anaconda.org/bisejdiu/lahuta
