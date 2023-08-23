@@ -2,7 +2,7 @@ import ast
 import re
 from functools import partial
 from pathlib import Path
-from typing import tuple
+from typing import Tuple
 
 from griffe.dataclasses import Object as GriffeObject
 from griffe.extensions import VisitorExtension
@@ -12,7 +12,7 @@ DOCS_PATH = Path(__file__).parent.parent
 slugifier = slugify(case='lower')
 
 
-def find_heading(content: str, slug: str, file_path: Path) -> tuple[str, int]:
+def find_heading(content: str, slug: str, file_path: Path) -> Tuple[str, int]:
     for m in re.finditer('^#+ (.+)', content, flags=re.M):
         heading = m.group(1)
         h_slug = slugifier(heading, '-')

@@ -1,7 +1,7 @@
 site_name: Lahuta
 site_description: Analysis of non-covalent interactions in biomolecular systems
 strict: false
-site_url: https://docs.lahuta.dev/
+site_url: https://bisejdiu.github.io/lahuta/
 
 theme:
   name: 'material'
