@@ -57,6 +57,10 @@ We highly recommend you go through the examples and usage guide in the documenta
 ## Reporting Issues
 If you encounter any issues, please report them in the [issues](https://github.com/bisejdiu/lahuta/issues) section of this project. 
 
+## Contributing
+We welcome contributions from anyone. For guidelines on how to contribute, please refer to our [CONTRIBUTING.md](CONTRIBUTING.md) document.
+
+
 [github-ci]: https://github.com/bisejdiu/lahuta/actions/workflows/ci.yml/badge.svg?branch=dev
 [github-link]: https://github.com/bisejdiu/lahuta
 [conda-badge]: https://anaconda.org/bisejdiu/lahuta/badges/version.svg
