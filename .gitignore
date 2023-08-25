@@ -8,6 +8,10 @@ cachedir/
 tests/data/*.pdb
 tests/data/*.cif
 
+# IDEs and editors
+.vscode
+
+
 # local notebooks
 notebooks/
 

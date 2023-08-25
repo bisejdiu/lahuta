@@ -345,6 +345,7 @@ class LahutaTrajectoryContacts:
                     ref_ns = NeighborPairs(mda, luni.to("mol"), luni.atom_types, pairs, distances)
 
                 ns = ref_ns.clone(pairs, distances)
+                ns._pairs, ns._distances = ns.sort_inputs(ns.pairs, ns.distances)  # noqa: SLF001
                 if lahuta_contacts is None:
                     self.results[frame_index] = ns
                 else:
