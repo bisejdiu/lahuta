@@ -4,8 +4,6 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.tests.base import find_project_root
-
 
 class VMDExporter:
     """Class for exporting VMD scripts.
@@ -16,12 +14,15 @@ class VMDExporter:
         tcl_code (str): VMD TCL code.
     """
 
-    TCL_TEMPLATE_PATH = find_project_root() / "lahuta" / "utils" / "vmd_script.tcl"
+    TCL_TEMPLATE_PATH = Path(__file__).parent.parent / "utils" / "vmd_script.tcl"
 
     def __init__(self, pairs: NDArray[np.int32]):
         self.pairs = pairs
-        with Path.open(self.TCL_TEMPLATE_PATH, "r") as file:
-            self.tcl_code = file.read()
+        try:
+            with Path.open(self.TCL_TEMPLATE_PATH, "r") as file:
+                self.tcl_code = file.read()
+        except FileNotFoundError:
+            print("COULD NOT LOAD VMD TCL TEMPLATE")
 
     def export(self, sphere_resolution: int = 20, save_to_file: bool = False) -> str | None:
         """Export VMD script.
