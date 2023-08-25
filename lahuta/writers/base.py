@@ -1,5 +1,4 @@
-"""
-This module defines the DataFrame abstract base class (ABC). 
+"""Defines the DataFrame abstract base class (ABC).
 
 The DataFrame class establishes an interface for creating pandas DataFrame objects from data 
 that is encapsulated in the class. The primary method that subclasses need to implement is 
@@ -8,7 +7,7 @@ the `execute` method, which should return a pandas DataFrame object.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any
 
 import pandas as pd
 from numpy.typing import NDArray
@@ -23,7 +22,7 @@ class DataFrame(ABC):
     to implement the `execute` method which should return a pandas DataFrame.
 
     Attributes:
-        data (Dict[str, NDArray[Any]]): A dictionary mapping column names (str) to
+        data (dict[str, NDArray[Any]]): A dictionary mapping column names (str) to
             N-dimensional array-like structures. It represents the data for the dataframe.
 
     Methods:
@@ -31,7 +30,7 @@ class DataFrame(ABC):
             the necessary dataframe operations and return a pandas DataFrame.
     """
 
-    def __init__(self, data: Dict[str, NDArray[Any]]):
+    def __init__(self, data: dict[str, NDArray[Any]]):
         self.data = data
 
     @abstractmethod

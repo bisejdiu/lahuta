@@ -1,16 +1,15 @@
-"""
-Module for assigning atom types to atoms in a molecule.
-
-This module contains the AtomTypeAssigner class that handles the assignment of atom types to a given molecule.
+"""Contains the AtomTypeAssigner class that handles the assignment of atom types to a given molecule.
 The class utilizes multiple methods such as SMARTS pattern matching and protein atom type assignment.
 It can be configured to use different methods for SMARTS pattern matching (sequential or parallel)
 and protein atom type assignment (vectorized or legacy).
 
 Classes:
+    ```
     AtomTypeAssigner: Class for assigning atom types to atoms in a molecule.
+    ```
 """
 
-from typing import Dict, Type
+from typing import Type
 
 import numpy as np
 from scipy.sparse import csc_array, dok_matrix
@@ -24,8 +23,7 @@ from lahuta.lahuta_types.openbabel import MolType
 
 
 class AtomTypeAssigner:
-    """
-    Class for assigning atom types to atoms in a molecule.
+    """Class for assigning atom types to atoms in a molecule.
 
     Handles the assignment of atom types to a given molecule.
     The class utilizes multiple methods such as SMARTS pattern matching and protein atom type assignment.
@@ -35,7 +33,6 @@ class AtomTypeAssigner:
     Attributes:
         mda (AtomGroupType): Atom group representing the molecular data.
         mol (MolType): The molecule to which atom types will be assigned.
-        mapping (NDArray[np.int64]): Array for atom mapping.
         parallel (bool, optional): Flag to use parallel SMARTS pattern matching. Default is False.
         legacy (bool, optional): Flag to use legacy protein atom type assignment. Default is False.
         protein_ag (AtomGroupType): Atom group containing only protein atoms.
@@ -60,7 +57,7 @@ class AtomTypeAssigner:
         self.parallel = parallel
         self.legacy = legacy
 
-        self.smarts_matcher_classes: Dict[bool, Type[SmartsMatcherBase]] = {
+        self.smarts_matcher_classes: dict[bool, Type[SmartsMatcherBase]] = {
             True: ParallelSmartsMatcher,
             False: SmartsMatcher,
         }
@@ -70,9 +67,8 @@ class AtomTypeAssigner:
             False: VectorizedProteinTypeAssigner,
         }
 
-    def _compute_smarts_types(self) -> dok_matrix:
-        """
-        Compute atom types based on SMARTS pattern matching.
+    def compute_smarts_types(self) -> dok_matrix:
+        """Compute atom types based on SMARTS pattern matching.
 
         Depending on the configuration, either the SmartsMatcher or the ParallelSmartsMatcher
         class is used for SMARTS pattern matching.
@@ -84,9 +80,8 @@ class AtomTypeAssigner:
         smarts_matcher = smarts_matcher_class(self.mda.universe.atoms.n_atoms)
         return smarts_matcher.compute(self.mol)
 
-    def _compute_water_types(self, atypes_array: dok_matrix) -> dok_matrix:
-        """
-        Assign hydrogen bond donor and acceptor types to water molecules.
+    def compute_water_types(self, atypes_array: dok_matrix) -> dok_matrix:
+        """Assign hydrogen bond donor and acceptor types to water molecules.
 
         This modifies the input atypes_array to set hydrogen bond donor and acceptor types
         for all water molecules in the atom group.
@@ -97,10 +92,9 @@ class AtomTypeAssigner:
         Returns:
             dok_matrix: A modified sparse matrix of atom types with assigned types for water molecules
         """
-
         water_ag = self.mda.select_atoms("resname SOL HOH TIP3 TIP4 WAT W and not name H*")
 
-        # TODO: vectorize this
+        # TODO @bisejdiu: vectorize this
         hbond_acceptor = self.atypes["hbond_acceptor".upper()]
         hbond_donor = self.atypes["hbond_donor".upper()]
         for atom in water_ag:
@@ -109,9 +103,8 @@ class AtomTypeAssigner:
 
         return atypes_array
 
-    def _compute_protein_types(self, atypes_array: dok_matrix) -> dok_matrix:
-        """
-        Assign protein atom types based on the chosen method.
+    def compute_protein_types(self, atypes_array: dok_matrix) -> dok_matrix:
+        """Assign protein atom types based on the chosen method.
 
         Depending on the configuration, either the VectorizedProteinTypeAssigner or the
         LegacyProteinTypeAssigner class is used for protein atom type assignment.
@@ -128,8 +121,7 @@ class AtomTypeAssigner:
         return protein_type_assigner.compute(atypes_array)
 
     def assign_atom_types(self) -> csc_array:
-        """
-        Assign atom types to atoms in the molecule using the configured methods.
+        """Assign atom types to atoms in the molecule using the configured methods.
 
         Atom types for the molecule are computed using the chosen methods for SMARTS pattern matching and
         protein atom type assignment.
@@ -139,11 +131,10 @@ class AtomTypeAssigner:
         """
         atom_types = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
-        # atypes_array = self._compute_smarts_types()
         if self.mda.n_atoms != self.protein_ag.n_atoms:
-            atom_types = self._compute_smarts_types()
+            atom_types = self.compute_smarts_types()
 
-        atom_types = self._compute_water_types(atom_types)
-        atom_types = self._compute_protein_types(atom_types)
+        atom_types = self.compute_water_types(atom_types)
+        atom_types = self.compute_protein_types(atom_types)
 
         return atom_types.tocsc()

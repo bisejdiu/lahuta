@@ -1,7 +1,4 @@
-"""
-Module: openbabel.py
-
-This module provides a typed interface and typed wrappers for OpenBabel, a chemical toolbox 
+"""Provides a typed interface and typed wrappers for OpenBabel, a chemical toolbox
 for chemical data. This module allows for static typing support when working with OpenBabel objects.
 
 The module is comprised of several classes that correspond to various aspects of OpenBabel's functionality. 
@@ -28,11 +25,10 @@ Example:
     ob_pattern.Init('c1ccccc1')
     ob_pattern.Match(mol)
     ob_pattern.GetMapList()
+
 """
 
-from typing import Any, Iterator, List, Protocol
-
-# pylint: disable=C0116, C0115, C0103
+from typing import Any, Iterator, Protocol
 
 
 class ObSmartPatternType(Protocol):
@@ -42,7 +38,7 @@ class ObSmartPatternType(Protocol):
     def Match(self, mol: Any) -> None:
         ...
 
-    def GetMapList(self) -> List[Any]:
+    def GetMapList(self) -> list[Any]:
         ...
 
 
@@ -58,7 +54,7 @@ class OBSmartsPatternWrapper:
         """Match the SMARTS pattern to a molecule."""
         return self.ob_smarts_pattern.Match(mol)
 
-    def GetMapList(self) -> List[Any]:
+    def GetMapList(self) -> list[Any]:
         """Get the map list of the SMARTS pattern."""
         return self.ob_smarts_pattern.GetMapList()
 
@@ -73,8 +69,8 @@ class MolType(Protocol):
     def GetAtom(self, index: int) -> Any:
         ...
 
-    # def GetId(self) -> Any:
-    #     ...
+    def GetId(self) -> int:
+        ...
 
     def GetAtomById(self, index: int) -> Any:
         ...
@@ -130,7 +126,8 @@ class MolTypeWrapper:
         self.mol = mol
 
     def GetId(self) -> int:
-        ...
+        """Get the molecule's ID."""
+        return self.mol.GetId()
 
 
 class MolAtomType(Protocol):
@@ -211,7 +208,7 @@ class ObRingType(Protocol):
         ...
 
     @property
-    def _path(self) -> List[int]:
+    def _path(self) -> list[int]:
         ...
 
 

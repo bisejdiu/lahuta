@@ -1,9 +1,6 @@
-"""
-Module: donor_pi.py
+"""Provides class-level API for computing donor-pi contacts, based on atom-plane interactions.
 
-This module provides class-level API for computing donor-pi contacts, based on atom-plane interactions. 
-
-Warning: 
+Warning:
     Due to re-computation, using the `DonorPi` class may result in slower performance. 
     We recommend using the `AtomPlaneContacts` class from the `atom_plane` module for 
     improved efficiency. 
@@ -17,8 +14,9 @@ Usage:
     ns = universe.compute_neighbors()
     donor_pi = DonorPi(ns)
     results = donor_pi.compute().results
+
 """
-from warnings import warn
+import warnings
 
 from lahuta.core.neighbors import NeighborPairs
 
@@ -27,8 +25,7 @@ from .base import ContactAnalysis
 
 
 class DonorPi(ContactAnalysis):
-    """
-    Handles the computation of donor pi contacts in a molecular system.
+    """Handle the computation of donor pi contacts in a molecular system.
 
     Donor pi contacts are interactions between electron donors and the π system of atoms in a molecule.
     This class, a derivative of the `ContactAnalysis` base class, overrides the `compute`
@@ -42,7 +39,8 @@ class DonorPi(ContactAnalysis):
     1. The interaction is between an aromatic ring and a hydrogen bond donor.
     2. The angle between the aromatic ring plane and the vector connecting the center of the aromatic ring
       and the hydrogen bond donor is within a predefined cutoff.
-    3. The distance between the hydrogen bond donor and the aromatic ring system does not exceed a specified distance cutoff.
+    3. The distance between the hydrogen bond donor and the aromatic ring system does not exceed \
+        a specified distance cutoff.
 
     Attributes:
         ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
@@ -50,7 +48,7 @@ class DonorPi(ContactAnalysis):
         distance (float): The maximum distance to consider for a donor pi contact. This value is retrieved
             from the 'donor_pi' entry of the global DEFAULT_CONTACT_DISTS dictionary.
         cache (bool): Determines whether computed results should be stored for later use to improve performance.
-            Set to `False` by default, meaning results will not be cached.
+            set to `False` by default, meaning results will not be cached.
 
     Methods:
         compute() -> NeighborPairs: Computes and returns the donor pi contacts, utilizing the `donor_pi` function.
@@ -61,15 +59,16 @@ class DonorPi(ContactAnalysis):
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
-        warn(
+        warnings.warn(
             "Using the `DonorPi` class may result in slower performance due to "
             "re-computation. Consider using the `AtomPlaneContacts` class from the "
             "`atom_plane` module for improved efficiency.",
             RuntimeWarning,
+            stacklevel=2,
         )
 
     def compute(self) -> NeighborPairs:
-        """Computes donor pi contacts based on the neighbor pairs.
+        """Compute donor pi contacts based on the neighbor pairs.
 
         Returns:
             NeighborPairs: A NeighborPairs object containing only donor pi contacts.

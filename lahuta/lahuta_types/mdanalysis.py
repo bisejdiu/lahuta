@@ -1,7 +1,4 @@
-"""
-Module: mdanalysis.py
-
-This module provides indirect typing support for MDAnalysis, a library for 
+"""Provides indirect typing support for MDAnalysis, a library for
 the analysis of molecular dynamics simulations. Despite the absence of inherent 
 typing support in MDAnalysis, the `mdanalysis.py` module uses Protocols to define 
 interfaces that allow type hinting for MDAnalysis objects.
@@ -24,15 +21,15 @@ Example:
     universe: UniverseType = ...
     atoms = universe.atoms
     compute_distance(atoms)
+
 """
 
-from typing import Any, Optional, Protocol, Union
+from typing import Any, Optional, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 
 
-# pylint: disable=missing-function-docstring
 class ResidueGroupType(Protocol):
     """A typing interface for MDAnalysis ResidueGroup objects."""
 
@@ -48,7 +45,6 @@ class ResidueGroupType(Protocol):
         ...
 
 
-# pylint: disable=missing-function-docstring
 class AtomGroupType(Protocol):
     """A typing interface for MDAnalysis AtomGroup objects."""
 
@@ -116,7 +112,11 @@ class AtomGroupType(Protocol):
         ...
 
     @property
-    def chainIDs(self) -> NDArray[np.str_]:  # pylint: disable=invalid-name
+    def resindices(self) -> NDArray[np.int_]:
+        ...
+
+    @property
+    def chainIDs(self) -> NDArray[np.str_]:
         ...
 
     @property
@@ -126,20 +126,27 @@ class AtomGroupType(Protocol):
     def copy(self) -> "AtomGroupType":
         ...
 
+    @property
+    def _u(self) -> "UniverseType":
+        ...
+
+    @_u.setter
+    def _u(self, universe: "UniverseType") -> None:
+        ...
+
     def __iter__(self) -> Any:
         ...
 
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "AtomGroupType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
         ...
 
 
-# pylint: disable=missing-function-docstring
 class UniverseType(Protocol):
     """A typing interface for MDAnalysis Universe objects."""
 
@@ -165,7 +172,10 @@ class UniverseType(Protocol):
     def copy(self) -> "UniverseType":
         ...
 
-    def add_TopologyAttr(self, name: str, attr: Any) -> None:  # pylint: disable=invalid-name
+    def add_TopologyAttr(self, name: str, attr: Any) -> None:
+        ...
+
+    def load_new(self, filenames: tuple[str, ...], **kwargs: Any) -> None:
         ...
 
     def __iter__(self) -> Any:
@@ -180,7 +190,7 @@ class TrajectoryType(Protocol):
     def n_frames(self) -> int:
         ...
 
-    def __getitem__(self, index: Union[int, slice, NDArray[np.int32]]) -> "TimeStepType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "TimeStepType":
         ...
 
     def __iter__(self) -> "TimeStepType":

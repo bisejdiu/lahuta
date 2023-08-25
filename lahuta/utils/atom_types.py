@@ -1,21 +1,11 @@
-"""
-Module: atom_types.py
-
-This module provides utility functions for assigning atom types to each atom in a molecule. 
+"""Provides utility functions for assigning atom types to each atom in a molecule.
 Atom types are defined in the `SmartsPatternRegistry`. 
 
-Functions:
-    assign_atom_types(mol, atomgroup): Assigns atom types to each atom in the molecule.
-
-    vec_assign_atom_types(mol, atomgroup, ta): Vectorized function for assigning atom types 
-                                                to each atom in the molecule. 
-
-WARNING: 
+Warning:
     As of the current version of the library, these functions are not used in the main code. 
     They are kept for comparison and testing with earlier versions of the library. 
-"""
 
-from typing import Dict
+"""
 
 import numpy as np
 from numpy.typing import NDArray
@@ -28,9 +18,14 @@ from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsP
 
 
 def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8]:
-    """
-    Assign atom types to each atom in the molecule.
-    Atom types are defined in `SmartsPatternRegistry`
+    """Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`.
+
+    Args:
+        mol (MolType): The molecule for which to assign atom types.
+        atomgroup (AtomGroupType): The atomgroup for which to assign atom types.
+
+    Returns:
+        NDArray[np.int8]: An array of shape (n_atoms, n_atom_types) where each element is either 0 or 1.
     """
     atypes = AVAILABLE_ATOM_TYPES
 
@@ -72,13 +67,19 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
 def vec_assign_atom_types(
     mol: MolType,
     atomgroup: AtomGroupType,
-    ta: Dict[str, NDArray[np.str_]],
+    ta: dict[str, NDArray[np.str_]],
 ) -> NDArray[np.int8]:
-    """
-    Assign atom types to each atom in the molecule.
-    Atom types are defined in `SmartsPatternRegistry`
-    """
+    """Assign atom types to each atom in the molecule. Atom types are defined in `SmartsPatternRegistry`.
 
+    Args:
+        mol (MolType): The molecule for which to assign atom types.
+        atomgroup (AtomGroupType): The atomgroup for which to assign atom types.
+        ta (dict[str, NDArray[np.str_]]): A dictionary containing the atom names and residue names.
+
+    Returns:
+        NDArray[np.int8]: An array of shape (n_atoms, n_atom_types) where each element is either 0 or 1.
+
+    """
     atypes = {x: i for i, x in enumerate(list(PROT_ATOM_TYPES.keys()))}
 
     atypes_array = np.zeros((mol.NumAtoms(), len(atypes)), dtype=np.int8)
@@ -114,17 +115,19 @@ def vec_assign_atom_types(
     atom_name_str = atom_name[indices].astype(str)
 
     # Generate atom_id array by concatenating resname and atom_name arrays
-    atom_ids: NDArray[np.int32] = np.core.defchararray.add(  # type: ignore
-        np.core.defchararray.strip(resname_str),  # type: ignore
-        np.core.defchararray.strip(atom_name_str),  # type: ignore
+    atom_ids: NDArray[np.str_] = np.core.defchararray.add(
+        np.core.defchararray.strip(resname_str),
+        np.core.defchararray.strip(atom_name_str),
     )
 
     for idx, atom in enumerate(ag):
-        atom_id: int = atom_ids[idx]  # type: ignore
-        atom_types = ID_TO_TYPES.get(atom_id, None)  # type: ignore
+        atom_id = atom_ids[idx]
+        atom_types = ID_TO_TYPES.get(atom_id, None)
 
-        if atom_types is not None:
-            for atom_type in atom_types:
-                atypes_array[atom.index, atypes[atom_type]] = 1  # type: ignore
+        if atom_types is None:
+            continue
+
+        for atom_type_x in atom_types:
+            atypes_array[atom.index, atypes[atom_type_x]] = 1
 
     return atypes_array

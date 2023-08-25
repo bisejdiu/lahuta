@@ -1,5 +1,4 @@
-"""
-This module defines two concrete classes, CompactDataFrame and ExpandedDataFrame, 
+"""Defines two concrete classes, CompactDataFrame and ExpandedDataFrame,
 that inherit from the abstract base class DataFrame.
 
 The CompactDataFrame and ExpandedDataFrame classes provide different implementations 
@@ -24,7 +23,7 @@ Example usage:
 """
 
 
-from typing import Dict, Type
+from typing import Type
 
 import pandas as pd
 
@@ -44,7 +43,7 @@ class CompactDataFrame(DataFrame):
     """
 
     def execute(self) -> pd.DataFrame:
-        """Creates the dataframe in a compact format.
+        """Create the dataframe in a compact format.
 
         The method compacts the data by joining the related columns for each partner into a single
         column and dropping unnecessary columns. The resultant dataframe includes "partner1",
@@ -53,17 +52,17 @@ class CompactDataFrame(DataFrame):
         Returns:
             pd.DataFrame: A pandas DataFrame in a compact format.
         """
-        df = pd.DataFrame(self.data)
-        df["partner1"] = df.filter(like="partner1_").apply(  # type: ignore
+        contacts = pd.DataFrame(self.data)
+        contacts["partner1"] = contacts.filter(like="partner1_").apply(
             lambda x: "-".join(x.dropna().astype(str)), axis=1
         )
-        df["partner2"] = df.filter(like="partner2_").apply(  # type: ignore
+        contacts["partner2"] = contacts.filter(like="partner2_").apply(
             lambda x: "-".join(x.dropna().astype(str)), axis=1
         )
-        df = df.drop(df.filter(like="partner1_").columns, axis=1)  # type: ignore
-        df = df.drop(df.filter(like="partner2_").columns, axis=1)  # type: ignore
+        contacts = contacts.drop(contacts.filter(like="partner1_").columns, axis=1)
+        contacts = contacts.drop(contacts.filter(like="partner2_").columns, axis=1)
 
-        return df[["partner1", "partner2", "distances"]]
+        return contacts[["partner1", "partner2", "distances"]]
 
 
 class ExpandedDataFrame(DataFrame):
@@ -79,7 +78,7 @@ class ExpandedDataFrame(DataFrame):
     """
 
     def execute(self) -> pd.DataFrame:
-        """Creates the dataframe in an expanded format.
+        """Create the dataframe in an expanded format.
 
         The method simply converts the data into a pandas DataFrame without any manipulation.
 
@@ -89,7 +88,7 @@ class ExpandedDataFrame(DataFrame):
         return pd.DataFrame(self.data)
 
 
-FACTORY_DICT: Dict[str, Type[DataFrame]] = {
+FACTORY_DICT: dict[str, Type[DataFrame]] = {
     "compact": CompactDataFrame,
     "expanded": ExpandedDataFrame,
 }

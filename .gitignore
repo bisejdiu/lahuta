@@ -4,6 +4,14 @@ cachedir/
 *.py[cod]
 *$py.class
 
+# No easily downloadable PDB/CIF files in the testing directory
+tests/data/*.pdb
+tests/data/*.cif
+
+# IDEs and editors
+.vscode
+
+
 # local notebooks
 notebooks/
 
@@ -123,6 +131,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/docs/changelog.md
 
 # mypy
 .mypy_cache/

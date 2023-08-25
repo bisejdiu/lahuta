@@ -1,31 +1,44 @@
-"""
-# Module: config._atom_type_strings.py
-
-This module provides string representations of various atom types and categories.
+"""Provide string representations of various atom types and categories.
 
 The various types of atoms represented here include metals, standard amino acids, 
 different types of bond acceptors and donors, ionisable atoms, 
 hydrophobic atoms, carbonyl atoms, and aromatic atoms.
 
+Variables:
+    ```
+    _METALS_STR (str): A string of metal atom types.
+    _STANDARD_AA_STR (str): A string of standard amino acid atom types.
+    _HA_ATOM_TYPES (str): A string of hydrogen bond acceptor atom types.
+    _HD_ATOM_TYPES (str): A string of hydrogen bond donor atom types.
+    _XA_ATOM_TYPES (str): A string of halogen bond acceptor atom types.
+    _XD_ATOM_TYPES (str): A string of halogen bond donor atom types.
+    _WHA_ATOM_TYPES (str): A string of weak hydrogen bond acceptor atom types.
+    _WHD_ATOM_TYPES (str): A string of weak hydrogen bond donor atom types.
+    _POS_IONISABLE_ATOM_TYPES (str): A string of positive ionisable atom types.
+    _NEG_IONISABLE_ATOM_TYPES (str): A string of negative ionisable atom types.
+    _HYDROPHOBE_ATOM_TYPES (str): A string of hydrophobic atom types.
+    _CARBONYL_OXYGEN_ATOM_TYPES (str): A string of carbonyl oxygen atom types.
+    _CARBONYL_CARBON_ATOM_TYPES (str): A string of carbonyl carbon atom types.
+    _AROMATIC_ATOM_TYPES (str): A string of aromatic atom types.
+    RESIDUE_SYNONYMS (dict): A dictionary of residue names and their synonyms.
+    STANDARD_AMINO_ACIDS (set): A set of standard amino acids.
+
+    ```
+
 The atom types are initially defined as comma-separated strings. 
 These strings are then processed into sets for easy and efficient access 
 throughout the rest of the library.
 
-This file is licensed under [GNU General Public License](../path/to/license/file). 
-For more details, see also the [GNU General Public License webpage](http://www.gnu.org/licenses/).
 """
-from typing import Dict, List, Set
 
 from MDAnalysis.core.selection import ProteinSelection
 
-# fmt: off
 _METALS_STR = (
     "Li,Be,Na,Mg,Aa,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,"
     "Tc,Ru,Rh,Pd,Ag,Cd,In,Sn,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,"
     "Lu,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf"
-)
+).upper()
 
-# _STANDARD_AA_STR = "ALA,CYS,ASP,GLU,PHE,GLY,HIS,HSE,HSD,ILE,LYS,LEU,MET,ASN,PRO,GLN,ARG,SER,THR,VAL,TRP,TYR"
 
 _HA_ATOM_TYPES = (
     "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO,LYSO,METO,PHEO,PROO,"
@@ -82,13 +95,11 @@ _HYDROPHOBE_ATOM_TYPES = (
 )
 
 _CARBONYL_OXYGEN_ATOM_TYPES = (
-    "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO," 
-    "LYSO,METO,PHEO,PROO,SERO,THRO,TRPO,TYRO,VALO"
+    "ALAO,ARGO,ASNO,ASPO,CYSO,GLNO,GLUO,GLYO,HISO,ILEO,LEUO," "LYSO,METO,PHEO,PROO,SERO,THRO,TRPO,TYRO,VALO"
 )
 
 _CARBONYL_CARBON_ATOM_TYPES = (
-    "ALAC,ARGC,ASNC,ASPC,CYSC,GLNC,GLUC,GLYC,HISC,ILEC,LEUC,LYSC," 
-    "METC,PHEC,PROC,SERC,THRC,TRPC,TYRC,VALC"
+    "ALAC,ARGC,ASNC,ASPC,CYSC,GLNC,GLUC,GLYC,HISC,ILEC,LEUC,LYSC," "METC,PHEC,PROC,SERC,THRC,TRPC,TYRC,VALC"
 )
 
 _AROMATIC_ATOM_TYPES = (
@@ -99,8 +110,21 @@ _AROMATIC_ATOM_TYPES = (
 
 RESIDUE_SYNONYMS = {
     "HIS": [
-        "HIS", "HSD", "HSE", "HSP", "HIE", "HIP", "HID", "HIS1", 
-        "HIS2", "HISA", "HISB", "HISD", "HISE", "HISH", "HYP"
+        "HIS",
+        "HSD",
+        "HSE",
+        "HSP",
+        "HIE",
+        "HIP",
+        "HID",
+        "HIS1",
+        "HIS2",
+        "HISA",
+        "HISB",
+        "HISD",
+        "HISE",
+        "HISH",
+        "HYP",
     ],
     "PHE": ["PHE"],
     "TYR": ["TYR"],
@@ -123,18 +147,40 @@ RESIDUE_SYNONYMS = {
     "VAL": ["VAL"],
 }
 
-def parse_atom_types_string(_atom_types_string: str) -> Dict[str, List[str]]:
-    """
-    Parse a string of atom types into a dictionary of residue names and atom parts.
+BASE_AA_CONVERSION: dict[str, str] = {
+    "ALA": "A",
+    "ARG": "R",
+    "ASN": "N",
+    "ASP": "D",
+    "CYS": "C",
+    "GLN": "Q",
+    "GLU": "E",
+    "GLY": "G",
+    "HIS": "H",
+    "ILE": "I",
+    "LEU": "L",
+    "LYS": "K",
+    "MET": "M",
+    "PHE": "F",
+    "PRO": "P",
+    "SER": "S",
+    "THR": "T",
+    "TRP": "W",
+    "TYR": "Y",
+    "VAL": "V",
+}
+
+
+def parse_atom_types_string(_atom_types_string: str) -> dict[str, list[str]]:
+    """Parse a string of atom types into a dictionary of residue names and atom parts.
 
     Args:
         _atom_types_string (str): A string of atom types.
 
     Returns:
-        Dict[str, List[str]]: A dictionary of residue names and atom parts.
+        dict[str, list[str]]: A dictionary of residue names and atom parts.
     """
-
-    atom_parts: Dict[str, List[str]] = {}
+    atom_parts: dict[str, list[str]] = {}
     for atom_type in _atom_types_string.split(","):
         residue_name = atom_type[:3]
         atom_part = atom_type[3:]
@@ -145,20 +191,19 @@ def parse_atom_types_string(_atom_types_string: str) -> Dict[str, List[str]]:
 
     return atom_parts
 
-def parse_atom_types(_atom_types_string: str) -> Set[str]:
-    """
-    Parse a string of atom types into a set of atom types.
+
+def parse_atom_types(_atom_types_string: str) -> set[str]:
+    """Parse a string of atom types into a set of atom types.
 
     Args:
         _atom_types_string (str): A string of atom types.
 
     Returns:
-        Set[str]: A set of atom types.
+        set[str]: A set of atom types.
     """
-
     res_atoms = parse_atom_types_string(_atom_types_string)
 
-    atom_types: Set[str] = set()
+    atom_types: set[str] = set()
     for residue, synonyms in RESIDUE_SYNONYMS.items():
         for synonym in synonyms:
             atom_parts = res_atoms.get(residue)
@@ -169,22 +214,26 @@ def parse_atom_types(_atom_types_string: str) -> Set[str]:
 
     return atom_types
 
-# FIXME: update with the residue list provided by MDAnalysis
+
 METALS = set(_METALS_STR.split(","))
-# STANDARD_AMINO_ACIDS = set(_STANDARD_AA_STR.split(","))
 STANDARD_AMINO_ACIDS = ProteinSelection.prot_res
-HBOND_ACCEPTORS = parse_atom_types(_HA_ATOM_TYPES) # set(_HA_ATOM_TYPES.split(","))
-HBOND_DONORS = parse_atom_types(_HD_ATOM_TYPES) #set(_HD_ATOM_TYPES.split(","))
-XBOND_ACCEPTORS = parse_atom_types(_XA_ATOM_TYPES) #set(_XA_ATOM_TYPES.split(","))
-XBOND_DONORS = set("") #set("")
-WEAK_HBOND_ACCEPTORS = parse_atom_types(_WHA_ATOM_TYPES) #set(_WHA_ATOM_TYPES.split(","))
-WEAK_HBOND_DONORS = parse_atom_types(_WHD_ATOM_TYPES) #set(_WHD_ATOM_TYPES.split(","))
-POS_IONISABLE = parse_atom_types(_POS_IONISABLE_ATOM_TYPES) #set(_POS_IONISABLE_ATOM_TYPES.split(","))
-NEG_IONISABLE = parse_atom_types(_NEG_IONISABLE_ATOM_TYPES) #set(_NEG_IONISABLE_ATOM_TYPES.split(","))
-HYDROPHOBES = parse_atom_types(_HYDROPHOBE_ATOM_TYPES) #set(_HYDROPHOBE_ATOM_TYPES.split(","))
-CARBONYL_OXYGENS = parse_atom_types(_CARBONYL_OXYGEN_ATOM_TYPES) #set(_CARBONYL_OXYGEN_ATOM_TYPES.split(","))
-CARBONYL_CARBONS = parse_atom_types(_CARBONYL_CARBON_ATOM_TYPES) #set(_CARBONYL_CARBON_ATOM_TYPES.split(","))
-AROMATIC = parse_atom_types(_AROMATIC_ATOM_TYPES) #set(_AROMATIC_ATOM_TYPES.split(","))
+"""
+module: `lahuta.config._atom_type_strings.py`
+
+Type: `set[str]`: A set of standard amino acids. Taken from `MDAnalysis.core.selection.ProteinSelection`.
+"""
+HBOND_ACCEPTORS = parse_atom_types(_HA_ATOM_TYPES)  # set(_HA_ATOM_TYPES.split(","))
+HBOND_DONORS = parse_atom_types(_HD_ATOM_TYPES)  # set(_HD_ATOM_TYPES.split(","))
+XBOND_ACCEPTORS = parse_atom_types(_XA_ATOM_TYPES)  # set(_XA_ATOM_TYPES.split(","))
+XBOND_DONORS = set("")  # set("")
+WEAK_HBOND_ACCEPTORS = parse_atom_types(_WHA_ATOM_TYPES)  # set(_WHA_ATOM_TYPES.split(","))
+WEAK_HBOND_DONORS = parse_atom_types(_WHD_ATOM_TYPES)  # set(_WHD_ATOM_TYPES.split(","))
+POS_IONISABLE = parse_atom_types(_POS_IONISABLE_ATOM_TYPES)  # set(_POS_IONISABLE_ATOM_TYPES.split(","))
+NEG_IONISABLE = parse_atom_types(_NEG_IONISABLE_ATOM_TYPES)  # set(_NEG_IONISABLE_ATOM_TYPES.split(","))
+HYDROPHOBES = parse_atom_types(_HYDROPHOBE_ATOM_TYPES)  # set(_HYDROPHOBE_ATOM_TYPES.split(","))
+CARBONYL_OXYGENS = parse_atom_types(_CARBONYL_OXYGEN_ATOM_TYPES)  # set(_CARBONYL_OXYGEN_ATOM_TYPES.split(","))
+CARBONYL_CARBONS = parse_atom_types(_CARBONYL_CARBON_ATOM_TYPES)  # set(_CARBONYL_CARBON_ATOM_TYPES.split(","))
+AROMATIC = parse_atom_types(_AROMATIC_ATOM_TYPES)  # set(_AROMATIC_ATOM_TYPES.split(","))
 
 # NOTES
 # "ALAO",    # all the carbonyl Oxygens in the main chain
@@ -196,14 +245,11 @@ AROMATIC = parse_atom_types(_AROMATIC_ATOM_TYPES) #set(_AROMATIC_ATOM_TYPES.spli
 # "HISCE1",  # for the ambiguity of the position of the N/C
 # "HISNE2",  # for the ambiguity of the position of the N/C
 # "HISCD2",  # for the ambiguity of the position of the N/C
-# "METSD",   # http://pubs.acs.org/doi/abs/10.1021/jz300207k and pubid 19089987
-# "CYSSG",   # pubid 19089987, also when they from di-sulfide (Cys-Cys, fig 8 paper)
 # "SEROG",   # isostar plots
 # "THROG1",  # isostar plots
 # "TYROH",   # isostar plots
 # "ALAN",    # all the amide nitrogens in the main chain except proline
 # "ASNOD1",  # for the ambiguity of the position of the N and O
-# "CYSSG",   # http://www.ncbi.nlm.nih.gov/pubmed/19089987
 # "ALACA",   # all the c-alphas
 # "ALACB",   # cb and further down
 # "CYSCB",   # sulfur in Cys has an Hydrogen, it is polarised

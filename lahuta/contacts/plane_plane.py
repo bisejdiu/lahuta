@@ -1,7 +1,4 @@
-"""
-Module: plane_plane.py
-
-This module provides both class and function-level APIs to compute plane-plane contacts 
+"""Provides both class and function-level APIs to compute plane-plane contacts
 between two ring-containing residues or ligands. Each interaction is labeled according 
 to the relative orientations of the planes.
 
@@ -35,13 +32,13 @@ Functions:
     plane_plane_neighbors: Function to compute plane-plane contacts.
 
 Usage:
-    universe = Universe(...)
-    ns = universe.compute_neighbors()
+    luni = Luni(...)
+    ns = luni.compute_neighbors()
     plane_plane = PlanePlaneContacts(ns)
-    result = plane_plane.compute().results
+    result = plane_plane.results
 """
 
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -58,13 +55,13 @@ class _PlanePlaneContacts:
         self.ns = ns
         self.rings = enumerate_rings(self.ns.mol)
         self.centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
-        self._annotations: Dict[str, NDArray[Any]] = {}
+        self._annotations: dict[str, NDArray[Any]] = {}
 
         self._pair_ids: NDArray[np.int32] = np.array([])
         self.distances: NDArray[np.float32] = np.array([])
 
     def compute(self) -> None:
-        """Computes plane-plane contacts based on the neighbor pairs and the set centroid distance."""
+        """Compute plane-plane contacts based on the neighbor pairs and the set centroid distance."""
         centers = self.rings.centers
         normals = self.rings.normals
 
@@ -86,7 +83,8 @@ class _PlanePlaneContacts:
         int_types = assign_pp_contact_type(normal_angles, theta_angles)
 
         # check for int_type is not None
-        mask = int_types != "None"  # FIXME: Shouldn't this be None, without quotes?
+        # TODO @bisejdiu: Shouldn't this be None, without quotes?
+        mask = int_types != "None"
 
         self._pair_ids = pair_ids[mask]
         self.distances = pair_dists[mask]
@@ -106,21 +104,21 @@ class _PlanePlaneContacts:
         self._annotations["ring2_atoms"] = ring_atoms[:, 1]
         self._annotations["contact_labels"] = int_types
 
-    def _get_pairs_distances(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def _get_pairs_distances(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
         ring_atom_indices = self.rings.first_atom_idx[self._pair_ids]
         first_ring_indices, second_ring_indices = (
             ring_atom_indices[:, 0],
             ring_atom_indices[:, 1],
         )
 
-        pairs = np.array(list(zip(first_ring_indices, second_ring_indices)))
+        pairs = np.array(list(zip(first_ring_indices, second_ring_indices, strict=True)))
 
         return pairs, self.distances
 
-    def _sort_inputs(self) -> Tuple[NDArray[np.int32], NDArray[np.float32]]:
+    def _sort_inputs(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
         pairs, distances = self._get_pairs_distances()
         indices_arr = sorting_indices(pairs)
-        indices: List[int] = indices_arr.tolist()
+        indices: list[int] = indices_arr.tolist()
         pairs, distances = NeighborPairs.sort_inputs(pairs, self.distances)
 
         self._pair_ids = self._pair_ids[indices]
@@ -130,60 +128,66 @@ class _PlanePlaneContacts:
         return pairs, distances
 
     def get_neighbors(self) -> NeighborPairs:
-        """Returns the plane-plane contacts as a NeighborPairs object."""
+        """Return the plane-plane contacts as a NeighborPairs object."""
         pairs, distances = self._sort_inputs()
         ns = self.ns.clone(pairs, distances)
         ns.annotations = self._annotations
         return ns
 
     def _gen_combinations(self, use_itertools: bool = False) -> NDArray[np.int32]:
-        """Generate all combinations of pairs of indices in the form (i, j) where i < j"""
+        """Generate all combinations of pairs of indices in the form (i, j) where i < j."""
         if use_itertools:
-            # pylint: disable=import-outside-toplevel
-            from itertools import combinations  # type: ignore
+            from itertools import combinations
 
             return np.array(list(combinations(range(len(self.rings)), 2)))
-        else:
-            # scales better with the number of rings
-            return np.column_stack(np.triu_indices(len(self.rings), k=1))
+
+        # scales better with the number of rings
+        return np.column_stack(np.triu_indices(len(self.rings), k=1))
 
 
 def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
-    """
-    Handles the computation of plane-plane contacts in a molecular system.
+    """Handle the computation of plane-plane contacts in a molecular system.
 
     This class provides both class and function-level APIs to compute plane-plane contacts
     between two ring-containing residues or ligands. Each interaction is labeled according
     to the relative orientations of the planes.
 
-    Types of Plane-Plane Contact Orientations:
-        FF (Face-Face): Represents two planes interacting in a face-to-face orientation, where
+    !!! tip "Definitions"
+        **FF** _(Face-Face)_: Represents two planes interacting in a face-to-face orientation, where
             their flat surfaces are parallel and directly aligned. This typically leads to
             maximum pi-pi stacking.
-        OF (Oblique Face): Denotes a skewed face-to-face orientation. One plane is tilted
+
+        **OF** _(Oblique Face)_: Denotes a skewed face-to-face orientation. One plane is tilted
             relative to the other, resulting in partial overlap of their surfaces.
-        EE (Edge-Edge): Describes an interaction where the edges of two planes align parallel,
+
+        **EE** _(Edge-Edge)_: Describes an interaction where the edges of two planes align parallel,
             but their surfaces do not overlap, limiting pi-pi interactions.
-        FT (Face-T-stack): Indicates an interaction where the face of one plane (the base of the 'T')
+
+        **FT** _(Face-T-stack)_: Indicates an interaction where the face of one plane (the base of the 'T')
             aligns with the edge of another plane (the stem of the 'T'). The second plane is
             oriented in a T-stacked manner.
-        OT (Oblique-T-stack): Represents an interaction where an obliquely oriented face of one
+
+        **OT** _(Oblique-T-stack)_: Represents an interaction where an obliquely oriented face of one
             plane (the skewed base of the 'T') aligns with the edge of another plane (the stem of
             the 'T'). The second plane is in a T-stacked orientation.
-        ET (Edge-T-stack): Describes an interaction where the edge of one plane aligns with the
+
+        **ET** _(Edge-T-stack)_: Describes an interaction where the edge of one plane aligns with the
             edge of another plane. Both are part of the stem in a T-stacked orientation.
-        FE (Face-Edge): Depicts an interaction where the flat surface (face) of one plane aligns
+
+        **FE** _(Face-Edge)_: Depicts an interaction where the flat surface (face) of one plane aligns
             with the edge of another plane, leading to partial pi-pi interactions.
-        OE (Oblique-Edge): Represents an interaction where an obliquely oriented face of one plane
+
+        **OE** _(Oblique-Edge)_: Represents an interaction where an obliquely oriented face of one plane
             aligns with the edge of another plane, leading to partial and skewed pi-pi interactions.
-        EF (Edge-Face): Indicates an interaction where the edge of one plane aligns with the face of
+
+        **EF** _(Edge-Face)_: Indicates an interaction where the edge of one plane aligns with the face of
             another plane, creating limited pi-pi interactions.
 
     Args:
-        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
 
     Returns:
-        NeighborPairs: The object containing the pairs of atoms that are considered as plane-plane contacts.
+        NeighborPairs: A NeighborPairs object containing only plane-plane contacts.
 
     """
     plane_plane = _PlanePlaneContacts(ns)
@@ -192,55 +196,59 @@ def plane_plane_neighbors(ns: NeighborPairs) -> NeighborPairs:
 
 
 class PlanePlaneContacts:
-    """
-    Handles the computation of plane-plane contacts in a molecular system.
+    """Handle the computation of plane-plane contacts in a molecular system.
 
     This class provides both class and function-level APIs to compute plane-plane contacts
     between two ring-containing residues or ligands. Each interaction is labeled according
     to the relative orientations of the planes.
 
-    Types of Plane-Plane Contact Orientations:
-        FF (Face-Face): Represents two planes interacting in a face-to-face orientation, where
+    !!! tip "Definitions"
+        **FF** _(Face-Face)_: Represents two planes interacting in a face-to-face orientation, where
             their flat surfaces are parallel and directly aligned. This typically leads to
             maximum pi-pi stacking.
-        OF (Oblique Face): Denotes a skewed face-to-face orientation. One plane is tilted
+
+        **OF** _(Oblique Face)_: Denotes a skewed face-to-face orientation. One plane is tilted
             relative to the other, resulting in partial overlap of their surfaces.
-        EE (Edge-Edge): Describes an interaction where the edges of two planes align parallel,
+
+        **EE** _(Edge-Edge)_: Describes an interaction where the edges of two planes align parallel,
             but their surfaces do not overlap, limiting pi-pi interactions.
-        FT (Face-T-stack): Indicates an interaction where the face of one plane (the base of the 'T')
+
+        **FT** _(Face-T-stack)_: Indicates an interaction where the face of one plane (the base of the 'T')
             aligns with the edge of another plane (the stem of the 'T'). The second plane is
             oriented in a T-stacked manner.
-        OT (Oblique-T-stack): Represents an interaction where an obliquely oriented face of one
+
+        **OT** _(Oblique-T-stack)_: Represents an interaction where an obliquely oriented face of one
             plane (the skewed base of the 'T') aligns with the edge of another plane (the stem of
             the 'T'). The second plane is in a T-stacked orientation.
-        ET (Edge-T-stack): Describes an interaction where the edge of one plane aligns with the
+
+        **ET** _(Edge-T-stack)_: Describes an interaction where the edge of one plane aligns with the
             edge of another plane. Both are part of the stem in a T-stacked orientation.
-        FE (Face-Edge): Depicts an interaction where the flat surface (face) of one plane aligns
+
+        **FE** _(Face-Edge)_: Depicts an interaction where the flat surface (face) of one plane aligns
             with the edge of another plane, leading to partial pi-pi interactions.
-        OE (Oblique-Edge): Represents an interaction where an obliquely oriented face of one plane
+
+        **OE** _(Oblique-Edge)_: Represents an interaction where an obliquely oriented face of one plane
             aligns with the edge of another plane, leading to partial and skewed pi-pi interactions.
-        EF (Edge-Face): Indicates an interaction where the edge of one plane aligns with the face of
+
+        **EF** _(Edge-Face)_: Indicates an interaction where the edge of one plane aligns with the face of
             another plane, creating limited pi-pi interactions.
 
-    Attributes
-    ----------
-    ns : NeighborPairs
-        The object encapsulating pairs of neighboring atoms in the system.
-        This object is usually generated by calling the `compute_neighbors` method
-        on the Lahuta Universe object.
-    centroid_distance : float
-        The maximum distance to consider for the centroid of a plane-plane contact.
-        This value is retrieved from the 'centroid_distance' entry of the 'aromatic'
-        section in the global CONTACTS dictionary.
-    results : NeighborPairs
-        The object containing the pairs of atoms that are considered as plane-plane contacts
-        based on the set centroid_distance criteria. It is computed when the class is instantiated.
+    Args:
+        ns (NeighborPairs): A NeighborPairs object containing the atom neighbor relationships in the system.
 
-    Methods
-    -------
-    compute() -> NeighborPairs:
-        Computes and returns the plane-plane contacts, utilizing the `_PlanePlaneContacts` class and
-        setting its `centroid_distance` to match the class's `centroid_distance`.
+    Attributes:
+        centroid_distance (float): The maximum distance to consider for the centroid of a plane-plane contact.
+            See `lahuta.config.defaults.CONTACTS` for default values.
+        results (NeighborPairs): NeighborPairs containing the pairs of atoms found to be forming plane-plane contacts.
+
+    ??? example "Example"
+        ``` py
+        luni = Luni(...)
+        ns = luni.compute_neighbors()
+
+        plane_plane = PlanePlaneContacts(ns)
+        result = plane_plane.results
+        ```
     """
 
     centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
@@ -250,7 +258,7 @@ class PlanePlaneContacts:
         self.results = self.compute()
 
     def compute(self) -> NeighborPairs:
-        """Computes plane-plane contacts based on the neighbor pairs and the set centroid distance.
+        """Compute plane-plane contacts based on the neighbor pairs and the set centroid distance.
 
         This method initializes a `_PlanePlaneContacts` object with the neighbor pairs object (`ns`),
         sets its `centroid_distance` to match the class's `centroid_distance`, calls its `compute`
@@ -270,7 +278,7 @@ class PlanePlaneContacts:
 
 
 def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.float32]) -> NDArray[np.str_]:
-    """Assigns a contact type based on the normal angle and theta angle.
+    """Assign a contact type based on the normal angle and theta angle.
 
     This function assigns a contact type based on the normal angle and theta angle between two planes.
     The normal angle is the angle between the normals of the two planes, while the theta angle is the
@@ -285,7 +293,7 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
         NDArray[np.str_]: An array of strings representing the contact type for each pair of planes.
 
     """
-    types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"])
+    types = np.array(["FF", "OF", "EE", "FT", "OT", "ET", "FE", "OE", "EF"], dtype=np.str_)
     ranges = np.array(
         [
             (0, 30, 0, 30),
@@ -297,7 +305,8 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
             (60, 90, 0, 30),
             (60, 90, 30, 60),
             (60, 90, 60, 90),
-        ]
+        ],
+        dtype=np.int32,
     )
 
     conditions = np.logical_and(
@@ -305,5 +314,5 @@ def assign_pp_contact_type(normal_angle: NDArray[np.float32], theta: NDArray[np.
         np.logical_and(ranges[:, 2] <= theta[:, None], theta[:, None] <= ranges[:, 3]),
     )
 
-    indices = np.argmax(conditions, axis=1)
-    return types[indices]  # type: ignore
+    indices: NDArray[np.int32] = np.argmax(conditions, axis=1)
+    return types[indices]

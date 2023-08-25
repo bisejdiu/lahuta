@@ -1,11 +1,11 @@
 import time
 
+from lahuta import Luni
 from lahuta.contacts import F
-from lahuta.core.universe import Universe
 
 if __name__ == "__main__":
     # Load the universe
-    u = Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
+    u = Luni("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
     start = time.time()
     n = u.compute_neighbors(res_dif=2)
     print("Finished computing neighbors", n.pairs.shape)
