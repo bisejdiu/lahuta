@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 from numpy.typing import NDArray
 
+
 class VMDExporter:
     """Class for exporting VMD scripts.
 
