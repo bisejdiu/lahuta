@@ -24,6 +24,7 @@ from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.viz.contact_matrix import ContactMap
+from lahuta.writers.exporters import VMDExporter
 from lahuta.writers.frame_writer import DataFrameWriter
 
 from ._hbond_handler import HBondHandler
@@ -692,6 +693,19 @@ class NeighborPairs:
             A pandas DataFrame representing the NeighborPairs object.
         """
         return DataFrameWriter(self, df_format, annotations).create()
+
+    def vmd_exporter(self, sphere_resolution: int = 20, save_to_file: bool = False) -> Optional[str]:
+        """Export a TCL script to visualize the neighbor pairs in VMD.
+
+        Args:
+            sphere_resolution (int, optional): The resolution of the spheres. Defaults to 20.
+            save_to_file (bool, optional): Flag to save the script to a file. Defaults to False.
+
+        Returns:
+            str | None: The TCL script to visualize the neighbor pairs in VMD.
+        """
+        exporter = VMDExporter(self.pairs)
+        return exporter.export(sphere_resolution=sphere_resolution, save_to_file=save_to_file)
 
     def _neighborpairs_equal(self, other: "NeighborPairs") -> bool:
         """Check if another NeighborPairs object is equal to this one.
