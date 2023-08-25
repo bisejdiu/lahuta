@@ -1,6 +1,32 @@
-[GitHub release v0.7.0](https://github.com/bisejdiu/lahuta/releases/tag/v0.8.0)
+# Release Notes for Lahuta v0.9.1 (2023-08-25)
+[GitHub release v0.9.1](https://github.com/bisejdiu/lahuta/releases/tag/v0.9.1)
+
+**New Features**:
+- Mapping of Indices Based on Multiple Sequence Alignment ([#41](https://github.com/bisejdiu/lahuta/pull/41)): Introducing a new mechanism to map neighbor information from residues in MSA. This initial support lays the foundation for further development.
+- Basic Plotting Interface ([#45](https://github.com/bisejdiu/lahuta/pull/45)): A new plotting interface provides users with straightforward visualization tools.
+- CLI Interface ([#47](https://github.com/bisejdiu/lahuta/pull/47)): Access and control Lahuta functionalities via a new command-line interface.
+
+**Improvements**:
+- Documentation Overhaul ([#39](https://github.com/bisejdiu/lahuta/pull/39)): Comprehensive updates and improvements to documentation enhance usability and understanding.
+- Extending and Improving Tests ([#50](https://github.com/bisejdiu/lahuta/pull/50)): Robustness of the codebase has been increased with significant testing enhancements. 
+- Refactoring & Python 3.10 Support ([#44](https://github.com/bisejdiu/lahuta/pull/44), [#56](https://github.com/bisejdiu/lahuta/pull/56)): Codebase refactoring for better performance and compatibility with Python 3.10 as the minimum supported version.
+
+**Set Operations & Testing**:
+- Set Operations Testing ([#43](https://github.com/bisejdiu/lahuta/pull/43)): Rigorous first-principles testing on set operations ensures reliability and consistency.
+- Refactoring & Test Improvement ([#44](https://github.com/bisejdiu/lahuta/pull/44)): Enhancing the code quality and performance through systematic refactoring and improved testing.
+
+**CI/CD Enhancements**:
+- Fixed Building and Deployment of Documentation ([#51](https://github.com/bisejdiu/lahuta/pull/51)): Streamlined building process and deployment for accessible and up-to-date documentation.
+- Linting & Type Checking ([#53](https://github.com/bisejdiu/lahuta/pull/53)): Code maintainability and correctness have been strengthened through rigorous linting and type checking.
+- Build Testing Workflow ([#55](https://github.com/bisejdiu/lahuta/pull/55)): Continuous integration now includes build testing for regular validation.
+- Publish Conda Package ([#57](https://github.com/bisejdiu/lahuta/pull/57)): Automated publishing of conda packages for every new release for seamless distribution.
+
+Lahuta v0.9.1 is quite a significant update in both features and overall quality. 
+
 
 # Release Notes for Lahuta v0.8.0 (2023-08-03)
+[GitHub release v0.8.0](https://github.com/bisejdiu/lahuta/releases/tag/v0.8.0)
+
 This release represents a significant move from a proof-of-concept to a fully-fledged library. Here's a brief overview of everything that's new in this release.
 
 ## Key Highlights
