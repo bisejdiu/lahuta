@@ -1,32 +1,23 @@
 import logging
 import os
+
+from typing import Optional
 from pathlib import Path
 from urllib.request import urlretrieve
-
-
-def find_project_root(start_from: str = __file__, marker: str = 'pyproject.toml', max_depth: int = 3) -> Path:
-    path = Path(start_from).resolve().parent
-    depth = 0
-    while depth < max_depth:
-        if (path / marker).exists():
-            return path
-        path = path.parent
-        depth += 1
-    raise FileNotFoundError(f"Project root with marker '{marker}' not found within {max_depth} levels.")
 
 
 class BaseFile:
     URL = "https://files.rcsb.org/download/"
     FILE_NAME = ""
 
-    def __init__(self, pdb: bool = False):
-        project_root = find_project_root() / 'tests' / 'data'
+    def __init__(self, pdb: bool = False, dir_loc: Optional[Path] = None):
+        dir_loc = dir_loc or Path.cwd()
         if pdb:
             self.FILE_NAME += '.pdb'
         else:
             self.FILE_NAME += '.cif'
 
-        self.local_path = project_root / self.FILE_NAME.lower()
+        self.local_path = dir_loc / self.FILE_NAME.lower()
         self.file_path = self._get_or_download()
 
     def _get_or_download(self) -> Path:
