@@ -50,7 +50,11 @@ class AtomMapper:
         prot_resindices = self._map_prot_resindices(seq)
         nonprot_resindices = self._map_nonprot_resindices(seq)
 
-        return np.concatenate((prot_resindices, nonprot_resindices), axis=0)
+        mapped_resindices = self.sort_mapped_resindices(
+            self.prot.resindices, self.nonprot.resindices, prot_resindices, nonprot_resindices
+        )
+
+        return mapped_resindices  # noqa: R504
 
     def _map_prot_resindices(self, seq: Seq) -> NDArray[np.int32]:
         mapped_prot_resindices = MSAParser.to_indices_array(seq)
@@ -66,6 +70,28 @@ class AtomMapper:
     @staticmethod
     def _factorize(resindices: NDArray[np.int32]) -> NDArray[np.int32]:
         return pd.factorize(resindices)[0]  # type: ignore
+
+    def sort_mapped_resindices(
+        self,
+        prot_resindices: NDArray[np.int32],
+        nonprot_resindices: NDArray[np.int32],
+        mapped_prot_resindices: NDArray[np.int32],
+        mapped_nonprot_resindices: NDArray[np.int32],
+    ) -> NDArray[np.int32]:
+        """Sort mapped residue indices.
+
+        Args:
+            prot_resindices (NDArray[np.int32]): Array of protein residue indices.
+            nonprot_resindices (NDArray[np.int32]): Array of non-protein residue indices.
+            mapped_prot_resindices (NDArray[np.int32]): Array of mapped protein residue indices.
+            mapped_nonprot_resindices (NDArray[np.int32]): Array of mapped non-protein residue indices.
+
+        Returns:
+            NDArray[np.int32]: Sorted array of mapped residue indices.
+        """
+        indices = np.searchsorted(prot_resindices, nonprot_resindices)
+        mapped_resindices = np.insert(mapped_prot_resindices, indices, mapped_nonprot_resindices)
+        return mapped_resindices  # noqa: R504
 
 
 class LabeledNeighborPairsBuilder:
