@@ -216,7 +216,7 @@ class Luni:
             NDArray[np.str_]: A NumPy array containing the one-letter amino acid codes of the Luni.
         """
         assert self.arc is not None
-        three_letter_codes = self.to("mda").residues.resnames
+        three_letter_codes = self.to("mda").select_atoms("protein").residues.resnames
         conversion_dict: dict[str, str] = {}
         for key, synonyms in RESIDUE_SYNONYMS.items():
             for synonym in synonyms:
