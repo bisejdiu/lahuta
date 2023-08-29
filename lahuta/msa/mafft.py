@@ -78,11 +78,8 @@ class MafftWrapper:
                 self.options[arg] = None
         self.options.update(kwargs)
 
-    def _build_command(self, method: Optional[str] = None) -> list[str]:
+    def _build_command(self) -> list[str]:
         command = ["mafft"]
-
-        if method:
-            command.append(f"--{method}")
 
         if self.options:
             for key, value in self.options.items():
@@ -94,17 +91,17 @@ class MafftWrapper:
 
         return command
 
-    def run(self, method: Optional[str] = None, keeplength: bool = True) -> None:
+    def run(self, n_jobs: int = 1, keeplength: bool = True) -> None:
         """Run MAFFT.
 
         Args:
-            method (Optional[str]): Alignment method.
+            n_jobs (int): Number of workers.
             keeplength (bool): Keep the original sequence lengths.
 
         """
         match (self.ref_alignment, keeplength):
             case (None, _):
-                command = self._build_command(method)
+                command = self._build_command()
             case (_, True):
                 assert self.ref_alignment is not None
                 command = ["mafft", "--add", self.input_file, "--keeplength", self.ref_alignment]
@@ -113,6 +110,8 @@ class MafftWrapper:
                 command = ["mafft", "--add", self.input_file, self.ref_alignment]
             case _:
                 raise ValueError("Invalid combination of arguments")
+
+        command[1:1] = ["--thread", str(n_jobs)]
 
         with open(self.output_file, "w") as out_file:
             process = subprocess.Popen(command, stdout=out_file, stderr=subprocess.PIPE)
