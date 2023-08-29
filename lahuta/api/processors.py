@@ -2,101 +2,11 @@
 import logging
 import os
 import sys
-from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Generic, Iterable, List, Optional, Type, TypeVar, cast
+from typing import Callable, Generic, Iterable, Optional, Type, cast
 
 from lahuta import Luni, NeighborPairs
-
-T = TypeVar("T")
-
-
-class WorkerStrategy(ABC, Generic[T]):
-    """Abstract base class for worker strategies.
-
-    Methods:
-        execute: Execute the worker strategy.
-    """
-
-    @abstractmethod
-    def execute(self, file_paths: List[str]) -> dict[str, T]:
-        """Execute the worker strategy.
-
-        Args:
-            file_paths (List[str]): List of file paths.
-
-        Returns:
-            dict[str, T]: Dictionary of objects.
-        """
-        ...
-
-
-class NeighborPairsComputer(WorkerStrategy[NeighborPairs]):
-    """Worker strategy to compute neighbor pairs.
-
-    Methods:
-        execute: Execute the worker strategy.
-    """
-
-    def execute(self, file_paths: List[str]) -> dict[str, NeighborPairs]:
-        """Execute the worker strategy.
-
-        Args:
-            file_paths (List[str]): List of file paths.
-
-        Returns:
-            dict[str, NeighborPairs]: Dictionary of NeighborPairs objects.
-        """
-        ns_dict = {}
-        for file_path in file_paths:
-            file_name = os.path.basename(file_path)
-            luni = Luni(file_path)
-            ns = luni.compute_neighbors()
-            ns_dict[file_name] = ns
-        return ns_dict
-
-
-class SequenceComputer(WorkerStrategy[str]):
-    """Worker strategy to compute sequences.
-
-    Methods:
-        execute: Execute the worker strategy.
-    """
-
-    def execute(self, file_paths: List[str]) -> dict[str, str]:
-        """Execute the worker strategy.
-
-        Args:
-            file_paths (List[str]): List of file paths.
-
-        Returns:
-            dict[str, str]: Dictionary of sequences.
-        """
-        sequence_dict = {}
-        for file_path in file_paths:
-            file_name = os.path.basename(file_path)
-            luni = Luni(file_path)
-            sequence_dict[file_name] = luni.sequence
-        return sequence_dict
-
-
-class EmptyWorker(WorkerStrategy[None]):
-    """Worker strategy to do nothing.
-
-    Methods:
-        execute: Execute the worker strategy.
-    """
-
-    def execute(self, file_paths: List[str]) -> dict[str, None]:
-        """Execute the worker strategy.
-
-        Args:
-            file_paths (List[str]): List of file paths.
-
-        Returns:
-            dict[str, None]: Dictionary of None values.
-        """
-        return {file_name: None for file_name in file_paths}
+from lahuta.api.workers import NeighborPairsComputer, T, WorkerStrategy
 
 
 class CachedFileProcessor(Generic[T]):
@@ -104,8 +14,8 @@ class CachedFileProcessor(Generic[T]):
 
     Attributes:
         directory (Optional[str]): Path to a directory.
-        file_list (Optional[List[str]]): List of file paths.
-        allowed_file_extensions (Optional[List[str]]): List of allowed file extensions.
+        file_list (Optional[list[str]]): list of file paths.
+        allowed_file_extensions (Optional[list[str]]): list of allowed file extensions.
         n_jobs (int): Number of workers.
 
     Methods:
@@ -116,15 +26,15 @@ class CachedFileProcessor(Generic[T]):
     def __init__(
         self,
         directory: Optional[str] = None,
-        file_list: Optional[List[str]] = None,
-        allowed_file_extensions: Optional[List[str]] = None,
+        file_list: Optional[list[str]] = None,
+        allowed_file_extensions: Optional[list[str]] = None,
         worker: Type[WorkerStrategy[T]] = cast(Type[WorkerStrategy[T]], NeighborPairsComputer),  # noqa: B008
     ):
         self.worker = worker()
         self.directory = directory
         self.file_list = file_list
         self.allowed_file_extensions = set(allowed_file_extensions) if allowed_file_extensions else None
-        self._cache: dict[str, Any] = {}
+        self._cache: dict[str, T] = {}
 
     def _is_valid_extension(self, file_name: str) -> bool:
         return not self.allowed_file_extensions or any(file_name.endswith(ext) for ext in self.allowed_file_extensions)
@@ -154,7 +64,7 @@ class CachedFileProcessor(Generic[T]):
         for future in futures:
             self._cache.update(future.result())
 
-    def _collect_file_paths(self) -> List[str]:
+    def _collect_file_paths(self) -> list[str]:
         if self.directory:
             return [
                 os.path.join(root, name)
@@ -183,40 +93,15 @@ class CachedFileProcessor(Generic[T]):
         return self.__repr__()
 
 
-class NPOperator:
-    """Class to perform operations on NeighborPairs objects.
-
-    Methods:
-        union: Compute the union of two NeighborPairs objects.
-        intersection: Compute the intersection of two NeighborPairs objects.
-        difference: Compute the difference of two NeighborPairs objects.
-    """
-
-    @staticmethod
-    def union(a: NeighborPairs, b: NeighborPairs) -> NeighborPairs:
-        """Compute the union of two NeighborPairs objects."""
-        return a + b
-
-    @staticmethod
-    def intersection(a: NeighborPairs, b: NeighborPairs) -> NeighborPairs:
-        """Compute the intersection of two NeighborPairs objects."""
-        return a & b
-
-    @staticmethod
-    def difference(a: NeighborPairs, b: NeighborPairs) -> NeighborPairs:
-        """Compute the difference of two NeighborPairs objects."""
-        return a - b
-
-
 class FileProcessor:
     """Class to process files and cache the results.
 
     Attributes:
         directory (Optional[str]): Path to a directory.
-        file_list (Optional[List[str]]): List of file paths.
+        file_list (Optional[list[str]]): list of file paths.
         num_workers (int): Number of workers.
         operation (str): Operation to perform on the NeighborPairs objects.
-        allowed_file_extensions (Optional[List[str]]): List of allowed file extensions.
+        allowed_file_extensions (Optional[list[str]]): list of allowed file extensions.
         file_count (int): Number of files to process.
 
     Methods:
@@ -227,7 +112,7 @@ class FileProcessor:
     def __init__(
         self,
         directory: Optional[str] = None,
-        file_list: Optional[List[str]] = None,
+        file_list: Optional[list[str]] = None,
         allowed_file_extensions: Optional[Iterable[str]] = None,
     ):
         self.directory = directory
@@ -254,7 +139,7 @@ class FileProcessor:
 
     def _worker_function(
         self,
-        file_paths: List[str],
+        file_paths: list[str],
         operation: Callable[[NeighborPairs, NeighborPairs], NeighborPairs],
     ) -> NeighborPairs:
         file_iter = iter(file_paths)
