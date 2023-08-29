@@ -8,6 +8,8 @@ from typing import Callable, Generic, Iterable, Optional, Type, cast
 from lahuta import Luni, NeighborPairs
 from lahuta.api.workers import NeighborPairsComputer, T, WorkerStrategy
 
+__all__ = ["CachedFileProcessor", "FileProcessor"]
+
 
 class CachedFileProcessor(Generic[T]):
     """Class to process files and cache the results.

@@ -1,6 +1,13 @@
 """API for NeighborPairs objects."""
 from lahuta.core.neighbors import NeighborPairs
 
+__all__ = [
+    "union",
+    "intersection",
+    "difference",
+    "symmetric_difference",
+]
+
 
 def union(a: NeighborPairs, b: NeighborPairs) -> NeighborPairs:
     """Compute the union of two NeighborPairs objects."""
