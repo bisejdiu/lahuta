@@ -4,7 +4,7 @@ import os
 import sys
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Generic, List, Optional, Type, TypeVar, cast, Iterable, Callable
+from typing import Any, Callable, Generic, Iterable, List, Optional, Type, TypeVar, cast
 
 from lahuta import Luni, NeighborPairs
 
@@ -228,12 +228,10 @@ class FileProcessor:
         self,
         directory: Optional[str] = None,
         file_list: Optional[List[str]] = None,
-        operation: str = "union",
         allowed_file_extensions: Optional[Iterable[str]] = None,
     ):
         self.directory = directory
         self.file_list = file_list
-        self.operation = operation
         self.allowed_file_extensions = allowed_file_extensions
         self.file_count = self._count_files(limit=10000)
 
@@ -271,13 +269,14 @@ class FileProcessor:
         return ns
 
     def process(
-        self, n_jobs: int = 1, custom_func: Optional[Callable[[NeighborPairs, NeighborPairs], NeighborPairs]] = None
+        self, operation: Callable[[NeighborPairs, NeighborPairs], NeighborPairs], n_jobs: int = 1
     ) -> NeighborPairs | None:
         """Walk through the directory and process the files.
 
         Args:
+            operation (Callable[[NeighborPairs, NeighborPairs], NeighborPairs]): Operation to perform on the
+                NeighborPairs objects.
             n_jobs (int): Number of workers.
-            custom_func (Optional[Callable[[NeighborPairs, NeighborPairs], NeighborPairs]]): Custom function to use.
 
         Returns:
             NeighborPairs | None: NeighborPairs object.
@@ -288,7 +287,6 @@ class FileProcessor:
         if num_files == 0:
             return None
 
-        operation = custom_func if custom_func else getattr(NPOperator, self.operation)
         chunk_size = max(1, num_files // n_jobs)
         with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
@@ -296,23 +294,14 @@ class FileProcessor:
                 for i in range(0, num_files, chunk_size)
             ]
 
-        ns = None
-        for future in futures:
+        futures_iter = iter(futures)
+        ns = next(futures_iter).result()
+
+        for future in futures_iter:
             ns_ = future.result()
-            ns = ns_ if ns is None else operation(ns, ns_)
+            ns = operation(ns, ns_)
 
         return ns
-
-    def custom(self, func: Callable[[NeighborPairs, NeighborPairs], NeighborPairs]) -> NeighborPairs | None:
-        """Walk through the directory and process the files using a custom function.
-
-        Args:
-            func (Callable[[NeighborPairs, NeighborPairs], NeighborPairs]): Custom function to use.
-
-        Returns:
-            NeighborPairs | None: NeighborPairs object.
-        """
-        return self.process(custom_func=func)
 
     def _collect_file_paths(self) -> list[str]:
         if self.directory:
@@ -328,7 +317,7 @@ class FileProcessor:
         raise ValueError("Either directory or file_list must be provided")
 
     def __repr__(self) -> str:
-        return f"<FileProcessor(num_files={self.file_count}, operation={self.operation})>"
+        return f"<FileProcessor(num_files={self.file_count})>"
 
     def __str__(self) -> str:
         return self.__repr__()
