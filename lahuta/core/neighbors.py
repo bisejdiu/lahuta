@@ -13,7 +13,7 @@ from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core.builder import LabeledNeighborPairsBuilder
+from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
 
 if TYPE_CHECKING:
@@ -314,7 +314,9 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the mapped pairs.
         """
-        return LabeledNeighborPairsBuilder.build(self.pairs, self.atoms, seq)
+        atom_mapper = AtomMapper(self.atoms)
+        builder = LabeledNeighborPairsBuilder(atom_mapper)
+        return builder.build(self.pairs, seq)
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
