@@ -106,7 +106,7 @@ class CachedFileProcessor(Generic[T]):
         directory (Optional[str]): Path to a directory.
         file_list (Optional[List[str]]): List of file paths.
         allowed_file_extensions (Optional[List[str]]): List of allowed file extensions.
-        num_workers (int): Number of workers.
+        n_jobs (int): Number of workers.
         worker (WorkerStrategy[T]): A worker strategy.
 
     Methods:
@@ -119,11 +119,9 @@ class CachedFileProcessor(Generic[T]):
         directory: Optional[str] = None,
         file_list: Optional[List[str]] = None,
         allowed_file_extensions: Optional[List[str]] = None,
-        num_workers: int = 4,
         worker: Type[WorkerStrategy[T]] = cast(Type[WorkerStrategy[T]], NeighborPairsComputer),  # noqa: B008
     ):
         self.worker = worker()
-        self.num_workers = num_workers
         self.directory = directory
         self.file_list = file_list
         self.allowed_file_extensions = set(allowed_file_extensions) if allowed_file_extensions else None
@@ -132,7 +130,7 @@ class CachedFileProcessor(Generic[T]):
     def _is_valid_extension(self, file_name: str) -> bool:
         return not self.allowed_file_extensions or any(file_name.endswith(ext) for ext in self.allowed_file_extensions)
 
-    def process(self) -> None:
+    def process(self, n_jobs: int = 1) -> None:
         """Walk through the directory and process the files."""
         all_files = self._collect_file_paths()
         num_files = len(all_files)
@@ -141,9 +139,9 @@ class CachedFileProcessor(Generic[T]):
             logging.warning("No files found. Nothing to do.")
             return
 
-        chunk_size = max(1, num_files // self.num_workers)
+        chunk_size = max(1, num_files // n_jobs)
 
-        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
                 executor.submit(self.worker.execute, all_files[i : i + chunk_size])
                 for i in range(0, num_files, chunk_size)
