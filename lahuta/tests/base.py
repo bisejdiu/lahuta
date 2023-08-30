@@ -5,6 +5,8 @@ from typing import Optional
 from pathlib import Path
 from urllib.request import urlretrieve
 
+logging.basicConfig(level=logging.INFO)
+
 
 class BaseFile:
     URL = "https://files.rcsb.org/download/"
@@ -22,7 +24,6 @@ class BaseFile:
 
     def _get_or_download(self) -> Path:
         if not os.path.exists(self.local_path):
-            print('downloading')
             self._download_file()
         return self.local_path
 
