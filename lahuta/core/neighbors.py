@@ -793,7 +793,7 @@ class NeighborPairs:
         """
         if isinstance(item, int):
             return self.clone(
-                self.pairs[item],
+                self.pairs[item].reshape(-1, 2),
                 self.distances[item],
             )
 
