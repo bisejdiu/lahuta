@@ -7,7 +7,7 @@ from typing import Dict, Optional
 logging.basicConfig(level=logging.INFO)
 
 
-class MafftWrapper:
+class Mafft:
     """Wrapper for MAFFT.
 
     Attributes:
