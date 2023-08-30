@@ -47,7 +47,7 @@ class Mafft:
 
         self.ref_alignment = ref_alignment
 
-        self.result: Optional[str] = None
+        self._result: Optional[str] = None
         self.options: Dict[str, str | None] = {}
         with NamedTemporaryFile(delete=False) as temp:
             self.output_file = temp.name
@@ -121,7 +121,8 @@ class Mafft:
 
         logging.info(f"Alignment completed. Output file located at: {self.output_file}")
 
-    def read_result(self) -> str:
+    @property
+    def result(self) -> str:
         """Read the result from the output file.
 
         Returns:
@@ -129,5 +130,5 @@ class Mafft:
 
         """
         with open(self.output_file, "r") as file:
-            self.result = file.read()
-        return self.result
+            self._result = file.read()
+        return self._result
