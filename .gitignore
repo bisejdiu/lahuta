@@ -15,7 +15,8 @@ tests/data/*.cif
 
 
 # local notebooks
-notebooks/
+# notebooks/
+*/*/*_wip.ipynb
 
 # C extensions
 *.so
