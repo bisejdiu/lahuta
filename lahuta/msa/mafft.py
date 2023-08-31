@@ -55,6 +55,7 @@ class Mafft:
 
         self._result: Optional[str] = None
         self.options: dict[str, str | None] = {}
+        self._command: list[str] = []
         with NamedTemporaryFile(delete=False) as temp:
             self.output_file = temp.name
 
@@ -119,6 +120,7 @@ class Mafft:
 
         command[1:1] = ["--thread", str(n_jobs)]
 
+        self._command = command
         with open(self.output_file, "w") as out_file:
             process = subprocess.Popen(command, stdout=out_file, stderr=subprocess.PIPE)
             _, logs = process.communicate()
@@ -126,6 +128,16 @@ class Mafft:
         self.logs = logs.decode()
 
         logging.info(f"Alignment completed. Output file located at: {self.output_file}")
+
+    @property
+    def command(self) -> str:
+        """Get the command.
+
+        Returns:
+            str: The command.
+
+        """
+        return " ".join(self._command)
 
     @property
     def result(self) -> str:
