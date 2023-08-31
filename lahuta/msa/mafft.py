@@ -6,6 +6,8 @@ from typing import Optional
 
 from Bio.Seq import Seq
 
+__all__ = ["Mafft"]
+
 logging.basicConfig(level=logging.INFO)
 
 

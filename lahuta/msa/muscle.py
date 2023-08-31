@@ -7,6 +7,8 @@ from typing import Dict, List, Optional
 
 from Bio.Seq import Seq
 
+__all__ = ["Muscle"]
+
 logging.basicConfig(level=logging.INFO)
 
 

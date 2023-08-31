@@ -20,6 +20,8 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from numpy.typing import NDArray
 
+__all__ = ["MSAParser"]
+
 
 class MSAParser:
     """A parser for multiple sequence alignment (MSA) files.
