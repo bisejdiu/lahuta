@@ -5,6 +5,8 @@ import subprocess
 from tempfile import NamedTemporaryFile
 from typing import Dict, List, Optional
 
+from Bio.Seq import Seq
+
 logging.basicConfig(level=logging.INFO)
 
 
@@ -19,7 +21,7 @@ class Muscle:
         input_file (str): Path to the input file.
         result (str): Result of the alignment.
         strategy (str): Strategy to use for advanced alignment.
-        options (dict[str, str]): Options to pass to MUSCLE.
+        options (dict[str, str] | dict[str, Seq]): Options to pass to MUSCLE.
         output_file (str): Path to the output file.
 
     Methods:
@@ -29,7 +31,7 @@ class Muscle:
         cleanup: Delete the input and output files.
     """
 
-    def __init__(self, sequence_data: str | dict[str, str]) -> None:
+    def __init__(self, sequence_data: str | dict[str, str] | dict[str, Seq]) -> None:
         match sequence_data:
             case str(path):
                 self.input_file = path
@@ -105,11 +107,11 @@ class Muscle:
             self.result = f.read()
 
     @staticmethod
-    def dict_to_fasta(seq_dict: dict[str, str]) -> str:
+    def dict_to_fasta(seq_dict: dict[str, str] | dict[str, Seq]) -> str:
         """Convert a dictionary of sequences to a FASTA string.
 
         Args:
-            seq_dict (dict[str, str]): Dictionary of sequences.
+            seq_dict (dict[str, str] | dict[str, Seq]): Dictionary of sequences.
 
         Returns:
             str: FASTA string.
