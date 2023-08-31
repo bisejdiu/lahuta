@@ -12,7 +12,7 @@ Example:
     seq_id = seq_ids[0]
 
 """
-from typing import Iterator
+from typing import Iterator, Literal, Type, TypeVar
 
 import numpy as np
 from Bio import SeqIO
@@ -20,7 +20,29 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from numpy.typing import NDArray
 
+from lahuta.msa.mafft import Mafft
+from lahuta.msa.muscle import Muscle
+
 __all__ = ["MSAParser"]
+
+T = TypeVar("T", bound="MSAParser")
+
+
+MSAFactory: dict[str, Type[Mafft | Muscle]] = {
+    "mafft": Mafft,
+    "muscle": Muscle,
+}
+
+
+class InvalidBackendError(Exception):
+    pass
+
+
+def get_backend(backend: Literal["mafft", "muscle"] = "mafft") -> Type[Mafft | Muscle]:
+    Align = MSAFactory.get(backend)
+    if Align is None:
+        raise InvalidBackendError(f"Invalid backend: {backend}! Supported backends: mafft, muscle")
+    return Align
 
 
 class MSAParser:
@@ -107,6 +129,31 @@ class MSAParser:
 
         """
         return self._sequences
+
+    def align(
+        self: T,
+        backend: Literal["mafft", "muscle"] = "mafft",
+        n_jobs: int = 1,
+        ref_alignment: str | dict[str, str] | dict[str, Seq] | None = None,
+    ) -> T:
+        """Align the sequences.
+
+        Args:
+            backend (Literal["mafft", "muscle"], optional): The alignment backend. Defaults to "mafft".
+            n_jobs (int, optional): The number of jobs. Defaults to 1.
+            ref_alignment (str | dict[str, str] | dict[str, Seq], optional): The reference alignment. Defaults to None.
+
+        Returns:
+            T: An `MSAParser` instance with the aligned sequences.
+
+        Raises:
+            ValueError: If the backend is not supported.
+
+        """
+        Align = get_backend(backend)
+        aligner = Align(self._sequences, ref_alignment=ref_alignment)
+        aligner.run(n_jobs=n_jobs)
+        return type(self)(aligner.output_file)
 
     def __getitem__(self, seq_id: str) -> Seq:
         return self._sequences[seq_id]
