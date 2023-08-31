@@ -2,7 +2,9 @@
 import logging
 import subprocess
 from tempfile import NamedTemporaryFile
-from typing import Dict, Optional
+from typing import Optional
+
+from Bio.Seq import Seq
 
 logging.basicConfig(level=logging.INFO)
 
@@ -23,7 +25,9 @@ class Mafft:
     """
 
     def __init__(
-        self, sequence_data: str | Dict[str, str], ref_alignment: Optional[str | Dict[str, str]] = None
+        self,
+        sequence_data: str | dict[str, str] | dict[str, Seq],
+        ref_alignment: Optional[str | dict[str, str] | dict[str, Seq]] = None,
     ) -> None:
         match sequence_data:
             case str(path):
@@ -48,12 +52,12 @@ class Mafft:
         self.ref_alignment = ref_alignment
 
         self._result: Optional[str] = None
-        self.options: Dict[str, str | None] = {}
+        self.options: dict[str, str | None] = {}
         with NamedTemporaryFile(delete=False) as temp:
             self.output_file = temp.name
 
     @staticmethod
-    def dict_to_fasta(data: Dict[str, str]) -> str:
+    def dict_to_fasta(data: dict[str, str] | dict[str, Seq]) -> str:
         """Convert a dictionary to a FASTA string.
 
         Args:
@@ -91,7 +95,7 @@ class Mafft:
 
         return command
 
-    def run(self, n_jobs: int = 1, keeplength: bool = True) -> None:
+    def run(self, n_jobs: int = 1, keeplength: bool = False) -> None:
         """Run MAFFT.
 
         Args:
