@@ -110,7 +110,7 @@ class LabeledNeighborPairsBuilder:
 
     """
 
-    DTYPE = np.dtype({"names": ["atom_names", "resids", "resnames"], "formats": ["<U10", int, "<U10"]})
+    DTYPE = np.dtype({"names": ["atom_names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25"]})
 
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
