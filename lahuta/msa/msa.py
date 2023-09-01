@@ -12,12 +12,11 @@ Example:
     seq_id = seq_ids[0]
 
 """
-from typing import Iterator, Literal, Type, TypeVar
+from typing import Iterator, Literal, Optional, Type, TypeVar
 
 import numpy as np
 from Bio import SeqIO
 from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 from numpy.typing import NDArray
 
 from lahuta.msa.mafft import Mafft
@@ -54,15 +53,22 @@ class MSAParser:
 
     """
 
-    def __init__(self, filepath: str) -> None:
+    def __init__(
+        self, filepath: Optional[str] = None, sequences: Optional[dict[str, Seq] | dict[str, str]] = None
+    ) -> None:
         self._sequences: dict[str, Seq] = {}
-        self._seq_ids: list[str] = []
-        self._parse_file(filepath)
+        match (filepath, sequences):
+            case (None, _):
+                assert sequences is not None
+                self._sequences = {k: Seq(v) for k, v in sequences.items()}
+            case (_, None):
+                assert filepath is not None
+                self._parse_file(filepath)
+            case (_, _):
+                raise ValueError("Either filepath or sequences must be provided")
 
     def _parse_file(self, filepath: str) -> None:
         for record in SeqIO.parse(filepath, "fasta"):
-            assert isinstance(record, SeqRecord)
-            self._seq_ids.append(record.id)
             self._sequences[record.id] = record.seq
 
     def sequence_indices(self, seq_id: str) -> NDArray[np.int32]:
@@ -82,15 +88,6 @@ class MSAParser:
         if seq is None:
             raise ValueError(f"Sequence with ID {seq_id} not found.")
         return self.to_indices_array(seq)
-
-    def get_seq_ids(self) -> list[str]:
-        """Get the sequence IDs.
-
-        Returns:
-            list[str]: The sequence IDs.
-
-        """
-        return self._seq_ids
 
     @staticmethod
     def to_indices_array(seq: Seq) -> NDArray[np.int32]:
@@ -118,7 +115,7 @@ class MSAParser:
             list[str]: The sequence IDs.
 
         """
-        return self._seq_ids
+        return list(self._sequences.keys())
 
     @property
     def sequences(self) -> dict[str, Seq]:
@@ -154,6 +151,12 @@ class MSAParser:
         aligner = Align(self._sequences, ref_alignment=ref_alignment)
         aligner.run(n_jobs=n_jobs)
         return type(self)(aligner.output_file)
+
+    def __add__(self: T, other: T) -> T:
+        return type(self)(sequences={**self.sequences, **other.sequences})
+
+    def __sub__(self: T, other: T) -> T:
+        return type(self)(sequences={k: v for k, v in self.sequences.items() if k not in other.sequences})
 
     def __getitem__(self, seq_id: str) -> Seq:
         return self._sequences[seq_id]
