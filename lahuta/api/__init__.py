@@ -8,16 +8,13 @@ They should make it easy to use the package in a variety of contexts
 from lahuta.api.np import difference, intersection, symmetric_difference, union
 from lahuta.api.processors import CachedFileProcessor, FileProcessor
 from lahuta.api.utils import download_structures
-from lahuta.api.workers import EmptyWorker, NeighborPairsComputer, SequenceComputer, WorkerStrategy
+from lahuta.api.workers import Worker
 
 __all__ = [
     "download_structures",
     "CachedFileProcessor",
     "FileProcessor",
-    "WorkerStrategy",
-    "EmptyWorker",
-    "NeighborPairsComputer",
-    "SequenceComputer",
+    "Worker",
     "union",
     "intersection",
     "difference",
