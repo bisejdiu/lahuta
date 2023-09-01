@@ -12,6 +12,7 @@ Example:
     seq_id = seq_ids[0]
 
 """
+from pathlib import Path
 from typing import Iterator, Literal, Optional, Type, TypeVar
 
 import numpy as np
@@ -151,6 +152,17 @@ class MSAParser:
         aligner = Align(self._sequences, ref_alignment=ref_alignment)
         aligner.run(n_jobs=n_jobs)
         return type(self)(aligner.output_file)
+
+    def save(self, file_name: str) -> None:
+        """Write the sequences to a FASTA file.
+
+        Args:
+            file_name (str): The file name.
+
+        """
+        with Path(file_name).open("w") as f:
+            for key, value in self.sequences.items():
+                f.write(f">{key.split('.')[0]}\n{value}\n")
 
     def __add__(self: T, other: T) -> T:
         return type(self)(sequences={**self.sequences, **other.sequences})
