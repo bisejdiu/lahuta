@@ -3,12 +3,14 @@ import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Generic, Iterable, Optional, Type, cast
+from typing import Callable, Generic, Iterable, Optional, TypeVar, cast
 
 from lahuta import Luni, NeighborPairs
-from lahuta.api.workers import NeighborPairsComputer, T, WorkerStrategy
+from lahuta.api.workers import Worker
 
 __all__ = ["CachedFileProcessor", "FileProcessor"]
+
+T = TypeVar("T")
 
 
 class CachedFileProcessor(Generic[T]):
@@ -30,9 +32,9 @@ class CachedFileProcessor(Generic[T]):
         directory: Optional[str] = None,
         file_list: Optional[list[str]] = None,
         allowed_file_extensions: Optional[list[str]] = None,
-        worker: Type[WorkerStrategy[T]] = cast(Type[WorkerStrategy[T]], NeighborPairsComputer),  # noqa: B008
-    ):
-        self.worker = worker()
+        worker: Callable[[str], T] = cast(Callable[[str], T], lambda x: x),  # noqa: B008
+    ) -> None:
+        self.worker: Worker[T] = Worker(worker)
         self.directory = directory
         self.file_list = file_list
         self.allowed_file_extensions = set(allowed_file_extensions) if allowed_file_extensions else None
