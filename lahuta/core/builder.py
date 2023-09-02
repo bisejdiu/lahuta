@@ -107,7 +107,6 @@ class LabeledNeighborPairsBuilder:
     Methods:
         build: Build a LabeledNeighborPairs object from the pairs of atom indices.
 
-
     """
 
     DTYPE = np.dtype({"names": ["atom_names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25"]})

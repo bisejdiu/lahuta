@@ -15,6 +15,7 @@ from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
+from lahuta.core.index_finder import IndexFinder
 
 if TYPE_CHECKING:
     from lahuta.core.labeled_neighbors import LabeledNeighborPairs
@@ -317,6 +318,25 @@ class NeighborPairs:
         atom_mapper = AtomMapper(self.atoms)
         builder = LabeledNeighborPairsBuilder(atom_mapper)
         return builder.build(self.pairs, seq)
+
+    def backmap(self, seq: Seq, pairs: NDArray[np.void]) -> "NeighborPairs":
+        """Map the `pairs` indices to indices in the structure.
+
+        The method maps the indices in the `pairs` array to indices in the structure
+        using the specified sequence ID.
+
+        Args:
+            seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
+            pairs (NDArray[np.void]): The mapped pairs to backmap.
+
+        Returns:
+            A NeighborPairs object containing the backmapped pairs.
+        """
+        atom_mapper = AtomMapper(self.atoms)
+        mapped_pairs = LabeledNeighborPairsBuilder(atom_mapper).build(self.pairs, seq).pairs
+        index_finder = IndexFinder(mapped_pairs)
+        mask = index_finder.find_indices(pairs)
+        return self.clone(self.pairs[mask], self.distances[mask])
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
