@@ -822,6 +822,20 @@ class NeighborPairs:
         """
         return self.atoms[self.pairs].indices
 
+    @property
+    def labels(self) -> NDArray[np.void]:
+        """Get the pairs of atoms that are neighbors.
+
+        Returns:
+            An array containing the pairs of indices of neighboring atoms.
+        """
+        struct_array = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atoms.n_atoms)
+        struct_array["names"] = self.atoms.names
+        struct_array["resnames"] = self.atoms.resnames
+        struct_array["resids"] = self.atoms.resids
+
+        return struct_array[self.pairs]
+
     def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.
 

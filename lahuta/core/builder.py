@@ -127,9 +127,21 @@ class LabeledNeighborPairsBuilder:
         mapped_resindices = self.atom_mapper.map(seq)
         atoms = self.atom_mapper.atoms
 
-        data = np.empty(atoms.names.shape[0], dtype=self.DTYPE)
+        data = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atom_mapper.atoms.n_atoms)
         data["names"] = atoms.names
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
 
         return LabeledNeighborPairs(data[pairs])
+
+    @staticmethod
+    def create_empty_struct_array(size: int) -> NDArray[np.void]:
+        """Create an empty structured array.
+
+        Args:
+            size (int): The size of the array.
+
+        Returns:
+            NDArray[np.void]: An empty structured array.
+        """
+        return np.empty(size, dtype=LabeledNeighborPairsBuilder.DTYPE)
