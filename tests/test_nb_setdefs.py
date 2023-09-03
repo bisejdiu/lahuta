@@ -50,9 +50,9 @@ def non_transformed_maps(setup_data: T) -> T:
 
 
 params = [
-    (['ASP'], ['ASP', 'LEU'], 'atom_names'),
+    (['ASP'], ['ASP', 'LEU'], 'names'),
     (['ASP'], ['ASP', 'LEU'], 'resnames'),
-    (['ALA', 'LEU', 'ILE', 'VAL'], ['ALA', 'LEU', 'ILE', 'VAL'], 'atom_names'),
+    (['ALA', 'LEU', 'ILE', 'VAL'], ['ALA', 'LEU', 'ILE', 'VAL'], 'names'),
 ]
 
 

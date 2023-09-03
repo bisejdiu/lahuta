@@ -109,7 +109,7 @@ class LabeledNeighborPairsBuilder:
 
     """
 
-    DTYPE = np.dtype({"names": ["atom_names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25"]})
+    DTYPE = np.dtype({"names": ["names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25"]})
 
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
@@ -128,7 +128,7 @@ class LabeledNeighborPairsBuilder:
         atoms = self.atom_mapper.atoms
 
         data = np.empty(atoms.names.shape[0], dtype=self.DTYPE)
-        data["atom_names"] = atoms.names
+        data["names"] = atoms.names
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
 
