@@ -1,11 +1,15 @@
 """Utility functions for the API."""
+from collections import defaultdict
 from enum import Enum
+from operator import itemgetter
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
+
+import numpy as np
 
 from lahuta.tests.base import BaseFile
 
-__all__ = ["download_structures"]
+__all__ = ["download_structures", "count_unique_pairs_across_keys", "map_unique_pairs_to_keys"]
 
 
 class URLs(Enum):
@@ -45,3 +49,37 @@ def download_structures(
         pdb_file_locations[pdb_id] = tf.file_loc.as_posix()
 
     return pdb_file_locations
+
+
+def count_unique_pairs_across_keys(
+    data_dict: dict[str, Any], mapping: Optional[dict[str, str]] = None
+) -> dict[str, int]:
+    result: defaultdict[str, int] = defaultdict(int)
+
+    for pairs in data_dict.values():
+        if mapping:
+            pairs = np.vectorize(mapping.get)(pairs)  # noqa: PLW2901
+        unique_pairs = {tuple(i) for i in pairs}
+
+        for pair in unique_pairs:
+            result[str(pair)] += 1
+
+    # Sort by value, highest first
+    return dict(sorted(result.items(), key=itemgetter(1), reverse=True))
+
+
+def map_unique_pairs_to_keys(
+    data_dict: dict[str, Any], mapping: Optional[dict[str, str]] = None
+) -> dict[str, list[str]]:
+    result = defaultdict(list)
+
+    for key, pairs in data_dict.items():
+        if mapping:
+            pairs = np.vectorize(mapping.get)(pairs)  # noqa: PLW2901
+        unique_pairs = {tuple(i) for i in pairs}
+
+        for pair in unique_pairs:
+            result[str(pair)].append(key)
+
+    # Sort by the length of the value list, highest first
+    return dict(sorted(result.items(), key=lambda x: len(x[1]), reverse=True))
