@@ -310,7 +310,7 @@ class NeighborPairs:
         using the specified sequence ID.
 
         Args:
-            seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
+            seq (Bio.Seq): The sequence to map the indices to.
 
         Returns:
             A NeighborPairs object containing the mapped pairs.
@@ -326,7 +326,7 @@ class NeighborPairs:
         using the specified sequence ID.
 
         Args:
-            seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
+            seq (Bio.Seq): The sequence to map the indices to.
             pairs (NDArray[np.void]): The mapped pairs to backmap.
 
         Returns:
