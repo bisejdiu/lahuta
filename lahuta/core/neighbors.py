@@ -787,14 +787,40 @@ class NeighborPairs:
         return self._distances
 
     @property
+    def names(self) -> NDArray[np.str_]:
+        """Get the names of the atoms that are neighbors.
+
+        Returns
+            An array containing the atom names of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].names
+
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        """Get the residue names of the atoms that are neighbors.
+
+        Returns
+            An array containing the residue names of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].resnames
+
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        """Get the residue IDs of the atoms that are neighbors.
+
+        Returns
+            An array containing the residue IDs of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].resids
+
+    @property
     def indices(self) -> NDArray[np.int32]:
         """Get the indices of the atoms that are neighbors.
 
         Returns
-            An array containing the unique indices of the neighboring atoms.
+            An array containing the indices of the neighboring atoms.
         """
-        arr: NDArray[np.int32] = np.array([self.partner1.indices, self.partner2.indices])
-        return np.unique(arr)
+        return self.atoms[self.pairs].indices
 
     def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.
@@ -989,7 +1015,7 @@ class NeighborPairs:
         return self.pairs.shape[0]
 
     def __str__(self) -> str:
-        return f"<Lahuta NeighborPairs class containing {self.indices.size} atoms and {self.pairs.shape[0]} pairs>"
+        return f"<Lahuta NeighborPairs class containing {self.atoms.n_atoms} atoms and {self.pairs.shape[0]} pairs>"
 
     def __repr__(self) -> str:
         return self.__str__()
