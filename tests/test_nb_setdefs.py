@@ -32,9 +32,9 @@ def setup_data(request: FixtureRequest) -> T:
     ns_b2 = b2u.compute_neighbors(res_dif=2)
     ns_s5 = s5u.compute_neighbors(res_dif=2)
     parser = MSAParser(str(fasta_data_path))
-    seq_id_b2 = parser.get_seq_ids()[0]
+    seq_id_b2 = parser.seq_ids[0]
     seq_b2 = parser.sequences[seq_id_b2]
-    seq_id_s5 = parser.get_seq_ids()[1]
+    seq_id_s5 = parser.seq_ids[1]
     seq_s5 = parser.sequences[seq_id_s5]
 
     s1 = ns_b2.map(seq_b2)
