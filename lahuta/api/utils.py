@@ -54,6 +54,15 @@ def download_structures(
 def count_unique_pairs_across_keys(
     data_dict: dict[str, Any], mapping: Optional[dict[str, str]] = None
 ) -> dict[str, int]:
+    """Count the number of unique pairs across all keys in a dictionary.
+
+    Args:
+        data_dict (dict[str, Any]): Dictionary with keys as keys and values as iterables of pairs.
+        mapping (dict[str, str], optional): Mapping to apply to the pairs. Defaults to None.
+
+    Returns:
+        dict[str, int]: Dictionary with unique pairs as keys and their counts as values.
+    """
     result: defaultdict[str, int] = defaultdict(int)
 
     for pairs in data_dict.values():
@@ -71,6 +80,15 @@ def count_unique_pairs_across_keys(
 def map_unique_pairs_to_keys(
     data_dict: dict[str, Any], mapping: Optional[dict[str, str]] = None
 ) -> dict[str, list[str]]:
+    """Map unique pairs to the keys in which they occur.
+
+    Args:
+        data_dict (dict[str, Any]): Dictionary with keys as keys and values as iterables of pairs.
+        mapping (dict[str, str], optional): Mapping to apply to the pairs. Defaults to None.
+
+    Returns:
+        dict[str, list[str]]: Dictionary with unique pairs as keys and lists of keys as values.
+    """
     result = defaultdict(list)
 
     for key, pairs in data_dict.items():
