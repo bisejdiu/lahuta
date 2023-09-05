@@ -107,10 +107,9 @@ class LabeledNeighborPairsBuilder:
     Methods:
         build: Build a LabeledNeighborPairs object from the pairs of atom indices.
 
-
     """
 
-    DTYPE = np.dtype({"names": ["atom_names", "resids", "resnames"], "formats": ["<U10", int, "<U10"]})
+    DTYPE = np.dtype({"names": ["names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25"]})
 
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
@@ -128,9 +127,21 @@ class LabeledNeighborPairsBuilder:
         mapped_resindices = self.atom_mapper.map(seq)
         atoms = self.atom_mapper.atoms
 
-        data = np.empty(atoms.names.shape[0], dtype=self.DTYPE)
-        data["atom_names"] = atoms.names
+        data = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atom_mapper.atoms.n_atoms)
+        data["names"] = atoms.names
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
 
         return LabeledNeighborPairs(data[pairs])
+
+    @staticmethod
+    def create_empty_struct_array(size: int) -> NDArray[np.void]:
+        """Create an empty structured array.
+
+        Args:
+            size (int): The size of the array.
+
+        Returns:
+            NDArray[np.void]: An empty structured array.
+        """
+        return np.empty(size, dtype=LabeledNeighborPairsBuilder.DTYPE)

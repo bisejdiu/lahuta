@@ -2,12 +2,16 @@
 import logging
 import subprocess
 from tempfile import NamedTemporaryFile
-from typing import Dict, Optional
+from typing import Optional
+
+from Bio.Seq import Seq
+
+__all__ = ["Mafft"]
 
 logging.basicConfig(level=logging.INFO)
 
 
-class MafftWrapper:
+class Mafft:
     """Wrapper for MAFFT.
 
     Attributes:
@@ -23,7 +27,9 @@ class MafftWrapper:
     """
 
     def __init__(
-        self, sequence_data: str | Dict[str, str], ref_alignment: Optional[str | Dict[str, str]] = None
+        self,
+        sequence_data: str | dict[str, str] | dict[str, Seq],
+        ref_alignment: Optional[str | dict[str, str] | dict[str, Seq]] = None,
     ) -> None:
         match sequence_data:
             case str(path):
@@ -47,13 +53,14 @@ class MafftWrapper:
 
         self.ref_alignment = ref_alignment
 
-        self.result: Optional[str] = None
-        self.options: Dict[str, str | None] = {}
+        self._result: Optional[str] = None
+        self.options: dict[str, str | None] = {}
+        self._command: list[str] = []
         with NamedTemporaryFile(delete=False) as temp:
             self.output_file = temp.name
 
     @staticmethod
-    def dict_to_fasta(data: Dict[str, str]) -> str:
+    def dict_to_fasta(data: dict[str, str] | dict[str, Seq]) -> str:
         """Convert a dictionary to a FASTA string.
 
         Args:
@@ -91,7 +98,7 @@ class MafftWrapper:
 
         return command
 
-    def run(self, n_jobs: int = 1, keeplength: bool = True) -> None:
+    def run(self, n_jobs: int = 1, keeplength: bool = False) -> None:
         """Run MAFFT.
 
         Args:
@@ -113,6 +120,7 @@ class MafftWrapper:
 
         command[1:1] = ["--thread", str(n_jobs)]
 
+        self._command = command
         with open(self.output_file, "w") as out_file:
             process = subprocess.Popen(command, stdout=out_file, stderr=subprocess.PIPE)
             _, logs = process.communicate()
@@ -121,7 +129,18 @@ class MafftWrapper:
 
         logging.info(f"Alignment completed. Output file located at: {self.output_file}")
 
-    def read_result(self) -> str:
+    @property
+    def command(self) -> str:
+        """Get the command.
+
+        Returns:
+            str: The command.
+
+        """
+        return " ".join(self._command)
+
+    @property
+    def result(self) -> str:
         """Read the result from the output file.
 
         Returns:
@@ -129,5 +148,5 @@ class MafftWrapper:
 
         """
         with open(self.output_file, "r") as file:
-            self.result = file.read()
-        return self.result
+            self._result = file.read()
+        return self._result

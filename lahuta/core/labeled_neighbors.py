@@ -102,12 +102,12 @@ class LabeledNeighborPairs:
     def select(self, **kwargs: list[str]) -> "LabeledNeighborPairs":
         """Select pairs based on their attributes.
 
-        Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
+        Possible attributes are: `names`, `resnames`, and `resids`. The values of these attributes
         should be provided as lists of strings. The method returns a new LabeledNeighborPairs object
         containing the pairs that match the provided attributes.
 
         Args:
-            **kwargs: The attributes to filter by. Possible attributes are: `atom_names`, `resnames`, and `resids`.
+            **kwargs: The attributes to filter by. Possible attributes are: `names`, `resnames`, and `resids`.
 
         Returns:
             LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that \
@@ -116,9 +116,9 @@ class LabeledNeighborPairs:
         Example:
             ``` py
             >>> np = LabeledNeighborPairs(...)
-            >>> np.select(atom_names=['CA', 'CB']) # select all pairs with CA or CB for atom_names
+            >>> np.select(names=['CA', 'CB']) # select all pairs with CA or CB for names
             >>> np.select(resnames=['ALA', 'GLY']) # select all pairs with ALA or GLY for resnames
-            >>> np.select(atom_names=['CA', 'CB'], resnames=['ALA', 'GLY'])
+            >>> np.select(names=['CA', 'CB'], resnames=['ALA', 'GLY'])
             ```
         """
         return self._filter("select", False, **kwargs)
@@ -126,12 +126,12 @@ class LabeledNeighborPairs:
     def exclude(self, **kwargs: list[str]) -> "LabeledNeighborPairs":
         """Exclude pairs based on their attributes.
 
-        Possible attributes are: `atom_names`, `resnames`, and `resids`. The values of these attributes
+        Possible attributes are: `names`, `resnames`, and `resids`. The values of these attributes
         should be provided as lists of strings. The method returns a new LabeledNeighborPairs object
         containing the pairs that do not match the provided attributes.
 
         Args:
-            **kwargs: The attributes to filter by. Possible attributes are: `atom_names`, `resnames`, and `resids`.
+            **kwargs: The attributes to filter by. Possible attributes are: `names`, `resnames`, and `resids`.
 
         Returns:
             LabeledNeighborPairs: A new LabeledNeighborPairs object containing the pairs that \
@@ -140,9 +140,9 @@ class LabeledNeighborPairs:
         Example:
             ``` py
             >>> np = LabeledNeighborPairs(...)
-            >>> np.exclude(atom_names=['CA', 'CB']) # exclude all pairs with CA or CB for atom_names
+            >>> np.exclude(names=['CA', 'CB']) # exclude all pairs with CA or CB for names
             >>> np.exclude(resnames=['ALA', 'GLY']) # exclude all pairs with ALA or GLY for resnames
-            >>> np.exclude(atom_names=['CA', 'CB'], resnames=['ALA', 'GLY'])
+            >>> np.exclude(names=['CA', 'CB'], resnames=['ALA', 'GLY'])
             ```
 
         """
@@ -161,7 +161,7 @@ class LabeledNeighborPairs:
         Example:
             ``` py
             >>> np = LabeledNeighborPairs(...)
-            >>> np.select(atom_names=['CA', 'CB']).inverse() # select all pairs that do not have CA or CB for atom_names
+            >>> np.select(names=['CA', 'CB']).inverse() # select all pairs that do not have CA or CB for names
             ```
         """
         return LabeledNeighborPairs(self._pairs, ~self._mask1, ~self._mask2)
@@ -209,7 +209,7 @@ class LabeledNeighborPairs:
         Example:
             ``` py
             >>> np = LabeledNeighborPairs(...)
-            >>> np.remove('atom_names')
+            >>> np.remove('names')
             ```
         """
         return self._apply_func(field, lambda _: "")
@@ -230,7 +230,7 @@ class LabeledNeighborPairs:
         Example:
             ``` py
             >>> np = LabeledNeighborPairs(...)
-            >>> np.rename('atom_names', lambda x: x + '_new')
+            >>> np.rename('names', lambda x: x + '_new')
             ```
         """
         return self._apply_func(field, func)

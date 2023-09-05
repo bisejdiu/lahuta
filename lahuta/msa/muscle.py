@@ -3,7 +3,11 @@ import logging
 import os
 import subprocess
 from tempfile import NamedTemporaryFile
-from typing import Dict, List, Optional
+from typing import Optional
+
+from Bio.Seq import Seq
+
+__all__ = ["Muscle"]
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,7 +23,7 @@ class Muscle:
         input_file (str): Path to the input file.
         result (str): Result of the alignment.
         strategy (str): Strategy to use for advanced alignment.
-        options (dict[str, str]): Options to pass to MUSCLE.
+        options (dict[str, str] | dict[str, Seq]): Options to pass to MUSCLE.
         output_file (str): Path to the output file.
 
     Methods:
@@ -29,7 +33,14 @@ class Muscle:
         cleanup: Delete the input and output files.
     """
 
-    def __init__(self, sequence_data: str | dict[str, str]) -> None:
+    def __init__(
+        self,
+        sequence_data: str | dict[str, str] | dict[str, Seq],
+        ref_alignment: Optional[str | dict[str, str] | dict[str, Seq]] = None,
+    ) -> None:
+        if ref_alignment:
+            raise NotImplementedError("MUSCLE does not support reference alignment. Please use lahuta.msa.mafft.Mafft.")
+
         match sequence_data:
             case str(path):
                 self.input_file = path
@@ -40,8 +51,9 @@ class Muscle:
 
         self.result: Optional[str] = None
         self.strategy: Optional[str] = None
-        self.options: Dict[str, str] = {}
+        self.options: dict[str, str] = {}
         self.output_file = self.input_file + "_aligned.fasta"
+        self._command: list[str] = []
 
     def set_option(self, key: str, value: Optional[str]) -> None:
         """Set an option to pass to MUSCLE.
@@ -54,6 +66,7 @@ class Muscle:
         if value is not None:
             self.options[key] = str(value)
 
+    # TODO @bisejdiu: refactor to make it consistent with Mafft
     def set_advanced_alignment(
         self,
         strategy: Optional[str] = None,
@@ -82,7 +95,7 @@ class Muscle:
         if perturb is not None:
             self.options["perturb"] = str(perturb)
 
-    def _build_command(self) -> List[str]:
+    def _build_command(self) -> list[str]:
         cmd = ["muscle", "-align", self.input_file, "-output", self.output_file]
         if self.strategy:
             cmd.append(f"-{self.strategy}")
@@ -90,9 +103,13 @@ class Muscle:
             cmd.extend([f"-{k}", v])
         return cmd
 
-    def run(self) -> None:
+    def run(self, n_jobs: int = 1) -> None:
         """Run MUSCLE."""
+        if n_jobs > 1:
+            logging.warning("MUSCLE does not support multiple threads. n_jobs will be ignored.")
         cmd = self._build_command()
+
+        self._command = cmd
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         _, stderr = process.communicate()
 
@@ -105,17 +122,27 @@ class Muscle:
             self.result = f.read()
 
     @staticmethod
-    def dict_to_fasta(seq_dict: dict[str, str]) -> str:
+    def dict_to_fasta(seq_dict: dict[str, str] | dict[str, Seq]) -> str:
         """Convert a dictionary of sequences to a FASTA string.
 
         Args:
-            seq_dict (dict[str, str]): Dictionary of sequences.
+            seq_dict (dict[str, str] | dict[str, Seq]): Dictionary of sequences.
 
         Returns:
             str: FASTA string.
 
         """
         return "".join([f">{k}\n{v}\n" for k, v in seq_dict.items()])
+
+    @property
+    def command(self) -> str:
+        """Get the command.
+
+        Returns:
+            str: The command.
+
+        """
+        return " ".join(self._command)
 
     def cleanup(self) -> None:
         """Delete the input and output files."""
