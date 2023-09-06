@@ -1,9 +1,8 @@
 name: Test Conda Installation
 
 on:
-  push:
-    branches:
-      - conda_pub_test
+  release:
+    types: [published]
 
 jobs:
   test-conda-install:
