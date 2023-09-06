@@ -31,7 +31,7 @@ jobs:
       
       - name: Install Library
         run: |
-          conda install -c conda-forge bisejdiu lahuta
+          conda install -c conda-forge -c bisejdiu lahuta
       
       - name: Test Library Installation
         run: |
