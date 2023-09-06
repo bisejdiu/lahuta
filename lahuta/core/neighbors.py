@@ -1029,7 +1029,9 @@ class NeighborPairs:
         return self.pairs.shape[0]
 
     def __str__(self) -> str:
-        return f"<Lahuta NeighborPairs class containing {self.atoms.n_atoms} atoms and {self.pairs.shape[0]} pairs>"
+        indices = self.indices.ravel()
+        unique_indices = pd.factorize(indices)[1]
+        return f"<Lahuta NeighborPairs class containing {unique_indices.size} atoms and {self.pairs.shape[0]} pairs>"
 
     def __repr__(self) -> str:
         return self.__str__()
