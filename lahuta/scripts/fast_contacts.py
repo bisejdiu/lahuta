@@ -28,7 +28,7 @@ RESULT = {
 PDB_ID = "2RH1"
 
 
-class TestLibrary(unittest.TestCase):
+class ContactTest(unittest.TestCase):
     def test_neighbors(self) -> None:
         output_dir = tempfile.gettempdir()
         download_data = download_structures([PDB_ID], dir_loc=output_dir)

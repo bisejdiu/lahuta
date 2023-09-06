@@ -6,7 +6,7 @@ from lahuta import Luni
 from lahuta.contacts import F
 
 
-class TestLibrary(unittest.TestCase):
+class SimpleTest(unittest.TestCase):
     def test_aromatic_neighbors(self) -> None:
         output_dir = tempfile.gettempdir()
         pdb_id = "2RH1"
