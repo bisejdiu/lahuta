@@ -1,100 +1,96 @@
+import unittest
 import time
+import tempfile
+
+from lahuta.api import download_structures
 
 from lahuta import Luni
 from lahuta.contacts import F
 
+RESULT = {
+    "cov": (6, 2),
+    "met": (0, 2),
+    "carb": (30, 2),
+    "hb": (0, 2),
+    "whb": (0, 2),
+    "ionic": (58, 2),
+    "aromatic": (91, 2),
+    "hydrophobic": (1203, 2),
+    "phb": (863, 2),
+    "wphb": (562, 2),
+    "vdw": (282, 2),
+    "cp": (71, 2),
+    "cp2": (6, 2),
+    "dp": (14, 2),
+    "sp": (14, 2),
+    "pp": (50, 2),
+}
+PDB_ID = "2RH1"
+
+
+class TestLibrary(unittest.TestCase):
+    def test_neighbors(self) -> None:
+        output_dir = tempfile.gettempdir()
+        download_data = download_structures([PDB_ID], dir_loc=output_dir)
+
+        start = time.time()
+        u = Luni(download_data[PDB_ID])
+        n = u.compute_neighbors(res_dif=2)
+
+        # Compute contacAMIDE_SMARTSts
+        cov = F.covalent_neighbors(n)
+        self.assertEqual(cov.pairs.shape, RESULT["cov"])
+
+        met = F.metalic_neighbors(n)
+        self.assertEqual(met.pairs.shape, RESULT["met"])
+
+        carb = F.carbonyl_neighbors(n)
+        self.assertEqual(carb.pairs.shape, RESULT["carb"])
+
+        hb = F.hbond_neighbors(n)
+        self.assertEqual(hb.pairs.shape, RESULT["hb"])
+
+        whb = F.weak_hbond_neighbors(n)
+        self.assertEqual(whb.pairs.shape, RESULT["whb"])
+
+        ionic = F.ionic_neighbors(n)
+        self.assertEqual(ionic.pairs.shape, RESULT["ionic"])
+
+        aromatic = F.aromatic_neighbors(n)
+        self.assertEqual(aromatic.pairs.shape, RESULT["aromatic"])
+
+        hydrophobic = F.hydrophobic_neighbors(n)
+        self.assertEqual(hydrophobic.pairs.shape, RESULT["hydrophobic"])
+
+        phb = F.polar_hbond_neighbors(n)
+        self.assertEqual(phb.pairs.shape, RESULT["phb"])
+
+        wphb = F.weak_polar_hbond_neighbors(n)
+        self.assertEqual(wphb.pairs.shape, RESULT["wphb"])
+
+        vdw = F.vdw_neighbors(n)
+        self.assertEqual(vdw.pairs.shape, RESULT["vdw"])
+
+        cp = F.carbon_pi(n)
+        self.assertEqual(cp.pairs.shape, RESULT["cp"])
+
+        cp2 = F.cation_pi(n)
+        self.assertEqual(cp2.pairs.shape, RESULT["cp2"])
+
+        dp = F.donor_pi(n)
+        self.assertEqual(dp.pairs.shape, RESULT["dp"])
+
+        sp = F.sulphur_pi(n)
+        self.assertEqual(sp.pairs.shape, RESULT["sp"])
+
+        pp = F.plane_plane_neighbors(n)
+        self.assertEqual(pp.pairs.shape, RESULT["pp"])
+
+        end = time.time()
+
+        self.assertEqual(aromatic.pairs.shape, (91, 2))
+        print(f"Time elapsed: {end - start}")
+
+
 if __name__ == "__main__":
-    # Load the universe
-
-    # u = Luni("/home/bisejdiu/2023/lahuta/lahuta/tests/data/1KX2.pdb")
-    # u = Luni("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.pdb")
-    u = Luni("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.cif")
-    # mda_u = mda.Universe("/home/bisejdiu/tutorials/lahuta-notebooks/data/1KX2_rcsb.pdb")
-    # # mda_u_pp = mda_u.select_atoms("(protein and not resname ARG) or resname HEC")
-    # # mda_u_pp = mda_u.select_atoms("protein and not resname ARG")
-    # mda_u_pp = mda_u.select_atoms("all")
-    # u = Luni(mda_u.atoms)
-    # u = Luni("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.pdb")
-    # u = Luni("/home/bisejdiu/tutorials/lahuta-notebooks/data/4GSW.cif")
-    # end = time.time()
-    # u = Luni("/home/bisejdiu/tutorials/lahuta-notebooks/data/8djb.cif")
-    start = time.time()
-    n = u.compute_neighbors(res_dif=2)
-    print("Finished computing neighbors", n.pairs.shape)
-
-    # Compute contacAMIDE_SMARTSts
-    cov = F.covalent_neighbors(n)
-    print(cov.pairs.shape, "cov")
-
-    met = F.metalic_neighbors(n)
-    print(met.pairs.shape, "met")
-
-    carb = F.carbonyl_neighbors(n)
-    print(carb.pairs.shape, "carb")
-
-    hb = F.hbond_neighbors(n)
-    print(hb.pairs.shape, "hb")
-
-    whb = F.weak_hbond_neighbors(n)
-    print(whb.pairs.shape, "whb")
-
-    ionic = F.ionic_neighbors(n)
-    print(ionic.pairs.shape, "ionic")
-
-    aromatic = F.aromatic_neighbors(n)
-    print(aromatic.pairs.shape, "aromatic")
-
-    hydrophobic = F.hydrophobic_neighbors(n)
-    print(hydrophobic.pairs.shape, "hydrophobic")
-
-    phb = F.polar_hbond_neighbors(n)
-    print(phb.pairs.shape, "phb")
-
-    wphb = F.weak_polar_hbond_neighbors(n)
-    print(wphb.pairs.shape, "wphb")
-
-    vdw = F.vdw_neighbors(n)
-    print(vdw.pairs.shape, "vdw")
-
-    cp = F.carbon_pi(n)
-    print(cp.pairs.shape, "cp")
-
-    cp2 = F.cation_pi(n)
-    print(cp2.pairs.shape, "cp2")
-
-    dp = F.donor_pi(n)
-    print(dp.pairs.shape, "dp")
-
-    sp = F.sulphur_pi(n)
-    print(sp.pairs.shape, "sp")
-
-    # ap = AtomPlaneContacts(u)
-    # ap.compute_contacts()
-
-    # cp = ap.carbon_pi.contacts(ap.neighbors, ap.angles)
-    # print(cp.pairs.shape, "cp")
-
-    # cp2 = ap.cation_pi.contacts(ap.neighbors, ap.angles)
-    # print(cp2.pairs.shape, "cp2")
-
-    # dp = ap.donor_pi.contacts(ap.neighbors, ap.angles)
-    # print(dp.pairs.shape, "dp")
-
-    # sp = ap.sulphur_pi.contacts(ap.neighbors, ap.angles)
-    # print(sp.pairs.shape, "sp")
-
-    # pp = PlanePlaneContacts(n)
-    # pp.compute()
-    # pn = pp.get_neighbors()
-    # print(pn.pairs.shape, "pp")
-
-    # # print(PPDataFrameFactory(pp, df_format="expanded").dataframe())
-    # print(pp.get_neighbors().to_frame(annotations=True))
-
-    pp = F.plane_plane_neighbors(n)
-    print(pp.pairs.shape, "pp")
-
-    print(pp.to_frame(annotations=True))
-
-    end = time.time()
-    print("Time elapsed: ", end - start)
+    unittest.main()
