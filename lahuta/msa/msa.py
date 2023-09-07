@@ -128,6 +128,16 @@ class MSAParser:
         """
         return self._sequences
 
+    @sequences.setter
+    def sequences(self, sequences: dict[str, Seq]) -> None:
+        """Set the sequences.
+
+        Args:
+            sequences (dict[str, Seq]): The sequences.
+
+        """
+        self._sequences = sequences
+
     def align(
         self: T,
         backend: Literal["mafft", "muscle"] = "mafft",
