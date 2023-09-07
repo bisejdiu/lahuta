@@ -9,7 +9,6 @@ cachedir/
 *.cif
 tests/data/*.pdb
 tests/data/*.cif
-docs/notebooks/data
 
 # IDEs and editors
 .vscode
