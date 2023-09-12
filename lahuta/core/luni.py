@@ -59,9 +59,8 @@ class Luni:
     """
 
     def __init__(self, structure: str | AtomGroupType, trajectories: Optional[str | list[str]] = None) -> None:
-        self._mol: Optional[MolType] = None
+        self._mol: Optional[MolType]
         self._ready = False
-        self._topattr_handler = AtomAttrClassHandler()
         self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
 
         self._file_loader: BaseLoader
@@ -101,7 +100,8 @@ class Luni:
             attrname (str): The name of the attribute.
             values (NDArray[Any]): The values of the attribute.
         """
-        self._topattr_handler.init_topattr(attrname, attrname)
+        topattr_handler = AtomAttrClassHandler()
+        topattr_handler.init_topattr(attrname, attrname)
         self._mda.universe.add_TopologyAttr(attrname, values)
 
     def ready(self) -> None:
@@ -113,7 +113,6 @@ class Luni:
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
-        print ('ag_types', ag_types)
         self.atom_types = ag_types
 
         self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
