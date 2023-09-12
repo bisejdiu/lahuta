@@ -66,12 +66,13 @@ class Luni:
         self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
 
         self._file_loader: BaseLoader
+        fmts: str | set[str]
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
-                self._file_loader = TopologyLoader.from_mda(s)
+                self._file_loader = TopologyLoader.from_mda(s) # type: ignore
             case (str(s), None):
                 # Check if we can use GemmiLoader.
-                file_format, is_pdb = Luni.get_format(s)
+                file_format, is_pdb = Luni._check_gemmi_support(s)
                 if file_format:
                     self._file_loader = GemmiLoader(s, is_pdb=is_pdb)
                 elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
@@ -90,13 +91,9 @@ class Luni:
 
         self._mda = self._file_loader.to("mda")
 
-        assert self._mda is not None
-        assert self._file_loader is not None
-
     @staticmethod
     def _get_supported_fmts() -> set[str]:
-            fmts = GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
-            return fmts
+        return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
 
     def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         """Add new topology attributes to the Luni.
@@ -181,11 +178,11 @@ class Luni:
         return "".join(single_letter_codes)
 
     @staticmethod
-    def get_format(file_name: str) -> tuple[str | None, bool]:
-        """Retrieve the file format from a file name.
+    def _check_gemmi_support(file_name: str) -> tuple[str | None, bool]:
+        """Check if we can use Gemmi to load the file.
 
-        This static method checks the file extension of the provided file name against the list of formats
-        supported by GEMMI (stored in `GEMMI_SUPPRTED_FORMATS`). If the extension matches a supported format,
+        Checks the file extension of the provided file name against the list of formats
+        supported by GEMMI. If the extension matches a supported format,
         it returns the format and a boolean indicating whether the format is 'pdb' or 'cif'. If the file
         extension doesn't match any supported formats, it returns None and False.
 
