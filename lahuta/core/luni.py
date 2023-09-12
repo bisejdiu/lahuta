@@ -67,8 +67,8 @@ class Luni:
 
         self._file_loader: BaseLoader
         match (structure, trajectories):
-            case (_, None) if isinstance(structure, mda.AtomGroup):
-                self._file_loader = TopologyLoader.from_mda(structure)
+            case (mda.AtomGroup(atoms=s), None):
+                self._file_loader = TopologyLoader.from_mda(s)
             case (str(s), None):
                 # Assume GemmiLoader can handle the single structure file.
                 file_format, is_pdb = Luni.get_format(s)
@@ -80,7 +80,7 @@ class Luni:
 
             case (str(s), str(t)):
                 # If trajectories are provided, use TopologyLoader
-                self._file_loader = TopologyLoader(structure=s, trajectories=t)
+                self._file_loader = TopologyLoader(s, t)
 
             case _:
                 raise ValueError("Invalid input")
