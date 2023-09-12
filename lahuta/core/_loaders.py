@@ -265,14 +265,16 @@ class TopologyLoader(BaseLoader):
 
     """
 
-    def __init__(self, *paths: str):
-        file_path: str = paths[0]
+    def __init__(self, structure: str, trajectories: Optional[str | list[str]] = None):
+        file_path: str = structure
         super().__init__(file_path)
         universe = mda.Universe(self.file_path)
         self.ag: AtomGroupType = universe.atoms
         assert self.ag is not None
-        if len(paths) > 1:
-            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
+        if trajectories:
+            if isinstance(trajectories, str):
+                trajectories = (trajectories)
+            self.ag.universe.load_new(*trajectories, format=None, in_memory=False)
 
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 

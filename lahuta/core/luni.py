@@ -14,7 +14,7 @@ Example:
     
 """
 
-from typing import Any, Callable, Literal, Optional, overload
+from typing import Any, Literal, Optional, overload
 
 import MDAnalysis as mda
 import numpy as np
@@ -59,91 +59,36 @@ class Luni:
         ValueError: If no input is provided or if invalid types of inputs are provided.
     """
 
-    def __init__(self, *args: LuniInputType) -> None:
+    def __init__(self, structure: str | AtomGroupType, trajectories: Optional[str | list[str]] = None) -> None:
         self._mol: Optional[MolType] = None
         self._ready = False
         self._topattr_handler = AtomAttrClassHandler()
         self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
 
-        initializer = self._validate_input(*args)
-        self._file_loader, self._mda = initializer(*args)
+        self._file_loader: BaseLoader
+        match (structure, trajectories):
+            case (_, None) if isinstance(structure, mda.AtomGroup):
+                self._file_loader = TopologyLoader.from_mda(structure)
+            case (str(s), None):
+                # Assume GemmiLoader can handle the single structure file.
+                file_format, is_pdb = Luni.get_format(s)
+                if file_format:
+                    self._file_loader = GemmiLoader(s, is_pdb=is_pdb)
+                else:
+                    # raise ValueError(f"Unsupported format for structure: {s}") # noqa: ERA001
+                    self._file_loader = TopologyLoader((s))
+
+            case (str(s), str(t)):
+                # If trajectories are provided, use TopologyLoader
+                self._file_loader = TopologyLoader(structure=s, trajectories=t)
+
+            case _:
+                raise ValueError("Invalid input")
+
+        self._mda = self._file_loader.to("mda")
 
         assert self._mda is not None
         assert self._file_loader is not None
-
-    def _validate_input(self, *args: LuniInputType) -> Callable[..., tuple[BaseLoader, AtomGroupType]]:
-        """Validate the input files for Luni initialization.
-
-        Args:
-        ----
-        *args (LuniInputType): Either an MDAnalysis.AtomGroup instance or a list of file names.
-
-        Raises:
-            ValueError: If no input is provided or if invalid types of inputs are provided.
-
-        Returns:
-            func: A function to initialize the Luni either from an existing Luni or from files.
-        """
-        if not args:
-            raise ValueError("No input provided")
-
-        if isinstance(args[0], mda.AtomGroup):
-            if len(args) != 1:
-                raise ValueError("When passing an MDAnalysis.AtomGroup instance, no other arguments are allowed")
-            return self._initialize_from_universe
-
-        if not all(isinstance(arg, str) for arg in args):
-            raise ValueError("Input must be either an MDAnalysis.AtomGroup instance or a list of file names")
-        return self._initialize_from_files
-
-    def _initialize_from_universe(self, *args: AtomGroupType) -> tuple[BaseLoader, AtomGroupType]:
-        """Initialize the universe from an existing Luni.
-
-        Args:
-            *args (AtomGroupType): An MDAnalysis.AtomGroup instance.
-
-        Returns:
-            tuple: A tuple of the file loader and the AtomGroup instance.
-        """
-        _file_loader = TopologyLoader.from_mda(args[0])
-        _mda = _file_loader.to("mda")
-        return _file_loader, _mda
-
-    def _initialize_from_files(self, files: str) -> tuple[BaseLoader, AtomGroupType]:
-        """Initialize the universe from provided files.
-
-        Args:
-            files (str): The file name(s).
-
-        Returns:
-            tuple: A tuple of the file loader and the AtomGroup instance.
-        """
-        _file_loader = self._get_file_loader(files)
-        _mda = _file_loader.to("mda")
-        return _file_loader, _mda
-
-    def _get_file_loader(self, *files: str) -> BaseLoader:
-        """Retrieve the appropriate file loader.
-
-        Args:
-            *files (str): The file name(s).
-
-        Raises:
-            ValueError: If no file name is provided or if multiple files are provided.
-
-        Returns:
-            BaseLoader: The appropriate file loader.
-        """
-        # GemmiLoader can only handle one file and its format should be supported
-        if len(files) == 1:
-            file_name = files[0]
-            file_format, is_pdb = Luni.get_format(file_name)
-            if file_format:
-                return GemmiLoader(file_name, is_pdb=is_pdb)
-
-        # If there are multiple files or the single file is not supported by GemmiLoader,
-        # then use TopologyLoader
-        return TopologyLoader(*files)
 
     def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         """Add new topology attributes to the Luni.
@@ -164,6 +109,7 @@ class Luni:
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
+        print ('ag_types', ag_types)
         self.atom_types = ag_types
 
         self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
