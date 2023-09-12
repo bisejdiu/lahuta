@@ -14,7 +14,11 @@ Constants:
                      inner keys are the geometric parameters (distance, angle etc.) with their values.
 
     GEMMI_SUPPRTED_FORMATS (set): set of file formats that are supported by Gemmi library.
+
+    MDA_SUPPORTED_FORMATS (set): set of file formats supported by MDAnalysis.
 """
+
+from MDAnalysis import _PARSERS as MDAParsers
 
 # http://en.wikipedia.org/wiki/Atomic_radii_of_the_elements_(data_page)
 VDW_RADII = {"H": 1.2}
@@ -71,4 +75,9 @@ inner keys are the geometric parameters (distance, angle etc.) with their values
 GEMMI_SUPPRTED_FORMATS = {"cif", "mmcif", "cif.gz", "pdb", "pdb.gz"}
 """
 Type: `set`: set of file formats that are supported by Gemmi library.
+"""
+
+MDA_SUPPORTED_FORMATS: set[str] = set(MDAParsers.keys())
+"""
+Type: `set`: set of file formats that are supported by MDAnalysis. 
 """

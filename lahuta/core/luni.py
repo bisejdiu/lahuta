@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from scipy.sparse import csc_array
 
 from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
-from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
+from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
@@ -70,25 +70,33 @@ class Luni:
             case (mda.AtomGroup(atoms=s), None):
                 self._file_loader = TopologyLoader.from_mda(s)
             case (str(s), None):
-                # Assume GemmiLoader can handle the single structure file.
+                # Check if we can use GemmiLoader.
                 file_format, is_pdb = Luni.get_format(s)
                 if file_format:
                     self._file_loader = GemmiLoader(s, is_pdb=is_pdb)
-                else:
-                    # raise ValueError(f"Unsupported format for structure: {s}") # noqa: ERA001
+                elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
                     self._file_loader = TopologyLoader((s))
-
+                else:
+                    fmts = self._get_supported_fmts()
+                    fmts = ", ".join(fmts)
+                    raise ValueError(f"Unsupported format for structure: {s}! \nSupported formats are: {fmts}.")
             case (str(s), str(t)):
                 # If trajectories are provided, use TopologyLoader
                 self._file_loader = TopologyLoader(s, t)
-
             case _:
-                raise ValueError("Invalid input")
+                fmts = self._get_supported_fmts()
+                fmts = ", ".join(fmts)
+                raise ValueError("Invalid input! \nSupported formats are: {fmts}.")
 
         self._mda = self._file_loader.to("mda")
 
         assert self._mda is not None
         assert self._file_loader is not None
+
+    @staticmethod
+    def _get_supported_fmts() -> set[str]:
+            fmts = GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
+            return fmts
 
     def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         """Add new topology attributes to the Luni.
@@ -178,14 +186,14 @@ class Luni:
 
         This static method checks the file extension of the provided file name against the list of formats
         supported by GEMMI (stored in `GEMMI_SUPPRTED_FORMATS`). If the extension matches a supported format,
-        it returns the format and a boolean indicating whether the format is 'pdb' or 'pdb.gz'. If the file
+        it returns the format and a boolean indicating whether the format is 'pdb' or 'cif'. If the file
         extension doesn't match any supported formats, it returns None and False.
 
         Args:
             file_name (str): The name of the file.
 
         Returns:
-            tuple: A tuple containing the file format (str or None) and a boolean indicating if it is 'pdb' or 'pdb.gz'.
+            tuple: A tuple containing the file format (str or None) and a boolean indicating if it is 'pdb' or 'cif'.
         """
         file_name_lower = file_name.lower()
         for fmt in GEMMI_SUPPRTED_FORMATS:
