@@ -106,10 +106,8 @@ class Luni:
 
     def ready(self) -> None:
         """Prepare instance for computations by transforming the molecule and assigning atom types."""
-        assert self._file_loader is not None
         self._mol = self._file_loader.to("mol")
 
-        assert self.arc is not None
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         ag_types = atomtype_assigner.assign_atom_types()
         og_atoms = self._mda.universe.atoms
@@ -164,7 +162,6 @@ class Luni:
         Returns:
             NDArray[np.str_]: A NumPy array containing the one-letter amino acid codes of the Luni.
         """
-        assert self.arc is not None
         three_letter_codes = self.to("mda").select_atoms("protein").residues.resnames
         conversion_dict: dict[str, str] = {}
         for key, synonyms in RESIDUE_SYNONYMS.items():
