@@ -33,9 +33,7 @@ from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
 
-__all__ = ["LuniInputType", "Luni"]
-
-LuniInputType = AtomGroupType | str | list[str]
+__all__ = ["Luni"]
 
 
 class Luni:
@@ -48,7 +46,8 @@ class Luni:
     for reading MD trajectories.
 
     Args:
-        *args (LuniInputType): Either an MDAnalysis.AtomGroup instance or a list of file names.
+        structure (str | AtomGroupType): The structure to load. Can be either a file path or an MDAnalysis AtomGroup.
+        trajectories (Optional[str | list[str]]): Optional trajectories. Either a single path or a list of paths.
 
     Attributes:
         atom_types (csc_array): A sparse array containing the atom types of the universe.
