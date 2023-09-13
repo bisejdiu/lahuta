@@ -32,7 +32,7 @@ from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
 from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
 from lahuta.lahuta_types.openbabel import MolType
-
+from lahuta.utils.radii import v_radii_assignment
 
 class BaseLoader(ABC):
     """Abstract base class providing a blueprint for loading and handling biological structure data.
@@ -221,6 +221,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("names", self.arc.atoms.names)
         uv.add_TopologyAttr("type", self.arc.atoms.types)
         uv.add_TopologyAttr("elements", self.arc.atoms.elements)
+        uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("segids", chain_ids)
@@ -276,6 +277,7 @@ class TopologyLoader(BaseLoader):
                 trajectories = (trajectories)
             self.ag.universe.load_new(trajectories, format=None, in_memory=False)
 
+        self.ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(universe.atoms.elements))
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
     def to_mda(self) -> AtomGroupType:
@@ -304,6 +306,7 @@ class TopologyLoader(BaseLoader):
             TopologyLoader: A new instance of the TopologyLoader class with the AtomGroup data copied.
         """
         top_loader = cls.__new__(cls)
+        ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(ag.universe.atoms.elements))
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
         top_loader.structure = None

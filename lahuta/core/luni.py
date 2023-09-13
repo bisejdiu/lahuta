@@ -108,15 +108,9 @@ class Luni:
         """Prepare instance for computations by transforming the molecule and assigning atom types."""
         # 1.
         self._mol = self._file_loader.to("mol")
-
-        # 2.
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         self.atom_types = atomtype_assigner.assign_atom_types()
         
-        # 3.
-        og_atoms = self._mda.universe.atoms
-        self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
-
         self._ready = True
 
     # TODO @bisejdiu: rename to
