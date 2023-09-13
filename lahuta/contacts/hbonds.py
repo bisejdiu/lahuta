@@ -177,3 +177,4 @@ class WeakPolarHBondContacts(ContactAnalysis):
             NeighborPairs: A NeighborPairs object containing only weak polar hbond contacts.
         """
         return F.weak_polar_hbond_neighbors(self.ns, self.distance)
+

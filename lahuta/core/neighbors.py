@@ -10,7 +10,6 @@ import pandas as pd
 from Bio.Seq import Seq
 from numpy.typing import NDArray
 
-from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
@@ -25,8 +24,6 @@ from lahuta.utils import array_utils as au
 from lahuta.viz.contact_matrix import ContactMap
 from lahuta.writers.exporters import VMDExporter
 from lahuta.writers.frame_writer import DataFrameWriter
-
-from ._hbond_handler import HBondHandler
 
 __all__ = ["NeighborPairs"]
 
@@ -78,10 +75,6 @@ class NeighborPairs:
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
         # 3
-        self.hbond_handler = HBondHandler(self)
-        self.hbond_angles: NDArray[np.float32] = np.array([])
-
-        # 4
         self._annotations: dict[str, NDArray[Any]] = {}
 
     def _validate_inputs(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
@@ -143,7 +136,7 @@ class NeighborPairs:
         """Return the column of the pair of atoms depending on the value of partner."""
         return self.atoms[self.pairs[:, partner - 1]]
 
-    def _get_partners(self, partner: int) -> tuple[AtomGroupType, AtomGroupType]:
+    def get_partners(self, partner: int) -> tuple[AtomGroupType, AtomGroupType]:
         """Return the columns of the pair of atoms depending on the value of partner."""
         partner2 = 1 if partner == 2 else 2
 
@@ -250,57 +243,6 @@ class NeighborPairs:
         mask = col_func.atoms.vdw_radii <= radius
 
         return self.clone(self.pairs[mask], self.distances[mask])
-
-    def hbond_distance_filter(self, partner: int, vdw_comp_factor: float = 0.1) -> "NeighborPairs":
-        """Filter the pairs based on the distance between the hydrogen bonded atoms.
-
-        The method filters pairs from the NeighborPairs object where the hydrogen bond distances
-        are less than or equal to the specified van der Waals distances. The `partner` parameter specifies
-        the column of hydrogen bonded atom indices in the `hbond_array`.
-
-        Args:
-            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-            vdw_comp_factor (float, optional): The van der Waals complementarity factor. Defaults to 0.1.
-
-        Returns:
-            A NeighborPairs object containing the pairs that meet the hydrogen bond distance filter.
-        """
-        attr_col, hbound_attr_col = self._get_partners(partner)
-
-        vdw_distances = self.hbond_handler.get_vdw_distances(attr_col, vdw_comp_factor)
-        hbond_dist = self.hbond_handler.get_hbond_distances(attr_col, hbound_attr_col)
-
-        distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
-        hbond_dist_pairs = self.pairs[distances_mask]
-        hbond_distances = self.distances[distances_mask]
-
-        return self.clone(hbond_dist_pairs, hbond_distances)
-
-    def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
-        """Filter the pairs based on the angle between the hydrogen bonded atoms.
-
-        The method filters pairs from the NeighborPairs object where the hydrogen bond angles are greater
-        than or equal to the specified contact angle. The `partner` parameter specifies the column of hydrogen
-        bonded atom indices in the `hbond_array`. If `weak` is True, the function will accept weaker hydrogen bonds.
-
-        Args:
-            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-            weak (bool, optional): If True, accept weaker hydrogen bonds. Defaults to False.
-
-        Returns:
-            A NeighborPairs object containing the pairs that meet the hydrogen bond angle filter.
-        """
-        contact_type = "weak hbond" if weak else "hbond"
-        attr_partner, hbound_attr_partner = self._get_partners(partner)
-
-        # if self.hbond_angles is None:
-        self.hbond_angles = self.hbond_handler.get_hbond_angles(attr_partner, hbound_attr_partner)
-
-        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
-        self._pairs = self._pairs[idx]
-        self._distances = self._distances[idx]
-
-        return self.clone(self.pairs, self.distances)
 
     def map(self, seq: Seq) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
