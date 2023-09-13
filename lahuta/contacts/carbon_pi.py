@@ -56,7 +56,6 @@ class CarbonPi(ContactAnalysis):
     """
 
     distance = DEFAULT_CONTACT_DISTS["carbon_pi"]
-    cache = False
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
@@ -74,4 +73,4 @@ class CarbonPi(ContactAnalysis):
         Returns:
             NeighborPairs: A NeighborPairs object containing only carbon pi contacts.
         """
-        return carbon_pi(self.ns, cache=self.cache)
+        return carbon_pi(self.ns)

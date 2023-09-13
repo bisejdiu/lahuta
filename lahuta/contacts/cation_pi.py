@@ -54,7 +54,6 @@ class CationPi(ContactAnalysis):
     """
 
     distance = DEFAULT_CONTACT_DISTS["cation_pi"]
-    cache = False
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
@@ -72,4 +71,4 @@ class CationPi(ContactAnalysis):
         Returns:
             NeighborPairs: A NeighborPairs object containing only cation pi contacts.
         """
-        return cation_pi(self.ns, cache=self.cache)
+        return cation_pi(self.ns)
