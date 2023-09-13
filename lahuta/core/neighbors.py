@@ -68,17 +68,22 @@ class NeighborPairs:
     ):
         """Initialize the NeighborPairs object."""
         self.luni = luni
+        # 1
         mda = luni.to("mda")
         self.mol = luni.to("mol")
         self.atoms = mda.atoms.universe.atoms
         self.atom_types = luni.atom_types
 
+        # 2
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
+        # 3
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
         self.hbond_angles: NDArray[np.float32] = np.array([])
+
+        # 4
         self._annotations: dict[str, NDArray[Any]] = {}
 
     def _validate_inputs(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
