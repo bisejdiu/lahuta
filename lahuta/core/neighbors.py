@@ -59,18 +59,18 @@ class NeighborPairs:
     def __init__(
         self,
         luni: "Luni",
-        pairs: NDArray[np.int32],
-        distances: NDArray[np.float32],
+        # pairs: NDArray[np.int32],
+        # distances: NDArray[np.float32],
     ):
         """Initialize the NeighborPairs object."""
-        self.luni = luni
         # 1
+        self.luni = luni
         self.atoms = luni.to("mda").universe.atoms
         self.atom_types = luni.atom_types
 
         # 2
-        self._validate_inputs(pairs, distances)
-        self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
+        self._pairs = np.array([], dtype=np.int32).reshape(0, 2)
+        self._distances = np.array([], dtype=np.float32)
 
         # 3
         self._annotations: dict[str, NDArray[Any]] = {}
@@ -715,6 +715,43 @@ class NeighborPairs:
             An array containing the pairs of indices of neighboring atoms.
         """
         return self._pairs
+
+    @property
+    def neighbors(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
+        """Get the neighbors.
+
+        Returns:
+            An array containing the indices of the neighbors.
+        """
+        return self.pairs, self.distances
+
+    @neighbors.setter
+    def neighbors(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
+        """Set the neighbors.
+
+        Args:
+            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
+            distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+        """
+        self.set_neighbors(pairs, distances)
+
+    def get_neighbors(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
+        """Get the neighbors.
+
+        Returns:
+            An array containing the indices of the neighbors.
+        """
+        return self.pairs, self.distances
+
+    def set_neighbors(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
+        """Set the neighbors.
+
+        Args:
+            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
+            distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+        """
+        self._validate_inputs(pairs, distances)
+        self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
     @property
     def distances(self) -> NDArray[np.float32]:

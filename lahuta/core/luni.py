@@ -152,7 +152,9 @@ class Luni:
             res_dif=res_dif,
         )
 
-        return NeighborPairs(self, pairs, distances)
+        ns = NeighborPairs(self)
+        ns.set_neighbors(pairs, distances)
+        return ns
         # return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
 
     @property

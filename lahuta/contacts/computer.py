@@ -342,7 +342,9 @@ class LahutaTrajectoryContacts:
             for frame_index, (pairs, distances) in block.items():
                 # Create a reference NeighborPairs object, because cloning is faster than creating a new one
                 if ref_ns is None:
-                    ref_ns = NeighborPairs(luni, pairs, distances)
+                    ref_ns = NeighborPairs(luni)
+                    ref_ns.set_neighbors(pairs, distances)
+
 
                 ns = ref_ns.clone(pairs, distances)
                 ns._pairs, ns._distances = ns.sort_inputs(ns.pairs, ns.distances)  # noqa: SLF001
