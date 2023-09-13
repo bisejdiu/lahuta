@@ -106,13 +106,15 @@ class Luni:
 
     def ready(self) -> None:
         """Prepare instance for computations by transforming the molecule and assigning atom types."""
+        # 1.
         self._mol = self._file_loader.to("mol")
 
+        # 2.
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
-        ag_types = atomtype_assigner.assign_atom_types()
+        self.atom_types = atomtype_assigner.assign_atom_types()
+        
+        # 3.
         og_atoms = self._mda.universe.atoms
-        self.atom_types = ag_types
-
         self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
 
         self._ready = True
@@ -150,7 +152,8 @@ class Luni:
             res_dif=res_dif,
         )
 
-        return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
+        return NeighborPairs(self, pairs, distances)
+        # return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
 
     @property
     def sequence(self) -> str:

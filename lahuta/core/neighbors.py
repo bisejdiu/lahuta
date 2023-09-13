@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 from Bio.Seq import Seq
 from numpy.typing import NDArray
-from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
@@ -19,9 +18,9 @@ from lahuta.core.index_finder import IndexFinder
 
 if TYPE_CHECKING:
     from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+    from lahuta.core.luni import Luni
 
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils import array_utils as au
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.viz.contact_matrix import ContactMap
@@ -47,9 +46,7 @@ class NeighborPairs:
     designed to be extensible and supports the addition of custom annotations to the pairs.
 
     Args:
-        mda (AtomGroupType): The group of atoms under consideration.
-        mol (MolType): The molecule under consideration.
-        atom_types (csc_array): A sparse matrix containing the atom types.
+        luni (Luni): A Luni object containing the structure.
         pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
         distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
 
@@ -65,20 +62,17 @@ class NeighborPairs:
 
     def __init__(
         self,
-        mda: AtomGroupType,
-        mol: MolType,
-        atom_types: csc_array,
+        luni: "Luni",
         pairs: NDArray[np.int32],
         distances: NDArray[np.float32],
     ):
-        self.mda = mda
-        self.mol = mol
+        self.mda = luni.to("mda")
+        self.mol = luni.to("mol")
         self.atoms = self.mda.atoms.universe.atoms
-        self.atom_types = atom_types
+        self.atom_types = luni.atom_types
 
         self._validate_inputs(pairs, distances)
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
-        self._remapped: Optional[NDArray[np.str_]] = None
 
         self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
         self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
