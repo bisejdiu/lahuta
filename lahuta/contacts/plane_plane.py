@@ -53,7 +53,7 @@ from lahuta.utils.ob import enumerate_rings
 class _PlanePlaneContacts:
     def __init__(self, ns: NeighborPairs) -> None:
         self.ns = ns
-        self.rings = enumerate_rings(self.ns.mol)
+        self.rings = enumerate_rings(ns.luni.to("mol"))
         self.centroid_distance = CONTACTS["aromatic"]["centroid_distance"]
         self._annotations: dict[str, NDArray[Any]] = {}
 

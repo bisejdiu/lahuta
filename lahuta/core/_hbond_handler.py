@@ -29,9 +29,9 @@ class HBondHandler:
         The indices of the hydrogen bonded atoms.
     """
 
-    def __init__(self, neighbor_pairs: "NeighborPairs"):
-        self.atoms = neighbor_pairs.atoms
-        self.hbond_array = find_hydrogen_bonded_atoms(neighbor_pairs.mol, self.atoms.n_atoms)
+    def __init__(self, ns: "NeighborPairs"):
+        self.atoms = ns.atoms
+        self.hbond_array = find_hydrogen_bonded_atoms(ns.luni.to("mol"), self.atoms.n_atoms)
 
     def get_hbond_distances(self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType) -> NDArray[np.float32]:
         """Compute the distances between hydrogen atoms and their respective bonded atoms.

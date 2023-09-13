@@ -112,9 +112,8 @@ def compute_contacts(
 
     def wrapped(ns: NeighborPairs) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the specified atom plane system."""
-        mol = ns.mol
         mda = ns.luni.to("mda")
-        rings = enumerate_rings(mol)
+        rings = enumerate_rings(ns.luni.to("mol"))
 
         # neighbors_fn = compute_neighbors_cached.call if use_cache else compute_neighbors  # type: ignore
         # pairs, distances = result[0] if use_cache else result
@@ -304,7 +303,7 @@ class AtomPlaneContacts:
 
     def __init__(self, ns: NeighborPairs):
         self.angles: NDArray[np.float32] = np.array([])
-        self.rings = enumerate_rings(ns.mol)
+        self.rings = enumerate_rings(ns.luni.to("mol"))
         self.ap_contacts = _AtomPlaneContacts()
 
         self._compute(ns, ns.luni.to("mda"))

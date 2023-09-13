@@ -65,9 +65,7 @@ class NeighborPairs:
         """Initialize the NeighborPairs object."""
         self.luni = luni
         # 1
-        mda = luni.to("mda")
-        self.mol = luni.to("mol")
-        self.atoms = mda.atoms.universe.atoms
+        self.atoms = luni.to("mda").universe.atoms
         self.atom_types = luni.atom_types
 
         # 2

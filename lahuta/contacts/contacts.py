@@ -75,7 +75,7 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only covalent contacts.
     """
-    bonds = get_bonded_atoms(ns.mol)
+    bonds = get_bonded_atoms(ns.luni.to("mol"))
     indices = find_shared_pairs(ns.pairs + 1, bonds)
 
     return ns.clone(ns.pairs[indices], ns.distances[indices])
