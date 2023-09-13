@@ -66,9 +66,11 @@ class NeighborPairs:
         pairs: NDArray[np.int32],
         distances: NDArray[np.float32],
     ):
-        self.mda = luni.to("mda")
+        """Initialize the NeighborPairs object."""
+        self.luni = luni
+        mda = luni.to("mda")
         self.mol = luni.to("mol")
-        self.atoms = self.mda.atoms.universe.atoms
+        self.atoms = mda.atoms.universe.atoms
         self.atom_types = luni.atom_types
 
         self._validate_inputs(pairs, distances)

@@ -118,7 +118,7 @@ def compute_contacts(
     def wrapped(ns: NeighborPairs) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the specified atom plane system."""
         mol = ns.mol
-        mda: AtomGroupType = ns.mda
+        mda: AtomGroupType = ns.luni.to("mda")
         rings = enumerate_rings(mol)
 
         neighbors_fn = compute_neighbors_cached if not use_cache else compute_neighbors_cached.call  # type: ignore
@@ -312,7 +312,7 @@ class AtomPlaneContacts:
         self.rings = enumerate_rings(ns.mol)
         self.ap_contacts = _AtomPlaneContacts()
 
-        self._compute(ns, ns.mda)
+        self._compute(ns, ns.luni.to("mda"))
 
     def _compute(self, ns: NeighborPairs, mda: AtomGroupType) -> None:
         pairs, distances = compute_neighbors(mda.atoms.positions, self.rings.centers)
