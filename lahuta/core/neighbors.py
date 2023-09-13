@@ -22,7 +22,6 @@ if TYPE_CHECKING:
 
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils import array_utils as au
-from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.viz.contact_matrix import ContactMap
 from lahuta.writers.exporters import VMDExporter
 from lahuta.writers.frame_writer import DataFrameWriter
@@ -79,8 +78,7 @@ class NeighborPairs:
         self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
 
         # 3
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
-        self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
+        self.hbond_handler = HBondHandler(self)
         self.hbond_angles: NDArray[np.float32] = np.array([])
 
         # 4

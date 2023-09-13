@@ -4,14 +4,17 @@ Classes:
     HBondHandler: A class used to compute various properties of hydrogen bonds for a given atomic group.
 
 """
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
+if TYPE_CHECKING:
+    from lahuta import NeighborPairs
 import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse import coo_array, csr_matrix
 
 from lahuta.config.defaults import VDW_RADII
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.utils.math import calc_pairwise_distances, calc_vertex_angles
 
 
@@ -26,9 +29,9 @@ class HBondHandler:
         The indices of the hydrogen bonded atoms.
     """
 
-    def __init__(self, atoms: AtomGroupType, hbond_array: csr_matrix):
-        self._atoms = atoms
-        self.hbond_array = hbond_array
+    def __init__(self, neighbor_pairs: "NeighborPairs"):
+        self._atoms = neighbor_pairs.atoms
+        self.hbond_array = find_hydrogen_bonded_atoms(neighbor_pairs.mol, neighbor_pairs.atoms.n_atoms)
 
     def get_hbond_distances(self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType) -> NDArray[np.float32]:
         """Compute the distances between hydrogen atoms and their respective bonded atoms.
