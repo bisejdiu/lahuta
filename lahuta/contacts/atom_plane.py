@@ -31,7 +31,6 @@ Warning:
 from typing import Callable, Optional, TypeVar
 
 import numpy as np
-from joblib import Memory
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
@@ -41,12 +40,9 @@ from lahuta.utils.ob import enumerate_rings
 
 from ._cache_funcs import (
     calc_ringnormal_pos_angle,
-    calc_ringnormal_pos_angle_cached,
     compute_neighbors,
-    compute_neighbors_cached,
 )
 
-memory = Memory("cachedir", verbose=0)
 T = TypeVar("T")
 
 __all__ = [
@@ -111,27 +107,26 @@ def subtract_aromatic_neighbors(
 def compute_contacts(
     contact_fn: Callable[[NeighborPairs, NDArray[np.float32], Optional[float]], NeighborPairs],
     angle_cutoff: Optional[float],
-    use_cache: bool,
 ) -> Callable[[NeighborPairs], NeighborPairs]:
     """Compute the contacts between aromatic rings and the specified atom plane system."""
 
     def wrapped(ns: NeighborPairs) -> NeighborPairs:
         """Compute the contacts between aromatic rings and the specified atom plane system."""
         mol = ns.mol
-        mda: AtomGroupType = ns.luni.to("mda")
+        mda = ns.luni.to("mda")
         rings = enumerate_rings(mol)
 
-        neighbors_fn = compute_neighbors_cached if not use_cache else compute_neighbors_cached.call  # type: ignore
-        result = neighbors_fn(mda.atoms.positions, rings.centers)
-        pairs, distances = result[0] if use_cache else result
+        # neighbors_fn = compute_neighbors_cached.call if use_cache else compute_neighbors  # type: ignore
+        # pairs, distances = result[0] if use_cache else result
+        pairs, distances = compute_neighbors(mda.atoms.positions, rings.centers)
 
         neighbors = subtract_aromatic_neighbors(ns, pairs, distances)
 
-        angles_fn = (
-            calc_ringnormal_pos_angle_cached if not use_cache else calc_ringnormal_pos_angle_cached.call  # type: ignore
-        )
-        result = angles_fn(neighbors, mda.universe.atoms, rings.centers, rings.normals)
-        angles = result[0] if use_cache else result
+        # angles_fn = (
+        #     calc_ringnormal_pos_angle_cached.call if use_cache else calc_ringnormal_pos_angle  # type: ignore
+        # )
+        # angles = result[0] if use_cache else result
+        angles = calc_ringnormal_pos_angle(neighbors, mda.universe.atoms, rings.centers, rings.normals)
 
         return contact_fn(neighbors, angles, angle_cutoff)
 
@@ -139,16 +134,16 @@ def compute_contacts(
 
 
 def create_contact_function(
-    contact_type: str, angle_cutoff: Optional[float], use_cache: bool = True
+    contact_type: str, angle_cutoff: Optional[float] = True
 ) -> Callable[[NeighborPairs], NeighborPairs]:
     """Create a contact function based on the contact type."""
     func_name = f"{contact_type}"
     contact_fn = getattr(_AtomPlaneContacts, func_name)
-    return compute_contacts(contact_fn, angle_cutoff, use_cache)
+    return compute_contacts(contact_fn, angle_cutoff)
 
 
 # user-facing functions
-def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
+def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     """Handle the computation of cation pi contacts in a molecular system.
 
     Cation pi contacts are interactions between cations and the π system of atoms in a molecule.
@@ -175,11 +170,11 @@ def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False
         NeighborPairs: The computed cation-pi contacts.
 
     """
-    func = create_contact_function("cation_pi", angle_cutoff, cache)
+    func = create_contact_function("cation_pi", angle_cutoff)
     return func(ns)
 
 
-def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
+def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     """Handle the computation of carbon pi contacts in a molecular system.
 
     Carbon pi contacts are interactions involving the π system of carbon atoms in a molecule.
@@ -206,11 +201,11 @@ def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False
         NeighborPairs: The computed carbon-pi contacts.
 
     """
-    func = create_contact_function("carbon_pi", angle_cutoff, cache)
+    func = create_contact_function("carbon_pi", angle_cutoff)
     return func(ns)
 
 
-def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False) -> NeighborPairs:
+def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     """Handle the computation of donor pi contacts in a molecular system.
 
     Donor pi contacts are interactions between electron donors and the π system of atoms in a molecule.
@@ -237,11 +232,11 @@ def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0, cache: bool = False)
         NeighborPairs: The computed donor-pi contacts.
 
     """
-    func = create_contact_function("donor_pi", angle_cutoff, cache)
+    func = create_contact_function("donor_pi", angle_cutoff)
     return func(ns)
 
 
-def sulphur_pi(ns: NeighborPairs, cache: bool = False) -> NeighborPairs:
+def sulphur_pi(ns: NeighborPairs) -> NeighborPairs:
     """Handle the computation of sulphur pi contacts in a molecular system.
 
     Sulphur pi contacts are interactions involving the π system of sulphur atoms in a molecule.
@@ -265,7 +260,7 @@ def sulphur_pi(ns: NeighborPairs, cache: bool = False) -> NeighborPairs:
         NeighborPairs: The computed sulphur-pi contacts.
 
     """
-    func = create_contact_function("sulphur_pi", None, cache)
+    func = create_contact_function("sulphur_pi", None)
     return func(ns)
 
 
@@ -308,7 +303,7 @@ class AtomPlaneContacts:
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
     def __init__(self, ns: NeighborPairs):
-        self.angles: Optional[NDArray[np.float32]] = None
+        self.angles: NDArray[np.float32] = np.array([])
         self.rings = enumerate_rings(ns.mol)
         self.ap_contacts = _AtomPlaneContacts()
 
@@ -346,7 +341,6 @@ class AtomPlaneContacts:
             NeighborPairs: The computed donor-pi contacts.
 
         """
-        assert self.angles is not None
         return self.ap_contacts.donor_pi(self.neighbors, self.angles)
 
     def sulphur_pi(self) -> NeighborPairs:
@@ -369,7 +363,6 @@ class AtomPlaneContacts:
             NeighborPairs: The computed sulphur-pi contacts.
 
         """
-        assert self.angles is not None
         return self.ap_contacts.sulphur_pi(self.neighbors, self.angles)
 
     def carbon_pi(self) -> NeighborPairs:
@@ -394,7 +387,6 @@ class AtomPlaneContacts:
             NeighborPairs: The computed carbon-pi contacts.
 
         """
-        assert self.angles is not None
         return self.ap_contacts.carbon_pi(self.neighbors, self.angles)
 
     def cation_pi(self) -> NeighborPairs:
@@ -419,5 +411,4 @@ class AtomPlaneContacts:
             NeighborPairs: The computed cation-pi contacts.
 
         """
-        assert self.angles is not None
         return self.ap_contacts.cation_pi(self.neighbors, self.angles)
