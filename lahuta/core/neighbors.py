@@ -9,9 +9,7 @@ import numpy as np
 import pandas as pd
 from Bio.Seq import Seq
 from numpy.typing import NDArray
-from scipy.sparse import csc_array
 
-from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.index_finder import IndexFinder
@@ -76,16 +74,12 @@ class NeighborPairs:
 
     def __init__(self, luni: "Luni"):
         """Initialize the NeighborPairs object."""
-        # 1
         self.luni = luni
         self.atoms = luni.to("mda").universe.atoms
 
         self._pairs = np.array([], dtype=np.int32).reshape(0, 2)
         self._distances = np.array([], dtype=np.float32)
         self._annotations: dict[str, NDArray[Any]] = {}
-
-        empty_csc = csc_array((self.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
-        self._atom_types = luni.atom_types if luni.atom_types is not None else empty_csc
 
     def _validate_inputs(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
         """Validate that the provided pairs and distances arrays have the same first dimension.
@@ -179,7 +173,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
-        nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]
+        nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)
 
         return self.new(self.pairs[mask], self.distances[mask])
@@ -559,7 +553,7 @@ class NeighborPairs:
         new = cls.__new__(cls)
         new.luni = self.luni
         new.atoms = self.atoms
-        new.atom_types = self.atom_types
+        # new.atom_types = self.atom_types
         new._pairs = pairs # noqa: SLF001
         new._distances = distances # noqa: SLF001
         new.annotations = {} # reset annotations
@@ -817,24 +811,6 @@ class NeighborPairs:
         struct_array["resids"] = self.atoms.resids
 
         return struct_array[self.pairs]
-
-    @property
-    def atom_types(self) -> csc_array:
-        """Get the atom types of all atoms.
-
-        Returns:
-            (csc_array): A sparse matrix containing the atom types of all atoms.
-        """
-        return self._atom_types
-    
-    @atom_types.setter
-    def atom_types(self, atom_types: csc_array) -> None:
-        """Set the atom types of all atoms.
-
-        Args:
-            atom_types (csc_array): A sparse matrix containing the atom types of all atoms.
-        """
-        self._atom_types = atom_types
 
     def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.

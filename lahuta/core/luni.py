@@ -14,16 +14,15 @@ Example:
     
 """
 
-from typing import TYPE_CHECKING, Any, Literal, Optional, overload
+from typing import Any, Literal, Optional, overload
 
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
-
-if TYPE_CHECKING:
-    from scipy.sparse import csc_array
+from scipy.sparse import csc_array
 
 from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
+from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
@@ -60,9 +59,6 @@ class Luni:
     """
 
     def __init__(self, structure: str | AtomGroupType, trajectories: Optional[str | list[str]] = None) -> None:
-        self._mol: Optional[MolType] = None
-        self.atom_types: Optional[csc_array] = None
-
         fmts: str | set[str] = ""
         self._file_loader: BaseLoader
         match (structure, trajectories):
@@ -87,7 +83,9 @@ class Luni:
                 fmts = ", ".join(fmts)
                 raise ValueError("Invalid input! \nSupported formats are: {fmts}.")
 
+        self._mol: Optional[MolType] = None
         self._mda = self._file_loader.to("mda")
+        self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
     @staticmethod
     def _get_supported_fmts() -> set[str]:
@@ -112,7 +110,7 @@ class Luni:
 
         Ensures that the Luni instance is ready for contact analysis.
         """
-        if self.atom_types is not None:
+        if np.any(self.atom_types.data):
             return
         self._mol = self._file_loader.to("mol")
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
@@ -123,7 +121,7 @@ class Luni:
 
         This method removes the atom types from the Luni.
         """
-        self.atom_types = None
+        self.atom_types *= 0
 
     # TODO @bisejdiu: rename to
     # https://github.com/bisejdiu/lahuta/issues/52
