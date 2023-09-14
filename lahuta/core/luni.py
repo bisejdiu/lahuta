@@ -114,10 +114,16 @@ class Luni:
         """
         if self.atom_types is not None:
             return
-        
         self._mol = self._file_loader.to("mol")
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         self.atom_types = atomtype_assigner.assign_atom_types()
+
+    def unassign_atom_types(self) -> None:
+        """Unassign atom types from the Luni.
+
+        This method removes the atom types from the Luni.
+        """
+        self.atom_types = None
 
     # TODO @bisejdiu: rename to
     # https://github.com/bisejdiu/lahuta/issues/52
@@ -145,8 +151,7 @@ class Luni:
             NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). \
             Each row in the array contains the indices of the neighbors for the atom corresponding to that row.
         """
-        if atom_types:
-            self.assing_atom_types()
+        self.assing_atom_types() if atom_types else self.unassign_atom_types()
 
         neighbors = NeighborSearch(self.to("mda"))
         pairs, distances = neighbors.compute(
