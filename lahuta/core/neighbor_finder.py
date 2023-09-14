@@ -97,6 +97,6 @@ class NeighborSearch:
             NDArray[np.bool_]: An array of shape (n_pairs,) containing the indices of the pairs to keep.
         """
         resids = self.og_resids[pairs]
-        # return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1) # noqa: ERA001
+        # return np.any(np.abs(resids - resids[:, ::-1]) > res_dif, axis=1)
         mask: NDArray[np.bool_] = np.abs(np.diff(resids, axis=1)) > res_dif
         return np.ravel(mask)

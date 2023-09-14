@@ -34,6 +34,7 @@ from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
 
+
 class BaseLoader(ABC):
     """Abstract base class providing a blueprint for loading and handling biological structure data.
 
