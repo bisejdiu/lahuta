@@ -130,7 +130,7 @@ class _PlanePlaneContacts:
     def get_neighbors(self) -> NeighborPairs:
         """Return the plane-plane contacts as a NeighborPairs object."""
         pairs, distances = self._sort_inputs()
-        ns = self.ns.clone(pairs, distances)
+        ns = self.ns.new(pairs, distances)
         ns.annotations = self._annotations
         return ns
 

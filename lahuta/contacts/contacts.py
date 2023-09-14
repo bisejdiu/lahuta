@@ -78,7 +78,7 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
     bonds = get_bonded_atoms(ns.luni.to("mol"))
     indices = find_shared_pairs(ns.pairs + 1, bonds)
 
-    return ns.clone(ns.pairs[indices], ns.distances[indices])
+    return ns.new(ns.pairs[indices], ns.distances[indices])
 
 
 def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["distance"]) -> NeighborPairs:
@@ -256,12 +256,12 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
-        return ns.clone(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
+        return ns.new(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
 
     vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
-    return ns.clone(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])
+    return ns.new(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])
 
 
 def hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = None) -> NeighborPairs:

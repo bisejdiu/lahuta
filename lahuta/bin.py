@@ -115,7 +115,7 @@ def create_dataframe(
 
     """
     if n_rows:
-        result = result.clone(result.pairs[:n_rows], result.distances[:n_rows])
+        result = result.new(result.pairs[:n_rows], result.distances[:n_rows])
     contacts = result.to_frame(df_format=df_format)
     contacts["contact_type"] = np.array([label] * result.pairs.shape[0])
     return contacts

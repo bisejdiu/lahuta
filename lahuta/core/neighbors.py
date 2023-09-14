@@ -14,7 +14,6 @@ from scipy.sparse import csc_array
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
-from lahuta.core.helpers import get_class_attributes
 from lahuta.core.index_finder import IndexFinder
 
 if TYPE_CHECKING:
@@ -183,7 +182,7 @@ class NeighborPairs:
         nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)
 
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def index_filter(
         self,
@@ -203,7 +202,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
         mask = np.in1d(self.pairs[:, partner - 1], indices)
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def distance_filter(self, distance: float) -> "NeighborPairs":
         """Select pairs based on the distance.
@@ -218,7 +217,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the distance filter.
         """
         mask = self.distances <= distance
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> "NeighborPairs":
         """Select pairs based on a numeric cutoff.
@@ -234,7 +233,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the numeric filter.
         """
         mask = array <= cutoff
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
         """Select pairs based on the radius.
@@ -253,7 +252,7 @@ class NeighborPairs:
         col_func = self._get_pair_column(partner)
         mask = col_func.atoms.vdw_radii <= radius
 
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def map(self, seq: Seq) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
@@ -288,7 +287,7 @@ class NeighborPairs:
         mapped_pairs = LabeledNeighborPairsBuilder(atom_mapper).build(self.pairs, seq).pairs
         index_finder = IndexFinder(mapped_pairs)
         mask = index_finder.find_indices(pairs)
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
@@ -313,7 +312,7 @@ class NeighborPairs:
             ```
         """
         mask = au.intersection(self.pairs, other.pairs)
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def union(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the union of two NeighborPairs objects.
@@ -340,7 +339,7 @@ class NeighborPairs:
         pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]
 
-        return self.clone(pairs, distances)
+        return self.new(pairs, distances)
 
     def difference(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the difference between two NeighborPairs objects.
@@ -368,7 +367,7 @@ class NeighborPairs:
         """
         mask = au.difference(self.pairs, other.pairs)
 
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def symmetric_difference(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the symmetric difference of two NeighborPairs objects.
@@ -396,7 +395,7 @@ class NeighborPairs:
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
         distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)
 
-        return self.clone(pairs, distances)
+        return self.new(pairs, distances)
 
     def isdisjoint(self, other: "NeighborPairs") -> bool:
         """Check if the intersection of two NeighborPairs objects is null.
@@ -544,8 +543,8 @@ class NeighborPairs:
             ```
         """
         return au.is_strict_superset(self.pairs, other.pairs)
-
-    def clone(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> "NeighborPairs":
+    
+    def new(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> "NeighborPairs":
         """Return a new NeighborPairs object that is a copy of the current object,
         but with specified pairs and distances.
 
@@ -556,21 +555,15 @@ class NeighborPairs:
         Returns:
             A new NeighborPairs object with the provided pairs and distances.
         """
-        attrs = {attr: getattr(self, attr) for attr in get_class_attributes(self)}
-        attrs.update({"_pairs": pairs, "_distances": distances})
-
         cls = type(self)
-        child_instance = cls.__new__(cls)
-
-        for attr, value in attrs.items():
-            if not isinstance(getattr(cls, attr, None), property):
-                setattr(child_instance, attr, value)
-
-        if self.annotations:
-            for key, value in self.annotations.items():
-                child_instance.annotations[key] = value[: child_instance.pairs.shape[0]]
-
-        return child_instance
+        new = cls.__new__(cls)
+        new.luni = self.luni
+        new.atoms = self.atoms
+        new.atom_types = self.atom_types
+        new._pairs = pairs # noqa: SLF001
+        new._distances = distances # noqa: SLF001
+        new.annotations = {} # reset annotations
+        return new
 
     def plot(self, which: Literal["matching", "full"] = "matching", half_only: bool = False) -> None:
         """Plot the contact map of the NeighborPairs object.
@@ -859,12 +852,12 @@ class NeighborPairs:
                             their corresponding distance(s).
         """
         if isinstance(item, int):
-            return self.clone(
+            return self.new(
                 self.pairs[item].reshape(-1, 2),
                 self.distances[item],
             )
 
-        return self.clone(self.pairs[item], self.distances[item])
+        return self.new(self.pairs[item], self.distances[item])
 
     def __contains__(self, other: "NeighborPairs") -> bool:
         """Check whether all pairs in the given NeighborPairs object are also present in this NeighborPairs object.

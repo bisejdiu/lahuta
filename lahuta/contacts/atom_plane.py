@@ -100,7 +100,7 @@ def subtract_aromatic_neighbors(
     ns: NeighborPairs, pairs: NDArray[np.int32], distances: NDArray[np.float32]
 ) -> NeighborPairs:
     """Subtract aromatic neighbors from the neighbor pairs."""
-    cloned_neighbors = ns.clone(pairs, distances)
+    cloned_neighbors = ns.new(pairs, distances)
     return cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)
 
 
@@ -311,7 +311,7 @@ class AtomPlaneContacts:
     def _compute(self, ns: NeighborPairs, mda: AtomGroupType) -> None:
         pairs, distances = compute_neighbors(mda.atoms.positions, self.rings.centers)
 
-        neighbors = ns.clone(pairs, distances)
+        neighbors = ns.new(pairs, distances)
 
         self.neighbors = neighbors - neighbors.type_filter("aromatic", partner=2)
 

@@ -128,7 +128,7 @@ class HBondHandler:
         hbond_dist_pairs = ns.pairs[distances_mask]
         hbond_distances = ns.distances[distances_mask]
 
-        return ns.clone(hbond_dist_pairs, hbond_distances)
+        return ns.new(hbond_dist_pairs, hbond_distances)
 
     def hbond_angle_filter(self, ns: "NeighborPairs", partner: int, weak: bool = False) -> "NeighborPairs":
         """Filter the pairs based on the angle between the hydrogen bonded atoms.
@@ -154,4 +154,4 @@ class HBondHandler:
         pairs = ns.pairs[idx]
         distances = ns.distances[idx]
 
-        return ns.clone(pairs, distances)
+        return ns.new(pairs, distances)

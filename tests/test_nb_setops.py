@@ -139,7 +139,7 @@ def test_intersection(
 
     """
     new_pairs = call_func(ns.pairs, subset_ratio, 0)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     resulting_ns = ns & new_ns
     mask = au.intersection(ns.pairs, new_pairs)
@@ -169,7 +169,7 @@ def test_union(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     resulting_ns = ns + new_ns
     ref_union_pairs, _ = au.union(ns.pairs, new_pairs)
@@ -198,7 +198,7 @@ def test_difference(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     resulting_ns = ns - new_ns
     mask = au.difference(ns.pairs, new_pairs)
@@ -228,7 +228,7 @@ def test_symmetric_difference(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     resulting_ns = ns | new_ns
     mask_a, mask_b = au.symmetric_difference(ns.pairs, new_pairs)
@@ -259,7 +259,7 @@ def test_isdisjoint(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     assert ns.isdisjoint(new_ns) == au.isdisjoint(ns.pairs, new_pairs)
 
@@ -285,7 +285,7 @@ def test_issubset(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     assert ns.issubset(new_ns) == au.issubset(ns.pairs, new_pairs)
 
@@ -311,7 +311,7 @@ def test_issuperset(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     assert ns.issuperset(new_ns) == au.issuperset(ns.pairs, new_pairs)
 
@@ -337,7 +337,7 @@ def test_isequal(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     assert ns.isequal(new_ns) == au.isequal(ns.pairs, new_pairs)
 
@@ -363,7 +363,7 @@ def test_isunique(
         None
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
 
     # ns.isunique() does not take any arguments
     assert ns.isunique() == au.isunique(ns.pairs)
@@ -387,7 +387,7 @@ def test_is_strict_subset(
         ns (NeighborPairs): The NeighborPairs object to test.
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
     assert ns.is_strict_subset(new_ns) == au.is_strict_subset(ns.pairs, new_pairs)
 
 
@@ -408,7 +408,7 @@ def test_is_strict_superset(
         ns (NeighborPairs): The NeighborPairs object to test.
     """
     new_pairs = call_func(ns.pairs, subset_ratio, extra_ratio)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
     assert ns.is_strict_superset(new_ns) == au.is_strict_superset(ns.pairs, new_pairs)
 
 
@@ -429,7 +429,7 @@ def test_contains(
         ns (NeighborPairs): The NeighborPairs object to test.
     """
     new_pairs = call_func(ns.pairs, subset_ratio, 0)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
     assert new_ns in ns
 
 
@@ -449,5 +449,5 @@ def test_eq(
     """
 
     new_pairs = call_func(ns.pairs, 1, 0)
-    new_ns = ns.clone(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
+    new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
     assert new_ns == ns
