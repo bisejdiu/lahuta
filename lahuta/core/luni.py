@@ -14,12 +14,14 @@ Example:
     
 """
 
-from typing import Any, Literal, Optional, overload
+from typing import TYPE_CHECKING, Any, Literal, Optional, overload
 
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse import csc_array
+
+if TYPE_CHECKING:
+    from scipy.sparse import csc_array
 
 from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
@@ -31,7 +33,6 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
-from lahuta.utils.radii import v_radii_assignment
 
 __all__ = ["Luni"]
 
@@ -59,12 +60,11 @@ class Luni:
     """
 
     def __init__(self, structure: str | AtomGroupType, trajectories: Optional[str | list[str]] = None) -> None:
-        self._mol: Optional[MolType]
-        self._ready = False
-        self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
+        self._mol: Optional[MolType] = None
+        self.atom_types: Optional[csc_array] = None
 
+        fmts: str | set[str] = ""
         self._file_loader: BaseLoader
-        fmts: str | set[str]
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
                 self._file_loader = TopologyLoader.from_mda(s) # type: ignore
@@ -104,14 +104,20 @@ class Luni:
         topattr_handler.init_topattr(attrname, attrname)
         self._mda.universe.add_TopologyAttr(attrname, values)
 
-    def ready(self) -> None:
-        """Prepare instance for computations by transforming the molecule and assigning atom types."""
-        # 1.
+    def assing_atom_types(self) -> None:
+        """Assign atom types to the Luni.
+
+        This method assigns atom types to the Luni. It creates a sparse array of shape (n_atoms, n_atom_types)
+        containing the atom types.
+
+        Ensures that the Luni instance is ready for contact analysis.
+        """
+        if self.atom_types is not None:
+            return
+        
         self._mol = self._file_loader.to("mol")
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         self.atom_types = atomtype_assigner.assign_atom_types()
-        
-        self._ready = True
 
     # TODO @bisejdiu: rename to
     # https://github.com/bisejdiu/lahuta/issues/52
@@ -119,6 +125,7 @@ class Luni:
         self,
         radius: float = 5.0,
         res_dif: int = 1,
+        atom_types: bool = True,
     ) -> NeighborPairs:
         """Compute the neighbors of each atom in the Luni.
 
@@ -132,13 +139,14 @@ class Luni:
             radius (float, optional): The cutoff radius for considering two atoms as neighbors. Default is 5.0.
             res_dif (int, optional): The minimum difference in residue numbers for two atoms to be \
             considered neighbors. Default is 1.
+            atom_types (bool, optional): Whether to assign atom types before compute neighbors. Default is True.
 
         Returns:
             NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). \
             Each row in the array contains the indices of the neighbors for the atom corresponding to that row.
         """
-        if not self._ready:
-            self.ready()
+        if atom_types:
+            self.assing_atom_types()
 
         neighbors = NeighborSearch(self.to("mda"))
         pairs, distances = neighbors.compute(
@@ -149,7 +157,6 @@ class Luni:
         ns = NeighborPairs(self)
         ns.set_neighbors(pairs, distances)
         return ns
-        # return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
 
     @property
     def sequence(self) -> str:

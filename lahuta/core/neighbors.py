@@ -9,7 +9,9 @@ import numpy as np
 import pandas as pd
 from Bio.Seq import Seq
 from numpy.typing import NDArray
+from scipy.sparse import csc_array
 
+from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
@@ -43,8 +45,6 @@ class NeighborPairs:
 
     Args:
         luni (Luni): A Luni object containing the structure.
-        pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
-        distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
 
     Attributes:
         pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
@@ -54,26 +54,39 @@ class NeighborPairs:
         partner2 (AtomGroupType): The second column of the pairs of atoms.
         indices (NDArray[np.int32]): A 2D numpy array of the indices of the pairs of atoms.
 
+    Examples:
+        ``` py
+        >>> from lahuta import Luni, NeighborPairs
+        >>> luni = Luni("path/to/structure.pdb")
+        >>> np = NeighborPairs(luni)
+        >>> np.set_neighbors(pairs, distances)
+        >>> np.pairs
+        [[1, 2], [3, 4]]
+        >>> np.distances
+        [1.0, 2.0]
+        >>> np.annotations
+        {}
+        >>> np.partner1
+        <AtomGroup with 2 atoms>
+        >>> np.partner2
+        <AtomGroup with 2 atoms>
+        >>> np.indices
+        [[1, 2], [3, 4]]
+        ```
     """
 
-    def __init__(
-        self,
-        luni: "Luni",
-        # pairs: NDArray[np.int32],
-        # distances: NDArray[np.float32],
-    ):
+    def __init__(self, luni: "Luni"):
         """Initialize the NeighborPairs object."""
         # 1
         self.luni = luni
         self.atoms = luni.to("mda").universe.atoms
-        self.atom_types = luni.atom_types
 
-        # 2
         self._pairs = np.array([], dtype=np.int32).reshape(0, 2)
         self._distances = np.array([], dtype=np.float32)
-
-        # 3
         self._annotations: dict[str, NDArray[Any]] = {}
+
+        empty_csc = csc_array((self.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+        self._atom_types = luni.atom_types if luni.atom_types is not None else empty_csc
 
     def _validate_inputs(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
         """Validate that the provided pairs and distances arrays have the same first dimension.
@@ -811,6 +824,24 @@ class NeighborPairs:
         struct_array["resids"] = self.atoms.resids
 
         return struct_array[self.pairs]
+
+    @property
+    def atom_types(self) -> csc_array:
+        """Get the atom types of all atoms.
+
+        Returns:
+            (csc_array): A sparse matrix containing the atom types of all atoms.
+        """
+        return self._atom_types
+    
+    @atom_types.setter
+    def atom_types(self, atom_types: csc_array) -> None:
+        """Set the atom types of all atoms.
+
+        Args:
+            atom_types (csc_array): A sparse matrix containing the atom types of all atoms.
+        """
+        self._atom_types = atom_types
 
     def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.

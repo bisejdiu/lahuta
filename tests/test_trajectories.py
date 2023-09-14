@@ -75,7 +75,7 @@ class UniverseWrapper:
 
         self.u_ref = u_ref
         self.u = Luni(self.mda_u.select_atoms(selection).atoms)
-        self.u.ready()
+        self.u.assing_atom_types()
 
 
 @pytest.fixture(scope="session")
