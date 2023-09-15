@@ -124,7 +124,7 @@ class AtomGroupType(Protocol):
         ...
 
     @property
-    def chainIDs(self) -> NDArray[np.str_]:
+    def chainIDs(self) -> NDArray[np.int32]:
         ...
 
     @property
