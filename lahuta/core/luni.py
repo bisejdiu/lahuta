@@ -14,7 +14,7 @@ Example:
     
 """
 
-from typing import Any, Literal, Optional, overload
+from typing import Any, Literal, Optional, Type, overload
 
 import MDAnalysis as mda
 import numpy as np
@@ -27,6 +27,7 @@ from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
+from lahuta.core.fn import GemmiNeighbors
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
@@ -35,6 +36,10 @@ from lahuta.lahuta_types.openbabel import MolType
 
 __all__ = ["Luni"]
 
+NeighborBackends: dict[str, Type[NeighborSearch] | Type[GemmiNeighbors]] = {
+    "mda": NeighborSearch,
+    "gemmi": GemmiNeighbors,
+}
 
 class Luni:
     """The main class of the Lahuta package. It represents a universe of atoms and provides
@@ -123,12 +128,15 @@ class Luni:
         """
         self.atom_types *= 0
 
-    # TODO @bisejdiu: rename to
+    # TODO @bisejdiu: rename to find_neighbors
     # https://github.com/bisejdiu/lahuta/issues/52
-    def compute_neighbors(
+    def compute_neighbors( # noqa: PLR0913
         self,
         radius: float = 5.0,
         res_dif: int = 1,
+        chain_type: Optional[Literal["inter", "intra"]] = None,
+        image: Optional[Literal["inter", "intra"]] = None,
+        backend: Literal["mda", "gemmi"] = "mda",
         atom_types: bool = True,
     ) -> NeighborPairs:
         """Compute the neighbors of each atom in the Luni.
@@ -143,18 +151,34 @@ class Luni:
             radius (float, optional): The cutoff radius for considering two atoms as neighbors. Default is 5.0.
             res_dif (int, optional): The minimum difference in residue numbers for two atoms to be \
             considered neighbors. Default is 1.
+            chain_type (Literal["inter", "intra"], optional): The type of chain to keep. Default is None (keep all).
+            image (Literal["inter", "intra"], optional): The type of image to keep. Default is None (keep all).
+            backend (Literal["mda", "gemmi"], optional): The backend to use for computing neighbors. \
+            Default is "mda".
             atom_types (bool, optional): Whether to assign atom types before compute neighbors. Default is True.
 
         Returns:
             NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). \
             Each row in the array contains the indices of the neighbors for the atom corresponding to that row.
         """
+        if image is not None and backend != "gemmi":
+            raise ValueError("Image filtering is only supported with the 'gemmi' backend!")
+        
         self.assing_atom_types() if atom_types else self.unassign_atom_types()
 
-        neighbors = NeighborSearch(self.to("mda"))
+        # neighbors = NeighborSearch(self.to("mda"))
+        if backend == "gemmi":
+            assert self._file_loader.structure is not None
+            neighbors = GemmiNeighbors(self._mda, self._file_loader.structure)
+        elif backend == "mda":
+            neighbors = NeighborSearch(self.to("mda"))
+        else:
+            raise ValueError(f"Invalid backend: {backend}, must be one of 'mda' or 'gemmi'")
+        
         pairs, distances = neighbors.compute(
             radius=radius,
             res_dif=res_dif,
+            chain_type=chain_type,
         )
 
         ns = NeighborPairs(self)

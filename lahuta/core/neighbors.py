@@ -790,6 +790,15 @@ class NeighborPairs:
         return self.atoms[self.pairs].resids
 
     @property
+    def chainIDs(self) -> NDArray[np.int32]:
+        """Get the chain IDs of the atoms that are neighbors.
+
+        Returns
+            An array containing the chain IDs of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].chainIDs
+
+    @property
     def indices(self) -> NDArray[np.int32]:
         """Get the indices of the atoms that are neighbors.
 

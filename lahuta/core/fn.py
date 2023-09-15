@@ -63,7 +63,8 @@ class GemmiNeighbors:
             image (Literal["inter", "intra"], optional): The type of image to keep. Default is None (keep all).
 
         Returns:
-            tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices and the distances.
+            tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices \
+                and the distances.
         """
         results = self._get_contacts(radius)
         pairs, distances, image_ids = self._compute(results, n_threads)
@@ -98,7 +99,10 @@ class GemmiNeighbors:
         slice_size = n_results // n_threads
 
         with ThreadPoolExecutor() as executor:
-            futures = {executor.submit(self.fetch_attributes, results[i:i+slice_size]): i for i in range(0, n_results, slice_size)}
+            futures = {
+                executor.submit(
+                    self.fetch_attributes, results[i:i+slice_size]
+                ): i for i in range(0, n_results, slice_size)}
 
         # Collate results
         for future, start_idx in futures.items():
@@ -122,7 +126,8 @@ class GemmiNeighbors:
             results_slice (list[SearchResults]): A slice of SearchResults.
 
         Returns:
-            tuple[NDArray[np.int32], NDArray[np.float32], NDArray[np.int32]]: A tuple containing the pairs of atom indices, the distances, and the image ids.
+            tuple[NDArray[np.int32], NDArray[np.float32], NDArray[np.int32]]: A tuple containing the pairs of atom \
+                indices, the distances, and the image ids.
         """
         n = len(results_slice)
         slice_pairs = np.empty((n, 2), dtype=np.int32)
