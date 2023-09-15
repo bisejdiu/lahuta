@@ -174,7 +174,7 @@ def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
         [(1, 2), (3, 4)]
         ```
     """
-    arr = np.ascontiguousarray(arr)
+    arr = np.ascontiguousarray(arr.astype(np.int32)) # type: ignore
     if np.issubdtype(arr.dtype, np.floating):
         arr += 0.0  # type: ignore
     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))
