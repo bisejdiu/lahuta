@@ -687,7 +687,7 @@ class NeighborPairs:
         pairs, dists = self.pairs[indices1], self.distances[indices1]
         other_pairs, other_dists = other.pairs[indices2], other.distances[indices2]
 
-        return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)
+        return np.array_equal(pairs, other_pairs) and np.allclose(dists, other_dists)
 
     @property
     def partner1(self) -> AtomGroupType:

@@ -131,7 +131,6 @@ class AtomTypeAssigner:
         Returns:
             dok_matrix: A sparse matrix of atom types for the entire molecule.
         """
-        # atom_types = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
         atom_types = self.atom_types
 
         if self.mda.n_atoms != self.protein_ag.n_atoms:
