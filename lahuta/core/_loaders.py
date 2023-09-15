@@ -157,11 +157,11 @@ class GemmiLoader(BaseLoader):
     def __init__(self, file_path: str, is_pdb: bool = False):
         super().__init__(file_path)
         if is_pdb:
-            structure: Any = gemmi.read_pdb(self.file_path)  # type: ignore
-            block: Any = structure.make_mmcif_document().sole_block()
+            structure = gemmi.read_pdb(self.file_path)
+            block = structure.make_mmcif_document().sole_block()
         else:
-            block: Any = gemmi.cif.read(self.file_path).sole_block()  # type: ignore
-            structure: Any = gemmi.make_structure_from_block(block)  # type: ignore
+            block = gemmi.cif.read(self.file_path).sole_block()
+            structure = gemmi.make_structure_from_block(block)
 
         self.structure = structure
         atom_site_data: dict[str, Any] = block.get_mmcif_category("_atom_site.")
@@ -225,7 +225,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
-        uv.add_TopologyAttr("segids", chain_ids)
+        uv.add_TopologyAttr("chainIDs", self.arc.chains.ids)
         uv.add_TopologyAttr("ids", self.arc.atoms.ids)
 
         uv.atoms.positions = self.arc.atoms.coordinates

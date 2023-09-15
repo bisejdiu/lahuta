@@ -109,7 +109,8 @@ class Atoms:
         label_atom_id: list[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
-        data["id"] = np.arange(data["name"].size)
+        # data["id"] = np.arange(data["name"].size)
+        data["id"] = np.array(gemmi_block.get("id"), dtype=np.int32) - 1
         data["element"] = np.array(gemmi_block.get("type_symbol"))
         data["type"] = np.array(gemmi_block.get("type_symbol"))
 
