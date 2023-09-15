@@ -37,9 +37,8 @@ class NeighborSearch:
     """
 
     def __init__(self, mda: AtomGroupType) -> None:
-        mda_atoms, mda_universe = mda.atoms, mda.universe
-        self.ag_no_h = mda_atoms.select_atoms("not name H*")
-        self.og_resids = mda_universe.atoms.resids
+        self.ag_no_h = mda.select_atoms("not name H*")
+        self.og_resids = mda.universe.atoms.resids
 
     def compute(self, radius: float = 5.0, res_dif: int = 1) -> PairsDistances:
         """Compute the neighbors of each atom in the Universe.
