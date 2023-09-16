@@ -146,7 +146,11 @@ class Luni:
         """
         self.atom_types *= 0
 
-    def store_atom_types(self, filename: str = "sparse_matrix.npz", backend: Literal["scipy", "numpy"] = "scipy") -> None:
+    def store_atom_types(
+            self, 
+            filename: str = "sparse_matrix.npz", 
+            backend: Literal["scipy", "numpy"] = "scipy"
+        ) -> None:
         """Store the atom types of the Luni to a file.
 
         This method stores the atom types of the Luni to a file.
