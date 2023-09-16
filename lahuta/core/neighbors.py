@@ -13,8 +13,9 @@ from scipy.sparse import csc_array
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core.builder import LabeledNeighborPairsBuilder
+from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.helpers import get_class_attributes
+from lahuta.core.index_finder import IndexFinder
 
 if TYPE_CHECKING:
     from lahuta.core.labeled_neighbors import LabeledNeighborPairs
@@ -309,12 +310,33 @@ class NeighborPairs:
         using the specified sequence ID.
 
         Args:
-            seq (Bio.Seq): The sequence to map the indices to. See msa_parser.get_seq_id() for more information.
+            seq (Bio.Seq): The sequence to map the indices to.
 
         Returns:
             A NeighborPairs object containing the mapped pairs.
         """
-        return LabeledNeighborPairsBuilder.build(self.pairs, self.atoms, seq)
+        atom_mapper = AtomMapper(self.atoms)
+        builder = LabeledNeighborPairsBuilder(atom_mapper)
+        return builder.build(self.pairs, seq)
+
+    def backmap(self, seq: Seq, pairs: NDArray[np.void]) -> "NeighborPairs":
+        """Map the `pairs` indices to indices in the structure.
+
+        The method maps the indices in the `pairs` array to indices in the structure
+        using the specified sequence ID.
+
+        Args:
+            seq (Bio.Seq): The sequence to map the indices to.
+            pairs (NDArray[np.void]): The mapped pairs to backmap.
+
+        Returns:
+            A NeighborPairs object containing the backmapped pairs.
+        """
+        atom_mapper = AtomMapper(self.atoms)
+        mapped_pairs = LabeledNeighborPairsBuilder(atom_mapper).build(self.pairs, seq).pairs
+        index_finder = IndexFinder(mapped_pairs)
+        mask = index_finder.find_indices(pairs)
+        return self.clone(self.pairs[mask], self.distances[mask])
 
     def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
         """Return the intersection of two NeighborPairs objects.
@@ -765,14 +787,54 @@ class NeighborPairs:
         return self._distances
 
     @property
+    def names(self) -> NDArray[np.str_]:
+        """Get the names of the atoms that are neighbors.
+
+        Returns
+            An array containing the atom names of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].names
+
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        """Get the residue names of the atoms that are neighbors.
+
+        Returns
+            An array containing the residue names of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].resnames
+
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        """Get the residue IDs of the atoms that are neighbors.
+
+        Returns
+            An array containing the residue IDs of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].resids
+
+    @property
     def indices(self) -> NDArray[np.int32]:
         """Get the indices of the atoms that are neighbors.
 
         Returns
-            An array containing the unique indices of the neighboring atoms.
+            An array containing the indices of the neighboring atoms.
         """
-        arr: NDArray[np.int32] = np.array([self.partner1.indices, self.partner2.indices])
-        return np.unique(arr)
+        return self.atoms[self.pairs].indices
+
+    @property
+    def labels(self) -> NDArray[np.void]:
+        """Get the pairs of atoms that are neighbors.
+
+        Returns:
+            An array containing the pairs of indices of neighboring atoms.
+        """
+        struct_array = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atoms.n_atoms)
+        struct_array["names"] = self.atoms.names
+        struct_array["resnames"] = self.atoms.resnames
+        struct_array["resids"] = self.atoms.resids
+
+        return struct_array[self.pairs]
 
     def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
         """Retrieve the neighbor pairs at the specified index or indices.
@@ -791,7 +853,7 @@ class NeighborPairs:
         """
         if isinstance(item, int):
             return self.clone(
-                self.pairs[item],
+                self.pairs[item].reshape(-1, 2),
                 self.distances[item],
             )
 
@@ -967,7 +1029,9 @@ class NeighborPairs:
         return self.pairs.shape[0]
 
     def __str__(self) -> str:
-        return f"<Lahuta NeighborPairs class containing {self.indices.size} atoms and {self.pairs.shape[0]} pairs>"
+        indices = self.indices.ravel()
+        unique_indices = pd.factorize(indices)[1]
+        return f"<Lahuta NeighborPairs class containing {unique_indices.size} atoms and {self.pairs.shape[0]} pairs>"
 
     def __repr__(self) -> str:
         return self.__str__()

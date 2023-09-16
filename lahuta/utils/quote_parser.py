@@ -2,8 +2,6 @@
 import re
 from pathlib import Path
 
-from lahuta.tests.base import find_project_root
-
 
 def parse_quotes(file_path: Path) -> list[tuple[str, str]]:
     """Parse quotes from the GROMACS coolstuff.cpp file.
@@ -21,5 +19,5 @@ def parse_quotes(file_path: Path) -> list[tuple[str, str]]:
         return [(match[0], match[1]) for match in matches]
 
 
-PROJECT_ROOT = find_project_root() / "tests" / "data"
+PROJECT_ROOT = Path(__file__).parent.parent / "tests" / "data"
 GROMACS_QUOTES = parse_quotes(PROJECT_ROOT / "coolstuff.cpp")

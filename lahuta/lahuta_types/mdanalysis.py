@@ -41,6 +41,14 @@ class ResidueGroupType(Protocol):
     def resnames(self) -> NDArray[np.str_]:
         ...
 
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        ...
+
+    @property
+    def resindices(self) -> NDArray[np.int_]:
+        ...
+
     def __iter__(self) -> Any:
         ...
 

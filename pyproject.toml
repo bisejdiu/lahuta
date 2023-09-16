@@ -64,7 +64,7 @@ extend-select = [
 ignore = [
     'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
     'D205', 'D213', 'D406', 'D407', 'D415', 'FIX002', 'PLR2004', 'TD003',
-    'TRY003'
+    'TRY003', 'PT018'
 ]
 
 mccabe = { max-complexity = 14 }
@@ -83,6 +83,12 @@ max-args = 6
 'lahuta/lahuta_types/mdanalysis.py' = ['ANN401', 'D101', 'D102']
 'lahuta/lahuta_types/openbabel.py' = ['ANN401', 'D101', 'D102']
 'lahuta/bin.py' = ['A002', 'B008', 'D400', 'PLR0913']
+'lahuta/api/processors.py' = ['PTH118', 'PTH119', "B008"]
+'lahuta/api/workers.py' = ['PTH118', 'PTH119']
+'lahuta/msa/muscle.py' = ['PTH110', 'PTH107', 'PTH123']
+'lahuta/msa/mafft.py' = ['PTH110', 'PTH107', 'PTH123']
+'lahuta/core/index_finder.py' = ['PERF401']
+
 
 [tool.mypy]
 python_version = "3.10"

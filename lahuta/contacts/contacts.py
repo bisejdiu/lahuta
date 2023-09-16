@@ -103,7 +103,7 @@ def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["di
     Returns:
         (NeighborPairs): A NeighborPairs object containing only metallic contacts.
     """
-    metal_indices = ns.atoms[ns.indices].select_atoms("element " + " ".join(METALS)).indices
+    metal_indices = ns.atoms.select_atoms("element " + " ".join(METALS)).indices
 
     acceptor_metal = ns.type_filter("hbond_acceptor", 1).index_filter(metal_indices, 2).distance_filter(distance)
 

@@ -5,6 +5,8 @@ cachedir/
 *$py.class
 
 # No easily downloadable PDB/CIF files in the testing directory
+*.pdb
+*.cif
 tests/data/*.pdb
 tests/data/*.cif
 
@@ -13,7 +15,8 @@ tests/data/*.cif
 
 
 # local notebooks
-notebooks/
+# notebooks/
+*/*/*_wip.ipynb
 
 # C extensions
 *.so
