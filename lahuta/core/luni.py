@@ -19,7 +19,7 @@ from typing import Any, Literal, Optional, Type, overload
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse import csc_array
+from scipy.sparse import csc_array, load_npz, save_npz
 
 from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
@@ -121,12 +121,99 @@ class Luni:
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         self.atom_types = atomtype_assigner.assign_atom_types()
 
+    def load_atom_types(self, filename: str, backend: Literal["scipy", "numpy"] = "numpy") -> None:
+        """Load atom types from a file.
+
+        This method loads the atom types from a file and stores them in the Luni.
+
+        Args:
+            filename (str): The name of the file to load the atom types from.
+            backend (Literal["scipy", "numpy"], optional): The backend to use for loading the atom types. \
+            Default is "numpy".
+        """
+        self._mol = self._file_loader.to("mol")
+        if backend == "scipy":
+            self._load_using_scipy(filename)
+        elif backend == "numpy":
+            self._load_using_numpy(filename)
+        else:
+            raise ValueError(f"Invalid backend: {backend}, must be one of 'scipy' or 'numpy'")
+
     def unassign_atom_types(self) -> None:
         """Unassign atom types from the Luni.
 
         This method removes the atom types from the Luni.
         """
         self.atom_types *= 0
+
+    def store_atom_types(self, filename: str = "sparse_matrix.npz", backend: Literal["scipy", "numpy"] = "scipy") -> None:
+        """Store the atom types of the Luni to a file.
+
+        This method stores the atom types of the Luni to a file.
+
+        Args:
+            filename (str): The name of the file to store the atom types in. Default is "sparse_matrix.npz".
+            backend (Literal["scipy", "numpy"], optional): The backend to use for storing the atom types. \
+            Default is "scipy".
+        """
+        assert np.any(self.atom_types.data), "Atom types have not been assigned yet!"
+        if backend == "scipy":
+            self._save_using_scipy(filename)
+        elif backend == "numpy":
+            self._save_using_numpy(filename)
+        else:
+            raise ValueError(f"Invalid backend: {backend}, must be one of 'scipy' or 'numpy'")
+
+    def _save_using_scipy(self, filename: str) -> None:
+        """Save the Luni to a file using SciPy.
+
+        This method saves the Luni to a file using SciPy.
+
+        Args:
+            filename (str): The name of the file to save the Luni to.
+        """
+        save_npz(filename, self.atom_types)
+
+    def _save_using_numpy(self, filename: str) -> None:
+        """Save the Luni to a file using NumPy.
+
+        This method saves the Luni to a file using NumPy.
+
+        Args:
+            filename (str): The name of the file to save the Luni to.
+        """
+        sparse_matrix = self.atom_types
+        np.savez_compressed(filename,
+                            data=sparse_matrix.data,
+                            indices=sparse_matrix.indices,
+                            indptr=sparse_matrix.indptr,
+                            shape=sparse_matrix.shape)
+
+
+    def _load_using_scipy(self, filename: str) -> None:
+        """Load the Luni from a file using SciPy.
+
+        This method loads the Luni from a file using SciPy.
+
+        Args:
+            filename (str): The name of the file to load the Luni from.
+        """
+        self.atom_types = load_npz(filename)
+
+    def _load_using_numpy(self, filename: str) -> None:
+        """Load the Luni from a file using NumPy.
+
+        This method loads the Luni from a file using NumPy.
+
+        Args:
+            filename (str): The name of the file to load the Luni from.
+        """
+        # loaded_matrix = csc_array((loaded['data'], loaded['indices'], loaded['indptr']), shape=loaded['shape'])
+        sparse_matrix = np.load(filename)
+        self.atom_types = csc_array((sparse_matrix["shape"]), dtype=np.int8)
+        self.atom_types.data = sparse_matrix["data"]
+        self.atom_types.indices = sparse_matrix["indices"]
+        self.atom_types.indptr = sparse_matrix["indptr"]
 
     # TODO @bisejdiu: rename to find_neighbors
     # https://github.com/bisejdiu/lahuta/issues/52
