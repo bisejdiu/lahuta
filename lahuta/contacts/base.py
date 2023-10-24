@@ -68,7 +68,7 @@ class ComputeElementwiseProtocol(Protocol):
         atoms: AtomGroupType,
         pair: NDArray[np.int32],
         distance: NDArray[np.float_],
-    ) -> T:
+    ) -> T | None:
         """Compute contacts based on the neighbor pairs."""
 
 
@@ -104,6 +104,8 @@ class ContactAnalysis:
                 self.ns.partner2,
             )
             for atom1, atom2, distance in zip(p1_atoms, p2_atoms, self.ns.distances, strict=True):
-                self.results.append(self.compute_elementwise(atom1, atom2, distance))
+                result = self.compute_elementwise(atom1, atom2, distance)
+                if result:
+                    self.results.append(result)
         else:
             raise NotImplementedError("Object must implement either compute or compute_elementwise methods.")
