@@ -34,7 +34,7 @@ from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.utils.array_utils import non_matching_indices
+from lahuta.utils.array_utils import non_matching_indices, sorting_indices
 from lahuta.utils.math import calc_vec_line_angles
 from lahuta.utils.ob import enumerate_rings
 
@@ -123,12 +123,11 @@ class AtomPlaneContacts:
         pairs = pairs[npairs]
         nn.set_neighbors(nn.pairs[npairs], nn.distances[npairs], sort=False)
 
-        # indices = sorting_indices(nn.pairs)
-        # nn.set_neighbors(nn.pairs[indices], nn.distances[indices], sort=False)
-        # pairs = pairs[indices]
+        indices = sorting_indices(nn.pairs)
+        nn.set_neighbors(nn.pairs[indices], nn.distances[indices], sort=False)
+        pairs = pairs[indices]
 
         self.ns = nn
-
 
         self.angles = calc_ringnormal_pos_angle(
             mda.universe.atoms[pairs[:, 1]].positions, 
