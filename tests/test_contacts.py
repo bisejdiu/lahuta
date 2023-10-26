@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Callable, Type
 
 import numpy as np
+from numpy.typing import NDArray
 import pytest
 from _pytest.fixtures import FixtureRequest
 
@@ -26,24 +27,19 @@ pytestmark = pytest.mark.contacts
 FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin()), ("3q2y.json.gz", DNABound())]
 # FILE_PAIRS = [("3q2y.json.gz", DNABound())]
 
-def get_sorted_indices(arr):
+def get_sorted_indices(arr: NDArray[np.int32 | np.float32]) -> NDArray[np.int32]:
     # Sort each pair individually
     sorted_arr = np.sort(arr, axis=1)
     # Get the indices that would sort arrays by rows
-    indices = np.lexsort((sorted_arr[:, 1], sorted_arr[:, 0]))
+    indices: NDArray[np.int32] = np.lexsort((sorted_arr[:, 1], sorted_arr[:, 0]))
     return indices
 
-def check_sorted_arrays_equal(arr1, arr2):
-    indices_arr1 = get_sorted_indices(arr1)
-    indices_arr2 = get_sorted_indices(arr2)
-
-    # Use the indices to sort arrays
-    sorted_arr1 = arr1[indices_arr1]
-    sorted_arr2 = arr2[indices_arr2]
-    # Check if sorted arrays are equal
-    return np.array_equal(sorted_arr1, sorted_arr2)
-
-def sort_and_check_arrays_equal(arr1, arr2, indices_arr1, indices_arr2):
+def sort_and_check_arrays_equal(
+        arr1: NDArray[np.int32 | np.float32], 
+        arr2: NDArray[np.int32 | np.float32], 
+        indices_arr1: NDArray[np.int32], 
+        indices_arr2: NDArray[np.int32]
+    ) -> bool:
     # Use the indices to sort arrays
     sorted_arr1 = arr1[indices_arr1]
     sorted_arr2 = arr2[indices_arr2]
@@ -135,7 +131,6 @@ def test_atom_atom_neighbor_funcs(
 
     indices_arr1 = get_sorted_indices(pairs)
     indices_arr2 = get_sorted_indices(expected_pairs)
-
     assert np.array_equal(pairs[indices_arr1], expected_pairs[indices_arr2])
     assert np.allclose(distances[indices_arr1], np.array(expected_result["distances"])[indices_arr2], atol=1e-3)
 
@@ -186,12 +181,9 @@ def test_atom_atom_neighbor_classes(
 
     assert result.pairs.shape[1] == 2
     assert result.pairs.shape[0] == expected_result["shapex"]
-    # assert check_sorted_arrays_equal(pairs, expected_pairs)
-    # assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
     indices_arr1 = get_sorted_indices(pairs)
     indices_arr2 = get_sorted_indices(expected_pairs)
-    
     assert np.array_equal(pairs[indices_arr1], expected_pairs[indices_arr2])
     assert np.allclose(distances[indices_arr1], np.array(expected_result["distances"])[indices_arr2], atol=1e-3)
 
@@ -228,12 +220,9 @@ def test_atomplane_contacts(
         expected_pairs = expected_pairs.reshape((0, 2))
 
     assert result.pairs.shape[0] == expected_result["shapex"]
-    # assert check_sorted_arrays_equal(pairs, expected_pairs)
-    # assert np.allclose(distances, expected_result["distances"], atol=1e-3)
 
     indices_arr1 = get_sorted_indices(pairs)
     indices_arr2 = get_sorted_indices(expected_pairs)
-    
     assert np.array_equal(pairs[indices_arr1], expected_pairs[indices_arr2])
     assert np.allclose(distances[indices_arr1], np.array(expected_result["distances"])[indices_arr2], atol=1e-3)
 
