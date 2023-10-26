@@ -31,12 +31,12 @@ jobs:
     - name: Run linting with ruff
       run: |
         conda install -c conda-forge ruff
-        ruff check . 
-    - name: Run tests with pytest
-      run: |
-        conda install pytest
-        pytest
+        ruff check .
     - name: Run type checking with mypy
       run: |
         conda install -c conda-forge mypy
         mypy .
+    - name: Run tests with pytest
+      run: |
+        conda install pytest
+        pytest
