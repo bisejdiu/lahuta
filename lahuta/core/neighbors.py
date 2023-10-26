@@ -553,10 +553,7 @@ class NeighborPairs:
         new = cls.__new__(cls)
         new.luni = self.luni
         new.atoms = self.atoms
-        new._pairs = pairs # noqa: SLF001
-        new._distances = distances # noqa: SLF001
-        # pairs, distances = new.sort_inputs(pairs, distances)
-        # new.set_neighbors(pairs, distances)
+        new.set_neighbors(pairs, distances, sort=False)
         new.annotations = {} # reset annotations
         return new
 
