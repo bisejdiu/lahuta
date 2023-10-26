@@ -554,10 +554,28 @@ class NeighborPairs:
         new.luni = self.luni
         new.atoms = self.atoms
         # new.atom_types = self.atom_types
+        # print (pairs.shape, distances.shape)
+        # pairs, distances = self.sort_inputs(pairs, distances)
+        # print (pairs.shape, distances.shape)
+        # print ('---')
         new._pairs = pairs # noqa: SLF001
         new._distances = distances # noqa: SLF001
+        # pairs, distances = new.sort_inputs(pairs, distances)
+        # new.set_neighbors(pairs, distances)
+        # new.set_neighbors(pairs, distances)
         new.annotations = {} # reset annotations
         return new
+
+    def clone(self) -> "NeighborPairs":
+        """Return a new NeighborPairs object that is a copy of the current object."""
+        cls = type(self)
+        new = cls.__new__(cls)
+        new.luni = self.luni
+        new.atoms = self.atoms
+        new._pairs = self.pairs.copy() # noqa: SLF001
+        new._distances = self.distances.copy() # noqa: SLF001
+        return new
+        # return self.new(self.pairs, self.distances)
 
     def plot(self, which: Literal["matching", "full"] = "matching", half_only: bool = False) -> None:
         """Plot the contact map of the NeighborPairs object.
@@ -743,15 +761,19 @@ class NeighborPairs:
         """
         return self.pairs, self.distances
 
-    def set_neighbors(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
+    def set_neighbors(self, pairs: NDArray[np.int32], distances: NDArray[np.float32], sort: bool = True) -> None:
         """Set the neighbors.
 
         Args:
             pairs (NDArray[np.int32]): An array containing the pairs of atoms.
             distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+            sort (bool, optional): Whether to sort the pairs and distances arrays. Defaults to True.
         """
         self._validate_inputs(pairs, distances)
-        self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
+        if sort:
+            self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
+        else:
+            self._pairs, self._distances = pairs, distances
 
     @property
     def distances(self) -> NDArray[np.float32]:

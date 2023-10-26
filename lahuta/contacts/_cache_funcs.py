@@ -31,6 +31,28 @@ def calc_ringnormal_pos_angle(
     )
 
 
+# def calc_ringnormal_pos_angle2(
+#     pairs: NDArray[np.int32], uv_atoms: AtomGroupType, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
+# ) -> NDArray[np.float32]:
+#     """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
+#     selected_ring_centers = ring_centers[pairs[:, 0]]
+#     selected_ring_normals = ring_normals[pairs[:, 0]]
+
+#     return calc_vec_line_angles(
+#         selected_ring_normals,
+#         selected_ring_centers - uv_atoms[pairs[:, 1]].positions,
+#     )
+
+def calc_ringnormal_pos_angle2(
+    positions, ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
+) -> NDArray[np.float32]:
+    """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
+
+    return calc_vec_line_angles(
+        ring_normals,
+        ring_centers - positions,
+    )
+
 # memory = Memory("cachedir", verbose=0)
 # compute_neighbors_cached: Callable[
 #     [NDArray[np.float32], NDArray[np.float32]], tuple[NDArray[np.int32], NDArray[np.float32]]
