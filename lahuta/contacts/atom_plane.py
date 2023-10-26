@@ -28,24 +28,15 @@ Warning:
 
 """
 
-from typing import Callable, Optional, TypeVar
-
 import numpy as np
+from MDAnalysis.lib import distances as mda_distances
 from numpy.typing import NDArray
 
 from lahuta.config.defaults import CONTACTS
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.utils.array_utils import find_shared_pairs, non_matching_indices, sorting_indices
+from lahuta.utils.array_utils import non_matching_indices
+from lahuta.utils.math import calc_vec_line_angles
 from lahuta.utils.ob import enumerate_rings
-
-from ._cache_funcs import (
-    calc_ringnormal_pos_angle,
-    calc_ringnormal_pos_angle2,
-    compute_neighbors,
-)
-
-T = TypeVar("T")
 
 __all__ = [
     "cation_pi",
@@ -63,43 +54,58 @@ DEFAULT_CONTACT_DISTS: dict[str, float] = {
     "carbon_pi": CONTACTS["aromatic"]["atom_aromatic_distance"],
 }
 
+def compute_neighbors(
+    positions: NDArray[np.float32], reference: NDArray[np.float32]
+) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
+    """Compute the neighbors between the reference and positions."""
+    max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
-# class _AtomPlaneContacts:
-#     """Class for computing atom-plane contacts."""
+    pairs, distances = mda_distances.capped_distance(reference, positions, max_cutoff, return_distances=True)
+    return pairs, distances
 
-#     @staticmethod
-#     def donor_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
-#         """Compute the contacts between aromatic rings and the donor pi system."""
-#         distance = DEFAULT_CONTACT_DISTS["donor_pi"]
-#         print ('--> ', ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("hbond_donor", partner=2).pairs)
-#         return ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("hbond_donor", partner=2)
+def calc_ringnormal_pos_angle(
+    positions: NDArray[np.float32], ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
+) -> NDArray[np.float32]:
+    """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
+    return calc_vec_line_angles(
+        ring_normals,
+        ring_centers - positions,
+    )
 
-#     @staticmethod
-#     def sulphur_pi(ns: NeighborPairs, *_: T) -> NeighborPairs:
-#         """Compute the contacts between aromatic rings and the sulphur pi system."""
-#         distance = DEFAULT_CONTACT_DISTS["sulphur_pi"]
-#         indices = ns.partner2.select_atoms("resname MET and element S").indices
-#         return ns.index_filter(indices, partner=2).distance_filter(distance)
-
-#     @staticmethod
-#     def carbon_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
-#         """Compute the contacts between aromatic rings and the carbon pi system."""
-#         distance = DEFAULT_CONTACT_DISTS["carbon_pi"]
-#         return (
-#             ns.numeric_filter(angles, angle_cutoff)
-#             .index_filter(ns.partner2.select_atoms("element C").indices, partner=2)
-#             .distance_filter(distance)
-#             .type_filter("weak_hbond_donor", partner=2)
-#         )
-
-#     @staticmethod
-#     def cation_pi(ns: NeighborPairs, angles: NDArray[np.float32], angle_cutoff: float = 30.0) -> NeighborPairs:
-#         """Compute the contacts between aromatic rings and the cation pi system."""
-#         distance = DEFAULT_CONTACT_DISTS["cation_pi"]
-#         return ns.numeric_filter(angles, angle_cutoff).distance_filter(distance).type_filter("pos_ionisable", partner=2)
 
 class AtomPlaneContacts:
-    """Class for computing atom-plane contacts."""
+    """Calculate and handles special atomic contacts within a molecular system, including
+    carbon-pi, cation-pi, donor-pi, and sulphur-pi interactions. Each interaction type is computed
+    as a method of this class.
+
+    Aromatic rings and their interactions play a pivotal role in this analysis.
+
+    !!! tip "Definition"
+        1. The interaction is between an aromatic ring and a specific type of atom or group.
+        2. The angle between the aromatic ring plane and the vector connecting the center of the
+           aromatic ring and the specific atom or group is within a predefined cutoff (where applicable).
+        3. The distance between the atom or group and the aromatic ring system does not exceed a
+           predefined distance cutoff.
+
+    The computation is based on the neighbors and angles calculated within the molecular system.
+
+    Attributes:
+        angles (Optional[NDArray[np.float32]]): Calculated angles between ring plane and atom vector.
+        rings (Rings): Enumeration of rings in the molecular system.
+        ns (NeighborPairs): The object encapsulating pairs of neighboring atoms in the system.
+        
+    ??? example "Example"
+        ``` py
+        luni = Luni(...)
+        ns = luni.compute_neighbors()
+
+        apc = AtomPlaneContacts(ns)
+        dop = apc.donor_pi()    # for donor-pi contacts
+        sup = apc.sulphur_pi()  # for sulphur-pi contacts
+        cbp = apc.carbon_pi()   # for carbon-pi contacts
+        cap = apc.cation_pi()   # for cation-pi contacts
+        ```
+    """
 
     def __init__(self, ns: NeighborPairs):
         mda = ns.luni.to("mda")
@@ -124,7 +130,7 @@ class AtomPlaneContacts:
         self.ns = nn
 
 
-        self.angles = calc_ringnormal_pos_angle2(
+        self.angles = calc_ringnormal_pos_angle(
             mda.universe.atoms[pairs[:, 1]].positions, 
             self.rings.centers[pairs[:, 0]], 
             self.rings.normals[pairs[:, 0]]
@@ -170,51 +176,6 @@ class AtomPlaneContacts:
         return self.ns.numeric_filter(self.angles, angle_cutoff).distance_filter(distance).type_filter("pos_ionisable", partner=2)
     
 
-        
-
-# def subtract_aromatic_neighbors(
-#     ns: NeighborPairs, pairs: NDArray[np.int32], distances: NDArray[np.float32]
-# ) -> NeighborPairs:
-#     """Subtract aromatic neighbors from the neighbor pairs."""
-#     cloned_neighbors = ns.new(pairs, distances)
-#     return cloned_neighbors - cloned_neighbors.type_filter("aromatic", partner=2)
-
-
-# def compute_contacts(
-#     contact_fn: Callable[[NeighborPairs, NDArray[np.float32], Optional[float]], NeighborPairs],
-#     angle_cutoff: Optional[float],
-# ) -> Callable[[NeighborPairs], NeighborPairs]:
-#     """Compute the contacts between aromatic rings and the specified atom plane system."""
-
-#     def wrapped(ns: NeighborPairs) -> NeighborPairs:
-#         """Compute the contacts between aromatic rings and the specified atom plane system."""
-#         mda = ns.luni.to("mda")
-#         rings = enumerate_rings(ns.luni.to("mol"))
-
-#         # neighbors_fn = compute_neighbors_cached.call if use_cache else compute_neighbors  # type: ignore
-#         # pairs, distances = result[0] if use_cache else result
-#         pairs, distances = compute_neighbors(mda.atoms.positions, rings.centers)
-
-#         neighbors = subtract_aromatic_neighbors(ns, pairs, distances)
-
-#         # angles_fn = (
-#         #     calc_ringnormal_pos_angle_cached.call if use_cache else calc_ringnormal_pos_angle  # type: ignore
-#         # )
-#         # angles = result[0] if use_cache else result
-#         angles = calc_ringnormal_pos_angle(neighbors, mda.universe.atoms, rings.centers, rings.normals)
-
-#         return contact_fn(neighbors, angles, angle_cutoff)
-
-#     return wrapped
-
-
-# def create_contact_function(
-#     contact_type: str, angle_cutoff: Optional[float] = True
-# ) -> Callable[[NeighborPairs], NeighborPairs]:
-#     """Create a contact function based on the contact type."""
-#     func_name = f"{contact_type}"
-#     contact_fn = getattr(_AtomPlaneContacts, func_name)
-#     return compute_contacts(contact_fn, angle_cutoff)
 
 
 # user-facing functions
@@ -248,10 +209,6 @@ def cation_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     apc = AtomPlaneContacts(ns)
     return apc.cation_pi(angle_cutoff)
 
-    # func = create_contact_function("cation_pi", angle_cutoff)
-    # return func(ns)
-
-
 def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     """Handle the computation of carbon pi contacts in a molecular system.
 
@@ -281,10 +238,6 @@ def carbon_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     """
     apc = AtomPlaneContacts(ns)
     return apc.carbon_pi(angle_cutoff)
-
-    # func = create_contact_function("carbon_pi", angle_cutoff)
-    # return func(ns)
-
 
 def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     """Handle the computation of donor pi contacts in a molecular system.
@@ -316,11 +269,6 @@ def donor_pi(ns: NeighborPairs, angle_cutoff: float = 30.0) -> NeighborPairs:
     apc = AtomPlaneContacts(ns)
     return apc.donor_pi(angle_cutoff)
 
-    # func = create_contact_function("donor_pi", angle_cutoff)
-    # print ('func', func)
-    # return func(ns)
-
-
 def sulphur_pi(ns: NeighborPairs) -> NeighborPairs:
     """Handle the computation of sulphur pi contacts in a molecular system.
 
@@ -347,10 +295,6 @@ def sulphur_pi(ns: NeighborPairs) -> NeighborPairs:
     """
     apc = AtomPlaneContacts(ns)
     return apc.sulphur_pi()
-
-    # func = create_contact_function("sulphur_pi", None)
-    # return func(ns)
-
 
 # class AtomPlaneContacts:
 #     """Calculate and handles special atomic contacts within a molecular system, including
