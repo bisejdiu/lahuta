@@ -501,3 +501,16 @@ def is_strict_superset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
         ```
     """
     return issuperset(arr1, arr2) and not isequal(arr1, arr2)
+
+def unique_indices(arr: NDArray[np.int32]) -> NDArray[np.int32]:
+    """Find the indices of unique elements in an array.
+
+    Args:
+        arr (NDArray[np.int32]): The array to find the unique indices of.
+
+    Returns:
+        NDArray[np.int32]: The indices of the unique elements in the array.
+    """
+    _, unique_indices = np.unique(asvoid(arr), return_index=True)
+
+    return unique_indices
