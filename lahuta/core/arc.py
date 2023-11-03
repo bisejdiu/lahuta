@@ -85,7 +85,7 @@ class Atoms:
     dtype = np.dtype(
         {
             "names": ["name", "id", "element", "type"],
-            "formats": ["<U10", "int", "<U10", "<U10"],
+            "formats": ["<U10", "int", "<U2", "<U10"],
         }
     )
 

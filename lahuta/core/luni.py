@@ -41,6 +41,7 @@ NeighborBackends: dict[str, Type[NeighborSearch] | Type[GemmiNeighbors]] = {
     "gemmi": GemmiNeighbors,
 }
 
+
 class Luni:
     """The main class of the Lahuta package. It represents a universe of atoms and provides
     methods for computing various properties of the universe.
@@ -68,7 +69,7 @@ class Luni:
         self._file_loader: BaseLoader
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
-                self._file_loader = TopologyLoader.from_mda(s) # type: ignore
+                self._file_loader = TopologyLoader.from_mda(s)  # type: ignore
             case (str(s), None):
                 # Check if we can use GemmiLoader.
                 file_format, is_pdb = Luni._check_gemmi_support(s)
@@ -147,10 +148,8 @@ class Luni:
         self.atom_types *= 0
 
     def store_atom_types(
-            self, 
-            filename: str = "sparse_matrix.npz", 
-            backend: Literal["scipy", "numpy"] = "scipy"
-        ) -> None:
+        self, filename: str = "sparse_matrix.npz", backend: Literal["scipy", "numpy"] = "scipy"
+    ) -> None:
         """Store the atom types of the Luni to a file.
 
         This method stores the atom types of the Luni to a file.
@@ -187,12 +186,13 @@ class Luni:
             filename (str): The name of the file to save the Luni to.
         """
         sparse_matrix = self.atom_types
-        np.savez_compressed(filename,
-                            data=sparse_matrix.data,
-                            indices=sparse_matrix.indices,
-                            indptr=sparse_matrix.indptr,
-                            shape=sparse_matrix.shape)
-
+        np.savez_compressed(
+            filename,
+            data=sparse_matrix.data,
+            indices=sparse_matrix.indices,
+            indptr=sparse_matrix.indptr,
+            shape=sparse_matrix.shape,
+        )
 
     def _load_using_scipy(self, filename: str) -> None:
         """Load the Luni from a file using SciPy.
@@ -221,7 +221,7 @@ class Luni:
 
     # TODO @bisejdiu: rename to find_neighbors
     # https://github.com/bisejdiu/lahuta/issues/52
-    def compute_neighbors( # noqa: PLR0913
+    def compute_neighbors(  # noqa: PLR0913
         self,
         radius: float = 5.0,
         res_dif: int = 1,
@@ -254,7 +254,7 @@ class Luni:
         """
         if image is not None and backend != "gemmi":
             raise ValueError("Image filtering is only supported with the 'gemmi' backend!")
-        
+
         self.assing_atom_types() if atom_types else self.unassign_atom_types()
 
         # neighbors = NeighborSearch(self.to("mda"))
@@ -265,7 +265,7 @@ class Luni:
             neighbors = NeighborSearch(self.to("mda"))
         else:
             raise ValueError(f"Invalid backend: {backend}, must be one of 'mda' or 'gemmi'")
-        
+
         pairs, distances = neighbors.compute(
             radius=radius,
             res_dif=res_dif,

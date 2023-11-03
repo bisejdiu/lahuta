@@ -275,10 +275,12 @@ class TopologyLoader(BaseLoader):
         assert self.ag is not None
         if trajectories:
             if isinstance(trajectories, str):
-                trajectories = (trajectories)
+                trajectories = trajectories
             self.ag.universe.load_new(trajectories, format=None, in_memory=False)
 
         self.ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(universe.atoms.elements))
+        self.ag.universe.add_TopologyAttr("element", np.char.upper(universe.atoms.elements.astype(str)))
+        # self.ag.elements = np.char.capitalize(self.ag.elements)
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
     def to_mda(self) -> AtomGroupType:
@@ -308,6 +310,7 @@ class TopologyLoader(BaseLoader):
         """
         top_loader = cls.__new__(cls)
         ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(ag.universe.atoms.elements))
+        ag.universe.add_TopologyAttr("element", np.char.upper(ag.universe.atoms.elements.astype(str)))
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
         top_loader.structure = None
