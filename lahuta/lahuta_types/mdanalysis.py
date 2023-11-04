@@ -148,7 +148,7 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "AtomGroupType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32] | NDArray[np.bool_]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
@@ -172,6 +172,10 @@ class UniverseType(Protocol):
 
     @property
     def trajectory(self) -> "TrajectoryType":
+        ...
+
+    @property
+    def _topology(self) -> Any:
         ...
 
     def select_atoms(self, selection: str) -> "AtomGroupType":
