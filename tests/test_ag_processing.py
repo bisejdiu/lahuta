@@ -65,7 +65,8 @@ class UniverseWrapper:
         self.unique_resnames = np.unique(resnames)
 
         self.u_ref = u_ref
-        self.u = Luni(self.mda_u.select_atoms(selection).atoms)
+        # self.u = Luni(self.mda_u.select_atoms(selection).atoms)
+        self.u = u_ref.filter(selection)
 
 
 @pytest.fixture(scope="session")
