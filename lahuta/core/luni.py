@@ -290,6 +290,14 @@ class Luni:
         """
         return Luni(self._mda.select_atoms(selection))
 
+    def copy(self) -> "Luni":
+        """Create a copy of this Luni instance.
+
+        Returns:
+            Luni: A copy of this Luni instance.
+        """
+        return self.__class__(self._mda)
+
     @property
     def sequence(self) -> str:
         """Retrieve the sequence of the Luni.
