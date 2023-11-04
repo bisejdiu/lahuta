@@ -125,7 +125,7 @@ class Luni:
     def load_atom_types(self, filename: str, backend: Literal["scipy", "numpy"] = "numpy") -> None:
         """Load atom types from a file.
 
-        This method loads the atom types from a file and stores them in the Luni.
+        This method loads the atom types from a file and stores them in the Luni object.
 
         Args:
             filename (str): The name of the file to load the atom types from.
@@ -230,7 +230,7 @@ class Luni:
         backend: Literal["mda", "gemmi"] = "mda",
         atom_types: bool = True,
     ) -> NeighborPairs:
-        """Compute the neighbors of each atom in the Luni.
+        """Compute the neighbors of each atom in the Luni object.
 
         This method calculates the neighbors for each atom based on the given radius and residue difference parameters.
         It returns an object of type `NeighborPairs` where each row in the underlying NumPy array contains the indices
@@ -372,12 +372,13 @@ class Luni:
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
-    def arc(self) -> None | ARC:
+    def arc(self) -> ARC:
         """Retrieve the ARC instance used to load the files.
 
         Returns:
-            None | ARC: The ARC instance used to load the files.
+            ARC: The ARC instance used to load the files.
         """
+        assert self._file_loader.arc is not None, "Empty initialization is not currently supported!"
         return self._file_loader.arc
 
     def __repr__(self) -> str:
@@ -385,3 +386,94 @@ class Luni:
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    @property
+    def indices(self) -> NDArray[np.int32]:
+        """Retrieve the indices of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
+        """
+        return self.arc.atoms.ids
+
+    @property
+    def ids(self) -> NDArray[np.int32]:
+        """Retrieve the indices of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
+        """
+        return self.arc.atoms.ids
+
+    @property
+    def names(self) -> NDArray[np.str_]:
+        """Retrieve the names of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the names of the atoms in the Luni object.
+        """
+        return self.arc.atoms.names
+
+    @property
+    def elements(self) -> NDArray[np.str_]:
+        """Retrieve the elements of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the elements of the atoms in the Luni object.
+        """
+        return self.arc.atoms.elements
+
+    # TODO: @bisejdiu: perhaps we should not cloud the atom type attribue, and rather return the perceived atom types?
+    @property
+    def types(self) -> NDArray[np.str_]:
+        """Retrieve the types of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the types of the atoms in the Luni object.
+        """
+        return self.arc.atoms.types
+
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        """Retrieve the residue names of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the residue names of the atoms in the Luni object.
+        """
+        return self.arc.residues.resnames
+
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        """Retrieve the residue IDs of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.int32]: A NumPy array containing the residue IDs of the atoms in the Luni object.
+        """
+        return self.arc.residues.resids
+
+    @property
+    def chainids(self) -> NDArray[np.int32]:
+        """Retrieve the chain IDs of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the chain IDs of the atoms in the Luni object.
+        """
+        return self.arc.chains.ids
+
+    @property
+    def chainlabels(self) -> NDArray[np.str_]:
+        """Retrieve the chain labels of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the chain labels of the atoms in the Luni object.
+        """
+        return self.arc.chains.labels
+
+    @property
+    def chainauths(self) -> NDArray[np.str_]:
+        """Retrieve the chain auths of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the chain auths of the atoms in the Luni object.
+        """
+        return self.arc.chains.auths
