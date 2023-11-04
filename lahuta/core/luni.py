@@ -276,6 +276,20 @@ class Luni:
         ns.set_neighbors(pairs, distances)
         return ns
 
+    def filter(self, selection: str) -> "Luni":
+        """Filter the Luni.
+
+        This method filters the Luni based on the given selection string. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Args:
+            selection (str): The selection string to use for filtering.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return Luni(self._mda.select_atoms(selection))
+
     @property
     def sequence(self) -> str:
         """Retrieve the sequence of the Luni.
