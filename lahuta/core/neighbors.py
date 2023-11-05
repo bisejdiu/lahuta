@@ -537,7 +537,7 @@ class NeighborPairs:
             ```
         """
         return au.is_strict_superset(self.pairs, other.pairs)
-    
+
     def new(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> "NeighborPairs":
         """Return a new NeighborPairs object that is a copy of the current object,
         but with specified pairs and distances.
@@ -554,7 +554,7 @@ class NeighborPairs:
         new.luni = self.luni
         new.atoms = self.atoms
         new.set_neighbors(pairs, distances, sort=False)
-        new.annotations = {} # reset annotations
+        new.annotations = {}  # reset annotations
         return new
 
     def plot(self, which: Literal["matching", "full"] = "matching", half_only: bool = False) -> None:
@@ -841,7 +841,7 @@ class NeighborPairs:
         if isinstance(item, int):
             return self.new(
                 self.pairs[item].reshape(-1, 2),
-                self.distances[item],
+                np.array([self.distances[item]]),
             )
 
         return self.new(self.pairs[item], self.distances[item])

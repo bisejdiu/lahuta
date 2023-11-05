@@ -170,6 +170,11 @@ class Atoms:
     def coordinates(self, coordinates: NDArray[np.float32]) -> None:
         self.coords = coordinates
 
+    @property
+    def n_atoms(self) -> int:
+        """Number of atoms."""
+        return self.data.size
+
     def __len__(self) -> int:
         return self.data.size
 
@@ -267,6 +272,11 @@ class Residues:
     def resids(self) -> NDArray[np.int32]:
         """Residue IDs."""
         return self.data["resid"]
+
+    @property
+    def n_residues(self) -> int:
+        """Number of residues."""
+        return len(self.data)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -382,6 +392,11 @@ class Chains:
     def ids(self) -> NDArray[np.int32]:
         """Chain IDs."""
         return self.data["id"]
+
+    @property
+    def n_chains(self) -> int:
+        """Number of chains."""
+        return len(self.data)
 
     def __len__(self) -> int:
         return len(self.data)

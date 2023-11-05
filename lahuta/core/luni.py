@@ -219,8 +219,6 @@ class Luni:
         self.atom_types.indices = sparse_matrix["indices"]
         self.atom_types.indptr = sparse_matrix["indptr"]
 
-    # TODO @bisejdiu: rename to find_neighbors
-    # https://github.com/bisejdiu/lahuta/issues/52
     def compute_neighbors(  # noqa: PLR0913
         self,
         radius: float = 5.0,
@@ -436,6 +434,15 @@ class Luni:
         return self.arc.atoms.types
 
     @property
+    def coordinates(self) -> NDArray[np.float32]:
+        """Retrieve the coordinates of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.float32]: A NumPy array containing the coordinates of the atoms in the Luni object.
+        """
+        return self.arc.atoms.coordinates
+
+    @property
     def resnames(self) -> NDArray[np.str_]:
         """Retrieve the residue names of the atoms in the Luni object.
 
@@ -479,3 +486,30 @@ class Luni:
             NDArray[np.str_]: A NumPy array containing the chain auths of the atoms in the Luni object.
         """
         return self.arc.chains.auths
+
+    @property
+    def n_atoms(self) -> int:
+        """Retrieve the number of atoms in the Luni object.
+
+        Returns:
+            int: The number of atoms in the Luni object.
+        """
+        return self.arc.atoms.n_atoms
+
+    @property
+    def n_residues(self) -> int:
+        """Retrieve the number of residues in the Luni object.
+
+        Returns:
+            int: The number of residues in the Luni object.
+        """
+        return self.arc.residues.n_residues
+
+    @property
+    def n_chains(self) -> int:
+        """Retrieve the number of chains in the Luni object.
+
+        Returns:
+            int: The number of chains in the Luni object.
+        """
+        return self.arc.chains.n_chains
