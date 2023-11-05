@@ -276,6 +276,9 @@ class Luni:
         ns.set_neighbors(pairs, distances)
         return ns
 
+    # alias for compute_neighbors
+    neighbors = compute_neighbors
+
     def filter(self, selection: str) -> "Luni":
         """Filter the Luni.
 
