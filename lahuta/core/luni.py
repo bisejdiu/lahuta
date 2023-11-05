@@ -423,7 +423,6 @@ class Luni:
         """
         return self.arc.atoms.elements
 
-    # TODO: @bisejdiu: perhaps we should not cloud the atom type attribue, and rather return the perceived atom types?
     @property
     def types(self) -> NDArray[np.str_]:
         """Retrieve the types of the atoms in the Luni object.
