@@ -44,12 +44,12 @@ class NeighborSearch:
         self.chain_ids = mda.universe.atoms.chainIDs
 
     def compute(
-            self, 
-            radius: float = 5.0, 
-            res_dif: int = 1,
-            chain_type: Optional[Literal["inter", "intra"]] = None,
-            image: Optional[Literal["inter", "intra"]] = None,
-        ) -> PairsDistances:
+        self,
+        radius: float = 5.0,
+        res_dif: int = 1,
+        chain_type: Optional[Literal["inter", "intra"]] = None,
+        image: Optional[Literal["inter", "intra"]] = None,
+    ) -> PairsDistances:
         """Compute the neighbors of each atom in the Universe.
 
         Args:
@@ -63,7 +63,7 @@ class NeighborSearch:
         """
         if image is not None:
             raise NotImplementedError("Image handling not implemented yet.")
-        
+
         pairs, distances = self.get_neighbors(radius)
 
         if res_dif > 0:
@@ -89,7 +89,7 @@ class NeighborSearch:
         """
         # check for dimensions
         if not hasattr(self.ag_no_h.universe, "dimensions") or self.ag_no_h.universe.dimensions is None:
-            positions, dimensions = mda_psuedobox_from_atomgroup(self.ag_no_h)
+            positions, dimensions = mda_psuedobox_from_atomgroup(self.ag_no_h, cutoff=radius)
             pbc = False
         else:
             positions = self.ag_no_h.positions
@@ -130,9 +130,9 @@ class NeighborSearch:
             NDArray[np.bool_]: An array of shape (n_pairs,) containing the indices of the pairs to keep.
         """
         assert chain_type in ["inter", "intra"], f"Invalid chain_type: {chain_type}. Must be 'inter' or 'intra'."
-        
+
         chain_ids: NDArray[np.int32] = self.chain_ids[pairs]
         if chain_type == "inter":
-            return chain_ids[:, 0] != chain_ids[:, 1] # type: ignore
-        
-        return chain_ids[:, 0] == chain_ids[:, 1] # type: ignore
+            return chain_ids[:, 0] != chain_ids[:, 1]  # type: ignore
+
+        return chain_ids[:, 0] == chain_ids[:, 1]  # type: ignore
