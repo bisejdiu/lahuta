@@ -33,6 +33,7 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.lahuta_types.openbabel import MolType
+from lahuta.utils.array_utils import cross_interaction_indices
 
 __all__ = ["Luni"]
 
@@ -225,6 +226,7 @@ class Luni:
         res_dif: int = 1,
         chain_type: Optional[Literal["inter", "intra"]] = None,
         image: Optional[Literal["inter", "intra"]] = None,
+        target_spec: Optional["Luni"] = None,
         backend: Literal["mda", "gemmi"] = "mda",
         atom_types: bool = True,
     ) -> NeighborPairs:
@@ -244,6 +246,8 @@ class Luni:
             image (Literal["inter", "intra"], optional): The type of image to keep. Default is None (keep all).
             backend (Literal["mda", "gemmi"], optional): The backend to use for computing neighbors. \
             Default is "mda".
+            target_spec (Optional[Luni], optional): The target Luni object to compute neighbors with. \
+            Default is None (compute neighbors within the same Luni object).
             atom_types (bool, optional): Whether to assign atom types before compute neighbors. Default is True.
 
         Returns:
@@ -255,12 +259,18 @@ class Luni:
 
         self.assing_atom_types() if atom_types else self.unassign_atom_types()
 
+        mda = self._mda
+        if target_spec is not None:
+            union_indices = np.union1d(self.indices, target_spec.indices)
+            mda = self._mda.universe.atoms[union_indices]
+
         # neighbors = NeighborSearch(self.to("mda"))
         if backend == "gemmi":
             assert self._file_loader.structure is not None
-            neighbors = GemmiNeighbors(self._mda, self._file_loader.structure)
+            # TODO(bisejdiu): image is not being passed
+            neighbors = GemmiNeighbors(mda, self._file_loader.structure)
         elif backend == "mda":
-            neighbors = NeighborSearch(self.to("mda"))
+            neighbors = NeighborSearch(mda)
         else:
             raise ValueError(f"Invalid backend: {backend}, must be one of 'mda' or 'gemmi'")
 
@@ -269,6 +279,10 @@ class Luni:
             res_dif=res_dif,
             chain_type=chain_type,
         )
+
+        if target_spec is not None:
+            cross_indices = cross_interaction_indices(pairs, self.indices, target_spec.indices)
+            pairs, distances = pairs[cross_indices], distances[cross_indices]
 
         ns = NeighborPairs(self)
         ns.set_neighbors(pairs, distances)
