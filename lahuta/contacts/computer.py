@@ -25,7 +25,7 @@ Distances: TypeAlias = NDArray[np.float32]
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactFunctions = ContactFunction | Iterable[ContactFunction]
 FrameContacts = dict[int, tuple[Pairs, Distances]]
-
+FrameNumber = int
 
 class LahutaContacts:
     """Manages the computation of various molecular contacts.
@@ -281,7 +281,7 @@ class LahutaTrajectoryContacts:
     def __init__(self, res_dif: int, radius: float):
         self.res_dif = res_dif
         self.radius = radius
-        self.results: dict[int, NeighborPairs | dict[str, NeighborPairs]] = {}
+        self.results: dict[FrameNumber, NeighborPairs | dict[str, NeighborPairs]] = {}
 
     def _get_block_slices(self, n_frames: int, n_blocks: int) -> list[range]:
         n_frames_per_block = n_frames // n_blocks
@@ -311,9 +311,7 @@ class LahutaTrajectoryContacts:
         n_frames = mda.universe.trajectory.n_frames
         blocks = self._get_block_slices(n_frames, n_blocks=n_jobs)
         with tqdm_joblib(tqdm(total=n_jobs)) as _:
-            results: list[FrameContacts] = cast(
-                list[FrameContacts], Parallel(n_jobs=n_jobs)(delayed(self._frame_iter)(mda, bs) for bs in blocks)
-            )
+            results: list[FrameContacts] = Parallel(n_jobs=n_jobs)(delayed(self._frame_iter)(mda, bs) for bs in blocks)
 
         return results
 
@@ -331,11 +329,8 @@ class LahutaTrajectoryContacts:
             None
 
         """
-        if not self.results:
-            self.results = {}
-
-        mda = luni.to("mda")
-        results = self._compute(mda, n_jobs=n_jobs)
+        self.results = {}
+        results = self._compute(luni.to("mda"), n_jobs=n_jobs)
 
         ref_ns = None
         for block in results:
@@ -395,7 +390,7 @@ class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
         self.res_dif = res_dif
         self.radius = radius
         self._trajectory = self.luni.to("mda").universe.trajectory
-        self.results: dict[int, NeighborPairs | dict[str, NeighborPairs]] = {}
+        self.results: dict[FrameNumber, NeighborPairs | dict[str, NeighborPairs]] = {}
         self.lahuta_contacts: Optional["LahutaContacts"] = None
         AnalysisBase.__init__(self, self._trajectory)
 
