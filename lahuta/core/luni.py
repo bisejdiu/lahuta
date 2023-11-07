@@ -31,7 +31,7 @@ from lahuta.core.fn import GemmiNeighbors
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.lahuta_types.mdanalysis import AtomGroupType, TrajectoryType
 from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.array_utils import cross_interaction_indices
 
@@ -527,3 +527,21 @@ class Luni:
             int: The number of chains in the Luni object.
         """
         return self.arc.chains.n_chains
+
+    @property
+    def n_frames(self) -> int: 
+        """Retrieve the number of frames in the Luni object.
+
+        Returns:
+            int: The number of frames in the Luni object.
+        """
+        return self._mda.universe.trajectory.n_frames
+    
+    @property
+    def trajectory(self) -> TrajectoryType:
+        """Retrieve the trajectory of the Luni object.
+
+        Returns:
+            Any: The trajectory of the Luni object.
+        """
+        return self._mda.universe.trajectory
