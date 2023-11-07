@@ -1,19 +1,15 @@
+import io
+import subprocess
 from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-from Bio.PDB.DSSP import make_dssp_dict
+from Bio.PDB.DSSP import _make_dssp_dict
 
 
-class DSSPData:
-    def __init__(self, dssp_file_path: str) -> None:
-        self.dssp_file_path: str = dssp_file_path
-        self.dssp_dict: dict[tuple[str, tuple[str, int, str]], tuple[Any, ...]] = self._parse_dssp_file()
-
-    def _parse_dssp_file(self) -> dict[tuple[str, tuple[str, int, str]], tuple[Any, ...]]:
-        # Call the make_dssp_dict function from BioPython and return only the dssp_dict
-        dssp_dict, _ = make_dssp_dict(self.dssp_file_path)
-        return dssp_dict  # type: ignore
+class DSSP:
+    def __init__(self, dssp_dict: dict[tuple[str, tuple[str, int, str]], tuple[Any, ...]]) -> None:
+        self.dssp_dict = dssp_dict
 
     @property
     def secondary_structure(self) -> NDArray[np.str_]:
@@ -25,10 +21,41 @@ class DSSPData:
         # Solvent accessible surface areas
         return np.array([data[2] for data in self.dssp_dict.values()])
 
+class DSSPCLIHandler:
+    def __init__(self, input_file):
+        self.input_file = input_file
+        self._command = self._build_command()
+
+    def get_dssp_dict(self):
+        cli_output = self.run()
+        file_like_object = io.StringIO(cli_output)
+
+        dssp_dict, _ = _make_dssp_dict(file_like_object)
+        return dssp_dict
+
+    def _build_command(self):
+        return ['mkdssp', '-i', self.input_file]
+        
+    def run(self):
+        result = subprocess.run(self.command, capture_output=True, text=True, check=True)
+        return result.stdout
+
+    @property
+    def command(self):
+        return self._command
+
 
 if __name__ == '__main__':
-    # Test the DSSPData class
-    dssp_data = DSSPData('/home/bisejdiu/2023/lahuta/1gzm.dssp')
+    # Test the DSSP class
+    # dssp_data = DSSP('/home/bisejdiu/2023/lahuta/1gzm.dssp')
+    # secondary_structure = dssp_data.secondary_structure
+    # print('secondary_structure', secondary_structure)
+    # solvent_accessible_area = dssp_data.solvent_accessible_area
+    # print('solvent_accessible_area', solvent_accessible_area)
+
+    handler = DSSPCLIHandler('1gzm.cif')
+    dssp_dict = handler.get_dssp_dict()
+    dssp_data = DSSP(dssp_dict)
     secondary_structure = dssp_data.secondary_structure
     print('secondary_structure', secondary_structure)
     solvent_accessible_area = dssp_data.solvent_accessible_area
