@@ -94,6 +94,8 @@ class Luni:
         self._mda = self._file_loader.to("mda")
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
+        self._structure, self._trajectories = structure, trajectories
+
     @staticmethod
     def _get_supported_fmts() -> set[str]:
         return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
@@ -396,12 +398,6 @@ class Luni:
         assert self._file_loader.arc is not None, "Empty initialization is not currently supported!"
         return self._file_loader.arc
 
-    def __repr__(self) -> str:
-        return f"<Luni with {self._mda.n_atoms} atoms>"
-
-    def __str__(self) -> str:
-        return self.__repr__()
-
     @property
     def indices(self) -> NDArray[np.int32]:
         """Retrieve the indices of the atoms in the Luni object.
@@ -545,3 +541,25 @@ class Luni:
             Any: The trajectory of the Luni object.
         """
         return self._mda.universe.trajectory
+    
+    def __getstate__(self) -> dict[str, Any]:
+        """Get state for pickling."""
+        state = self.__dict__.copy()
+        state["_mol"] = None
+        return state
+    
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Set state for unpickling."""
+        self.__dict__.update(state)
+
+    def __reduce__(self) -> tuple[Type["Luni"], tuple[Any, ...], dict[str, Any]]:
+        """Get state for pickling."""
+        state = self.__dict__.copy()
+        state["_mol"] = None
+        return (self.__class__, (self._structure, self._trajectories), state)
+
+    def __repr__(self) -> str:
+        return f"<Luni with {self._mda.n_atoms} atoms>"
+
+    def __str__(self) -> str:
+        return self.__repr__()
