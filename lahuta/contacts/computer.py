@@ -16,7 +16,6 @@ from lahuta.contacts import AtomPlaneContacts, F
 from lahuta.core.luni import Luni
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 from ._ctx_mngrs import tqdm_joblib
 
@@ -24,7 +23,7 @@ Pairs: TypeAlias = NDArray[np.int32]
 Distances: TypeAlias = NDArray[np.float32]
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactFunctions = ContactFunction | Iterable[ContactFunction]
-FrameContacts = dict[int, tuple[Pairs, Distances]]
+FrameContacts = dict[int, NeighborPairs | dict[str, NeighborPairs]]
 FrameNumber = int
 
 class LahutaContacts:
@@ -278,7 +277,10 @@ class LahutaTrajectoryContacts:
         - The `compute` method can be called multiple times to compute contacts for different universes.
     """
 
-    def __init__(self, res_dif: int, radius: float):
+    def __init__(self, luni: Luni, res_dif: int, radius: float):
+        self.luni = luni
+        self.ref_ns = NeighborPairs(self.luni)
+        self.computer: Optional[LahutaContacts] = None
         self.res_dif = res_dif
         self.radius = radius
         self.results: dict[FrameNumber, NeighborPairs | dict[str, NeighborPairs]] = {}
@@ -289,66 +291,62 @@ class LahutaTrajectoryContacts:
         blocks.append(range((n_blocks - 1) * n_frames_per_block, n_frames))
         return blocks
 
-    def _per_frame_compute(self, mda: AtomGroupType, frame_index: int, result: FrameContacts) -> FrameContacts:
-        neighbors = NeighborSearch(mda)
+    def _per_frame_compute(self, frame_index: int, result: FrameContacts) -> FrameContacts:
+        neighbors = NeighborSearch(self.luni.to("mda"))
         pairs, distances = neighbors.compute(
             radius=self.radius,
             res_dif=self.res_dif,
         )
 
-        result[frame_index] = (pairs, distances)
+        computer_result = {}
+        ns = NeighborPairs(self.luni)
+        ns._pairs, ns._distances = NeighborPairs.sort_inputs(pairs, distances) # noqa: SLF001
+        if self.computer is not None:
+            self.computer.compute(ns)
+            computer_result = self.computer.results
+
+        result[frame_index] = computer_result if self.computer is not None else ns
         return result
 
-    def _frame_iter(self, mda: AtomGroupType, blockslice: slice) -> FrameContacts:
+    def _frame_iter(self, blockslice: slice) -> FrameContacts:
         result: FrameContacts = {}
-        trajectory = mda.universe.trajectory
-        for ts in trajectory[blockslice.start : blockslice.stop]:
-            result = self._per_frame_compute(mda, ts.frame, result)
+        for ts in self.luni.trajectory[blockslice.start : blockslice.stop]:
+            result = self._per_frame_compute(ts.frame, result)
 
         return result
 
-    def _compute(self, mda: AtomGroupType, n_jobs: int) -> list[FrameContacts]:
-        n_frames = mda.universe.trajectory.n_frames
-        blocks = self._get_block_slices(n_frames, n_blocks=n_jobs)
+    def _compute(self, n_jobs: int) -> list[FrameContacts]:
+        blocks = self._get_block_slices(self.luni.n_frames, n_blocks=n_jobs)
         with tqdm_joblib(tqdm(total=n_jobs)) as _:
-            results: list[FrameContacts] = Parallel(n_jobs=n_jobs)(delayed(self._frame_iter)(mda, bs) for bs in blocks)
+            results: list[FrameContacts] = cast(
+                list[FrameContacts],
+                Parallel(n_jobs=n_jobs, verbose=0)(
+                    delayed(self._frame_iter)(blockslice) for blockslice in blocks
+                ),
+            )
 
         return results
 
-    def compute(self, luni: Luni, lahuta_contacts: Optional["LahutaContacts"] = None, n_jobs: int = 1) -> None:
+    def compute(self, computer: Optional["LahutaContacts"] = None, n_jobs: int = 1) -> None:
         """Compute the contacts for the whole trajectory.
 
         This is the main method to initiate the contact computation across frames.
 
         Args:
             luni (Luni): The universe containing the MD trajectory data.
-            lahuta_contacts (Optional["LahutaContacts"]): Use predefined contacts.
+            computer (Optional["LahutaContacts"]): Use predefined contacts.
             n_jobs (int): Number of parallel jobs for computation.
 
         Returns:
             None
 
         """
-        self.results = {}
-        results = self._compute(luni.to("mda"), n_jobs=n_jobs)
+        self.computer = computer
+        results = self._compute(n_jobs=n_jobs)
 
-        ref_ns = None
-        for block in results:
-            for frame_index, (pairs, distances) in block.items():
-                # Create a reference NeighborPairs object, because cloning is faster than creating a new one
-                if ref_ns is None:
-                    ref_ns = NeighborPairs(luni)
-                    ref_ns.set_neighbors(pairs, distances)
-
-
-                ns = ref_ns.new(pairs, distances)
-                ns._pairs, ns._distances = ns.sort_inputs(ns.pairs, ns.distances)  # noqa: SLF001
-                if lahuta_contacts is None:
-                    self.results[frame_index] = ns
-                else:
-                    lahuta_contacts.compute(ns)
-                    self.results[frame_index] = lahuta_contacts.results
-
+        for result in results:
+            self.results.update(result)
+            
 
 class SlowLahutaTrajectoryContacts(AnalysisBase):  # type: ignore
     """Manage the computation of molecular contacts within MD trajectory data using a slower, but stable method.
