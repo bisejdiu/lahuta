@@ -515,7 +515,7 @@ class Luni:
         Returns:
             int: The number of residues in the Luni object.
         """
-        return self.arc.residues.n_residues
+        return self._mda.residues.n_residues
 
     @property
     def n_chains(self) -> int:
@@ -524,7 +524,7 @@ class Luni:
         Returns:
             int: The number of chains in the Luni object.
         """
-        return self.arc.chains.n_chains
+        return self._mda.n_segments
 
     @property
     def n_frames(self) -> int:
