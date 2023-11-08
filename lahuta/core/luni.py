@@ -14,7 +14,7 @@ Example:
     
 """
 
-from typing import Any, Literal, Optional, Type, overload
+from typing import TYPE_CHECKING, Any, Literal, Optional, Type, Union, overload
 
 import MDAnalysis as mda
 import numpy as np
@@ -25,15 +25,17 @@ from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYM
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
-from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.fn import GemmiNeighbors
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
-from lahuta.lahuta_types.mdanalysis import AtomGroupType, TrajectoryType
-from lahuta.lahuta_types.openbabel import MolType
 from lahuta.utils.array_utils import cross_interaction_indices
+
+if TYPE_CHECKING:
+    from lahuta.core.arc import ARC
+    from lahuta.lahuta_types.mdanalysis import AtomGroupType, TrajectoryType
+    from lahuta.lahuta_types.openbabel import MolType
 
 __all__ = ["Luni"]
 
@@ -65,7 +67,7 @@ class Luni:
         ValueError: If no input is provided or if invalid types of inputs are provided.
     """
 
-    def __init__(self, structure: str | AtomGroupType, trajectories: Optional[str | list[str]] = None) -> None:
+    def __init__(self, structure: Union[str, "AtomGroupType"], trajectories: Optional[str | list[str]] = None) -> None:
         fmts: str | set[str] = ""
         self._file_loader: BaseLoader
         match (structure, trajectories):
@@ -90,7 +92,7 @@ class Luni:
                 fmts = ", ".join(fmts)
                 raise ValueError("Invalid input! \nSupported formats are: {fmts}.")
 
-        self._mol: Optional[MolType] = None
+        self._mol: Optional["MolType"] = None
         self._mda = self._file_loader.to("mda")
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
@@ -358,14 +360,14 @@ class Luni:
         return None, False
 
     @overload
-    def to(self, fmt: Literal["mda"]) -> AtomGroupType:
+    def to(self, fmt: Literal["mda"]) -> "AtomGroupType":
         ...
 
     @overload
-    def to(self, fmt: Literal["mol"]) -> MolType:
+    def to(self, fmt: Literal["mol"]) -> "MolType":
         ...
 
-    def to(self, fmt: Literal["mda", "mol"]) -> MolType | AtomGroupType:
+    def to(self, fmt: Literal["mda", "mol"]) -> Union["MolType", "AtomGroupType"]:
         """Convert the Luni to a different format.
 
         This method converts the internal representation of the Luni to the specified format.
@@ -389,7 +391,7 @@ class Luni:
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
-    def arc(self) -> ARC:
+    def arc(self) -> "ARC":
         """Retrieve the ARC instance used to load the files.
 
         Returns:
@@ -525,29 +527,29 @@ class Luni:
         return self.arc.chains.n_chains
 
     @property
-    def n_frames(self) -> int: 
+    def n_frames(self) -> int:
         """Retrieve the number of frames in the Luni object.
 
         Returns:
             int: The number of frames in the Luni object.
         """
         return self._mda.universe.trajectory.n_frames
-    
+
     @property
-    def trajectory(self) -> TrajectoryType:
+    def trajectory(self) -> "TrajectoryType":
         """Retrieve the trajectory of the Luni object.
 
         Returns:
             Any: The trajectory of the Luni object.
         """
         return self._mda.universe.trajectory
-    
+
     def __getstate__(self) -> dict[str, Any]:
         """Get state for pickling."""
         state = self.__dict__.copy()
         state["_mol"] = None
         return state
-    
+
     def __setstate__(self, state: dict[str, Any]) -> None:
         """Set state for unpickling."""
         self.__dict__.update(state)

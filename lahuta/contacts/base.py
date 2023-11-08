@@ -62,6 +62,7 @@ class ComputeProtocol(Protocol):
     def _conclude(self) -> T:
         """Conclude the computation and store the results."""
 
+
 @runtime_checkable
 class ComputeElementwiseProtocol(Protocol):
     """A runtime-checkable protocol which requires classes to implement a `compute_elementwise` method."""
@@ -76,6 +77,7 @@ class ComputeElementwiseProtocol(Protocol):
 
     def _conclude(self) -> T:
         """Conclude the computation and store the results."""
+
 
 class ContactAnalysis:
     """A base class that provides the structure for running contact computation methods.
