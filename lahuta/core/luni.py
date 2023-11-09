@@ -14,6 +14,7 @@ Example:
     
 """
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Type, Union, overload
 
 import MDAnalysis as mda
@@ -67,9 +68,12 @@ class Luni:
         ValueError: If no input is provided or if invalid types of inputs are provided.
     """
 
-    def __init__(self, structure: Union[str, "AtomGroupType"], trajectories: Optional[str | list[str]] = None) -> None:
+    def __init__(
+        self, structure: Union[str, Path, "AtomGroupType"], trajectories: Optional[str | list[str]] = None
+    ) -> None:
         fmts: str | set[str] = ""
         self._file_loader: BaseLoader
+        structure = str(structure) if isinstance(structure, Path) else structure
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
                 self._file_loader = TopologyLoader.from_mda(s)  # type: ignore
