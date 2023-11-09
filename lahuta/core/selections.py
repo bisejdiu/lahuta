@@ -1,6 +1,6 @@
 """Selections for the Lahuta package."""
 
-from enum import Enum, auto
+from enum import Enum
 from typing import Optional
 
 import numpy as np
@@ -12,46 +12,37 @@ from lahuta.analysis.dssp import DSSP, DSSPParser
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
-class SelectionTokens(Enum):
+class ResTypeSelectionTokens(Enum):
     """Selection tokens."""
 
-    ACIDIC = auto()
-    ALIPHATIC = auto()
-    AROMATIC = auto()
-    AT = auto()
-    BASIC = auto()
-    BURIED = auto()
-    CG = auto()
-    CYCLIC = auto()
-    HYDROPHOBIC = auto()
-    MEDIUM = auto()
-    NEUTRAL = auto()
-    PURINE = auto()
-    PYRIMIDINE = auto()
-    SMALL = auto()
-    WATER = auto()
+    ACIDIC = ("ASP", "GLU")
+    ALIPHATIC = ("ALA", "GLY", "ILE", "LEU", "VAL")
+    AROMATIC = ("PHE", "TRP", "TYR", "HIS")
+    AT = ("ADA", "A", "THY", "T")
+    BASIC = ("ARG", "LYS", "HIS")
+    BURIED = ("ALA", "LEU", "VAL", "ILE", "PHE", "CYS", "MET", "TRP")
+    CG = ("CYT", "C", "GUA", "G")
+    CYCLIC = ("HIS", "PHE", "PRO", "TRP", "TYR")
+    HYDROPHOBIC = ("ALA", "LEU", "VAL", "ILE", "PRO", "PHE", "MET", "TRP")
+    MEDIUM = ("VAL", "THR", "ASP", "ASN", "PRO", "CYS", "ASX", "PCA", "HYP")
+    NEUTRAL = ("VAL", "PHE", "GLN", "TYR", "HIS", "CYS", "MET", "TRP", "ASX", "GLX", "PCA", "HYP")
+    PURINE = ("ADE", "A", "GUA", "G")
+    PYRIMIDINE = ("CYT", "C", "THY", "T", "URI", "U")
+    SMALL = ("ALA", "GLY", "SER")
+    WATER = ("H2O", "HH0", "OHH", "HOH", "OH2", "SOL", "WAT", "TIP", "TIP2", "TIP3", "TIP4")
 
 
-# Mapping of tokens to their respective prot_res values
-PROT_RES_MAP = {
-    SelectionTokens.ACIDIC: np.array(["ASP", "GLU"]),
-    SelectionTokens.ALIPHATIC: np.array(["ALA", "GLY", "ILE", "LEU", "VAL"]),
-    SelectionTokens.AROMATIC: np.array(["PHE", "TRP", "TYR", "HIS"]),
-    SelectionTokens.AT: np.array(["ADA", "A", "THY", "T"]),
-    SelectionTokens.BASIC: np.array(["ARG", "LYS", "HIS"]),
-    SelectionTokens.BURIED: np.array(["ALA", "LEU", "VAL", "ILE", "PHE", "CYS", "MET", "TRP"]),
-    SelectionTokens.CG: np.array(["CYT", "C", "GUA", "G"]),
-    SelectionTokens.CYCLIC: np.array(["HIS", "PHE", "PRO", "TRP", "TYR"]),
-    SelectionTokens.HYDROPHOBIC: np.array(["ALA", "LEU", "VAL", "ILE", "PRO", "PHE", "MET", "TRP"]),
-    SelectionTokens.MEDIUM: np.array(["VAL", "THR", "ASP", "ASN", "PRO", "CYS", "ASX", "PCA", "HYP"]),
-    SelectionTokens.NEUTRAL: np.array(
-        ["VAL", "PHE", "GLN", "TYR", "HIS", "CYS", "MET", "TRP", "ASX", "GLX", "PCA", "HYP"]
-    ),
-    SelectionTokens.PURINE: np.array(["ADE", "A", "GUA", "G"]),
-    SelectionTokens.PYRIMIDINE: np.array(["CYT", "C", "THY", "T", "URI", "U"]),
-    SelectionTokens.SMALL: np.array(["ALA", "GLY", "SER"]),
-    SelectionTokens.WATER: np.array(["H2O", "HH0", "OHH", "HOH", "OH2", "SOL", "WAT", "TIP", "TIP2", "TIP3", "TIP4"]),
-}
+class SecondaryStructureTokens(Enum):
+    """Secondary structure tokens."""
+
+    HELIX = ("H",)
+    BETA_BRIDGE = ("B",)
+    STRAND = ("E",)
+    HELIX_3_10 = ("G",)
+    PI_HELIX = ("I",)
+    TURN = ("T",)
+    BEND = ("S",)
+    NO_SS = ("-",)
 
 
 class BaseSelection:
@@ -81,29 +72,31 @@ class BaseSelection:
         return matches.astype(int)
 
 
-class HELIX_3_10(Selection):  # type: ignore
-    """3_10 helix selection."""
+class BaseDSSPSelection(Selection):  # type: ignore
+    """Base class for helix selections."""
 
-    token = "helix_3_10"
     DTYPE = DSSPParser.DTYPES
+
+    def get_ss_type(self) -> str:
+        """Override method in subclasses to define specific secondary structure type."""
+        raise NotImplementedError("This method should be overridden in subclasses")
 
     def _apply(self, group: AtomGroupType) -> AtomGroupType:
         dssp = DSSP(group.universe.filename)
         dssp.parse_or_calculate_dssp()
 
-        group_resinfo = np.empty(len(group.resnames), dtype=DSSPParser.DTYPES)
+        group_resinfo = np.empty(len(group.resnames), dtype=self.DTYPE)
         group_resinfo["chain_auths"] = group.chainIDs
         group_resinfo["resname"] = group.resnames
         group_resinfo["resid"] = group.resids
 
-        g_indices = np.where(dssp.ss_array == "G")[0]
-
-        protein_mask = np.isin(group_resinfo, dssp.resinfo_array[g_indices])
+        ss_indices = np.where(dssp.ss_array == self.get_ss_type())[0]
+        protein_mask = np.isin(group_resinfo, dssp.resinfo_array[ss_indices])
 
         return group[protein_mask]
 
 
-def create_selection_classes() -> list[type[Selection]]:
+def create_restype_selection_classes() -> list[type[Selection]]:
     """Create a selection class.
 
     Iterate over the tokens and create a selection class for each token.
@@ -112,14 +105,35 @@ def create_selection_classes() -> list[type[Selection]]:
         type[Selection]: The selection class.
     """
     types = []
-    for token_enum, prot_res in PROT_RES_MAP.items():
+    for token_enum in ResTypeSelectionTokens:
         sel_cls = type(
             f"{token_enum.name.capitalize()}Selection",
             (
                 Selection,
                 BaseSelection,
             ),
-            {"token": token_enum.name.lower(), "prot_res": prot_res},
+            {"token": token_enum.name.lower(), "prot_res": np.array(token_enum.value, dtype=str)},
+        )
+        types.append(sel_cls)
+
+    return types
+
+
+def create_dssp_selection_classes() -> list[type[Selection]]:
+    """Create a selection class.
+
+    Iterate over the tokens and create a selection class for each token.
+
+    Returns:
+        type[Selection]: The selection class.
+    """
+    types = []
+    for token in SecondaryStructureTokens:
+        class_name = token.name.replace("_", " ").title().replace(" ", "")
+        sel_cls = type(
+            class_name,
+            (BaseDSSPSelection,),
+            {"token": token.name.lower(), "ss_type": token.value, "get_ss_type": lambda self: self.ss_type},
         )
         types.append(sel_cls)
 
