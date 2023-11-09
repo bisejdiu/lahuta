@@ -21,6 +21,7 @@ import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse import csc_array, load_npz, save_npz
+from typing_extensions import Self
 
 from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
@@ -234,7 +235,7 @@ class Luni:
         res_dif: int = 1,
         chain_type: Optional[Literal["inter", "intra"]] = None,
         image: Optional[Literal["inter", "intra"]] = None,
-        target_spec: Optional["Luni"] = None,
+        target_spec: Optional[Self] = None,
         backend: Literal["mda", "gemmi"] = "mda",
         atom_types: bool = True,
     ) -> NeighborPairs:
@@ -299,7 +300,7 @@ class Luni:
     # alias for compute_neighbors
     neighbors = compute_neighbors
 
-    def filter(self, selection: str) -> "Luni":
+    def filter(self, selection: str) -> Self:
         """Filter the Luni.
 
         This method filters the Luni based on the given selection string. It returns a new Luni instance
@@ -311,9 +312,9 @@ class Luni:
         Returns:
             Luni: A new Luni instance containing the filtered atoms.
         """
-        return Luni(self._mda.select_atoms(selection))
+        return self.__class__(self._mda.select_atoms(selection))
 
-    def copy(self) -> "Luni":
+    def copy(self) -> Self:
         """Create a copy of this Luni instance.
 
         Returns:
@@ -558,7 +559,7 @@ class Luni:
         """Set state for unpickling."""
         self.__dict__.update(state)
 
-    def __reduce__(self) -> tuple[Type["Luni"], tuple[Any, ...], dict[str, Any]]:
+    def __reduce__(self) -> tuple[Type[Self], tuple[Any, ...], dict[str, Any]]:
         """Get state for pickling."""
         state = self.__dict__.copy()
         state["_mol"] = None

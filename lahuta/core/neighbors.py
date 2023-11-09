@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy as np
 from numpy.typing import NDArray
+from typing_extensions import Self
 
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
@@ -144,7 +145,7 @@ class NeighborPairs:
 
         return self._get_pair_column(partner), self._get_pair_column(partner2)
 
-    def type_filter(self, atom_type: str, partner: int) -> "NeighborPairs":
+    def type_filter(self, atom_type: str, partner: int) -> Self:
         """Filter pairs based on atom types.
 
         The method selects pairs from the NeighborPairs object where the atoms have the specified type.
@@ -180,7 +181,7 @@ class NeighborPairs:
         self,
         indices: NDArray[np.int32],
         partner: int,
-    ) -> "NeighborPairs":
+    ) -> Self:
         """Select pairs based on the atom indices.
 
         The method selects pairs from the NeighborPairs object where the atoms have the specified indices.
@@ -196,7 +197,7 @@ class NeighborPairs:
         mask = np.in1d(self.pairs[:, partner - 1], indices)
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def distance_filter(self, distance: float) -> "NeighborPairs":
+    def distance_filter(self, distance: float) -> Self:
         """Select pairs based on the distance.
 
         The method selects pairs from the NeighborPairs object where the distances between the atoms are
@@ -211,7 +212,7 @@ class NeighborPairs:
         mask = self.distances <= distance
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> "NeighborPairs":
+    def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> Self:
         """Select pairs based on a numeric cutoff.
 
         The method selects pairs from the NeighborPairs object where the values in the specified array are less than or
@@ -227,7 +228,7 @@ class NeighborPairs:
         mask = array <= cutoff
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
+    def radius_filter(self, radius: float, partner: int) -> Self:
         """Select pairs based on the radius.
 
         The method selects pairs from the NeighborPairs object where the van der Waals radii of the atoms
@@ -262,7 +263,7 @@ class NeighborPairs:
         builder = LabeledNeighborPairsBuilder(atom_mapper)
         return builder.build(self.pairs, seq)
 
-    def backmap(self, seq: "Seq", pairs: NDArray[np.void]) -> "NeighborPairs":
+    def backmap(self, seq: "Seq", pairs: NDArray[np.void]) -> Self:
         """Map the `pairs` indices to indices in the structure.
 
         The method maps the indices in the `pairs` array to indices in the structure
@@ -281,7 +282,7 @@ class NeighborPairs:
         mask = index_finder.find_indices(pairs)
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
+    def intersection(self, other: Self) -> Self:
         """Return the intersection of two NeighborPairs objects.
 
         The method calculates the intersection of the pairs from `self` and `other`, and then returns a new
@@ -306,7 +307,7 @@ class NeighborPairs:
         mask = au.intersection(self.pairs, other.pairs)
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def union(self, other: "NeighborPairs") -> "NeighborPairs":
+    def union(self, other: Self) -> Self:
         """Return the union of two NeighborPairs objects.
 
         The method finds the union of the pairs from `self` and `other`. It also ensures that the distances
@@ -333,7 +334,7 @@ class NeighborPairs:
 
         return self.new(pairs, distances)
 
-    def difference(self, other: "NeighborPairs") -> "NeighborPairs":
+    def difference(self, other: Self) -> Self:
         """Return the difference between two NeighborPairs objects.
 
         The method calculates the difference between the pairs from `self` and `other`, then returns a new
@@ -361,7 +362,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def symmetric_difference(self, other: "NeighborPairs") -> "NeighborPairs":
+    def symmetric_difference(self, other: Self) -> Self:
         """Return the symmetric difference of two NeighborPairs objects.
 
         This method creates a new `NeighborPairs` object that contains pairs and distances
@@ -389,7 +390,7 @@ class NeighborPairs:
 
         return self.new(pairs, distances)
 
-    def isdisjoint(self, other: "NeighborPairs") -> bool:
+    def isdisjoint(self, other: Self) -> bool:
         """Check if the intersection of two NeighborPairs objects is null.
 
         This method checks whether the intersection of the two NeighborPairs objects is null,
@@ -412,7 +413,7 @@ class NeighborPairs:
         """
         return au.isdisjoint(self.pairs, other.pairs)
 
-    def issubset(self, other: "NeighborPairs") -> bool:
+    def issubset(self, other: Self) -> bool:
         """Check if all elements (pairs) of a NeighborPairs object are found in another NeighborPairs object.
 
         This method checks whether every pair of atoms from the current NeighborPairs object
@@ -434,7 +435,7 @@ class NeighborPairs:
         """
         return au.issubset(self.pairs, other.pairs)
 
-    def issuperset(self, other: "NeighborPairs") -> bool:
+    def issuperset(self, other: Self) -> bool:
         """Determine if all pairs from another NeighborPairs object are found in this object.
 
         This method checks whether every pair of atoms from the 'other' NeighborPairs object
@@ -456,7 +457,7 @@ class NeighborPairs:
         """
         return au.issuperset(self.pairs, other.pairs)
 
-    def isequal(self, other: "NeighborPairs") -> bool:
+    def isequal(self, other: Self) -> bool:
         """Check if this NeighborPairs object is equal to another.
 
         Two NeighborPairs objects are considered equal if they contain exactly the same pairs.
@@ -494,7 +495,7 @@ class NeighborPairs:
         """
         return au.isunique(self.pairs)
 
-    def is_strict_subset(self, other: "NeighborPairs") -> bool:
+    def is_strict_subset(self, other: Self) -> bool:
         """Check if all pairs of this NeighborPairs object are in another, and the two sets are not equal.
 
         A strict subset has all pairs in the 'other' object but the two sets are not identical.
@@ -515,7 +516,7 @@ class NeighborPairs:
         """
         return au.is_strict_subset(self.pairs, other.pairs)
 
-    def is_strict_superset(self, other: "NeighborPairs") -> bool:
+    def is_strict_superset(self, other: Self) -> bool:
         """Check if all pairs of another NeighborPairs object are in this one, and the two sets are not equal.
 
         A strict superset has all pairs from the 'other' object but the two sets are not identical.
@@ -536,7 +537,7 @@ class NeighborPairs:
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 
-    def new(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> "NeighborPairs":
+    def new(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> Self:
         """Return a new NeighborPairs object that is a copy of the current object,
         but with specified pairs and distances.
 
@@ -667,7 +668,7 @@ class NeighborPairs:
         exporter = VMDExporter(self.pairs)
         return exporter.export(sphere_resolution=sphere_resolution, save_to_file=save_to_file)
 
-    def _neighborpairs_equal(self, other: "NeighborPairs") -> bool:
+    def _neighborpairs_equal(self, other: Self) -> bool:
         """Check if another NeighborPairs object is equal to this one.
 
         Two NeighborPairs objects are considered equal if they have the same atom pairs
@@ -824,7 +825,7 @@ class NeighborPairs:
 
         return struct_array[self.pairs]
 
-    def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
+    def __getitem__(self, item: int | slice | NDArray[np.int32]) -> Self:
         """Retrieve the neighbor pairs at the specified index or indices.
 
         This method allows accessing the neighbor pairs similar to elements in a list.
@@ -847,7 +848,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[item], self.distances[item])
 
-    def __contains__(self, other: "NeighborPairs") -> bool:
+    def __contains__(self, other: Self) -> bool:
         """Check whether all pairs in the given NeighborPairs object are also present in this NeighborPairs object.
 
         This method allows using the Python built-in `in` keyword to check for the presence of pairs.
@@ -867,7 +868,7 @@ class NeighborPairs:
 
         return au.issubset(other.pairs, self.pairs)
 
-    def __add__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __add__(self, other: Self) -> Self:
         """Combine this NeighborPairs object with another one.
 
         The resulting NeighborPairs object is the union of the two sets, containing all unique pairs from both.
@@ -886,7 +887,7 @@ class NeighborPairs:
             return NotImplemented
         return self.union(other)
 
-    def __sub__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __sub__(self, other: Self) -> Self:
         """Get the pairs in this NeighborPairs object that are not in the 'other'.
 
         The resulting NeighborPairs object is the difference of the two sets,
@@ -906,7 +907,7 @@ class NeighborPairs:
             return NotImplemented
         return self.difference(other)
 
-    def __or__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __or__(self, other: Self) -> Self:
         """Get the pairs that are in either this NeighborPairs object or the 'other', but not in both.
 
         The resulting NeighborPairs object is the symmetric difference of the two sets,
@@ -945,7 +946,7 @@ class NeighborPairs:
             return NotImplemented
         return self._neighborpairs_equal(other)
 
-    def __and__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __and__(self, other: Self) -> Self:
         """Get the pairs that are common to both this NeighborPairs object and the 'other'.
 
         The resulting NeighborPairs object is the intersection of the two sets,
@@ -965,7 +966,7 @@ class NeighborPairs:
             return NotImplemented
         return self.intersection(other)
 
-    def __xor__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __xor__(self, other: Self) -> Self:
         """Get the pairs that are in either this NeighborPairs object or the 'other', but not in both.
 
         This method behaves similarly to the `__or__` method.
@@ -984,24 +985,24 @@ class NeighborPairs:
             return NotImplemented
         return self.symmetric_difference(other)
 
-    def __lt__(self, other: "NeighborPairs") -> bool:
+    def __lt__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.is_strict_subset(other)
 
-    def __le__(self, other: "NeighborPairs") -> bool:
+    def __le__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
 
         return self.issubset(other)
 
-    def __gt__(self, other: "NeighborPairs") -> bool:
+    def __gt__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
 
         return self.is_strict_superset(other)
 
-    def __ge__(self, other: "NeighborPairs") -> bool:
+    def __ge__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
 
