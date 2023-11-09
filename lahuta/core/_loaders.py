@@ -229,6 +229,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("ids", self.arc.atoms.ids)
 
         uv.atoms.positions = self.arc.atoms.coordinates
+        uv.filename = self.file_path
 
         return uv.atoms
 
@@ -280,6 +281,7 @@ class TopologyLoader(BaseLoader):
 
         self.ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(universe.atoms.elements))
         self.ag.universe.add_TopologyAttr("element", np.char.upper(universe.atoms.elements.astype(str)))
+        self.ag.universe.filename = self.file_path
         # self.ag.elements = np.char.capitalize(self.ag.elements)
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
@@ -311,9 +313,11 @@ class TopologyLoader(BaseLoader):
         top_loader = cls.__new__(cls)
         ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(ag.universe.atoms.elements))
         ag.universe.add_TopologyAttr("element", np.char.upper(ag.universe.atoms.elements.astype(str)))
+
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
         top_loader.structure = None
+        top_loader.ag.universe.filename = ag.universe.filename
 
         top_loader.arc = ARC(top_loader, top_loader.ag)
 

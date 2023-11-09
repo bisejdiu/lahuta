@@ -198,6 +198,14 @@ class UniverseType(Protocol):
     def load_new(self, filenames: tuple[str, ...], **kwargs: Any) -> None:
         ...
 
+    @property
+    def filename(self) -> str:
+        ...
+
+    @filename.setter
+    def filename(self, filename: str) -> None:
+        ...
+
     def __iter__(self) -> Any:
         ...
 

@@ -8,6 +8,7 @@ from MDAnalysis.core.selection import Selection
 from MDAnalysis.core.topologyattrs import Resnames
 from numpy.typing import NDArray
 
+from lahuta.analysis.dssp import DSSP, DSSPParser
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
@@ -78,6 +79,27 @@ class BaseSelection:
         names, indices = np.array(list(resname_attr.namedict.items())).T
         matches: NDArray[np.str_] = indices[np.isin(names, self.prot_res)]
         return matches.astype(int)
+
+
+class HELIX_3_10(Selection):  # type: ignore
+    """3_10 helix selection."""
+
+    token = "helix_3_10"
+    DTYPE = DSSPParser.DTYPES
+
+    def _apply(self, group: AtomGroupType) -> AtomGroupType:
+        dssp = DSSP(group.universe.filename)
+        dssp.parse_or_calculate_dssp()
+
+        group_resinfo = np.empty(len(group.resnames), dtype=DSSPParser.DTYPES)
+        group_resinfo["resname"] = group.resnames
+        group_resinfo["resid"] = group.resids
+
+        g_indices = np.where(dssp.ss_array == "G")[0]
+
+        protein_mask = np.isin(group_resinfo, dssp.resinfo_array[g_indices])
+
+        return group[protein_mask]
 
 
 def create_selection_classes() -> list[type[Selection]]:
