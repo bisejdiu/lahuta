@@ -205,14 +205,13 @@ class GemmiLoader(BaseLoader):
 
         # Use factorize to get the labels and unique values
         resindices, uniques = pd.factorize(struct_arr)
-
-        resnames, resids, chain_ids = (uniques["resnames"], uniques["resids"], uniques["chain_ids"])
+        resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
 
         # Create a new Universe
         uv: UniverseType = mda.Universe.empty(
             n_atoms=self.arc.atoms.ids.size,
             n_residues=uniques.size,
-            n_segments=chain_ids.size,
+            n_segments=self.arc.chains.ids.size,
             atom_resindex=resindices,
             residue_segindex=chain_ids,
             trajectory=True,
@@ -225,7 +224,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
-        uv.add_TopologyAttr("chainIDs", self.arc.chains.ids)
+        uv.add_TopologyAttr("chainIDs", self.arc.chains.auths)
         uv.add_TopologyAttr("ids", self.arc.atoms.ids)
 
         uv.atoms.positions = self.arc.atoms.coordinates
