@@ -10,9 +10,11 @@ if __name__ == '__main__':
     # handler.parse_or_calculate_dssp()
     # dssp = DSSP(dssp_dict=handler.dssp_dict)
 
-    dssp = DSSP(input_file=str(file_loc))
+    dssp = DSSP(input_file=file_loc)
+    dssp.parse_or_calculate_dssp()
 
-    secondary_structure = dssp.secondary_structure
-    print('secondary_structure', secondary_structure)
+    # secondary_structure = dssp.secondary_structure
+    secondary_structure = dssp.ss_array
+    print('secondary_structure', secondary_structure.shape)
     # solvent_accessible_area = dssp.solvent_accessible_area
     # print('solvent_accessible_area', solvent_accessible_area)
