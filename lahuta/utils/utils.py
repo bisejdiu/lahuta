@@ -1,8 +1,9 @@
 """Utility functions for the lahuta package."""
+import shutil
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
-from typing import IO, Generator
+from typing import IO, Generator, Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -59,3 +60,19 @@ def remove_consecutive_duplicates(arr: NDArray[np.int32]) -> NDArray[np.int32]:
     # Boolean array where True indicates a change in value
     mask: NDArray[np.bool_] = np.concatenate(([True], arr[1:] != arr[:-1]))
     return arr[mask]
+
+
+def find_dssp_executable() -> Optional[str]:
+    """Detect if 'dssp' (Linux) or 'mkdssp' (Mac) executables are available.
+    Returns the name of the executable if found, otherwise returns None.
+    """
+    # Try finding 'dssp' first
+    if shutil.which("dssp") is not None:
+        return "dssp"
+
+    # Try finding 'mkdssp' next
+    if shutil.which("mkdssp") is not None:
+        return "mkdssp"
+
+    # If neither is found
+    return None
