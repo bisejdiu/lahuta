@@ -129,9 +129,9 @@ class DSSP:
             self.resinfo_array, self.ss_array, self.acc_array = self._file_hash_cache[self._file_hash]
 
     def _build_command(self) -> list[str]:
-        # self.executable can still be None
-        executable_name = self.executable_name if self.executable_name else "dssp"
-        return [executable_name, "-i", str(self.input_file)]
+        if self.executable_name is None:
+            raise RuntimeError("Could not find the executable for DSSP")
+        return [self.executable_name, "-i", str(self.input_file)]
 
     def run(self) -> str:
         """Run DSSP and return the output."""
