@@ -10,51 +10,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from lahuta.config._atom_type_strings import BASE_AA_CONVERSION
-
-# class _DSSP:
-#     """Class to handle DSSP output.
-
-#     This class provides methods to handle DSSP output.
-
-#     Args:
-#         input_file (Optional[str | Path], optional): The input file. Default is None.
-#         dssp_dict (Optional[dict[tuple[str, tuple[str, int, str]], tuple[Any, ...]]], optional): The DSSP dictionary.
-#         Default is None.
-
-#     Attributes:
-#         secondary_structure (NDArray[np.str_]): The secondary structure assignments.
-#         solvent_accessible_area (NDArray[np.float32]): The solvent accessible surface areas.
-
-#     Raises:
-#         ValueError: If neither input_file nor dssp_dict is provided.
-#     """
-
-#     def __init__(
-#         self,
-#         input_file: Optional[str | Path] = None,
-#         dssp_dict: Optional[dict[tuple[str, tuple[str, int, str]], tuple[Any, ...]]] = None,
-#     ) -> None:
-#         match (input_file, dssp_dict):
-#             case (None, None):
-#                 raise ValueError("Either input_file or dssp_dict must be provided.")
-#             case (None, dssp_dict):
-#                 self.dssp_dict = dssp_dict or {}
-#             case (input_file, None):
-#                 handler = DSSPCLIHandler(str(input_file))
-#                 handler.parse_or_calculate_dssp()
-#                 self.dssp_dict = handler.dssp_dict
-
-#     @property
-#     def secondary_structure(self) -> NDArray[np.str_]:
-#         """Return the secondary structure assignments."""
-#         # Secondary structure assignments
-#         return np.array([data[1] for data in self.dssp_dict.values()])
-
-#     @property
-#     def solvent_accessible_area(self) -> NDArray[np.float32]:
-#         """Return the solvent accessible surface areas."""
-#         # Solvent accessible surface areas
-#         return np.array([data[2] for data in self.dssp_dict.values()])
+from lahuta.utils.utils import find_dssp_executable
 
 
 class DSSPParser:
@@ -134,7 +90,7 @@ class DSSP:
 
     def __init__(self, input_file: Path | str, executable_name: Optional[str] = None) -> None:
         self.input_file = input_file if isinstance(input_file, Path) else Path(input_file)
-        self.executable_name = executable_name
+        self.executable_name = executable_name if executable_name else find_dssp_executable()
         self._command = self._build_command()
         self._file_hash = self._calculate_file_hash()
         self.resinfo_array: NDArray[np.void] = np.array([], dtype=DSSPParser.DTYPES)
@@ -173,6 +129,7 @@ class DSSP:
             self.resinfo_array, self.ss_array, self.acc_array = self._file_hash_cache[self._file_hash]
 
     def _build_command(self) -> list[str]:
+        # self.executable can still be None
         executable_name = self.executable_name if self.executable_name else "dssp"
         return [executable_name, "-i", str(self.input_file)]
 
