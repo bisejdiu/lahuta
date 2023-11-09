@@ -4,6 +4,9 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import IO, Generator
 
+import numpy as np
+from numpy.typing import NDArray
+
 
 def string_to_file(text: str, extension: str) -> str:
     """Create a temporary file with the specified extension.
@@ -42,3 +45,17 @@ def managed_temp_file(text: str, extension: str, delete: bool = True) -> Generat
         # Delete the file if the delete flag is True
         if delete and temp_file_path.exists():
             temp_file_path.unlink()
+
+
+def remove_consecutive_duplicates(arr: NDArray[np.int32]) -> NDArray[np.int32]:
+    """Remove consecutive duplicates from a 1D array.
+
+    Args:
+        arr (NDArray[np.int_]): The array.
+
+    Returns:
+        NDArray[np.int_]: The array with consecutive duplicates removed.
+    """
+    # Boolean array where True indicates a change in value
+    mask: NDArray[np.bool_] = np.concatenate(([True], arr[1:] != arr[:-1]))
+    return arr[mask]
