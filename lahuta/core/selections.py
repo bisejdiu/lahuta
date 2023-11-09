@@ -92,6 +92,7 @@ class HELIX_3_10(Selection):  # type: ignore
         dssp.parse_or_calculate_dssp()
 
         group_resinfo = np.empty(len(group.resnames), dtype=DSSPParser.DTYPES)
+        group_resinfo["chain_auths"] = group.chainIDs
         group_resinfo["resname"] = group.resnames
         group_resinfo["resid"] = group.resids
 

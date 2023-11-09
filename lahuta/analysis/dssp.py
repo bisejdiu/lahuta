@@ -70,7 +70,7 @@ class DSSPParser:
         aa_conversion: A dictionary to convert amino acid names to one letter codes.
     """
 
-    DTYPES = np.dtype([("resname", "<U10"), ("resid", "int")])
+    DTYPES = np.dtype([("chain_auths", "<U2"), ("resname", "<U10"), ("resid", "int")])
 
     def __init__(self, dssp_file: str | io.StringIO) -> None:
         # dssp_file can be a file path or a file object
@@ -92,17 +92,18 @@ class DSSPParser:
 
             # Extract relevant data
             res_id = int(line[5:10].strip())
+            chain_auth = line[11]
             res_name = line[13]
             sec_struct = line[16].strip() or "-"
             solvent_access = int(line[34:38].strip())
 
             # Append to lists
-            resinfo.append((self.aa_conversion.get(res_name), res_id))
+            resinfo.append((chain_auth, self.aa_conversion.get(res_name), res_id))
             ss.append(sec_struct)
             acc.append(solvent_access)
 
         # Convert lists to arrays
-        resinfo_array = np.array(resinfo, dtype=np.dtype([("resname", "<U10"), ("resid", "int")]))
+        resinfo_array = np.array(resinfo, dtype=DSSPParser.DTYPES)
         ss_array = np.array(ss, dtype="<U1")
         acc_array = np.array(acc, dtype="int")
 
