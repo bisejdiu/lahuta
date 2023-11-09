@@ -6,23 +6,21 @@ methods to manipulate, analyze, and export these pairs.
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy as np
-import pandas as pd
-from Bio.Seq import Seq
 from numpy.typing import NDArray
 
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
 from lahuta.core.index_finder import IndexFinder
+from lahuta.utils import array_utils as au
 
 if TYPE_CHECKING:
+    from Bio.Seq import Seq
+    from pandas import DataFrame
+
     from lahuta.core.labeled_neighbors import LabeledNeighborPairs
     from lahuta.core.luni import Luni
+    from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.utils import array_utils as au
-from lahuta.viz.contact_matrix import ContactMap
-from lahuta.writers.exporters import VMDExporter
-from lahuta.writers.frame_writer import DataFrameWriter
 
 __all__ = ["NeighborPairs"]
 
@@ -136,11 +134,11 @@ class NeighborPairs:
 
         return pairs[indices], distances[indices]
 
-    def _get_pair_column(self, partner: int) -> AtomGroupType:
+    def _get_pair_column(self, partner: int) -> "AtomGroupType":
         """Return the column of the pair of atoms depending on the value of partner."""
         return self.atoms[self.pairs[:, partner - 1]]
 
-    def get_partners(self, partner: int) -> tuple[AtomGroupType, AtomGroupType]:
+    def get_partners(self, partner: int) -> tuple["AtomGroupType", "AtomGroupType"]:
         """Return the columns of the pair of atoms depending on the value of partner."""
         partner2 = 1 if partner == 2 else 2
 
@@ -248,7 +246,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def map(self, seq: Seq) -> "LabeledNeighborPairs":
+    def map(self, seq: "Seq") -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
@@ -264,7 +262,7 @@ class NeighborPairs:
         builder = LabeledNeighborPairsBuilder(atom_mapper)
         return builder.build(self.pairs, seq)
 
-    def backmap(self, seq: Seq, pairs: NDArray[np.void]) -> "NeighborPairs":
+    def backmap(self, seq: "Seq", pairs: NDArray[np.void]) -> "NeighborPairs":
         """Map the `pairs` indices to indices in the structure.
 
         The method maps the indices in the `pairs` array to indices in the structure
@@ -564,6 +562,7 @@ class NeighborPairs:
             which (str, optional): Which contact map to plot ('matching' or 'full'). Defaults to 'matching'.
             half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
+        from lahuta.viz.contact_matrix import ContactMap
         return ContactMap(self.pairs).plot(which, half_only)
 
     @property
@@ -599,7 +598,7 @@ class NeighborPairs:
         self,
         df_format: Literal["compact", "expanded"] = "expanded",
         annotations: bool = False,
-    ) -> pd.DataFrame:
+    ) -> "DataFrame":
         """Convert the NeighborPairs object to a pandas DataFrame.
 
         The method provides two formatting options. The 'compact' format contains two columns
@@ -639,7 +638,7 @@ class NeighborPairs:
         self,
         df_format: Literal["compact", "expanded"] = "expanded",
         annotations: Optional[dict[str, NDArray[Any]]] = None,
-    ) -> pd.DataFrame:
+    ) -> "DataFrame":
         """Create a pandas DataFrame from the NeighborPairs object.
 
         Args:
@@ -651,6 +650,7 @@ class NeighborPairs:
         Returns:
             A pandas DataFrame representing the NeighborPairs object.
         """
+        from lahuta.writers.frame_writer import DataFrameWriter
         return DataFrameWriter(self, df_format, annotations).create()
 
     def vmd_exporter(self, sphere_resolution: int = 20, save_to_file: bool = False) -> Optional[str]:
@@ -663,6 +663,7 @@ class NeighborPairs:
         Returns:
             str | None: The TCL script to visualize the neighbor pairs in VMD.
         """
+        from lahuta.writers.exporters import VMDExporter
         exporter = VMDExporter(self.pairs)
         return exporter.export(sphere_resolution=sphere_resolution, save_to_file=save_to_file)
 
@@ -688,7 +689,7 @@ class NeighborPairs:
         return np.array_equal(pairs, other_pairs) and np.allclose(dists, other_dists)
 
     @property
-    def partner1(self) -> AtomGroupType:
+    def partner1(self) -> "AtomGroupType":
         """Get the first partner of the pairs of indices of atoms that are neighbors.
 
         Returns:
@@ -697,7 +698,7 @@ class NeighborPairs:
         return self._get_pair_column(1)
 
     @property
-    def partner2(self) -> AtomGroupType:
+    def partner2(self) -> "AtomGroupType":
         """Get the second partner of the pairs of indices of atoms that are neighbors.
 
         Returns:
@@ -1016,8 +1017,7 @@ class NeighborPairs:
         return self.pairs.shape[0]
 
     def __str__(self) -> str:
-        indices = self.indices.ravel()
-        unique_indices = pd.factorize(indices)[1]
+        unique_indices = np.unique(self.indices.ravel())
         return f"<Lahuta NeighborPairs class containing {unique_indices.size} atoms and {self.pairs.shape[0]} pairs>"
 
     def __repr__(self) -> str:
