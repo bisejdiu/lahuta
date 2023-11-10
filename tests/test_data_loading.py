@@ -205,7 +205,7 @@ TEST_PARAMS = [(name, cls, flag) for cls, name in pdb_classes for flag in [True,
 
 @pytest.mark.parametrize("pdb_name, pdb_class, pdb_flag", TEST_PARAMS)
 def test_read_pdb(pdb_name: str, pdb_class: type[BaseFile], pdb_flag: bool) -> None:
-    luni = read_luni(str(pdb_class(pdb_flag)))
+    luni = read_luni(pdb_class(pdb_flag).file_loc)
     run_per_file_tests(pdb_name, luni)
 
 
@@ -213,5 +213,5 @@ def test_read_pdb(pdb_name: str, pdb_class: type[BaseFile], pdb_flag: bool) -> N
 def test_univ_init(pdb_name: str, pdb_class: type[BaseFile], pdb_flag: bool) -> None:
     if not pdb_flag:
         return None
-    luni = read_luni_from_mda(str(pdb_class(pdb_flag)))
+    luni = read_luni_from_mda(pdb_class(pdb_flag).file_loc)
     run_per_file_tests(pdb_name, luni)

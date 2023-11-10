@@ -72,7 +72,7 @@ class UniverseWrapper:
 @pytest.fixture(scope="session")
 def mda_universe() -> UniverseType:
     with warnings.catch_warnings(record=True) as _:
-        return mda.Universe(str(X2()))  # type: ignore
+        return mda.Universe(X2().file_loc)  # type: ignore
 
 
 selections_res_difs = [
@@ -136,7 +136,10 @@ class TestMDAnalysis:
             assert contact_type.neighbors_diff is not None
             for pair in contact_type.neighbors_diff.pairs:
                 x1, x2 = atoms[pair[0]], atoms[pair[1]]
-                assert (x1.resname in self.universe.unique_resnames) or (
-                    x2.resname in self.universe.unique_resnames
-                ), f"Pair {pair} with resnames {x1.resname} and {x2.resname} got wrongly picked up by {contact_type.name} neighbors, for selection '{self.selection}', and resnames {self.universe.unique_resnames}"
+                assert (x1.resname in self.universe.unique_resnames) or (x2.resname in self.universe.unique_resnames), (
+                    f"Pair {pair} with resnames {x1.resname} and {x2.resname} "
+                    f"got wrongly picked up by {contact_type.name} neighbors, "
+                    f"for selection '{self.selection}', and resnames "
+                    f"{self.universe.unique_resnames}"
+                )
             assert True

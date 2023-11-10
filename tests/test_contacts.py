@@ -27,6 +27,7 @@ pytestmark = pytest.mark.contacts
 FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin()), ("3q2y.json.gz", DNABound())]
 # FILE_PAIRS = [("3q2y.json.gz", DNABound())]
 
+
 def get_sorted_indices(arr: NDArray[np.int32 | np.float32]) -> NDArray[np.int32]:
     # Sort each pair individually
     sorted_arr = np.sort(arr, axis=1)
@@ -34,12 +35,13 @@ def get_sorted_indices(arr: NDArray[np.int32 | np.float32]) -> NDArray[np.int32]
     indices: NDArray[np.int32] = np.lexsort((sorted_arr[:, 1], sorted_arr[:, 0]))
     return indices
 
+
 def sort_and_check_arrays_equal(
-        arr1: NDArray[np.int32 | np.float32], 
-        arr2: NDArray[np.int32 | np.float32], 
-        indices_arr1: NDArray[np.int32], 
-        indices_arr2: NDArray[np.int32]
-    ) -> bool:
+    arr1: NDArray[np.int32 | np.float32],
+    arr2: NDArray[np.int32 | np.float32],
+    indices_arr1: NDArray[np.int32],
+    indices_arr2: NDArray[np.int32],
+) -> bool:
     # Use the indices to sort arrays
     sorted_arr1 = arr1[indices_arr1]
     sorted_arr2 = arr2[indices_arr2]
@@ -58,7 +60,7 @@ def data_loader(request: FixtureRequest) -> tuple[NeighborPairs, dict[str, Conta
     # Load universe from the pdb_file
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        universe = Luni(str(file_obj))
+        universe = Luni(file_obj.file_loc)
 
     ns = universe.compute_neighbors(res_dif=1)
     return ns, data
@@ -186,7 +188,6 @@ def test_atom_atom_neighbor_classes(
     indices_arr2 = get_sorted_indices(expected_pairs)
     assert np.array_equal(pairs[indices_arr1], expected_pairs[indices_arr2])
     assert np.allclose(distances[indices_arr1], np.array(expected_result["distances"])[indices_arr2], atol=1e-3)
-
 
 
 @pytest.mark.parametrize(

@@ -100,7 +100,7 @@ def data_loader() -> NeighborPairs:
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        universe = Luni(str(X2()))
+        universe = Luni(X2().file_loc)
     ns = universe.compute_neighbors()
     return ns
 
