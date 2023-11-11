@@ -3,7 +3,7 @@
 # Code-generated ion names params file. Names extracted from CCD components.
 # @author molstar/chem-comp-dict/create-ions cli
 
-ION_NAMES = {
+IONS = {
     "118",
     "119",
     "543",
