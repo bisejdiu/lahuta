@@ -174,7 +174,7 @@ def asvoid(arr: NDArray[_DType]) -> NDArray[np.void]:
         [(1, 2), (3, 4)]
         ```
     """
-    arr = np.ascontiguousarray(arr)
+    arr = np.ascontiguousarray(arr.astype(np.int32))  # type: ignore
     if np.issubdtype(arr.dtype, np.floating):
         arr += 0.0  # type: ignore
     return arr.view(np.dtype((np.void, arr.dtype.itemsize * arr.shape[-1])))
@@ -501,3 +501,44 @@ def is_strict_superset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:
         ```
     """
     return issuperset(arr1, arr2) and not isequal(arr1, arr2)
+
+
+def unique_indices(arr: NDArray[np.int32]) -> NDArray[np.int32]:
+    """Find the indices of unique elements in an array.
+
+    Args:
+        arr (NDArray[np.int32]): The array to find the unique indices of.
+
+    Returns:
+        NDArray[np.int32]: The indices of the unique elements in the array.
+    """
+    _, unique_indices = np.unique(asvoid(arr), return_index=True)
+
+    return unique_indices
+
+
+def cross_interaction_indices(
+    pairs: NDArray[np.int32], ix1: NDArray[np.int32], ix2: NDArray[np.int32]
+) -> NDArray[np.int32]:
+    """Find the indices of pairs that contain one element from ix1 and one element from ix2.
+
+    Args:
+        pairs (NDArray[np.int32]): The array of pairs to check.
+        ix1 (NDArray[np.int32]): The first set of indices to check.
+        ix2 (NDArray[np.int32]): The second set of indices to check.
+
+    Returns:
+        NDArray[np.int32]: The indices of pairs that contain one element from ix1 and one element from ix2.
+    """
+    # Create masks that check whether elements of pairs are in ix1 or ix2
+    in_ix1 = np.isin(pairs, ix1)
+    in_ix2 = np.isin(pairs, ix2)
+
+    # Find rows where one element is in ix1 and the other is in ix2
+    # valid_rows = np.logical_or(np.logical_and(in_ix1[:, 0], in_ix2[:, 1]),
+    #                            np.logical_and(in_ix1[:, 1], in_ix2[:, 0]))
+
+    valid_rows = (in_ix1[:, 0] * in_ix2[:, 1]) + (in_ix1[:, 1] * in_ix2[:, 0])
+
+    # Return the indices of valid rows
+    return np.where(valid_rows)[0]

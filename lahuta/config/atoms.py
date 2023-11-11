@@ -7,12 +7,12 @@ Variables:
     HALOGENS (set): A set of standard halogens.
     MAINCHAIN_ATOMS (set): A set of atoms usually found in the main chain of a protein.
     STANDARD_NUCLEOTIDES (set): A set of standard nucleotides in RNA and DNA.
-    METALS (set): A set of metal atoms, sourced from `_atom_type_strings.py`.
-    STANDARD_AMINO_ACIDS (set): A set of standard amino acids, sourced from `_atom_type_strings.py`.
+    METALS (set): A set of metal atoms, sourced from `atom_types.py`.
+    PROTEIN_RESIDUES (set): A set of standard amino acids, sourced from `atom_types.py`.
     PROT_ATOM_TYPES (dict): A dictionary mapping atom types to sets of atom names (strings),
-        as defined in `_atom_type_strings.py`.
+        as defined in `atom_types.py`.
     ID_TO_TYPES (dict): A dictionary mapping atom names (strings) to sets of atom types,
-        as defined in `_atom_type_strings.py`.
+        as defined in `atom_types.py`.
     ```
 
 The module is expected to be used for handling and processing biochemical data structures, 
@@ -20,7 +20,7 @@ with specific focuses on proteins and nucleic acids.
 """
 
 
-import lahuta.config._atom_type_strings as at
+import lahuta.config.atom_types as at
 
 HALOGENS = {"F", "CL", "BR", "I", "AT"}
 """
@@ -41,13 +41,13 @@ Type: `set[str]`: A set of standard nucleotides in RNA and DNA.
 
 METALS = at.METALS
 """
-Type: `set[str]`: A set of metal atoms, sourced from `lahuta.config._atom_type_strings.py`.
+Type: `set[str]`: A set of metal atoms, sourced from `lahuta.config.atom_types.py`.
 """
 
-STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS
+PROTEIN_RESIDUES = at.PROTEIN_RESIDUES
 """
 Type: `set[str]`: A set of standard amino acids. See the 
-[source](atom_types.md#lahuta.config._atom_type_strings.STANDARD_AMINO_ACIDS).
+[source](atom_types.md#lahuta.config.atom_types.PROTEIN_RESIDUES).
 """
 
 
@@ -70,22 +70,22 @@ Type: `dict[str, set[str]]`: A dictionary mapping atom types to sets of atom nam
 
 !!! tip "Definitions"
 
-    - `hbond_acceptor` -> [`_HA_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._HA_ATOM_TYPES)
-    - `hbond_donor` -> [`_HD_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._HD_ATOM_TYPES)
-    - `xbond_acceptor` -> [`_XA_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._XA_ATOM_TYPES)
-    - `xbond_donor` -> [`_XD_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._XD_ATOM_TYPES)
-    - `weak_hbond_acceptor` -> [`_WHA_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._WHA_ATOM_TYPES)
-    - `weak_hbond_donor` -> [`_WHD_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._WHD_ATOM_TYPES)
+    - `hbond_acceptor` -> [`_HA_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._HA_ATOM_TYPES)
+    - `hbond_donor` -> [`_HD_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._HD_ATOM_TYPES)
+    - `xbond_acceptor` -> [`_XA_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._XA_ATOM_TYPES)
+    - `xbond_donor` -> [`_XD_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._XD_ATOM_TYPES)
+    - `weak_hbond_acceptor` -> [`_WHA_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._WHA_ATOM_TYPES)
+    - `weak_hbond_donor` -> [`_WHD_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._WHD_ATOM_TYPES)
     - `pos_ionisable` -> \
-        [`_POS_IONISABLE_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._POS_IONISABLE_ATOM_TYPES)
+        [`_POS_IONISABLE_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._POS_IONISABLE_ATOM_TYPES)
     - `neg_ionisable` -> \
-        [`_NEG_IONISABLE_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._NEG_IONISABLE_ATOM_TYPES)
-    - `hydrophobe` -> [`_HYDROPHOBE_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._HYDROPHOBE_ATOM_TYPES)
+        [`_NEG_IONISABLE_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._NEG_IONISABLE_ATOM_TYPES)
+    - `hydrophobe` -> [`_HYDROPHOBE_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._HYDROPHOBE_ATOM_TYPES)
     - `carbonyl_oxygen` -> \
-        [`_CARBONYL_OXYGEN_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._CARBONYL_OXYGEN_ATOM_TYPES)
+        [`_CARBONYL_OXYGEN_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._CARBONYL_OXYGEN_ATOM_TYPES)
     - `carbonyl_carbon` -> \
-        [`_CARBONYL_CARBON_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._CARBONYL_CARBON_ATOM_TYPES)
-    - `aromatic` -> [`_AROMATIC_ATOM_TYPES`](atom_types.md#lahuta.config._atom_type_strings._AROMATIC_ATOM_TYPES)
+        [`_CARBONYL_CARBON_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._CARBONYL_CARBON_ATOM_TYPES)
+    - `aromatic` -> [`_AROMATIC_ATOM_TYPES`](atom_types.md#lahuta.config.atom_types._AROMATIC_ATOM_TYPES)
 
 """
 

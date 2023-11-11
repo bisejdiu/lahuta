@@ -52,7 +52,6 @@ class SulphurPi(ContactAnalysis):
     """
 
     distance = DEFAULT_CONTACT_DISTS["sulphur_pi"]
-    cache = False
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
@@ -70,4 +69,4 @@ class SulphurPi(ContactAnalysis):
         Returns:
             NeighborPairs: A NeighborPairs object containing only sulphur pi contacts.
         """
-        return sulphur_pi(self.ns, cache=self.cache)
+        return sulphur_pi(self.ns)

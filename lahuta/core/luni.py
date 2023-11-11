@@ -14,28 +14,37 @@ Example:
     
 """
 
-from typing import Any, Callable, Literal, Optional, overload
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Type, Union, overload
 
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
-from scipy.sparse import csc_array
+from scipy.sparse import csc_array, load_npz, save_npz
+from typing_extensions import Self
 
-from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
-from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS
+from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
+from lahuta.config.atoms import PROT_ATOM_TYPES
+from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
-from lahuta.core.arc import ARC
 from lahuta.core.atom_assigner import AtomTypeAssigner
+from lahuta.core.fn import GemmiNeighbors
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.lahuta_types.openbabel import MolType
-from lahuta.utils.radii import v_radii_assignment
+from lahuta.utils.array_utils import cross_interaction_indices
 
-__all__ = ["LuniInputType", "Luni"]
+if TYPE_CHECKING:
+    from lahuta.core.arc import ARC
+    from lahuta.lahuta_types.mdanalysis import AtomGroupType, TrajectoryType
+    from lahuta.lahuta_types.openbabel import MolType
 
-LuniInputType = AtomGroupType | str | list[str]
+__all__ = ["Luni"]
+
+NeighborBackends: dict[str, Type[NeighborSearch] | Type[GemmiNeighbors]] = {
+    "mda": NeighborSearch,
+    "gemmi": GemmiNeighbors,
+}
 
 
 class Luni:
@@ -48,7 +57,8 @@ class Luni:
     for reading MD trajectories.
 
     Args:
-        *args (LuniInputType): Either an MDAnalysis.AtomGroup instance or a list of file names.
+        structure (str | AtomGroupType): The structure to load. Can be either a file path or an MDAnalysis AtomGroup.
+        trajectories (Optional[str | list[str]]): Optional trajectories. Either a single path or a list of paths.
 
     Attributes:
         atom_types (csc_array): A sparse array containing the atom types of the universe.
@@ -59,91 +69,43 @@ class Luni:
         ValueError: If no input is provided or if invalid types of inputs are provided.
     """
 
-    def __init__(self, *args: LuniInputType) -> None:
-        self._mol: Optional[MolType] = None
-        self._ready = False
-        self._topattr_handler = AtomAttrClassHandler()
-        self.atom_types: csc_array = csc_array((0, 0), dtype=np.int32)
+    def __init__(
+        self, structure: Union[str, Path, "AtomGroupType"], trajectories: Optional[str | list[str]] = None
+    ) -> None:
+        fmts: str | set[str] = ""
+        self._file_loader: BaseLoader
+        structure = str(structure) if isinstance(structure, Path) else structure
+        match (structure, trajectories):
+            case (mda.AtomGroup(atoms=s), None):
+                self._file_loader = TopologyLoader.from_mda(s)  # type: ignore
+            case (str(s), None):
+                # Check if we can use GemmiLoader.
+                file_format, is_pdb = Luni._check_gemmi_support(s)
+                if file_format:
+                    self._file_loader = GemmiLoader(s, is_pdb=is_pdb)
+                elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
+                    self._file_loader = TopologyLoader((s))
+                else:
+                    fmts = self._get_supported_fmts()
+                    fmts = ", ".join(fmts)
+                    raise ValueError(f"Unsupported format for structure: {s}! \nSupported formats are: {fmts}.")
+            case (str(s), str(t)):
+                # If trajectories are provided, use TopologyLoader
+                self._file_loader = TopologyLoader(s, t)
+            case _:
+                fmts = self._get_supported_fmts()
+                fmts = ", ".join(fmts)
+                raise ValueError("Invalid input! \nSupported formats are: {fmts}.")
 
-        initializer = self._validate_input(*args)
-        self._file_loader, self._mda = initializer(*args)
+        self._mol: Optional["MolType"] = None
+        self._mda = self._file_loader.to("mda")
+        self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
-        assert self._mda is not None
-        assert self._file_loader is not None
+        self._structure, self._trajectories = structure, trajectories
 
-    def _validate_input(self, *args: LuniInputType) -> Callable[..., tuple[BaseLoader, AtomGroupType]]:
-        """Validate the input files for Luni initialization.
-
-        Args:
-        ----
-        *args (LuniInputType): Either an MDAnalysis.AtomGroup instance or a list of file names.
-
-        Raises:
-            ValueError: If no input is provided or if invalid types of inputs are provided.
-
-        Returns:
-            func: A function to initialize the Luni either from an existing Luni or from files.
-        """
-        if not args:
-            raise ValueError("No input provided")
-
-        if isinstance(args[0], mda.AtomGroup):
-            if len(args) != 1:
-                raise ValueError("When passing an MDAnalysis.AtomGroup instance, no other arguments are allowed")
-            return self._initialize_from_universe
-
-        if not all(isinstance(arg, str) for arg in args):
-            raise ValueError("Input must be either an MDAnalysis.AtomGroup instance or a list of file names")
-        return self._initialize_from_files
-
-    def _initialize_from_universe(self, *args: AtomGroupType) -> tuple[BaseLoader, AtomGroupType]:
-        """Initialize the universe from an existing Luni.
-
-        Args:
-            *args (AtomGroupType): An MDAnalysis.AtomGroup instance.
-
-        Returns:
-            tuple: A tuple of the file loader and the AtomGroup instance.
-        """
-        _file_loader = TopologyLoader.from_mda(args[0])
-        _mda = _file_loader.to("mda")
-        return _file_loader, _mda
-
-    def _initialize_from_files(self, files: str) -> tuple[BaseLoader, AtomGroupType]:
-        """Initialize the universe from provided files.
-
-        Args:
-            files (str): The file name(s).
-
-        Returns:
-            tuple: A tuple of the file loader and the AtomGroup instance.
-        """
-        _file_loader = self._get_file_loader(files)
-        _mda = _file_loader.to("mda")
-        return _file_loader, _mda
-
-    def _get_file_loader(self, *files: str) -> BaseLoader:
-        """Retrieve the appropriate file loader.
-
-        Args:
-            *files (str): The file name(s).
-
-        Raises:
-            ValueError: If no file name is provided or if multiple files are provided.
-
-        Returns:
-            BaseLoader: The appropriate file loader.
-        """
-        # GemmiLoader can only handle one file and its format should be supported
-        if len(files) == 1:
-            file_name = files[0]
-            file_format, is_pdb = Luni.get_format(file_name)
-            if file_format:
-                return GemmiLoader(file_name, is_pdb=is_pdb)
-
-        # If there are multiple files or the single file is not supported by GemmiLoader,
-        # then use TopologyLoader
-        return TopologyLoader(*files)
+    @staticmethod
+    def _get_supported_fmts() -> set[str]:
+        return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
 
     def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         """Add new topology attributes to the Luni.
@@ -152,32 +114,132 @@ class Luni:
             attrname (str): The name of the attribute.
             values (NDArray[Any]): The values of the attribute.
         """
-        self._topattr_handler.init_topattr(attrname, attrname)
+        topattr_handler = AtomAttrClassHandler()
+        topattr_handler.init_topattr(attrname, attrname)
         self._mda.universe.add_TopologyAttr(attrname, values)
 
-    def ready(self) -> None:
-        """Prepare instance for computations by transforming the molecule and assigning atom types."""
-        assert self._file_loader is not None
+    def assing_atom_types(self) -> None:
+        """Assign atom types to the Luni.
+
+        This method assigns atom types to the Luni. It creates a sparse array of shape (n_atoms, n_atom_types)
+        containing the atom types.
+
+        Ensures that the Luni instance is ready for contact analysis.
+        """
+        if np.any(self.atom_types.data):
+            return
         self._mol = self._file_loader.to("mol")
-
-        assert self.arc is not None
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
-        ag_types = atomtype_assigner.assign_atom_types()
-        og_atoms = self._mda.universe.atoms
-        self.atom_types = ag_types
+        self.atom_types = atomtype_assigner.assign_atom_types()
 
-        self._mda.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(og_atoms.elements))
+    def load_atom_types(self, filename: str, backend: Literal["scipy", "numpy"] = "numpy") -> None:
+        """Load atom types from a file.
 
-        self._ready = True
+        This method loads the atom types from a file and stores them in the Luni object.
 
-    # TODO @bisejdiu: rename to
-    # https://github.com/bisejdiu/lahuta/issues/52
-    def compute_neighbors(
+        Args:
+            filename (str): The name of the file to load the atom types from.
+            backend (Literal["scipy", "numpy"], optional): The backend to use for loading the atom types. \
+            Default is "numpy".
+        """
+        self._mol = self._file_loader.to("mol")
+        if backend == "scipy":
+            self._load_using_scipy(filename)
+        elif backend == "numpy":
+            self._load_using_numpy(filename)
+        else:
+            raise ValueError(f"Invalid backend: {backend}, must be one of 'scipy' or 'numpy'")
+
+    def unassign_atom_types(self) -> None:
+        """Unassign atom types from the Luni.
+
+        This method removes the atom types from the Luni.
+        """
+        self.atom_types *= 0
+
+    def store_atom_types(
+        self, filename: str = "sparse_matrix.npz", backend: Literal["scipy", "numpy"] = "scipy"
+    ) -> None:
+        """Store the atom types of the Luni to a file.
+
+        This method stores the atom types of the Luni to a file.
+
+        Args:
+            filename (str): The name of the file to store the atom types in. Default is "sparse_matrix.npz".
+            backend (Literal["scipy", "numpy"], optional): The backend to use for storing the atom types. \
+            Default is "scipy".
+        """
+        assert np.any(self.atom_types.data), "Atom types have not been assigned yet!"
+        if backend == "scipy":
+            self._save_using_scipy(filename)
+        elif backend == "numpy":
+            self._save_using_numpy(filename)
+        else:
+            raise ValueError(f"Invalid backend: {backend}, must be one of 'scipy' or 'numpy'")
+
+    def _save_using_scipy(self, filename: str) -> None:
+        """Save the Luni to a file using SciPy.
+
+        This method saves the Luni to a file using SciPy.
+
+        Args:
+            filename (str): The name of the file to save the Luni to.
+        """
+        save_npz(filename, self.atom_types)
+
+    def _save_using_numpy(self, filename: str) -> None:
+        """Save the Luni to a file using NumPy.
+
+        This method saves the Luni to a file using NumPy.
+
+        Args:
+            filename (str): The name of the file to save the Luni to.
+        """
+        sparse_matrix = self.atom_types
+        np.savez_compressed(
+            filename,
+            data=sparse_matrix.data,
+            indices=sparse_matrix.indices,
+            indptr=sparse_matrix.indptr,
+            shape=sparse_matrix.shape,
+        )
+
+    def _load_using_scipy(self, filename: str) -> None:
+        """Load the Luni from a file using SciPy.
+
+        This method loads the Luni from a file using SciPy.
+
+        Args:
+            filename (str): The name of the file to load the Luni from.
+        """
+        self.atom_types = load_npz(filename)
+
+    def _load_using_numpy(self, filename: str) -> None:
+        """Load the Luni from a file using NumPy.
+
+        This method loads the Luni from a file using NumPy.
+
+        Args:
+            filename (str): The name of the file to load the Luni from.
+        """
+        # loaded_matrix = csc_array((loaded['data'], loaded['indices'], loaded['indptr']), shape=loaded['shape'])
+        sparse_matrix = np.load(filename)
+        self.atom_types = csc_array((sparse_matrix["shape"]), dtype=np.int8)
+        self.atom_types.data = sparse_matrix["data"]
+        self.atom_types.indices = sparse_matrix["indices"]
+        self.atom_types.indptr = sparse_matrix["indptr"]
+
+    def compute_neighbors(  # noqa: PLR0913
         self,
         radius: float = 5.0,
         res_dif: int = 1,
+        chain_type: Optional[Literal["inter", "intra"]] = None,
+        image: Optional[Literal["inter", "intra"]] = None,
+        target_spec: Optional[Self] = None,
+        backend: Literal["mda", "gemmi"] = "mda",
+        atom_types: bool = True,
     ) -> NeighborPairs:
-        """Compute the neighbors of each atom in the Luni.
+        """Compute the neighbors of each atom in the Luni object.
 
         This method calculates the neighbors for each atom based on the given radius and residue difference parameters.
         It returns an object of type `NeighborPairs` where each row in the underlying NumPy array contains the indices
@@ -189,21 +251,76 @@ class Luni:
             radius (float, optional): The cutoff radius for considering two atoms as neighbors. Default is 5.0.
             res_dif (int, optional): The minimum difference in residue numbers for two atoms to be \
             considered neighbors. Default is 1.
+            chain_type (Literal["inter", "intra"], optional): The type of chain to keep. Default is None (keep all).
+            image (Literal["inter", "intra"], optional): The type of image to keep. Default is None (keep all).
+            backend (Literal["mda", "gemmi"], optional): The backend to use for computing neighbors. \
+            Default is "mda".
+            target_spec (Optional[Luni], optional): The target Luni object to compute neighbors with. \
+            Default is None (compute neighbors within the same Luni object).
+            atom_types (bool, optional): Whether to assign atom types before compute neighbors. Default is True.
 
         Returns:
             NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). \
             Each row in the array contains the indices of the neighbors for the atom corresponding to that row.
         """
-        if not self._ready:
-            self.ready()
+        if image is not None and backend != "gemmi":
+            raise ValueError("Image filtering is only supported with the 'gemmi' backend!")
 
-        neighbors = NeighborSearch(self.to("mda"))
+        self.assing_atom_types() if atom_types else self.unassign_atom_types()
+
+        mda = self._mda
+        if target_spec is not None:
+            union_indices = np.union1d(self.indices, target_spec.indices)
+            mda = self._mda.universe.atoms[union_indices]
+
+        # neighbors = NeighborSearch(self.to("mda"))
+        if backend == "gemmi":
+            assert self._file_loader.structure is not None
+            # TODO(bisejdiu): image is not being passed
+            neighbors = GemmiNeighbors(mda, self._file_loader.structure)
+        elif backend == "mda":
+            neighbors = NeighborSearch(mda)
+        else:
+            raise ValueError(f"Invalid backend: {backend}, must be one of 'mda' or 'gemmi'")
+
         pairs, distances = neighbors.compute(
             radius=radius,
             res_dif=res_dif,
+            chain_type=chain_type,
         )
 
-        return NeighborPairs(self.to("mda"), self.to("mol"), self.atom_types, pairs, distances)
+        if target_spec is not None:
+            cross_indices = cross_interaction_indices(pairs, self.indices, target_spec.indices)
+            pairs, distances = pairs[cross_indices], distances[cross_indices]
+
+        ns = NeighborPairs(self)
+        ns.set_neighbors(pairs, distances)
+        return ns
+
+    # alias for compute_neighbors
+    neighbors = compute_neighbors
+
+    def filter(self, selection: str) -> Self:
+        """Filter the Luni.
+
+        This method filters the Luni based on the given selection string. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Args:
+            selection (str): The selection string to use for filtering.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.__class__(self._mda.select_atoms(selection))
+
+    def copy(self) -> Self:
+        """Create a copy of this Luni instance.
+
+        Returns:
+            Luni: A copy of this Luni instance.
+        """
+        return self.__class__(self._mda)
 
     @property
     def sequence(self) -> str:
@@ -215,7 +332,6 @@ class Luni:
         Returns:
             NDArray[np.str_]: A NumPy array containing the one-letter amino acid codes of the Luni.
         """
-        assert self.arc is not None
         three_letter_codes = self.to("mda").select_atoms("protein").residues.resnames
         conversion_dict: dict[str, str] = {}
         for key, synonyms in RESIDUE_SYNONYMS.items():
@@ -227,19 +343,19 @@ class Luni:
         return "".join(single_letter_codes)
 
     @staticmethod
-    def get_format(file_name: str) -> tuple[str | None, bool]:
-        """Retrieve the file format from a file name.
+    def _check_gemmi_support(file_name: str) -> tuple[str | None, bool]:
+        """Check if we can use Gemmi to load the file.
 
-        This static method checks the file extension of the provided file name against the list of formats
-        supported by GEMMI (stored in `GEMMI_SUPPRTED_FORMATS`). If the extension matches a supported format,
-        it returns the format and a boolean indicating whether the format is 'pdb' or 'pdb.gz'. If the file
+        Checks the file extension of the provided file name against the list of formats
+        supported by GEMMI. If the extension matches a supported format,
+        it returns the format and a boolean indicating whether the format is 'pdb' or 'cif'. If the file
         extension doesn't match any supported formats, it returns None and False.
 
         Args:
             file_name (str): The name of the file.
 
         Returns:
-            tuple: A tuple containing the file format (str or None) and a boolean indicating if it is 'pdb' or 'pdb.gz'.
+            tuple: A tuple containing the file format (str or None) and a boolean indicating if it is 'pdb' or 'cif'.
         """
         file_name_lower = file_name.lower()
         for fmt in GEMMI_SUPPRTED_FORMATS:
@@ -249,14 +365,14 @@ class Luni:
         return None, False
 
     @overload
-    def to(self, fmt: Literal["mda"]) -> AtomGroupType:
+    def to(self, fmt: Literal["mda"]) -> "AtomGroupType":
         ...
 
     @overload
-    def to(self, fmt: Literal["mol"]) -> MolType:
+    def to(self, fmt: Literal["mol"]) -> "MolType":
         ...
 
-    def to(self, fmt: Literal["mda", "mol"]) -> MolType | AtomGroupType:
+    def to(self, fmt: Literal["mda", "mol"]) -> Union["MolType", "AtomGroupType"]:
         """Convert the Luni to a different format.
 
         This method converts the internal representation of the Luni to the specified format.
@@ -280,13 +396,174 @@ class Luni:
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
-    def arc(self) -> None | ARC:
+    def arc(self) -> "ARC":
         """Retrieve the ARC instance used to load the files.
 
         Returns:
-            None | ARC: The ARC instance used to load the files.
+            ARC: The ARC instance used to load the files.
         """
+        assert self._file_loader.arc is not None, "Empty initialization is not currently supported!"
         return self._file_loader.arc
+
+    @property
+    def indices(self) -> NDArray[np.int32]:
+        """Retrieve the indices of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
+        """
+        return self.arc.atoms.ids
+
+    @property
+    def ids(self) -> NDArray[np.int32]:
+        """Retrieve the indices of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
+        """
+        return self.arc.atoms.ids
+
+    @property
+    def names(self) -> NDArray[np.str_]:
+        """Retrieve the names of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the names of the atoms in the Luni object.
+        """
+        return self.arc.atoms.names
+
+    @property
+    def elements(self) -> NDArray[np.str_]:
+        """Retrieve the elements of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the elements of the atoms in the Luni object.
+        """
+        return self.arc.atoms.elements
+
+    @property
+    def types(self) -> NDArray[np.str_]:
+        """Retrieve the types of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the types of the atoms in the Luni object.
+        """
+        return self.arc.atoms.types
+
+    @property
+    def coordinates(self) -> NDArray[np.float32]:
+        """Retrieve the coordinates of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.float32]: A NumPy array containing the coordinates of the atoms in the Luni object.
+        """
+        return self.arc.atoms.coordinates
+
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        """Retrieve the residue names of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the residue names of the atoms in the Luni object.
+        """
+        return self.arc.residues.resnames
+
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        """Retrieve the residue IDs of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.int32]: A NumPy array containing the residue IDs of the atoms in the Luni object.
+        """
+        return self.arc.residues.resids
+
+    @property
+    def chainids(self) -> NDArray[np.int32]:
+        """Retrieve the chain IDs of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the chain IDs of the atoms in the Luni object.
+        """
+        return self.arc.chains.ids
+
+    @property
+    def chainlabels(self) -> NDArray[np.str_]:
+        """Retrieve the chain labels of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the chain labels of the atoms in the Luni object.
+        """
+        return self.arc.chains.labels
+
+    @property
+    def chainauths(self) -> NDArray[np.str_]:
+        """Retrieve the chain auths of the atoms in the Luni object.
+
+        Returns:
+            NDArray[np.str_]: A NumPy array containing the chain auths of the atoms in the Luni object.
+        """
+        return self.arc.chains.auths
+
+    @property
+    def n_atoms(self) -> int:
+        """Retrieve the number of atoms in the Luni object.
+
+        Returns:
+            int: The number of atoms in the Luni object.
+        """
+        return self.arc.atoms.n_atoms
+
+    @property
+    def n_residues(self) -> int:
+        """Retrieve the number of residues in the Luni object.
+
+        Returns:
+            int: The number of residues in the Luni object.
+        """
+        return self._mda.residues.n_residues
+
+    @property
+    def n_chains(self) -> int:
+        """Retrieve the number of chains in the Luni object.
+
+        Returns:
+            int: The number of chains in the Luni object.
+        """
+        return self._mda.n_segments
+
+    @property
+    def n_frames(self) -> int:
+        """Retrieve the number of frames in the Luni object.
+
+        Returns:
+            int: The number of frames in the Luni object.
+        """
+        return self._mda.universe.trajectory.n_frames
+
+    @property
+    def trajectory(self) -> "TrajectoryType":
+        """Retrieve the trajectory of the Luni object.
+
+        Returns:
+            Any: The trajectory of the Luni object.
+        """
+        return self._mda.universe.trajectory
+
+    def __getstate__(self) -> dict[str, Any]:
+        """Get state for pickling."""
+        state = self.__dict__.copy()
+        state["_mol"] = None
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Set state for unpickling."""
+        self.__dict__.update(state)
+
+    def __reduce__(self) -> tuple[Type[Self], tuple[Any, ...], dict[str, Any]]:
+        """Get state for pickling."""
+        state = self.__dict__.copy()
+        state["_mol"] = None
+        return (self.__class__, (self._structure, self._trajectories), state)
 
     def __repr__(self) -> str:
         return f"<Luni with {self._mda.n_atoms} atoms>"

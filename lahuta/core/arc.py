@@ -85,7 +85,7 @@ class Atoms:
     dtype = np.dtype(
         {
             "names": ["name", "id", "element", "type"],
-            "formats": ["<U10", "int", "<U10", "<U10"],
+            "formats": ["<U10", "int", "<U2", "<U10"],
         }
     )
 
@@ -109,7 +109,8 @@ class Atoms:
         label_atom_id: list[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
-        data["id"] = np.arange(data["name"].size)
+        # data["id"] = np.arange(data["name"].size)
+        data["id"] = np.array(gemmi_block.get("id"), dtype=np.int32) - 1
         data["element"] = np.array(gemmi_block.get("type_symbol"))
         data["type"] = np.array(gemmi_block.get("type_symbol"))
 
@@ -168,6 +169,11 @@ class Atoms:
     @coordinates.setter
     def coordinates(self, coordinates: NDArray[np.float32]) -> None:
         self.coords = coordinates
+
+    @property
+    def n_atoms(self) -> int:
+        """Number of atoms."""
+        return self.data.size
 
     def __len__(self) -> int:
         return self.data.size
@@ -266,6 +272,11 @@ class Residues:
     def resids(self) -> NDArray[np.int32]:
         """Residue IDs."""
         return self.data["resid"]
+
+    @property
+    def n_residues(self) -> int:
+        """Number of residues."""
+        return len(self.data)
 
     def __len__(self) -> int:
         return len(self.data)
@@ -381,6 +392,11 @@ class Chains:
     def ids(self) -> NDArray[np.int32]:
         """Chain IDs."""
         return self.data["id"]
+
+    @property
+    def n_chains(self) -> int:
+        """Number of chains."""
+        return len(self.data)
 
     def __len__(self) -> int:
         return len(self.data)

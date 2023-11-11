@@ -1,4 +1,4 @@
-:::lahuta.config._atom_type_strings
+:::lahuta.config.atom_types
     show_root_heading: true
     options:
         members:
@@ -16,6 +16,6 @@
             - _CARBONYL_CARBON_ATOM_TYPES
             - _AROMATIC_ATOM_TYPES
             - RESIDUE_SYNONYMS
-            - STANDARD_AMINO_ACIDS
+            - PROTEIN_RESIDUES
             - parse_atom_types_string
             - parse_atom_types

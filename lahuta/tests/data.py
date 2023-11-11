@@ -6,8 +6,8 @@ __all__ = ["X2", "Rhodopsin", "DNABound"]
 class X2(BaseFile):
     FILE_NAME = "1KX2"
 
-    def __init__(self) -> None:
-        super().__init__(pdb=True)
+    def __init__(self, pdb: bool = True) -> None:
+        super().__init__(pdb=pdb)
 
 
 class Rhodopsin(BaseFile):

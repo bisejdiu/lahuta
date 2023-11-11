@@ -31,8 +31,11 @@ Notes:
 
 """
 
+from typing import Optional
+
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
+from lahuta.core._hbond_handler import HBondHandler
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.utils.array_utils import difference, find_shared_pairs
 from lahuta.utils.ob import get_bonded_atoms
@@ -72,10 +75,10 @@ def covalent_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only covalent contacts.
     """
-    bonds = get_bonded_atoms(ns.mol)
+    bonds = get_bonded_atoms(ns.luni.to("mol"))
     indices = find_shared_pairs(ns.pairs + 1, bonds)
 
-    return ns.clone(ns.pairs[indices], ns.distances[indices])
+    return ns.new(ns.pairs[indices], ns.distances[indices])
 
 
 def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["distance"]) -> NeighborPairs:
@@ -253,15 +256,15 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
-        return ns.clone(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
+        return ns.new(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
 
     vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
-    return ns.clone(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])
+    return ns.new(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])
 
 
-def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
+def hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = None) -> NeighborPairs:
     """Handle the computation of hydrogen bond (hbond) contacts in a molecular system.
 
     Hydrogen bonds are pivotal non-covalent interactions that significantly influence the structure, stability,
@@ -281,24 +284,26 @@ def hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only hbond contacts.
     """
+    handler = _handler or HBondHandler(ns)
+
     hbond_atom12 = (
         ns.type_filter("hbond_donor", 1)
         .type_filter("hbond_acceptor", 2)
-        .hbond_distance_filter(partner=2)
-        .hbond_angle_filter(partner=1)
     )
+    hbond_atom12 = handler.hbond_distance_filter(hbond_atom12, partner=2)
+    hbond_atom12 = handler.hbond_angle_filter(hbond_atom12, partner=1)
 
     hbond_atom21 = (
         ns.type_filter("hbond_donor", 2)
         .type_filter("hbond_acceptor", 1)
-        .hbond_distance_filter(partner=1)
-        .hbond_angle_filter(partner=2)
     )
+    hbond_atom21 = handler.hbond_distance_filter(hbond_atom21, partner=1)
+    hbond_atom21 = handler.hbond_angle_filter(hbond_atom21, partner=2)
 
     return hbond_atom12 + hbond_atom21
 
 
-def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
+def weak_hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = None) -> NeighborPairs:
     """Handle the computation of weak hydrogen bond (weak hbond) contacts in a molecular system.
 
     Weak hydrogen bonds are a type of non-covalent interactions that, despite their reduced strength
@@ -319,19 +324,20 @@ def weak_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs:
     Returns:
         (NeighborPairs): A NeighborPairs object containing only weak hydrogen bonds.
     """
+    handler = _handler or HBondHandler(ns)
     hbond_atom12 = (
         ns.type_filter("hbond_acceptor", 1)
         .type_filter("weak_hbond_donor", 2)
-        .hbond_distance_filter(partner=1)
-        .hbond_angle_filter(partner=2, weak=True)
     )
+    hbond_atom12 = handler.hbond_distance_filter(hbond_atom12, partner=1)
+    hbond_atom12 = handler.hbond_angle_filter(hbond_atom12, partner=2, weak=True)
 
     hbond_atom21 = (
         ns.type_filter("hbond_acceptor", 2)
         .type_filter("weak_hbond_donor", 1)
-        .hbond_distance_filter(partner=2)
-        .hbond_angle_filter(partner=1, weak=True)
     )
+    hbond_atom21 = handler.hbond_distance_filter(hbond_atom21, partner=2)
+    hbond_atom21 = handler.hbond_angle_filter(hbond_atom21, partner=1, weak=True)
 
     return hbond_atom12 + hbond_atom21
 

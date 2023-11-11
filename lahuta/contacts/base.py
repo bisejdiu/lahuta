@@ -45,6 +45,7 @@ from typing import Any, Protocol, runtime_checkable
 import numpy as np
 from numpy.typing import NDArray
 
+from lahuta.api import union
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
@@ -58,6 +59,9 @@ class ComputeProtocol(Protocol):
     def compute(self) -> NeighborPairs:
         """Compute contacts based on the neighbor pairs."""
 
+    def _conclude(self) -> T:
+        """Conclude the computation and store the results."""
+
 
 @runtime_checkable
 class ComputeElementwiseProtocol(Protocol):
@@ -68,8 +72,11 @@ class ComputeElementwiseProtocol(Protocol):
         atoms: AtomGroupType,
         pair: NDArray[np.int32],
         distance: NDArray[np.float_],
-    ) -> T:
+    ) -> T | None:
         """Compute contacts based on the neighbor pairs."""
+
+    def _conclude(self) -> T:
+        """Conclude the computation and store the results."""
 
 
 class ContactAnalysis:
@@ -85,9 +92,10 @@ class ContactAnalysis:
 
     def __init__(self, ns: NeighborPairs):
         self.ns = ns
-        self.results: Any = None
+        self._results: Any = None
 
         self.run()
+        self._conclude()
 
     def run(self) -> None:
         """Run the contact computation methods."""
@@ -96,14 +104,25 @@ class ContactAnalysis:
     def run_methods(self) -> None:
         """Run the compute or compute_elementwise methods."""
         if isinstance(self, ComputeProtocol):
-            self.results = self.compute()
+            self._results = self.compute()
         elif isinstance(self, ComputeElementwiseProtocol):
-            self.results = []
+            self._results = []
             p1_atoms, p2_atoms = (
                 self.ns.partner1,
                 self.ns.partner2,
             )
             for atom1, atom2, distance in zip(p1_atoms, p2_atoms, self.ns.distances, strict=True):
-                self.results.append(self.compute_elementwise(atom1, atom2, distance))
+                result = self.compute_elementwise(atom1, atom2, distance)
+                if result:
+                    self._results.append(result)
+        else:
+            raise NotImplementedError("Object must implement either compute or compute_elementwise methods.")
+
+    def _conclude(self) -> None:
+        """Conclude the computation and store the results."""
+        if isinstance(self, ComputeProtocol):
+            self.results = self._results
+        elif isinstance(self, ComputeElementwiseProtocol):
+            self.results = union(*self._results) if self._results else NeighborPairs(self.ns.luni)
         else:
             raise NotImplementedError("Object must implement either compute or compute_elementwise methods.")

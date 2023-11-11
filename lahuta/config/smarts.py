@@ -7,7 +7,7 @@ easier lookups.
 from enum import Enum
 from typing import ClassVar
 
-import lahuta.config._smart_strings as smarts
+import lahuta.config.smarts_patterns as smarts
 
 
 # "NH2 terminal amide" and "oxygen amide term" are ambiguous and may affect non-protein amides
@@ -22,7 +22,7 @@ class SmartsPatternRegistry(Enum):
     HBOND_ACCEPTOR = smarts.HBOND_ACCEPTOR_SMARTS
     """
     Hydrogen bond acceptor SMARTS patterns. See 
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) for details.
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.HBOND_ACCEPTOR_SMARTS) for details.
     """
     HBOND_DONOR = smarts.HBOND_DONOR_SMARTS
 
@@ -30,14 +30,14 @@ class SmartsPatternRegistry(Enum):
     XBOND_ACCEPTOR: ClassVar = {**smarts.HBOND_ACCEPTOR_SMARTS, "": "[Xx]"}
     """
     Halogen bond acceptor SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) for details.
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.HBOND_ACCEPTOR_SMARTS) for details.
     Note that we provide a nonsensical string to avoid duplicate entries in the Enum.
     """
 
     XBOND_DONOR: ClassVar = {"donor": smarts.SMARTS_STR_XBD}
     """
     Halogen bond donor SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_XBD) for details.
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_XBD) for details.
     """
 
     WEAK_HBOND_ACCEPTOR: ClassVar = {
@@ -46,22 +46,22 @@ class SmartsPatternRegistry(Enum):
     }
     """
     Weak hydrogen bond acceptor SMARTS patterns. In addition to the standard
-    [hydrogen bond acceptor](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS)
+    [hydrogen bond acceptor](smarts_defs.md#lahuta.config.smarts_patterns.HBOND_ACCEPTOR_SMARTS)
     SMARTS patterns, this also includes
-    [halogen bond acceptor](smarts_defs.md#lahuta.config._smart_strings.HBOND_ACCEPTOR_SMARTS) 
+    [halogen bond acceptor](smarts_defs.md#lahuta.config.smarts_patterns.HBOND_ACCEPTOR_SMARTS) 
     SMARTS patterns.
     """
 
     WEAK_HBOND_DONOR: ClassVar = {"donor": smarts.SMARTS_STR_WHBD}
     """
     Weak hydrogen bond donor SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_WHBD) for details.
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_WHBD) for details.
     """
 
     POS_IONISABLE: ClassVar = smarts.POSITIVELY_IOINISABLE_SMARTS
     """
     Positively ionisable SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.POSITIVELY_IOINISABLE_SMARTS) for
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.POSITIVELY_IOINISABLE_SMARTS) for
     details.
     """
 
@@ -71,34 +71,34 @@ class SmartsPatternRegistry(Enum):
     }
     """
     Negatively ionisable SMARTS patterns. It includes two types of patterns: 
-    [acidic oxygen](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_NI_O_ACIDIC_GRP) and
-    [anions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_NI_ANIONS).
+    [acidic oxygen](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_NI_O_ACIDIC_GRP) and
+    [anions](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_NI_ANIONS).
     """
 
     HYDROPHOBE: ClassVar = {"hydrophobe": smarts.SMARTS_STR_HYDROPHOBIC}
     """
     Hydrophobic SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_HYDROPHOBIC) for details.
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_HYDROPHOBIC) for details.
     """
 
     CARBONYL_OXYGEN: ClassVar = {"oxygen": smarts.SMARTS_STR_CARBONYL_OXYGEN}
     """
     Carbonyl oxygen SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_CARBONYL_OXYGEN) for
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_CARBONYL_OXYGEN) for
     details.
     """
 
     CARBONYL_CARBON: ClassVar = {"carbon": smarts.SMARTS_STR_CARBONYL_CARBON}
     """
     Carbonyl carbon SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.SMARTS_STR_CARBONYL_CARBON) for
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_CARBONYL_CARBON) for
     details.
     """
 
     AROMATIC = smarts.AROMATIC_SMARTS
     """
     Aromatic SMARTS patterns. See
-    [definitions](smarts_defs.md#lahuta.config._smart_strings.AROMATIC_SMARTS) for details.
+    [definitions](smarts_defs.md#lahuta.config.smarts_patterns.AROMATIC_SMARTS) for details.
     """
 
 

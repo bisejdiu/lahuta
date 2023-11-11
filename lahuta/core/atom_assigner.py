@@ -67,6 +67,8 @@ class AtomTypeAssigner:
             False: VectorizedProteinTypeAssigner,
         }
 
+        self.atom_types = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+
     def compute_smarts_types(self) -> dok_matrix:
         """Compute atom types based on SMARTS pattern matching.
 
@@ -129,7 +131,7 @@ class AtomTypeAssigner:
         Returns:
             dok_matrix: A sparse matrix of atom types for the entire molecule.
         """
-        atom_types = dok_matrix((self.mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+        atom_types = self.atom_types
 
         if self.mda.n_atoms != self.protein_ag.n_atoms:
             atom_types = self.compute_smarts_types()

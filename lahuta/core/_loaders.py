@@ -32,6 +32,7 @@ from lahuta.core.arc import ARC, Atoms, Chains, Residues
 from lahuta.core.obmol import OBMol
 from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
 from lahuta.lahuta_types.openbabel import MolType
+from lahuta.utils.radii import v_radii_assignment
 
 
 class BaseLoader(ABC):
@@ -156,11 +157,11 @@ class GemmiLoader(BaseLoader):
     def __init__(self, file_path: str, is_pdb: bool = False):
         super().__init__(file_path)
         if is_pdb:
-            structure: Any = gemmi.read_pdb(self.file_path)  # type: ignore
-            block: Any = structure.make_mmcif_document().sole_block()
+            structure = gemmi.read_pdb(self.file_path)
+            block = structure.make_mmcif_document().sole_block()
         else:
-            block: Any = gemmi.cif.read(self.file_path).sole_block()  # type: ignore
-            structure: Any = gemmi.make_structure_from_block(block)  # type: ignore
+            block = gemmi.cif.read(self.file_path).sole_block()
+            structure = gemmi.make_structure_from_block(block)
 
         self.structure = structure
         atom_site_data: dict[str, Any] = block.get_mmcif_category("_atom_site.")
@@ -204,14 +205,13 @@ class GemmiLoader(BaseLoader):
 
         # Use factorize to get the labels and unique values
         resindices, uniques = pd.factorize(struct_arr)
-
-        resnames, resids, chain_ids = (uniques["resnames"], uniques["resids"], uniques["chain_ids"])
+        resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
 
         # Create a new Universe
         uv: UniverseType = mda.Universe.empty(
             n_atoms=self.arc.atoms.ids.size,
             n_residues=uniques.size,
-            n_segments=chain_ids.size,
+            n_segments=self.arc.chains.ids.size,
             atom_resindex=resindices,
             residue_segindex=chain_ids,
             trajectory=True,
@@ -221,12 +221,14 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("names", self.arc.atoms.names)
         uv.add_TopologyAttr("type", self.arc.atoms.types)
         uv.add_TopologyAttr("elements", self.arc.atoms.elements)
+        uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
-        uv.add_TopologyAttr("segids", chain_ids)
+        uv.add_TopologyAttr("chainIDs", self.arc.chains.auths)
         uv.add_TopologyAttr("ids", self.arc.atoms.ids)
 
         uv.atoms.positions = self.arc.atoms.coordinates
+        uv.filename = self.file_path
 
         return uv.atoms
 
@@ -265,15 +267,21 @@ class TopologyLoader(BaseLoader):
 
     """
 
-    def __init__(self, *paths: str):
-        file_path: str = paths[0]
+    def __init__(self, structure: str, *trajectories: str):
+        file_path: str = structure
         super().__init__(file_path)
         universe = mda.Universe(self.file_path)
         self.ag: AtomGroupType = universe.atoms
         assert self.ag is not None
-        if len(paths) > 1:
-            self.ag.universe.load_new(paths[1:], format=None, in_memory=False)
+        if trajectories:
+            if isinstance(trajectories, str):
+                trajectories = trajectories
+            self.ag.universe.load_new(trajectories, format=None, in_memory=False)
 
+        self.ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(universe.atoms.elements))
+        self.ag.universe.add_TopologyAttr("element", np.char.upper(universe.atoms.elements.astype(str)))
+        self.ag.universe.filename = self.file_path
+        # self.ag.elements = np.char.capitalize(self.ag.elements)
         self.arc = ARC(self, self.ag)  # positions are set when using mda.Universe
 
     def to_mda(self) -> AtomGroupType:
@@ -302,9 +310,13 @@ class TopologyLoader(BaseLoader):
             TopologyLoader: A new instance of the TopologyLoader class with the AtomGroup data copied.
         """
         top_loader = cls.__new__(cls)
+        ag.universe.add_TopologyAttr("vdw_radii", v_radii_assignment(ag.universe.atoms.elements))
+        ag.universe.add_TopologyAttr("element", np.char.upper(ag.universe.atoms.elements.astype(str)))
+
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
         top_loader.structure = None
+        top_loader.ag.universe.filename = ag.universe.filename
 
         top_loader.arc = ARC(top_loader, top_loader.ag)
 
