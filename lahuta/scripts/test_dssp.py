@@ -15,6 +15,6 @@ if __name__ == '__main__':
 
     # secondary_structure = dssp.secondary_structure
     secondary_structure = dssp.ss_array
-    print('secondary_structure', secondary_structure.shape)
-    # solvent_accessible_area = dssp.solvent_accessible_area
+    # print('secondary_structure', secondary_structure.shape)
+    # solvent_accessible_area = dssp.acc_array
     # print('solvent_accessible_area', solvent_accessible_area)

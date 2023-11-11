@@ -8,7 +8,7 @@ Variables:
     MAINCHAIN_ATOMS (set): A set of atoms usually found in the main chain of a protein.
     STANDARD_NUCLEOTIDES (set): A set of standard nucleotides in RNA and DNA.
     METALS (set): A set of metal atoms, sourced from `_atom_type_strings.py`.
-    STANDARD_AMINO_ACIDS (set): A set of standard amino acids, sourced from `_atom_type_strings.py`.
+    PROTEIN_RESIDUES (set): A set of standard amino acids, sourced from `_atom_type_strings.py`.
     PROT_ATOM_TYPES (dict): A dictionary mapping atom types to sets of atom names (strings),
         as defined in `_atom_type_strings.py`.
     ID_TO_TYPES (dict): A dictionary mapping atom names (strings) to sets of atom types,
@@ -44,10 +44,10 @@ METALS = at.METALS
 Type: `set[str]`: A set of metal atoms, sourced from `lahuta.config._atom_type_strings.py`.
 """
 
-STANDARD_AMINO_ACIDS = at.STANDARD_AMINO_ACIDS
+PROTEIN_RESIDUES = at.PROTEIN_RESIDUES
 """
 Type: `set[str]`: A set of standard amino acids. See the 
-[source](atom_types.md#lahuta.config._atom_type_strings.STANDARD_AMINO_ACIDS).
+[source](atom_types.md#lahuta.config._atom_type_strings.PROTEIN_RESIDUES).
 """
 
 

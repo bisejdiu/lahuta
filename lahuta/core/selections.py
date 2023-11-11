@@ -29,7 +29,11 @@ class ResTypeSelectionTokens(Enum):
     PURINE = ("ADE", "A", "GUA", "G")
     PYRIMIDINE = ("CYT", "C", "THY", "T", "URI", "U")
     SMALL = ("ALA", "GLY", "SER")
-    WATER = ("H2O", "HH0", "OHH", "HOH", "OH2", "SOL", "WAT", "TIP", "TIP2", "TIP3", "TIP4")
+    # fmt: off
+    WATER = (
+        "H2O", "HH0", "OHH", "HOH", "OH2", "SOL", "WAT", "TIP", "TIP2", 
+        "TIP3", "TIP4", "W", "DOD", "D3O", "SPC", "SPCE", "SPC/E"
+    )
 
 
 class SecondaryStructureTokens(Enum):
