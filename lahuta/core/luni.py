@@ -23,7 +23,7 @@ from numpy.typing import NDArray
 from scipy.sparse import csc_array, load_npz, save_npz
 from typing_extensions import Self
 
-from lahuta.config._atom_type_strings import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
+from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader

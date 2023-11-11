@@ -218,7 +218,7 @@ def parse_atom_types(_atom_types_string: str) -> set[str]:
 METALS = set(_METALS_STR.split(","))
 PROTEIN_RESIDUES = ProteinSelection.prot_res
 """
-module: `lahuta.config._atom_type_strings.py`
+module: `lahuta.config.atom_types.py`
 
 Type: `set[str]`: A set of standard amino acids. Taken from `MDAnalysis.core.selection.ProteinSelection`.
 """

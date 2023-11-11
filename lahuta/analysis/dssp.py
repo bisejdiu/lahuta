@@ -9,7 +9,7 @@ from typing import Any, ClassVar, Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.config._atom_type_strings import BASE_AA_CONVERSION
+from lahuta.config.atom_types import BASE_AA_CONVERSION
 from lahuta.utils.utils import find_dssp_executable
 
 

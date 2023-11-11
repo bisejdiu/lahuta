@@ -1,4 +1,4 @@
-:::lahuta.config._atom_type_strings
+:::lahuta.config.atom_types
     show_root_heading: true
     options:
         members:
