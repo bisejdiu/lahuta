@@ -26,9 +26,9 @@ from typing_extensions import Self
 from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
-from lahuta.core._loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.atom_assigner import AtomTypeAssigner
 from lahuta.core.fn import GemmiNeighbors
+from lahuta.core.loaders import BaseLoader, GemmiLoader, TopologyLoader
 from lahuta.core.neighbor_finder import NeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
