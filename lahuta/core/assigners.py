@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.sparse import dok_matrix
 
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray

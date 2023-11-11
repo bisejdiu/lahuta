@@ -18,9 +18,9 @@ if TYPE_CHECKING:
     from Bio.Seq import Seq
     from pandas import DataFrame
 
+    from lahuta._types.mdanalysis import AtomGroupType
     from lahuta.core.labeled_neighbors import LabeledNeighborPairs
     from lahuta.core.luni import Luni
-    from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
 __all__ = ["NeighborPairs"]

@@ -11,10 +11,10 @@ import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
+from lahuta._types.mdanalysis import AtomGroupType
+from lahuta._types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, PROTEIN_RESIDUES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8]:

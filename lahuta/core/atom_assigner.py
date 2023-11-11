@@ -14,12 +14,12 @@ from typing import Type
 import numpy as np
 from scipy.sparse import csc_array, dok_matrix
 
+from lahuta._types.mdanalysis import AtomGroupType
+from lahuta._types.openbabel import MolType
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.core.assigners import LegacyProteinTypeAssigner, VectorizedProteinTypeAssigner
 from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher, SmartsMatcherBase
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.lahuta_types.openbabel import MolType
 
 
 class AtomTypeAssigner:

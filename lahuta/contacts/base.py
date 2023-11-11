@@ -45,9 +45,9 @@ from typing import Any, Protocol, runtime_checkable
 import numpy as np
 from numpy.typing import NDArray
 
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.api import union
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 T = Any
 

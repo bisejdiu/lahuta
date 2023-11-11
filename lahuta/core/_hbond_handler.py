@@ -12,8 +12,8 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.sparse import coo_array, csr_matrix
 
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.config.defaults import CONTACTS, VDW_RADII
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
 from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
 from lahuta.utils.math import calc_pairwise_distances, calc_vertex_angles
 

@@ -35,9 +35,9 @@ from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRa
 from lahuta.utils.array_utils import cross_interaction_indices
 
 if TYPE_CHECKING:
+    from lahuta._types.mdanalysis import AtomGroupType, TrajectoryType
+    from lahuta._types.openbabel import MolType
     from lahuta.core.arc import ARC
-    from lahuta.lahuta_types.mdanalysis import AtomGroupType, TrajectoryType
-    from lahuta.lahuta_types.openbabel import MolType
 
 __all__ = ["Luni"]
 

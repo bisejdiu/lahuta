@@ -7,8 +7,8 @@ import numpy as np
 from gemmi import ContactSearch, NeighborSearch
 from numpy.typing import NDArray
 
-from lahuta.lahuta_types.gemmi import SearchResults, Structure
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta._types.gemmi import SearchResults, Structure
+from lahuta._types.mdanalysis import AtomGroupType
 
 
 class GemmiNeighbors:

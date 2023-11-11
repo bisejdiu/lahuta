@@ -15,7 +15,7 @@ import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS
 from numpy.typing import NDArray
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 IndexPairs = NDArray[np.int32]

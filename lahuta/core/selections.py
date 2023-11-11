@@ -8,12 +8,12 @@ from MDAnalysis.core.selection import Selection
 from MDAnalysis.core.topologyattrs import Resnames
 from numpy.typing import NDArray
 
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.analysis.dssp import DSSP, DSSPParser
 from lahuta.config.models.ions import IONS
 from lahuta.config.models.lipids import LIPIDS
 from lahuta.config.models.sugars import SUGARS
 from lahuta.config.models.water import WATERS
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
 
 
 class ResTypeSelectionTokens(Enum):
