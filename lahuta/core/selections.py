@@ -147,7 +147,7 @@ def create_dssp_selection_classes() -> list[type[Selection]]:
 
     return types
 
-class LigandSelection(Selection):
+class LigandSelection(Selection): # type: ignore
     """Selection for ligands."""
 
     token: str = "ligand"

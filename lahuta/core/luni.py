@@ -314,6 +314,83 @@ class Luni:
         """
         return self.__class__(self._mda.select_atoms(selection))
 
+    def remove_water(self) -> Self:
+        """Remove water molecules from the Luni.
+
+        This method removes water molecules from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not water")
+    
+    def remove_ions(self) -> Self:
+        """Remove ions from the Luni.
+
+        This method removes ions from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not ion")
+
+    def remove_ligands(self) -> Self:
+        """Remove ligands from the Luni.
+
+        This method removes ligands from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not ligand")
+
+    def remove_sugars(self) -> Self:
+        """Remove sugars from the Luni.
+
+        This method removes sugars from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not sugar")
+
+    def remove_lipids(self) -> Self:
+        """Remove lipids from the Luni.
+
+        This method removes lipids from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not lipid")
+
+    def remove_nucleic(self) -> Self:
+        """Remove nucleic acids from the Luni.
+
+        This method removes nucleic acids from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not nucleic")
+
+    def remove_protein(self) -> Self:
+        """Remove protein from the Luni.
+
+        This method removes protein from the Luni. It returns a new Luni instance
+        containing the filtered atoms.
+
+        Returns:
+            Luni: A new Luni instance containing the filtered atoms.
+        """
+        return self.filter("not protein")
+
     def copy(self) -> Self:
         """Create a copy of this Luni instance.
 
