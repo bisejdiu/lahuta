@@ -246,7 +246,7 @@ HBOND_DONOR_SMARTS = {
 """
 A dictionary of hydrogen bond donor SMARTS patterns.
 !!! tip "Definitions"
-    - `donor`: Standard hydrogen bond donor ([source](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_HBD_DONOR))
+    - `donor`: Standard h-bond donor ([source](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_HBD_DONOR))
     - `oxygen acid`: Oxygen acid ([source](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_HBD_OXYGEN_ACID))
     - `tautomer nH`: Tautomer NH ([source](smarts_defs.md#lahuta.config.smarts_patterns.SMARTS_STR_HBD_TAUTOMERIC_NH))
     - `oxygen amide term`: Oxygen amide terminal \
