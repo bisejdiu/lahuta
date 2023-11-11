@@ -9,9 +9,10 @@ from numpy.typing import NDArray
 
 from lahuta._types.gemmi import SearchResults, Structure
 from lahuta._types.mdanalysis import AtomGroupType
+from lahuta.core.base import BaseNeighborSearch
 
 
-class GemmiNeighbors:
+class GemmiNeighbors(BaseNeighborSearch):
     """Handle atom related operations, including finding neighbors and preparation for computation.
 
     The class provides methods to find neighbors of each atom in the universe and to remove pairs of atoms
@@ -28,10 +29,7 @@ class GemmiNeighbors:
     """
 
     def __init__(self, mda: AtomGroupType, structure: Structure, radius: float=5.0):
-        self.ag_no_h = mda.select_atoms("not name H*")
-        self.og_resids = mda.universe.atoms.resids
-        self.chain_ids = mda.universe.atoms.chainIDs
-
+        super().__init__(mda)
         structure.assign_serial_numbers()
         self.structure = structure
         self.radius = radius

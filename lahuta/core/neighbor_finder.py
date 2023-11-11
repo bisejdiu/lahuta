@@ -15,7 +15,7 @@ import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS
 from numpy.typing import NDArray
 
-from lahuta._types.mdanalysis import AtomGroupType
+from lahuta.core.base import BaseNeighborSearch
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 IndexPairs = NDArray[np.int32]
@@ -23,7 +23,7 @@ Distances = NDArray[np.float32]
 PairsDistances = tuple[IndexPairs, Distances]
 
 
-class NeighborSearch:
+class NeighborSearch(BaseNeighborSearch):
     """Handle atom related operations, including finding neighbors and preparation for computation.
 
     The class provides methods to find neighbors of each atom in the universe and to remove pairs of atoms
@@ -37,11 +37,6 @@ class NeighborSearch:
         ag_no_h (AtomGroup): Atom group of a universe excluding hydrogen atoms.
         og_resids (np.ndarray): The residue IDs of each atom in the universe.
     """
-
-    def __init__(self, mda: AtomGroupType) -> None:
-        self.ag_no_h = mda.select_atoms("not name H*")
-        self.og_resids = mda.universe.atoms.resids
-        self.chain_ids = mda.universe.atoms.chainIDs
 
     def compute(
         self,
