@@ -35,10 +35,11 @@ from typing import Optional
 
 from lahuta.config.atoms import METALS
 from lahuta.config.defaults import CONTACTS
-from lahuta.core.hbond_handler import HBondHandler
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.utils.array_utils import difference, find_shared_pairs
 from lahuta.utils.ob import get_bonded_atoms
+
+from .hbond_handler import HBondHandler
 
 __all__ = [
     "covalent_neighbors",
