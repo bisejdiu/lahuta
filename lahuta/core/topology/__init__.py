@@ -1,3 +1,4 @@
+"""Topology module: contains classes and functions to build and manipulate biomolecular topologies."""
 from .arc import ARC, Atom, Atoms, Chains, Residues
 from .loaders import BaseLoader, GemmiLoader, TopologyLoader
 from .obmol import OBMol
