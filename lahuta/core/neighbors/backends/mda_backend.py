@@ -15,7 +15,7 @@ import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS
 from numpy.typing import NDArray
 
-from lahuta.core.base import BaseNeighborSearch, PairsDistances
+from lahuta.core.neighbors import BaseNeighborSearch, PairsDistances
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
 

@@ -47,7 +47,7 @@ from numpy.typing import NDArray
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 
 if TYPE_CHECKING:
-    from lahuta.core.loaders import GemmiLoader, TopologyLoader
+    from .loaders import GemmiLoader, TopologyLoader
 
 
 class Atoms:

@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 
 from lahuta._types.gemmi import SearchResults, Structure
 from lahuta._types.mdanalysis import AtomGroupType
-from lahuta.core.base import BaseNeighborSearch, PairsDistances
+from lahuta.core.neighbors import BaseNeighborSearch, PairsDistances
 
 
 class GemmiNeighborSearch(BaseNeighborSearch):

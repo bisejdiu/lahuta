@@ -10,7 +10,7 @@ from Bio.Seq import Seq
 from numpy.typing import NDArray
 
 from lahuta._types.mdanalysis import AtomGroupType
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+from lahuta.core.neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
 __all__ = ["AtomMapper", "LabeledNeighborPairsBuilder"]

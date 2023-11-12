@@ -18,8 +18,9 @@ from lahuta._types.mdanalysis import AtomGroupType
 from lahuta._types.openbabel import MolType
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core.assigners import LegacyProteinTypeAssigner, VectorizedProteinTypeAssigner
-from lahuta.core.matchers import ParallelSmartsMatcher, SmartsMatcher, SmartsMatcherBase
+
+from .assigners import LegacyProteinTypeAssigner, VectorizedProteinTypeAssigner
+from .matchers import ParallelSmartsMatcher, SmartsMatcher, SmartsMatcherBase
 
 
 class AtomTypeAssigner:

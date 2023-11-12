@@ -26,19 +26,17 @@ from typing_extensions import Self
 from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
-from lahuta.core.atom_assigner import AtomTypeAssigner
-from lahuta.core.base import BaseNeighborSearch
-from lahuta.core.gemmi_backend import GemmiNeighborSearch
-from lahuta.core.loaders import BaseLoader, GemmiLoader, TopologyLoader
-from lahuta.core.mda_backend import MDAnalysisNeighborSearch
-from lahuta.core.neighbors import NeighborPairs
-from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
+from lahuta.core.assigners import AtomTypeAssigner
+from lahuta.core.neighbors import BaseNeighborSearch, NeighborPairs
+from lahuta.core.neighbors.backends import GemmiNeighborSearch, MDAnalysisNeighborSearch
+from lahuta.core.topology import GemmiLoader, TopologyLoader
 from lahuta.utils.array_utils import cross_interaction_indices
 
 if TYPE_CHECKING:
     from lahuta._types.mdanalysis import AtomGroupType, TrajectoryType
     from lahuta._types.openbabel import MolType
-    from lahuta.core.arc import ARC
+    from lahuta.core.topology import BaseLoader
+    from lahuta.core.topology.arc import ARC
 
 __all__ = ["Luni"]
 
@@ -115,6 +113,7 @@ class Luni:
             attrname (str): The name of the attribute.
             values (NDArray[Any]): The values of the attribute.
         """
+        from .topology.topattrs import AtomAttrClassHandler
         topattr_handler = AtomAttrClassHandler()
         topattr_handler.init_topattr(attrname, attrname)
         self._mda.universe.add_TopologyAttr(attrname, values)
@@ -325,7 +324,7 @@ class Luni:
             Luni: A new Luni instance containing the filtered atoms.
         """
         return self.filter("not water")
-    
+
     def remove_ions(self) -> Self:
         """Remove ions from the Luni.
 

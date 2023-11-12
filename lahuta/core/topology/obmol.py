@@ -28,7 +28,8 @@ from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
 from lahuta._types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
-from lahuta.core.arc import ARC
+
+from . import ARC
 
 
 class OBMol:

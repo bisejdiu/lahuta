@@ -5,7 +5,7 @@ from _pytest.fixtures import FixtureRequest
 
 import lahuta.utils.set_defs as sd
 from lahuta import Luni
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+from lahuta.core.neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
 
