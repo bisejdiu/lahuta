@@ -27,9 +27,10 @@ from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
 from lahuta.core.atom_assigner import AtomTypeAssigner
-from lahuta.core.fn import GemmiNeighbors
+from lahuta.core.base import BaseNeighborSearch
+from lahuta.core.gemmi_backend import GemmiNeighborSearch
 from lahuta.core.loaders import BaseLoader, GemmiLoader, TopologyLoader
-from lahuta.core.neighbor_finder import NeighborSearch
+from lahuta.core.mda_backend import MDAnalysisNeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topattrs import AtomAttrClassHandler  # This also imports VDWRadiiAtomAttr (which is needed)
 from lahuta.utils.array_utils import cross_interaction_indices
@@ -41,9 +42,9 @@ if TYPE_CHECKING:
 
 __all__ = ["Luni"]
 
-NeighborBackends: dict[str, Type[NeighborSearch] | Type[GemmiNeighbors]] = {
-    "mda": NeighborSearch,
-    "gemmi": GemmiNeighbors,
+NeighborBackends: dict[str, Type[BaseNeighborSearch]] = {
+    "mda": MDAnalysisNeighborSearch,
+    "gemmi": GemmiNeighborSearch,
 }
 
 
@@ -273,13 +274,13 @@ class Luni:
             union_indices = np.union1d(self.indices, target_spec.indices)
             mda = self._mda.universe.atoms[union_indices]
 
-        # neighbors = NeighborSearch(self.to("mda"))
+        # neighbors = MDAnalysisNeighborSearch(self.to("mda"))
         if backend == "gemmi":
             assert self._file_loader.structure is not None
             # TODO(bisejdiu): image is not being passed
-            neighbors = GemmiNeighbors(mda, self._file_loader.structure)
+            neighbors = GemmiNeighborSearch(mda, self._file_loader.structure)
         elif backend == "mda":
-            neighbors = NeighborSearch(mda)
+            neighbors = MDAnalysisNeighborSearch(mda)
         else:
             raise ValueError(f"Invalid backend: {backend}, must be one of 'mda' or 'gemmi'")
 

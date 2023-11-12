@@ -1,12 +1,11 @@
 """Base class for finding neighbors."""
-from typing import TypeVar
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
 from lahuta._types.mdanalysis import AtomGroupType
 
-T = TypeVar("T")
 IndexPairs = NDArray[np.int32]
 Distances = NDArray[np.float32]
 PairsDistances = tuple[IndexPairs, Distances]
@@ -31,6 +30,6 @@ class BaseNeighborSearch:
         self.og_resids = mda.universe.atoms.resids
         self.chain_ids = mda.universe.atoms.chainIDs
 
-    def compute(self, *args: T, **kwargs: T) -> PairsDistances:
+    def compute(self, *args: Any, **kwargs: Any) -> PairsDistances: # noqa: ANN401
         """Compute the neighbors of each atom in the Universe."""
         raise NotImplementedError("This method should be overridden in subclasses")

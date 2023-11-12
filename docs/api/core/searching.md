@@ -1,4 +1,4 @@
-::: lahuta.core.neighbor_finder.NeighborSearch
+::: lahuta.core.mda_backend.MDAnalysisNeighborSearch
     options:
         show_root_heading: true
         merge_init_into_class: false

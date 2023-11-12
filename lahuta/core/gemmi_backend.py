@@ -9,10 +9,10 @@ from numpy.typing import NDArray
 
 from lahuta._types.gemmi import SearchResults, Structure
 from lahuta._types.mdanalysis import AtomGroupType
-from lahuta.core.base import BaseNeighborSearch
+from lahuta.core.base import BaseNeighborSearch, PairsDistances
 
 
-class GemmiNeighbors(BaseNeighborSearch):
+class GemmiNeighborSearch(BaseNeighborSearch):
     """Handle atom related operations, including finding neighbors and preparation for computation.
 
     The class provides methods to find neighbors of each atom in the universe and to remove pairs of atoms
@@ -50,7 +50,7 @@ class GemmiNeighbors(BaseNeighborSearch):
             n_threads: int = 1, 
             chain_type: Optional[Literal["inter", "intra"]] = None, 
             image: Optional[Literal["inter", "intra"]] = None
-    ) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
+    ) -> PairsDistances:
         """Compute the neighbors of each atom in the loaded system.
 
         Args:
@@ -61,7 +61,7 @@ class GemmiNeighbors(BaseNeighborSearch):
             image (Literal["inter", "intra"], optional): The type of image to keep. Default is None (keep all).
 
         Returns:
-            tuple[NDArray[np.int32], NDArray[np.float32]]: A tuple containing the pairs of atom indices \
+            PairsDistances: A tuple containing the pairs of atom indices \
                 and the distances.
         """
         results = self._get_contacts(radius)

@@ -1,10 +1,10 @@
 """Handle atom related operations, including finding neighbors and preparation for computation.
 
-This module contains the NeighborSearch class that handles atom related operations, 
+This module contains the MDAnalysisNeighborSearch class that handles atom related operations, 
 including finding neighbors and preparation for computation.
 
 Classes:
-    NeighborSearch: Class to handle atom related operations, including finding neighbors 
+    MDAnalysisNeighborSearch: Class to handle atom related operations, including finding neighbors 
                     and preparation for computation.
 
 """
@@ -15,15 +15,11 @@ import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS
 from numpy.typing import NDArray
 
-from lahuta.core.base import BaseNeighborSearch
+from lahuta.core.base import BaseNeighborSearch, PairsDistances
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
-IndexPairs = NDArray[np.int32]
-Distances = NDArray[np.float32]
-PairsDistances = tuple[IndexPairs, Distances]
 
-
-class NeighborSearch(BaseNeighborSearch):
+class MDAnalysisNeighborSearch(BaseNeighborSearch):
     """Handle atom related operations, including finding neighbors and preparation for computation.
 
     The class provides methods to find neighbors of each atom in the universe and to remove pairs of atoms
