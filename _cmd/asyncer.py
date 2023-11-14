@@ -1,39 +1,6 @@
 import asyncio
-from typing import Literal
-from typing_extensions import TypedDict, Required
 from dep_graph import DependencyGraph
-
-class Command:
-    def __init__(self, command, *args):
-        self.command = command
-        self.args = args
-        self.output = None
-        self.error = None
-
-    async def run(self):
-        process = await asyncio.create_subprocess_exec(
-            self.command, *self.args,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE)
-        
-        stdout, stderr = await process.communicate()
-        if process.returncode == 0:
-            self.output = stdout.decode().strip()
-        else:
-            self.error = stderr.decode().strip()
-
-        return process.returncode == 0
-    
-    @property
-    def name(self):
-        return self.command
-    
-    @property
-    def arguments(self):
-        return self.args
-
-    def __str__(self):
-        return f"{self.command} {' '.join(self.args)}"
+from createdb import CreateDBCommand
 
 class WorkflowRunner:
     def __init__(self):
@@ -64,14 +31,28 @@ class WorkflowRunner:
 
 
 runner = WorkflowRunner()
-cmd1 = Command("fseek", "-i A -o B")
-cmd2 = Command("fseek", "-i B -o C")
-cmd3 = Command("fseek", "-i C -o D")
-cmd4 = Command("fseek", "-i C -o E")
-runner.add_command(cmd1)
-runner.add_command(cmd2, dependencies=[cmd1])
-runner.add_command(cmd3, dependencies=[cmd2])
-runner.add_command(cmd4, dependencies=[cmd2])
+# cmd1 = Command("fseek", "-i A -o B")
+# cmd2 = Command("fseek", "-i B -o C")
+# cmd3 = Command("fseek", "-i C -o D")
+# cmd4 = Command("fseek", "-i C -o E")
+
+createdb = CreateDBCommand(options={
+    "input_files": "1gzm.pdb",
+    "db_out_path": "db/query",
+    "chain_name_mode": "0",
+})
+createdb2 = CreateDBCommand(options={
+    "input_files": "examples/",
+    "db_out_path": "db/target",
+    "chain_name_mode": "0",
+})
+
+runner.add_command(createdb)
+runner.add_command(createdb2, dependencies=[createdb])
+# runner.add_command(cmd1)
+# runner.add_command(cmd2, dependencies=[cmd1])
+# runner.add_command(cmd3, dependencies=[cmd2])
+# runner.add_command(cmd4, dependencies=[cmd2])
 
 runner.run()
 
