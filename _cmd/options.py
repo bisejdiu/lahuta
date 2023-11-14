@@ -6,6 +6,8 @@ FilePath = str | list[str]
 class CLIOptions(TypedDict, total=False):
     ...
 
+RequiredOpts = Literal["input_files"] | Literal["db_out_path"]
+
 class CreateDBOptions(CLIOptions, total=False):
     input_files: Required[FilePath]
     db_out_path: Required[str]
@@ -22,8 +24,8 @@ class CreateDBOptions(CLIOptions, total=False):
     v: Literal["0", "1", "2", "3"]
 
 CreateDBOptionsDefaults: dict[str, str] = {
-    'input_files': "",
-    'db_out_path': "",
+    # 'input_files': "",
+    # 'db_out_path': "",
     'chain_name_mode': "0",
     'write_mapping': "0",
     'mask_bfactor_threshold': "0.0",

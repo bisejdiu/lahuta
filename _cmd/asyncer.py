@@ -1,5 +1,6 @@
 import asyncio
 from dep_graph import DependencyGraph
+from cmd_base import FoldSeekCommand
 from createdb import CreateDBCommand
 
 class WorkflowRunner:
@@ -31,28 +32,21 @@ class WorkflowRunner:
 
 
 runner = WorkflowRunner()
-# cmd1 = Command("fseek", "-i A -o B")
-# cmd2 = Command("fseek", "-i B -o C")
-# cmd3 = Command("fseek", "-i C -o D")
-# cmd4 = Command("fseek", "-i C -o E")
 
-createdb = CreateDBCommand(options={
-    "input_files": "1gzm.pdb",
-    "db_out_path": "db/query",
-    "chain_name_mode": "0",
-})
-createdb2 = CreateDBCommand(options={
-    "input_files": "examples/",
-    "db_out_path": "db/target",
-    "chain_name_mode": "0",
-})
+# createdb = CreateDBCommand(options={
+#     "input_files": "1gzm.pdb",
+#     "db_out_path": "db/query",
+#     "chain_name_mode": "0",
+# })
+# createdb2 = CreateDBCommand(options={
+#     "input_files": "examples/",
+#     "db_out_path": "db/target",
+#     "chain_name_mode": "0",
+# })
 
-runner.add_command(createdb)
-runner.add_command(createdb2, dependencies=[createdb])
-# runner.add_command(cmd1)
-# runner.add_command(cmd2, dependencies=[cmd1])
-# runner.add_command(cmd3, dependencies=[cmd2])
-# runner.add_command(cmd4, dependencies=[cmd2])
+runner.add_command(FoldSeekCommand("easy-search", [""], {"h": ""}))
+# runner.add_command(createdb)
+# runner.add_command(createdb2, dependencies=[createdb])
 
 runner.run()
 

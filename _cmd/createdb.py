@@ -1,41 +1,28 @@
 from typing import cast, get_type_hints
-from typing_extensions import Required, LiteralString
+from typing_extensions import Required
 
-from cmd_base import Command
+from cmd_base import FoldSeekCommand
 from options import CreateDBOptions, CreateDBOptionsDefaults, CLIOptions
 
 
-def get_required_keys(typed_dict: type[CLIOptions]) -> set[LiteralString]:
-    required_keys = set()
+def get_required_keys(typed_dict: type[CLIOptions]) -> list[str]:
+    required_keys: list[str] = [] # need to use list instead of set to perserve order
     for key, value in get_type_hints(typed_dict).items():
         # Check if the type hint is wrapped with Required
         if hasattr(value, '__origin__') and value.__origin__ is Required:
-            required_keys.add(key)
+            required_keys.append(key)
     return required_keys
 
-class CreateDBCommand(Command):
+class CreateDBCommand(FoldSeekCommand):
     def __init__(self, *, options: CreateDBOptions) -> None:
 
         required_keys = get_required_keys(CreateDBOptions)
 
         # Validate required arguments
-        if not required_keys.issubset(options):
+        if not set(required_keys).issubset(options):
             raise ValueError(f"Required arguments {required_keys} are missing.")
+        
+        args = [options.pop(key) for key in required_keys]  # type: ignore
+        opts: CLIOptions = cast(CLIOptions, {**CreateDBOptionsDefaults, **options})
 
-        args, self.options = [], {**CreateDBOptionsDefaults.copy()}
-        for key in CreateDBOptionsDefaults:
-            if key in required_keys:
-                args.append(options.get(key))
-                self.options.pop(key)
-            else:
-                self.options[key] = cast(str, options.get(key)) or CreateDBOptionsDefaults[key]
-
-        super().__init__("createdb", args, self.options)
-
-createdb = CreateDBCommand(options={
-    "input_files": "1gzm.pdb",
-    "db_out_path": "db/query",
-    # "chain_name_mode": 1,
-    })
-
-print(createdb.arguments)
+        super().__init__("createdb", args, opts)

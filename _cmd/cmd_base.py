@@ -1,23 +1,20 @@
 import asyncio
 
-class Command:
-    def __init__(self, command, args, kwargs):
+class FoldSeekCommand:
+    NAME = "foldseek"
+    def __init__(self, command, required_args, kwargs):
         self.command = command
-        # self._a = {f"--{key.replace('_', '-')} {value}" for key, value in kwargs.items()}
-        self.args = []
-        for key, value in kwargs.items():
-            arg = f"-{key}" if len(key) == 1 else f"--{key.replace('_', '-')}"
-            self.args.extend([arg, str(value)])
+        self.args = required_args + self._handle_kwargs(kwargs)
 
-        self.args = tuple(args) + tuple(self.args)
         self.output = None
         self.error = None
-        # print("type: ", self.args, type(self.args)) 
 
     async def run(self):
-        print(f"Running command: {self}")
+        arguments = [self.NAME] + ([self.command] if self.command else []) + self.args
+        arguments = list(filter(lambda x: x != '', arguments))
+
         process = await asyncio.create_subprocess_exec(
-            "foldseek", self.command, *self.args,
+            *arguments,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE)
         
@@ -29,6 +26,14 @@ class Command:
 
         return process.returncode == 0
     
+    def _handle_kwargs(self, kwargs):
+        arguments = []
+        for key, value in kwargs.items():
+            arg = f"-{key}" if len(key) == 1 else f"--{key.replace('_', '-')}"
+            arguments.extend([arg, str(value)])
+
+        return arguments
+
     @property
     def name(self):
         return self.command
@@ -38,5 +43,5 @@ class Command:
         return self.args
 
     def __str__(self):
-        return f"{self.command} {' '.join(self.args)}"
+        return f"{self.NAME} {self.command} {' '.join(self.args)}"
 
