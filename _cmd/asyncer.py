@@ -1,7 +1,5 @@
 import asyncio
 from dep_graph import DependencyGraph
-from cmd_base import FoldSeekCommand
-from createdb import CreateDBCommand
 
 class WorkflowRunner:
     def __init__(self):
@@ -29,30 +27,3 @@ class WorkflowRunner:
 
     def get_error(self):
         return self.error
-
-
-runner = WorkflowRunner()
-
-# createdb = CreateDBCommand(options={
-#     "input_files": "1gzm.pdb",
-#     "db_out_path": "db/query",
-#     "chain_name_mode": "0",
-# })
-# createdb2 = CreateDBCommand(options={
-#     "input_files": "examples/",
-#     "db_out_path": "db/target",
-#     "chain_name_mode": "0",
-# })
-
-runner.add_command(FoldSeekCommand("easy-search", [""], {"h": ""}))
-# runner.add_command(createdb)
-# runner.add_command(createdb2, dependencies=[createdb])
-
-runner.run()
-
-if runner.is_successful():
-    print("Workflow completed successfully.")
-    for output in runner.get_state().values():
-        print(output)
-else:
-    print("Workflow failed with error:", runner.get_error())

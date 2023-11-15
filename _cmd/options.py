@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import Literal
 from typing_extensions import TypedDict, Required
 
@@ -6,7 +7,8 @@ FilePath = str | list[str]
 class CLIOptions(TypedDict, total=False):
     ...
 
-RequiredOpts = Literal["input_files"] | Literal["db_out_path"]
+# CreateDBOptions & CreateDBOptionsDefaults are based on the following command:
+# foldseek createdb 1gzm.pdb ${dir}/query --chain-name-mode 0 --write-mapping 0 --mask-bfactor-threshold 0 --coord-store-mode 2 --write-lookup 1 --tar-include '.*' --tar-exclude '^$' --file-include '.*' --file-exclude '^$' --threads 4 -v 3
 
 class CreateDBOptions(CLIOptions, total=False):
     input_files: Required[FilePath]
@@ -24,8 +26,6 @@ class CreateDBOptions(CLIOptions, total=False):
     v: Literal["0", "1", "2", "3"]
 
 CreateDBOptionsDefaults: dict[str, str] = {
-    # 'input_files': "",
-    # 'db_out_path': "",
     'chain_name_mode': "0",
     'write_mapping': "0",
     'mask_bfactor_threshold': "0.0",
@@ -36,5 +36,183 @@ CreateDBOptionsDefaults: dict[str, str] = {
     'tar_exclude': "^$",
     'file_include': ".*",
     'file_exclude': "^$",
+    'v': "3",
+}
+
+# SearchOptions & SearchOptionsDefaults are based on the following command:
+# foldseek search ${dir}/query ${dir}/target ${dir}/result ${dir}/search_tmp -a 1 --alignment-mode 3 --comp-bias-corr 1 --gap-open aa:10,nucl:10 --gap-extend aa:1,nucl:1 -s 9.5 -k 6 --mask 0 --mask-prob 0.99995 --remove-tmp-files 1
+
+class SearchOptions(CLIOptions, total=False):
+    query: Required[str]
+    target: Required[str]
+    result: Required[str]
+    search_tmp: Required[str]
+    a: Literal["0", "1"]
+    # optionals
+    alignment_mode: Literal["0", "1", "2", "3"]
+    alignment_output_mode: Literal["0", "1", "2", "3", "4", "5"]
+    comp_bias_corr: str
+    gap_open: str
+    gap_extend: str
+    s: str
+    k: str
+    mask: Literal["0", "1"]
+    mask_prob: str
+    remove_tmp_files: Literal["0", "1"]
+    max_seqs: str
+    exhaustive_search: Literal["0", "1"]
+
+SearchOptionsDefaults: dict[str, str] = {
+    'a': "0",
+    'alignment_mode': "3",
+    'alignment_output_mode': "0",
+    'comp_bias_corr': "1",
+    'gap_open': "aa:10,nucl:10",
+    'gap_extend': "aa:1,nucl:1",
+    's': "9.5",
+    'k': "0",
+    'mask': "0",
+    'mask_prob': "1.000",
+    'remove_tmp_files': "1",
+    'max_seqs': "1000",
+    'exhaustive_search': "0",
+}
+
+# ConvertAlisOptions & ConvertAlisOptionsDefaults are based on the following two commands:
+# foldseek convertalis ${dir}/query ${dir}/target ${dir}/result aln9.m8 --sub-mat 'aa:3di.out,nucl:3di.out' --format-mode 4 --format-output query,qstart,qend,tstart,tend,evalue,bits,prob,lddt,alntmscore,qseq,tseq,qaln,taln --translation-table 1 --gap-open aa:10,nucl:10 --gap-extend aa:1,nucl:1 --db-output 0 --db-load-mode 0 --search-type 0 --threads 4 --compressed 0 -v 3
+# foldseek convertalis ${dir}/query ${dir}/target ${dir}/result aln9_ --sub-mat 'aa:3di.out,nucl:3di.out' --format-mode 5 --format-output query,target,fident,alnlen,mismatch,gapopen,qstart,qend,tstart,tend,evalue,bits --translation-table 1 --gap-open aa:10,nucl:10 --gap-extend aa:1,nucl:1 --db-output 0 --db-load-mode 0 --search-type 0 --threads 4 --compressed 0 -v 3
+
+class ConvertAlisOptions(CLIOptions, total=False):
+    query: Required[str]
+    target: Required[str]
+    result: Required[str]
+    output: Required[str]
+    # optionals
+    sub_mat: str
+    format_mode: Literal["0", "1", "2", "3", "4", "5"]
+    format_output: str
+    translation_table: str
+    gap_open: str
+    gap_extend: str
+    db_output: Literal["0", "1"]
+    db_load_mode: Literal["0", "1"]
+    search_type: Literal["0", "1"]
+    threads: str
+    compressed: Literal["0", "1"]
+    v: Literal["0", "1", "2", "3"]
+
+# query,target,evalue,gapopen,pident,fident,nident,qstart,qend,qlen
+                    #    tstart,tend,tlen,alnlen,raw,bits,cigar,qseq,tseq,qheader,theader,qaln,taln,mismatch,qcov,tcov
+                    #    qset,qsetid,tset,tsetid,taxid,taxname,taxlineage,
+                    #    lddt,lddtfull,qca,tca,t,u,qtmscore,ttmscore,alntmscore,rmsd,prob
+                    #    qcomplextmscore,tcomplextmscore,assignid
+class FormatOutput(Enum):
+    QUERY = auto()
+    TARGET = auto()
+    EVALUE = auto()
+    GAPOPEN = auto()
+    PIDENT = auto()
+    FIDENT = auto()
+    NIDENT = auto()
+    QSTART = auto()
+    QEND = auto()
+    QLEN = auto()
+    TSTART = auto()
+    TEND = auto()
+    TLEN = auto()
+    ALNLEN = auto()
+    RAW = auto()
+    BITS = auto()
+    CIGAR = auto()
+    QSEQ = auto()
+    TSEQ = auto()
+    QHEADER = auto()
+    THEADER = auto()
+    QALN = auto()
+    TALN = auto()
+    MISMATCH = auto()
+    QCOV = auto()
+    TCOV = auto()
+    QSET = auto()
+    QSETID = auto()
+    TSET = auto()
+    TSETID = auto()
+    TAXID = auto()
+    TAXNAME = auto()
+    TAXLINEAGE = auto()
+    LDDT = auto()
+    LDDTFULL = auto()
+    QCA = auto()
+    TCA = auto()
+    T = auto()
+    U = auto()
+    QTMSCORE = auto()
+    TTMSCORE = auto()
+    ALNTMSCORE = auto()
+    RMSD = auto()
+    PROB = auto()
+    QCOMPLEXTMSCORE = auto()
+    TCOMPLEXTMSCORE = auto()
+    ASSIGNID = auto()
+
+class FormatOutputController:
+
+    DEFAULTS = [
+        FormatOutput.QUERY,
+        FormatOutput.TARGET,
+        FormatOutput.FIDENT,
+        FormatOutput.ALNLEN,
+        FormatOutput.MISMATCH,
+        FormatOutput.GAPOPEN,
+        FormatOutput.QSTART,
+        FormatOutput.QEND,
+        FormatOutput.TSTART,
+        FormatOutput.TEND,
+        FormatOutput.EVALUE,
+        FormatOutput.BITS,
+    ]
+
+    def __init__(self):
+        self.state = {option: False for option in FormatOutput}
+        self.state.update({option: True for option in self.DEFAULTS})
+
+    def set_on(self, options: FormatOutput) -> None:
+        self.state[options] = True
+
+    def set_off(self, options: FormatOutput) -> None:
+        self.state[options] = False
+
+    def set_all_on(self) -> None:
+        for options in FormatOutput:
+            self.state[options] = True
+
+    def set_all_off(self) -> None:
+        for options in FormatOutput:
+            self.state[options] = False
+
+    def get_on(self) -> str:
+        # Join the names of the colors that are 'on'
+        return ','.join(option.name.lower() for option, is_on in self.state.items() if is_on)
+    
+    def get_off(self) -> str:
+        # Join the names of the colors that are 'off'
+        return ','.join(option.name.lower() for option, is_on in self.state.items() if not is_on)
+    
+    def get_state(self) -> dict[FormatOutput, bool]:
+        return self.state
+
+
+ConvertAlisOptionsDefaults: dict[str, str] = {
+    'sub_mat': "aa:3di.out,nucl:3di.out",
+    'format_mode': "0",
+    'format_output': FormatOutputController().get_on(),
+    'translation_table': "1",
+    'gap_open': "aa:10,nucl:10",
+    'gap_extend': "aa:1,nucl:1",
+    'db_output': "0",
+    'db_load_mode': "0",
+    'search_type': "0",
+    'threads': "4",
+    'compressed': "0",
     'v': "3",
 }
