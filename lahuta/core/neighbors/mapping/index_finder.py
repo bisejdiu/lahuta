@@ -43,7 +43,7 @@ class IndexFinder:
 
     @staticmethod
     def _match_tuple(pair1: NDArray[np.void], pair2: NDArray[np.void]) -> bool:
-        return all(x == y or x == "" or y == "" for x, y in zip(pair1, pair2, strict=True))
+        return all(x in (y, "") or y == "" for x, y in zip(pair1, pair2, strict=True))
 
     @staticmethod
     def _has_empty_resids(pairs: NDArray[np.void]) -> np.bool_:
@@ -73,7 +73,7 @@ class IndexFinder:
                 candidates = self._categorized_pairs[resids_key]
                 for i in candidates:
                     if self._match_tuple(self.pairs[i][0], pp1) and self._match_tuple(self.pairs[i][1], pp2):
-                        self.indices.append(i)  # noqa: PERF401
+                        self.indices.append(i)
 
     def _find_indices_using_deque(self, ppairs: NDArray[np.void]) -> None:
         candidates = deque(range(len(self.pairs)))
