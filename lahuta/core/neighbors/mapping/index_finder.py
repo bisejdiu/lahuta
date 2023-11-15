@@ -73,7 +73,7 @@ class IndexFinder:
                 candidates = self._categorized_pairs[resids_key]
                 for i in candidates:
                     if self._match_tuple(self.pairs[i][0], pp1) and self._match_tuple(self.pairs[i][1], pp2):
-                        self.indices.append(i)
+                        self.indices.append(i)  # noqa: PERF401
 
     def _find_indices_using_deque(self, ppairs: NDArray[np.void]) -> None:
         candidates = deque(range(len(self.pairs)))

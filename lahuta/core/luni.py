@@ -114,6 +114,7 @@ class Luni:
             values (NDArray[Any]): The values of the attribute.
         """
         from .topology.topattrs import AtomAttrClassHandler
+
         topattr_handler = AtomAttrClassHandler()
         topattr_handler.init_topattr(attrname, attrname)
         self._mda.universe.add_TopologyAttr(attrname, values)
@@ -301,10 +302,186 @@ class Luni:
     neighbors = compute_neighbors
 
     def filter(self, selection: str) -> Self:
-        """Filter the Luni.
+        """Filter atoms from this Luni using a selection string to a new Luni.
 
-        This method filters the Luni based on the given selection string. It returns a new Luni instance
-        containing the filtered atoms.
+        `lahuta` uses the MDAnalysis selection language to filter atoms. It defines
+        several additional keywords in addition to the standard MDAnalysis keywords.
+
+        The documentation below is taken and lightly adabpted from the MDAnalysis
+        documentation. See https://userguide.mdanalysis.org/stable/selections.html
+        for more.
+
+        The selection parser understands the following CASE SENSITIVE *keywords*:
+
+        **Simple selections**
+
+            protein, backbone, nucleic, water, ion, lipid, etc.
+                selects all atoms that belong to a standard set of residues;
+                a protein is identfied by a hard-coded set of residue names so
+                it  may not work for esoteric residues. TODO (bisejdiu): add
+                a list of all supported keywords belonging to this category.
+            segid *seg-name*
+                select by segid (as given in the topology), e.g. ``segid 4AKE``
+                or ``segid DMPC``
+            resid *residue-number-range*
+                resid can take a single residue number or a range of numbers. A
+                range consists of two numbers separated by a colon (inclusive)
+                such as ``resid 1:5``. A residue number ("resid") is taken
+                directly from the topology.
+                If icodes are present in the topology, then these will be
+                taken into account.  Ie 'resid 163B' will only select resid
+                163 with icode B while 'resid 163' will select only residue 163.
+                Range selections will also respect icodes, so 'resid 162-163B'
+                will select all residues in 162 and those in 163 up to icode B.
+            resnum *resnum-number-range*
+                resnum is the canonical residue number; typically it is set to
+                the residue id in the original PDB structure.
+            resname *residue-name*
+                select by residue name, e.g. ``resname LYS``
+            name *atom-name*
+                select by atom name (as given in the topology). Often, this is
+                force field dependent. Example: ``name CA`` (for C&alpha; atoms)
+                or ``name OW`` (for SPC water oxygen)
+            type *atom-type*
+                select by atom type; this is either a string or a number and
+                depends on the force field; it is read from the topology file
+                (e.g. the CHARMM PSF file contains numeric atom types). It has
+                non-sensical values when a PDB or GRO file is used as a topology
+            atom *seg-name*  *residue-number*  *atom-name*
+                a selector for a single atom consisting of segid resid atomname,
+                e.g. ``DMPC 1 C2`` selects the C2 carbon of the first residue of
+                the DMPC segment
+            altloc *alternative-location*
+                a selection for atoms where alternative locations are available,
+                which is often the case with high-resolution crystal structures
+                e.g. `resid 4 and resname ALA and altloc B` selects only the
+                atoms of ALA-4 that have an altloc B record.
+            moltype *molecule-type*
+                select by molecule type, e.g. ``moltype Protein_A``. At the
+                moment, only the TPR format defines the molecule type.
+            record_type *record_type*
+                for selecting either ATOM or HETATM from PDB-like files.
+                e.g. ``select_atoms('name CA and not record_type HETATM')``
+            smarts *SMARTS-query*
+                select atoms using Daylight's SMARTS queries, e.g. ``smarts
+                [#7;R]`` to find nitrogen atoms in rings. Requires RDKit.
+                All matches (max 1000) are combined as a unique match
+            chiral *R | S*
+                select a particular stereocenter. e.g. ``name C and chirality
+                S`` to select only S-chiral carbon atoms.  Only ``R`` and
+                ``S`` will be possible options but other values will not raise
+                an error.
+
+        **Boolean**
+
+            not
+                all atoms not in the selection, e.g. ``not protein`` selects
+                all atoms that aren't part of a protein
+            and, or
+                combine two selections according to the rules of boolean
+                algebra, e.g. ``protein and not resname ALA LYS``
+                selects all atoms that belong to a protein, but are not in a
+                lysine or alanine residue
+
+        **Geometric**
+
+            around *distance*  *selection*
+                selects all atoms a certain cutoff away from another selection,
+                e.g. ``around 3.5 protein`` selects all atoms not belonging to
+                protein that are within 3.5 Angstroms from the protein
+            point *x* *y* *z*  *distance*
+                selects all atoms within a cutoff of a point in space, make sure
+                coordinate is separated by spaces,
+                e.g. ``point 5.0 5.0 5.0  3.5`` selects all atoms within 3.5
+                Angstroms of the coordinate (5.0, 5.0, 5.0)
+            prop [abs] *property*  *operator*  *value*
+                selects atoms based on position, using *property*  **x**, **y**,
+                or **z** coordinate. Supports the **abs** keyword (for absolute
+                value) and the following *operators*: **<, >, <=, >=, ==, !=**.
+                For example, ``prop z >= 5.0`` selects all atoms with z
+                coordinate greater than 5.0; ``prop abs z <= 5.0`` selects all
+                atoms within -5.0 <= z <= 5.0.
+            sphzone *radius* *selection*
+                Selects all atoms that are within *radius* of the center of
+                geometry of *selection*
+            sphlayer *inner radius* *outer radius* *selection*
+                Similar to sphzone, but also excludes atoms that are within
+                *inner radius* of the selection COG
+            cyzone *externalRadius* *zMax* *zMin* *selection*
+                selects all atoms within a cylindric zone centered in the
+                center of geometry (COG) of a given selection,
+                e.g. ``cyzone 15 4 -8 protein and resid 42`` selects the
+                center of geometry of protein and resid 42, and creates a
+                cylinder of external radius 15 centered on the COG. In z, the
+                cylinder extends from 4 above the COG to 8 below. Positive
+                values for *zMin*, or negative ones for *zMax*, are allowed.
+            cylayer *innerRadius* *externalRadius* *zMax* *zMin* *selection*
+                selects all atoms within a cylindric layer centered in the
+                center of geometry (COG) of a given selection,
+                e.g. ``cylayer 5 10 10 -8 protein`` selects the center of
+                geometry of protein, and creates a cylindrical layer of inner
+                radius 5, external radius 10 centered on the COG. In z, the
+                cylinder extends from 10 above the COG to 8 below. Positive
+                values for *zMin*, or negative ones for *zMax*, are allowed.
+
+        **Connectivity**
+
+            byres *selection*
+                selects all atoms that are in the same segment and residue as
+                selection, e.g. specify the subselection after the byres keyword
+            bonded *selection*
+                selects all atoms that are bonded to selection
+                eg: ``select name H and bonded name O`` selects only hydrogens
+                bonded to oxygens
+
+        **Index**
+
+            bynum *index-range*
+                selects all atoms within a range of (1-based) inclusive indices,
+                e.g. ``bynum 1`` selects the first atom in the universe;
+                ``bynum 5:10`` selects atoms 5 through 10 inclusive. All atoms
+                in the :class:`~MDAnalysis.core.universe.Universe` are
+                consecutively numbered, and the index runs from 1 up to the
+                total number of atoms.
+            index *index-range*
+                selects all atoms within a range of (0-based) inclusive indices,
+                e.g. ``index 0`` selects the first atom in the universe;
+                ``index 5:10`` selects atoms 6 through 11 inclusive. All atoms
+                in the :class:`~MDAnalysis.core.universe.Universe` are
+                consecutively numbered, and the index runs from 0 up to the
+                total number of atoms - 1.
+
+        **Preexisting selections**
+
+            group `group-name`
+                selects the atoms in the :class:`AtomGroup` passed to the
+                function as a keyword argument named `group-name`. Only the
+                atoms common to `group-name` and the instance
+                :meth:`~MDAnalysis.core.groups.AtomGroup.select_atoms`
+                was called from will be considered, unless ``group`` is
+                preceded by the ``global`` keyword. `group-name` will be
+                included in the parsing just by comparison of atom indices.
+                This means that it is up to the user to make sure the
+                `group-name` group was defined in an appropriate
+                :class:`~MDAnalysis.core.universe.Universe`.
+            global *selection*
+                by default, when issuing
+                :meth:`~MDAnalysis.core.groups.AtomGroup.select_atoms` from an
+                :class:`~MDAnalysis.core.groups.AtomGroup`, selections and
+                subselections are returned intersected with the atoms of that
+                instance. Prefixing a selection term with ``global`` causes its
+                selection to be returned in its entirety.  As an example, the
+                ``global`` keyword allows for
+                ``lipids.select_atoms("around 10 global protein")`` --- where
+                ``lipids`` is a group that does not contain any proteins. Were
+                ``global`` absent, the result would be an empty selection since
+                the ``protein`` subselection would itself be empty. When issuing
+                :meth:`~MDAnalysis.core.groups.AtomGroup.select_atoms` from a
+                :class:`~MDAnalysis.core.universe.Universe`, ``global`` is
+                ignored.
+
+        **Dynamic selections**
+            Not tested & not documented & probably not working.
 
         Args:
             selection (str): The selection string to use for filtering.
