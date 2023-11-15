@@ -62,4 +62,3 @@ class TestConvertAlisCommand(TestBaseCommand):
     NAME = "foldseek"
     def __init__(self, options: dict[str, str]) -> None:
         super().__init__("convertalis", ["db/query", "db/target", "db/result", "x_aln_x_.8"], options)
-        
