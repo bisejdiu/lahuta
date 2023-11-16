@@ -29,10 +29,10 @@ class FoldSeekCommand(FoldSeekBaseCommand):
         if not set(required_keys).issubset(options):
             raise ValueError(f"Required arguments {required_keys} are missing.")
 
-        args = [options.pop(key) for key in required_keys]  # type: ignore
+        args: list[str] = [options.pop(key) for key in required_keys]  # type: ignore
         opts: Mapping[str, Any] = {**options_defaults, **options}
 
-        super().__init__(command_name, args, opts)
+        super().__init__("foldseek", command_name, args, opts)
 
 
 class CreateDBCommand(FoldSeekCommand):
@@ -51,14 +51,14 @@ class ConvertAlisCommand(FoldSeekCommand):
 class TestCreateDBCommand(TestBaseCommand):
     NAME = "foldseek"
     def __init__(self, options: dict[str, str]) -> None:
-        super().__init__("createdb", ["1gzm.pdb", "db/query"], options)
+        super().__init__("foldseek", "createdb", ["1gzm.pdb", "db/query"], options)
 
 class TestSearchCommand(TestBaseCommand):
     NAME = "foldseek"
     def __init__(self, options: dict[str, str]) -> None:
-        super().__init__("search", ["db/query", "db/target", "db/result", "db/search_tmp"], options)
+        super().__init__("foldseek", "search", ["db/query", "db/target", "db/result", "db/search_tmp"], options)
 
 class TestConvertAlisCommand(TestBaseCommand):
     NAME = "foldseek"
     def __init__(self, options: dict[str, str]) -> None:
-        super().__init__("convertalis", ["db/query", "db/target", "db/result", "x_aln_x_.8"], options)
+        super().__init__("foldseek", "convertalis", ["db/query", "db/target", "db/result", "x_aln_x_.8"], options)
