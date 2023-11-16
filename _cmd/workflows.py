@@ -44,7 +44,8 @@ class EasySearchWorkflow:
             "format_mode": "5",
         })
 
-        self.runner.add_command(CommandWithoutSubCommand("mkdir", ["db"]))
+        if not os.path.exists("db"):
+            self.runner.add_command(CommandWithoutSubCommand("mkdir", ["db"]))
         self.runner.add_command(create_query_db)
         self.runner.add_command(create_target_db, dependencies=[create_query_db])
         self.runner.add_command(search, dependencies=[create_target_db])
@@ -74,7 +75,6 @@ class SimpleBashCommandsWorkflow:
         self.runner = WorkflowRunner()
 
     def _main_command_loop(self):
-        # self.runner.add_command(SimpleCommand("foldseek", {"h": ""}))
         self.runner.add_command(SimpleCommand("ls"))
         self.runner.add_command(SimpleCommand("pwd"))
         self.runner.add_command(SimpleCommand("ls", {"l": ""}))

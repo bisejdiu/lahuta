@@ -54,10 +54,8 @@ class SimpleCommand(BaseCommand):
         super().__init__(command, "", [], kwargs)
             
     async def run(self):
-        output, error = await run_command_async(self.command, self.sub_command, *self.args)
-        self.output = output
-        self.error = error
-        return error == ""
+        self.output, self.error = await run_command_async(self.command, self.sub_command, *self.args)
+        return self.error == ""
 
 class CommandWithoutSubCommand(BaseCommand):
 
@@ -65,26 +63,14 @@ class CommandWithoutSubCommand(BaseCommand):
         super().__init__(command, "", required_args, kwargs)
             
     async def run(self):
-        output, error = await run_command_async(self.command, self.sub_command, *self.args)
-        self.output = output
-        self.error = error
-        return error == ""
-    
-    
-class CommandWithSubCommand(BaseCommand):
-    async def run(self):
-        output, error = await run_command_async(self.command, self.sub_command, *self.args)
-        self.output = output
-        self.error = error
-        return error == ""
-
-class FoldSeekBaseCommand(BaseCommand):
-    NAME = "foldseek"
-
-    async def run(self):
         self.output, self.error = await run_command_async(self.command, self.sub_command, *self.args)
         return self.error == ""
     
+class CommandWithSubCommand(BaseCommand):
+    async def run(self):
+        self.output, self.error = await run_command_async(self.command, self.sub_command, *self.args)
+        return self.error == ""
+
 class TestBaseCommand(BaseCommand):
     NAME = "testcommand"
     def __init__(self, command, sub_command: str, required_args: list[str], kwargs: Mapping[str, Any]) -> None:

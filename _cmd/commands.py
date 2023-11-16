@@ -1,7 +1,7 @@
 from typing import Any, Mapping, get_type_hints
 from typing_extensions import Required
 
-from base import FoldSeekBaseCommand, TestBaseCommand
+from base import CommandWithSubCommand, TestBaseCommand
 from options import (
     CreateDBOptions, 
     CreateDBOptionsDefaults, 
@@ -21,7 +21,7 @@ def get_required_keys(typed_dict: type[CLIOptions]) -> list[str]:
             required_keys.append(key)
     return required_keys
 
-class FoldSeekCommand(FoldSeekBaseCommand):
+class FoldSeekCommand(CommandWithSubCommand):
     def __init__(self, command_name: str, options: CLIOptions, options_defaults: dict[str, str], options_def: type) -> None:
         required_keys = get_required_keys(options_def)
 
