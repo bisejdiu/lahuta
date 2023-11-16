@@ -1,8 +1,8 @@
 class DependencyGraph:
     def __init__(self):
-        self.graph = {}  # Stores the graph
-        self.visited = {}  # Tracks visited nodes
-        self.stack = {}  # Tracks nodes in the current DFS path
+        self.graph = {}     # Stores the graph
+        self.visited = {}   # Tracks visited nodes
+        self.stack = {}     # Tracks nodes in the current DFS path
 
     def add_command(self, command, dependencies=None):
         self.graph[command] = dependencies or []

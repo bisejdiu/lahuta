@@ -1,7 +1,6 @@
-from asyncer import WorkflowRunner
-from base import BaseCommand, FoldSeekBaseCommand
-from createdb import CreateDBCommand, SearchCommand, ConvertAlisCommand
-from createdb import TestCreateDBCommand, TestSearchCommand, TestConvertAlisCommand
+from runner import WorkflowRunner
+from base import BaseCommand
+from commands import CreateDBCommand, SearchCommand, ConvertAlisCommand
 
 
 class EasySearchWorkflow:
@@ -19,27 +18,36 @@ class EasySearchWorkflow:
             "input_files": self.target,
             "db_out_path": "db/target",
         })
-
         search = SearchCommand(options={
             "query": "db/query",
             "target": "db/target",
             "result": "db/result",
             "search_tmp": "db/search_tmp",
             "a": "1",
+            "k": "6",
+            "mask_prob": "0.99995",
         })
-
-        convert_alis = ConvertAlisCommand(options={
+        convert_alis_fm0 = ConvertAlisCommand(options={
             "query": "db/query",
             "target": "db/target",
             "result": "db/result",
             "output": "x_aln_x_.8",
             "format_mode": "0",
         })
+        convert_alis_fm5 = ConvertAlisCommand(options={
+            "query": "db/query",
+            "target": "db/target",
+            "result": "db/result",
+            "output": "x_aln_x_.8",
+            "format_mode": "5",
+        })
+
 
         self.runner.add_command(create_query_db)
         self.runner.add_command(create_target_db, dependencies=[create_query_db])
         self.runner.add_command(search, dependencies=[create_target_db])
-        self.runner.add_command(convert_alis, dependencies=[search])
+        self.runner.add_command(convert_alis_fm0, dependencies=[search])
+        self.runner.add_command(convert_alis_fm5, dependencies=[search])
 
     def seek(self):
         self._main_command_loop()
@@ -82,6 +90,7 @@ class SimpleBashCommandsWorkflow:
             return f"Workflow failed with error: \n{self.runner.get_error()}"
 
 if __name__ == "__main__":
+    # from commands import TestCreateDBCommand, TestSearchCommand, TestConvertAlisCommand
     # runner = WorkflowRunner()
     # runner.add_command(TestCreateDBCommand(options={
     #         "input_files": "query",
@@ -106,12 +115,12 @@ if __name__ == "__main__":
     # assert runner.is_successful() is True
     # assert list(runner.get_state().values()) == ["1", "2", "3"]
     
-    # w = EasySearchWorkflow(query='1gzm.pdb', target='examples/')
-    # w.seek()
-    # print(w.output)
-
-    w = SimpleBashCommandsWorkflow()
+    w = EasySearchWorkflow(query='1gzm.pdb', target='examples/')
     w.seek()
     print(w.output)
+
+    # w = SimpleBashCommandsWorkflow()
+    # w.seek()
+    # print(w.output)
 
     # runner.add_command(FoldSeekCommand("easy-search", [""], {"h": ""}))

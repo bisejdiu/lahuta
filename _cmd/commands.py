@@ -1,4 +1,4 @@
-from typing import cast, get_type_hints
+from typing import Any, Mapping, get_type_hints
 from typing_extensions import Required
 
 from base import FoldSeekBaseCommand, TestBaseCommand
@@ -22,15 +22,15 @@ def get_required_keys(typed_dict: type[CLIOptions]) -> list[str]:
     return required_keys
 
 class FoldSeekCommand(FoldSeekBaseCommand):
-    def __init__(self, command_name: str, options: CLIOptions, options_defaults: dict[str, str], options_type: type) -> None:
-        required_keys = get_required_keys(options_type)
+    def __init__(self, command_name: str, options: CLIOptions, options_defaults: dict[str, str], options_def: type) -> None:
+        required_keys = get_required_keys(options_def)
 
         # Validate required arguments
         if not set(required_keys).issubset(options):
             raise ValueError(f"Required arguments {required_keys} are missing.")
 
         args = [options.pop(key) for key in required_keys]  # type: ignore
-        opts: CLIOptions = cast(CLIOptions, {**options_defaults, **options})
+        opts: Mapping[str, Any] = {**options_defaults, **options}
 
         super().__init__(command_name, args, opts)
 

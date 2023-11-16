@@ -7,12 +7,10 @@ FilePath = str | list[str]
 class CLIOptions(TypedDict, total=False):
     ...
 
-# CreateDBOptions & CreateDBOptionsDefaults are based on the following command:
-# foldseek createdb 1gzm.pdb ${dir}/query --chain-name-mode 0 --write-mapping 0 --mask-bfactor-threshold 0 --coord-store-mode 2 --write-lookup 1 --tar-include '.*' --tar-exclude '^$' --file-include '.*' --file-exclude '^$' --threads 4 -v 3
-
 class CreateDBOptions(CLIOptions, total=False):
     input_files: Required[FilePath]
     db_out_path: Required[str]
+    # optionals
     chain_name_mode: Literal["0", "1"]
     write_mapping: Literal["0", "1"]
     mask_bfactor_threshold: str
@@ -28,7 +26,7 @@ class CreateDBOptions(CLIOptions, total=False):
 CreateDBOptionsDefaults: dict[str, str] = {
     'chain_name_mode': "0",
     'write_mapping': "0",
-    'mask_bfactor_threshold': "0.0",
+    'mask_bfactor_threshold': "0",
     'threads': "4",
     'coord_store_mode': "2",
     'write_lookup': "1",
@@ -38,9 +36,6 @@ CreateDBOptionsDefaults: dict[str, str] = {
     'file_exclude': "^$",
     'v': "3",
 }
-
-# SearchOptions & SearchOptionsDefaults are based on the following command:
-# foldseek search ${dir}/query ${dir}/target ${dir}/result ${dir}/search_tmp -a 1 --alignment-mode 3 --comp-bias-corr 1 --gap-open aa:10,nucl:10 --gap-extend aa:1,nucl:1 -s 9.5 -k 6 --mask 0 --mask-prob 0.99995 --remove-tmp-files 1
 
 class SearchOptions(CLIOptions, total=False):
     query: Required[str]
@@ -78,10 +73,6 @@ SearchOptionsDefaults: dict[str, str] = {
     'exhaustive_search': "0",
 }
 
-# ConvertAlisOptions & ConvertAlisOptionsDefaults are based on the following two commands:
-# foldseek convertalis ${dir}/query ${dir}/target ${dir}/result aln9.m8 --sub-mat 'aa:3di.out,nucl:3di.out' --format-mode 4 --format-output query,qstart,qend,tstart,tend,evalue,bits,prob,lddt,alntmscore,qseq,tseq,qaln,taln --translation-table 1 --gap-open aa:10,nucl:10 --gap-extend aa:1,nucl:1 --db-output 0 --db-load-mode 0 --search-type 0 --threads 4 --compressed 0 -v 3
-# foldseek convertalis ${dir}/query ${dir}/target ${dir}/result aln9_ --sub-mat 'aa:3di.out,nucl:3di.out' --format-mode 5 --format-output query,target,fident,alnlen,mismatch,gapopen,qstart,qend,tstart,tend,evalue,bits --translation-table 1 --gap-open aa:10,nucl:10 --gap-extend aa:1,nucl:1 --db-output 0 --db-load-mode 0 --search-type 0 --threads 4 --compressed 0 -v 3
-
 class ConvertAlisOptions(CLIOptions, total=False):
     query: Required[str]
     target: Required[str]
@@ -101,11 +92,6 @@ class ConvertAlisOptions(CLIOptions, total=False):
     compressed: Literal["0", "1"]
     v: Literal["0", "1", "2", "3"]
 
-# query,target,evalue,gapopen,pident,fident,nident,qstart,qend,qlen
-                    #    tstart,tend,tlen,alnlen,raw,bits,cigar,qseq,tseq,qheader,theader,qaln,taln,mismatch,qcov,tcov
-                    #    qset,qsetid,tset,tsetid,taxid,taxname,taxlineage,
-                    #    lddt,lddtfull,qca,tca,t,u,qtmscore,ttmscore,alntmscore,rmsd,prob
-                    #    qcomplextmscore,tcomplextmscore,assignid
 class FormatOutput(Enum):
     QUERY = auto()
     TARGET = auto()
