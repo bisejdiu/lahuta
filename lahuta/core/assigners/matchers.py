@@ -18,10 +18,10 @@ import numpy as np
 from openbabel import openbabel as ob
 from scipy.sparse import dok_matrix
 
+from lahuta._types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 from lahuta.config.atoms import PROTEIN_RESIDUES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
 from lahuta.config.smarts import SmartsPatternRegistry
-from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 class SmartsMatcherBase(ABC):

@@ -14,7 +14,7 @@ from typing_extensions import TypeAlias
 
 from lahuta.contacts import AtomPlaneContacts, F
 from lahuta.core.luni import Luni
-from lahuta.core.neighbor_finder import NeighborSearch
+from lahuta.core.mda_backend import MDAnalysisNeighborSearch
 from lahuta.core.neighbors import NeighborPairs
 
 from ._ctx_mngrs import tqdm_joblib
@@ -292,7 +292,7 @@ class LahutaTrajectoryContacts:
         return blocks
 
     def _per_frame_compute(self, frame_index: int, result: FrameContacts) -> FrameContacts:
-        neighbors = NeighborSearch(self.luni.to("mda"))
+        neighbors = MDAnalysisNeighborSearch(self.luni.to("mda"))
         pairs, distances = neighbors.compute(
             radius=self.radius,
             res_dif=self.res_dif,

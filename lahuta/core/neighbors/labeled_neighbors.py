@@ -13,7 +13,7 @@ import pandas as pd
 from numpy.typing import NDArray
 from typing_extensions import Self
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.msa.encoder import encode_labels
 from lahuta.utils import array_utils as au
 

@@ -1,10 +1,10 @@
 """Handle atom related operations, including finding neighbors and preparation for computation.
 
-This module contains the NeighborSearch class that handles atom related operations, 
+This module contains the MDAnalysisNeighborSearch class that handles atom related operations, 
 including finding neighbors and preparation for computation.
 
 Classes:
-    NeighborSearch: Class to handle atom related operations, including finding neighbors 
+    MDAnalysisNeighborSearch: Class to handle atom related operations, including finding neighbors 
                     and preparation for computation.
 
 """
@@ -15,15 +15,11 @@ import numpy as np
 from MDAnalysis.lib.nsgrid import FastNS
 from numpy.typing import NDArray
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.core.neighbors import BaseNeighborSearch, PairsDistances
 from lahuta.utils.mda import mda_psuedobox_from_atomgroup
 
-IndexPairs = NDArray[np.int32]
-Distances = NDArray[np.float32]
-PairsDistances = tuple[IndexPairs, Distances]
 
-
-class NeighborSearch:
+class MDAnalysisNeighborSearch(BaseNeighborSearch):
     """Handle atom related operations, including finding neighbors and preparation for computation.
 
     The class provides methods to find neighbors of each atom in the universe and to remove pairs of atoms
@@ -37,11 +33,6 @@ class NeighborSearch:
         ag_no_h (AtomGroup): Atom group of a universe excluding hydrogen atoms.
         og_resids (np.ndarray): The residue IDs of each atom in the universe.
     """
-
-    def __init__(self, mda: AtomGroupType) -> None:
-        self.ag_no_h = mda.select_atoms("not name H*")
-        self.og_resids = mda.universe.atoms.resids
-        self.chain_ids = mda.universe.atoms.chainIDs
 
     def compute(
         self,

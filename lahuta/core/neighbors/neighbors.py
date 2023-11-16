@@ -10,17 +10,18 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
-from lahuta.core.index_finder import IndexFinder
 from lahuta.utils import array_utils as au
+
+from .mapping import AtomMapper, IndexFinder, LabeledNeighborPairsBuilder
 
 if TYPE_CHECKING:
     from Bio.Seq import Seq
     from pandas import DataFrame
 
-    from lahuta.core.labeled_neighbors import LabeledNeighborPairs
-    from lahuta.core.luni import Luni
-    from lahuta.lahuta_types.mdanalysis import AtomGroupType
+    from lahuta import Luni
+    from lahuta._types.mdanalysis import AtomGroupType
+
+    from . import LabeledNeighborPairs
 
 
 __all__ = ["NeighborPairs"]

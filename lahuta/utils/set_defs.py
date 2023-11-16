@@ -5,7 +5,8 @@ This module defines theorems that can be checked for labeled neighbor pairs.
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+from lahuta.core.neighbors import LabeledNeighborPairs
+from lahuta.core.neighbors.mapping import LabeledNeighborPairsBuilder
 
 
 def check_union(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
@@ -144,8 +145,6 @@ def check_disjoint(s1: LabeledNeighborPairs, s2: LabeledNeighborPairs) -> bool:
     Returns:
         bool: True if the theorem holds, False otherwise.
     """
-    from lahuta.core.builder import LabeledNeighborPairsBuilder
-
     empty = s1.create_new(np.empty((0, 2), dtype=LabeledNeighborPairsBuilder.DTYPE))
     m1_subset = s1.create_new(random_subset(s1))
     m1_altered = m1_subset - s2

@@ -28,11 +28,12 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from lahuta.core.arc import ARC, Atoms, Chains, Residues
-from lahuta.core.obmol import OBMol
-from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
-from lahuta.lahuta_types.openbabel import MolType
+from lahuta._types.mdanalysis import AtomGroupType, UniverseType
+from lahuta._types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
+
+from .arc import ARC, Atoms, Chains, Residues
+from .obmol import OBMol
 
 
 class BaseLoader(ABC):

@@ -1,12 +1,12 @@
 """The `core` module contains the core functionality of Lahuta."""
 
-from .arc import ARC, Atom, Atoms, Chains, Residues
 from .luni import Luni
-from .neighbor_finder import NeighborSearch
-from .neighbors import NeighborPairs
-from .selections import create_dssp_selection_classes, create_restype_selection_classes
+from .neighbors.backends.mda_backend import MDAnalysisNeighborSearch
+from .neighbors.neighbors import NeighborPairs
+from .topology.arc import ARC
+from .topology.selections import create_dssp_selection_classes, create_restype_selection_classes
 
-__all__ = ["Luni", "NeighborPairs", "NeighborSearch", "ARC", "Atoms", "Residues", "Chains", "Atom"]
+__all__ = ["Luni", "NeighborPairs", "MDAnalysisNeighborSearch", "ARC"]
 
 create_restype_selection_classes()
 create_dssp_selection_classes()

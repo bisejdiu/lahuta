@@ -33,16 +33,16 @@ The `NeighborPairs` class in Lahuta is designed to facilitate the transition fro
     3. The `pairs` attribute contains an array of all pairs of atom indices that are within the specified cutoff distance and satisfy the residue difference constraint.
     4. The `distances` attribute contains an array of all distances between the pairs of atoms in the `pairs` attribute.
 
-??? example "Example - Using `NeighborSearch` to compute Neighobrs"
+??? example "Example - Using `MDAnalysisNeighborSearch` to compute Neighobrs"
     ```py
-    from lahuta.core.neighbor_finder import NeighborSearch
+    from lahuta.core.mda_backend import MDAnalysisNeighborSearch
 
     luni.ready()
-    neighbors = NeighborSearch(luni.to("mda")) # (1)!
+    neighbors = MDAnalysisNeighborSearch(luni.to("mda")) # (1)!
     pairs, distances = neighbors.compute() # (2)!
     ```
 
-    1. The `NeighborSearch` class is initialized by passing an `MDAnalysis.AtomGroup` object to it.
+    1. The `MDAnalysisNeighborSearch` class is initialized by passing an `MDAnalysis.AtomGroup` object to it.
     2. The `compute` method is used to compute neighbors. 
 
 ## `pairs` and `distances` 

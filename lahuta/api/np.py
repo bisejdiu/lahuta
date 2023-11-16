@@ -1,8 +1,7 @@
 """API for NeighborPairs objects."""
 from typing import TypeVar, overload
 
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
-from lahuta.core.neighbors import NeighborPairs
+from lahuta.core.neighbors import LabeledNeighborPairs, NeighborPairs
 
 __all__ = [
     "union",

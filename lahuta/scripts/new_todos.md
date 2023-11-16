@@ -13,7 +13,11 @@
 - [x] Luni now accepts Path objects. Update tests to reflect this (avoid casting to str). 
 - [x] For custom DSSP selection, ensure we also take into account the chainID.
 - [x] Update MSA mappings to include chainID information.
-- [ ] Add selection string docs
-- [ ] Add tests for the filter method
-- [ ] How does dssp handle MD files?
+- [x] Tests for DSSP API 
+- [ ] Add docs to the filter method 
+- [x] Add tests for the filter method
+- [x] How does dssp handle MD files?
   - It seems to only consider protein residues and ignore everything else. 
+  - Test that the DSSP API works with MD files.
+
+- [ ] Implement a `pairwise_distances` method for Luni.

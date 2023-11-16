@@ -8,8 +8,12 @@ from MDAnalysis.core.selection import Selection
 from MDAnalysis.core.topologyattrs import Resnames
 from numpy.typing import NDArray
 
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.analysis.dssp import DSSP, DSSPParser
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta.config.models.ions import IONS
+from lahuta.config.models.lipids import LIPIDS
+from lahuta.config.models.sugars import SUGARS
+from lahuta.config.models.water import WATERS
 
 
 class ResTypeSelectionTokens(Enum):
@@ -29,12 +33,12 @@ class ResTypeSelectionTokens(Enum):
     PURINE = ("ADE", "A", "GUA", "G")
     PYRIMIDINE = ("CYT", "C", "THY", "T", "URI", "U")
     SMALL = ("ALA", "GLY", "SER")
-    # fmt: off
-    WATER = (
-        "H2O", "HH0", "OHH", "HOH", "OH2", "SOL", "WAT", "TIP", "TIP2", 
-        "TIP3", "TIP4", "W", "DOD", "D3O", "SPC", "SPCE", "SPC/E"
-    )
 
+    # Components
+    WATER = tuple(WATERS)
+    ION = tuple(IONS)
+    LIPID = tuple(LIPIDS)
+    SUGAR = tuple(SUGARS)
 
 class SecondaryStructureTokens(Enum):
     """Secondary structure tokens."""
@@ -142,3 +146,13 @@ def create_dssp_selection_classes() -> list[type[Selection]]:
         types.append(sel_cls)
 
     return types
+
+class LigandSelection(Selection): # type: ignore
+    """Selection for ligands."""
+
+    token: str = "ligand"
+
+    def _apply(self, group: AtomGroupType) -> AtomGroupType:
+
+        exclusion_elements = ["protein", "nucleic", "water", "ion", "lipid", "sugar"]
+        return group.select_atoms(f"not ({' or '.join(exclusion_elements)})")

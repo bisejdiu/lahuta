@@ -6,7 +6,7 @@ import pytest
 import numpy as np
 
 import lahuta.utils.set_defs as sd
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+from lahuta.core.neighbors import LabeledNeighborPairs
 from tests.test_nb_setdefs import setup_data
 
 T = tuple[LabeledNeighborPairs, LabeledNeighborPairs]

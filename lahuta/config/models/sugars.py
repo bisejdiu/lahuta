@@ -4,7 +4,7 @@
 # @author molstar/cli/chem-comp-dict/create-saccharides
 
 
-SUGAR_NAMES = {
+SUGARS = {
     "145",
     "147",
     "149",

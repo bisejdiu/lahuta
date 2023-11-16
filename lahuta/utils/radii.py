@@ -10,7 +10,7 @@ from MDAnalysis.topology.tables import vdwradii as MDA_VDW_RADII
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.lahuta_types.openbabel import MolType
+from lahuta._types.openbabel import MolType
 
 
 def assign_radii(mol: MolType) -> NDArray[np.float32]:

@@ -3,7 +3,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta._types.mdanalysis import AtomGroupType
 
 
 def mda_psuedobox_from_atomgroup(

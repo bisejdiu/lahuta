@@ -44,10 +44,10 @@ from typing import TYPE_CHECKING, Any, Iterator, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType, UniverseType
+from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 
 if TYPE_CHECKING:
-    from lahuta.core._loaders import GemmiLoader, TopologyLoader
+    from .loaders import GemmiLoader, TopologyLoader
 
 
 class Atoms:

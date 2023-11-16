@@ -27,8 +27,9 @@ import pandas as pd
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.core.arc import ARC
-from lahuta.lahuta_types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
+from lahuta._types.openbabel import MolAtomType, MolResType, MolType, MolTypeWrapper
+
+from . import ARC
 
 
 class OBMol:

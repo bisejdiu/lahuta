@@ -3,7 +3,7 @@
 # Code-generated lipid params file. Names extracted from Martini FF lipids itp.
 # @author molstar/lipid-params cli
 
-LIPID_NAMES = {
+LIPIDS = {
     "DAPC",
     "DBPC",
     "DFPC",
