@@ -1,11 +1,14 @@
 from enum import Enum, auto
 from typing import Literal
-from typing_extensions import TypedDict, Required
+
+from typing_extensions import Required, TypedDict
 
 FilePath = str | list[str]
 
+
 class CLIOptions(TypedDict, total=False):
     ...
+
 
 class CreateDBOptions(CLIOptions, total=False):
     input_files: Required[FilePath]
@@ -23,19 +26,21 @@ class CreateDBOptions(CLIOptions, total=False):
     file_exclude: str
     v: Literal["0", "1", "2", "3"]
 
+
 CreateDBOptionsDefaults: dict[str, str] = {
-    'chain_name_mode': "0",
-    'write_mapping': "0",
-    'mask_bfactor_threshold': "0",
-    'threads': "4",
-    'coord_store_mode': "2",
-    'write_lookup': "1",
-    'tar_include': ".*",
-    'tar_exclude': "^$",
-    'file_include': ".*",
-    'file_exclude': "^$",
-    'v': "3",
+    "chain_name_mode": "0",
+    "write_mapping": "0",
+    "mask_bfactor_threshold": "0",
+    "threads": "4",
+    "coord_store_mode": "2",
+    "write_lookup": "1",
+    "tar_include": ".*",
+    "tar_exclude": "^$",
+    "file_include": ".*",
+    "file_exclude": "^$",
+    "v": "3",
 }
+
 
 class SearchOptions(CLIOptions, total=False):
     query: Required[str]
@@ -57,21 +62,23 @@ class SearchOptions(CLIOptions, total=False):
     max_seqs: str
     exhaustive_search: Literal["0", "1"]
 
+
 SearchOptionsDefaults: dict[str, str] = {
-    'a': "0",
-    'alignment_mode': "3",
-    'alignment_output_mode': "0",
-    'comp_bias_corr': "1",
-    'gap_open': "aa:10,nucl:10",
-    'gap_extend': "aa:1,nucl:1",
-    's': "9.5",
-    'k': "0",
-    'mask': "0",
-    'mask_prob': "1.000",
-    'remove_tmp_files': "1",
-    'max_seqs': "1000",
-    'exhaustive_search': "0",
+    "a": "0",
+    "alignment_mode": "3",
+    "alignment_output_mode": "0",
+    "comp_bias_corr": "1",
+    "gap_open": "aa:10,nucl:10",
+    "gap_extend": "aa:1,nucl:1",
+    "s": "9.5",
+    "k": "0",
+    "mask": "0",
+    "mask_prob": "1.000",
+    "remove_tmp_files": "1",
+    "max_seqs": "1000",
+    "exhaustive_search": "0",
 }
+
 
 class ConvertAlisOptions(CLIOptions, total=False):
     query: Required[str]
@@ -91,6 +98,7 @@ class ConvertAlisOptions(CLIOptions, total=False):
     threads: str
     compressed: Literal["0", "1"]
     v: Literal["0", "1", "2", "3"]
+
 
 class FormatOutput(Enum):
     QUERY = auto()
@@ -141,8 +149,8 @@ class FormatOutput(Enum):
     TCOMPLEXTMSCORE = auto()
     ASSIGNID = auto()
 
-class FormatOutputController:
 
+class FormatOutputController:
     DEFAULTS = [
         FormatOutput.QUERY,
         FormatOutput.TARGET,
@@ -178,27 +186,27 @@ class FormatOutputController:
 
     def get_on(self) -> str:
         # Join the names of the colors that are 'on'
-        return ','.join(option.name.lower() for option, is_on in self.state.items() if is_on)
-    
+        return ",".join(option.name.lower() for option, is_on in self.state.items() if is_on)
+
     def get_off(self) -> str:
         # Join the names of the colors that are 'off'
-        return ','.join(option.name.lower() for option, is_on in self.state.items() if not is_on)
-    
+        return ",".join(option.name.lower() for option, is_on in self.state.items() if not is_on)
+
     def get_state(self) -> dict[FormatOutput, bool]:
         return self.state
 
 
 ConvertAlisOptionsDefaults: dict[str, str] = {
-    'sub_mat': "aa:3di.out,nucl:3di.out",
-    'format_mode': "0",
-    'format_output': FormatOutputController().get_on(),
-    'translation_table': "1",
-    'gap_open': "aa:10,nucl:10",
-    'gap_extend': "aa:1,nucl:1",
-    'db_output': "0",
-    'db_load_mode': "0",
-    'search_type': "0",
-    'threads': "4",
-    'compressed': "0",
-    'v': "3",
+    "sub_mat": "aa:3di.out,nucl:3di.out",
+    "format_mode": "0",
+    "format_output": FormatOutputController().get_on(),
+    "translation_table": "1",
+    "gap_open": "aa:10,nucl:10",
+    "gap_extend": "aa:1,nucl:1",
+    "db_output": "0",
+    "db_load_mode": "0",
+    "search_type": "0",
+    "threads": "4",
+    "compressed": "0",
+    "v": "3",
 }
