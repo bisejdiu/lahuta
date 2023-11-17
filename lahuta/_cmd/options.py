@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Literal
+from typing import ClassVar, Literal
 
 from typing_extensions import Required, TypedDict
 
@@ -151,7 +151,7 @@ class FormatOutput(Enum):
 
 
 class FormatOutputController:
-    DEFAULTS = [
+    DEFAULTS: ClassVar[list[FormatOutput]] = [
         FormatOutput.QUERY,
         FormatOutput.TARGET,
         FormatOutput.FIDENT,
@@ -166,7 +166,7 @@ class FormatOutputController:
         FormatOutput.BITS,
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.state = {option: False for option in FormatOutput}
         self.state.update({option: True for option in self.DEFAULTS})
 
