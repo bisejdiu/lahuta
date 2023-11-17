@@ -18,10 +18,10 @@ import numpy as np
 from openbabel import openbabel as ob
 from scipy.sparse import dok_matrix
 
-from lahuta.config.atoms import STANDARD_AMINO_ACIDS
+from lahuta._types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
+from lahuta.config.atoms import PROTEIN_RESIDUES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES as ATypes
 from lahuta.config.smarts import SmartsPatternRegistry
-from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 class SmartsMatcherBase(ABC):
@@ -79,7 +79,7 @@ class SmartsMatcher(SmartsMatcherBase):
                 for match in matches:
                     atom = mol.GetAtom(match)
 
-                    if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
+                    if atom.GetResidue().GetName() not in PROTEIN_RESIDUES:
                         atom_types[atom.GetId(), ATypes[atom_type.name]] = 1
 
         return atom_types
@@ -159,7 +159,7 @@ class ParallelSmartsMatcher(SmartsMatcherBase):
                     matches = future.result()
                     for match, atype in matches:
                         atom = mol.GetAtom(match)
-                        if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
+                        if atom.GetResidue().GetName() not in PROTEIN_RESIDUES:
                             atom_types[atom.GetIdx() - 1, atype] = 1
 
         return atom_types

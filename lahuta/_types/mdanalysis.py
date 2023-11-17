@@ -49,6 +49,10 @@ class ResidueGroupType(Protocol):
     def resindices(self) -> NDArray[np.int_]:
         ...
 
+    @property
+    def n_residues(self) -> int:
+        ...
+
     def __iter__(self) -> Any:
         ...
 
@@ -88,6 +92,10 @@ class AtomGroupType(Protocol):
         ...
 
     @property
+    def n_segments(self) -> int:
+        ...
+
+    @property
     def names(self) -> NDArray[np.str_]:
         ...
 
@@ -124,7 +132,7 @@ class AtomGroupType(Protocol):
         ...
 
     @property
-    def chainIDs(self) -> NDArray[np.str_]:
+    def chainIDs(self) -> NDArray[np.int32]:
         ...
 
     @property
@@ -148,7 +156,7 @@ class AtomGroupType(Protocol):
     def __new__(cls, *args: Any, **kwargs: Any) -> "AtomGroupType":
         ...
 
-    def __getitem__(self, index: int | slice | NDArray[np.int32]) -> "AtomGroupType":
+    def __getitem__(self, index: int | slice | NDArray[np.int32] | NDArray[np.bool_]) -> "AtomGroupType":
         ...
 
     def __len__(self) -> int:
@@ -174,6 +182,10 @@ class UniverseType(Protocol):
     def trajectory(self) -> "TrajectoryType":
         ...
 
+    @property
+    def _topology(self) -> Any:
+        ...
+
     def select_atoms(self, selection: str) -> "AtomGroupType":
         ...
 
@@ -184,6 +196,14 @@ class UniverseType(Protocol):
         ...
 
     def load_new(self, filenames: tuple[str, ...], **kwargs: Any) -> None:
+        ...
+
+    @property
+    def filename(self) -> str:
+        ...
+
+    @filename.setter
+    def filename(self, filename: str) -> None:
         ...
 
     def __iter__(self) -> Any:

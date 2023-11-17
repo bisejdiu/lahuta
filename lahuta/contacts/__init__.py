@@ -7,6 +7,7 @@ compute interactions between atoms and planes, as well as between planes themsel
 """
 from .aromatic import AromaticContacts
 from .atom_plane import AtomPlaneContacts, carbon_pi, cation_pi, donor_pi, sulphur_pi
+from .base import ContactAnalysis
 from .carbon_pi import CarbonPi
 from .carbonyl import CarbonylContacts
 from .cation_pi import CationPi
@@ -34,6 +35,7 @@ from .sulphur_pi import SulphurPi
 from .vdw import VanDerWaalsContacts
 
 __all__ = [
+    "ContactAnalysis",
     "aromatic_neighbors",
     "carbonyl_neighbors",
     "covalent_neighbors",

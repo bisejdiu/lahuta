@@ -9,9 +9,11 @@ import pandas as pd
 from Bio.Seq import Seq
 from numpy.typing import NDArray
 
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta._types.mdanalysis import AtomGroupType
+from lahuta.core.neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
+
+__all__ = ["AtomMapper", "LabeledNeighborPairsBuilder"]
 
 
 class AtomMapper:
@@ -109,7 +111,9 @@ class LabeledNeighborPairsBuilder:
 
     """
 
-    DTYPE = np.dtype({"names": ["names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25"]})
+    DTYPE = np.dtype(
+        {"names": ["chain_ids", "resids", "resnames", "names"], "formats": ["<U25", "<U25", "<U25", "<U25"]}
+    )
 
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
@@ -128,9 +132,10 @@ class LabeledNeighborPairsBuilder:
         atoms = self.atom_mapper.atoms
 
         data = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atom_mapper.atoms.n_atoms)
-        data["names"] = atoms.names
+        data["chain_ids"] = atoms.chainIDs
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
+        data["names"] = atoms.names
 
         return LabeledNeighborPairs(data[pairs])
 

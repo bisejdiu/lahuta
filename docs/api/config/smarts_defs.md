@@ -1,4 +1,4 @@
-:::lahuta.config._smart_strings
+:::lahuta.config.smarts_patterns
     options:
         members:
             - AMIDE_SMARTS

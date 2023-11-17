@@ -3,7 +3,7 @@
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
+from lahuta._types.mdanalysis import AtomGroupType
 
 
 def mda_psuedobox_from_atomgroup(
@@ -28,8 +28,9 @@ def mda_psuedobox_from_atomgroup(
     lmax: float = ag.positions.max(axis=0)
     lmin: float = ag.positions.min(axis=0)
     pseudobox = np.zeros(6, dtype=np.float32)
-    lengths = 1.1 * (lmax - lmin)
-    lengths = np.maximum(lengths, 2 * cutoff)
+    # lengths = 1.1 * (lmax - lmin)
+    lengths = (lmax - lmin) + 2 * cutoff
+    # lengths = np.maximum(lengths, 2 * cutoff)
     pseudobox = np.zeros(6, dtype=np.float32)
     pseudobox[:3] = lengths
     pseudobox[3:] = 90.0

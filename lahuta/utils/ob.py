@@ -4,7 +4,7 @@ import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.lahuta_types.openbabel import MolType, ObRingType, ObVector3Wrapper
+from lahuta._types.openbabel import MolType, ObRingType, ObVector3Wrapper
 
 
 def get_bonded_atoms(mol: MolType) -> NDArray[np.int32]:

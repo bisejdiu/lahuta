@@ -5,7 +5,7 @@ from _pytest.fixtures import FixtureRequest
 
 import lahuta.utils.set_defs as sd
 from lahuta import Luni
-from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+from lahuta.core.neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
 
@@ -27,18 +27,17 @@ def setup_data(request: FixtureRequest) -> T:
     s5_data_path = Path(__file__).parent / s5_data
     fasta_data_path = Path(__file__).parent / fasta_data
 
-    b2u = Luni(str(b2_data_path))
-    s5u = Luni(str(s5_data_path))
-    ns_b2 = b2u.compute_neighbors(res_dif=2)
-    ns_s5 = s5u.compute_neighbors(res_dif=2)
-    parser = MSAParser(str(fasta_data_path))
-    seq_id_b2 = parser.seq_ids[0]
-    seq_b2 = parser.sequences[seq_id_b2]
-    seq_id_s5 = parser.seq_ids[1]
-    seq_s5 = parser.sequences[seq_id_s5]
+    b2u = Luni(b2_data_path)
+    s5u = Luni(s5_data_path)
+    ns_b2 = b2u.neighbors(res_dif=2)
+    ns_s5 = s5u.neighbors(res_dif=2)
+    parser = MSAParser(fasta_data_path)
 
-    s1 = ns_b2.map(seq_b2)
-    s2 = ns_s5.map(seq_s5)
+    seq_id_b2 = parser.seq_ids[0]
+    seq_id_s5 = parser.seq_ids[1]
+
+    s1 = ns_b2.map(parser.sequences[seq_id_b2])
+    s2 = ns_s5.map(parser.sequences[seq_id_s5])
 
     return s1, s2
 

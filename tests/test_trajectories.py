@@ -11,7 +11,7 @@ from lahuta import Luni
 
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.lahuta_types.mdanalysis import UniverseType
+from lahuta._types.mdanalysis import UniverseType
 
 
 pytestmark = pytest.mark.trajs
@@ -75,7 +75,7 @@ class UniverseWrapper:
 
         self.u_ref = u_ref
         self.u = Luni(self.mda_u.select_atoms(selection).atoms)
-        self.u.ready()
+        self.u.assing_atom_types()
 
 
 @pytest.fixture(scope="session")

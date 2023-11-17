@@ -33,7 +33,7 @@ class FullPlotter(BasePlotter):
 
         plt.xlabel("Atom Indices")
         plt.ylabel("Atom Indices")
-        plt.show()
+        plt.show() # type: ignore
 
     def _add_outlines(self, x_offset: np.int32, y_offset: np.int32) -> None:
         unique_x = np.unique(self.pairs[:, 0]) - x_offset
@@ -74,9 +74,9 @@ class MatchingIndicesPlotter(BasePlotter):
             x_tick_positions, x_tick_labels = self.get_ticks_and_labels(x_indices, n_points)
             y_tick_positions, y_tick_labels = self.get_ticks_and_labels(y_indices, n_points)
 
-            plt.xticks(ticks=x_tick_positions, labels=x_tick_labels)
-            plt.yticks(ticks=y_tick_positions, labels=y_tick_labels)
+            plt.xticks(ticks=x_tick_positions, labels=x_tick_labels) # type: ignore
+            plt.yticks(ticks=y_tick_positions, labels=y_tick_labels) # type: ignore
 
         plt.xlabel("Atom Indices")
         plt.ylabel("Atom Indices")
-        plt.show()
+        plt.show() # type: ignore

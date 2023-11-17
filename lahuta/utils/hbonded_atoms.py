@@ -4,7 +4,7 @@ import numpy as np
 from openbabel import openbabel as ob
 from scipy.sparse import csr_matrix, dok_matrix
 
-from lahuta.lahuta_types.openbabel import MolType
+from lahuta._types.openbabel import MolType
 
 
 def find_hydrogen_bonded_atoms(mol: MolType, n_atoms: int) -> csr_matrix:

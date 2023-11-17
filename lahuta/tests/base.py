@@ -28,8 +28,8 @@ class BaseFile:
         return self.local_path
 
     @property
-    def file_loc(self) -> Path:
-        return self.file_path
+    def file_loc(self) -> str:
+        return str(self.file_path)
 
     def _download_file(self) -> None:
         logging.info("Downloading %s from %s", self.FILE_NAME, self.URL)

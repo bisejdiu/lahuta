@@ -43,7 +43,7 @@ class IndexFinder:
 
     @staticmethod
     def _match_tuple(pair1: NDArray[np.void], pair2: NDArray[np.void]) -> bool:
-        return all(x == y or x == "" or y == "" for x, y in zip(pair1, pair2, strict=True))  # noqa: PLR1714
+        return all(x in (y, "") or y == "" for x, y in zip(pair1, pair2, strict=True))
 
     @staticmethod
     def _has_empty_resids(pairs: NDArray[np.void]) -> np.bool_:

@@ -6,29 +6,23 @@ methods to manipulate, analyze, and export these pairs.
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy as np
-import pandas as pd
-from Bio.Seq import Seq
 from numpy.typing import NDArray
-from scipy.sparse import csc_array
+from typing_extensions import Self
 
-from lahuta.config.defaults import CONTACTS
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.core.builder import AtomMapper, LabeledNeighborPairsBuilder
-from lahuta.core.helpers import get_class_attributes
-from lahuta.core.index_finder import IndexFinder
+from lahuta.utils import array_utils as au
+
+from .mapping import AtomMapper, IndexFinder, LabeledNeighborPairsBuilder
 
 if TYPE_CHECKING:
-    from lahuta.core.labeled_neighbors import LabeledNeighborPairs
+    from Bio.Seq import Seq
+    from pandas import DataFrame
 
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.lahuta_types.openbabel import MolType
-from lahuta.utils import array_utils as au
-from lahuta.utils.hbonded_atoms import find_hydrogen_bonded_atoms
-from lahuta.viz.contact_matrix import ContactMap
-from lahuta.writers.exporters import VMDExporter
-from lahuta.writers.frame_writer import DataFrameWriter
+    from lahuta import Luni
+    from lahuta._types.mdanalysis import AtomGroupType
 
-from ._hbond_handler import HBondHandler
+    from . import LabeledNeighborPairs
+
 
 __all__ = ["NeighborPairs"]
 
@@ -47,11 +41,7 @@ class NeighborPairs:
     designed to be extensible and supports the addition of custom annotations to the pairs.
 
     Args:
-        mda (AtomGroupType): The group of atoms under consideration.
-        mol (MolType): The molecule under consideration.
-        atom_types (csc_array): A sparse matrix containing the atom types.
-        pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
-        distances (NDArray[np.float32]): A 1D numpy array of distances between the pairs of atoms.
+        luni (Luni): A Luni object containing the structure.
 
     Attributes:
         pairs (NDArray[np.int32]): A 2D numpy array of pairs of atom indices that are neighbors.
@@ -61,28 +51,34 @@ class NeighborPairs:
         partner2 (AtomGroupType): The second column of the pairs of atoms.
         indices (NDArray[np.int32]): A 2D numpy array of the indices of the pairs of atoms.
 
+    Examples:
+        ``` py
+        >>> from lahuta import Luni, NeighborPairs
+        >>> luni = Luni("path/to/structure.pdb")
+        >>> np = NeighborPairs(luni)
+        >>> np.set_neighbors(pairs, distances)
+        >>> np.pairs
+        [[1, 2], [3, 4]]
+        >>> np.distances
+        [1.0, 2.0]
+        >>> np.annotations
+        {}
+        >>> np.partner1
+        <AtomGroup with 2 atoms>
+        >>> np.partner2
+        <AtomGroup with 2 atoms>
+        >>> np.indices
+        [[1, 2], [3, 4]]
+        ```
     """
 
-    def __init__(
-        self,
-        mda: AtomGroupType,
-        mol: MolType,
-        atom_types: csc_array,
-        pairs: NDArray[np.int32],
-        distances: NDArray[np.float32],
-    ):
-        self.mda = mda
-        self.mol = mol
-        self.atoms = self.mda.atoms.universe.atoms
-        self.atom_types = atom_types
+    def __init__(self, luni: "Luni"):
+        """Initialize the NeighborPairs object."""
+        self.luni = luni
+        self.atoms = luni.to("mda").universe.atoms
 
-        self._validate_inputs(pairs, distances)
-        self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
-        self._remapped: Optional[NDArray[np.str_]] = None
-
-        self.hbond_array = find_hydrogen_bonded_atoms(self.mol, self.atoms.n_atoms)
-        self.hbond_handler = HBondHandler(self.atoms, self.hbond_array)
-        self.hbond_angles: NDArray[np.float32] = np.array([])
+        self._pairs = np.array([], dtype=np.int32).reshape(0, 2)
+        self._distances = np.array([], dtype=np.float32)
         self._annotations: dict[str, NDArray[Any]] = {}
 
     def _validate_inputs(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
@@ -140,17 +136,17 @@ class NeighborPairs:
 
         return pairs[indices], distances[indices]
 
-    def _get_pair_column(self, partner: int) -> AtomGroupType:
+    def _get_pair_column(self, partner: int) -> "AtomGroupType":
         """Return the column of the pair of atoms depending on the value of partner."""
         return self.atoms[self.pairs[:, partner - 1]]
 
-    def _get_partners(self, partner: int) -> tuple[AtomGroupType, AtomGroupType]:
+    def get_partners(self, partner: int) -> tuple["AtomGroupType", "AtomGroupType"]:
         """Return the columns of the pair of atoms depending on the value of partner."""
         partner2 = 1 if partner == 2 else 2
 
         return self._get_pair_column(partner), self._get_pair_column(partner2)
 
-    def type_filter(self, atom_type: str, partner: int) -> "NeighborPairs":
+    def type_filter(self, atom_type: str, partner: int) -> Self:
         """Filter pairs based on atom types.
 
         The method selects pairs from the NeighborPairs object where the atoms have the specified type.
@@ -177,16 +173,16 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
-        nonzeros: NDArray[np.int32] = self.atom_types.getcol(atom_type_col_num).nonzero()[0]
+        nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)
 
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
     def index_filter(
         self,
         indices: NDArray[np.int32],
         partner: int,
-    ) -> "NeighborPairs":
+    ) -> Self:
         """Select pairs based on the atom indices.
 
         The method selects pairs from the NeighborPairs object where the atoms have the specified indices.
@@ -200,9 +196,9 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
         mask = np.in1d(self.pairs[:, partner - 1], indices)
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def distance_filter(self, distance: float) -> "NeighborPairs":
+    def distance_filter(self, distance: float) -> Self:
         """Select pairs based on the distance.
 
         The method selects pairs from the NeighborPairs object where the distances between the atoms are
@@ -215,9 +211,9 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the distance filter.
         """
         mask = self.distances <= distance
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> "NeighborPairs":
+    def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> Self:
         """Select pairs based on a numeric cutoff.
 
         The method selects pairs from the NeighborPairs object where the values in the specified array are less than or
@@ -231,9 +227,9 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the numeric filter.
         """
         mask = array <= cutoff
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def radius_filter(self, radius: float, partner: int) -> "NeighborPairs":
+    def radius_filter(self, radius: float, partner: int) -> Self:
         """Select pairs based on the radius.
 
         The method selects pairs from the NeighborPairs object where the van der Waals radii of the atoms
@@ -250,60 +246,9 @@ class NeighborPairs:
         col_func = self._get_pair_column(partner)
         mask = col_func.atoms.vdw_radii <= radius
 
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def hbond_distance_filter(self, partner: int, vdw_comp_factor: float = 0.1) -> "NeighborPairs":
-        """Filter the pairs based on the distance between the hydrogen bonded atoms.
-
-        The method filters pairs from the NeighborPairs object where the hydrogen bond distances
-        are less than or equal to the specified van der Waals distances. The `partner` parameter specifies
-        the column of hydrogen bonded atom indices in the `hbond_array`.
-
-        Args:
-            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-            vdw_comp_factor (float, optional): The van der Waals complementarity factor. Defaults to 0.1.
-
-        Returns:
-            A NeighborPairs object containing the pairs that meet the hydrogen bond distance filter.
-        """
-        attr_col, hbound_attr_col = self._get_partners(partner)
-
-        vdw_distances = self.hbond_handler.get_vdw_distances(attr_col, vdw_comp_factor)
-        hbond_dist = self.hbond_handler.get_hbond_distances(attr_col, hbound_attr_col)
-
-        distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
-        hbond_dist_pairs = self.pairs[distances_mask]
-        hbond_distances = self.distances[distances_mask]
-
-        return self.clone(hbond_dist_pairs, hbond_distances)
-
-    def hbond_angle_filter(self, partner: int, weak: bool = False) -> "NeighborPairs":
-        """Filter the pairs based on the angle between the hydrogen bonded atoms.
-
-        The method filters pairs from the NeighborPairs object where the hydrogen bond angles are greater
-        than or equal to the specified contact angle. The `partner` parameter specifies the column of hydrogen
-        bonded atom indices in the `hbond_array`. If `weak` is True, the function will accept weaker hydrogen bonds.
-
-        Args:
-            partner (int): The column of the hydrogen bonded atom indices in the `hbond_array`.
-            weak (bool, optional): If True, accept weaker hydrogen bonds. Defaults to False.
-
-        Returns:
-            A NeighborPairs object containing the pairs that meet the hydrogen bond angle filter.
-        """
-        contact_type = "weak hbond" if weak else "hbond"
-        attr_partner, hbound_attr_partner = self._get_partners(partner)
-
-        # if self.hbond_angles is None:
-        self.hbond_angles = self.hbond_handler.get_hbond_angles(attr_partner, hbound_attr_partner)
-
-        idx = np.any(self.hbond_angles >= CONTACTS[contact_type]["angle rad"], axis=1)
-        self._pairs = self._pairs[idx]
-        self._distances = self._distances[idx]
-
-        return self.clone(self.pairs, self.distances)
-
-    def map(self, seq: Seq) -> "LabeledNeighborPairs":
+    def map(self, seq: "Seq") -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
@@ -319,7 +264,7 @@ class NeighborPairs:
         builder = LabeledNeighborPairsBuilder(atom_mapper)
         return builder.build(self.pairs, seq)
 
-    def backmap(self, seq: Seq, pairs: NDArray[np.void]) -> "NeighborPairs":
+    def backmap(self, seq: "Seq", pairs: NDArray[np.void]) -> Self:
         """Map the `pairs` indices to indices in the structure.
 
         The method maps the indices in the `pairs` array to indices in the structure
@@ -336,9 +281,9 @@ class NeighborPairs:
         mapped_pairs = LabeledNeighborPairsBuilder(atom_mapper).build(self.pairs, seq).pairs
         index_finder = IndexFinder(mapped_pairs)
         mask = index_finder.find_indices(pairs)
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def intersection(self, other: "NeighborPairs") -> "NeighborPairs":
+    def intersection(self, other: Self) -> Self:
         """Return the intersection of two NeighborPairs objects.
 
         The method calculates the intersection of the pairs from `self` and `other`, and then returns a new
@@ -361,9 +306,9 @@ class NeighborPairs:
             ```
         """
         mask = au.intersection(self.pairs, other.pairs)
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def union(self, other: "NeighborPairs") -> "NeighborPairs":
+    def union(self, other: Self) -> Self:
         """Return the union of two NeighborPairs objects.
 
         The method finds the union of the pairs from `self` and `other`. It also ensures that the distances
@@ -388,9 +333,9 @@ class NeighborPairs:
         pairs, indices = au.union(self.pairs, other.pairs)
         distances = np.concatenate((self.distances, other.distances), axis=0)[indices]
 
-        return self.clone(pairs, distances)
+        return self.new(pairs, distances)
 
-    def difference(self, other: "NeighborPairs") -> "NeighborPairs":
+    def difference(self, other: Self) -> Self:
         """Return the difference between two NeighborPairs objects.
 
         The method calculates the difference between the pairs from `self` and `other`, then returns a new
@@ -416,9 +361,9 @@ class NeighborPairs:
         """
         mask = au.difference(self.pairs, other.pairs)
 
-        return self.clone(self.pairs[mask], self.distances[mask])
+        return self.new(self.pairs[mask], self.distances[mask])
 
-    def symmetric_difference(self, other: "NeighborPairs") -> "NeighborPairs":
+    def symmetric_difference(self, other: Self) -> Self:
         """Return the symmetric difference of two NeighborPairs objects.
 
         This method creates a new `NeighborPairs` object that contains pairs and distances
@@ -444,9 +389,9 @@ class NeighborPairs:
         pairs = np.concatenate((self.pairs[mask_a], other.pairs[mask_b]), axis=0)
         distances = np.concatenate((self.distances[mask_a], other.distances[mask_b]), axis=0)
 
-        return self.clone(pairs, distances)
+        return self.new(pairs, distances)
 
-    def isdisjoint(self, other: "NeighborPairs") -> bool:
+    def isdisjoint(self, other: Self) -> bool:
         """Check if the intersection of two NeighborPairs objects is null.
 
         This method checks whether the intersection of the two NeighborPairs objects is null,
@@ -469,7 +414,7 @@ class NeighborPairs:
         """
         return au.isdisjoint(self.pairs, other.pairs)
 
-    def issubset(self, other: "NeighborPairs") -> bool:
+    def issubset(self, other: Self) -> bool:
         """Check if all elements (pairs) of a NeighborPairs object are found in another NeighborPairs object.
 
         This method checks whether every pair of atoms from the current NeighborPairs object
@@ -491,7 +436,7 @@ class NeighborPairs:
         """
         return au.issubset(self.pairs, other.pairs)
 
-    def issuperset(self, other: "NeighborPairs") -> bool:
+    def issuperset(self, other: Self) -> bool:
         """Determine if all pairs from another NeighborPairs object are found in this object.
 
         This method checks whether every pair of atoms from the 'other' NeighborPairs object
@@ -513,7 +458,7 @@ class NeighborPairs:
         """
         return au.issuperset(self.pairs, other.pairs)
 
-    def isequal(self, other: "NeighborPairs") -> bool:
+    def isequal(self, other: Self) -> bool:
         """Check if this NeighborPairs object is equal to another.
 
         Two NeighborPairs objects are considered equal if they contain exactly the same pairs.
@@ -551,7 +496,7 @@ class NeighborPairs:
         """
         return au.isunique(self.pairs)
 
-    def is_strict_subset(self, other: "NeighborPairs") -> bool:
+    def is_strict_subset(self, other: Self) -> bool:
         """Check if all pairs of this NeighborPairs object are in another, and the two sets are not equal.
 
         A strict subset has all pairs in the 'other' object but the two sets are not identical.
@@ -572,7 +517,7 @@ class NeighborPairs:
         """
         return au.is_strict_subset(self.pairs, other.pairs)
 
-    def is_strict_superset(self, other: "NeighborPairs") -> bool:
+    def is_strict_superset(self, other: Self) -> bool:
         """Check if all pairs of another NeighborPairs object are in this one, and the two sets are not equal.
 
         A strict superset has all pairs from the 'other' object but the two sets are not identical.
@@ -593,7 +538,7 @@ class NeighborPairs:
         """
         return au.is_strict_superset(self.pairs, other.pairs)
 
-    def clone(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> "NeighborPairs":
+    def new(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> Self:
         """Return a new NeighborPairs object that is a copy of the current object,
         but with specified pairs and distances.
 
@@ -604,21 +549,13 @@ class NeighborPairs:
         Returns:
             A new NeighborPairs object with the provided pairs and distances.
         """
-        attrs = {attr: getattr(self, attr) for attr in get_class_attributes(self)}
-        attrs.update({"_pairs": pairs, "_distances": distances})
-
         cls = type(self)
-        child_instance = cls.__new__(cls)
-
-        for attr, value in attrs.items():
-            if not isinstance(getattr(cls, attr, None), property):
-                setattr(child_instance, attr, value)
-
-        if self.annotations:
-            for key, value in self.annotations.items():
-                child_instance.annotations[key] = value[: child_instance.pairs.shape[0]]
-
-        return child_instance
+        new = cls.__new__(cls)
+        new.luni = self.luni
+        new.atoms = self.atoms
+        new.set_neighbors(pairs, distances, sort=False)
+        new.annotations = {}  # reset annotations
+        return new
 
     def plot(self, which: Literal["matching", "full"] = "matching", half_only: bool = False) -> None:
         """Plot the contact map of the NeighborPairs object.
@@ -627,6 +564,7 @@ class NeighborPairs:
             which (str, optional): Which contact map to plot ('matching' or 'full'). Defaults to 'matching'.
             half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
+        from lahuta.viz.contact_matrix import ContactMap
         return ContactMap(self.pairs).plot(which, half_only)
 
     @property
@@ -662,7 +600,7 @@ class NeighborPairs:
         self,
         df_format: Literal["compact", "expanded"] = "expanded",
         annotations: bool = False,
-    ) -> pd.DataFrame:
+    ) -> "DataFrame":
         """Convert the NeighborPairs object to a pandas DataFrame.
 
         The method provides two formatting options. The 'compact' format contains two columns
@@ -702,7 +640,7 @@ class NeighborPairs:
         self,
         df_format: Literal["compact", "expanded"] = "expanded",
         annotations: Optional[dict[str, NDArray[Any]]] = None,
-    ) -> pd.DataFrame:
+    ) -> "DataFrame":
         """Create a pandas DataFrame from the NeighborPairs object.
 
         Args:
@@ -714,6 +652,7 @@ class NeighborPairs:
         Returns:
             A pandas DataFrame representing the NeighborPairs object.
         """
+        from lahuta.writers.frame_writer import DataFrameWriter
         return DataFrameWriter(self, df_format, annotations).create()
 
     def vmd_exporter(self, sphere_resolution: int = 20, save_to_file: bool = False) -> Optional[str]:
@@ -726,10 +665,11 @@ class NeighborPairs:
         Returns:
             str | None: The TCL script to visualize the neighbor pairs in VMD.
         """
+        from lahuta.writers.exporters import VMDExporter
         exporter = VMDExporter(self.pairs)
         return exporter.export(sphere_resolution=sphere_resolution, save_to_file=save_to_file)
 
-    def _neighborpairs_equal(self, other: "NeighborPairs") -> bool:
+    def _neighborpairs_equal(self, other: Self) -> bool:
         """Check if another NeighborPairs object is equal to this one.
 
         Two NeighborPairs objects are considered equal if they have the same atom pairs
@@ -748,10 +688,10 @@ class NeighborPairs:
         pairs, dists = self.pairs[indices1], self.distances[indices1]
         other_pairs, other_dists = other.pairs[indices2], other.distances[indices2]
 
-        return np.array_equal(pairs, other_pairs) and np.array_equal(dists, other_dists)
+        return np.array_equal(pairs, other_pairs) and np.allclose(dists, other_dists)
 
     @property
-    def partner1(self) -> AtomGroupType:
+    def partner1(self) -> "AtomGroupType":
         """Get the first partner of the pairs of indices of atoms that are neighbors.
 
         Returns:
@@ -760,7 +700,7 @@ class NeighborPairs:
         return self._get_pair_column(1)
 
     @property
-    def partner2(self) -> AtomGroupType:
+    def partner2(self) -> "AtomGroupType":
         """Get the second partner of the pairs of indices of atoms that are neighbors.
 
         Returns:
@@ -776,6 +716,47 @@ class NeighborPairs:
             An array containing the pairs of indices of neighboring atoms.
         """
         return self._pairs
+
+    @property
+    def neighbors(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
+        """Get the neighbors.
+
+        Returns:
+            An array containing the indices of the neighbors.
+        """
+        return self.pairs, self.distances
+
+    @neighbors.setter
+    def neighbors(self, pairs: NDArray[np.int32], distances: NDArray[np.float32]) -> None:
+        """Set the neighbors.
+
+        Args:
+            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
+            distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+        """
+        self.set_neighbors(pairs, distances)
+
+    def get_neighbors(self) -> tuple[NDArray[np.int32], NDArray[np.float32]]:
+        """Get the neighbors.
+
+        Returns:
+            An array containing the indices of the neighbors.
+        """
+        return self.pairs, self.distances
+
+    def set_neighbors(self, pairs: NDArray[np.int32], distances: NDArray[np.float32], sort: bool = True) -> None:
+        """Set the neighbors.
+
+        Args:
+            pairs (NDArray[np.int32]): An array containing the pairs of atoms.
+            distances (NDArray[np.float32]): An array containing the distances between each pair of atoms.
+            sort (bool, optional): Whether to sort the pairs and distances arrays. Defaults to True.
+        """
+        self._validate_inputs(pairs, distances)
+        if sort:
+            self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
+        else:
+            self._pairs, self._distances = pairs, distances
 
     @property
     def distances(self) -> NDArray[np.float32]:
@@ -814,6 +795,15 @@ class NeighborPairs:
         return self.atoms[self.pairs].resids
 
     @property
+    def chainIDs(self) -> NDArray[np.int32]:
+        """Get the chain IDs of the atoms that are neighbors.
+
+        Returns
+            An array containing the chain IDs of the neighboring atoms.
+        """
+        return self.atoms[self.pairs].chainIDs
+
+    @property
     def indices(self) -> NDArray[np.int32]:
         """Get the indices of the atoms that are neighbors.
 
@@ -836,7 +826,7 @@ class NeighborPairs:
 
         return struct_array[self.pairs]
 
-    def __getitem__(self, item: int | slice | NDArray[np.int32]) -> "NeighborPairs":
+    def __getitem__(self, item: int | slice | NDArray[np.int32]) -> Self:
         """Retrieve the neighbor pairs at the specified index or indices.
 
         This method allows accessing the neighbor pairs similar to elements in a list.
@@ -852,14 +842,14 @@ class NeighborPairs:
                             their corresponding distance(s).
         """
         if isinstance(item, int):
-            return self.clone(
+            return self.new(
                 self.pairs[item].reshape(-1, 2),
-                self.distances[item],
+                np.array([self.distances[item]]),
             )
 
-        return self.clone(self.pairs[item], self.distances[item])
+        return self.new(self.pairs[item], self.distances[item])
 
-    def __contains__(self, other: "NeighborPairs") -> bool:
+    def __contains__(self, other: Self) -> bool:
         """Check whether all pairs in the given NeighborPairs object are also present in this NeighborPairs object.
 
         This method allows using the Python built-in `in` keyword to check for the presence of pairs.
@@ -879,7 +869,7 @@ class NeighborPairs:
 
         return au.issubset(other.pairs, self.pairs)
 
-    def __add__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __add__(self, other: Self) -> Self:
         """Combine this NeighborPairs object with another one.
 
         The resulting NeighborPairs object is the union of the two sets, containing all unique pairs from both.
@@ -898,7 +888,7 @@ class NeighborPairs:
             return NotImplemented
         return self.union(other)
 
-    def __sub__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __sub__(self, other: Self) -> Self:
         """Get the pairs in this NeighborPairs object that are not in the 'other'.
 
         The resulting NeighborPairs object is the difference of the two sets,
@@ -918,7 +908,7 @@ class NeighborPairs:
             return NotImplemented
         return self.difference(other)
 
-    def __or__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __or__(self, other: Self) -> Self:
         """Get the pairs that are in either this NeighborPairs object or the 'other', but not in both.
 
         The resulting NeighborPairs object is the symmetric difference of the two sets,
@@ -957,7 +947,7 @@ class NeighborPairs:
             return NotImplemented
         return self._neighborpairs_equal(other)
 
-    def __and__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __and__(self, other: Self) -> Self:
         """Get the pairs that are common to both this NeighborPairs object and the 'other'.
 
         The resulting NeighborPairs object is the intersection of the two sets,
@@ -977,7 +967,7 @@ class NeighborPairs:
             return NotImplemented
         return self.intersection(other)
 
-    def __xor__(self, other: "NeighborPairs") -> "NeighborPairs":
+    def __xor__(self, other: Self) -> Self:
         """Get the pairs that are in either this NeighborPairs object or the 'other', but not in both.
 
         This method behaves similarly to the `__or__` method.
@@ -996,24 +986,24 @@ class NeighborPairs:
             return NotImplemented
         return self.symmetric_difference(other)
 
-    def __lt__(self, other: "NeighborPairs") -> bool:
+    def __lt__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
         return self.is_strict_subset(other)
 
-    def __le__(self, other: "NeighborPairs") -> bool:
+    def __le__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
 
         return self.issubset(other)
 
-    def __gt__(self, other: "NeighborPairs") -> bool:
+    def __gt__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
 
         return self.is_strict_superset(other)
 
-    def __ge__(self, other: "NeighborPairs") -> bool:
+    def __ge__(self, other: Self) -> bool:
         if other.__class__ != self.__class__:
             return NotImplemented
 
@@ -1029,8 +1019,7 @@ class NeighborPairs:
         return self.pairs.shape[0]
 
     def __str__(self) -> str:
-        indices = self.indices.ravel()
-        unique_indices = pd.factorize(indices)[1]
+        unique_indices = np.unique(self.indices.ravel())
         return f"<Lahuta NeighborPairs class containing {unique_indices.size} atoms and {self.pairs.shape[0]} pairs>"
 
     def __repr__(self) -> str:

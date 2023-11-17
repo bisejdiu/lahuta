@@ -11,10 +11,10 @@ import numpy as np
 from numpy.typing import NDArray
 from openbabel import openbabel as ob
 
-from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, STANDARD_AMINO_ACIDS
+from lahuta._types.mdanalysis import AtomGroupType
+from lahuta._types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
+from lahuta.config.atoms import ID_TO_TYPES, PROT_ATOM_TYPES, PROTEIN_RESIDUES
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES, SmartsPatternRegistry
-from lahuta.lahuta_types.mdanalysis import AtomGroupType
-from lahuta.lahuta_types.openbabel import MolType, ObSmartPatternType, OBSmartsPatternWrapper
 
 
 def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8]:
@@ -49,7 +49,7 @@ def assign_atom_types(mol: MolType, atomgroup: AtomGroupType) -> NDArray[np.int8
         atypes_array[atom.index, atypes["hbond_donor"]] = 1
 
     # OVERRIDE PROTEIN ATOM TYPING FROM DICTIONARY
-    for residue in atomgroup.select_atoms("resname " + " ".join(STANDARD_AMINO_ACIDS)).residues:
+    for residue in atomgroup.select_atoms("resname " + " ".join(PROTEIN_RESIDUES)).residues:
         for atom in residue.atoms:
             # REMOVE TYPES IF ALREADY ASSIGNED FROM SMARTS
             for prot_atype in list(PROT_ATOM_TYPES.keys()):
@@ -94,7 +94,7 @@ def vec_assign_atom_types(
             for match in matches:
                 atom = mol.GetAtom(match)
 
-                if atom.GetResidue().GetName() not in STANDARD_AMINO_ACIDS:
+                if atom.GetResidue().GetName() not in PROTEIN_RESIDUES:
                     atypes_array[atom.GetId(), atypes[atom_type.name]] = 1
 
     # ALL WATER MOLECULES ARE HYDROGEN BOND DONORS AND ACCEPTORS
@@ -106,7 +106,7 @@ def vec_assign_atom_types(
     resname, atom_name = ta["resname"], ta["name"]
 
     # Convert atoms to NumPy arrays for efficient indexing
-    ag = atomgroup.select_atoms("resname " + " ".join(STANDARD_AMINO_ACIDS)).atoms
+    ag = atomgroup.select_atoms("resname " + " ".join(PROTEIN_RESIDUES)).atoms
     resindices = np.array([atom.resindex for atom in atomgroup])
     indices = np.array([atom.index for atom in atomgroup])
 

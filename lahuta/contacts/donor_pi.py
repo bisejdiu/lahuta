@@ -55,7 +55,6 @@ class DonorPi(ContactAnalysis):
     """
 
     distance = DEFAULT_CONTACT_DISTS["donor_pi"]
-    cache = False
 
     def __init__(self, ns: NeighborPairs):
         super().__init__(ns)
@@ -73,4 +72,4 @@ class DonorPi(ContactAnalysis):
         Returns:
             NeighborPairs: A NeighborPairs object containing only donor pi contacts.
         """
-        return donor_pi(self.ns, cache=self.cache)
+        return donor_pi(self.ns)
