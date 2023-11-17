@@ -24,7 +24,7 @@ jobs:
 
       - name: Install Library
         shell: bash -l {0}
-        run: conda install -c conda-forge -c bisejdiu lahuta
+        run: conda install -c conda-forge -c bioconda -c anaconda -c salilab -c bisejdiu lahuta
 
       - name: Test Library Installation
         shell: bash -l {0}
