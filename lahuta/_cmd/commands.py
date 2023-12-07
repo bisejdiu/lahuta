@@ -11,6 +11,8 @@ from .options import (
     CreateDBOptionsDefaults,
     SearchOptions,
     SearchOptionsDefaults,
+    StructureAlignOptionsDefaults,
+    StructureAlignptions,
 )
 
 
@@ -52,6 +54,11 @@ class SearchCommand(FoldSeekCommand):
 class ConvertAlisCommand(FoldSeekCommand):
     def __init__(self, *, options: ConvertAlisOptions) -> None:
         super().__init__("convertalis", options, ConvertAlisOptionsDefaults, ConvertAlisOptions)
+
+
+class StructureAlignCommand(FoldSeekCommand):
+    def __init__(self, *, options: ConvertAlisOptions) -> None:
+        super().__init__("structurealign", options, StructureAlignOptionsDefaults, StructureAlignptions)
 
 
 class TestCreateDBCommand(TestBaseCommand):
