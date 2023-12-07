@@ -53,6 +53,10 @@ class ResidueGroupType(Protocol):
     def n_residues(self) -> int:
         ...
 
+    @property
+    def segindices(self) -> NDArray[np.int_]:
+        ...
+
     def __iter__(self) -> Any:
         ...
 
@@ -89,6 +93,10 @@ class AtomGroupType(Protocol):
 
     @property
     def n_atoms(self) -> int:
+        ...
+
+    @property
+    def n_residues(self) -> int:
         ...
 
     @property
