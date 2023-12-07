@@ -85,7 +85,7 @@ class CachedFileProcessor(Generic[T]):
     def results(self) -> dict[str, T]:
         """Get the cached results."""
         if not self._cache:
-            logging.warning("No results available. Did you forget to call walk()?")
+            logging.warning("No results available. Did you forget to call process()?")
         return self._cache
 
     def __repr__(self) -> str:

@@ -565,6 +565,7 @@ class NeighborPairs:
             half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
         from lahuta.viz.contact_matrix import ContactMap
+
         return ContactMap(self.pairs).plot(which, half_only)
 
     @property
@@ -653,6 +654,7 @@ class NeighborPairs:
             A pandas DataFrame representing the NeighborPairs object.
         """
         from lahuta.writers.frame_writer import DataFrameWriter
+
         return DataFrameWriter(self, df_format, annotations).create()
 
     def vmd_exporter(self, sphere_resolution: int = 20, save_to_file: bool = False) -> Optional[str]:
@@ -666,6 +668,7 @@ class NeighborPairs:
             str | None: The TCL script to visualize the neighbor pairs in VMD.
         """
         from lahuta.writers.exporters import VMDExporter
+
         exporter = VMDExporter(self.pairs)
         return exporter.export(sphere_resolution=sphere_resolution, save_to_file=save_to_file)
 
