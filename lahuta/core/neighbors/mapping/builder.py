@@ -38,6 +38,8 @@ class AtomMapper:
 
     @staticmethod
     def _mda_protein_select_split(atoms: AtomGroupType) -> tuple[AtomGroupType, AtomGroupType]:
+        # TODO(bisejdiu): This selection won't work when we do not use synonyms when getting
+        # the sequence from the Luni object. We need to synchronize these two methods.
         return atoms.select_atoms("protein"), atoms.select_atoms("not protein")
 
     def map(self, seq: Seq) -> NDArray[np.int32]:
