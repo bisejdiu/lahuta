@@ -33,8 +33,10 @@ class AtomMapper:
     """
 
     def __init__(self, atoms: AtomGroupType):
-        self.atoms = atoms
-        self.prot, self.nonprot = self._mda_protein_select_split(atoms)
+        self.a = atoms
+        self.atoms = atoms.universe.atoms
+        self.selected_indices, self.selected_resindices = atoms.indices, atoms.resindices
+        self.prot, self.nonprot = self._mda_protein_select_split(self.atoms)
 
     @staticmethod
     def _mda_protein_select_split(atoms: AtomGroupType) -> tuple[AtomGroupType, AtomGroupType]:
@@ -114,13 +116,16 @@ class LabeledNeighborPairsBuilder:
     """
 
     DTYPE = np.dtype(
-        {"names": ["chain_ids", "resids", "resnames", "names"], "formats": ["<U25", "<U25", "<U25", "<U25"]}
+        {
+            "names": ["chain_ids", "resids", "resnames", "names", "clabels"],
+            "formats": ["<U25", "<U25", "<U25", "<U25", "<U25"],
+        }
     )
 
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
 
-    def build(self, pairs: NDArray[np.int32], seq: Seq) -> "LabeledNeighborPairs":
+    def build(self, pairs: NDArray[np.int32], seq: Seq, clabels: NDArray[np.any] = None) -> "LabeledNeighborPairs":
         """Build a LabeledNeighborPairs object from the pairs of atom indices and a sequence.
 
         Args:
@@ -131,6 +136,7 @@ class LabeledNeighborPairsBuilder:
             LabeledNeighborPairs: A LabeledNeighborPairs object.
         """
         mapped_resindices = self.atom_mapper.map(seq)
+        # mapped_clabels = self.atom_mapper.map(clabels)
         atoms = self.atom_mapper.atoms
 
         data = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atom_mapper.atoms.n_atoms)
@@ -138,6 +144,8 @@ class LabeledNeighborPairsBuilder:
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
         data["names"] = atoms.names
+        # data["clabels"] = mapped_clabels
+        # data["clabels"] = clabels[mapped_resindices]
 
         return LabeledNeighborPairs(data[pairs])
 

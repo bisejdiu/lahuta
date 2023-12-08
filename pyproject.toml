@@ -114,5 +114,5 @@ exclude = "docs|cachedir|scripts|__pycache__"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 minversion = 7.4
-addopts = "--maxfail=4"
+addopts = "--maxfail=18"
 log_level = "INFO"

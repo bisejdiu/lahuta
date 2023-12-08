@@ -248,7 +248,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def map(self, seq: "Seq") -> "LabeledNeighborPairs":
+    def map(self, seq: "Seq", clabels: "Any" = None) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
@@ -260,9 +260,10 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the mapped pairs.
         """
-        atom_mapper = AtomMapper(self.atoms)
+        # atom_mapper = AtomMapper(self.atoms)
+        atom_mapper = AtomMapper(self.luni.to("mda"))
         builder = LabeledNeighborPairsBuilder(atom_mapper)
-        return builder.build(self.pairs, seq)
+        return builder.build(self.pairs, seq, clabels)
 
     def backmap(self, seq: "Seq", pairs: NDArray[np.void]) -> Self:
         """Map the `pairs` indices to indices in the structure.
