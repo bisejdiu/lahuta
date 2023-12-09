@@ -56,8 +56,9 @@ class AtomMapper:
         prot_resindices = self._map_prot_resindices(seq)
         nonprot_resindices = self._map_nonprot_resindices(seq)
 
-        prot_nonprot_indices = np.searchsorted(self.prot.resindices, self.nonprot.resindices)
-        mapped_resindices = np.insert(prot_resindices, prot_nonprot_indices, nonprot_resindices)
+        mapped_resindices = self.merge_mapped_indices(
+            self.prot.resindices, self.nonprot.resindices, prot_resindices, nonprot_resindices
+        )
 
         if self.sel_resindices.size > 0:
             mapped_resindices = self._mergemap_nonsel_resindices(mapped_resindices)
@@ -89,27 +90,37 @@ class AtomMapper:
     def _factorize(resindices: NDArray[np.int32]) -> NDArray[np.int32]:
         return pd.factorize(resindices)[0]  # type: ignore
 
-    def sort_mapped_resindices(
+    def merge_mapped_indices(
         self,
-        prot_resindices: NDArray[np.int32],
-        nonprot_resindices: NDArray[np.int32],
-        mapped_prot_resindices: NDArray[np.int32],
-        mapped_nonprot_resindices: NDArray[np.int32],
+        ref: NDArray[np.int32],
+        target: NDArray[np.int32],
+        mapped_ref: NDArray[np.int32],
+        mapped_target: NDArray[np.int32],
     ) -> NDArray[np.int32]:
-        """Sort mapped residue indices.
+        """Merge two sets of mapped indices into a single, ordered array.
+
+        Integrates two arrays of mapped indices, derived from reference (ref) and target arrays,
+        The original ref and target arrays guide the merging process, as direct merging of the mapped arrays
+        is not possible due to their transformed nature. The method ensures the final array
+        respects the original order of the ref and target indices.
 
         Args:
-            prot_resindices (NDArray[np.int32]): Array of protein residue indices.
-            nonprot_resindices (NDArray[np.int32]): Array of non-protein residue indices.
-            mapped_prot_resindices (NDArray[np.int32]): Array of mapped protein residue indices.
-            mapped_nonprot_resindices (NDArray[np.int32]): Array of mapped non-protein residue indices.
+            ref (NDArray[np.int32]): Array of reference indices.
+            target (NDArray[np.int32]): Array of target indices.
+            mapped_ref (NDArray[np.int32]): Mapped indices corresponding to the ref array.
+            mapped_target (NDArray[np.int32]): Mapped indices corresponding to the target array.
 
         Returns:
-            NDArray[np.int32]: Sorted array of mapped residue indices.
+            NDArray[np.int32]: A merged array containing elements from both mapped_ref and mapped_target in an order            NDArray[np.int32]: A merged array containing elements from both mapped_ref and mapped_target in an order
+                            that respects the original position of ref and target indices.
+
+        The function identifies the appropriate insertion points for elements of the mapped_target array into the
+        mapped_ref array, guided by the positions of target indices in relation to ref indices. This preserves theed_ref array, guided by the positions of target indices in relation to ref indices. This preserves the
+        integrity of the original order in the combined mapped output.
         """
-        indices = np.searchsorted(prot_resindices, nonprot_resindices)
-        mapped_resindices = np.insert(mapped_prot_resindices, indices, mapped_nonprot_resindices)
-        return mapped_resindices  # noqa: R504
+        insertion_points = np.searchsorted(ref, target)
+        merged_indices = np.insert(mapped_ref, insertion_points, mapped_target)
+        return merged_indices  # noqa: R504n mapped_resindices_indices_indices
 
 
 class LabeledNeighborPairsBuilder:
