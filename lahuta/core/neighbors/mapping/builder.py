@@ -3,6 +3,7 @@
 Classes:
     LabeledNeighborPairsBuilder: A class to build LabeledNeighborPairs objects.
 """
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -53,19 +54,18 @@ class AtomMapper:
         """
         prot_resindices = self._map_prot_resindices(seq)
         nonprot_resindices = self._map_nonprot_resindices(seq)
-        # nonsel_resindices = self._map_nonselected_resindices(seq)
 
         prot_nonprot_indices = np.searchsorted(self.prot.resindices, self.nonprot.resindices)
         mapped_prot_resindices = np.insert(prot_resindices, prot_nonprot_indices, nonprot_resindices)
 
         nonsel_atoms = self.atoms.universe.atoms - self.atoms
         nonsel_indices = np.searchsorted(self.atoms.resindices, nonsel_atoms.resindices)
-        # print("nonsel_indices", nonsel_indices.shape)
-        # print("nonsel_atoms.indices", nonsel_atoms.indices.shape)
-        # print("nonsel_resindices", nonsel_resindices.shape)
 
-        nonsel_resindices = np.full(nonsel_indices.shape, np.nan)
-        mapped_resindices = np.insert(mapped_prot_resindices, nonsel_indices, nonsel_resindices)
+        with warnings.catch_warnings():
+            # np.nan is inserted into the array, which is not supported by numpy.
+            warnings.simplefilter("ignore")
+            nonsel_resindices = np.full(nonsel_indices.shape, np.nan, dtype=float)
+            mapped_resindices = np.insert(mapped_prot_resindices, nonsel_indices, nonsel_resindices)
 
         return mapped_resindices  # noqa: R504
 
@@ -79,15 +79,6 @@ class AtomMapper:
         nonprot_resindices = self._factorize(self.nonprot.resindices)
         shift_nonprot_resindices = np.arange(len(seq), len(seq) + n_nonprot_residues)
         return shift_nonprot_resindices[nonprot_resindices]
-
-    def _map_nonselected_resindices(self, seq: Seq) -> NDArray[np.int32]:
-        # TODO(bisejdiu): Make execution conditional on the existence of non-selected atoms.
-        nonsel_atoms = self.atoms.universe.atoms - self.atoms
-        nonsel_resindices = nonsel_atoms.resindices
-        n_nonsel_residues = nonsel_atoms.residues.resindices.shape[0]
-        nonsel_resindices = self._factorize(nonsel_resindices)
-        shift_nonsel_resindices = np.arange(len(seq) + n_nonsel_residues, len(seq) + 2 * n_nonsel_residues)
-        return shift_nonsel_resindices[nonsel_resindices]
 
     @staticmethod
     def _factorize(resindices: NDArray[np.int32]) -> NDArray[np.int32]:
