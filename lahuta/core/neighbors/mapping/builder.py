@@ -33,10 +33,8 @@ class AtomMapper:
     """
 
     def __init__(self, atoms: AtomGroupType):
-        self.a = atoms
-        self.atoms = atoms.universe.atoms
-        self.selected_indices, self.selected_resindices = atoms.indices, atoms.resindices
-        self.prot, self.nonprot = self._mda_protein_select_split(self.atoms)
+        self.atoms = atoms
+        self.prot, self.nonprot = self._mda_protein_select_split(atoms)
 
     @staticmethod
     def _mda_protein_select_split(atoms: AtomGroupType) -> tuple[AtomGroupType, AtomGroupType]:
@@ -55,10 +53,24 @@ class AtomMapper:
         """
         prot_resindices = self._map_prot_resindices(seq)
         nonprot_resindices = self._map_nonprot_resindices(seq)
+        nonsel_resindices = self._map_nonselected_resindices(seq)
 
-        mapped_resindices = self.sort_mapped_resindices(
-            self.prot.resindices, self.nonprot.resindices, prot_resindices, nonprot_resindices
-        )
+        # mapped_resindices = self.sort_mapped_resindices(
+        #     self.prot.resindices, self.nonprot.resindices, prot_resindices, nonprot_resindices
+        # )
+
+        prot_nonprot_indices = np.searchsorted(self.prot.resindices, self.nonprot.resindices)
+        mapped_prot_resindices = np.insert(prot_resindices, prot_nonprot_indices, nonprot_resindices)
+
+        nonsel_atoms = self.atoms.universe.atoms - self.atoms
+        nonsel_indices = np.searchsorted(self.atoms.resindices, nonsel_atoms.resindices)
+
+        mapped_resindices = np.insert(mapped_prot_resindices, nonsel_indices, nonsel_resindices)
+
+        # mapped_nonsel_resindices = self.sort_mapped_resindices(
+        #     mapped_resindices, nonsel_resindices, prot_resindices, nonsel_resindices
+        # )
+        # mapped_resindices = np.concatenate((mapped_resindices, mapped_nonsel_resindices))
 
         return mapped_resindices  # noqa: R504
 
@@ -72,6 +84,15 @@ class AtomMapper:
         nonprot_resindices = self._factorize(self.nonprot.resindices)
         shift_nonprot_resindices = np.arange(len(seq), len(seq) + n_nonprot_residues)
         return shift_nonprot_resindices[nonprot_resindices]
+
+    def _map_nonselected_resindices(self, seq: Seq) -> NDArray[np.int32]:
+        # TODO(bisejdiu): Make execution conditional on the existence of non-selected atoms.
+        nonsel_atoms = self.atoms.universe.atoms - self.atoms
+        nonsel_resindices = nonsel_atoms.resindices
+        n_nonsel_residues = nonsel_atoms.residues.resindices.shape[0]
+        nonsel_resindices = self._factorize(nonsel_resindices)
+        shift_nonsel_resindices = np.arange(len(seq) + n_nonsel_residues, len(seq) + 2 * n_nonsel_residues)
+        return shift_nonsel_resindices[nonsel_resindices]
 
     @staticmethod
     def _factorize(resindices: NDArray[np.int32]) -> NDArray[np.int32]:
@@ -116,16 +137,13 @@ class LabeledNeighborPairsBuilder:
     """
 
     DTYPE = np.dtype(
-        {
-            "names": ["chain_ids", "resids", "resnames", "names", "clabels"],
-            "formats": ["<U25", "<U25", "<U25", "<U25", "<U25"],
-        }
+        {"names": ["chain_ids", "resids", "resnames", "names"], "formats": ["<U25", "<U25", "<U25", "<U25"]}
     )
 
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
 
-    def build(self, pairs: NDArray[np.int32], seq: Seq, clabels: NDArray[np.any] = None) -> "LabeledNeighborPairs":
+    def build(self, pairs: NDArray[np.int32], seq: Seq) -> "LabeledNeighborPairs":
         """Build a LabeledNeighborPairs object from the pairs of atom indices and a sequence.
 
         Args:
@@ -136,16 +154,13 @@ class LabeledNeighborPairsBuilder:
             LabeledNeighborPairs: A LabeledNeighborPairs object.
         """
         mapped_resindices = self.atom_mapper.map(seq)
-        # mapped_clabels = self.atom_mapper.map(clabels)
-        atoms = self.atom_mapper.atoms
+        atoms = self.atom_mapper.atoms.universe.atoms
 
-        data = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atom_mapper.atoms.n_atoms)
+        data = LabeledNeighborPairsBuilder.create_empty_struct_array(atoms.n_atoms)
         data["chain_ids"] = atoms.chainIDs
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
         data["names"] = atoms.names
-        # data["clabels"] = mapped_clabels
-        # data["clabels"] = clabels[mapped_resindices]
 
         return LabeledNeighborPairs(data[pairs])
 

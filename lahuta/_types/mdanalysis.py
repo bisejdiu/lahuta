@@ -60,6 +60,9 @@ class ResidueGroupType(Protocol):
     def __iter__(self) -> Any:
         ...
 
+    def __add__(self, other: "ResidueGroupType") -> "ResidueGroupType":
+        ...
+
 
 class AtomGroupType(Protocol):
     """A typing interface for MDAnalysis AtomGroup objects."""
@@ -168,6 +171,12 @@ class AtomGroupType(Protocol):
         ...
 
     def __len__(self) -> int:
+        ...
+
+    def __add__(self, other: "AtomGroupType") -> "AtomGroupType":
+        ...
+
+    def __sub__(self, other: "AtomGroupType") -> "AtomGroupType":
         ...
 
 
