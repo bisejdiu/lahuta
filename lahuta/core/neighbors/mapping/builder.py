@@ -179,7 +179,7 @@ class LabeledNeighborPairsBuilder:
             # Add custom fields
             mapped_prot_resindices = MSAParser.to_indices_array(seq)
             for field_name, field_data in custom_fields.items():
-                mapped_values = np.full(atoms.indices.shape, field_data.get("fill", None) or "-", dtype="<U25")
+                mapped_values = np.full(atoms.indices.shape, field_data.get("fill", ""), dtype="<U25")
                 mapped_values[mapped_prot_resindices] = field_data["values"]
                 extended_data[field_name] = mapped_values
 
