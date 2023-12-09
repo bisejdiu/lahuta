@@ -111,11 +111,11 @@ class AtomMapper:
             mapped_target (NDArray[np.int32]): Mapped indices corresponding to the target array.
 
         Returns:
-            NDArray[np.int32]: A merged array containing elements from both mapped_ref and mapped_target in an order            NDArray[np.int32]: A merged array containing elements from both mapped_ref and mapped_target in an order
+            NDArray[np.int32]: A merged array containing elements from both mapped_ref and mapped_target in an order
                             that respects the original position of ref and target indices.
 
         The function identifies the appropriate insertion points for elements of the mapped_target array into the
-        mapped_ref array, guided by the positions of target indices in relation to ref indices. This preserves theed_ref array, guided by the positions of target indices in relation to ref indices. This preserves the
+        mapped_ref array, guided by the positions of target indices in relation to ref indices. This preserves the
         integrity of the original order in the combined mapped output.
         """
         insertion_points = np.searchsorted(ref, target)
@@ -145,12 +145,14 @@ class LabeledNeighborPairsBuilder:
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
 
-    def build(self, pairs: NDArray[np.int32], seq: Seq) -> "LabeledNeighborPairs":
-        """Build a LabeledNeighborPairs object from the pairs of atom indices and a sequence.
+    def build(self, pairs: NDArray[np.int32], seq: Seq, custom_fields: dict = None) -> "LabeledNeighborPairs":
+        """Build a LabeledNeighborPairs object from the pairs of atom indices, a sequence,
+           and optional custom fields.
 
         Args:
             pairs (NDArray[np.int32]): Array of pairs of atom indices.
             seq (Seq): A sequence as it results from the MSA.
+            custom_fields (dict, optional): A dictionary of custom fields and values.
 
         Returns:
             LabeledNeighborPairs: A LabeledNeighborPairs object.
@@ -158,13 +160,46 @@ class LabeledNeighborPairsBuilder:
         mapped_resindices = self.atom_mapper.map(seq)
         atoms = self.atom_mapper.atoms.universe.atoms
 
+        # Create the base structured array
         data = LabeledNeighborPairsBuilder.create_empty_struct_array(atoms.n_atoms)
         data["chain_ids"] = atoms.chainIDs
         data["resnames"] = atoms.resnames
         data["resids"] = mapped_resindices
         data["names"] = atoms.names
 
+        # Extend the array if custom fields are provided
+        if custom_fields:
+            extended_dtype = self._extend_dtype_with_custom_fields(custom_fields)
+            extended_data = np.empty(atoms.n_atoms, dtype=extended_dtype)
+
+            # Copy data from the original array
+            for field in LabeledNeighborPairsBuilder.DTYPE.names:
+                extended_data[field] = data[field]
+
+            # Add custom fields
+            mapped_prot_resindices = MSAParser.to_indices_array(seq)
+            for field_name, field_data in custom_fields.items():
+                mapped_values = np.full(atoms.indices.shape, field_data.get("fill", None) or "-", dtype="<U25")
+                mapped_values[mapped_prot_resindices] = field_data["values"]
+                extended_data[field_name] = mapped_values
+
+            data = extended_data
+
         return LabeledNeighborPairs(data[pairs])
+
+    @staticmethod
+    def _extend_dtype_with_custom_fields(custom_fields: dict) -> np.dtype:
+        """Extend the dtype with custom fields.
+
+        Args:
+            custom_fields (dict): A dictionary of custom fields and their values.
+
+        Returns:
+            np.dtype: An extended dtype.
+        """
+        new_fields = [(name, "<U25") for name in custom_fields]
+        extended_dtype = np.dtype(list(LabeledNeighborPairsBuilder.DTYPE.descr) + new_fields)
+        return extended_dtype
 
     @staticmethod
     def create_empty_struct_array(size: int) -> NDArray[np.void]:
