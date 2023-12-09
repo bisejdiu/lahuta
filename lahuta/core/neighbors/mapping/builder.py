@@ -55,10 +55,6 @@ class AtomMapper:
         nonprot_resindices = self._map_nonprot_resindices(seq)
         nonsel_resindices = self._map_nonselected_resindices(seq)
 
-        # mapped_resindices = self.sort_mapped_resindices(
-        #     self.prot.resindices, self.nonprot.resindices, prot_resindices, nonprot_resindices
-        # )
-
         prot_nonprot_indices = np.searchsorted(self.prot.resindices, self.nonprot.resindices)
         mapped_prot_resindices = np.insert(prot_resindices, prot_nonprot_indices, nonprot_resindices)
 
@@ -66,11 +62,6 @@ class AtomMapper:
         nonsel_indices = np.searchsorted(self.atoms.resindices, nonsel_atoms.resindices)
 
         mapped_resindices = np.insert(mapped_prot_resindices, nonsel_indices, nonsel_resindices)
-
-        # mapped_nonsel_resindices = self.sort_mapped_resindices(
-        #     mapped_resindices, nonsel_resindices, prot_resindices, nonsel_resindices
-        # )
-        # mapped_resindices = np.concatenate((mapped_resindices, mapped_nonsel_resindices))
 
         return mapped_resindices  # noqa: R504
 
