@@ -36,6 +36,7 @@ class AtomMapper:
     def __init__(self, atoms: AtomGroupType):
         self.atoms = atoms
         self.prot, self.nonprot = self._mda_protein_select_split(atoms)
+        self.sel_resindices = (self.atoms.universe.atoms - self.atoms).resindices
 
     @staticmethod
     def _mda_protein_select_split(atoms: AtomGroupType) -> tuple[AtomGroupType, AtomGroupType]:
@@ -56,18 +57,12 @@ class AtomMapper:
         nonprot_resindices = self._map_nonprot_resindices(seq)
 
         prot_nonprot_indices = np.searchsorted(self.prot.resindices, self.nonprot.resindices)
-        mapped_prot_resindices = np.insert(prot_resindices, prot_nonprot_indices, nonprot_resindices)
+        mapped_resindices = np.insert(prot_resindices, prot_nonprot_indices, nonprot_resindices)
 
-        nonsel_atoms = self.atoms.universe.atoms - self.atoms
-        nonsel_indices = np.searchsorted(self.atoms.resindices, nonsel_atoms.resindices)
+        if self.sel_resindices.size > 0:
+            mapped_resindices = self._mergemap_nonsel_resindices(mapped_resindices)
 
-        with warnings.catch_warnings():
-            # np.nan is inserted into the array, which is not supported by numpy.
-            warnings.simplefilter("ignore")
-            nonsel_resindices = np.full(nonsel_indices.shape, np.nan, dtype=float)
-            mapped_resindices = np.insert(mapped_prot_resindices, nonsel_indices, nonsel_resindices)
-
-        return mapped_resindices  # noqa: R504
+        return mapped_resindices
 
     def _map_prot_resindices(self, seq: Seq) -> NDArray[np.int32]:
         mapped_prot_resindices = MSAParser.to_indices_array(seq)
@@ -79,6 +74,16 @@ class AtomMapper:
         nonprot_resindices = self._factorize(self.nonprot.resindices)
         shift_nonprot_resindices = np.arange(len(seq), len(seq) + n_nonprot_residues)
         return shift_nonprot_resindices[nonprot_resindices]
+
+    def _mergemap_nonsel_resindices(self, mapped_resindices: NDArray[np.int32]) -> NDArray[np.int32]:
+        nonsel_indices = np.searchsorted(self.atoms.resindices, self.sel_resindices)
+        with warnings.catch_warnings():
+            # np.nan insertion is not supported by numpy.
+            warnings.simplefilter("ignore")
+            nonsel_resindices = np.full(nonsel_indices.shape, np.nan, dtype=float)
+            mapped_resindices = np.insert(mapped_resindices, nonsel_indices, nonsel_resindices)
+
+        return mapped_resindices  # noqa: R504n mapped_resindices
 
     @staticmethod
     def _factorize(resindices: NDArray[np.int32]) -> NDArray[np.int32]:
