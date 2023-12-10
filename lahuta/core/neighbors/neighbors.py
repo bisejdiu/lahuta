@@ -248,7 +248,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def map(self, seq: "Seq", fields: dict = None) -> "LabeledNeighborPairs":
+    def map(self, seq: "Seq", fields: Optional[dict] = None) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
@@ -256,6 +256,7 @@ class NeighborPairs:
 
         Args:
             seq (Bio.Seq): The sequence to map the indices to.
+            fields (dict, optional): A dictionary of custom fields and values.
 
         Returns:
             A NeighborPairs object containing the mapped pairs.

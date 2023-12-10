@@ -46,23 +46,23 @@ class EasySearchWorkflow:
                 "format_mode": "0",
             }
         )
-        convert_alis_fm5 = ConvertAlisCommand(
-            options={
-                "query": "db/query",
-                "target": "db/target",
-                "result": "db/result",
-                "output": "",
-                "format_mode": "5",
-            }
-        )
-        align_structs = ConvertAlisCommand(
-            options={
-                "query": "db/query",
-                "target": "db/target",
-                "result": "db/result",
-                "output": "db/xyz_alig_res",
-            }
-        )
+        # convert_alis_fm5 = ConvertAlisCommand(
+        #     options={
+        #         "query": "db/query",
+        #         "target": "db/target",
+        #         "result": "db/result",
+        #         "output": "",
+        #         "format_mode": "5",
+        #     }
+        # )
+        # align_structs = ConvertAlisCommand(
+        #     options={
+        #         "query": "db/query",
+        #         "target": "db/target",
+        #         "result": "db/result",
+        #         "output": "db/xyz_alig_res",
+        #     }
+        # )
 
         if not os.path.exists("db"):  # noqa: PTH110
             self.runner.add_command(CommandWithoutSubCommand("mkdir", ["db"]))

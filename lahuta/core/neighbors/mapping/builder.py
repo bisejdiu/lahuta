@@ -4,6 +4,7 @@ Classes:
     LabeledNeighborPairsBuilder: A class to build LabeledNeighborPairs objects.
 """
 import warnings
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -84,7 +85,7 @@ class AtomMapper:
             nonsel_resindices = np.full(nonsel_indices.shape, np.nan, dtype=float)
             mapped_resindices = np.insert(mapped_resindices, nonsel_indices, nonsel_resindices)
 
-        return mapped_resindices  # noqa: R504n mapped_resindices
+        return mapped_resindices
 
     @staticmethod
     def _factorize(resindices: NDArray[np.int32]) -> NDArray[np.int32]:
@@ -120,7 +121,7 @@ class AtomMapper:
         """
         insertion_points = np.searchsorted(ref, target)
         merged_indices = np.insert(mapped_ref, insertion_points, mapped_target)
-        return merged_indices  # noqa: R504n mapped_resindices_indices_indices
+        return merged_indices
 
 
 class LabeledNeighborPairsBuilder:
@@ -145,7 +146,7 @@ class LabeledNeighborPairsBuilder:
     def __init__(self, atom_mapper: AtomMapper):
         self.atom_mapper = atom_mapper
 
-    def build(self, pairs: NDArray[np.int32], seq: Seq, custom_fields: dict = None) -> "LabeledNeighborPairs":
+    def build(self, pairs: NDArray[np.int32], seq: Seq, custom_fields: Optional[dict]=None) -> "LabeledNeighborPairs":
         """Build a LabeledNeighborPairs object from the pairs of atom indices, a sequence,
            and optional custom fields.
 

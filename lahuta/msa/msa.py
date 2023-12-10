@@ -165,7 +165,7 @@ class MSAParser:
 
     @staticmethod
     def map_labels(labels: Iterable[str], sequences: list[str], fill: str="-") -> NDArray[np.str_]:
-        """Maps labels to the aligned reference sequences.
+        """Map labels to the aligned reference sequences.
 
         Identifies the unique indices that have been mapped in the sequences, creates an array of the same length 
         as the reference sequence filled with the `fill` value, and then places the labels at the appropriate 
@@ -192,7 +192,7 @@ class MSAParser:
             # mapped_labels would be ['1', '-', '2', '3', '4']
         """
         # all sequences should have the same length
-        assert len(set([len(seq) for seq in sequences])) == 1
+        assert len({len(seq) for seq in sequences}) == 1
         
         # Find all the unique indices that have been mapped.
         mapped_indices = np.concatenate([MSAParser.to_indices_array(seq) for seq in sequences])
@@ -205,7 +205,7 @@ class MSAParser:
 
     @staticmethod
     def map_labels_alt(labels: Iterable[str], sequences: list[str], fill: str="-") -> NDArray[np.str_]:
-        """Maps labels to positions in sequences where at least one sequence differs from the fill character.
+        """Map labels to positions in sequences where at least one sequence differs from the fill character.
 
         Identifies columns in the sequence list where at least one element is not the fill character,
         and maps the provided labels to these columns. It creates an array, the length of a sequence, initially filled
