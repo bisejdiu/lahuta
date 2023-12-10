@@ -64,7 +64,7 @@ extend-select = [
 ignore = [
     'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
     'D205', 'D213', 'D406', 'D407', 'D415', 'ERA001', 'FIX002', 'PLR2004', 'PLW0127', 'TD003',
-    'TRY003', 'PT018'
+    'TRY003', 'PT018', 'R504'
 ]
 
 mccabe = { max-complexity = 14 }
@@ -114,5 +114,5 @@ exclude = "docs|cachedir|scripts|__pycache__"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 minversion = 7.4
-addopts = "--maxfail=4"
+addopts = "--maxfail=18"
 log_level = "INFO"

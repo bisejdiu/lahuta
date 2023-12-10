@@ -489,6 +489,7 @@ class Luni:
         Returns:
             Luni: A new Luni instance containing the filtered atoms.
         """
+        return self.__class__(self._mda.select_atoms(selection))
         import pandas as pd
 
         mda_copy = self._mda.select_atoms(selection).copy()
