@@ -2,7 +2,7 @@
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from typing import Callable, Generic, Iterable, Optional, TypeVar, cast
 
 from lahuta import Luni, NeighborPairs
@@ -59,7 +59,7 @@ class CachedFileProcessor(Generic[T]):
 
         chunk_size = max(1, num_files // n_jobs)
 
-        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
                 executor.submit(self.worker.execute, all_files[i : i + chunk_size])
                 for i in range(0, num_files, chunk_size)
@@ -177,7 +177,7 @@ class FileProcessor:
             return None
 
         chunk_size = max(1, num_files // n_jobs)
-        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
                 executor.submit(self._worker_function, all_files[i : i + chunk_size], operation)
                 for i in range(0, num_files, chunk_size)
