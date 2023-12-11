@@ -108,6 +108,8 @@ strict_equality = true
 strict = true
 show_error_codes = true
 disallow_untyped_decorators = false
+disable_error_code = ["no-redef"]
+
 
 exclude = "docs|cachedir|scripts|__pycache__"
 
