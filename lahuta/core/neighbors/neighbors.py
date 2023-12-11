@@ -3,7 +3,7 @@ considered as "neighbors" based on a certain distance criterion. This class prov
 methods to manipulate, analyze, and export these pairs.
 """
 
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -247,7 +247,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def map(self, seq: "Seq", fields: Optional[DefaultLNPFields] = None, cusotm_fields: Optional[dict[str, dict[str, Iterable[str]]]] = None) -> "LabeledNeighborPairs":
+    def map(self, seq: "Seq", fields: Optional[DefaultLNPFields] = None, cusotm_fields: Optional[dict[str, dict[str, Sequence[str]]]] = None) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment

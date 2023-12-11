@@ -4,7 +4,7 @@ Classes:
     LabeledNeighborPairsBuilder: A class to build LabeledNeighborPairs objects.
 """
 import warnings
-from typing import Iterable, Optional, TypedDict
+from typing import Optional, Sequence, TypedDict
 
 import numpy as np
 import pandas as pd
@@ -168,7 +168,7 @@ class LabeledNeighborPairsBuilder:
         self.dtype = np.dtype({"names": keys, "formats": ["<U25" for _ in keys]})
 
     def build(
-        self, pairs: NDArray[np.int32], seq: Seq, custom_fields: Optional[dict[str, dict[str, Iterable[str]]]] = None
+        self, pairs: NDArray[np.int32], seq: Seq, custom_fields: Optional[dict[str, dict[str, Sequence[str]]]] = None
     ) -> "LabeledNeighborPairs":
         """Build a LabeledNeighborPairs object from the pairs of atom indices, a sequence,
            and optional custom fields.
@@ -195,8 +195,6 @@ class LabeledNeighborPairsBuilder:
 
         data["resids"] = mapped_resindices
 
-        # # Extend the array if custom fields are provided
-        # print("custom_fields", custom_fields)
         if custom_fields:
             extended_dtype = self._extend_dtype_with_custom_fields(custom_fields)
             extended_data = np.empty(atoms.n_atoms, dtype=extended_dtype)
@@ -207,17 +205,19 @@ class LabeledNeighborPairsBuilder:
                 extended_data[field] = data[field]
 
             # Add custom fields
-            mapped_prot_resindices = MSAParser.to_indices_array(seq)
+            mapped_prot_resindices = MSAParser.to_indices_array(seq).tolist()
             for field_name, field_data in custom_fields.items():
+                prot_labels = field_data["values"][mapped_prot_resindices]
+                prot_resix_labels = prot_labels[self.atom_mapper.prot.resindices.tolist()]
                 mapped_values = np.full(atoms.indices.shape, field_data.get("fill", ""), dtype="<U25")
-                mapped_values[mapped_prot_resindices] = field_data["values"]
+                mapped_values[self.atom_mapper.prot.indices] = prot_resix_labels
                 extended_data[field_name] = mapped_values
 
             data = extended_data
 
         return LabeledNeighborPairs(data[pairs])
 
-    def _extend_dtype_with_custom_fields(self, custom_fields: dict[str, dict[str, Iterable[str]]]) -> DTypeLike:
+    def _extend_dtype_with_custom_fields(self, custom_fields: dict[str, dict[str, Sequence[str]]]) -> DTypeLike:
         """Extend the dtype with custom fields.
 
         Args:
