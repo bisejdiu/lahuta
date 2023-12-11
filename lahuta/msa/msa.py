@@ -164,7 +164,7 @@ class MSAParser:
         return type(self)(aligner.output_file)
 
     @staticmethod
-    def map_labels(labels: Iterable[str], sequences: list[str], fill: str="-") -> NDArray[np.str_]:
+    def map_labels(labels: Iterable[str], sequences: list[str | Seq], fill: str="-") -> NDArray[np.str_]:
         """Map labels to the aligned reference sequences.
 
         Identifies the unique indices that have been mapped in the sequences, creates an array of the same length 
@@ -204,7 +204,7 @@ class MSAParser:
         return mapped_labels.astype(str)
 
     @staticmethod
-    def map_labels_alt(labels: Iterable[str], sequences: list[str], fill: str="-") -> NDArray[np.str_]:
+    def map_labels_alt(labels: Iterable[str], sequences: list[str | Seq], fill: str="-") -> NDArray[np.str_]:
         """Map labels to positions in sequences where at least one sequence differs from the fill character.
 
         Identifies columns in the sequence list where at least one element is not the fill character,
@@ -235,13 +235,13 @@ class MSAParser:
             any alignment but relies on the sequences already being aligned, with the fill character indicating 
             gaps or unmapped positions.
         """
-        sequences = np.array([list(seq) for seq in sequences])
+        sequences_block = np.array([list(seq) for seq in sequences])
 
         # Find columns with at least one non-dash element, and extract their indices.
-        non_dash_columns = np.any(sequences != fill, axis=0)
+        non_dash_columns = np.any(sequences_block != fill, axis=0)
 
         # Map the labels to the indices.
-        mapped_labels = np.full(sequences.shape[1], fill, dtype=object)
+        mapped_labels = np.full(sequences_block.shape[1], fill, dtype=object)
         mapped_labels[non_dash_columns] = labels
         return mapped_labels
 
