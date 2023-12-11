@@ -4,18 +4,35 @@ Classes:
     LabeledNeighborPairsBuilder: A class to build LabeledNeighborPairs objects.
 """
 import warnings
-from typing import Optional
+from typing import Iterable, Optional, TypedDict
 
 import numpy as np
 import pandas as pd
 from Bio.Seq import Seq
-from numpy.typing import NDArray
+from numpy.typing import DTypeLike, NDArray
 
 from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.core.neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
-__all__ = ["AtomMapper", "LabeledNeighborPairsBuilder"]
+__all__ = ["AtomMapper", "DefaultLNPFields", "LabeledNeighborPairsBuilder"]
+
+
+class DefaultLNPFields(TypedDict, total=False):
+    """Represents the default fields that are included in the LabeledNeighborPairs object.
+
+    The class is used to specify which fields should be included when creating a new LabeledNeighborPairs object.
+    The default fields are:
+
+    - `names`: The names of the atoms.
+    - `resnames`: The residue names of the atoms.
+    - `chainids`: The chain IDs of the atoms.
+    """
+
+    names: bool
+    resnames: bool
+    chainids: bool
+    resids: bool
 
 
 class AtomMapper:
@@ -132,7 +149,7 @@ class LabeledNeighborPairsBuilder:
     from the pairs of atom indices.
 
     Attributes:
-        DTYPE (np.dtype): The data type of the LabeledNeighborPairs object.
+        DTYPE (np.dtype): The default data type of the LabeledNeighborPairs object.
 
     Methods:
         build: Build a LabeledNeighborPairs object from the pairs of atom indices.
@@ -140,13 +157,19 @@ class LabeledNeighborPairsBuilder:
     """
 
     DTYPE = np.dtype(
-        {"names": ["chain_ids", "resids", "resnames", "names"], "formats": ["<U25", "<U25", "<U25", "<U25"]}
+        {"names": ["chainids", "names", "resids", "resnames"], "formats": ["<U25", "<U25", "<U25", "<U25"]}
     )
 
-    def __init__(self, atom_mapper: AtomMapper):
+    def __init__(self, atom_mapper: AtomMapper, fields: Optional[DefaultLNPFields] = None) -> None:
         self.atom_mapper = atom_mapper
+        self.default_fields = fields or DefaultLNPFields(names=True, resnames=True, chainids=True, resids=True)
 
-    def build(self, pairs: NDArray[np.int32], seq: Seq, custom_fields: Optional[dict]=None) -> "LabeledNeighborPairs":
+        keys: list[str] = sorted([field for field, value in self.default_fields.items() if value])
+        self.dtype = np.dtype({"names": keys, "formats": ["<U25" for _ in keys]})
+
+    def build(
+        self, pairs: NDArray[np.int32], seq: Seq, custom_fields: Optional[dict[str, dict[str, Iterable[str]]]] = None
+    ) -> "LabeledNeighborPairs":
         """Build a LabeledNeighborPairs object from the pairs of atom indices, a sequence,
            and optional custom fields.
 
@@ -162,19 +185,25 @@ class LabeledNeighborPairsBuilder:
         atoms = self.atom_mapper.atoms.universe.atoms
 
         # Create the base structured array
-        data = LabeledNeighborPairsBuilder.create_empty_struct_array(atoms.n_atoms)
-        data["chain_ids"] = atoms.chainIDs
-        data["resnames"] = atoms.resnames
-        data["resids"] = mapped_resindices
-        data["names"] = atoms.names
+        data = self.create_empty_struct_array(atoms.n_atoms)
+        if self.default_fields.get("chainids"):
+            data["chainids"] = atoms.chainIDs
+        if self.default_fields.get("resnames"):
+            data["resnames"] = atoms.resnames
+        if self.default_fields.get("names"):
+            data["names"] = atoms.names
 
-        # Extend the array if custom fields are provided
+        data["resids"] = mapped_resindices
+
+        # # Extend the array if custom fields are provided
+        # print("custom_fields", custom_fields)
         if custom_fields:
             extended_dtype = self._extend_dtype_with_custom_fields(custom_fields)
             extended_data = np.empty(atoms.n_atoms, dtype=extended_dtype)
 
             # Copy data from the original array
-            for field in LabeledNeighborPairsBuilder.DTYPE.names:
+            assert self.dtype.names is not None
+            for field in self.dtype.names:
                 extended_data[field] = data[field]
 
             # Add custom fields
@@ -188,8 +217,7 @@ class LabeledNeighborPairsBuilder:
 
         return LabeledNeighborPairs(data[pairs])
 
-    @staticmethod
-    def _extend_dtype_with_custom_fields(custom_fields: dict) -> np.dtype:
+    def _extend_dtype_with_custom_fields(self, custom_fields: dict[str, dict[str, Iterable[str]]]) -> DTypeLike:
         """Extend the dtype with custom fields.
 
         Args:
@@ -199,11 +227,10 @@ class LabeledNeighborPairsBuilder:
             np.dtype: An extended dtype.
         """
         new_fields = [(name, "<U25") for name in custom_fields]
-        extended_dtype = np.dtype(list(LabeledNeighborPairsBuilder.DTYPE.descr) + new_fields)
+        extended_dtype = np.dtype(list(self.dtype.descr) + new_fields)
         return extended_dtype
 
-    @staticmethod
-    def create_empty_struct_array(size: int) -> NDArray[np.void]:
+    def create_empty_struct_array(self, size: int) -> NDArray[np.void]:
         """Create an empty structured array.
 
         Args:
@@ -212,4 +239,4 @@ class LabeledNeighborPairsBuilder:
         Returns:
             NDArray[np.void]: An empty structured array.
         """
-        return np.empty(size, dtype=LabeledNeighborPairsBuilder.DTYPE)
+        return np.empty(size, dtype=self.dtype)
