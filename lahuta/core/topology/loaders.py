@@ -20,7 +20,7 @@ Classes:
 
 
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, Literal, Optional, overload
+from typing import Any, Iterator, Literal, NamedTuple, Optional, overload
 
 import gemmi
 import MDAnalysis as mda
@@ -35,6 +35,20 @@ from lahuta.utils.radii import v_radii_assignment
 from .arc import ARC, Atoms, Chains, Residues
 from .obmol import OBMol
 
+
+class PartnerData(NamedTuple):
+    """Store gemmi.ConnectionList atom partner data."""
+
+    atom_name: str
+    chain_name: str
+    res_id_seq_num: int
+    res_id_name: str
+
+class ConnectionData(NamedTuple):
+    """Store gemmi.ConnectionList atom connection data."""
+
+    partner1: PartnerData
+    partner2: PartnerData
 
 class BaseLoader(ABC):
     """Abstract base class providing a blueprint for loading and handling biological structure data.
@@ -65,7 +79,6 @@ class BaseLoader(ABC):
         self._residues = None
         self._atoms = None
 
-        self.structure = None
         self.arc: Optional[ARC] = None
 
     @property
@@ -164,7 +177,7 @@ class GemmiLoader(BaseLoader):
             block = gemmi.cif.read(self.file_path).sole_block()
             structure = gemmi.make_structure_from_block(block)
 
-        self.structure = structure
+        self.conn_store = self.store_connections(structure.connections)
         atom_site_data: dict[str, Any] = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
@@ -240,14 +253,40 @@ class GemmiLoader(BaseLoader):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
-        assert self.structure is not None, "structure should not be None"
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            self.structure.connections,
+            self.conn_store,
         )
         assert obmol.mol is not None
         return obmol.mol
+
+    def store_connections(self, connections: gemmi.ConnectionList) -> list[ConnectionData]:
+        """Store the atom connections from the gemmi structure object.
+
+        Args:
+            connections (gemmi.ConnectionList): The atom connections from the gemmi structure object.
+
+        Returns:
+            list[ConnectionData]: A list of ConnectionData objects containing the atom connections.
+        """
+        conn_store = []
+        for conn in connections:
+            prt1 = PartnerData(
+                atom_name=conn.partner1.atom_name,
+                chain_name=conn.partner1.chain_name,
+                res_id_seq_num=conn.partner1.res_id.seqid.num,
+                res_id_name=conn.partner1.res_id.name
+            )
+            prt2 = PartnerData(
+                atom_name=conn.partner2.atom_name,
+                chain_name=conn.partner2.chain_name,
+                res_id_seq_num=conn.partner2.res_id.seqid.num,
+                res_id_name=conn.partner2.res_id.name
+            )
+            conn_store.append(ConnectionData(prt1, prt2))
+
+        return conn_store
 
 
 class TopologyLoader(BaseLoader):
@@ -293,10 +332,7 @@ class TopologyLoader(BaseLoader):
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()
-        obmol.create_mol(
-            self.arc,
-            self.structure,
-        )
+        obmol.create_mol(self.arc)
         assert obmol.mol is not None
         return obmol.mol
 
@@ -316,7 +352,6 @@ class TopologyLoader(BaseLoader):
 
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
-        top_loader.structure = None
         top_loader.ag.universe.filename = ag.universe.filename
 
         top_loader.arc = ARC(top_loader, top_loader.ag)

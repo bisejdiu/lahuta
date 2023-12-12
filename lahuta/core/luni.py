@@ -73,6 +73,7 @@ class Luni:
     ) -> None:
         fmts: str | set[str] = ""
         self._file_loader: BaseLoader
+        self._input_structure: str | Path | "AtomGroupType" = structure
         structure = str(structure) if isinstance(structure, Path) else structure
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
@@ -275,10 +276,12 @@ class Luni:
             mda = self._mda.universe.atoms[union_indices]
 
         # neighbors = MDAnalysisNeighborSearch(self.to("mda"))
+        neighbors: BaseNeighborSearch
         if backend == "gemmi":
-            assert self._file_loader.structure is not None
+            import gemmi
             # TODO(bisejdiu): image is not being passed
-            neighbors = GemmiNeighborSearch(mda, self._file_loader.structure)
+            structure = gemmi.read_pdb(self._input_structure)
+            neighbors = GemmiNeighborSearch(mda, structure)
         elif backend == "mda":
             neighbors = MDAnalysisNeighborSearch(mda)
         else:
