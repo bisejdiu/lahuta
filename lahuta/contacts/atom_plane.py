@@ -55,6 +55,8 @@ def compute_neighbors(
     """Compute the neighbors between the reference and positions."""
     max_cutoff = CONTACTS["aromatic"]["met_sulphur_aromatic_distance"]
 
+    if reference.shape[0] == 0 or positions.shape[0] == 0:
+        return np.empty((0, 2), dtype=np.int32), np.empty(0, dtype=np.float32)
     pairs, distances = mda_distances.capped_distance(reference, positions, max_cutoff, return_distances=True)
     return pairs, distances
 
@@ -102,13 +104,18 @@ class AtomPlaneContacts:
         ```
     """
 
-    def __init__(self, ns: NeighborPairs):
+    def __init__(self, ns: NeighborPairs) -> None:
         mda = ns.luni.to("mda")
 
         self.rings = enumerate_rings(ns.luni.to("mol"))
         self.ring_first_idxs = mda.universe.atoms.indices[self.rings.first_atom_idx]
 
-        pairs, distances = compute_neighbors(mda.atoms.positions, self.rings.centers)
+        # no rings means no contacts
+        if self.rings.centers.shape[0] == 0:
+            self.ns = NeighborPairs(ns.luni)
+            self.angles = np.empty(0, dtype=np.float32)
+            return
+        pairs, distances = compute_neighbors(mda.positions, self.rings.centers)
         mapped_pairs = np.array([self.ring_first_idxs[pairs[:, 0]], pairs[:, 1]]).T
 
         nn = NeighborPairs(ns.luni)

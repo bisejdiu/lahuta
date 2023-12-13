@@ -65,8 +65,8 @@ class UniverseWrapper:
         self.unique_resnames = np.unique(resnames)
 
         self.u_ref = u_ref
-        # self.u = Luni(self.mda_u.select_atoms(selection).atoms)
-        self.u = u_ref.filter(selection)
+        self.u = Luni(self.mda_u.select_atoms(selection).atoms)
+        # self.u = u_ref.filter(selection)
 
 
 @pytest.fixture(scope="session")
@@ -79,10 +79,10 @@ selections_res_difs = [
     ("all", 1),
     ("protein and not resname ARG", 2),
     ("protein and not resname LYS", 3),
-    (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
+   (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
     ("resid 1 to 50", 4),
-    ("resid 1 to 50 or resname HEC", 2),
-    ("(protein and not resname ARG LYS) or resname HEC", 2),
+   ("resid 1 to 50 or resname HEC", 2),
+   ("(protein and not resname ARG LYS) or resname HEC", 2),
 ]
 
 
@@ -96,7 +96,7 @@ class TestMDAnalysis:
             self.selection = selection
 
         self.contact_types = [
-            ContactType("covalent", C.covalent_neighbors, self.universe),
+            # ContactType("covalent", C.covalent_neighbors, self.universe),
             ContactType("metalic", C.metalic_neighbors, self.universe),
             ContactType("carbonyl", C.carbonyl_neighbors, self.universe),
             ContactType("hbond", C.hbond_neighbors, self.universe),

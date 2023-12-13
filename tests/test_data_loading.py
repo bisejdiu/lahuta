@@ -173,6 +173,7 @@ def read_luni_from_mda(pdb_file: str) -> Luni:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         univ = Universe(pdb_file)
+        assert univ.atoms is not None
         return Luni(univ.atoms)
 
 

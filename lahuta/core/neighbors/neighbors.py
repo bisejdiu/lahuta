@@ -3,7 +3,7 @@ considered as "neighbors" based on a certain distance criterion. This class prov
 methods to manipulate, analyze, and export these pairs.
 """
 
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,7 +12,7 @@ from typing_extensions import Self
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.utils import array_utils as au
 
-from .mapping import AtomMapper, IndexFinder, LabeledNeighborPairsBuilder
+from .mapping import AtomMapper, DefaultLNPFields, IndexFinder, LabeledNeighborPairsBuilder
 
 if TYPE_CHECKING:
     from Bio.Seq import Seq
@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 
 __all__ = ["NeighborPairs"]
-
 
 class NeighborPairs:
     """A class that manages pairs of atoms that are considered "neighbors" within a defined distance threshold.
@@ -248,7 +247,7 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def map(self, seq: "Seq") -> "LabeledNeighborPairs":
+    def map(self, seq: "Seq", fields: Optional[DefaultLNPFields] = None, cusotm_fields: Optional[dict[str, dict[str, Sequence[str]]]] = None) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
@@ -256,13 +255,24 @@ class NeighborPairs:
 
         Args:
             seq (Bio.Seq): The sequence to map the indices to.
+            fields (DefaultLNPFields, optional): The fields to include in the LabeledNeighborPairs object. 
+                By default, names, resnames, and chainids are included. Defaults to DefaultLNPFields.
+            cusotm_fields (dict, optional): A dictionary of custom fields and values.
 
         Returns:
             A NeighborPairs object containing the mapped pairs.
         """
-        atom_mapper = AtomMapper(self.atoms)
-        builder = LabeledNeighborPairsBuilder(atom_mapper)
-        return builder.build(self.pairs, seq)
+        fields = fields or {}
+        default_fields = DefaultLNPFields(
+            names=fields.get("names", True), 
+            resnames=fields.get("resnames", True),
+            chainids=fields.get("chainids", True),
+            resids=True,
+        )
+
+        atom_mapper = AtomMapper(self.luni.to("mda"))
+        builder = LabeledNeighborPairsBuilder(atom_mapper, default_fields)
+        return builder.build(self.pairs, seq, custom_fields=cusotm_fields)
 
     def backmap(self, seq: "Seq", pairs: NDArray[np.void]) -> Self:
         """Map the `pairs` indices to indices in the structure.
@@ -565,6 +575,7 @@ class NeighborPairs:
             half_only (bool, optional): Whether to plot only the upper half of the contact map. Defaults to False.
         """
         from lahuta.viz.contact_matrix import ContactMap
+
         return ContactMap(self.pairs).plot(which, half_only)
 
     @property
@@ -653,6 +664,7 @@ class NeighborPairs:
             A pandas DataFrame representing the NeighborPairs object.
         """
         from lahuta.writers.frame_writer import DataFrameWriter
+
         return DataFrameWriter(self, df_format, annotations).create()
 
     def vmd_exporter(self, sphere_resolution: int = 20, save_to_file: bool = False) -> Optional[str]:
@@ -666,6 +678,7 @@ class NeighborPairs:
             str | None: The TCL script to visualize the neighbor pairs in VMD.
         """
         from lahuta.writers.exporters import VMDExporter
+
         exporter = VMDExporter(self.pairs)
         return exporter.export(sphere_resolution=sphere_resolution, save_to_file=save_to_file)
 
@@ -819,10 +832,11 @@ class NeighborPairs:
         Returns:
             An array containing the pairs of indices of neighboring atoms.
         """
-        struct_array = LabeledNeighborPairsBuilder.create_empty_struct_array(self.atoms.n_atoms)
+        struct_array = np.empty(self.atoms.n_atoms, dtype=LabeledNeighborPairsBuilder.DTYPE)
         struct_array["names"] = self.atoms.names
         struct_array["resnames"] = self.atoms.resnames
         struct_array["resids"] = self.atoms.resids
+        struct_array["chainids"] = self.atoms.chainIDs
 
         return struct_array[self.pairs]
 
