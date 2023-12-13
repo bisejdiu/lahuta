@@ -118,3 +118,7 @@ testpaths = ["tests"]
 minversion = 7.4
 addopts = "--maxfail=18"
 log_level = "INFO"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning"
+]

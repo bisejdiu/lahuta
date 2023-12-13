@@ -32,7 +32,7 @@ class CachedFileProcessor(Generic[T]):
         directory: Optional[str] = None,
         file_list: Optional[list[str]] = None,
         allowed_file_extensions: Optional[list[str]] = None,
-        worker: Callable[[str], T] = cast(Callable[[str], T], lambda x: x),
+        worker: Callable[..., T] = cast(Callable[..., T], lambda x: x),
     ) -> None:
         self.worker: Worker[T] = Worker(worker)
         self.directory = directory

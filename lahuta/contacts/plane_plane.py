@@ -65,6 +65,12 @@ class _PlanePlaneContacts:
         centers = self.rings.centers
         normals = self.rings.normals
 
+        # no rings means no plane-plane contacts
+        if self.rings.centers.shape[0] == 0:
+            self._pair_ids = np.empty((0, 2), dtype=np.int32)
+            self.distances = np.array([], dtype=np.float32)
+            return
+
         pair_ids = self._gen_combinations()
 
         # compute the pairwise distances
@@ -112,6 +118,9 @@ class _PlanePlaneContacts:
         )
 
         pairs = np.array(list(zip(first_ring_indices, second_ring_indices, strict=True)))
+
+        if pairs.shape[0] == 0:
+            return np.empty((0, 2), dtype=np.int32), np.array([])
 
         return pairs, self.distances
 
