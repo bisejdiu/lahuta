@@ -270,7 +270,6 @@ def test_get_aligned_seqs() -> None:
 
     for obj in objects_store:
         key = obj.FILE_NAME[:-4]
-        if key in {"2hpy", "2i37"}: continue
         luni = Luni(obj.file_loc).filter(f"chainID {MSA_PDB_DICT[key][0]}")
         ns = luni.neighbors(radius=5, res_dif=4)
 
@@ -292,6 +291,7 @@ def is_correct_gns_mapping(mapped_ns: LabeledNeighborPairs, ref_seq: str | Seq, 
     arr = LabeledNeighborPairs.remove_duplicates(mapped_ns.pairs[["resids", "resnames", "gns"]])
     resids_as_int = arr["resids"].astype(int)
     seq_extended = ref_seq + "-" * (resids_as_int.max() - len(ref_seq) + 1)
+    seq_extended = seq_extended.replace("X", "-")
     seq_extended = np.array(seq_extended)
     target_arr = seq_extended[resids_as_int]
 
