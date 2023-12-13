@@ -84,9 +84,9 @@ class AtomMapper:
         return mapped_resindices
 
     def _map_prot_resindices(self, seq: Seq) -> NDArray[np.int32]:
-        mapped_prot_resindices = MSAParser.to_indices_array(seq)
+        mapped_prot_resids = MSAParser.to_indices_array(seq)
         prot_resindices = self._factorize(self.prot.resindices)
-        return mapped_prot_resindices[prot_resindices]
+        return mapped_prot_resids[prot_resindices]
 
     def _map_nonprot_resindices(self, seq: Seq) -> NDArray[np.int32]:
         n_nonprot_residues = self.nonprot.residues.resindices.shape[0]
@@ -95,12 +95,12 @@ class AtomMapper:
         return shift_nonprot_resindices[nonprot_resindices]
 
     def _mergemap_nonsel_resindices(self, mapped_resindices: NDArray[np.int32]) -> NDArray[np.int32]:
-        nonsel_indices = np.searchsorted(self.atoms.resindices, self.nonsel_resindices)
+        insertion_points = np.searchsorted(self.atoms.resindices, self.nonsel_resindices)
         with warnings.catch_warnings():
             # np.nan insertion is not supported by numpy.
             warnings.simplefilter("ignore")
-            nonsel_resindices = np.full(nonsel_indices.shape, np.nan, dtype=float)
-            mapped_resindices = np.insert(mapped_resindices, nonsel_indices, nonsel_resindices)
+            nonsel_resindices = np.full(insertion_points.shape, np.nan, dtype=float)
+            mapped_resindices = np.insert(mapped_resindices, insertion_points, nonsel_resindices)
 
         return mapped_resindices
 
