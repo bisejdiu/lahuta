@@ -54,7 +54,7 @@ class AtomMapper:
     def __init__(self, atoms: AtomGroupType):
         self.atoms = atoms
         self.prot, self.nonprot = self._mda_protein_select_split(atoms)
-        self.sel_resindices = (self.atoms.universe.atoms - self.atoms).resindices
+        self.nonsel_resindices = (self.atoms.universe.atoms - self.atoms).resindices
 
     @staticmethod
     def _mda_protein_select_split(atoms: AtomGroupType) -> tuple[AtomGroupType, AtomGroupType]:
@@ -78,7 +78,7 @@ class AtomMapper:
             self.prot.resindices, self.nonprot.resindices, prot_resindices, nonprot_resindices
         )
 
-        if self.sel_resindices.size > 0:
+        if self.nonsel_resindices.size > 0:
             mapped_resindices = self._mergemap_nonsel_resindices(mapped_resindices)
 
         return mapped_resindices
@@ -95,7 +95,7 @@ class AtomMapper:
         return shift_nonprot_resindices[nonprot_resindices]
 
     def _mergemap_nonsel_resindices(self, mapped_resindices: NDArray[np.int32]) -> NDArray[np.int32]:
-        nonsel_indices = np.searchsorted(self.atoms.resindices, self.sel_resindices)
+        nonsel_indices = np.searchsorted(self.atoms.resindices, self.nonsel_resindices)
         with warnings.catch_warnings():
             # np.nan insertion is not supported by numpy.
             warnings.simplefilter("ignore")
