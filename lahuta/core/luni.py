@@ -107,7 +107,7 @@ class Luni:
     def _get_supported_fmts() -> set[str]:
         return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
 
-    def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
+    def extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         """Add new topology attributes to the Luni.
 
         Args:
