@@ -16,10 +16,10 @@ from pathlib import Path
 from typing import Iterable, Iterator, Literal, Optional, Type, TypeVar
 
 import numpy as np
-from Bio import SeqIO
 from Bio.Seq import Seq
 from numpy.typing import NDArray
 
+from lahuta.msa.io import read_fasta
 from lahuta.msa.mafft import Mafft
 from lahuta.msa.muscle import Muscle
 
@@ -55,41 +55,31 @@ class MSAParser:
     """
 
     def __init__(
-        self, filepath: Optional[str] = None, sequences: Optional[dict[str, Seq] | dict[str, str]] = None
+        self, 
+        *, 
+        filepath: Optional[str] = None, 
+        sequences: Optional[dict[str, Seq] | dict[str, str]] = None, 
+        _ref_alig_keys: Optional[set[str]] = None,
     ) -> None:
+                
         self._sequences: dict[str, Seq] = {}
+        self._ref_alig: Optional[MSAParser] = None
         match (filepath, sequences):
             case (None, _):
                 assert sequences is not None
                 self._sequences = {k: Seq(v) for k, v in sequences.items()}
             case (_, None):
                 assert filepath is not None
-                self._parse_file(filepath)
+                self._sequences = read_fasta(filepath)
             case (_, _):
                 raise ValueError("Either filepath or sequences must be provided")
+            
+        self._is_same_length: bool = self.all_same_length(list(self._sequences.values()))
+            
+        if _ref_alig_keys is not None:
+            self._ref_alig = type(self)(sequences={k: self._sequences[k] for k in _ref_alig_keys})
 
-    def _parse_file(self, filepath: str) -> None:
-        for record in SeqIO.parse(filepath, "fasta"):
-            self._sequences[record.id] = record.seq
-
-    def sequence_indices(self, seq_id: str) -> NDArray[np.int32]:
-        """Get the indices of the sequence.
-
-        Args:
-            seq_id (str): The ID of the sequence.
-
-        Returns:
-            NDArray[np.int32]: The indices of the sequence.
-
-        Raises:
-            ValueError: If the sequence ID is not found.
-
-        """
-        seq = self._sequences.get(seq_id, None)
-        if seq is None:
-            raise ValueError(f"Sequence with ID {seq_id} not found.")
-        return self.to_indices_array(seq)
-
+    # TODO (bisejdiu): rename method
     @staticmethod
     def to_indices_array(seq: Seq) -> NDArray[np.int32]:
         """Convert a sequence to an array of indices.
@@ -161,7 +151,7 @@ class MSAParser:
         Align = get_backend(backend)
         aligner = Align(self._sequences, ref_alignment=ref_alignment)
         aligner.run(n_jobs=n_jobs)
-        return type(self)(aligner.output_file)
+        return type(self)(filepath=aligner.output_file, _ref_alig_keys=aligner.ref_alig_keys)
 
     @staticmethod
     def map_labels(labels: Iterable[str], sequences: list[str | Seq], fill: str="-") -> NDArray[np.str_]:
@@ -255,6 +245,21 @@ class MSAParser:
         with Path(file_name).open("w") as f:
             for key, value in self.sequences.items():
                 f.write(f">{key.split('.')[0]}\n{value}\n")
+
+    @staticmethod
+    def all_same_length(strings: list[str | Seq]) -> bool:
+        """Check if all strings are of the same length.
+
+        Args:
+            strings (list[str]): The strings.
+
+        Returns:
+            bool: True if all strings are of the same length, False otherwise.
+
+        """
+        first_length = len(strings[0])
+        return all(len(s) == first_length for s in strings)
+
 
     def __add__(self: T, other: T) -> T:
         return type(self)(sequences={**self.sequences, **other.sequences})

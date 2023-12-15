@@ -76,12 +76,12 @@ def load_labels(non_dash_columns: NDArray[np.bool_]) -> list[str]:
 
 def load_msa(file_path: str) -> MSAParser:
     """Load an MSA from a file."""
-    return MSAParser(file_path)
+    return MSAParser(filepath=file_path)
 
 def load_rhod_msa() -> MSAParser:
     """Load an MSA from a file."""
     file_loc = Path(__file__).parent / "data/rhodopsins.fasta"
-    return MSAParser(file_loc.as_posix())
+    return MSAParser(filepath=file_loc.as_posix())
 
 def process_neighbors(file_path: str) -> NeighborPairs:
     """Extracts the neighbors from a PDB file."""

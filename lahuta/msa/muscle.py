@@ -38,8 +38,11 @@ class Muscle:
         sequence_data: str | dict[str, str] | dict[str, Seq],
         ref_alignment: Optional[str | dict[str, str] | dict[str, Seq]] = None,
     ) -> None:
+        # assert isinstance(ref_alignment, str) or ref_alignment is None
+        self.ref_alig_keys: Optional[set[str]] = None
+
         if ref_alignment:
-            raise NotImplementedError("MUSCLE does not support reference alignment. Please use lahuta.msa.mafft.Mafft.")
+            logging.warning("MUSCLE does not support reference alignment. Please use lahuta.msa.mafft.Mafft.")
 
         match sequence_data:
             case str(path):

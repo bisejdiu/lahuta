@@ -31,7 +31,7 @@ def setup_data(request: FixtureRequest) -> T:
     s5u = Luni(s5_data_path)
     ns_b2 = b2u.neighbors(res_dif=2)
     ns_s5 = s5u.neighbors(res_dif=2)
-    parser = MSAParser(fasta_data_path)
+    parser = MSAParser(filepath=fasta_data_path)
 
     seq_id_b2 = parser.seq_ids[0]
     seq_id_s5 = parser.seq_ids[1]
