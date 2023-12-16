@@ -8,14 +8,13 @@ from lahuta import Luni
 from lahuta.core.neighbors import LabeledNeighborPairs
 from lahuta.msa.msa import MSAParser
 
-
 pytestmark = pytest.mark.nb
 
 # Type variables
 T = tuple[LabeledNeighborPairs, LabeledNeighborPairs]
 
 file_triplets = [
-    ('data/b2.cif', 'data/s5.cif', 'data/alig_b2s5.fasta'),
+    ("data/b2.cif", "data/s5.cif", "data/alig_b2s5.fasta"),
 ]
 
 
@@ -42,16 +41,16 @@ def setup_data(request: FixtureRequest) -> T:
     return s1, s2
 
 
-@pytest.fixture
+@pytest.fixture()
 def non_transformed_maps(setup_data: T) -> T:
     s1, s2 = setup_data
     return s1, s2
 
 
 params = [
-    (['ASP'], ['ASP', 'LEU'], 'names'),
-    (['ASP'], ['ASP', 'LEU'], 'resnames'),
-    (['ALA', 'LEU', 'ILE', 'VAL'], ['ALA', 'LEU', 'ILE', 'VAL'], 'names'),
+    (["ASP"], ["ASP", "LEU"], "names"),
+    (["ASP"], ["ASP", "LEU"], "resnames"),
+    (["ALA", "LEU", "ILE", "VAL"], ["ALA", "LEU", "ILE", "VAL"], "names"),
 ]
 
 
