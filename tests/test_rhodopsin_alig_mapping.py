@@ -221,8 +221,9 @@ def test_get_aligned_seqs() -> None:
     labels = load_labels(non_dash_columns)
     assert len(labels) == 281
 
-    aligned_ref_seqs = (aligned_seqs - parser)
-    mapped_labels = MSAParser.map_labels(labels, list(aligned_ref_seqs.sequences.values()))
+    # Assign labels
+    aligned_seqs.assign_labels(ref_sequences=ref_parser.sequences, labels=labels)
+    assert aligned_seqs.labels.shape == (366,)
 
     processor = CachedFileProcessor(
         file_list=[obj.file_loc for obj in objects_store],
@@ -253,7 +254,7 @@ def test_get_aligned_seqs() -> None:
     ref_seq = aligned_seqs.sequences["1f88.pdb"]
     target_seq = aligned_seqs.sequences["Rhodopsin_Bovine"]
 
-    alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, mapped_labels)
+    alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, aligned_seqs.labels)
     assert alig_seq_labels.shape == (366,)
 
     luni = Luni(R1().file_loc).filter("chainID A") # 1GZM:A
@@ -274,7 +275,7 @@ def test_get_aligned_seqs() -> None:
         ns = luni.neighbors(radius=5, res_dif=4)
 
         ref_seq = aligned_seqs.sequences[f"{obj.FILE_NAME.lower()}"]
-        alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, mapped_labels)
+        alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, aligned_seqs.labels)
         mapped_ns = ns.map(ref_seq, cusotm_fields={
             "gns": {
                 "values": alig_seq_labels.astype(str), # type: ignore
