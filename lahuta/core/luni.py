@@ -279,6 +279,7 @@ class Luni:
         neighbors: BaseNeighborSearch
         if backend == "gemmi":
             import gemmi
+
             # TODO(bisejdiu): image is not being passed
             structure = gemmi.read_pdb(self._input_structure)
             neighbors = GemmiNeighborSearch(mda, structure)
@@ -493,32 +494,6 @@ class Luni:
             Luni: A new Luni instance containing the filtered atoms.
         """
         return self.__class__(self._mda.select_atoms(selection))
-        import pandas as pd
-
-        mda_copy = self._mda.select_atoms(selection).copy()
-
-        uv = mda.Universe.empty(
-            n_atoms=mda_copy.n_atoms,
-            n_residues=mda_copy.n_residues,
-            n_segments=mda_copy.n_segments,
-            atom_resindex=pd.factorize(mda_copy.resindices)[0],
-            residue_segindex=mda_copy.residues.segindices,
-            trajectory=True,
-        )
-
-        uv.add_TopologyAttr("names", mda_copy.names)
-        uv.add_TopologyAttr("types", mda_copy.types)
-        uv.add_TopologyAttr("elements", mda_copy.elements)
-        uv.add_TopologyAttr("resnames", mda_copy.residues.resnames)
-        uv.add_TopologyAttr("resids", mda_copy.residues.resids)
-        uv.add_TopologyAttr("chainIDs", mda_copy.chainIDs)
-        uv.add_TopologyAttr("ids", mda_copy.ids)
-
-        assert uv.atoms is not None
-        uv.atoms.positions = mda_copy.positions
-        uv.filename = mda_copy.universe.filename
-
-        return self.__class__(uv.atoms)
 
     def remove_water(self) -> Self:
         """Remove water molecules from the Luni.
@@ -604,6 +579,38 @@ class Luni:
             Luni: A copy of this Luni instance.
         """
         return self.__class__(self._mda)
+
+    def deepcopy(self) -> Self:
+        """Create a deep copy of this Luni instance.
+
+        Returns:
+            Luni: A deep copy of this Luni instance.
+        """
+        mda_copy = self._mda.copy()
+        _, resindices = np.unique(mda_copy.resindices, return_inverse=True)
+
+        uv = mda.Universe.empty(
+            n_atoms=mda_copy.n_atoms,
+            n_residues=mda_copy.n_residues,
+            n_segments=mda_copy.n_segments,
+            atom_resindex=resindices,
+            residue_segindex=mda_copy.residues.segindices,
+            trajectory=True,
+        )
+
+        uv.add_TopologyAttr("names", mda_copy.names)
+        uv.add_TopologyAttr("types", mda_copy.types)
+        uv.add_TopologyAttr("elements", mda_copy.elements)
+        uv.add_TopologyAttr("resnames", mda_copy.residues.resnames)
+        uv.add_TopologyAttr("resids", mda_copy.residues.resids)
+        uv.add_TopologyAttr("chainIDs", mda_copy.chainIDs)
+        uv.add_TopologyAttr("ids", mda_copy.ids)
+
+        assert uv.atoms is not None
+        uv.atoms.positions = mda_copy.positions
+        uv.filename = mda_copy.universe.filename
+
+        return self.__class__(uv.atoms)
 
     def sequence(self, use_synonyms: bool = False) -> str:
         """Retrieve the sequence of the Luni.
