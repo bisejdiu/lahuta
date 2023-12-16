@@ -1,8 +1,7 @@
 from pathlib import Path
 
-import pytest
-
 import numpy as np
+import pytest
 from Bio.Seq import Seq
 from numpy.typing import NDArray
 
@@ -36,15 +35,20 @@ single_letter_code = {
 }
 get_single_letter_code = np.vectorize(lambda x: single_letter_code.get(x, "-"))
 
+
 class R1(BaseFile):
     FILE_NAME = "1F88"
+
     def __init__(self, pdb: bool = True) -> None:
         super().__init__(pdb=pdb)
 
+
 class R2(BaseFile):
     FILE_NAME = "1HZX"
+
     def __init__(self, pdb: bool = True) -> None:
         super().__init__(pdb=pdb)
+
 
 TEST_PARAMS = [(R1, "A"), (R2, "A")]
 MSA_PDB_FILES = [
@@ -61,27 +65,32 @@ MSA_PDB_FILES = [
 ]
 MSA_PDB_DICT = {key: (v1, v2, v3) for key, v1, v2, v3 in MSA_PDB_FILES}
 
+
 def read_luni(pdb_file: str) -> Luni:
     """Read a PDB file and return a Luni object."""
     return Luni(pdb_file)
 
+
 def load_labels(non_dash_columns: NDArray[np.bool_]) -> list[str]:
     """Load labels from a file."""
     file_loc = Path(__file__).parent / "data/labels.txt"
-    with open(file_loc.as_posix(), "r") as f:
+    with Path.open(file_loc, "r") as f:
         labels = f.read().splitlines()
 
-    labels = np.array(labels)[np.where(non_dash_columns == True)[0]].tolist()
+    labels = np.array(labels)[non_dash_columns].tolist()
     return labels
+
 
 def load_msa(file_path: str) -> MSAParser:
     """Load an MSA from a file."""
     return MSAParser(filepath=file_path)
 
+
 def load_rhod_msa() -> MSAParser:
     """Load an MSA from a file."""
     file_loc = Path(__file__).parent / "data/rhodopsins.fasta"
     return MSAParser(filepath=file_loc.as_posix())
+
 
 def process_neighbors(file_path: str) -> NeighborPairs:
     """Extracts the neighbors from a PDB file."""
@@ -94,6 +103,7 @@ def process_neighbors(file_path: str) -> NeighborPairs:
 
     return ns
 
+
 def process_sequence(file_path: str) -> str:
     """Extracts the sequence from a PDB file."""
     base_name = Path(file_path).name
@@ -101,13 +111,15 @@ def process_sequence(file_path: str) -> str:
     luni = Luni(file_path).filter(f"chainID {chain_id}")
     return luni.sequence(use_synonyms=True)
 
-@pytest.mark.parametrize("pdb_class, chain", TEST_PARAMS)
+
+@pytest.mark.parametrize(("pdb_class", "chain"), TEST_PARAMS)
 def test_read_pdb(pdb_class: type[BaseFile], chain: str) -> None:
     luni = read_luni(pdb_class().file_loc)
     assert luni.n_atoms is not None
 
     filtered_luni = luni.filter(f"chainID '{chain}'")
     assert filtered_luni.n_atoms is not None
+
 
 def test_process_sequence() -> None:
     R1_seq = (
@@ -153,8 +165,8 @@ def correct_seqs(ref_parser: MSAParser) -> tuple[MSAParser, NDArray[np.bool_]]:
 
     return MSAParser(sequences=short_ref_seqs), non_dash_columns
 
-def get_alig_seq_labels(ref_seq: str | Seq, target_seq: str | Seq, mapped_labels: NDArray[np.str_]) -> NDArray[np.str_]:
 
+def get_alig_seq_labels(ref_seq: str | Seq, target_seq: str | Seq, mapped_labels: NDArray[np.str_]) -> NDArray[np.str_]:
     bov_pdb = MSAParser.to_indices_array(ref_seq)
     bov_seq = MSAParser.to_indices_array(target_seq)
 
@@ -182,14 +194,14 @@ def test_get_aligned_seqs() -> None:
     sequence_processor.process()
     parser = MSAParser(sequences=sequence_processor.results)
     assert sorted(parser.seq_ids) == sorted([f"{x[0]}".lower() + ".pdb" for x in MSA_PDB_FILES])
-    
+
     unprocessed_ref_parser = load_rhod_msa()
     assert len(unprocessed_ref_parser.seq_ids) == 4
     assert set(unprocessed_ref_parser.sequences.keys()) == {
         "Rhodopsin_H._adansoni",
         "Rhodopsin_Bovine",
         "Rhodopsin_Human",
-        "Rhodopsin_J._flying_s.."
+        "Rhodopsin_J._flying_s..",
     }
     assert len(next(iter(unprocessed_ref_parser.sequences.values()))) == 455
 
@@ -208,7 +220,7 @@ def test_get_aligned_seqs() -> None:
         "Rhodopsin_H._adansoni",
         "Rhodopsin_Bovine",
         "Rhodopsin_Human",
-        "Rhodopsin_J._flying_s.."
+        "Rhodopsin_J._flying_s..",
     }
     assert len(next(iter(ref_parser.sequences.values()))) == 281
     assert np.all(unpacked == non_dash_columns)
@@ -233,7 +245,7 @@ def test_get_aligned_seqs() -> None:
 
     for result, obj in processor.results.items():
         assert isinstance(obj, NeighborPairs)
-        
+
         key = result[:-4]
         assert key in MSA_PDB_DICT
         assert obj.pairs.shape[0] == MSA_PDB_DICT[key][1]
@@ -241,15 +253,16 @@ def test_get_aligned_seqs() -> None:
     mapped_results = {}
     for file_name in processor.results:
         basename = Path(file_name).name
-        mapped_results[basename] = processor.results[basename].map(aligned_seqs.sequences[basename], fields={"names": False, "resnames": False, "chainids": False})
+        mapped_results[basename] = processor.results[basename].map(
+            aligned_seqs.sequences[basename], fields={"names": False, "resnames": False, "chainids": False}
+        )
 
     for result, obj in mapped_results.items():
         assert isinstance(obj, LabeledNeighborPairs)
         assert obj.pairs.shape[0] == MSA_PDB_DICT[result[:-4]][2]
 
     assert union(*mapped_results.values()).pairs.shape[0] == 2217
-    assert intersection(*mapped_results.values()).pairs.shape[0] == 426 
-
+    assert intersection(*mapped_results.values()).pairs.shape[0] == 426
 
     ref_seq = aligned_seqs.sequences["1f88.pdb"]
     target_seq = aligned_seqs.sequences["Rhodopsin_Bovine"]
@@ -257,16 +270,19 @@ def test_get_aligned_seqs() -> None:
     alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, aligned_seqs.labels)
     assert alig_seq_labels.shape == (366,)
 
-    luni = Luni(R1().file_loc).filter("chainID A") # 1GZM:A
+    luni = Luni(R1().file_loc).filter("chainID A")  # 1GZM:A
     ns = luni.neighbors(radius=5, res_dif=4)
-    mapped_ns = ns.map(ref_seq, cusotm_fields={
-        "gns": {
-            "values": alig_seq_labels.astype(str), # type: ignore
-            "fill": "-"
+    mapped_ns = ns.map(
+        ref_seq,
+        cusotm_fields={
+            "gns": {
+                "values": alig_seq_labels.astype(str),  # type: ignore
+                "fill": "-",
+            },
         },
-    })
+    )
 
-    assert mapped_ns.pairs.shape == (6080 , 2)
+    assert mapped_ns.pairs.shape == (6080, 2)
     is_correct_gns_mapping(mapped_ns, ref_seq, alig_seq_labels, aligned_seqs)
 
     for obj in objects_store:
@@ -276,19 +292,24 @@ def test_get_aligned_seqs() -> None:
 
         ref_seq = aligned_seqs.sequences[f"{obj.FILE_NAME.lower()}"]
         alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, aligned_seqs.labels)
-        mapped_ns = ns.map(ref_seq, cusotm_fields={
-            "gns": {
-                "values": alig_seq_labels.astype(str), # type: ignore
-                "fill": "-", 
-                "pdb_id": key,
+        mapped_ns = ns.map(
+            ref_seq,
+            cusotm_fields={
+                "gns": {
+                    "values": alig_seq_labels.astype(str),  # type: ignore
+                    "fill": "-",
+                    "pdb_id": key,
+                },
             },
-        })
+        )
 
-        assert mapped_ns.pairs.shape == (MSA_PDB_DICT[key][1] , 2)
+        assert mapped_ns.pairs.shape == (MSA_PDB_DICT[key][1], 2)
         is_correct_gns_mapping(mapped_ns, ref_seq, alig_seq_labels, aligned_seqs)
 
 
-def is_correct_gns_mapping(mapped_ns: LabeledNeighborPairs, ref_seq: str | Seq, alig_seq_labels: NDArray[np.str_], aligned_seqs: MSAParser) -> None:
+def is_correct_gns_mapping(
+    mapped_ns: LabeledNeighborPairs, ref_seq: str | Seq, alig_seq_labels: NDArray[np.str_], aligned_seqs: MSAParser
+) -> None:
     arr = LabeledNeighborPairs.remove_duplicates(mapped_ns.pairs[["resids", "resnames", "gns"]])
     resids_as_int = arr["resids"].astype(int)
     seq_extended = ref_seq + "-" * (resids_as_int.max() - len(ref_seq) + 1)

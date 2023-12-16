@@ -70,7 +70,7 @@ ignore = [
 mccabe = { max-complexity = 14 }
 isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
 target-version = "py310"
-exclude=['lahuta/scripts', 'cachedir', 'tests', 'docs/plugins']
+exclude=['lahuta/scripts', 'cachedir', 'docs/plugins']
 
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
@@ -89,7 +89,8 @@ max-args = 6
 'lahuta/msa/muscle.py' = ['PTH110', 'PTH107', 'PTH123']
 'lahuta/msa/mafft.py' = ['PTH110', 'PTH107', 'PTH123']
 'lahuta/core/index_finder.py' = ['PERF401']
-
+'lahuta/tests/*.py' = ['D100', 'D101', 'D104']
+'tests/*.py' = ['D100', 'D101', 'D102', 'D103', 'D401', 'PT004', 'PT019', 'PLR0915']
 
 [tool.mypy]
 python_version = "3.10"
