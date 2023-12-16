@@ -1,47 +1,45 @@
 import random
 from typing import Callable
 
-import pytest
-
 import numpy as np
+import pytest
 
 import lahuta.utils.set_defs as sd
 from lahuta.core.neighbors import LabeledNeighborPairs
-from tests.test_nb_setdefs import setup_data
+from tests.test_nb_setdefs import setup_data  # noqa: F401
 
 T = tuple[LabeledNeighborPairs, LabeledNeighborPairs]
 
 EXPECTED_RESULTS = {
-    's1': [
-        [('A', 'CZ', '76', 'TYR'), ('A', 'CB', '154', 'LYS')],
-        [('A', 'SD', '40', 'MET'), ('A', 'CB', '45', 'VAL')],
-        [('A', 'CA', '139', 'TYR'), ('A', 'CG2', '142', 'ILE')],
-        [('A', 'CD1', '128', 'ILE'), ('A', 'CA', '218', 'PRO')],
-        [('A', 'N', '122', 'LEU'), ('A', 'CB', '172', 'SER')],
-        [('A', 'O', '86', 'LEU'), ('A', 'C', '89', 'GLY')],
-        [('A', 'C', '74', 'THR'), ('A', 'CD1', '78', 'ILE')],
-        [('A', 'CD2', '316', 'PHE'), ('A', 'CA', '339', 'ASN')],
-        [('A', 'CZ', '67', 'PHE'), ('A', 'O', '363', 'ALA')],
-        [('A', 'N', '349', 'ASN'), ('A', 'CD1', '352', 'ILE')],
+    "s1": [
+        [("A", "CZ", "76", "TYR"), ("A", "CB", "154", "LYS")],
+        [("A", "SD", "40", "MET"), ("A", "CB", "45", "VAL")],
+        [("A", "CA", "139", "TYR"), ("A", "CG2", "142", "ILE")],
+        [("A", "CD1", "128", "ILE"), ("A", "CA", "218", "PRO")],
+        [("A", "N", "122", "LEU"), ("A", "CB", "172", "SER")],
+        [("A", "O", "86", "LEU"), ("A", "C", "89", "GLY")],
+        [("A", "C", "74", "THR"), ("A", "CD1", "78", "ILE")],
+        [("A", "CD2", "316", "PHE"), ("A", "CA", "339", "ASN")],
+        [("A", "CZ", "67", "PHE"), ("A", "O", "363", "ALA")],
+        [("A", "N", "349", "ASN"), ("A", "CD1", "352", "ILE")],
     ],
-    's2': [
-        [('A', 'OG', '84', 'SER'), ('A', 'CB', '127', 'SER')],
-        [('A', 'O', '47', 'GLY'), ('A', 'CG1', '50', 'VAL')],
-        [('A', 'CA', '154', 'LYS'), ('A', 'N', '157', 'SER')],
-        [('A', 'CG', '136', 'LEU'), ('A', 'CG2', '225', 'VAL')],
-        [('A', 'CD1', '129', 'TRP'), ('A', 'OG', '168', 'SER')],
-        [('A', 'CD1', '95', 'LEU'), ('A', 'CD2', '112', 'LEU')],
-        [('A', 'CG', '81', 'MET'), ('A', 'ND2', '349', 'ASN')],
-        [('A', 'ND2', '76', 'ASN'), ('A', 'CD', '154', 'LYS')],
-        [('A', 'C', '296', 'GLN'), ('A', 'N', '300', 'LEU')],
-        [('A', 'CG1', '50', 'VAL'), ('A', 'SD', '93', 'MET')],
+    "s2": [
+        [("A", "OG", "84", "SER"), ("A", "CB", "127", "SER")],
+        [("A", "O", "47", "GLY"), ("A", "CG1", "50", "VAL")],
+        [("A", "CA", "154", "LYS"), ("A", "N", "157", "SER")],
+        [("A", "CG", "136", "LEU"), ("A", "CG2", "225", "VAL")],
+        [("A", "CD1", "129", "TRP"), ("A", "OG", "168", "SER")],
+        [("A", "CD1", "95", "LEU"), ("A", "CD2", "112", "LEU")],
+        [("A", "CG", "81", "MET"), ("A", "ND2", "349", "ASN")],
+        [("A", "ND2", "76", "ASN"), ("A", "CD", "154", "LYS")],
+        [("A", "C", "296", "GLN"), ("A", "N", "300", "LEU")],
+        [("A", "CG1", "50", "VAL"), ("A", "SD", "93", "MET")],
     ],
 }
 
 
-
-@pytest.fixture
-def non_transformed_maps(setup_data: T) -> T:
+@pytest.fixture()
+def non_transformed_maps(setup_data: T) -> T:  # noqa: F811
     s1, s2 = setup_data
     return s1, s2
 
@@ -99,13 +97,13 @@ def test_error_checks(non_transformed_maps: T) -> None:
         with pytest.raises(NotImplementedError):
             s.hbond_angle_filter(1, 2, 3, 4)
         with pytest.raises(NotImplementedError):
-            s.partner1
+            _ = s.partner1
         with pytest.raises(NotImplementedError):
-            s.partner2
+            _ = s.partner2
         with pytest.raises(NotImplementedError):
-            s.distances
+            _ = s.distances
         with pytest.raises(NotImplementedError):
-            s.indices
+            _ = s.indices
 
     error_checks(s1)
     error_checks(s2)
@@ -129,8 +127,8 @@ def test_contents(non_transformed_maps: T) -> None:
     assert s1 != s2.inverse()
     assert s2 != s1.inverse()
 
-    assert s1.pairs.tolist() == EXPECTED_RESULTS['s1']
-    assert s2.pairs.tolist() == EXPECTED_RESULTS['s2']
+    assert s1.pairs.tolist() == EXPECTED_RESULTS["s1"]
+    assert s2.pairs.tolist() == EXPECTED_RESULTS["s2"]
 
 
 class TestHelper:
@@ -155,8 +153,9 @@ class TestHelper:
 
     def random_select(self, select_field: str, remove_field: str, unique_values: list[str]) -> None:
         # test random subsamples
+        rng = np.random.default_rng()
         for subsample_size in range(1, len(unique_values) + 1):
-            subsample = np.random.choice(unique_values, subsample_size, replace=False)
+            subsample = rng.choice(unique_values, subsample_size, replace=False)
             self._select_and_assert(select_field, remove_field, subsample.tolist())
 
     def _select_and_assert(self, select_field: str, remove_field: str, select_values: list[str]) -> None:
