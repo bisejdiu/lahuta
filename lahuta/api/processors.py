@@ -2,7 +2,7 @@
 import logging
 import os
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from typing import Callable, Generic, Iterable, Optional, TypeVar, cast
 
 from lahuta import Luni, NeighborPairs
@@ -32,7 +32,7 @@ class CachedFileProcessor(Generic[T]):
         directory: Optional[str] = None,
         file_list: Optional[list[str]] = None,
         allowed_file_extensions: Optional[list[str]] = None,
-        worker: Callable[[str], T] = cast(Callable[[str], T], lambda x: x),
+        worker: Callable[..., T] = cast(Callable[..., T], lambda x: x),
     ) -> None:
         self.worker: Worker[T] = Worker(worker)
         self.directory = directory
@@ -59,7 +59,7 @@ class CachedFileProcessor(Generic[T]):
 
         chunk_size = max(1, num_files // n_jobs)
 
-        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
                 executor.submit(self.worker.execute, all_files[i : i + chunk_size])
                 for i in range(0, num_files, chunk_size)
@@ -85,7 +85,7 @@ class CachedFileProcessor(Generic[T]):
     def results(self) -> dict[str, T]:
         """Get the cached results."""
         if not self._cache:
-            logging.warning("No results available. Did you forget to call walk()?")
+            logging.warning("No results available. Did you forget to call process()?")
         return self._cache
 
     def __repr__(self) -> str:
@@ -177,7 +177,7 @@ class FileProcessor:
             return None
 
         chunk_size = max(1, num_files // n_jobs)
-        with ThreadPoolExecutor(max_workers=n_jobs) as executor:
+        with ProcessPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
                 executor.submit(self._worker_function, all_files[i : i + chunk_size], operation)
                 for i in range(0, num_files, chunk_size)

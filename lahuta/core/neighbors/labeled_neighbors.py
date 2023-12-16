@@ -54,7 +54,8 @@ class LabeledNeighborPairs:
         mask1: Optional[NDArray[np.bool_]] = None,
         mask2: Optional[NDArray[np.bool_]] = None,
     ):
-        self._pairs = pairs
+        upairs = np.unique(pairs, axis=0)
+        self._pairs = pairs if pairs.shape[0] == upairs.shape[0] else upairs
         self._mask1 = mask1 if mask1 is not None else np.ones(self._pairs.shape[0], dtype=bool)
         self._mask2 = mask2 if mask2 is not None else np.ones(self._pairs.shape[0], dtype=bool)
 
@@ -181,8 +182,7 @@ class LabeledNeighborPairs:
             NDArray[np.void]: A new array containing the unique pairs.
 
         """
-        _, unique_idx = np.unique(pairs, axis=0, return_index=True)
-        return pairs[np.sort(unique_idx)]
+        return np.unique(pairs, axis=0)
 
     def _apply_func(self, field: str, func: Callable[[NDArray[np.str_]], str | np.str_]) -> Self:
         assert self._pairs.dtype.names is not None
@@ -568,6 +568,15 @@ class LabeledNeighborPairs:
 
         Returns:
             An array containing the pairs of indices of neighboring atoms.
+        """
+        return self._pairs
+
+    @property
+    def labels(self) -> NDArray[np.void]:
+        """Get the labels of the pairs of atoms that are neighbors.
+
+        Returns:
+            An array containing the labels of the pairs of neighboring atoms.
         """
         return self._pairs
 

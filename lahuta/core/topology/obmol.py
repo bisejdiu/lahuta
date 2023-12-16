@@ -195,21 +195,21 @@ class OBMol:
         if connections is None:
             connections = []
         assert connections is not None
-        for connection in connections:
-            prt1, prt2 = connection.partner1, connection.partner2
+        for conn_data in connections:
             atom1: int = self._get_atom_index(
                 atoms_df,
-                prt1.atom_name,
-                prt1.chain_name,
-                prt1.res_id.seqid.num,
-                prt1.res_id.name,
+                conn_data.partner1.atom_name,
+                conn_data.partner1.chain_name,
+                conn_data.partner1.res_id_seq_num,
+                conn_data.partner1.res_id_name,
             )
+
             atom2: int = self._get_atom_index(
                 atoms_df,
-                prt2.atom_name,
-                prt2.chain_name,
-                prt2.res_id.seqid.num,
-                prt2.res_id.name,
+                conn_data.partner2.atom_name,
+                conn_data.partner2.chain_name,
+                conn_data.partner2.res_id_seq_num,
+                conn_data.partner2.res_id_name,
             )
 
             self.create_bond_obmol(atom1, atom2)

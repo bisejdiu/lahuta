@@ -1,34 +1,36 @@
+"""Base class for facilitating working with PDB files."""
 import logging
-import os
-
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 from urllib.request import urlretrieve
 
 logging.basicConfig(level=logging.INFO)
 
 
 class BaseFile:
+    """Base class for facilitating working with PDB files."""
+
     URL = "https://files.rcsb.org/download/"
     FILE_NAME = ""
 
     def __init__(self, pdb: bool = False, dir_loc: Optional[Path] = None):
         dir_loc = dir_loc or Path.cwd()
         if pdb:
-            self.FILE_NAME += '.pdb'
+            self.FILE_NAME += ".pdb"
         else:
-            self.FILE_NAME += '.cif'
+            self.FILE_NAME += ".cif"
 
         self.local_path = dir_loc / self.FILE_NAME.lower()
         self.file_path = self._get_or_download()
 
     def _get_or_download(self) -> Path:
-        if not os.path.exists(self.local_path):
+        if not Path.exists(self.local_path):
             self._download_file()
         return self.local_path
 
     @property
     def file_loc(self) -> str:
+        """Return the file location."""
         return str(self.file_path)
 
     def _download_file(self) -> None:

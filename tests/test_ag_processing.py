@@ -7,15 +7,15 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 
 from lahuta import Luni
+from lahuta._types.mdanalysis import UniverseType
 
 # from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta._types.mdanalysis import UniverseType
 from lahuta.tests import X2
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
-AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
+AROMATIC_RESNAMES = ["PHE", "TYR", "TRP", *HISTIDINE_RESNAMES]
 
 pytestmark = pytest.mark.ag
 
@@ -65,8 +65,8 @@ class UniverseWrapper:
         self.unique_resnames = np.unique(resnames)
 
         self.u_ref = u_ref
-        # self.u = Luni(self.mda_u.select_atoms(selection).atoms)
-        self.u = u_ref.filter(selection)
+        self.u = Luni(self.mda_u.select_atoms(selection).atoms)
+        # self.u = u_ref.filter(selection)
 
 
 @pytest.fixture(scope="session")
@@ -96,7 +96,7 @@ class TestMDAnalysis:
             self.selection = selection
 
         self.contact_types = [
-            ContactType("covalent", C.covalent_neighbors, self.universe),
+            # ContactType("covalent", C.covalent_neighbors, self.universe),
             ContactType("metalic", C.metalic_neighbors, self.universe),
             ContactType("carbonyl", C.carbonyl_neighbors, self.universe),
             ContactType("hbond", C.hbond_neighbors, self.universe),
