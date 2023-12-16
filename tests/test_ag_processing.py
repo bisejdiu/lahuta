@@ -7,15 +7,15 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 
 from lahuta import Luni
+from lahuta._types.mdanalysis import UniverseType
 
 # from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta._types.mdanalysis import UniverseType
 from lahuta.tests import X2
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
-AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
+AROMATIC_RESNAMES = ["PHE", "TYR", "TRP", *HISTIDINE_RESNAMES]
 
 pytestmark = pytest.mark.ag
 
@@ -79,10 +79,10 @@ selections_res_difs = [
     ("all", 1),
     ("protein and not resname ARG", 2),
     ("protein and not resname LYS", 3),
-   (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
+    (f"resname {' '.join(AROMATIC_RESNAMES)} or resname HEC", 2),
     ("resid 1 to 50", 4),
-   ("resid 1 to 50 or resname HEC", 2),
-   ("(protein and not resname ARG LYS) or resname HEC", 2),
+    ("resid 1 to 50 or resname HEC", 2),
+    ("(protein and not resname ARG LYS) or resname HEC", 2),
 ]
 
 
