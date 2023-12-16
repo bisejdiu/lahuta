@@ -33,6 +33,7 @@ class DefaultLNPFields(TypedDict, total=False):
     resnames: bool
     chainids: bool
     resids: bool
+    other: list[str]
 
 
 class AtomMapper:
@@ -186,6 +187,15 @@ class LabeledNeighborPairsBuilder:
 
         # Create the base structured array
         data = self.create_empty_struct_array(atoms.n_atoms)
+
+        if self.default_fields.get("other"):
+            new_fields = [(name, "<U25") for name in self.default_fields["other"]]
+            extended_dtype_with_other = np.dtype(list(self.dtype.descr) + new_fields)
+            data = np.empty(atoms.n_atoms, dtype=extended_dtype_with_other)
+
+            for other_field in self.default_fields["other"]:
+                data[other_field] = getattr(atoms, other_field)
+
         if self.default_fields.get("chainids"):
             data["chainids"] = atoms.chainIDs
         if self.default_fields.get("resnames"):
@@ -207,7 +217,6 @@ class LabeledNeighborPairsBuilder:
             # Add custom fields
             mapped_prot_resindices = MSAParser.to_indices_array(seq).tolist()
             for field_name, field_data in custom_fields.items():
-
                 factorized_prot_resindices = pd.factorize(self.atom_mapper.prot.resindices)[0]
 
                 prot_labels = field_data["values"][mapped_prot_resindices]

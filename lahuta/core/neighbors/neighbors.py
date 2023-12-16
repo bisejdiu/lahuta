@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 __all__ = ["NeighborPairs"]
 
+
 class NeighborPairs:
     """A class that manages pairs of atoms that are considered "neighbors" within a defined distance threshold.
 
@@ -247,7 +248,12 @@ class NeighborPairs:
 
         return self.new(self.pairs[mask], self.distances[mask])
 
-    def map(self, seq: "Seq", fields: Optional[DefaultLNPFields] = None, cusotm_fields: Optional[dict[str, dict[str, Sequence[str]]]] = None) -> "LabeledNeighborPairs":
+    def map(
+        self,
+        seq: "Seq",
+        fields: Optional[DefaultLNPFields] = None,
+        cusotm_fields: Optional[dict[str, dict[str, Sequence[str]]]] = None,
+    ) -> "LabeledNeighborPairs":
         """Map the `pairs` indices to indices in the multiple sequence alignment.
 
         The method maps the indices in the `pairs` array to indices in the multiple sequence alignment
@@ -255,7 +261,7 @@ class NeighborPairs:
 
         Args:
             seq (Bio.Seq): The sequence to map the indices to.
-            fields (DefaultLNPFields, optional): The fields to include in the LabeledNeighborPairs object. 
+            fields (DefaultLNPFields, optional): The fields to include in the LabeledNeighborPairs object.
                 By default, names, resnames, and chainids are included. Defaults to DefaultLNPFields.
             cusotm_fields (dict, optional): A dictionary of custom fields and values.
 
@@ -264,9 +270,10 @@ class NeighborPairs:
         """
         fields = fields or {}
         default_fields = DefaultLNPFields(
-            names=fields.get("names", True), 
+            names=fields.get("names", True),
             resnames=fields.get("resnames", True),
             chainids=fields.get("chainids", True),
+            other=fields.get("other", []),
             resids=True,
         )
 
