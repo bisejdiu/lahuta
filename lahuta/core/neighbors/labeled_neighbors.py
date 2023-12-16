@@ -572,7 +572,7 @@ class LabeledNeighborPairs:
         return self._pairs
 
     @property
-    def labels(self) -> NDArray[np.str_]:
+    def labels(self) -> NDArray[np.void]:
         """Get the labels of the pairs of atoms that are neighbors.
 
         Returns:
