@@ -1,9 +1,9 @@
 """Module for file processors."""
+import functools
 import logging
 import os
-import sys
 from concurrent.futures import ProcessPoolExecutor
-from typing import Callable, Generic, Iterable, Optional, TypeVar, cast
+from typing import Callable, Iterable, Optional, TypeVar
 
 from lahuta import Luni, NeighborPairs
 from lahuta.api.workers import Worker
@@ -13,7 +13,7 @@ __all__ = ["CachedFileProcessor", "FileProcessor"]
 T = TypeVar("T")
 
 
-class CachedFileProcessor(Generic[T]):
+class CachedFileProcessor:
     """Class to process files and cache the results.
 
     Attributes:
@@ -32,41 +32,48 @@ class CachedFileProcessor(Generic[T]):
         directory: Optional[str] = None,
         file_list: Optional[list[str]] = None,
         allowed_file_extensions: Optional[list[str]] = None,
-        worker: Callable[..., T] = cast(Callable[..., T], lambda x: x),
     ) -> None:
-        self.worker: Worker[T] = Worker(worker)
         self.directory = directory
         self.file_list = file_list
         self.allowed_file_extensions = set(allowed_file_extensions) if allowed_file_extensions else None
-        self._cache: dict[str, T] = {}
 
     def _is_valid_extension(self, file_name: str) -> bool:
         return not self.allowed_file_extensions or any(file_name.endswith(ext) for ext in self.allowed_file_extensions)
 
-    def process(self, n_jobs: int = 1) -> None:
+    def process(self, worker_func: Callable[..., T], n_jobs: int = 1, *args: str, **kwargs: str) -> dict[str, T]:
         """Walk through the directory and process the files.
 
         Args:
             n_jobs (int): Number of workers.
+            worker_func (Callable[..., T]): A function that processes a file and returns a dictionary of file names
+                and results.
+            *args (str): Arguments to pass to the worker function.
+            **kwargs (str): Keyword arguments to pass to the worker function.
+
+        Returns:
+            dict[str, T]: Dictionary of results.
 
         """
+        worker = Worker(functools.partial(worker_func, *args, **kwargs))
         all_files = self._collect_file_paths()
         num_files = len(all_files)
 
         if num_files == 0:
             logging.warning("No files found. Nothing to do.")
-            return
+            return {}
 
         chunk_size = max(1, num_files // n_jobs)
 
         with ProcessPoolExecutor(max_workers=n_jobs) as executor:
             futures = [
-                executor.submit(self.worker.execute, all_files[i : i + chunk_size])
-                for i in range(0, num_files, chunk_size)
+                executor.submit(worker.execute, all_files[i : i + chunk_size]) for i in range(0, num_files, chunk_size)
             ]
 
+        result: dict[str, T] = {}  # = cast(dict[str, T], {})
         for future in futures:
-            self._cache.update(future.result())
+            result.update(future.result())
+
+        return result
 
     def _collect_file_paths(self) -> list[str]:
         if self.directory:
@@ -81,17 +88,14 @@ class CachedFileProcessor(Generic[T]):
 
         raise ValueError("Either directory or file_list must be provided")
 
-    @property
-    def results(self) -> dict[str, T]:
-        """Get the cached results."""
-        if not self._cache:
-            logging.warning("No results available. Did you forget to call process()?")
-        return self._cache
-
     def __repr__(self) -> str:
-        num_objects = len(self._cache)
-        memory_footprint = sum(sys.getsizeof(ns) for ns in self._cache.values())
-        return f"<CachedFileProcessor(num_objects={num_objects}, memory_footprint={memory_footprint} bytes)>"
+        files_to_show = 3
+        short_file_list = (
+            self.file_list[:files_to_show] + ["..."]
+            if self.file_list and len(self.file_list) > files_to_show
+            else self.file_list
+        )
+        return f"<CachedFileProcessor(directory={self.directory}, file_list={short_file_list})>"
 
     def __str__(self) -> str:
         return self.__repr__()

@@ -20,7 +20,7 @@ class Worker(Generic[T]):
         execute: Execute the worker strategy.
     """
 
-    def __init__(self, func: Callable[[str], T]) -> None:
+    def __init__(self, func: Callable[..., T]) -> None:
         self.func = func
 
     def execute(self, file_paths: list[str]) -> dict[str, T]:
