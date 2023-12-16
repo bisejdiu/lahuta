@@ -13,7 +13,7 @@ Example:
 
 """
 from pathlib import Path
-from typing import Iterable, Iterator, Literal, Optional, Type, TypeVar
+from typing import Any, Iterable, Iterator, Literal, Optional, Type, TypeVar
 
 import numpy as np
 from Bio.Seq import Seq
@@ -55,13 +55,13 @@ class MSAParser:
     """
 
     def __init__(
-        self, 
-        *, 
-        filepath: Optional[str] = None, 
-        sequences: Optional[dict[str, Seq] | dict[str, str]] = None, 
+        self,
+        *,
+        filepath: Optional[str] = None,
+        sequences: Optional[dict[str, Seq] | dict[str, str]] = None,
         _ref_alig_keys: Optional[set[str]] = None,
     ) -> None:
-                
+        self._labels: Optional[NDArray[np.str_]] = None
         self._sequences: dict[str, Seq] = {}
         self._ref_alig: Optional[MSAParser] = None
         match (filepath, sequences):
@@ -73,9 +73,9 @@ class MSAParser:
                 self._sequences = read_fasta(filepath)
             case (_, _):
                 raise ValueError("Either filepath or sequences must be provided")
-            
+
         self._is_same_length: bool = self.all_same_length(list(self._sequences.values()))
-            
+
         if _ref_alig_keys is not None:
             self._ref_alig = type(self)(sequences={k: self._sequences[k] for k in _ref_alig_keys})
 
@@ -154,22 +154,22 @@ class MSAParser:
         return type(self)(filepath=aligner.output_file, _ref_alig_keys=aligner.ref_alig_keys)
 
     @staticmethod
-    def map_labels(labels: Iterable[str], sequences: list[str | Seq], fill: str="-") -> NDArray[np.str_]:
+    def map_labels(labels: Iterable[str], sequences: list[str | Seq], fill: str = "-") -> NDArray[np.str_]:
         """Map labels to the aligned reference sequences.
 
-        Identifies the unique indices that have been mapped in the sequences, creates an array of the same length 
-        as the reference sequence filled with the `fill` value, and then places the labels at the appropriate 
+        Identifies the unique indices that have been mapped in the sequences, creates an array of the same length
+        as the reference sequence filled with the `fill` value, and then places the labels at the appropriate
         mapped indices.
 
         Args:
-            labels (Iterable[str]): The labels to be mapped. The size of labels should match the size of unaligned 
+            labels (Iterable[str]): The labels to be mapped. The size of labels should match the size of unaligned
                 reference sequences.
-            sequences (list[str]): A list of aligned reference sequences. All sequences must be of 
+            sequences (list[str]): A list of aligned reference sequences. All sequences must be of
                 the same length.
             fill (str, optional): The character used to fill unmapped positions in the output array. Defaults to '-'.
 
         Returns:
-            NDArray[str]: An array of the same length as the reference sequences, where each position is either filled 
+            NDArray[str]: An array of the same length as the reference sequences, where each position is either filled
                 with a label (if that index is mapped) or the specified fill character.
 
         Raises:
@@ -183,7 +183,7 @@ class MSAParser:
         """
         # all sequences should have the same length
         assert len({len(seq) for seq in sequences}) == 1
-        
+
         # Find all the unique indices that have been mapped.
         mapped_indices = np.concatenate([MSAParser.to_indices_array(seq) for seq in sequences])
         mapped_indices = np.unique(mapped_indices)
@@ -193,47 +193,89 @@ class MSAParser:
         mapped_labels[mapped_indices] = labels
         return mapped_labels.astype(str)
 
-    @staticmethod
-    def map_labels_alt(labels: Iterable[str], sequences: list[str | Seq], fill: str="-") -> NDArray[np.str_]:
-        """Map labels to positions in sequences where at least one sequence differs from the fill character.
-
-        Identifies columns in the sequence list where at least one element is not the fill character,
-        and maps the provided labels to these columns. It creates an array, the length of a sequence, initially filled
-        with the fill character, and replaces the fill character at these specific columns with the labels.
+    def assign_labels(self, ref_sequences: dict[str, Seq], labels: Iterable[str], fill: str = "-") -> None:
+        """Assign labels to the aligned sequences.
 
         Args:
-            labels (Iterable[str]): The labels to be mapped. The number of labels should match the number of 
-                non-fill positions (non-dash columns) in the sequences.
-            sequences (list[str]): A list of aligned sequences where the fill character represents
-                gaps or unmapped positions.
-            fill (str, optional): The character used to identify unmapped or gap positions in the sequences. 
-                Defaults to '-'.
+            ref_sequences (dict[str, Seq]): The reference sequences used for alignment.
+            labels (Iterable[str]): The labels.
+            fill (str, optional): The fill character. Defaults to "-".
+
+        """
+        seq_block = np.array([list(seq) for seq in ref_sequences.values()])
+        ref_seq_block = np.array([list(seq) for key, seq in self.sequences.items() if key in ref_sequences])
+        comp_labels = np.full(ref_seq_block.shape[1], fill, dtype="U25")
+
+        non_fill_indices, ref_non_fill_indices = (
+            np.any(seq_block != fill, axis=0),
+            np.any(ref_seq_block != fill, axis=0),
+        )
+
+        non_fill_labels = np.array(labels)[non_fill_indices]
+        comp_labels[ref_non_fill_indices] = non_fill_labels
+
+        self._labels = comp_labels
+
+    def get_labels(
+        self,
+        *,
+        source_seq_id: Optional[str] = None,
+        source_seq: Optional[str | Seq] = None,
+        target_seq_ids: Optional[list[str]] = None,
+        target_seqs: Optional[list[str | Seq]] = None,
+        fill: str = "-",
+    ) -> NDArray[np.str_]:
+        """Get the labels.
+
+        Given a sequence or sequence ID, get the labels for the residues that are not dashes in the sequence.
+        The labels are taken from all existing sequences. To get the labels only from a subset of sequences,
+        use the `target_seq_ids` or `target_seqs` arguments. This will return the labels for the residues that
+        are not dashes in the source sequence and in any of the target sequences.
+
+        Args:
+            source_seq_id (Optional[str], optional): The source sequence ID. Defaults to None.
+            source_seq (Optional[str | Seq], optional): The source sequence. Defaults to None.
+            target_seq_ids (Optional[list[str]], optional): The target sequence IDs. Defaults to None.
+            target_seqs (Optional[list[str | Seq]], optional): The target sequences. Defaults to None.
+            fill (str, optional): The fill character. Defaults to "-".
 
         Returns:
-            NDArray[np.str_]: An array of the same length as the sequences, where positions corresponding to non-fill 
-                columns in the sequences are replaced with the provided labels, and other positions are filled 
-                with the specified fill character.
+            NDArray[np.str_]: The labels.
 
-        Example:
-            labels = ['1', '2', '3', '4']
-            aligned_ref_sequences = [Seq('--ABC'), Seq('A-BC-')]
-            mapped_labels = map_labels(labels, aligned_ref_sequences)
-            # mapped_labels would be ['1', '-', '2', '3', '4']
+        Raises:
+            ValueError: If no labels have been assigned.
+            ValueError: If not all sequences are of the same length.
+            ValueError: If both `source_seq_id` and `source_seq` are provided.
+            ValueError: If both `target_seq_ids` and `target_seqs` are provided.
+            ValueError: If the source sequence or ID is invalid.
 
-        Note:
-            The function assumes that all sequences in the list are of the same length. It does not perform 
-            any alignment but relies on the sequences already being aligned, with the fill character indicating 
-            gaps or unmapped positions.
         """
-        sequences_block = np.array([list(seq) for seq in sequences])
+        if self._labels is None:
+            raise ValueError("Cannot get labels because no labels have been assigned!")
 
-        # Find columns with at least one non-dash element, and extract their indices.
-        non_dash_columns = np.any(sequences_block != fill, axis=0)
+        if not self._is_same_length:
+            raise ValueError("Cannot get labels because not all sequences are of the same length!")
 
-        # Map the labels to the indices.
-        mapped_labels = np.full(sequences_block.shape[1], fill, dtype=object)
-        mapped_labels[non_dash_columns] = labels
-        return mapped_labels
+        self._validate_mutually_exclusive(
+            source_seq_id, source_seq, "Provide either source_seq_id or source_seq, not both."
+        )
+        self._validate_mutually_exclusive(
+            target_seq_ids, target_seqs, "Provide either target_seq_ids or target_seqs, not both."
+        )
+
+        seq = Seq(source_seq) if source_seq is not None else self._sequences.get(source_seq_id)  # type: ignore
+        if seq is None:
+            raise ValueError("Invalid source sequence or ID.")
+
+        comp_seq_block = np.array(self._get_sequence_block(target_seq_ids, target_seqs))
+        print("comp_seq_block", comp_seq_block.shape)
+
+        seq_non_fill = np.array(seq) != fill
+        seq_block_non_fill = np.any(comp_seq_block != fill, axis=0)
+        retain_labels_condition = seq_non_fill & seq_block_non_fill
+        result_labels = np.where(retain_labels_condition, self._labels, fill)
+
+        return result_labels
 
     def save(self, file_name: str) -> None:
         """Write the sequences to a FASTA file.
@@ -260,6 +302,30 @@ class MSAParser:
         first_length = len(strings[0])
         return all(len(s) == first_length for s in strings)
 
+    @property
+    def labels(self) -> NDArray[np.str_]:
+        """Get the labels.
+
+        Returns:
+            NDArray[np.str_]: The labels.
+
+        """
+        if self._labels is None:
+            raise ValueError("No labels have been assigned!")
+        return self._labels
+
+    def _validate_mutually_exclusive(self, param1: Any, param2: Any, error_message: str) -> None:  # noqa: ANN401
+        if param1 is not None and param2 is not None:
+            raise ValueError(error_message)
+
+    def _get_sequence_block(self, ids: Optional[list[str]], seqs: Optional[list[str | Seq]]) -> list[list[str]]:
+        if ids is not None:
+            return [list(self._sequences[_id_]) for _id_ in ids]
+
+        if seqs is not None:
+            return [list(str(seq)) for seq in seqs]
+
+        return [list(str(seq)) for seq in self._sequences.values()]
 
     def __add__(self: T, other: T) -> T:
         return type(self)(sequences={**self.sequences, **other.sequences})
