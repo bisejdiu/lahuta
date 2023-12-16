@@ -6,7 +6,7 @@ from Bio.Seq import Seq
 from numpy.typing import NDArray
 
 from lahuta import Luni
-from lahuta.api import CachedFileProcessor, intersection, union
+from lahuta.api import FileProcessor, intersection, union
 from lahuta.core.neighbors import LabeledNeighborPairs, NeighborPairs
 from lahuta.msa import MSAParser
 from lahuta.tests.base import BaseFile
@@ -139,7 +139,7 @@ def test_process_sequence() -> None:
     assert process_sequence(R1().file_loc) == R1_seq
     assert process_sequence(R2().file_loc) == R2_seq
 
-    file_processor = CachedFileProcessor(
+    file_processor = FileProcessor(
         file_list=[R1().file_loc, R2().file_loc],
     )
     sequences = file_processor.process(worker_func=process_sequence)
@@ -186,7 +186,7 @@ def test_get_aligned_seqs() -> None:
         objects_store.append(obj)
 
     # load all structures from MSA_PDB_FILES using type()
-    file_processor = CachedFileProcessor(
+    file_processor = FileProcessor(
         file_list=[obj.file_loc for obj in objects_store],
     )
     sequences = file_processor.process(worker_func=process_sequence)
@@ -235,7 +235,7 @@ def test_get_aligned_seqs() -> None:
     aligned_seqs.assign_labels(ref_sequences=ref_parser.sequences, labels=labels)
     assert aligned_seqs.labels.shape == (366,)
 
-    file_processor = CachedFileProcessor(
+    file_processor = FileProcessor(
         file_list=[obj.file_loc for obj in objects_store],
     )
     processor_results = file_processor.process(worker_func=process_neighbors, n_jobs=4)

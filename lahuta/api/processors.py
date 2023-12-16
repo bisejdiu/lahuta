@@ -7,7 +7,7 @@ from typing import Callable, Generic, Iterable, Optional, TypeVar
 
 from lahuta import Luni, NeighborPairs
 
-__all__ = ["CachedFileProcessor", "FileProcessor"]
+__all__ = ["FileProcessor", "ConsumableFileProcessor"]
 
 T = TypeVar("T")
 
@@ -44,7 +44,7 @@ class Worker(Generic[T]):
         return sequence_dict
 
 
-class CachedFileProcessor:
+class FileProcessor:
     """Class to process files and cache the results.
 
     Attributes:
@@ -126,13 +126,13 @@ class CachedFileProcessor:
             if self.file_list and len(self.file_list) > files_to_show
             else self.file_list
         )
-        return f"<CachedFileProcessor(directory={self.directory}, file_list={short_file_list})>"
+        return f"<FileProcessor(directory={self.directory}, file_list={short_file_list})>"
 
     def __str__(self) -> str:
         return self.__repr__()
 
 
-class FileProcessor:
+class ConsumableFileProcessor:
     """Class to process files and cache the results.
 
     Attributes:
