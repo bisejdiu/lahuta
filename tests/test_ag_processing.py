@@ -12,7 +12,7 @@ from lahuta._types.mdanalysis import UniverseType
 # from lahuta.contacts import F
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.tests import X2
+from lahuta.utils.download_files import X2
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
 AROMATIC_RESNAMES = ["PHE", "TYR", "TRP", *HISTIDINE_RESNAMES]

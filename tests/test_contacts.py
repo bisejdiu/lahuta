@@ -16,7 +16,7 @@ from lahuta.contacts.atom_plane import AtomPlaneContacts
 from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.tests import X2, DNABound, Rhodopsin
+from lahuta.utils.download_files import X2, DNABound, Rhodopsin
 
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactDict = dict[str, list[int] | int]

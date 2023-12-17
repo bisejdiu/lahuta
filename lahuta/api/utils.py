@@ -7,7 +7,7 @@ from typing import Any, Literal, Optional
 
 import numpy as np
 
-from lahuta.tests.base import BaseFile
+from lahuta.utils.download_files import BaseFile
 
 __all__ = ["download_structures", "count_unique_pairs_across_keys", "map_unique_pairs_to_keys"]
 
@@ -44,9 +44,18 @@ def download_structures(
 
     pdb_file_locations: dict[str, str] = {}
     for pdb_id in pdb_ids:
-        tf_class = type("PDBDownloader_" + pdb_id, (BaseFile,), {"FILE_NAME": pdb_id, "URL": url_value})
+
+        def _get_file_name(self: BaseFile) -> str:  # noqa: ARG001
+            return pdb_id  # noqa: B023
+
+        tf_class = type(
+            "PDBDownloader_" + pdb_id,
+            (BaseFile,),
+            {"_get_file_name": _get_file_name, "URL": url_value},
+        )
         tf = tf_class(pdb=pdb_or_cif == "pdb", dir_loc=dir_loc)
-        pdb_file_locations[pdb_id] = tf.file_loc.as_posix()
+
+        pdb_file_locations[pdb_id] = tf.file_loc
 
     return pdb_file_locations
 

@@ -6,8 +6,7 @@ import pytest
 from numpy.typing import NDArray
 
 from lahuta import Luni
-from lahuta.tests import X2
-from lahuta.tests.base import BaseFile
+from lahuta.utils.download_files import X2, BaseFile
 
 TEST_PARAMS = [(X2, "x2")]
 

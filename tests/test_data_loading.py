@@ -5,8 +5,7 @@ import pytest
 from MDAnalysis import Universe
 
 from lahuta import Luni
-from lahuta.tests import X2, DNABound, Rhodopsin
-from lahuta.tests.base import BaseFile
+from lahuta.utils.download_files import X2, BaseFile, DNABound, Rhodopsin
 
 EXPECTED_DATA = {
     "x2": {
