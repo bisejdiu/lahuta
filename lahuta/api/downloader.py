@@ -13,6 +13,8 @@ class URL(Enum):
     """URLs."""
 
     PDB = "https://files.rcsb.org/download/"
+    PDBeKB = "https://www.ebi.ac.uk/pdbe/entry-files/download/"
+    AlphaFoldDB = "https://alphafold.ebi.ac.uk/files/"
 
 
 class ProgressBarType(Enum):
@@ -128,7 +130,7 @@ class FileDownloader:
                 *[self._download_file(client, name, lambda n: pbar.update(n)) for name in self.file_names]
             )
 
-    def download_all(self) -> asyncio.Task:
+    def download_all(self) -> asyncio.Task[None]:
         """Download all files."""
         loop = asyncio.get_event_loop()
         task = loop.create_task(self._download_files())
