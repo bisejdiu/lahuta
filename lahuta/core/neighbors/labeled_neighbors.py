@@ -464,7 +464,7 @@ class LabeledNeighborPairs:
             False
             ```
         """
-        indices, _ = pd.factorize(self.pairs.ravel())
+        indices, _ = pd.factorize(self.pairs.ravel())  # type: ignore
         pairs = indices.reshape(self.pairs.shape)
         return au.isunique(pairs)
 

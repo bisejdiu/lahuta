@@ -217,7 +217,7 @@ class LabeledNeighborPairsBuilder:
             # Add custom fields
             mapped_prot_resindices = MSAParser.to_indices_array(seq).tolist()
             for field_name, field_data in custom_fields.items():
-                factorized_prot_resindices = pd.factorize(self.atom_mapper.prot.resindices)[0]
+                factorized_prot_resindices = pd.factorize(self.atom_mapper.prot.resindices)[0]  # type: ignore
 
                 prot_labels = field_data["values"][mapped_prot_resindices]
                 prot_resix_labels = prot_labels[factorized_prot_resindices.tolist()]
