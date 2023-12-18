@@ -44,16 +44,12 @@ def download_structures(
 
     pdb_file_locations: dict[str, str] = {}
     for pdb_id in pdb_ids:
-
-        def _get_file_name(self: BaseFile) -> str:  # noqa: ARG001
-            return pdb_id  # noqa: B023
-
         tf_class = type(
             "PDBDownloader_" + pdb_id,
             (BaseFile,),
-            {"_get_file_name": _get_file_name, "URL": url_value},
+            {"URL": url_value},
         )
-        tf = tf_class(pdb=pdb_or_cif == "pdb", dir_loc=dir_loc)
+        tf = tf_class(pdb_code=pdb_id, pdb=pdb_or_cif == "pdb", dir_loc=dir_loc)
 
         pdb_file_locations[pdb_id] = tf.file_loc
 

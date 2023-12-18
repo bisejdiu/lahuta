@@ -15,7 +15,7 @@ class BaseFile:
     def __init__(self, pdb_code: str = "", pdb: bool = False, dir_loc: Optional[Path] = None):
         self.dir_loc = dir_loc or Path.cwd()
         self.file_extension = ".pdb" if pdb else ".cif"
-        self.file_name = pdb_code.upper()
+        self.file_name = pdb_code
         self.local_path = self._generate_local_path()
         self.file_path = self._get_or_download()
 
