@@ -1,22 +1,15 @@
 """Utility functions for the API."""
 from collections import defaultdict
-from enum import Enum
 from operator import itemgetter
 from pathlib import Path
 from typing import Any, Literal, Optional
 
 import numpy as np
 
+from lahuta.api.downloader import URLs
 from lahuta.utils.download_files import BaseFile
 
 __all__ = ["download_structures", "count_unique_pairs_across_keys", "map_unique_pairs_to_keys"]
-
-
-class URLs(Enum):
-    """Enum class for URLs."""
-
-    RCSB = "https://files.rcsb.org/download/"
-    AlphaFold = "https://alphafold.ebi.ac.uk/files/"
 
 
 def download_structures(

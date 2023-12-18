@@ -9,12 +9,12 @@ import httpx
 import tqdm
 
 
-class URL(Enum):
+class URLs(Enum):
     """URLs."""
 
-    PDB = "https://files.rcsb.org/download/"
+    RCSB = "https://files.rcsb.org/download/"
     PDBeKB = "https://www.ebi.ac.uk/pdbe/entry-files/download/"
-    AlphaFoldDB = "https://alphafold.ebi.ac.uk/files/"
+    AlphaFold = "https://alphafold.ebi.ac.uk/files/"
 
 
 class ProgressBarType(Enum):
@@ -44,11 +44,11 @@ class FileDownloader:
         *,
         file_names: list[str],
         dir_loc: str | Path | None = None,
-        url: str | URL = URL.PDB,
+        url: str | URLs = URLs.RCSB,
         progress_bar_type: ProgressBarType = ProgressBarType.RICH,
     ):
         self.file_names = file_names
-        self.url = url.value if isinstance(url, URL) else url
+        self.url = url.value if isinstance(url, URLs) else url
         self.dir_loc = Path(dir_loc) if dir_loc else Path.cwd()
         self.dir_loc.mkdir(parents=True, exist_ok=True)
         self.progress_bar_type = progress_bar_type
@@ -139,15 +139,15 @@ class FileDownloader:
         return task
 
 
-def easy_downloader(*, url: str | URL | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
+def easy_downloader(*, url: str | URLs | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
     """Easy downloader.
 
     A convenient wrapper around the FileDownloader class. It takes a list of file names, a URL, and a directory, and
     downloads the files from the URL to the directory. If the directory does not exist, it creates it (along with other
-    sanity checks). If the URL is None, it defaults to the PDB URL.
+    sanity checks). If the URL is None, it defaults to the RCSB PDB URL.
 
     Args:
-        url (str | URL | None): URL.
+        url (str | URLs | None): URLs.
         file_names (list[str]): List of file names.
         dir_loc (str | Path | None): Path to the directory.
     """
@@ -163,9 +163,9 @@ def easy_downloader(*, url: str | URL | None, file_names: list[str], dir_loc: st
         raise ValueError("Invalid URL.")
 
     if url is None:
-        url = URL.PDB
+        url = URLs.RCSB
 
-    downloader = FileDownloader(file_names=file_names, dir_loc=dir_loc, url=url, progress_bar_type=ProgressBarType.TQDM)
+    downloader = FileDownloader(file_names=file_names, dir_loc=dir_loc, url=url, progress_bar_type=ProgressBarType.RICH)
     downloader.download_all()
 
 
@@ -178,6 +178,5 @@ if __name__ == "__main__":
         cif_codes[cif.name] = cif
 
     sample_cif_codes = list(cif_codes.keys())  # [:100]
-    print(len(sample_cif_codes))
 
-    easy_downloader(url=URL.PDB, file_names=sample_cif_codes, dir_loc=Path("test1/test2"))
+    easy_downloader(url=URLs.RCSB, file_names=sample_cif_codes, dir_loc=Path("test1/test2"))
