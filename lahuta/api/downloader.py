@@ -3,6 +3,7 @@ import asyncio
 import logging
 from enum import Enum
 from pathlib import Path
+import re
 from typing import Callable
 
 import httpx
@@ -84,29 +85,42 @@ class FileDownloader:
 
     async def _download_file(
         self, client: httpx.AsyncClient, file_name: str, progress_updater: Callable[[int], bool | None]
-    ) -> None:
+    ) -> tuple[str, Path | None]:  # output: file_name -> file_path
         local_path = self.dir_loc / file_name
         if local_path.exists():
             progress_updater(1)
-            return
+            return file_name, local_path
 
         response = await client.get(f"{self.url}{file_name}", follow_redirects=True)
         if response.status_code == 200:
             with local_path.open("wb") as f:
                 f.write(response.content)
             progress_updater(1)
+            return file_name, local_path
 
-    async def _download_files(self) -> None:
+        return file_name, None
+
+    async def _download_files(self) -> tuple[list[tuple[str, Path]], list[str]]:  # output, errors
         logging.getLogger("httpx").setLevel(logging.WARNING)
         limits = httpx.Limits(max_keepalive_connections=20, max_connections=10)
         transport = httpx.AsyncHTTPTransport(retries=1, http2=True)
         async with httpx.AsyncClient(transport=transport, limits=limits, timeout=None) as client:
             if self.progress_bar_type == ProgressBarType.RICH:
-                await self._download_with_rich_progress(client)
+                result = await self._download_with_rich_progress(client)
             else:
-                await self._download_with_tqdm_progress(client)
+                result = await self._download_with_tqdm_progress(client)
 
-    async def _download_with_rich_progress(self, client: httpx.AsyncClient) -> None:
+        output, errors = [], []
+        for file_name, file_path in result:
+            if file_path is None:
+                errors.append(file_name)
+                logging.warning(f"Could not download {file_name}.")
+            else:
+                output.append((file_name, file_path))
+
+        return output, errors
+
+    async def _download_with_rich_progress(self, client: httpx.AsyncClient) -> list[tuple[str, Path | None]]:
         import rich.progress
 
         with rich.progress.Progress(
@@ -117,20 +131,22 @@ class FileDownloader:
             rich.progress.TimeRemainingColumn(),
         ) as progress:
             download_task = progress.add_task("Downloading files...", total=len(self.file_names))
-            await asyncio.gather(
+            result = await asyncio.gather(
                 *[
                     self._download_file(client, name, lambda n: progress.update(download_task, advance=n))
                     for name in self.file_names
                 ]
             )
+            return result
 
-    async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> None:
+    async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> list[tuple[str, Path | None]]:
         with tqdm.tqdm(total=len(self.file_names), desc="Downloading files", unit="file") as pbar:
-            await asyncio.gather(
+            result = await asyncio.gather(
                 *[self._download_file(client, name, lambda n: pbar.update(n)) for name in self.file_names]
             )
+            return result
 
-    def download_all(self) -> asyncio.Task[None]:
+    def download_all(self) -> asyncio.Task[tuple[list[tuple[str, Path]], list[str]]]:
         """Download all files."""
         loop = asyncio.get_event_loop()
         task = loop.create_task(self._download_files())
