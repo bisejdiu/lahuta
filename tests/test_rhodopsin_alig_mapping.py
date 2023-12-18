@@ -85,7 +85,7 @@ def load_msa(file_path: str) -> MSAParser:
 def load_rhod_msa() -> MSAParser:
     """Load an MSA from a file."""
     file_loc = Path(__file__).parent / "data/rhodopsins.fasta"
-    return MSAParser(filepath=file_loc.as_posix())
+    return MSAParser(filepath=str(file_loc))
 
 
 def process_neighbors(file_path: str) -> NeighborPairs:
