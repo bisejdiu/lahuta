@@ -7,6 +7,8 @@ from pathlib import Path
 import httpx
 import rich.progress
 from rich.progress import Progress, TaskID
+from rich.console import Console
+import tqdm
 
 
 class URL(Enum):
@@ -88,15 +90,55 @@ class FileDownloader:
                 rich.progress.BarColumn(bar_width=None),
                 rich.progress.TextColumn("{task.completed}/{task.total} files"),
                 rich.progress.TextColumn("[progress.elapsed]Elapsed time: {task.elapsed:.4f}"),
+                rich.progress.TimeRemainingColumn(),
             ) as progress:
                 download_task = progress.add_task("Downloading files...", total=len(self.file_names))
                 await asyncio.gather(
                     *[self._download_file(client, name, progress, download_task) for name in self.file_names]
                 )
 
-    def download_all(self) -> None:
-        """Download all files."""
-        asyncio.run(self._download_all_async())
+    async def _download_all_async_tqdm(self) -> None:
+        limits = httpx.Limits(max_keepalive_connections=20, max_connections=10)
+        transport = httpx.AsyncHTTPTransport(retries=1, http2=True)
+        async with httpx.AsyncClient(transport=transport, limits=limits, timeout=None) as client:
+            with tqdm.tqdm(total=len(self.file_names), desc="Downloading files", unit="file") as pbar:
+                await asyncio.gather(*[self._download_file_tqdm(client, name, pbar) for name in self.file_names])
+
+    async def _download_file_tqdm(self, client: httpx.AsyncClient, file_name: str, pbar: tqdm.tqdm) -> None:
+        local_path = self.dir_loc / file_name
+        if local_path.exists():
+            pbar.update(1)
+            return
+
+        response = await client.get(f"{self.url}{file_name}", follow_redirects=True)
+        if response.status_code == 200:
+            with local_path.open("wb") as f:
+                f.write(response.content)
+            pbar.update(1)
+
+    def download_all(self, use_tqdm: bool = False) -> asyncio.Task[dict[str, str]] | asyncio.Task[None]:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            use_tqdm = True
+
+        if use_tqdm:
+            # before we run this we need to disable INFO logging from httpx
+            logging.getLogger("httpx").setLevel(logging.WARNING)
+            # Use the tqdm-based download method
+            # task = loop.create_task(self._download_all_async_tqdm())
+            task = loop.create_task(self._download_all_async())
+        else:
+            # Use the rich.progress-based download method
+            task = loop.create_task(self._download_all_async())
+
+        if not loop.is_running():
+            loop.run_until_complete(task)
+
+        return task
+
+    # def download_all(self) -> None:
+    #     """Download all files."""
+    #     asyncio.run(self._download_all_async())
 
 
 def easy_downloader(*, url: str | URL | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
