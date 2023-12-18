@@ -38,18 +38,12 @@ get_single_letter_code = np.vectorize(lambda x: single_letter_code.get(x, "-"))
 
 class R1(BaseFile):
     def __init__(self, pdb: bool = True) -> None:
-        super().__init__(pdb=pdb)
-
-    def _get_file_name(self) -> str:
-        return "1F88"
+        super().__init__(pdb_code="1F88", pdb=pdb)
 
 
 class R2(BaseFile):
     def __init__(self, pdb: bool = True) -> None:
-        super().__init__(pdb=pdb)
-
-    def _get_file_name(self) -> str:
-        return "1HZX"
+        super().__init__(pdb_code="1HZX", pdb=pdb)
 
 
 TEST_PARAMS = [(R1, "A"), (R2, "A")]
@@ -182,17 +176,13 @@ def get_alig_seq_labels(ref_seq: str | Seq, target_seq: str | Seq, mapped_labels
 def test_get_aligned_seqs() -> None:
     objects_store = []
     for file_name, _, _, _ in MSA_PDB_FILES:
-
-        def _get_file_name(self: BaseFile) -> str:  # noqa: ARG001
-            return file_name  # noqa: B023
-
         new_class = type(
             "PDBDownloader_" + file_name,
             (BaseFile,),
-            {"_get_file_name": _get_file_name},
+            {},
         )
 
-        obj = new_class(pdb=True)
+        obj = new_class(pdb_code=file_name, pdb=True)
         objects_store.append(obj)
 
     # load all structures from MSA_PDB_FILES using type()
@@ -293,11 +283,11 @@ def test_get_aligned_seqs() -> None:
     is_correct_gns_mapping(mapped_ns, ref_seq, alig_seq_labels, aligned_seqs)
 
     for obj in objects_store:
-        key = obj.file_name
+        key = obj.file_name.lower()
         luni = Luni(obj.file_loc).filter(f"chainID {MSA_PDB_DICT[key][0]}")
         ns = luni.neighbors(radius=5, res_dif=4)
 
-        ref_seq = aligned_seqs.sequences[f"{obj.file_name.lower()}.pdb"]
+        ref_seq = aligned_seqs.sequences[f"{key}.pdb"]
         alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, aligned_seqs.labels)
         mapped_ns = ns.map(
             ref_seq,

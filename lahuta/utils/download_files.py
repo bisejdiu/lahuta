@@ -12,16 +12,12 @@ class BaseFile:
 
     URL = "https://files.rcsb.org/download/"
 
-    def __init__(self, pdb: bool = False, dir_loc: Optional[Path] = None):
+    def __init__(self, pdb_code: str = "", pdb: bool = False, dir_loc: Optional[Path] = None):
         self.dir_loc = dir_loc or Path.cwd()
         self.file_extension = ".pdb" if pdb else ".cif"
-        self.file_name = self._get_file_name()
+        self.file_name = pdb_code.upper()
         self.local_path = self._generate_local_path()
         self.file_path = self._get_or_download()
-
-    def _get_file_name(self) -> str:
-        """Return the file name for the instance. To be implemented by subclasses."""
-        raise NotImplementedError("Subclasses must implement this method")
 
     def _generate_local_path(self) -> Path:
         """Generate the local path for the file."""
@@ -47,22 +43,19 @@ class BaseFile:
 class X2(BaseFile):
     """X2."""
 
-    def __init__(self, pdb: bool = True) -> None:
-        super().__init__(pdb=pdb)
-
-    def _get_file_name(self) -> str:
-        return "1KX2"
+    def __init__(self, pdb: bool = True, pdb_code: str = "1KX2") -> None:
+        super().__init__(pdb_code=pdb_code, pdb=pdb)
 
 
 class Rhodopsin(BaseFile):
     """Rhodopsin."""
 
-    def _get_file_name(self) -> str:
-        return "1GZM"
+    def __init__(self, pdb: bool = False, pdb_code: str = "1GZM") -> None:
+        super().__init__(pdb_code=pdb_code, pdb=pdb)
 
 
 class DNABound(BaseFile):
     """DNABound."""
 
-    def _get_file_name(self) -> str:
-        return "3Q2Y"
+    def __init__(self, pdb: bool = False, pdb_code: str = "3Q2Y") -> None:
+        super().__init__(pdb_code=pdb_code, pdb=pdb)
