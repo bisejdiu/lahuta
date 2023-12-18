@@ -7,7 +7,6 @@ from pathlib import Path
 import httpx
 import rich.progress
 from rich.progress import Progress, TaskID
-from rich.console import Console
 import tqdm
 
 
@@ -122,23 +121,15 @@ class FileDownloader:
             use_tqdm = True
 
         if use_tqdm:
-            # before we run this we need to disable INFO logging from httpx
             logging.getLogger("httpx").setLevel(logging.WARNING)
-            # Use the tqdm-based download method
-            # task = loop.create_task(self._download_all_async_tqdm())
             task = loop.create_task(self._download_all_async())
         else:
-            # Use the rich.progress-based download method
             task = loop.create_task(self._download_all_async())
 
         if not loop.is_running():
             loop.run_until_complete(task)
 
         return task
-
-    # def download_all(self) -> None:
-    #     """Download all files."""
-    #     asyncio.run(self._download_all_async())
 
 
 def easy_downloader(*, url: str | URL | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
