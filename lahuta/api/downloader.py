@@ -139,7 +139,7 @@ class FileDownloader:
         return task
 
 
-def easy_downloader(*, url: str | URLs | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
+def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
     """Easy downloader.
 
     A convenient wrapper around the FileDownloader class. It takes a list of file names, a URL, and a directory, and
@@ -179,4 +179,4 @@ if __name__ == "__main__":
 
     sample_cif_codes = list(cif_codes.keys())  # [:100]
 
-    easy_downloader(url=URLs.RCSB, file_names=sample_cif_codes, dir_loc=Path("test1/test2"))
+    fast_download(url=URLs.RCSB, file_names=sample_cif_codes, dir_loc=Path("test1/test2"))

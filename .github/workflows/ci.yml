@@ -28,7 +28,7 @@ jobs:
     - name: Install dependencies from conda-forge
       run: |
         conda config --set solver classic
-        conda install -c conda-forge openbabel MDAnalysis gemmi typer
+        conda install -c conda-forge openbabel MDAnalysis gemmi typer httpx
         conda install -c bioconda mafft
         conda install -c salilab -c anaconda dssp libboost=1.73.0
     - name: Run linting with ruff
