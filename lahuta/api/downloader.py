@@ -3,16 +3,25 @@ import asyncio
 import logging
 from enum import Enum
 from pathlib import Path
+from typing import Callable
 
 import httpx
-import rich.progress
-from rich.progress import Progress, TaskID
+import tqdm
 
 
 class URL(Enum):
     """URLs."""
 
     PDB = "https://files.rcsb.org/download/"
+    PDBeKB = "https://www.ebi.ac.uk/pdbe/entry-files/download/"
+    AlphaFoldDB = "https://alphafold.ebi.ac.uk/files/"
+
+
+class ProgressBarType(Enum):
+    """The type of progress bar to show."""
+
+    RICH = 1
+    TQDM = 2
 
 
 class FileDownloader:
@@ -30,11 +39,19 @@ class FileDownloader:
         download_all: Download all files.
     """
 
-    def __init__(self, *, file_names: list[str], dir_loc: str | Path | None = None, url: str | URL = URL.PDB):
+    def __init__(
+        self,
+        *,
+        file_names: list[str],
+        dir_loc: str | Path | None = None,
+        url: str | URL = URL.PDB,
+        progress_bar_type: ProgressBarType = ProgressBarType.RICH,
+    ):
         self.file_names = file_names
         self.url = url.value if isinstance(url, URL) else url
         self.dir_loc = Path(dir_loc) if dir_loc else Path.cwd()
         self.dir_loc.mkdir(parents=True, exist_ok=True)
+        self.progress_bar_type = progress_bar_type
 
         self._check_health()
 
@@ -66,37 +83,60 @@ class FileDownloader:
             raise ValueError("Directory is not writable.") from None
 
     async def _download_file(
-        self, client: httpx.AsyncClient, file_name: str, progress: Progress, download_task: TaskID
+        self, client: httpx.AsyncClient, file_name: str, progress_updater: Callable[[int], bool | None]
     ) -> None:
         local_path = self.dir_loc / file_name
         if local_path.exists():
-            progress.update(download_task, advance=1)
+            progress_updater(1)
             return
 
         response = await client.get(f"{self.url}{file_name}", follow_redirects=True)
         if response.status_code == 200:
             with local_path.open("wb") as f:
                 f.write(response.content)
-            progress.update(download_task, advance=1)
+            progress_updater(1)
 
-    async def _download_all_async(self) -> None:
+    async def _download_files(self) -> None:
+        logging.getLogger("httpx").setLevel(logging.WARNING)
         limits = httpx.Limits(max_keepalive_connections=20, max_connections=10)
         transport = httpx.AsyncHTTPTransport(retries=1, http2=True)
         async with httpx.AsyncClient(transport=transport, limits=limits, timeout=None) as client:
-            with rich.progress.Progress(
-                "[progress.percentage]{task.percentage:>3.0f}%",
-                rich.progress.BarColumn(bar_width=None),
-                rich.progress.TextColumn("{task.completed}/{task.total} files"),
-                rich.progress.TextColumn("[progress.elapsed]Elapsed time: {task.elapsed:.4f}"),
-            ) as progress:
-                download_task = progress.add_task("Downloading files...", total=len(self.file_names))
-                await asyncio.gather(
-                    *[self._download_file(client, name, progress, download_task) for name in self.file_names]
-                )
+            if self.progress_bar_type == ProgressBarType.RICH:
+                await self._download_with_rich_progress(client)
+            else:
+                await self._download_with_tqdm_progress(client)
 
-    def download_all(self) -> None:
+    async def _download_with_rich_progress(self, client: httpx.AsyncClient) -> None:
+        import rich.progress
+
+        with rich.progress.Progress(
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            rich.progress.BarColumn(bar_width=None),
+            rich.progress.TextColumn("{task.completed}/{task.total} files"),
+            rich.progress.TextColumn("[progress.elapsed]Elapsed time: {task.elapsed:.4f}"),
+            rich.progress.TimeRemainingColumn(),
+        ) as progress:
+            download_task = progress.add_task("Downloading files...", total=len(self.file_names))
+            await asyncio.gather(
+                *[
+                    self._download_file(client, name, lambda n: progress.update(download_task, advance=n))
+                    for name in self.file_names
+                ]
+            )
+
+    async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> None:
+        with tqdm.tqdm(total=len(self.file_names), desc="Downloading files", unit="file") as pbar:
+            await asyncio.gather(
+                *[self._download_file(client, name, lambda n: pbar.update(n)) for name in self.file_names]
+            )
+
+    def download_all(self) -> asyncio.Task[None]:
         """Download all files."""
-        asyncio.run(self._download_all_async())
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(self._download_files())
+        if not loop.is_running():
+            loop.run_until_complete(task)
+        return task
 
 
 def easy_downloader(*, url: str | URL | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
@@ -125,7 +165,7 @@ def easy_downloader(*, url: str | URL | None, file_names: list[str], dir_loc: st
     if url is None:
         url = URL.PDB
 
-    downloader = FileDownloader(file_names=file_names, dir_loc=dir_loc, url=url)
+    downloader = FileDownloader(file_names=file_names, dir_loc=dir_loc, url=url, progress_bar_type=ProgressBarType.TQDM)
     downloader.download_all()
 
 
