@@ -3,7 +3,7 @@ import asyncio
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Generator
+from typing import Callable, Generator, Iterator, TypeVar
 
 import httpx
 import tqdm
@@ -22,6 +22,25 @@ class ProgressBarType(Enum):
 
     RICH = 1
     TQDM = 2
+
+
+T = TypeVar("T", bound="NonNullResultIterator")
+
+
+class NonNullResultIterator:
+    def __init__(self, result: Iterator[tuple[str | None, Path | None]]):
+        self.result = result
+
+    def __iter__(self: T) -> T:
+        return self
+
+    def __next__(self) -> tuple[str, Path]:
+        while True:
+            file_name, file_path = next(self.result)
+            if file_name is not None and file_path is not None:
+                return file_name, file_path
+            if file_name is None and file_path is None:
+                raise StopIteration
 
 
 class FileDownloader:
@@ -89,17 +108,16 @@ class FileDownloader:
 
     async def _download_file(
         self, client: httpx.AsyncClient, file_name: str, progress_updater: Callable[[int], bool | None]
-    ) -> tuple[str, Path | None] | tuple[None, None]:  # output: file_name -> file_path
+    ) -> tuple[str, Path | None] | tuple[None, None]:
         # return None if file_name is a Generator
         if isinstance(self.file_names, Generator):
-            await self._download_file_no_return(client, file_name, progress_updater)
-            return None, None
+            return await self._download_file_no_return(client, file_name, progress_updater)
 
         return await self._download_file_with_return(client, file_name, progress_updater)
 
     async def _download_file_with_return(
         self, client: httpx.AsyncClient, file_name: str, progress_updater: Callable[[int], bool | None]
-    ) -> tuple[str, Path | None]:  # output: file_name -> file_path
+    ) -> tuple[str, Path | None]:
         local_path = self.dir_loc / file_name
         if local_path.exists():
             progress_updater(1)
@@ -140,13 +158,9 @@ class FileDownloader:
             else:
                 result = await self._download_with_tqdm_progress(client)
 
-        if [i for i in result if i == (None, None)]:
-            return None, None
-
-        not_non_result = [i for i in result if i[0] is not None and i[1] is not None]
-
-        output, errors = [], []
-        for file_name, file_path in not_non_result:
+        output = []
+        errors: list[str] = []
+        for file_name, file_path in NonNullResultIterator(iter(result)):
             if file_path is None:
                 errors.append(file_name)
                 logging.warning(f"Could not download {file_name}.")
@@ -175,11 +189,7 @@ class FileDownloader:
                     for name in self.file_names
                 ]
             )
-            result = [i for i in result if i[0] is None and i[1] is None]
-            if result:
-                return result
-
-            return [i for i in result if i[0] is not None and i[1] is not None]
+            return result
 
     async def _download_with_tqdm_progress(
         self, client: httpx.AsyncClient
@@ -189,11 +199,7 @@ class FileDownloader:
             result = await asyncio.gather(
                 *[self._download_file(client, name, lambda n: pbar.update(n)) for name in self.file_names]
             )
-            result = [i for i in result if i[0] is None and i[1] is None]
-            if result:
-                return result
-
-            return [i for i in result if i[0] is not None and i[1] is not None]
+            return result
 
     def download_all(self) -> asyncio.Task[tuple[list[tuple[str, Path]], list[str]] | tuple[None, None]]:
         """Download all files."""
