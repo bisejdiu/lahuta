@@ -21,12 +21,6 @@ CoroutineResult = Coroutine[Any, Any, httpxResult]
 TaskType = Generator[CoroutineResult, None, None]
 
 
-def file_generator(directory: str = "/mnt/f/PDB_ARCHIVE/mmCIF") -> Generator[str, None, None]:
-    for _, _, files in os.walk(directory):
-        for file in files:
-            yield file
-
-
 class URLs(Enum):
     """URLs."""
 
@@ -82,20 +76,14 @@ class FileDownloader:
         file_names: list[str] | Generator[str, None, None],
         dir_loc: str | Path | None = None,
         url: str | URLs = URLs.RCSB,
+        list_generator_limit: int = 10_000,
         progress_bar_type: ProgressBarType = ProgressBarType.RICH,
     ):
-        if True:  # not isinstance(file_names, Generator) and len(file_names) > 1:
-            # raise ValueError("For file lists larger than 10,000, use a generator.")
-            # turn file_names into a generator
-            # file_names = (name for name in file_names)
-            print("STARTING GENERATOR")
-            # fg = list(file_generator())
-            # file_names = (name for name in fg[:1000])
-            print("ENDING GENERATOR")
-        # file_names = file_generator()
+        if not isinstance(file_names, Generator) and len(file_names) > list_generator_limit:
+            raise ValueError(f"File number is larger than {list_generator_limit}, please use a generator.")
 
-        self.file_names = (x for x in file_names)  # file_generator()
-        self.is_generator = isinstance(self.file_names, Generator)
+        self.total_length = len(file_names) if isinstance(file_names, list) else None
+        self.file_names = (x for x in file_names)
 
         self.url = url.value if isinstance(url, URLs) else url
         self.dir_loc = Path(dir_loc) if dir_loc else Path.cwd()
@@ -170,8 +158,6 @@ class FileDownloader:
             else:
                 result = await self._download_with_tqdm_progress(client)
 
-        # print("result", result)
-
         output: list[Result] = []
         errors: list[NetworkError] = []
         for file_name, file_path in NonNullResultIterator(iter(result)):
@@ -204,12 +190,11 @@ class FileDownloader:
                 rich.progress.TimeRemainingColumn(),
             )
 
-        total_value = len(self.file_names) if isinstance(self.file_names, list) else None
-        bar_params = get_progress_bar_params(no_total=total_value is None)
+        bar_params = get_progress_bar_params(no_total=self.total_length is None)
         with rich.progress.Progress(*bar_params) as progress:
-            download_task = progress.add_task("Downloading files...", total=None)
+            download_task = progress.add_task("Downloading files...", total=self.total_length)
             tasks = await self._generate_tasks(client, lambda n: progress.update(download_task, advance=n))
-            if self.is_generator:
+            if self.total_length:
                 await asyncio.gather(*tasks)
                 return cast(list[httpxResult], [(None, None)])
 
@@ -218,10 +203,9 @@ class FileDownloader:
 
     # @profile
     async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> list[httpxResult]:
-        total_value = len(self.file_names) if isinstance(self.file_names, list) else None
-        with tqdm.tqdm(total=total_value, desc="Downloading files", unit="file") as pbar:
+        with tqdm.tqdm(total=self.total_length, desc="Downloading files", unit=" files") as pbar:
             tasks: TaskType = await self._generate_tasks(client, lambda n: pbar.update(n))
-            if self.is_generator:
+            if self.total_length:
                 await asyncio.gather(*tasks)
                 return cast(list[httpxResult], [(None, None)])
 
@@ -269,12 +253,18 @@ def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str
 
 # Usage
 if __name__ == "__main__":
+
+    def file_generator(directory: str = "/mnt/f/PDB_ARCHIVE/mmCIF") -> Generator[str, None, None]:
+        for _, _, files in os.walk(directory):
+            for file in files:
+                yield file
+
     cif_path = "/home/bisejdiu/projects/landscapy/data/downloaded/cifs"
 
     cif_codes = {}
     for cif in Path(cif_path).glob("*.cif"):
         cif_codes[cif.name] = cif
 
-    sample_cif_codes = list(cif_codes.keys())[:500]
+    sample_cif_codes = list(cif_codes.keys())  # [:500]
 
     fast_download(url=URLs.RCSB, file_names=sample_cif_codes, dir_loc=Path("test"))
