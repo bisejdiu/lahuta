@@ -1,22 +1,30 @@
 """Downloader."""
 import asyncio
 import logging
+
+# from memory_profiler import profile
+import os
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Coroutine, Generator, Iterator, TypeVar
+from typing import Any, Callable, Coroutine, Generator, Iterator, TypeVar, cast
 
 import httpx
 import tqdm
 
-# from memory_profiler import profile
-
-import os
+# type aliases
+NetworkError = str
+FilePath = tuple[str, Path | None]
+Result = tuple[str, Path]
+NoSavedResult = tuple[None, None]
+httpxResult = FilePath | NoSavedResult
+CoroutineResult = Coroutine[Any, Any, httpxResult]
+TaskType = Generator[CoroutineResult, None, None]
 
 
 def file_generator(directory: str = "/mnt/f/PDB_ARCHIVE/mmCIF") -> Generator[str, None, None]:
     for _, _, files in os.walk(directory):
         for file in files:
-            yield file  # .split(".")[0].upper()
+            yield file
 
 
 class URLs(Enum):
@@ -125,10 +133,10 @@ class FileDownloader:
 
     async def _generate_tasks(
         self, client: httpx.AsyncClient, progress_updater: Callable[[int], bool | None]
-    ) -> Generator[Coroutine[Any, Any, tuple[str, Path | None]], None, None]:
+    ) -> TaskType:
         semaphore = asyncio.Semaphore(100)  # TODO: Make this a parameter
 
-        async def task_wrapper(name: str) -> tuple[str, Path | None]:
+        async def task_wrapper(name: str) -> httpxResult:
             async with semaphore:
                 return await self._download_file(client, name, progress_updater)
 
@@ -137,7 +145,7 @@ class FileDownloader:
 
     async def _download_file(
         self, client: httpx.AsyncClient, file_name: str, progress_updater: Callable[[int], bool | None]
-    ) -> tuple[str, Path | None]:
+    ) -> httpxResult:
         local_path = self.dir_loc / file_name
         if local_path.exists():
             progress_updater(1)
@@ -152,7 +160,7 @@ class FileDownloader:
 
         return file_name, None
 
-    async def _download_files(self) -> tuple[list[tuple[str, Path]], list[str]] | tuple[None, None]:
+    async def _download_files(self) -> tuple[list[Result], list[NetworkError]] | NoSavedResult:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         limits = httpx.Limits(max_keepalive_connections=20, max_connections=10)
         transport = httpx.AsyncHTTPTransport(retries=1, http2=True)
@@ -164,8 +172,8 @@ class FileDownloader:
 
         # print("result", result)
 
-        output = []
-        errors: list[str] = []
+        output: list[Result] = []
+        errors: list[NetworkError] = []
         for file_name, file_path in NonNullResultIterator(iter(result)):
             if file_path is None:
                 errors.append(file_name)
@@ -175,9 +183,7 @@ class FileDownloader:
 
         return output, errors
 
-    async def _download_with_rich_progress(
-        self, client: httpx.AsyncClient
-    ) -> list[tuple[str, Path | None] | tuple[None, None]]:
+    async def _download_with_rich_progress(self, client: httpx.AsyncClient) -> list[httpxResult]:
         import rich.progress
 
         def get_progress_bar_params(no_total: bool = False) -> tuple[Any, ...]:
@@ -205,26 +211,24 @@ class FileDownloader:
             tasks = await self._generate_tasks(client, lambda n: progress.update(download_task, advance=n))
             if self.is_generator:
                 await asyncio.gather(*tasks)
-                return [(None, None)]
+                return cast(list[httpxResult], [(None, None)])
 
             result = await asyncio.gather(*tasks)
-            return result  # type: ignore
+            return cast(list[httpxResult], result)
 
     # @profile
-    async def _download_with_tqdm_progress(
-        self, client: httpx.AsyncClient
-    ) -> list[tuple[str, Path | None] | tuple[None, None]]:
+    async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> list[httpxResult]:
         total_value = len(self.file_names) if isinstance(self.file_names, list) else None
         with tqdm.tqdm(total=total_value, desc="Downloading files", unit="file") as pbar:
-            tasks = await self._generate_tasks(client, lambda n: pbar.update(n))
+            tasks: TaskType = await self._generate_tasks(client, lambda n: pbar.update(n))
             if self.is_generator:
                 await asyncio.gather(*tasks)
-                return [(None, None)]
+                return cast(list[httpxResult], [(None, None)])
 
             result = await asyncio.gather(*tasks)
-            return result  # type: ignore
+            return cast(list[httpxResult], result)
 
-    def download_all(self) -> asyncio.Task[tuple[list[tuple[str, Path]], list[str]] | tuple[None, None]]:
+    def download_all(self) -> asyncio.Task[tuple[list[Result], list[NetworkError]] | NoSavedResult]:
         """Download all files."""
         loop = asyncio.get_event_loop()
         task = loop.create_task(self._download_files())
