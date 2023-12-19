@@ -40,6 +40,12 @@ T = TypeVar("T", bound="NonNullResultIterator")
 
 
 class NonNullResultIterator:
+    """Iterator that skips over None results.
+
+    Args:
+        result (Iterator[tuple[str | None, Path | None]]): Iterator to wrap.
+    """
+
     def __init__(self, result: Iterator[tuple[str | None, Path | None]]):
         self.result = result
 
@@ -65,18 +71,22 @@ class FileDownloader:
         file_names (list[str]): List of file names.
         url (str): URL.
         dir_loc (Path): Path to the directory.
+        progress_bar_type (ProgressBarType): Type of progress bar to show.
+        list_generator_limit (int): Limit for the number of files before we require a generator.
+        sephamore_limit (int): Limit for the number of concurrent downloads.
 
     Methods:
         download_all: Download all files.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         file_names: list[str] | Generator[str, None, None],
         dir_loc: str | Path | None = None,
         url: str | URLs = URLs.RCSB,
         list_generator_limit: int = 10_000,
+        sephamore_limit: int = 100,
         progress_bar_type: ProgressBarType = ProgressBarType.RICH,
     ):
         if not isinstance(file_names, Generator) and len(file_names) > list_generator_limit:
@@ -89,6 +99,7 @@ class FileDownloader:
         self.dir_loc = Path(dir_loc) if dir_loc else Path.cwd()
         self.dir_loc.mkdir(parents=True, exist_ok=True)
         self.progress_bar_type = progress_bar_type
+        self.sephamore_limit = sephamore_limit
 
         self._check_health()
 
@@ -122,7 +133,7 @@ class FileDownloader:
     async def _generate_tasks(
         self, client: httpx.AsyncClient, progress_updater: Callable[[int], bool | None]
     ) -> TaskType:
-        semaphore = asyncio.Semaphore(100)  # TODO: Make this a parameter
+        semaphore = asyncio.Semaphore(self.sephamore_limit)
 
         async def task_wrapper(name: str) -> httpxResult:
             async with semaphore:
@@ -221,7 +232,9 @@ class FileDownloader:
         return task
 
 
-def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
+def fast_download(
+    *, url: str | URLs | None, file_names: list[str] | Generator[str, None, None], dir_loc: str | Path | None = None
+) -> None:
     """Easy downloader.
 
     A convenient wrapper around the FileDownloader class. It takes a list of file names, a URL, and a directory, and
@@ -247,7 +260,13 @@ def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str
     if url is None:
         url = URLs.RCSB
 
-    downloader = FileDownloader(file_names=file_names, dir_loc=dir_loc, url=url, progress_bar_type=ProgressBarType.RICH)
+    downloader = FileDownloader(
+        file_names=file_names,
+        dir_loc=dir_loc,
+        url=url,
+        progress_bar_type=ProgressBarType.RICH,
+        list_generator_limit=100_000,
+    )
     downloader.download_all()
 
 
@@ -255,6 +274,7 @@ def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str
 if __name__ == "__main__":
 
     def file_generator(directory: str = "/mnt/f/PDB_ARCHIVE/mmCIF") -> Generator[str, None, None]:
+        """Generate file names from a directory."""
         for _, _, files in os.walk(directory):
             for file in files:
                 yield file
@@ -267,4 +287,4 @@ if __name__ == "__main__":
 
     sample_cif_codes = list(cif_codes.keys())  # [:500]
 
-    fast_download(url=URLs.RCSB, file_names=sample_cif_codes, dir_loc=Path("test"))
+    fast_download(url=URLs.RCSB, file_names=file_generator(), dir_loc=Path("test"))
