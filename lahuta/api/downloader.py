@@ -1,13 +1,24 @@
 """Downloader."""
 import asyncio
 import logging
+
+# from memory_profiler import profile
+import os
 from enum import Enum
 from pathlib import Path
-import re
-from typing import Callable
+from typing import Any, Callable, Coroutine, Generator, Iterator, TypeVar, cast
 
 import httpx
 import tqdm
+
+# type aliases
+NetworkError = str
+FilePath = tuple[str, Path | None]
+Result = tuple[str, Path]
+NoSavedResult = tuple[None, None]
+httpxResult = FilePath | NoSavedResult
+CoroutineResult = Coroutine[Any, Any, httpxResult]
+TaskType = Generator[CoroutineResult, None, None]
 
 
 class URLs(Enum):
@@ -25,6 +36,31 @@ class ProgressBarType(Enum):
     TQDM = 2
 
 
+T = TypeVar("T", bound="NonNullResultIterator")
+
+
+class NonNullResultIterator:
+    """Iterator that skips over None results.
+
+    Args:
+        result (Iterator[tuple[str | None, Path | None]]): Iterator to wrap.
+    """
+
+    def __init__(self, result: Iterator[tuple[str | None, Path | None]]):
+        self.result = result
+
+    def __iter__(self: T) -> T:
+        return self
+
+    def __next__(self) -> tuple[str, Path]:
+        while True:
+            file_name, file_path = next(self.result)
+            if file_name is not None and file_path is not None:
+                return file_name, file_path
+            if file_name is None and file_path is None:
+                raise StopIteration
+
+
 class FileDownloader:
     """Class to download files from a URL.
 
@@ -35,24 +71,35 @@ class FileDownloader:
         file_names (list[str]): List of file names.
         url (str): URL.
         dir_loc (Path): Path to the directory.
+        progress_bar_type (ProgressBarType): Type of progress bar to show.
+        list_generator_limit (int): Limit for the number of files before we require a generator.
+        semaphore_limit (int): Limit for the number of concurrent downloads.
 
     Methods:
         download_all: Download all files.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
-        file_names: list[str],
+        file_names: list[str] | Generator[str, None, None],
         dir_loc: str | Path | None = None,
         url: str | URLs = URLs.RCSB,
+        list_generator_limit: int = 10_000,
+        semaphore_limit: int = 100,
         progress_bar_type: ProgressBarType = ProgressBarType.RICH,
     ):
-        self.file_names = file_names
+        if not isinstance(file_names, Generator) and len(file_names) > list_generator_limit:
+            raise ValueError(f"File number is larger than {list_generator_limit}, please use a generator.")
+
+        self.total_length = len(file_names) if isinstance(file_names, list) else None
+        self.file_names = (x for x in file_names)
+
         self.url = url.value if isinstance(url, URLs) else url
         self.dir_loc = Path(dir_loc) if dir_loc else Path.cwd()
         self.dir_loc.mkdir(parents=True, exist_ok=True)
         self.progress_bar_type = progress_bar_type
+        self.semaphore_limit = semaphore_limit
 
         self._check_health()
 
@@ -83,9 +130,21 @@ class FileDownloader:
         except PermissionError:
             raise ValueError("Directory is not writable.") from None
 
+    async def _generate_tasks(
+        self, client: httpx.AsyncClient, progress_updater: Callable[[int], bool | None]
+    ) -> TaskType:
+        semaphore = asyncio.Semaphore(self.semaphore_limit)
+
+        async def task_wrapper(name: str) -> httpxResult:
+            async with semaphore:
+                return await self._download_file(client, name, progress_updater)
+
+        tasks = (task_wrapper(name) for name in self.file_names)
+        return tasks
+
     async def _download_file(
         self, client: httpx.AsyncClient, file_name: str, progress_updater: Callable[[int], bool | None]
-    ) -> tuple[str, Path | None]:  # output: file_name -> file_path
+    ) -> httpxResult:
         local_path = self.dir_loc / file_name
         if local_path.exists():
             progress_updater(1)
@@ -100,7 +159,7 @@ class FileDownloader:
 
         return file_name, None
 
-    async def _download_files(self) -> tuple[list[tuple[str, Path]], list[str]]:  # output, errors
+    async def _download_files(self) -> tuple[list[Result], list[NetworkError]] | NoSavedResult:
         logging.getLogger("httpx").setLevel(logging.WARNING)
         limits = httpx.Limits(max_keepalive_connections=20, max_connections=10)
         transport = httpx.AsyncHTTPTransport(retries=1, http2=True)
@@ -110,8 +169,9 @@ class FileDownloader:
             else:
                 result = await self._download_with_tqdm_progress(client)
 
-        output, errors = [], []
-        for file_name, file_path in result:
+        output: list[Result] = []
+        errors: list[NetworkError] = []
+        for file_name, file_path in NonNullResultIterator(iter(result)):
             if file_path is None:
                 errors.append(file_name)
                 logging.warning(f"Could not download {file_name}.")
@@ -120,33 +180,50 @@ class FileDownloader:
 
         return output, errors
 
-    async def _download_with_rich_progress(self, client: httpx.AsyncClient) -> list[tuple[str, Path | None]]:
+    async def _download_with_rich_progress(self, client: httpx.AsyncClient) -> list[httpxResult]:
         import rich.progress
 
-        with rich.progress.Progress(
-            "[progress.percentage]{task.percentage:>3.0f}%",
-            rich.progress.BarColumn(bar_width=None),
-            rich.progress.TextColumn("{task.completed}/{task.total} files"),
-            rich.progress.TextColumn("[progress.elapsed]Elapsed time: {task.elapsed:.4f}"),
-            rich.progress.TimeRemainingColumn(),
-        ) as progress:
-            download_task = progress.add_task("Downloading files...", total=len(self.file_names))
-            result = await asyncio.gather(
-                *[
-                    self._download_file(client, name, lambda n: progress.update(download_task, advance=n))
-                    for name in self.file_names
-                ]
+        def get_progress_bar_params(no_total: bool = False) -> tuple[Any, ...]:
+            if no_total:
+                # Style if no total value is known
+                return (
+                    "Download progress: ",
+                    rich.progress.TextColumn("[bold blue]{task.completed}/? files", justify="right"),
+                    rich.progress.SpinnerColumn(spinner_name="dots12", style="bold green", speed=3),
+                    rich.progress.SpinnerColumn(spinner_name="pong", style="bold white", speed=1),
+                )
+            # Style parameters
+            return (
+                "[progress.percentage]{task.percentage:>3.0f}%",
+                rich.progress.BarColumn(bar_width=None),
+                rich.progress.TextColumn("{task.completed}/{task.total} files"),
+                rich.progress.TextColumn("[progress.elapsed]Elapsed time: {task.elapsed:.4f}"),
+                rich.progress.TimeRemainingColumn(),
             )
-            return result
 
-    async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> list[tuple[str, Path | None]]:
-        with tqdm.tqdm(total=len(self.file_names), desc="Downloading files", unit="file") as pbar:
-            result = await asyncio.gather(
-                *[self._download_file(client, name, lambda n: pbar.update(n)) for name in self.file_names]
-            )
-            return result
+        bar_params = get_progress_bar_params(no_total=self.total_length is None)
+        with rich.progress.Progress(*bar_params) as progress:
+            download_task = progress.add_task("Downloading files...", total=self.total_length)
+            tasks = await self._generate_tasks(client, lambda n: progress.update(download_task, advance=n))
+            if self.total_length:
+                await asyncio.gather(*tasks)
+                return cast(list[httpxResult], [(None, None)])
 
-    def download_all(self) -> asyncio.Task[tuple[list[tuple[str, Path]], list[str]]]:
+            result = await asyncio.gather(*tasks)
+            return cast(list[httpxResult], result)
+
+    # @profile
+    async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> list[httpxResult]:
+        with tqdm.tqdm(total=self.total_length, desc="Downloading files", unit=" files") as pbar:
+            tasks: TaskType = await self._generate_tasks(client, lambda n: pbar.update(n))
+            if self.total_length:
+                await asyncio.gather(*tasks)
+                return cast(list[httpxResult], [(None, None)])
+
+            result = await asyncio.gather(*tasks)
+            return cast(list[httpxResult], result)
+
+    def download_all(self) -> asyncio.Task[tuple[list[Result], list[NetworkError]] | NoSavedResult]:
         """Download all files."""
         loop = asyncio.get_event_loop()
         task = loop.create_task(self._download_files())
@@ -155,7 +232,9 @@ class FileDownloader:
         return task
 
 
-def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str | Path | None = None) -> None:
+def fast_download(
+    *, url: str | URLs | None, file_names: list[str] | Generator[str, None, None], dir_loc: str | Path | None = None
+) -> None:
     """Easy downloader.
 
     A convenient wrapper around the FileDownloader class. It takes a list of file names, a URL, and a directory, and
@@ -181,18 +260,31 @@ def fast_download(*, url: str | URLs | None, file_names: list[str], dir_loc: str
     if url is None:
         url = URLs.RCSB
 
-    downloader = FileDownloader(file_names=file_names, dir_loc=dir_loc, url=url, progress_bar_type=ProgressBarType.RICH)
+    downloader = FileDownloader(
+        file_names=file_names,
+        dir_loc=dir_loc,
+        url=url,
+        progress_bar_type=ProgressBarType.RICH,
+        list_generator_limit=100_000,
+    )
     downloader.download_all()
 
 
 # Usage
 if __name__ == "__main__":
+
+    def file_generator(directory: str = "/mnt/f/PDB_ARCHIVE/mmCIF") -> Generator[str, None, None]:
+        """Generate file names from a directory."""
+        for _, _, files in os.walk(directory):
+            for file in files:
+                yield file
+
     cif_path = "/home/bisejdiu/projects/landscapy/data/downloaded/cifs"
 
     cif_codes = {}
     for cif in Path(cif_path).glob("*.cif"):
         cif_codes[cif.name] = cif
 
-    sample_cif_codes = list(cif_codes.keys())  # [:100]
+    sample_cif_codes = list(cif_codes.keys())  # [:500]
 
-    fast_download(url=URLs.RCSB, file_names=sample_cif_codes, dir_loc=Path("test1/test2"))
+    fast_download(url=URLs.RCSB, file_names=file_generator(), dir_loc=Path("test"))
