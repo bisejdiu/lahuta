@@ -73,7 +73,7 @@ class FileDownloader:
         dir_loc (Path): Path to the directory.
         progress_bar_type (ProgressBarType): Type of progress bar to show.
         list_generator_limit (int): Limit for the number of files before we require a generator.
-        sephamore_limit (int): Limit for the number of concurrent downloads.
+        semaphore_limit (int): Limit for the number of concurrent downloads.
 
     Methods:
         download_all: Download all files.
@@ -86,7 +86,7 @@ class FileDownloader:
         dir_loc: str | Path | None = None,
         url: str | URLs = URLs.RCSB,
         list_generator_limit: int = 10_000,
-        sephamore_limit: int = 100,
+        semaphore_limit: int = 100,
         progress_bar_type: ProgressBarType = ProgressBarType.RICH,
     ):
         if not isinstance(file_names, Generator) and len(file_names) > list_generator_limit:
@@ -99,7 +99,7 @@ class FileDownloader:
         self.dir_loc = Path(dir_loc) if dir_loc else Path.cwd()
         self.dir_loc.mkdir(parents=True, exist_ok=True)
         self.progress_bar_type = progress_bar_type
-        self.sephamore_limit = sephamore_limit
+        self.semaphore_limit = semaphore_limit
 
         self._check_health()
 
@@ -133,7 +133,7 @@ class FileDownloader:
     async def _generate_tasks(
         self, client: httpx.AsyncClient, progress_updater: Callable[[int], bool | None]
     ) -> TaskType:
-        semaphore = asyncio.Semaphore(self.sephamore_limit)
+        semaphore = asyncio.Semaphore(self.semaphore_limit)
 
         async def task_wrapper(name: str) -> httpxResult:
             async with semaphore:
