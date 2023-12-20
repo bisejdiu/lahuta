@@ -205,7 +205,7 @@ class FileDownloader:
         with rich.progress.Progress(*bar_params) as progress:
             download_task = progress.add_task("Downloading files...", total=self.total_length)
             tasks = await self._generate_tasks(client, lambda n: progress.update(download_task, advance=n))
-            if self.total_length:
+            if self.total_length is None:
                 await asyncio.gather(*tasks)
                 return cast(list[httpxResult], [(None, None)])
 
@@ -216,7 +216,7 @@ class FileDownloader:
     async def _download_with_tqdm_progress(self, client: httpx.AsyncClient) -> list[httpxResult]:
         with tqdm.tqdm(total=self.total_length, desc="Downloading files", unit=" files") as pbar:
             tasks: TaskType = await self._generate_tasks(client, lambda n: pbar.update(n))
-            if self.total_length:
+            if self.total_length is None:
                 await asyncio.gather(*tasks)
                 return cast(list[httpxResult], [(None, None)])
 
@@ -234,7 +234,7 @@ class FileDownloader:
 
 def fast_download(
     *, url: str | URLs | None, file_names: list[str] | Generator[str, None, None], dir_loc: str | Path | None = None
-) -> None:
+) -> asyncio.Task[tuple[list[Result], list[NetworkError]] | NoSavedResult]:
     """Easy downloader.
 
     A convenient wrapper around the FileDownloader class. It takes a list of file names, a URL, and a directory, and
@@ -267,7 +267,8 @@ def fast_download(
         progress_bar_type=ProgressBarType.RICH,
         list_generator_limit=100_000,
     )
-    downloader.download_all()
+    task = downloader.download_all()
+    return task
 
 
 # Usage
