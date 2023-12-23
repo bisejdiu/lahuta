@@ -4,6 +4,9 @@ from Bio.Seq import Seq
 
 __all__ = ["read_fasta", "read_keys_from_fasta"]
 
+# mypy: disable-error-code="no-untyped-call"
+
+
 def read_fasta(path: str) -> dict[str, Seq]:
     """Read a FASTA file.
 
@@ -14,6 +17,7 @@ def read_fasta(path: str) -> dict[str, Seq]:
         dict[str, Seq]: Dictionary of sequences.
     """
     return {record.id: record.seq for record in SeqIO.parse(path, "fasta")}
+
 
 def read_keys_from_fasta(path: str) -> set[str]:
     """Read the keys from a FASTA file.
