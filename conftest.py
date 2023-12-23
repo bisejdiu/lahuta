@@ -1,5 +1,6 @@
 """Pytest configuration file."""
 from pathlib import Path
+from typing import Generator
 
 import pytest
 from _pytest.config import Config
@@ -53,7 +54,7 @@ def pytest_collection_modifyitems(config: Config, items: list[pytest.Item]) -> N
 
 
 @pytest.fixture(scope="session", autouse=True)
-def cleanup() -> None:  # noqa: PT004
+def cleanup() -> Generator[None, None, None]:  # noqa: PT004
     """Remove hidden files after testing. Specifically, MDAnalysis creates hidden files that end with .lock or .npz
     in the directory where the tests are run. This fixture removes those files after testing.
 
