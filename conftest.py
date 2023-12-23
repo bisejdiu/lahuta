@@ -54,7 +54,7 @@ def pytest_collection_modifyitems(config: Config, items: list[pytest.Item]) -> N
 
 
 @pytest.fixture(scope="session", autouse=True)
-def cleanup(request: FixtureRequest) -> None:  # noqa: PT004
+def cleanup() -> None:  # noqa: PT004
     """Remove hidden files after testing. Specifically, MDAnalysis creates hidden files that end with .lock or .npz
     in the directory where the tests are run. This fixture removes those files after testing.
 
@@ -72,4 +72,16 @@ def cleanup(request: FixtureRequest) -> None:  # noqa: PT004
                 if file_path.is_file():
                     file_path.unlink()
 
-    request.addfinalizer(remove_hidden_files)  # noqa: PT021
+    def remove_downloaded_files() -> None:
+        test_dir = Path(__file__).parent
+
+        # Find downloaded files in that directory
+        for pattern in ("*.pdb", "*.pdb.gz", "*.cif", "*.cif.gz"):
+            downloaded_files = test_dir.glob(pattern)
+            for file_path in downloaded_files:
+                if file_path.is_file():
+                    file_path.unlink()
+
+    yield
+    remove_hidden_files()
+    remove_downloaded_files()
