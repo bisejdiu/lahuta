@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 from _pytest.config import Config
 from _pytest.config.argparsing import Parser
-from _pytest.fixtures import FixtureRequest
 
 
 def pytest_configure(config: Config) -> None:
