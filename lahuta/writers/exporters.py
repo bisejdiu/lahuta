@@ -14,7 +14,7 @@ class VMDExporter:
         tcl_code (str): VMD TCL code.
     """
 
-    TCL_TEMPLATE_PATH = Path(__file__).parent.parent / "utils" / "vmd_script.tcl"
+    TCL_TEMPLATE_PATH = Path(__file__).parent.parent / "utils" / "data" / "vmd_script"
 
     def __init__(self, pairs: NDArray[np.int32]):
         self.pairs = pairs

@@ -6,10 +6,10 @@ from Bio.Seq import Seq
 from numpy.typing import NDArray
 
 from lahuta import Luni
-from lahuta.api import CachedFileProcessor, intersection, union
+from lahuta.api import FileProcessor, intersection, union
 from lahuta.core.neighbors import LabeledNeighborPairs, NeighborPairs
 from lahuta.msa import MSAParser
-from lahuta.tests.base import BaseFile
+from lahuta.utils.download_files import BaseFile
 
 single_letter_code = {
     "ALA": "A",
@@ -37,17 +37,13 @@ get_single_letter_code = np.vectorize(lambda x: single_letter_code.get(x, "-"))
 
 
 class R1(BaseFile):
-    FILE_NAME = "1F88"
-
     def __init__(self, pdb: bool = True) -> None:
-        super().__init__(pdb=pdb)
+        super().__init__(pdb_code="1F88", pdb=pdb)
 
 
 class R2(BaseFile):
-    FILE_NAME = "1HZX"
-
     def __init__(self, pdb: bool = True) -> None:
-        super().__init__(pdb=pdb)
+        super().__init__(pdb_code="1HZX", pdb=pdb)
 
 
 TEST_PARAMS = [(R1, "A"), (R2, "A")]
@@ -89,7 +85,7 @@ def load_msa(file_path: str) -> MSAParser:
 def load_rhod_msa() -> MSAParser:
     """Load an MSA from a file."""
     file_loc = Path(__file__).parent / "data/rhodopsins.fasta"
-    return MSAParser(filepath=file_loc.as_posix())
+    return MSAParser(filepath=str(file_loc))
 
 
 def process_neighbors(file_path: str) -> NeighborPairs:
@@ -139,12 +135,11 @@ def test_process_sequence() -> None:
     assert process_sequence(R1().file_loc) == R1_seq
     assert process_sequence(R2().file_loc) == R2_seq
 
-    sequence_processor = CachedFileProcessor(
+    file_processor = FileProcessor(
         file_list=[R1().file_loc, R2().file_loc],
-        worker=process_sequence,
     )
-    sequence_processor.process()
-    assert sequence_processor.results == {
+    sequences = file_processor.process(worker_func=process_sequence)
+    assert sequences == {
         Path(R1().file_loc).name: R1_seq,
         Path(R2().file_loc).name: R2_seq,
     }
@@ -181,19 +176,22 @@ def get_alig_seq_labels(ref_seq: str | Seq, target_seq: str | Seq, mapped_labels
 def test_get_aligned_seqs() -> None:
     objects_store = []
     for file_name, _, _, _ in MSA_PDB_FILES:
-        NewClass = type(file_name, (BaseFile,), {"FILE_NAME": file_name})
-        # Instantiating the object
-        obj = NewClass(pdb=True)
+        new_class = type(
+            "PDBDownloader_" + file_name,
+            (BaseFile,),
+            {},
+        )
+
+        obj = new_class(pdb_code=file_name, pdb=True)
         objects_store.append(obj)
 
     # load all structures from MSA_PDB_FILES using type()
-    sequence_processor = CachedFileProcessor(
+    file_processor = FileProcessor(
         file_list=[obj.file_loc for obj in objects_store],
-        worker=process_sequence,
     )
-    sequence_processor.process()
-    parser = MSAParser(sequences=sequence_processor.results)
-    assert sorted(parser.seq_ids) == sorted([f"{x[0]}".lower() + ".pdb" for x in MSA_PDB_FILES])
+    sequences = file_processor.process(worker_func=process_sequence)
+    parser = MSAParser(sequences=sequences)
+    assert set(parser.seq_ids) == {f"{x[0]}".lower() + ".pdb" for x in MSA_PDB_FILES}
 
     unprocessed_ref_parser = load_rhod_msa()
     assert len(unprocessed_ref_parser.seq_ids) == 4
@@ -237,13 +235,12 @@ def test_get_aligned_seqs() -> None:
     aligned_seqs.assign_labels(ref_sequences=ref_parser.sequences, labels=labels)
     assert aligned_seqs.labels.shape == (366,)
 
-    processor = CachedFileProcessor(
+    file_processor = FileProcessor(
         file_list=[obj.file_loc for obj in objects_store],
-        worker=process_neighbors,
     )
-    processor.process(n_jobs=4)
+    processor_results = file_processor.process(worker_func=process_neighbors, n_jobs=4)
 
-    for result, obj in processor.results.items():
+    for result, obj in processor_results.items():
         assert isinstance(obj, NeighborPairs)
 
         key = result[:-4]
@@ -251,9 +248,9 @@ def test_get_aligned_seqs() -> None:
         assert obj.pairs.shape[0] == MSA_PDB_DICT[key][1]
 
     mapped_results = {}
-    for file_name in processor.results:
+    for file_name in processor_results:
         basename = Path(file_name).name
-        mapped_results[basename] = processor.results[basename].map(
+        mapped_results[basename] = processor_results[basename].map(
             aligned_seqs.sequences[basename], fields={"names": False, "resnames": False, "chainids": False}
         )
 
@@ -286,11 +283,11 @@ def test_get_aligned_seqs() -> None:
     is_correct_gns_mapping(mapped_ns, ref_seq, alig_seq_labels, aligned_seqs)
 
     for obj in objects_store:
-        key = obj.FILE_NAME[:-4]
+        key = obj.file_name.lower()
         luni = Luni(obj.file_loc).filter(f"chainID {MSA_PDB_DICT[key][0]}")
         ns = luni.neighbors(radius=5, res_dif=4)
 
-        ref_seq = aligned_seqs.sequences[f"{obj.FILE_NAME.lower()}"]
+        ref_seq = aligned_seqs.sequences[f"{key}.pdb"]
         alig_seq_labels = get_alig_seq_labels(ref_seq, target_seq, aligned_seqs.labels)
         mapped_ns = ns.map(
             ref_seq,

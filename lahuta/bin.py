@@ -209,9 +209,9 @@ def export_to_file(
     if export_type not in export_functions:
         raise ValueError(f"Unsupported export type: {export_type}")
 
-    results = create_result_dataframe(results, df_format)
+    results_dataframe = create_result_dataframe(results, df_format)
     filename = f'{output or "lahuta"}.{export_type}'
-    export_functions[export_type](results, filename)
+    export_functions[export_type](results_dataframe, filename)
 
 
 def export_results(

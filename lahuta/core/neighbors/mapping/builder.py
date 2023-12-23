@@ -9,7 +9,7 @@ from typing import Optional, Sequence, TypedDict
 import numpy as np
 import pandas as pd
 from Bio.Seq import Seq
-from numpy.typing import DTypeLike, NDArray
+from numpy.typing import NDArray
 
 from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.core.neighbors import LabeledNeighborPairs
@@ -206,18 +206,19 @@ class LabeledNeighborPairsBuilder:
         data["resids"] = mapped_resindices
 
         if custom_fields:
-            extended_dtype = self._extend_dtype_with_custom_fields(custom_fields)
+            new_fields = [(name, "<U25") for name in custom_fields]
+            extended_dtype = np.dtype(list(data.dtype.descr) + new_fields)
             extended_data = np.empty(atoms.n_atoms, dtype=extended_dtype)
 
             # Copy data from the original array
-            assert self.dtype.names is not None
-            for field in self.dtype.names:
+            assert data.dtype.names is not None
+            for field in data.dtype.names:
                 extended_data[field] = data[field]
 
             # Add custom fields
             mapped_prot_resindices = MSAParser.to_indices_array(seq).tolist()
             for field_name, field_data in custom_fields.items():
-                factorized_prot_resindices = pd.factorize(self.atom_mapper.prot.resindices)[0]
+                factorized_prot_resindices = pd.factorize(self.atom_mapper.prot.resindices)[0]  # type: ignore
 
                 prot_labels = field_data["values"][mapped_prot_resindices]
                 prot_resix_labels = prot_labels[factorized_prot_resindices.tolist()]
@@ -228,19 +229,6 @@ class LabeledNeighborPairsBuilder:
             data = extended_data
 
         return LabeledNeighborPairs(data[pairs])
-
-    def _extend_dtype_with_custom_fields(self, custom_fields: dict[str, dict[str, Sequence[str]]]) -> DTypeLike:
-        """Extend the dtype with custom fields.
-
-        Args:
-            custom_fields (dict): A dictionary of custom fields and their values.
-
-        Returns:
-            np.dtype: An extended dtype.
-        """
-        new_fields = [(name, "<U25") for name in custom_fields]
-        extended_dtype = np.dtype(list(self.dtype.descr) + new_fields)
-        return extended_dtype
 
     def create_empty_struct_array(self, size: int) -> NDArray[np.void]:
         """Create an empty structured array.

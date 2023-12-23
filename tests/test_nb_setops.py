@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 import lahuta.utils.array_utils as au
 from lahuta.core.luni import Luni
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.tests import X2
+from lahuta.utils.download_files import X2
 
 pytestmark = pytest.mark.nb
 

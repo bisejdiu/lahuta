@@ -34,6 +34,7 @@ dependencies = [
     'gemmi>=0.6.0',
     'MDAnalysis>=2.5.0, <3.0.0',
     'openbabel>=3.1.0',
+    'httpx>=0.25.2',
     'typer>=0.9.0',
     'rich>=13.5.1',
 ]
@@ -64,7 +65,7 @@ extend-select = [
 ignore = [
     'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
     'D205', 'D213', 'D406', 'D407', 'D415', 'ERA001', 'FIX002', 'PLR2004', 'PLW0127', 'TD003',
-    'TRY003', 'PT018', 'R504'
+    'TRY003', 'PT018', 'RET504'
 ]
 
 mccabe = { max-complexity = 14 }
@@ -84,10 +85,9 @@ max-args = 6
 'lahuta/_types/mdanalysis.py' = ['ANN401', 'D101', 'D102']
 'lahuta/_types/openbabel.py' = ['ANN401', 'D101', 'D102']
 'lahuta/bin.py' = ['A002', 'B008', 'D400', 'PLR0913']
-'lahuta/api/processors.py' = ['PTH118', 'PTH119', "B008"]
-'lahuta/api/workers.py' = ['PTH118', 'PTH119']
 'lahuta/msa/muscle.py' = ['PTH110', 'PTH107', 'PTH123']
 'lahuta/msa/mafft.py' = ['PTH110', 'PTH107', 'PTH123']
+'lahuta/api/processors.py' = ['PTH118', 'PTH119']
 'lahuta/core/index_finder.py' = ['PERF401']
 'lahuta/tests/*.py' = ['D100', 'D101', 'D104']
 'tests/*.py' = ['D100', 'D101', 'D102', 'D103', 'D401', 'PT004', 'PT019', 'PLR0915']

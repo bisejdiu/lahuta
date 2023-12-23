@@ -81,7 +81,7 @@ class MSAParser:
 
     # TODO (bisejdiu): rename method
     @staticmethod
-    def to_indices_array(seq: Seq) -> NDArray[np.int32]:
+    def to_indices_array(seq: str | Seq) -> NDArray[np.int32]:
         """Convert a sequence to an array of indices.
 
         Args:
@@ -91,6 +91,8 @@ class MSAParser:
             NDArray[np.int32]: The array of indices.
 
         """
+        if isinstance(seq, str):
+            seq = Seq(seq)
         arr = MSAParser._to_framebuffer(seq)
         return np.nonzero(arr != 45)[0]
 
@@ -268,7 +270,6 @@ class MSAParser:
             raise ValueError("Invalid source sequence or ID.")
 
         comp_seq_block = np.array(self._get_sequence_block(target_seq_ids, target_seqs))
-        print("comp_seq_block", comp_seq_block.shape)
 
         seq_non_fill = np.array(seq) != fill
         seq_block_non_fill = np.any(comp_seq_block != fill, axis=0)
