@@ -44,11 +44,13 @@ class PartnerData(NamedTuple):
     res_id_seq_num: int
     res_id_name: str
 
+
 class ConnectionData(NamedTuple):
     """Store gemmi.ConnectionList atom connection data."""
 
     partner1: PartnerData
     partner2: PartnerData
+
 
 class BaseLoader(ABC):
     """Abstract base class providing a blueprint for loading and handling biological structure data.
@@ -240,6 +242,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("chainIDs", self.arc.chains.auths)
         uv.add_TopologyAttr("ids", self.arc.atoms.ids)
+        uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
 
         uv.atoms.positions = self.arc.atoms.coordinates
         uv.filename = self.file_path
@@ -276,13 +279,13 @@ class GemmiLoader(BaseLoader):
                 atom_name=conn.partner1.atom_name,
                 chain_name=conn.partner1.chain_name,
                 res_id_seq_num=conn.partner1.res_id.seqid.num,
-                res_id_name=conn.partner1.res_id.name
+                res_id_name=conn.partner1.res_id.name,
             )
             prt2 = PartnerData(
                 atom_name=conn.partner2.atom_name,
                 chain_name=conn.partner2.chain_name,
                 res_id_seq_num=conn.partner2.res_id.seqid.num,
-                res_id_name=conn.partner2.res_id.name
+                res_id_name=conn.partner2.res_id.name,
             )
             conn_store.append(ConnectionData(prt1, prt2))
 

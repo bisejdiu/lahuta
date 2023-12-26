@@ -150,6 +150,10 @@ class AtomGroupType(Protocol):
     def vdw_radii(self) -> NDArray[np.float16]:
         ...
 
+    @property
+    def tempfactors(self) -> NDArray[np.float16]:
+        ...
+
     def copy(self) -> "AtomGroupType":
         ...
 

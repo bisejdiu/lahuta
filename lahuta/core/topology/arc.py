@@ -84,8 +84,8 @@ class Atoms:
 
     dtype = np.dtype(
         {
-            "names": ["name", "id", "element", "type"],
-            "formats": ["<U10", "int", "<U2", "<U10"],
+            "names": ["name", "id", "element", "type", "b_iso"],
+            "formats": ["<U10", "int", "<U2", "<U10", "float"],
         }
     )
 
@@ -113,6 +113,7 @@ class Atoms:
         data["id"] = np.array(gemmi_block.get("id"), dtype=np.int32) - 1
         data["element"] = np.array(gemmi_block.get("type_symbol"))
         data["type"] = np.array(gemmi_block.get("type_symbol"))
+        data["b_iso"] = np.array(gemmi_block.get("B_iso_or_equiv"))
 
         cls_instance.data = data
         cls_instance.coords = np.zeros((0, 3), dtype=np.float32)
@@ -160,6 +161,11 @@ class Atoms:
     def elements(self) -> NDArray[np.str_]:
         """Atom elements."""
         return self.data["element"]
+
+    @property
+    def b_isos(self) -> NDArray[np.float32]:
+        """Atom B-factors."""
+        return self.data["b_iso"]
 
     @property
     def coordinates(self) -> NDArray[np.float32]:
@@ -491,6 +497,7 @@ class ARC:
             "resid": residue_info["resid"],
             "chain_label": chain_info["label"],
             "chain_id": chain_info["id"],
+            "b_iso": atom_info["B_iso_or_equiv"],
         }
 
         return Atom(**atom_kwargs)

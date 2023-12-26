@@ -69,7 +69,10 @@ class Luni:
     """
 
     def __init__(
-        self, structure: Union[str, Path, "AtomGroupType"], trajectories: Optional[str | list[str]] = None
+        self,
+        structure: Union[str, Path, "AtomGroupType"],
+        trajectories: Optional[str | list[str]] = None,
+        b_iso_name: str = "tempfactor",
     ) -> None:
         fmts: str | set[str] = ""
         self._file_loader: BaseLoader
@@ -102,6 +105,10 @@ class Luni:
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         self._structure, self._trajectories = structure, trajectories
+
+        self.b_iso_name = b_iso_name
+        if self.b_iso_name != "tempfactor":
+            self.extend_topology(self.b_iso_name, self._mda.universe.atoms.tempfactors)
 
     @staticmethod
     def _get_supported_fmts() -> set[str]:
@@ -493,6 +500,8 @@ class Luni:
         Returns:
             Luni: A new Luni instance containing the filtered atoms.
         """
+        if self.b_iso_name != "tempfactor":
+            selection = selection.replace(self.b_iso_name, "tempfactor")
         return self.__class__(self._mda.select_atoms(selection))
 
     def remove_water(self) -> Self:
@@ -605,6 +614,7 @@ class Luni:
         uv.add_TopologyAttr("resids", mda_copy.residues.resids)
         uv.add_TopologyAttr("chainIDs", mda_copy.chainIDs)
         uv.add_TopologyAttr("ids", mda_copy.ids)
+        uv.add_TopologyAttr("tempfactors", mda_copy.tempfactors)
 
         assert uv.atoms is not None
         uv.atoms.positions = mda_copy.positions
