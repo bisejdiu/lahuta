@@ -71,7 +71,7 @@ class FileProcessor:
     def _is_valid_extension(self, file_name: str) -> bool:
         return not self.allowed_file_extensions or any(file_name.endswith(ext) for ext in self.allowed_file_extensions)
 
-    def process(self, worker_func: Callable[..., T], n_jobs: int = 1, *args: str, **kwargs: str) -> dict[str, T]:
+    def process(self, worker_func: Callable[..., T], n_jobs: int = 1, **kwargs: str) -> dict[str, T]:
         """Walk through the directory and process the files.
 
         Args:
@@ -85,7 +85,7 @@ class FileProcessor:
             dict[str, T]: Dictionary of results.
 
         """
-        worker = Worker(functools.partial(worker_func, *args, **kwargs))
+        worker = Worker(functools.partial(worker_func, **kwargs))
         all_files = self._collect_file_paths()
         num_files = len(all_files)
 
