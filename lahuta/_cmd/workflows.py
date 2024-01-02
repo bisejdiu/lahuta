@@ -42,7 +42,7 @@ class EasySearchWorkflow:
                 "query": "db/query",
                 "target": "db/target",
                 "result": "db/result",
-                "output": "x_aln_x_.8",
+                "output": "alignment.fseek",
                 "format_mode": "0",
             }
         )
@@ -51,16 +51,8 @@ class EasySearchWorkflow:
         #         "query": "db/query",
         #         "target": "db/target",
         #         "result": "db/result",
-        #         "output": "",
-        #         "format_mode": "5",
-        #     }
-        # )
-        # align_structs = ConvertAlisCommand(
-        #     options={
-        #         "query": "db/query",
-        #         "target": "db/target",
-        #         "result": "db/result",
         #         "output": "db/xyz_alig_res",
+        #         "format_mode": "5",
         #     }
         # )
 
@@ -71,7 +63,6 @@ class EasySearchWorkflow:
         self.runner.add_command(search, dependencies=[create_target_db])
         self.runner.add_command(convert_alis_fm0, dependencies=[search])
         # self.runner.add_command(convert_alis_fm5, dependencies=[search])
-        # self.runner.add_command(align_structs, dependencies=[search])
 
     def seek(self) -> None:
         self._main_command_loop()

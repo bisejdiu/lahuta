@@ -15,29 +15,29 @@ class CreateDBOptions(CLIOptions, total=False):
     db_out_path: Required[str]
     # optionals
     chain_name_mode: Literal["0", "1"]
-    # write_mapping: Literal["0", "1"]
-    # mask_bfactor_threshold: str
+    write_mapping: Literal["0", "1"]
+    mask_bfactor_threshold: str
     threads: str
-    # coord_store_mode: Literal["1", "2"]
+    coord_store_mode: Literal["1", "2"]
     write_lookup: Literal["0", "1"]
     tar_include: str
     tar_exclude: str
-    # file_include: str
-    # file_exclude: str
+    file_include: str
+    file_exclude: str
     v: Literal["0", "1", "2", "3"]
 
 
 CreateDBOptionsDefaults: dict[str, str] = {
     "chain_name_mode": "0",
-    # "write_mapping": "0",
-    # "mask_bfactor_threshold": "0",
+    "write_mapping": "0",
+    "mask_bfactor_threshold": "0",
     "threads": "4",
-    # "coord_store_mode": "2",
+    "coord_store_mode": "2",
     "write_lookup": "1",
     "tar_include": ".*",
     "tar_exclude": "^$",
-    # "file_include": ".*",
-    # "file_exclude": "^$",
+    "file_include": ".*",
+    "file_exclude": "^$",
     "v": "3",
 }
 
@@ -60,7 +60,7 @@ class SearchOptions(CLIOptions, total=False):
     mask_prob: str
     remove_tmp_files: Literal["0", "1"]
     max_seqs: str
-    # exhaustive_search: Literal["0", "1"]
+    exhaustive_search: Literal["0", "1"]
 
 
 SearchOptionsDefaults: dict[str, str] = {
@@ -76,7 +76,7 @@ SearchOptionsDefaults: dict[str, str] = {
     "mask_prob": "1.000",
     "remove_tmp_files": "1",
     "max_seqs": "1000",
-    # "exhaustive_search": "0",
+    "exhaustive_search": "0",
 }
 
 
