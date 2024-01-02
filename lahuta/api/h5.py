@@ -5,6 +5,8 @@ except ImportError:
     raise ImportError("h5py is not installed. Please install it to use this module.") from None
 
 import tempfile
+from multiprocessing import Lock
+from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
@@ -22,13 +24,12 @@ class HDF5Handler:
         dtype (str | NDArray[np.void]): Data type of the data to be saved.
     """
 
-    def __init__(self, file_location: str | None = None, dtype: str | NDArray[np.void] | None = None):
+    def __init__(self, file_location: str | Path | None = None, dtype: str | NDArray[np.void] | None = None):
         if file_location:
-            self.file_location = file_location
+            self.file_location = Path(file_location)
         else:
-            # Create a temporary file if no file location is provided
             temp_file = tempfile.NamedTemporaryFile(delete=True)
-            self.file_location = temp_file.name
+            self.file_location = Path(temp_file.name)
 
         self.dtype = dtype or [
             ("chainids", "<U25"),
@@ -37,6 +38,7 @@ class HDF5Handler:
             ("resnames", "<U25"),
             ("gns", "<U25"),
         ]
+        self.lock = Lock()
 
     def _convert_dtype(self, data: NDArray[np.void]) -> NDArray[np.void]:
         # Convert the string fields to byte strings for HDF5 compatibility
@@ -60,13 +62,13 @@ class HDF5Handler:
                 h5file.create_dataset(key, data=self._convert_dtype(value))
 
     def append_data(self, key: str, value: NDArray[np.void]) -> None:
-        """Append data to the HDF5 file.
+        """Append data to the HDF5 file. This operation is thread-safe.
 
         Args:
             key (str): Key for the data to be appended.
             value (NDArray[np.void]): Data to be appended.
         """
-        with h5py.File(self.file_location, "a") as h5file:
+        with self.lock, h5py.File(self.file_location, "a") as h5file:
             if key in h5file:
                 raise KeyError(
                     f"Dataset with key '{key}' already exists. Use a different key or delete the existing dataset."
@@ -91,13 +93,13 @@ class HDF5Handler:
             encoded_array = h5file[key][:]
             return np.array(encoded_array, self.dtype)
 
-    def load_all_data(self) -> dict[str, NDArray[np.void]]:
-        """Load all data from the HDF5 file.
+    def load_data(self) -> dict[str, NDArray[np.void]]:
+        """Load data from the HDF5 file.
 
         Depending on the size of the file, this may take a while and use a lot of memory.
 
         Returns:
-            dict[str, NDArray[np.void]]: Dictionary of all data from the HDF5 file.
+            dict[str, NDArray[np.void]]: Data loaded from the HDF5 file.
         """
         data = {}
         with h5py.File(self.file_location, "r") as h5file:
