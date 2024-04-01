@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Callable, Type
 
 import numpy as np
-from numpy.typing import NDArray
 import pytest
 from _pytest.fixtures import FixtureRequest
+from numpy.typing import NDArray
 
 import lahuta.contacts as C
 from lahuta import Luni
@@ -16,8 +16,7 @@ from lahuta.contacts.atom_plane import AtomPlaneContacts
 from lahuta.contacts.base import ContactAnalysis
 from lahuta.contacts.plane_plane import PlanePlaneContacts
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.tests import X2, DNABound, Rhodopsin
-
+from lahuta.utils.download_files import X2, DNABound, Rhodopsin
 
 ContactFunction = Callable[[NeighborPairs], NeighborPairs]
 ContactDict = dict[str, list[int] | int]
@@ -25,7 +24,6 @@ ContactDict = dict[str, list[int] | int]
 pytestmark = pytest.mark.contacts
 
 FILE_PAIRS = [("1kx2.json.gz", X2()), ("1gzm.json.gz", Rhodopsin()), ("3q2y.json.gz", DNABound())]
-# FILE_PAIRS = [("3q2y.json.gz", DNABound())]
 
 
 def get_sorted_indices(arr: NDArray[np.int32 | np.float32]) -> NDArray[np.int32]:
@@ -88,7 +86,7 @@ def plane_plane(data_loader: tuple[NeighborPairs, dict[str, ContactDict]]) -> Pl
 
 
 @pytest.mark.parametrize(
-    "neighbor_func, expected_key",
+    ("neighbor_func", "expected_key"),
     [
         (F.covalent_neighbors, "COVALENT"),
         (F.metalic_neighbors, "METALIC"),
@@ -115,7 +113,6 @@ def test_atom_atom_neighbor_funcs(
     data_loader: tuple[NeighborPairs, dict[str, ContactDict]],
 ) -> None:
     """Test the neighbors."""
-
     _, expected_results = data_loader
     expected_result = expected_results[expected_key]
 
@@ -138,7 +135,7 @@ def test_atom_atom_neighbor_funcs(
 
 
 @pytest.mark.parametrize(
-    "contact_class, expected_key",
+    ("contact_class", "expected_key"),
     [
         (C.CovalentContacts, "COVALENT"),
         (C.MetalicContacts, "METALIC"),
@@ -191,7 +188,7 @@ def test_atom_atom_neighbor_classes(
 
 
 @pytest.mark.parametrize(
-    "contact_func_name, expected_key",
+    ("contact_func_name", "expected_key"),
     [
         ("cation_pi", "CATIONPI"),
         ("donor_pi", "DONORPI"),
@@ -206,7 +203,6 @@ def test_atomplane_contacts(
     data_loader: tuple[NeighborPairs, dict[str, ContactDict]],
 ) -> None:
     """Test the contacts."""
-
     contact_func = getattr(atom_plane, contact_func_name)
     result = contact_func()
     pairs, distances = result.pairs, result.distances

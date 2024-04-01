@@ -19,5 +19,5 @@ def parse_quotes(file_path: Path) -> list[tuple[str, str]]:
         return [(match[0], match[1]) for match in matches]
 
 
-PROJECT_ROOT = Path(__file__).parent.parent / "tests" / "data"
-GROMACS_QUOTES = parse_quotes(PROJECT_ROOT / "coolstuff.cpp")
+PROJECT_ROOT = Path(__file__).parent / "data"
+GROMACS_QUOTES = parse_quotes(PROJECT_ROOT / "coolstuff.txt")

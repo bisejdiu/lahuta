@@ -6,6 +6,8 @@ from typing import Optional
 
 from Bio.Seq import Seq
 
+from lahuta.msa.io import read_keys_from_fasta
+
 __all__ = ["Mafft"]
 
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +33,7 @@ class Mafft:
         sequence_data: str | dict[str, str] | dict[str, Seq],
         ref_alignment: Optional[str | dict[str, str] | dict[str, Seq]] = None,
     ) -> None:
+        self.ref_alig_keys: Optional[set[str]] = None
         match sequence_data:
             case str(path):
                 self.input_file = path
@@ -44,10 +47,12 @@ class Mafft:
         match ref_alignment:
             case str(path):
                 ref_alignment = path
+                self.ref_alig_keys = read_keys_from_fasta(path)
             case dict(data):
                 with NamedTemporaryFile(delete=False) as temp:
                     ref_alignment = temp.name
                     temp.write(self.dict_to_fasta(data).encode())
+                    self.ref_alig_keys = set(data.keys())
             case _:
                 ref_alignment = None
 

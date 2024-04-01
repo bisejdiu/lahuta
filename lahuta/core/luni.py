@@ -69,10 +69,14 @@ class Luni:
     """
 
     def __init__(
-        self, structure: Union[str, Path, "AtomGroupType"], trajectories: Optional[str | list[str]] = None
+        self,
+        structure: Union[str, Path, "AtomGroupType"],
+        trajectories: Optional[str | list[str]] = None,
+        b_iso_name: str = "tempfactor",
     ) -> None:
         fmts: str | set[str] = ""
         self._file_loader: BaseLoader
+        self._input_structure: str | Path | "AtomGroupType" = structure
         structure = str(structure) if isinstance(structure, Path) else structure
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
@@ -94,7 +98,9 @@ class Luni:
             case _:
                 fmts = self._get_supported_fmts()
                 fmts = ", ".join(fmts)
-                raise ValueError("Invalid input! \nSupported formats are: {fmts}.")
+                raise ValueError(
+                    f"Invalid input! {structure=} and {trajectories=} are not valid inputs. \nSupported formats are: {fmts}."
+                )
 
         self._mol: Optional["MolType"] = None
         self._mda = self._file_loader.to("mda")
@@ -102,11 +108,17 @@ class Luni:
 
         self._structure, self._trajectories = structure, trajectories
 
+        self.b_iso_name = b_iso_name
+        if self.b_iso_name != "tempfactor":
+            self.extend_topology(self.b_iso_name, self._mda.universe.atoms.tempfactors)
+
+        # self.extend_topology("chainLabels", self.arc.chains.labels)
+
     @staticmethod
     def _get_supported_fmts() -> set[str]:
         return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
 
-    def _extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
+    def extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
         """Add new topology attributes to the Luni.
 
         Args:
@@ -275,10 +287,13 @@ class Luni:
             mda = self._mda.universe.atoms[union_indices]
 
         # neighbors = MDAnalysisNeighborSearch(self.to("mda"))
+        neighbors: BaseNeighborSearch
         if backend == "gemmi":
-            assert self._file_loader.structure is not None
+            import gemmi
+
             # TODO(bisejdiu): image is not being passed
-            neighbors = GemmiNeighborSearch(mda, self._file_loader.structure)
+            structure = gemmi.read_pdb(self._input_structure)
+            neighbors = GemmiNeighborSearch(mda, structure)
         elif backend == "mda":
             neighbors = MDAnalysisNeighborSearch(mda)
         else:
@@ -445,7 +460,7 @@ class Luni:
                 total number of atoms.
             index *index-range*
                 selects all atoms within a range of (0-based) inclusive indices,
-                e.g. ``index 0`` selects the first atom in the universe;
+                e.g. ``index 0`` selectsssor.results the first atom in the universe;
                 ``index 5:10`` selects atoms 6 through 11 inclusive. All atoms
                 in the :class:`~MDAnalysis.core.universe.Universe` are
                 consecutively numbered, and the index runs from 0 up to the
@@ -460,7 +475,7 @@ class Luni:
                 :meth:`~MDAnalysis.core.groups.AtomGroup.select_atoms`
                 was called from will be considered, unless ``group`` is
                 preceded by the ``global`` keyword. `group-name` will be
-                included in the parsing just by comparison of atom indices.
+                included in the parprocesing just by comparison of atom indices.
                 This means that it is up to the user to make sure the
                 `group-name` group was defined in an appropriate
                 :class:`~MDAnalysis.core.universe.Universe`.
@@ -489,6 +504,8 @@ class Luni:
         Returns:
             Luni: A new Luni instance containing the filtered atoms.
         """
+        if self.b_iso_name != "tempfactor":
+            selection = selection.replace(self.b_iso_name, "tempfactor")
         return self.__class__(self._mda.select_atoms(selection))
 
     def remove_water(self) -> Self:
@@ -576,8 +593,40 @@ class Luni:
         """
         return self.__class__(self._mda)
 
-    @property
-    def sequence(self) -> str:
+    def deepcopy(self) -> Self:
+        """Create a deep copy of this Luni instance.
+
+        Returns:
+            Luni: A deep copy of this Luni instance.
+        """
+        mda_copy = self._mda.copy()
+        _, resindices = np.unique(mda_copy.resindices, return_inverse=True)
+
+        uv = mda.Universe.empty(
+            n_atoms=mda_copy.n_atoms,
+            n_residues=mda_copy.n_residues,
+            n_segments=mda_copy.n_segments,
+            atom_resindex=resindices,
+            residue_segindex=mda_copy.residues.segindices,
+            trajectory=True,
+        )
+
+        uv.add_TopologyAttr("names", mda_copy.names)
+        uv.add_TopologyAttr("types", mda_copy.types)
+        uv.add_TopologyAttr("elements", mda_copy.elements)
+        uv.add_TopologyAttr("resnames", mda_copy.residues.resnames)
+        uv.add_TopologyAttr("resids", mda_copy.residues.resids)
+        uv.add_TopologyAttr("chainIDs", mda_copy.chainIDs)
+        uv.add_TopologyAttr("ids", mda_copy.ids)
+        uv.add_TopologyAttr("tempfactors", mda_copy.tempfactors)
+
+        assert uv.atoms is not None
+        uv.atoms.positions = mda_copy.positions
+        uv.filename = mda_copy.universe.filename
+
+        return self.__class__(uv.atoms)
+
+    def sequence(self, use_synonyms: bool = False) -> str:
         """Retrieve the sequence of the Luni.
 
         This method retrieves the sequence of the Luni from the underlying MDA AtomGroup instance.
@@ -586,13 +635,16 @@ class Luni:
         Returns:
             NDArray[np.str_]: A NumPy array containing the one-letter amino acid codes of the Luni.
         """
+        res_dict: dict[str, str] = {}
         three_letter_codes = self.to("mda").select_atoms("protein").residues.resnames
-        conversion_dict: dict[str, str] = {}
-        for key, synonyms in RESIDUE_SYNONYMS.items():
-            for synonym in synonyms:
-                conversion_dict[synonym] = BASE_AA_CONVERSION[key]
+        if use_synonyms:
+            for key, synonyms in RESIDUE_SYNONYMS.items():
+                for synonym in synonyms:
+                    res_dict[synonym] = BASE_AA_CONVERSION[key]
 
-        single_letter_codes = np.vectorize(lambda x: conversion_dict.get(x, "X"))(three_letter_codes)
+        res_dict = res_dict if use_synonyms else BASE_AA_CONVERSION
+        unknown_res_name = "X" if use_synonyms else ""
+        single_letter_codes = np.vectorize(lambda x: res_dict.get(x, unknown_res_name))(three_letter_codes)
 
         return "".join(single_letter_codes)
 

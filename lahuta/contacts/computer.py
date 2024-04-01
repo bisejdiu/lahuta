@@ -14,8 +14,8 @@ from typing_extensions import TypeAlias
 
 from lahuta.contacts import AtomPlaneContacts, F
 from lahuta.core.luni import Luni
-from lahuta.core.mda_backend import MDAnalysisNeighborSearch
 from lahuta.core.neighbors import NeighborPairs
+from lahuta.core.neighbors.backends import MDAnalysisNeighborSearch
 
 from ._ctx_mngrs import tqdm_joblib
 
