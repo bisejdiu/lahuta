@@ -2,7 +2,7 @@
 import functools
 import logging
 import os
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import Callable, Generic, Iterable, Optional, TypeVar
 
 from lahuta import Luni, NeighborPairs
@@ -101,7 +101,7 @@ class FileProcessor:
             ]
 
         result: dict[str, T] = {}
-        for future in futures:
+        for future in as_completed(futures):
             result.update(future.result())
 
         return result
