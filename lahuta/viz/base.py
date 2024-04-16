@@ -4,6 +4,7 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from numpy.typing import NDArray
 
+
 class BasePlotter:
     """Base class for all plotter classes.
 
@@ -20,9 +21,7 @@ class BasePlotter:
         """Plot the contact map."""
         raise NotImplementedError()
 
-    def _initialize_map(
-        self, shape: tuple[int, int], pairs: list[tuple[np.int32, np.int32]]
-    ) -> NDArray[np.int32]:
+    def _initialize_map(self, shape: tuple[int, int], pairs: list[tuple[np.int32, np.int32]]) -> NDArray[np.int32]:
         contact_map = np.zeros(shape, dtype=int)
         for x, y in pairs:
             contact_map[x, y] = 1

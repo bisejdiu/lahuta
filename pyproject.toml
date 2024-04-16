@@ -56,29 +56,29 @@ skip-string-normalization = true
 
 [tool.ruff]
 line-length = 120
-extend-select = [
+lint.extend-select = [
     'A', 'ANN', 'ARG', 'B', 'BLE', 'C4', 'C90', 'COM', 'D', 'ERA',
     'FIX', 'FLY', 'I', 'INT', 'NPY', 'PD', 'PERF', 'PL', 'PT', 'PTH',
     'PYI', 'Q', 'RET', 'RUF', 'RUF100', 'SIM', 'SLF', 'TD', 'TCH', 'TID',
     'TRY'
 ]
-ignore = [
+lint.ignore = [
     'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
-    'D205', 'D213', 'D406', 'D407', 'D415', 'ERA001', 'FIX002', 'PLR2004', 'PLW0127', 'TD003',
+    'D205', 'D213', 'D406', 'D407', 'D413', 'D415', 'ERA001', 'FIX002', 'PERF401', 'PLR2004', 'PLW0127', 'TD003',
     'TRY003', 'PT018', 'RET504'
 ]
 
-mccabe = { max-complexity = 14 }
-isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
+lint.mccabe = { max-complexity = 14 }
+lint.isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
 target-version = "py310"
 exclude=['lahuta/scripts', 'cachedir', 'docs/plugins']
 
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
-[tool.ruff.pylint]
+[tool.ruff.lint.pylint]
 max-args = 6
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 'lahuta/contacts/_ctx_mngrs.py' = ['ANN']
 'lahuta/_types/mda_commands.py' = ['PLR0913']
 'lahuta/_types/gemmi.py' = ['ANN401', 'D101', 'D102']
