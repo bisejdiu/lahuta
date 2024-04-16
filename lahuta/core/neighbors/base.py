@@ -1,13 +1,13 @@
 """Base class for finding neighbors."""
-from typing import Any
+from typing import Any, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
 
 from lahuta._types.mdanalysis import AtomGroupType
 
-IndexPairs = NDArray[np.int32]
-Distances = NDArray[np.float32]
+IndexPairs: TypeAlias = NDArray[np.int32]
+Distances: TypeAlias = NDArray[np.float32]
 PairsDistances = tuple[IndexPairs, Distances]
 
 
