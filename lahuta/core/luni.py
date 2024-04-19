@@ -70,7 +70,7 @@ class Luni:
 
     def __init__(
         self,
-        structure: str | Path | "AtomGroupType",
+        structure: "str | Path | AtomGroupType",
         trajectories: str | list[str] | None = None,
         b_iso_name: str = "tempfactor",
     ) -> None:
