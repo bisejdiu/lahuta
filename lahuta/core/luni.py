@@ -11,7 +11,7 @@ Example:
 -------
     universe = Luni(...)
     ns = universe.compute_neighbors()
-    
+
 """
 
 from pathlib import Path
@@ -671,12 +671,10 @@ class Luni:
         return None, False
 
     @overload
-    def to(self, fmt: Literal["mda"]) -> "AtomGroupType":
-        ...
+    def to(self, fmt: Literal["mda"]) -> "AtomGroupType": ...
 
     @overload
-    def to(self, fmt: Literal["mol"]) -> "MolType":
-        ...
+    def to(self, fmt: Literal["mol"]) -> "MolType": ...
 
     def to(self, fmt: Literal["mda", "mol"]) -> Union["MolType", "AtomGroupType"]:
         """Convert the Luni to a different format.
