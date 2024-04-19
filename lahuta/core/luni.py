@@ -70,8 +70,8 @@ class Luni:
 
     def __init__(
         self,
-        structure: Union[str, Path, "AtomGroupType"],
-        trajectories: Optional[str | list[str]] = None,
+        structure: str | Path | "AtomGroupType",
+        trajectories: str | list[str] | None = None,
         b_iso_name: str = "tempfactor",
     ) -> None:
         fmts: str | set[str] = ""
@@ -292,7 +292,7 @@ class Luni:
             import gemmi
 
             # TODO(bisejdiu): image is not being passed
-            structure = gemmi.read_pdb(self._input_structure)
+            structure = gemmi.read_pdb(self._input_structure) # type: ignore
             neighbors = GemmiNeighborSearch(mda, structure)
         elif backend == "mda":
             neighbors = MDAnalysisNeighborSearch(mda)
