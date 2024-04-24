@@ -66,7 +66,7 @@ class OBMol:
         idx: int,
         atom_name: str,
         atom_element: str,
-        atom_pos: NDArray[np.float_],
+        atom_pos: NDArray[np.float32],
         ob_residue: MolResType,
     ) -> None:
         """Create a new atom in the molecule.

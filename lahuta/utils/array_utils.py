@@ -452,7 +452,7 @@ def isunique(arr: NDArray[_DType]) -> bool:
         False
         ```
     """
-    return arr.shape[0] == np.unique(arr, axis=0).shape[0]
+    return arr.shape[0] == np.unique(arr, axis=0).shape[0] # type: ignore
 
 
 def is_strict_subset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:

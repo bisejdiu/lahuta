@@ -11,7 +11,7 @@ Example:
 -------
     universe = Luni(...)
     ns = universe.compute_neighbors()
-    
+
 """
 
 from pathlib import Path
@@ -70,8 +70,8 @@ class Luni:
 
     def __init__(
         self,
-        structure: Union[str, Path, "AtomGroupType"],
-        trajectories: Optional[str | list[str]] = None,
+        structure: "str | Path | AtomGroupType",
+        trajectories: str | list[str] | None = None,
         b_iso_name: str = "tempfactor",
     ) -> None:
         fmts: str | set[str] = ""
@@ -98,7 +98,9 @@ class Luni:
             case _:
                 fmts = self._get_supported_fmts()
                 fmts = ", ".join(fmts)
-                raise ValueError("Invalid input! \nSupported formats are: {fmts}.")
+                raise ValueError(
+                    f"Invalid input! {structure=} and {trajectories=} are not valid inputs. \nSupported formats are: {fmts}."
+                )
 
         self._mol: Optional["MolType"] = None
         self._mda = self._file_loader.to("mda")
@@ -109,6 +111,8 @@ class Luni:
         self.b_iso_name = b_iso_name
         if self.b_iso_name != "tempfactor":
             self.extend_topology(self.b_iso_name, self._mda.universe.atoms.tempfactors)
+
+        # self.extend_topology("chainLabels", self.arc.chains.labels)
 
     @staticmethod
     def _get_supported_fmts() -> set[str]:
@@ -288,7 +292,7 @@ class Luni:
             import gemmi
 
             # TODO(bisejdiu): image is not being passed
-            structure = gemmi.read_pdb(self._input_structure)
+            structure = gemmi.read_pdb(self._input_structure) # type: ignore
             neighbors = GemmiNeighborSearch(mda, structure)
         elif backend == "mda":
             neighbors = MDAnalysisNeighborSearch(mda)
@@ -667,12 +671,10 @@ class Luni:
         return None, False
 
     @overload
-    def to(self, fmt: Literal["mda"]) -> "AtomGroupType":
-        ...
+    def to(self, fmt: Literal["mda"]) -> "AtomGroupType": ...
 
     @overload
-    def to(self, fmt: Literal["mol"]) -> "MolType":
-        ...
+    def to(self, fmt: Literal["mol"]) -> "MolType": ...
 
     def to(self, fmt: Literal["mda", "mol"]) -> Union["MolType", "AtomGroupType"]:
         """Convert the Luni to a different format.

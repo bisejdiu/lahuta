@@ -116,7 +116,8 @@ def test_luni_copy() -> None:
 def test_extend_topology() -> None:
     """Test the extension of the topology of the Luni object."""
     luni = read_luni(X2().file_loc)
-    rand_values = np.random.random(luni.n_atoms)
+    rng = np.random.default_rng()
+    rand_values = rng.random(luni.n_atoms)
     luni.extend_topology("topology_extend_test", rand_values)
 
     assert np.array_equal(luni.to("mda").topology_extend_test, rand_values)  # type: ignore[attr-defined]
