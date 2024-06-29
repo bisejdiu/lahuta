@@ -68,7 +68,7 @@ int main(int argc, char const *argv[]) {
   Model &model = struc.first_model();
   // time to find bonds
   start = std::chrono::high_resolution_clock::now();
-  findBondsDeconstructed(struc, model, mol, 5.5, 1.3);
+  findBondsDeconstructed(struc, model, mol, 5.0, 1.3);
   end = std::chrono::high_resolution_clock::now();
   elapsed = end - start;
   std::cout << "Time to find bonds using gemmi: " << elapsed.count() * 1000 << " ms"
@@ -102,7 +102,7 @@ int main(int argc, char const *argv[]) {
   //     << atom->getExplicitValence() << std::endl;
   // }
 
-  double cutoff = 5.0;
+  double cutoff = 5.001;
 
   start = std::chrono::high_resolution_clock::now();
   std::vector<RDGeom::Point3D> atom_coords = conf->getPositions();
