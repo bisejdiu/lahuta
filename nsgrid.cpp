@@ -6,8 +6,15 @@
 
 #include "nsgrid.hpp"
 
-const int END = -1;
-const int MAX_GRID_DIM = 1290;
+static const int END = -1;
+static const int MAX_GRID_DIM = 1290;
+
+// FIX: To be used with bonding code
+static const double EXTDIST = 0.45;
+static const double MAXDIST = 5.45;     // 2 * MAXRAD + EXTDIST
+static const double MINDIST2 = 0.16;    // MINDIST * MINDIST
+static const double MAXDIST2 = 29.7025; // MAXDIST * MAXDIST
+
 constexpr std::array<std::array<int, kDIMENSIONS>, 13> neighborCells = {
     {{1, 0, 0},
      {1, 1, 0},
@@ -58,11 +65,19 @@ NSResults FastNS::selfSearch() const {
   results.reserveSpace(coords_bbox.size() / 3);
 
   float cutoff2 = cutoff * cutoff;
-        std::array<std::array<int, 3>, 13> route = {{
-            {1, 0, 0}, {1, 1, 0}, {0, 1, 0}, {-1, 1, 0}, {1, 0, -1},
-            {1, 1, -1}, {0, 1, -1}, {-1, 1, -1}, {1, 0, 1}, {1, 1, 1},
-            {0, 1, 1}, {-1, 1, 1}, {0, 0, 1}
-        }};
+  std::array<std::array<int, 3>, 13> route = {{{1, 0, 0},
+                                               {1, 1, 0},
+                                               {0, 1, 0},
+                                               {-1, 1, 0},
+                                               {1, 0, -1},
+                                               {1, 1, -1},
+                                               {0, 1, -1},
+                                               {-1, 1, -1},
+                                               {1, 0, 1},
+                                               {1, 1, 1},
+                                               {0, 1, 1},
+                                               {-1, 1, 1},
+                                               {0, 0, 1}}};
   for (int cx = 0; cx < ncells[0]; ++cx) {
     for (int cy = 0; cy < ncells[1]; ++cy) {
       for (int cz = 0; cz < ncells[2]; ++cz) {
@@ -171,6 +186,23 @@ inline float FastNS::calcDistSq(const float *__restrict a,
   float dy = a[1] - b[1];
   float dz = a[2] - b[2];
   return dx * dx + dy * dy + dz * dz;
+}
+
+inline bool FastNS::IsWithinCutoff(const float *__restrict a, const float *__restrict b,
+                           float cutoff2) const {
+  float dx = a[0] - b[0];
+  float dist2 = dx * dx;
+  if (dist2 > cutoff2)
+    return false;
+
+  float dy = a[1] - b[1];
+  dist2 += dy * dy;
+  if (dist2 > cutoff2)
+    return false;
+
+  float dz = a[2] - b[2];
+  dist2 += dz * dz;
+  return dist2 <= cutoff2;
 }
 
 void NSResults::addNeighbors(int i, int j, float d2) {

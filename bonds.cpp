@@ -6,6 +6,8 @@
 #include "bonds.hpp"
 #include "nsgrid.hpp"
 
+#include "elements.h"
+
 using namespace gemmi;
 
 bool connectVdW(Atom p, Atom q, double dist_sq, double covFactor) {
@@ -19,8 +21,37 @@ bool connectVdW(Atom p, Atom q, double dist_sq, double covFactor) {
   return false;
 }
 
+static bool validAdditionalBond(RDKit::Atom *a, RDKit::Atom *b) {
+  if (a->getExplicitValence() == 5 && b->getAtomicNum() == 15) {
+
+    // only allow ochedral bonding for F and Cl
+    if (a->getAtomicNum() == 9 || a->getAtomicNum() == 17) {
+      return true;
+    } else {
+      return false;
+    }
+    // other things to check? 
+    return true;
+
+  }
+
+  if (a->getAtomicNum() == 1 && b->getAtomicNum() == 1) {
+    return false;
+  }
+  if (a->getAtomicNum() == 1 && b->getAtomicNum() == 6) {
+    return false;
+  }
+  if (a->getAtomicNum() == 6 && b->getAtomicNum() == 1) {
+    return false;
+  }
+  return true;
+}
+
 bool connectVdW(RDKit::Atom p, RDKit::Atom q, double dist_sq,
                 double covFactor) {
+  if (dist_sq < 0.16) {
+    return false;
+  }
   double rcov1 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
                                  p.getAtomicNum());
   double rcov2 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
@@ -31,14 +62,31 @@ bool connectVdW(RDKit::Atom p, RDKit::Atom q, double dist_sq,
   return false;
 }
 
+bool shouldSkip(RDKit::Atom &atom) {
+  auto explicitValence = atom.getExplicitValence();
+  if (atom.getExplicitValence() >= OBElements::GetMaxBonds(atom.getAtomicNum())) {
+    return true;
+  }
+  if (atom.getAtomicNum() == 7 && atom.getFormalCharge() == 0 && atom.getExplicitValence() >= 3) {
+    return true;
+  }
+  return false;
+}
+
 void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
                    const float covFactor) {
+
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
-    auto dist = results.distances[i];
+    auto dist_sq = results.distances[i];
     auto a = mol.getAtomWithIdx(res.first);
     auto b = mol.getAtomWithIdx(res.second);
-    double dist_sq = dist;
+
+    // FIXME: Needs to be tested if it is necessary, if so when
+    if (shouldSkip(*a) || shouldSkip(*b)) {
+      continue;
+    }
+
     if (connectVdW(*a, *b, dist_sq, covFactor)) {
       if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
         return;

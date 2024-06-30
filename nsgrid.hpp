@@ -57,4 +57,6 @@ private:
 
   inline float calcDistSq(const float *__restrict a,
                           const float *__restrict b) const;
+  inline bool IsWithinCutoff(const float *__restrict a,
+                          const float *__restrict b, float cutoff2) const;
 };
