@@ -52,16 +52,44 @@ bool connectVdW(RDKit::Atom p, RDKit::Atom q, double dist_sq,
   if (dist_sq < 0.16) {
     return false;
   }
-  double rcov1 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
+  double _rcov1 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
                                  p.getAtomicNum());
-  double rcov2 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
+  double _rcov2 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
                                  q.getAtomicNum());
+  double rcov1 = covFactor * OBElements::GetCovalentRad(p.getAtomicNum());
+  double rcov2 = covFactor * OBElements::GetCovalentRad(q.getAtomicNum());
+  // std::cout << "Distance: " << dist_sq << std::endl;
+  // std::cout << "Rcov1: " << rcov1 << std::endl;
+  // std::cout << "Rcov2: " << rcov2 << std::endl;
+  // std::cout << "Rcov1*: " << _rcov1 << std::endl;
+  // std::cout << "Rcov2*: " << _rcov2 << std::endl;
   if (dist_sq <= (rcov1 + rcov2) * (rcov1 + rcov2)) {
     return true;
   }
   return false;
 }
 
+bool connectOBMol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
+                double tolerance) {
+  if (dist_sq < 0.16) {
+    return false;
+  }
+  // double _rcov1 = tolerance * RDKit::PeriodicTable::getTable()->getRcovalent(
+  //                                p.getAtomicNum());
+  // double _rcov2 = tolerance * RDKit::PeriodicTable::getTable()->getRcovalent(
+  //                                q.getAtomicNum());
+  double rcov1 = OBElements::GetCovalentRad(p->getAtomicNum());
+  double rcov2 = OBElements::GetCovalentRad(q->getAtomicNum());
+  // std::cout << "Distance: " << dist_sq << std::endl;
+  // std::cout << "Rcov1: " << rcov1 << std::endl;
+  // std::cout << "Rcov2: " << rcov2 << std::endl;
+  // std::cout << "Rcov1*: " << _rcov1 << std::endl;
+  // std::cout << "Rcov2*: " << _rcov2 << std::endl;
+  if (dist_sq <= (rcov1 + rcov2 + tolerance) * (rcov1 + rcov2 + tolerance)) {
+    return true;
+  }
+  return false;
+}
 bool shouldSkip(RDKit::Atom &atom) {
   auto explicitValence = atom.getExplicitValence();
   if (atom.getExplicitValence() >= OBElements::GetMaxBonds(atom.getAtomicNum())) {
@@ -79,15 +107,15 @@ void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
-    auto a = mol.getAtomWithIdx(res.first);
-    auto b = mol.getAtomWithIdx(res.second);
+    auto *a = mol.getAtomWithIdx(res.first);
+    auto *b = mol.getAtomWithIdx(res.second);
 
     // FIXME: Needs to be tested if it is necessary, if so when
-    if (shouldSkip(*a) || shouldSkip(*b)) {
-      continue;
-    }
+    // if (shouldSkip(*a) || shouldSkip(*b)) {
+    //   continue;
+    // }
 
-    if (connectVdW(*a, *b, dist_sq, covFactor)) {
+    if (connectOBMol(a, b, dist_sq, covFactor)) {
       if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
         return;
       }

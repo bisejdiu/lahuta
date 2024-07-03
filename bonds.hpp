@@ -22,7 +22,7 @@ struct BondInfo {
   }
 };
 void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
-                   const float covFactor);
+                   const float tolerance);
 
 void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
                             double maxRadius, double covFactor);
