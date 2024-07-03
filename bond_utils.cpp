@@ -134,14 +134,14 @@ bool SmallestBondAngle(const RDKit::RWMol &mol, const RDKit::Conformer &conf,
 // to use it (e.g. keeping track of the explicit valence and remembering what
 // bonds have been removed)
 void CleanUpMolecule(RDKit::RWMol &mol, RDKit::Conformer &conf) {
-  RDKit::Atom *atom;
+  // RDKit::Atom *atom;
   RDKit::Bond *maxbond, *bond;
   double maxlength;
   int valCount;
   bool changed;
 
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
-    atom = *atomIt;
+    auto atom = *atomIt;
     while (GetExplicitValenceFromAtomBonds(mol, atom) >
                OBElements::GetMaxBonds(atom->getAtomicNum()) ||
            // SmallestBondAngle(mol, conf, atom)) {
