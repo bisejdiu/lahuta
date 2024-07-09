@@ -34,6 +34,7 @@ using namespace gemmi;
 using namespace RDKit;
 
 using HybridizationType = RDKit::Atom::HybridizationType;
+using SubStrMatches = std::vector<RDKit::MatchVectType>;
 
 int GetExpVal(const RDKit::Atom *atom) {
   double valence = 0;
@@ -45,117 +46,154 @@ int GetExpVal(const RDKit::Atom *atom) {
   return valence;
 }
 
-void RDKitSmartsMatch(RDKit::ROMol &mol) {
-  std::vector<std::pair<std::string, HybridizationType>> smartsList = {
+constexpr std::pair<const char *, HybridizationType> smartsList[] = {
+    {"[D4]", HybridizationType::SP3},
+    {"[D5]", HybridizationType::SP3D},
+    {"[D6]", HybridizationType::SP3D2},
+    {"[C]", HybridizationType::SP3},
+    {"[c,$(C=*)]", HybridizationType::SP2},
+    {"[$(C#*),$(C(=*)=*)]", HybridizationType::SP},
 
-      {"[D4]", HybridizationType::SP3},
-      {"[D5]", HybridizationType::SP3D},
-      {"[D6]", HybridizationType::SP3D2},
-      {"[C]", HybridizationType::SP3},
-      {"[c,$(C=*)]", HybridizationType::SP2},
-      {"[$(C#*),$(C(=*)=*)]", HybridizationType::SP},
+    {"[N]", HybridizationType::SP3},
+    {"[n,$(N=*),$(N[#6,#7,#8]=,:,#*)]", HybridizationType::SP2},
+    {"[ND1,ND2,ND3]a", HybridizationType::SP2},
+    {"[$(N#*),$([ND2](=*)=*)]", HybridizationType::SP},
 
-      {"[N]", HybridizationType::SP3},
-      {"[n,$(N=*),$(N[#6,#7,#8]=,:,#*)]", HybridizationType::SP2},
-      {"[ND1,ND2,ND3]a", HybridizationType::SP2},
-      {"[$(N#*),$([ND2](=*)=*)]", HybridizationType::SP},
+    {"[O]", HybridizationType::SP3},
+    {"[o,$(O=*),$(O[#6,#7,#8]=,:*)]", HybridizationType::SP2},
+    {"[$([#8D1][#6][#8D1])]", HybridizationType::SP2},
+    {"[$(O#*)]", HybridizationType::SP},
 
-      {"[O]", HybridizationType::SP3},
-      {"[o,$(O=*),$(O[#6,#7,#8]=,:*)]", HybridizationType::SP2},
-      {"[$([#8D1][#6][#8D1])]", HybridizationType::SP2},
-      {"[$(O#*)]", HybridizationType::SP},
+    {"[S]", RDKit::Atom::HybridizationType::SP3},
+    {"[#16;s,$([SD1]=*)]", RDKit::Atom::HybridizationType::SP2},
+    {"[SD6]", RDKit::Atom::HybridizationType::SP3D2},
+};
 
-      {"[S]", RDKit::Atom::HybridizationType::SP3},
-      {"[#16;s,$([SD1]=*)]", RDKit::Atom::HybridizationType::SP2},
-      {"[SD6]", RDKit::Atom::HybridizationType::SP3D2},
-  };
+SubStrMatches performSubstructMatch(RDKit::ROMol &mol, RDKit::ROMol &pattern,
+                                    SubstructMatchParameters &params) {
+  SubStrMatches matchList;
+  matchList = RDKit::SubstructMatch(mol, pattern, params);
 
-  for (const auto &[smarts, hybridType] : smartsList) {
-    RDKit::ROMol *pattern = RDKit::SmartsToMol(smarts);
+  if (matchList.size() == params.maxMatches) {
+    SubstructMatchParameters largeParams = params;
+    largeParams.maxMatches = mol.getNumAtoms();
+    matchList = RDKit::SubstructMatch(mol, pattern, largeParams);
+  }
 
-    std::vector<RDKit::MatchVectType> matchList;
+  return matchList;
+}
+
+void RDKitSmartsMatch(RDKit::ROMol &mol, SubstructMatchParameters &params) {
+  // Precompute patterns statically
+  static std::array<RDKit::ROMol *, std::size(smartsList)> patterns = [] {
+    std::array<RDKit::ROMol *, std::size(smartsList)> temp{};
+    for (size_t i = 0; i < std::size(smartsList); ++i) {
+      temp[i] = RDKit::SmartsToMol(smartsList[i].first);
+    }
+    return temp;
+  }();
+
+  for (size_t i = 0; i < std::size(smartsList); ++i) {
+    const auto &[smarts, hybridType] = smartsList[i];
+    RDKit::ROMol *pattern = patterns[i];
+
+    // FIX: supplying the param list leads to performance issues
+    // SubStrMatches matchList = performSubstructMatch(mol, *pattern, params);
+    SubStrMatches matchList;
     RDKit::SubstructMatch(mol, *pattern, matchList);
 
     for (const auto &match : matchList) {
       auto atom = mol.getAtomWithIdx(match[0].second);
       atom->setHybridization(hybridType);
     }
-
-    delete pattern;
   }
 }
 
+using SmartsPatternPair = std::pair<const char*, std::vector<int>>;
+const std::vector<SmartsPatternPair> bondSmarts = {
+    {"[x2,x3]1[#6]([#7D3]2)[#6][#6][#6]2[x2,x3][#6]([#7D3]3)[#6][#6][#6]3["
+     "x2,"
+     "x3][#6]([#7D3]4)[#6][#6][#6]4[x2,x3][#6]([#7D3]5)[#6][#6][#6]51",
+     {0,  1,  2,  1,  2,  1,  1,  3,  1,  3,  4,  2,  4,  5,  1,  5,  2,
+      1,  5,  6,  2,  6,  7,  1,  7,  8,  2,  7,  9,  1,  9,  10, 2,  10,
+      11, 1,  11, 8,  1,  11, 12, 2,  12, 13, 1,  13, 14, 1,  13, 15, 2,
+      15, 16, 1,  16, 17, 2,  17, 14, 1,  17, 18, 1,  18, 19, 2,  19, 20,
+      1,  19, 21, 1,  21, 22, 2,  22, 23, 1,  23, 20, 2}},
+    {"[x2,x3]1[#6]([#7D3]2)[#6][#6][#6]2[x2,x3][#6]([#7]3)[#6][#6][#6]3[x2,"
+     "x3][#6]([#7D3]4)[#6][#6][#6]4[x2,x3][#6]([#7]5)[#6][#6][#6]51",
+     {0,  1,  2,  1,  2,  1,  1,  3,  1,  3,  4,  2,  4,  5,  1,  5,  2,
+      1,  5,  6,  2,  6,  7,  1,  7,  8,  2,  7,  9,  1,  9,  10, 2,  10,
+      11, 1,  11, 8,  1,  11, 12, 2,  12, 13, 1,  13, 14, 1,  13, 15, 2,
+      15, 16, 1,  16, 17, 2,  17, 14, 1,  17, 18, 1,  18, 19, 2,  19, 20,
+      1,  19, 21, 1,  21, 22, 2,  22, 23, 1,  23, 20, 2}},
+    {"[x2,x3]1[#6]([#7]2)[#6][#6][#6]2[x2,x3][#6]([#7]3)[#6][#6][#6]3[x2,"
+     "x3]["
+     "#6]([#7]4)[#6][#6][#6]4[x2,x3][#6]([#7]5)[#6][#6][#6]51",
+     {0,  1,  2,  1,  2,  1,  1,  3,  1,  3,  4,  2,  4,  5,  1,  5,  2,
+      1,  5,  6,  2,  6,  7,  1,  7,  8,  2,  7,  9,  1,  9,  10, 2,  10,
+      11, 1,  11, 8,  1,  11, 12, 2,  12, 13, 1,  13, 14, 1,  13, 15, 2,
+      15, 16, 1,  16, 17, 2,  17, 14, 1,  17, 18, 1,  18, 19, 2,  19, 20,
+      1,  19, 21, 1,  21, 22, 2,  22, 23, 1,  23, 20, 2}},
+    {"[#7D2][#7D2^1][#7D1]", {0, 1, 2, 1, 2, 2}},
+    {"[#8D1][#7D3^2]([#8D1])*", {0, 1, 2, 1, 2, 2, 1, 3, 1}},
+    {"[#16D4]([#8D1])([#8D1])([*!#8])([*!#8])",
+     {0, 1, 2, 0, 2, 2, 0, 3, 1, 0, 4, 1}},
+    {"[#16D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])",
+     {0, 1, 2, 0, 2, 2, 0, 3, 1, 0, 4, 1}},
+    {"[#16D4]([#16D1])([#8D1])([#8-,#8])([#8-,#8])",
+     {0, 1, 2, 0, 2, 2, 0, 3, 1, 0, 4, 1}},
+    {"[#16D3]([#8D1])([*!#8])([*!#8])", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#16D3]([#8D1])([#8D1-])([#8D1-])", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#16D3]([#8D1])([#8])([#8])", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#16D2]([#8D1])([#16D1])", {0, 1, 2, 0, 2, 2}},
+    {"[#16D2]([#8D1])([*!#8])", {0, 1, 2, 0, 2, 1}},
+    {"[#16D2]([#8D1])([#8D1])", {0, 1, 2, 0, 2, 2}},
+    {"[#15D3]([#8D1])([#8D1])([#8D2])", {0, 1, 2, 0, 2, 2, 0, 3, 1}},
+    {"[#7D2]([#8D1])([#1])", {0, 1, 2, 0, 2, 1}},
+    {"[#15D4]([#8D1])(*)(*)(*)", {0, 1, 2, 0, 2, 1, 0, 3, 1, 0, 4, 1}},
+    {"[#6D3^2]([#8D1])([#8])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#8D1][#6D2^1][#8D1]", {0, 1, 2, 1, 2, 2}},
+    {"[#6D3^2]([#8D1;!-])([#7])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#34D3^2]([#8D1])([#8])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#6D3^2]([#8D1])([#16])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#6D3^2]([#16D1])([#16])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[CD3^2]([#16D1])([N])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    // Do not seem to work correctly with RDKit:
+    // {"[#6^2][#6D2^1][#6^2]", {0, 1, 2, 1, 2, 2}},
+    // {"[#6^2][#6D2^1][#8D1]", {0, 1, 2, 1, 2, 2}},
+    {"[#6D3^2;!R]([#7D1H0;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#6D3^2;!R]([#7D2H1;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#6D3^2;!R]([#7D3H2;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
+    {"[#6D3^2;!R]([#1,#6])([#1,#6])[#7D3^2;!R]([#1])[#6]",
+     {0, 1, 1, 0, 2, 1, 0, 3, 2, 3, 4, 1, 3, 5, 1}},
+};
+
 void OBBondTypeAssignment(RDKit::ROMol &mol) {
 
-  std::vector<std::pair<std::string, std::vector<int>>> smartsList = {
-      {"[x2,x3]1[#6]([#7D3]2)[#6][#6][#6]2[x2,x3][#6]([#7D3]3)[#6][#6][#6]3[x2,"
-       "x3][#6]([#7D3]4)[#6][#6][#6]4[x2,x3][#6]([#7D3]5)[#6][#6][#6]51",
-       {0,  1,  2,  1,  2,  1,  1,  3,  1,  3,  4,  2,  4,  5,  1,  5,  2,
-        1,  5,  6,  2,  6,  7,  1,  7,  8,  2,  7,  9,  1,  9,  10, 2,  10,
-        11, 1,  11, 8,  1,  11, 12, 2,  12, 13, 1,  13, 14, 1,  13, 15, 2,
-        15, 16, 1,  16, 17, 2,  17, 14, 1,  17, 18, 1,  18, 19, 2,  19, 20,
-        1,  19, 21, 1,  21, 22, 2,  22, 23, 1,  23, 20, 2}},
-      {"[x2,x3]1[#6]([#7D3]2)[#6][#6][#6]2[x2,x3][#6]([#7]3)[#6][#6][#6]3[x2,"
-       "x3][#6]([#7D3]4)[#6][#6][#6]4[x2,x3][#6]([#7]5)[#6][#6][#6]51",
-       {0,  1,  2,  1,  2,  1,  1,  3,  1,  3,  4,  2,  4,  5,  1,  5,  2,
-        1,  5,  6,  2,  6,  7,  1,  7,  8,  2,  7,  9,  1,  9,  10, 2,  10,
-        11, 1,  11, 8,  1,  11, 12, 2,  12, 13, 1,  13, 14, 1,  13, 15, 2,
-        15, 16, 1,  16, 17, 2,  17, 14, 1,  17, 18, 1,  18, 19, 2,  19, 20,
-        1,  19, 21, 1,  21, 22, 2,  22, 23, 1,  23, 20, 2}},
-      {"[x2,x3]1[#6]([#7]2)[#6][#6][#6]2[x2,x3][#6]([#7]3)[#6][#6][#6]3[x2,x3]["
-       "#6]([#7]4)[#6][#6][#6]4[x2,x3][#6]([#7]5)[#6][#6][#6]51",
-       {0,  1,  2,  1,  2,  1,  1,  3,  1,  3,  4,  2,  4,  5,  1,  5,  2,
-        1,  5,  6,  2,  6,  7,  1,  7,  8,  2,  7,  9,  1,  9,  10, 2,  10,
-        11, 1,  11, 8,  1,  11, 12, 2,  12, 13, 1,  13, 14, 1,  13, 15, 2,
-        15, 16, 1,  16, 17, 2,  17, 14, 1,  17, 18, 1,  18, 19, 2,  19, 20,
-        1,  19, 21, 1,  21, 22, 2,  22, 23, 1,  23, 20, 2}},
-      {"[#7D2][#7D2^1][#7D1]", {0, 1, 2, 1, 2, 2}},
-      {"[#8D1][#7D3^2]([#8D1])*", {0, 1, 2, 1, 2, 2, 1, 3, 1}},
-      {"[#16D4]([#8D1])([#8D1])([*!#8])([*!#8])",
-       {0, 1, 2, 0, 2, 2, 0, 3, 1, 0, 4, 1}},
-      {"[#16D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])",
-       {0, 1, 2, 0, 2, 2, 0, 3, 1, 0, 4, 1}},
-      {"[#16D4]([#16D1])([#8D1])([#8-,#8])([#8-,#8])",
-       {0, 1, 2, 0, 2, 2, 0, 3, 1, 0, 4, 1}},
-      {"[#16D3]([#8D1])([*!#8])([*!#8])", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#16D3]([#8D1])([#8D1-])([#8D1-])", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#16D3]([#8D1])([#8])([#8])", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#16D2]([#8D1])([#16D1])", {0, 1, 2, 0, 2, 2}},
-      {"[#16D2]([#8D1])([*!#8])", {0, 1, 2, 0, 2, 1}},
-      {"[#16D2]([#8D1])([#8D1])", {0, 1, 2, 0, 2, 2}},
-      {"[#15D3]([#8D1])([#8D1])([#8D2])", {0, 1, 2, 0, 2, 2, 0, 3, 1}},
-      {"[#7D2]([#8D1])([#1])", {0, 1, 2, 0, 2, 1}},
-      {"[#15D4]([#8D1])(*)(*)(*)", {0, 1, 2, 0, 2, 1, 0, 3, 1, 0, 4, 1}},
-      {"[#6D3^2]([#8D1])([#8])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#8D1][#6D2^1][#8D1]", {0, 1, 2, 1, 2, 2}},
-      {"[#6D3^2]([#8D1;!-])([#7])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#34D3^2]([#8D1])([#8])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#6D3^2]([#8D1])([#16])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#6D3^2]([#16D1])([#16])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[CD3^2]([#16D1])([N])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      // Do not seem to work correctly with RDKit:
-      // {"[#6^2][#6D2^1][#6^2]", {0, 1, 2, 1, 2, 2}},
-      // {"[#6^2][#6D2^1][#8D1]", {0, 1, 2, 1, 2, 2}},
-      {"[#6D3^2;!R]([#7D1H0;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#6D3^2;!R]([#7D2H1;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#6D3^2;!R]([#7D3H2;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-      {"[#6D3^2;!R]([#1,#6])([#1,#6])[#7D3^2;!R]([#1])[#6]",
-       {0, 1, 1, 0, 2, 1, 0, 3, 2, 3, 4, 1, 3, 5, 1}},
-  };
+  // Precompute patterns statically
+  static std::vector<RDKit::ROMol*> patterns = [] {
+    std::vector<RDKit::ROMol*> temp;
+    temp.resize(bondSmarts.size());
+    for (size_t i = 0; i < bondSmarts.size(); ++i) {
+      temp[i] = RDKit::SmartsToMol(bondSmarts[i].first);
+    }
+    return temp;
+  }();
 
-  for (const auto &[smarts, bondVector] : smartsList) {
-    RDKit::ROMol const *pattern = RDKit::SmartsToMol(smarts, 0, true);
-    std::string molSmarts = RDKit::MolToSmarts(*pattern);
+  for (size_t i = 0; i < bondSmarts.size(); ++i) {
+    const auto &[smarts, bondVector] = bondSmarts[i];
+    RDKit::ROMol *pattern = patterns[i];
 
     SubstructMatchParameters params;
     params.maxMatches = 100000000;
     std::vector<RDKit::MatchVectType> matchList;
     matchList = RDKit::SubstructMatch(mol, *pattern, params);
 
-    if (matchList.size() != 0) {
-      std::cout << "Match Success with: " << smarts << " " << matchList.size()
-                << std::endl;
-    }
+    // debug:
+    // if (matchList.size() != 0) {
+    //   std::cout << "Match Success with: " << smarts << " " << matchList.size()
+    //             << std::endl;
+    // }
 
     for (const auto &match : matchList) {
       for (auto j = 0; j < bondVector.size(); j += 3) {
@@ -167,8 +205,6 @@ void OBBondTypeAssignment(RDKit::ROMol &mol) {
         }
       }
     }
-
-    delete pattern;
   }
 }
 
@@ -734,7 +770,10 @@ int main(int argc, char const *argv[]) {
     atom->setHybridization(HybridizationType::SP);
   }
   start = std::chrono::high_resolution_clock::now();
-  RDKitSmartsMatch(mol);
+  SubstructMatchParameters params;
+  // params.maxMatches = 500; // 00000;
+  // params.numThreads = 1;
+  RDKitSmartsMatch(mol, params);
   end = std::chrono::high_resolution_clock::now();
   elapsed = end - start;
   std::cout << "Time to match SMARTS pattern: " << elapsed.count() * 1000
@@ -757,15 +796,15 @@ int main(int argc, char const *argv[]) {
   //             << " " << std::endl;
   // }
 
-  std::string bondOrders = "";
-  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-    RDKit::Bond *bond = *bondIt;
-    bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
-                  std::to_string(bond->getEndAtomIdx()) + " " +
-                  std::to_string(bond->getBondType()) + "\n";
-  }
-  std::cout << "FINAL RESULT: " << std::endl;
-  std::cout << bondOrders << std::endl;
+  // std::string bondOrders = "";
+  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+  //   RDKit::Bond *bond = *bondIt;
+  //   bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
+  //                 std::to_string(bond->getEndAtomIdx()) + " " +
+  //                 std::to_string(bond->getBondType()) + "\n";
+  // }
+  // std::cout << "FINAL RESULT: " << std::endl;
+  // std::cout << bondOrders << std::endl;
 
   return 0;
 }
