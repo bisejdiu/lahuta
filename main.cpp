@@ -109,7 +109,7 @@ void RDKitSmartsMatch(RDKit::ROMol &mol, SubstructMatchParameters &params) {
   }
 }
 
-using SmartsPatternPair = std::pair<const char*, std::vector<int>>;
+using SmartsPatternPair = std::pair<const char *, std::vector<int>>;
 const std::vector<SmartsPatternPair> bondSmarts = {
     {"[x2,x3]1[#6]([#7D3]2)[#6][#6][#6]2[x2,x3][#6]([#7D3]3)[#6][#6][#6]3["
      "x2,"
@@ -171,8 +171,8 @@ const std::vector<SmartsPatternPair> bondSmarts = {
 void OBBondTypeAssignment(RDKit::ROMol &mol) {
 
   // Precompute patterns statically
-  static std::vector<RDKit::ROMol*> patterns = [] {
-    std::vector<RDKit::ROMol*> temp;
+  static std::vector<RDKit::ROMol *> patterns = [] {
+    std::vector<RDKit::ROMol *> temp;
     temp.resize(bondSmarts.size());
     for (size_t i = 0; i < bondSmarts.size(); ++i) {
       temp[i] = RDKit::SmartsToMol(bondSmarts[i].first);
@@ -191,7 +191,8 @@ void OBBondTypeAssignment(RDKit::ROMol &mol) {
 
     // debug:
     // if (matchList.size() != 0) {
-    //   std::cout << "Match Success with: " << smarts << " " << matchList.size()
+    //   std::cout << "Match Success with: " << smarts << " " <<
+    //   matchList.size()
     //             << std::endl;
     // }
 
@@ -208,13 +209,12 @@ void OBBondTypeAssignment(RDKit::ROMol &mol) {
   }
 }
 
-double AverageBondAngle(const RDKit::ROMol &mol, const RDKit::Atom *atom,
-                        const RDKit::Conformer &conf) {
+double AverageBondAngle(const RDKit::Atom *atom) {
   double avgDegrees = 0.0;
   int n = 0;
 
-  // get conf from mol
-  // const RDKit::Conformer &c = mol.getConformer();
+  const RDKit::ROMol &mol = atom->getOwningMol();
+  const RDKit::Conformer &conf = mol.getConformer();
 
   for (auto bondIt1 = mol.getAtomBonds(atom); bondIt1.first != bondIt1.second;
        ++bondIt1.first) {
@@ -288,12 +288,14 @@ double CalcTorsionAngle(const RDGeom::Point3D &a, const RDGeom::Point3D &b,
   return (torsion * 180.0 / M_PI);
 }
 
-void PerceiveBondOrders(RDKit::RWMol &mol, RDKit::Conformer &conf) {
+void PerceiveBondOrders(RDKit::RWMol &mol) {
+
+  RDKit::Conformer &conf = mol.getConformer();
 
   // Pass 1: Assign estimated hybridization based on average bond angles
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     RDKit::Atom *atom = *atomIt;
-    double avgDegrees = AverageBondAngle(mol, atom, conf);
+    double avgDegrees = AverageBondAngle(atom);
 
     if (avgDegrees > 155.0) {
       atom->setHybridization(HybridizationType::SP);
@@ -460,7 +462,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol, RDKit::Conformer &conf) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(mol, a1, conf);
+    double avgDegrees = AverageBondAngle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -498,7 +500,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol, RDKit::Conformer &conf) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(mol, a1, conf);
+    double avgDegrees = AverageBondAngle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -536,7 +538,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol, RDKit::Conformer &conf) {
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
     RDKit::Atom *a3 = mol.getAtomWithIdx(match[2].second);
 
-    double avgDegrees = AverageBondAngle(mol, a2, conf);
+    double avgDegrees = AverageBondAngle(a2);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     auto a3Pos = conf.getAtomPos(a3->getIdx());
@@ -575,7 +577,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol, RDKit::Conformer &conf) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(mol, a1, conf);
+    double avgDegrees = AverageBondAngle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -612,7 +614,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol, RDKit::Conformer &conf) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(mol, a1, conf);
+    double avgDegrees = AverageBondAngle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -736,20 +738,7 @@ int main(int argc, char const *argv[]) {
   // ms"
   //           << std::endl;
 
-  // for (gemmi::Connection &conn : st.connections) {
-  //   // FIX: Need to iterate over all models
-  //   gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
-  //   gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
-  //
-  //   if (mol.getBondBetweenAtoms(a1->serial - 1, a2->serial - 1) == nullptr) {
-  //     // std::cout << "Adding bond: " << a1->serial << " - " << a2->serial <<
-  //     // std::endl;
-  //     mol.addBond((unsigned int)a1->serial - 1, (unsigned int)a2->serial - 1,
-  //                 RDKit::Bond::BondType::SINGLE);
-  //     continue;
-  //   }
-  // }
-
+  // NOTE: should we clean up bonds before or after adding the struct conns?
   mol.updatePropertyCache(false);
   // Clean up incorrect bonds
   start = std::chrono::high_resolution_clock::now();
@@ -758,6 +747,18 @@ int main(int argc, char const *argv[]) {
   elapsed = end - start;
   std::cout << "Time to clean up molecule: " << elapsed.count() * 1000 << "ms "
             << std::endl;
+
+  for (gemmi::Connection &conn : st.connections) {
+    // FIX: Need to iterate over all models
+    gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
+    gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
+
+    if (mol.getBondBetweenAtoms(a1->serial - 1, a2->serial - 1) == nullptr) {
+      mol.addBond((unsigned int)a1->serial - 1, (unsigned int)a2->serial - 1,
+                  RDKit::Bond::BondType::SINGLE);
+      continue;
+    } 
+  }
 
   std::cout << "Number of bonds w/ _struct_conns " << mol.getNumBonds()
             << std::endl;
@@ -780,11 +781,12 @@ int main(int argc, char const *argv[]) {
             << " ms" << std::endl;
 
   start = std::chrono::high_resolution_clock::now();
-  PerceiveBondOrders(mol, *conf);
+  PerceiveBondOrders(mol);
   end = std::chrono::high_resolution_clock::now();
   elapsed = end - start;
   std::cout << "Time to perceive bond orders: " << elapsed.count() * 1000
             << " ms" << std::endl;
+
   // for (auto atom : mol.atoms()) {
   //   auto resi = atom->getMonomerInfo();
   //   AtomPDBResidueInfo *residue = dynamic_cast<AtomPDBResidueInfo *>(resi);
@@ -796,15 +798,15 @@ int main(int argc, char const *argv[]) {
   //             << " " << std::endl;
   // }
 
-  // std::string bondOrders = "";
-  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-  //   RDKit::Bond *bond = *bondIt;
-  //   bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
-  //                 std::to_string(bond->getEndAtomIdx()) + " " +
-  //                 std::to_string(bond->getBondType()) + "\n";
-  // }
-  // std::cout << "FINAL RESULT: " << std::endl;
-  // std::cout << bondOrders << std::endl;
+  std::string bondOrders = "";
+  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+    RDKit::Bond *bond = *bondIt;
+    bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
+                  std::to_string(bond->getEndAtomIdx()) + " " +
+                  std::to_string(bond->getBondType()) + "\n";
+  }
+  std::cout << "FINAL RESULT: " << std::endl;
+  std::cout << bondOrders << std::endl;
 
   return 0;
 }
