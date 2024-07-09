@@ -292,6 +292,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
 
   RDKit::Conformer &conf = mol.getConformer();
 
+  auto start1 = std::chrono::high_resolution_clock::now();
   // Pass 1: Assign estimated hybridization based on average bond angles
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     RDKit::Atom *atom = *atomIt;
@@ -307,6 +308,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     auto ringInfo = atom->getOwningMol().getRingInfo();
     if (!ringInfo->isSssrOrBetter()) {
       RDKit::MolOps::findSSSR(atom->getOwningMol());
+      // RDKit::MolOps::symmetrizeSSSR(atom->getOwningMol());
     }
     auto inRing = ringInfo->numAtomRings(atom->getIdx()) != 0;
 
@@ -321,11 +323,15 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     } // pass 1
     //
   }
+  auto end1 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed1 = end1 - start1;
+  std::cout << "Pass 1: " << elapsed1.count() * 1e3 << " ms" << std::endl;
 
   // Pass 2: look for 5-memmbered rings with torsions <= 7.5 degrees
   //         and 6-membered rings with torsions <= 12 degrees
   //         (set all atoms with at least two bonds to sp2)
 
+  auto start2 = std::chrono::high_resolution_clock::now();
   if (!mol.getRingInfo()->isInitialized()) {
     std::cout << "SSSR not initialized" << std::endl;
     RDKit::MolOps::findSSSR(mol);
@@ -412,6 +418,9 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       }
     }
   }
+  auto end2 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed2 = end2 - start2;
+  std::cout << "Pass 2: " << elapsed2.count() * 1e3 << " ms" << std::endl;
 
   // Pass 3: "Antialiasing" If an atom marked as sp hybrid isn't
   //          bonded to another or an sp2 hybrid isn't bonded
@@ -420,6 +429,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
 
   // NOTE: Hybridization assignment for all atoms is done before function is
   // called
+  auto start3 = std::chrono::high_resolution_clock::now();
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     RDKit::Atom *atom = *atomIt;
     if (atom->getHybridization() == HybridizationType::SP ||
@@ -444,14 +454,23 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     }
   }
   // pass 3
+  auto end3 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed3 = end3 - start3;
+  std::cout << "Pass 3: " << elapsed3.count() * 1e3 << " ms" << std::endl;
+
 
   // Pass 4: Check for known functional group patterns and assign bonds
   //         to the canonical form
   //      Currently we have explicit code to do this, but a "bond typer"
   //      is in progress to make it simpler to test and debug.
 
+  auto start4a = std::chrono::high_resolution_clock::now();
   OBBondTypeAssignment(mol);
+  auto end4a = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed4a = end4a - start4a;
+  std::cout << "Pass 4a: " << elapsed4a.count() * 1e3 << " ms" << std::endl;
 
+  auto start4b = std::chrono::high_resolution_clock::now();
   std::string carbo("[#8D1;!-][#6](*)(*)");
   RDKit::ROMol *pattern = RDKit::SmartsToMol(carbo);
 
@@ -488,8 +507,13 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     }
 
   } // Carbonyl oxygen
+  auto end4b = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed4b = end4b - start4b;
+  std::cout << "Pass 4b: " << elapsed4b.count() * 1e3 << " ms" << std::endl;
+
 
   // thione C=S
+  auto start4c = std::chrono::high_resolution_clock::now();
   std::string thione("[#16D1][#6](*)(*)");
   RDKit::ROMol *pattern2 = RDKit::SmartsToMol(thione);
 
@@ -525,8 +549,12 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       }
     }
   } // thione
+  auto end4c = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed4c = end4c - start4c;
+  std::cout << "Pass 4c: " << elapsed4c.count() * 1e3 << " ms" << std::endl;
 
   // Isocyanate N=C=O or Isothiocyanate
+  auto start4d = std::chrono::high_resolution_clock::now();
   std::string isocyanate("[#8,#16;D1][#6D2][#7D2]");
   RDKit::ROMol *pattern3 = RDKit::SmartsToMol(isocyanate);
 
@@ -564,9 +592,12 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       bond2->setBondType(Bond::BondType::DOUBLE);
     }
   } // Isocyanate
-  //
+  auto end4d = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed4d = end4d - start4d;
+  std::cout << "Pass 4d: " << elapsed4d.count() * 1e3 << " ms" << std::endl;
 
   // oxime C=S
+  auto start4e = std::chrono::high_resolution_clock::now();
   std::string oxime("[#6D3][#7D2][#8D2]");
   RDKit::ROMol *pattern4 = RDKit::SmartsToMol(oxime);
 
@@ -602,8 +633,12 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       }
     }
   } // oxime
+  auto end4e = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed4e = end4e - start4e;
+  std::cout << "Pass 4e: " << elapsed4e.count() * 1e3 << " ms" << std::endl;
 
   // oxido-n+ (e.g., pyridine-N-oxide)
+  auto start4f = std::chrono::high_resolution_clock::now();
   std::string oxidopyr("[#8D1][#7D3r6]");
   RDKit::ROMol *pattern5 = RDKit::SmartsToMol(oxidopyr);
 
@@ -625,7 +660,22 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       a2->setFormalCharge(+1); // nitrogen
     }
   } // oxido-n+
+  auto end4f = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed4f = end4f - start4f;
+  std::cout << "Pass 4f: " << elapsed4f.count() * 1e3 << " ms" << std::endl;
 
+
+
+  // Pass 5: Check for aromatic rings and assign bonds as appropriate
+  // This is just a quick and dirty approximation that marks everything
+  //  as potentially aromatic
+
+  // This doesn't work perfectly, but it's pretty decent.
+  //  Need to have a list of SMARTS patterns for common rings
+  //  which would "break ties" on complicated multi-ring systems
+  // (Most of the current problems lie in the interface with the
+  //   Kekulize code anyway, not in marking everything as potentially aromatic)
+  auto start5 = std::chrono::high_resolution_clock::now();
   bool needs_kekulization = false;
   bool typed = false;
   unsigned int loopSize;
@@ -676,9 +726,13 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     }
     bool ok = OBKekulize(&mol);
   }
+  auto end5 = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed5 = end5 - start5;
+  std::cout << "Pass 5: " << elapsed5.count() * 1e3 << " ms" << std::endl;
 }
 
 int main(int argc, char const *argv[]) {
+  auto startTotTime = std::chrono::high_resolution_clock::now();
   if (argc != 2) {
     std::cerr << "Usage: " << argv[0] << " <cif file>" << std::endl;
     return 1;
@@ -757,7 +811,7 @@ int main(int argc, char const *argv[]) {
       mol.addBond((unsigned int)a1->serial - 1, (unsigned int)a2->serial - 1,
                   RDKit::Bond::BondType::SINGLE);
       continue;
-    } 
+    }
   }
 
   std::cout << "Number of bonds w/ _struct_conns " << mol.getNumBonds()
@@ -798,15 +852,19 @@ int main(int argc, char const *argv[]) {
   //             << " " << std::endl;
   // }
 
-  std::string bondOrders = "";
-  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-    RDKit::Bond *bond = *bondIt;
-    bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
-                  std::to_string(bond->getEndAtomIdx()) + " " +
-                  std::to_string(bond->getBondType()) + "\n";
-  }
-  std::cout << "FINAL RESULT: " << std::endl;
-  std::cout << bondOrders << std::endl;
+  // std::string bondOrders = "";
+  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+  //   RDKit::Bond *bond = *bondIt;
+  //   bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
+  //                 std::to_string(bond->getEndAtomIdx()) + " " +
+  //                 std::to_string(bond->getBondType()) + "\n";
+  // }
+  // std::cout << "FINAL RESULT: " << std::endl;
+  // std::cout << bondOrders << std::endl;
 
+  auto endTotTime = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsedTotTime = endTotTime - startTotTime;
+  std::cout << "Total time: " << elapsedTotTime.count() * 1000 << " ms"
+            << std::endl;
   return 0;
 }
