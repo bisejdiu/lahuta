@@ -1,8 +1,9 @@
 // #include <gemmi/mmcif.hpp>
 // #include <gemmi/atox.hpp>    // for string_to_int
 // #include <gemmi/mmcif_impl.hpp> // for set_cell_from_mmcif
-// // #include <gemmi/enumstr.hpp> // for entity_type_from_string, polymer_type_from_string
-// #include <gemmi/polyheur.hpp>  // for restore_full_ccd_codes
+// // #include <gemmi/enumstr.hpp> // for entity_type_from_string,
+// polymer_type_from_string #include <gemmi/polyheur.hpp>  // for
+// restore_full_ccd_codes
 
 #include "conv.hpp"
 
@@ -69,7 +70,8 @@ using namespace gemmi;
 //     copy_string(row, kLinkId, c.link_id);
 //     c.type = connection_type_from_string(row.str(kConnTypeId));
 //     if (row.has2(kSym1) && row.has2(kSym2)) {
-//       c.asu = (row.str(kSym1) == row.str(kSym2) ? Asu::Same : Asu::Different);
+//       c.asu = (row.str(kSym1) == row.str(kSym2) ? Asu::Same :
+//       Asu::Different);
 //     }
 //     copy_double(row, kDistValue, c.reported_distance);
 //     for (int i = 0; i < 2; ++i) {
@@ -107,7 +109,10 @@ RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
       for (Residue &res : chain.residues) {
         RDKit::AtomPDBResidueInfo res_info;
         res_info.setResidueName(res.name);
-        res_info.setIsHeteroAtom(res.het_flag == 'H');
+        bool het_flag = res.het_flag == 'H';
+        // std::cout << "Residue name: " << res.name << " " << res.het_flag << " " << het_flag
+        //           << std::endl;
+        res_info.setIsHeteroAtom(het_flag);
         for (const Atom &atom : res.atoms) {
           // std::cout << "Atom name: " << atom.name << std::endl;
           Element element = atom.element;
@@ -115,20 +120,22 @@ RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
             continue;
           }
           // TODO: needs to be handled properly when ign_h is true
-          if (element == Element("D")) {
-            element = El::H;
-          } else if (element == El::X) {
-            element = El::X;
-          }
+          // if (element == Element("D")) {
+          //   element = El::H;
+          // } else if (element == El::X) {
+          //   element = El::X;
+          // }
           //
           int atomic_number = element.atomic_number();
           RDKit::Atom rdkit_atom(atomic_number);
           rdkit_atom.setFormalCharge((int)atom.charge);
           //
           auto *copy = (RDKit::AtomPDBResidueInfo *)res_info.copy();
+          std::string res_name = res.name;
           // copy->setName(res_name);
-          // copy->setIsHeteroAtom((bool)res.het_flag);
+          // copy->setIsHeteroAtom(het_flag);
           rdkit_atom.setMonomerInfo(copy);
+          // false means RDKit copies the atom
           mol.addAtom(&rdkit_atom, true, false);
 
           conf.setAtomPos(atom_index,

@@ -23,12 +23,12 @@ LDFLAGS = -L$(CONDA_PREFIX)/lib -Wl,-rpath,$(CONDA_PREFIX)/lib
 # Define any libraries to link into executable
 # LDLIBS = -lrdkit -lRDKit -lRDGeneral -lRDGeometryLib -lRDBoost -lFileParsers -lGraphMol -lDataStructs -lSmilesParse -lSubstructMatch -lDescriptors -lChemTransforms -lChemReactions -lChemTransforms -lChemReactions -lChemInformatics
 # LDLIBS =  -lRDKitGraphMol -lRDKitRDGeneral -lRDKitDetermineBonds -lgemmi_cpp
-LDLIBS =  -lRDKitGraphMol -lRDKitRDGeneral -lRDKitDetermineBonds -lRDKitRDGeometryLib -lRDKitRDBoost
+LDLIBS =  -lRDKitGraphMol -lRDKitRDGeneral -lRDKitDetermineBonds -lRDKitRDGeometryLib -lRDKitRDBoost -lRDKitSubgraphs -lRDKitSubstructMatch -lRDKitSmilesParse
 
 
 # LIBC = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi/lahuta/SimSIMD/c/lib.c
 
-SRCS = main.cpp bonds.cpp conv.cpp nsgrid.cpp elements.cpp bond_utils.cpp $(wildcard $(ROOT)/src/*.cpp) $(ROOT)/prog/options.cpp $(wildcard /home/bisejdiu/tmp/dpnblist/only_cpu/*.cpp)
+SRCS = main.cpp bonds.cpp conv.cpp nsgrid.cpp elements.cpp bond_utils.cpp kekulize.cpp bitvec.cpp $(wildcard $(ROOT)/src/*.cpp) $(ROOT)/prog/options.cpp $(wildcard /home/bisejdiu/tmp/dpnblist/only_cpu/*.cpp)
 ZLIB_SRCS = $(wildcard $(ROOT)/third_party/zlib/*.c)
 OBJS = $(SRCS:.cpp=.o) $(ZLIB_SRCS:.c=.o)
 
