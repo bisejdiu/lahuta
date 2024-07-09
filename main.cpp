@@ -14,9 +14,6 @@
 using namespace gemmi;
 using namespace RDKit;
 
-using HybridizationType = RDKit::Atom::HybridizationType;
-using SubStrMatches = std::vector<RDKit::MatchVectType>;
-
 int main(int argc, char const *argv[]) {
   auto startTotTime = std::chrono::high_resolution_clock::now();
   if (argc != 2) {
