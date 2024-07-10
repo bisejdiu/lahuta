@@ -26,3 +26,5 @@ void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
 
 void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
                             double maxRadius, double covFactor);
+
+void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results);

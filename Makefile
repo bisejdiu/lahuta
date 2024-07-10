@@ -11,7 +11,7 @@ ROOT = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi
 
 # CXXFLAGS = -DDYNAMIC_CRC_TABLE -I$(ROOT)/include -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -I/home/bisejdiu/raw_dev/lahuta_cpp/gemmi/lahuta/SimSIMD/include 
 
-CXXFLAGS = -DDYNAMIC_CRC_TABLE -I$(ROOT)/lahuta/bond_order -I$(ROOT)/include -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -I/home/bisejdiu/tmp/dpnblist/only_cpu/ -O3
+CXXFLAGS = -DDYNAMIC_CRC_TABLE -I$(ROOT)/lahuta/lahuta_cpp/bond_table -I$(ROOT)/lahuta/bond_order -I$(ROOT)/include -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -I/home/bisejdiu/tmp/dpnblist/only_cpu/ -O3
 
 
 # GEMMI_BASE = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi
@@ -28,7 +28,7 @@ LDLIBS =  -lRDKitGraphMol -lRDKitRDGeneral -lRDKitDetermineBonds -lRDKitRDGeomet
 
 # LIBC = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi/lahuta/SimSIMD/c/lib.c
 
-SRCS = main.cpp bonds.cpp conv.cpp nsgrid.cpp elements.cpp bond_utils.cpp kekulize.cpp bitvec.cpp bond_order.cpp $(wildcard $(ROOT)/src/*.cpp) $(ROOT)/prog/options.cpp $(wildcard /home/bisejdiu/tmp/dpnblist/only_cpu/*.cpp)
+SRCS = main.cpp bonds.cpp conv.cpp nsgrid.cpp elements.cpp bond_utils.cpp kekulize.cpp bitvec.cpp bond_order.cpp bond_table/bonds.cpp $(wildcard $(ROOT)/src/*.cpp) $(ROOT)/prog/options.cpp $(wildcard /home/bisejdiu/tmp/dpnblist/only_cpu/*.cpp)
 ZLIB_SRCS = $(wildcard $(ROOT)/third_party/zlib/*.c)
 OBJS = $(SRCS:.cpp=.o) $(ZLIB_SRCS:.c=.o)
 

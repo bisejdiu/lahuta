@@ -65,6 +65,7 @@ NSResults FastNS::selfSearch() const {
   results.reserveSpace(coords_bbox.size() / 3);
 
   float cutoff2 = cutoff * cutoff;
+  // FIX: use neighborCells
   std::array<std::array<int, 3>, 13> route = {{{1, 0, 0},
                                                {1, 1, 0},
                                                {0, 1, 0},
@@ -90,6 +91,7 @@ NSResults FastNS::selfSearch() const {
           while (j != END) {
             float d2 = calcDistSq(coord_i, &coords_bbox[3 * j]);
             if (d2 <= cutoff2) {
+              // FIX: add another check for minimum distance
               results.addNeighbors(i, j, d2);
             }
             j = next_id[j];
@@ -188,8 +190,9 @@ inline float FastNS::calcDistSq(const float *__restrict a,
   return dx * dx + dy * dy + dz * dz;
 }
 
-inline bool FastNS::IsWithinCutoff(const float *__restrict a, const float *__restrict b,
-                           float cutoff2) const {
+inline bool FastNS::IsWithinCutoff(const float *__restrict a,
+                                   const float *__restrict b,
+                                   float cutoff2) const {
   float dx = a[0] - b[0];
   float dist2 = dx * dx;
   if (dist2 > cutoff2)
@@ -214,10 +217,6 @@ void NSResults::reserveSpace(size_t input_size) {
   neighbor_pairs.reserve(input_size);
   distances.reserve(input_size);
 }
-
-const NeighborPairs &NSResults::getNeighbors() const { return neighbor_pairs; }
-
-size_t NSResults::getNeighborPairsSize() const { return neighbor_pairs.size(); }
 
 void transformCoords(std::vector<RDGeom::Point3D> &coords,
                      std::array<float, kDIMENSIONS> &pseudobox) {

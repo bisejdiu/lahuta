@@ -1,12 +1,17 @@
 #include "GraphMol/Atom.h"
 #include "GraphMol/Bond.h"
+#include "GraphMol/MonomerInfo.h"
 #include <gemmi/neighbor.hpp>
+#include <model.hpp>
 // #include "GraphMol/RWMol.h"
 // #include "GraphMol/PeriodicTable.h"
 #include "bonds.hpp"
 #include "nsgrid.hpp"
 
 #include "elements.h"
+
+#include "bond_table/bonds.hpp"
+#include "bond_table/table.hpp"
 
 using namespace gemmi;
 
@@ -30,9 +35,8 @@ static bool validAdditionalBond(RDKit::Atom *a, RDKit::Atom *b) {
     } else {
       return false;
     }
-    // other things to check? 
+    // other things to check?
     return true;
-
   }
 
   if (a->getAtomicNum() == 1 && b->getAtomicNum() == 1) {
@@ -53,9 +57,9 @@ bool connectVdW(RDKit::Atom p, RDKit::Atom q, double dist_sq,
     return false;
   }
   double _rcov1 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
-                                 p.getAtomicNum());
+                                  p.getAtomicNum());
   double _rcov2 = covFactor * RDKit::PeriodicTable::getTable()->getRcovalent(
-                                 q.getAtomicNum());
+                                  q.getAtomicNum());
   double rcov1 = covFactor * OBElements::GetCovalentRad(p.getAtomicNum());
   double rcov2 = covFactor * OBElements::GetCovalentRad(q.getAtomicNum());
   // std::cout << "Distance: " << dist_sq << std::endl;
@@ -70,7 +74,7 @@ bool connectVdW(RDKit::Atom p, RDKit::Atom q, double dist_sq,
 }
 
 bool connectOBMol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
-                double tolerance) {
+                  double tolerance) {
   if (dist_sq < 0.16) {
     return false;
   }
@@ -92,10 +96,12 @@ bool connectOBMol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
 }
 bool shouldSkip(RDKit::Atom &atom) {
   auto explicitValence = atom.getExplicitValence();
-  if (atom.getExplicitValence() >= OBElements::GetMaxBonds(atom.getAtomicNum())) {
+  if (atom.getExplicitValence() >=
+      OBElements::GetMaxBonds(atom.getAtomicNum())) {
     return true;
   }
-  if (atom.getAtomicNum() == 7 && atom.getFormalCharge() == 0 && atom.getExplicitValence() >= 3) {
+  if (atom.getAtomicNum() == 7 && atom.getFormalCharge() == 0 &&
+      atom.getExplicitValence() >= 3) {
     return true;
   }
   return false;
@@ -141,23 +147,6 @@ void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
         ns.for_each(
             pos, altloc, maxRadius,
             [&](const NeighborSearch::Mark &m, double dist_sq) {
-              // Ensure that (1) we don't double count by
-              // only considering atoms that are in the same residue or
-              // in a residue that came before the current residue in
-              // the chain and (2) we don't consider atoms that are too
-              // close to each other (dist_sq < 1)
-
-              // if (indices[0] > m.chain_idx ||
-              //     (indices[0] == m.chain_idx &&
-              //      (indices[1] > m.residue_idx || (indices[1] ==
-              //      m.residue_idx && dist_sq < 1)))) {
-              //   return;
-              // }
-
-              // if (dist_sq < 1) {
-              //   return;
-              // }
-
               const_CRA cra1 = {&chain, &res, &atom};
               const_CRA cra2 = m.to_cra(model);
 
@@ -187,6 +176,127 @@ void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
               }
             });
       }
+    }
+  }
+};
+
+// std::vector<BondInfo> _findBondsDeconstructed(Structure &st, Model &model,
+//                                               double maxRadius) {
+//   NeighborSearch ns(model, st.cell, maxRadius);
+//   ns.populate();
+//
+//   std::vector<int> flags, order, key;
+//   std::vector<BondInfo> ret;
+//
+//   initialize_bond_order_table();
+//
+//   for (const Chain &chain : model.chains) {
+//     for (const Residue &res : chain.residues) {
+//       for (const gemmi::Atom &atom : res.atoms) {
+//         auto indices = model.get_indices(&chain, &res, &atom);
+//         Position pos = atom.pos;
+//         char altloc = atom.altloc;
+//         double thresholdA =
+//         getElementThreshold(atom.element.atomic_number());
+//
+//         ns.for_each(
+//             pos, altloc, maxRadius,
+//             [&](const NeighborSearch::Mark &m, double dist_sq) {
+//
+//               const_CRA cra1 = {&chain, &res, &atom};
+//               const_CRA cra2 = m.to_cra(model);
+//
+//               // skip B-A bonds and only leave A-B bonds
+//               if (cra1.atom->serial >= cra2.atom->serial) {
+//                 return;
+//               }
+//
+//               // ret.push_back({cra1, cra2, m.image_idx, dist_sq});
+//
+//               const gemmi::Atom *neighborAtom = cra2.atom;
+//
+//               int neighborElemIdx =
+//               getElementIdx(neighborAtom->element.name());
+//               // neighborAtom.element.atomic_number();
+//               double thresholdB = getElementThreshold(neighborElemIdx);
+//               //
+//               double dist = std::sqrt(dist_sq);
+//               double pairingThreshold =
+//                   getPairingThreshold(atom.element.atomic_number(),
+//                                       neighborElemIdx, thresholdA,
+//                                       thresholdB);
+//               //
+//               if (dist <= pairingThreshold) {
+//                 int order = get_intra_bond_order(res.name, atom.name,
+//                                                  neighborAtom->name);
+//
+//                 ret.push_back({cra1, cra2, m.image_idx, dist_sq, order});
+//               }
+//             });
+//       }
+//     }
+//   }
+//   return ret;
+// };
+//
+//
+// //
+
+// inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
+//   std::cout << "Comparing " << altlocA << " and " << altlocB << " Should give: " << (altlocA == altlocB) << std::endl;
+//   return altlocA == altlocB;
+// }
+inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
+  return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
+}
+
+void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results) {
+
+  initialize_bond_order_table();
+  // std::cout << "x. size: " << results.getNeighbors().size() << std::endl;
+  for (auto i = 0; i < results.getNeighbors().size(); i++) {
+    auto res = results.getNeighbors()[i];
+    auto dist_sq = results.distances[i];
+    auto *a = mol.getAtomWithIdx(res.first);
+    auto *b = mol.getAtomWithIdx(res.second);
+
+    auto resiA = a->getMonomerInfo();
+    RDKit::AtomPDBResidueInfo *residueA =
+        dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiA);
+    auto resiB = b->getMonomerInfo();
+    RDKit::AtomPDBResidueInfo *residueB =
+        dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiB);
+
+    // std::cout << "AltLocs are: " << residueA->getAltLoc() << " and "
+    //           << residueB->getAltLoc() << std::endl;
+
+    if (!is_same_conformer(residueA->getAltLoc(), residueB->getAltLoc())) {
+      // std::cout << "Skipping bond between " << a->getIdx() << " and "
+      //           << b->getIdx() << std::endl;
+      continue;
+    }
+
+    // if: (1) same chain and (2) same residue and (3) same
+
+    double thresholdB = getElementThreshold(b->getAtomicNum());
+    double thresholdA = getElementThreshold(a->getAtomicNum());
+
+    // these are likely going to be too many lookups. Needs to be optimized
+    double pairingThreshold = getPairingThreshold(
+        a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
+
+    // std::cout << "Pairing threshold: " << pairingThreshold << '\n';
+    auto dist = std::sqrt(dist_sq);
+    if (dist <= pairingThreshold) {
+      if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
+        return;
+      }
+      int order =
+          get_intra_bond_order(residueA->getResidueName(), residueA->getName(),
+                               b->getMonomerInfo()->getName());
+      // std::cout << "Adding bond between " << a->getIdx() << " and "
+      //           << b->getIdx() << " with order " << order << std::endl;
+      mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }
 };

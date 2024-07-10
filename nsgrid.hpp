@@ -20,9 +20,9 @@ struct NSResults {
 
   void reserveSpace(size_t input_size);
 
-  const NeighborPairs &getNeighbors() const;
+  const NeighborPairs &getNeighbors() const { return neighbor_pairs; }
 
-  size_t getNeighborPairsSize() const;
+  size_t getNeighborPairsSize() const { return neighbor_pairs.size(); }
 };
 
 class FastNS {
@@ -58,5 +58,5 @@ private:
   inline float calcDistSq(const float *__restrict a,
                           const float *__restrict b) const;
   inline bool IsWithinCutoff(const float *__restrict a,
-                          const float *__restrict b, float cutoff2) const;
+                             const float *__restrict b, float cutoff2) const;
 };
