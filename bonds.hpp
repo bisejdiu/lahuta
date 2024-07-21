@@ -1,6 +1,7 @@
 #include <GraphMol/PeriodicTable.h>
 #include <GraphMol/RWMol.h>
 #include <gemmi/neighbor.hpp>
+#include <unordered_set>
 
 #include "nsgrid.hpp"
 
@@ -24,7 +25,12 @@ struct BondInfo {
 void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
                    const float tolerance);
 
+void perceiveBonds(RDKit::RWMol &mol, RDKit::RWMol &newMol,
+                   std::vector<int> atomIndices, const NSResults &results,
+                   const float covFactor);
+
 void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
                             double maxRadius, double covFactor);
 
-void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results);
+std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
+                                             const NSResults &results);

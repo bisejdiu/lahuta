@@ -5,6 +5,7 @@
 // polymer_type_from_string #include <gemmi/polyheur.hpp>  // for
 // restore_full_ccd_codes
 #include "conv.hpp"
+#include "GraphMol/RDKitBase.h"
 #include "GraphMol/MonomerInfo.h"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \
@@ -159,4 +160,51 @@ RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
   }
 
   return mol;
+}
+
+
+// FIX: Not efficient, because we have to re-find the atoms in the new molecule
+RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices) {
+  RDKit::Conformer conf = mol.getConformer();
+  RDKit::RWMol newMol;
+  RDKit::Conformer *newMolConf = new RDKit::Conformer();
+  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
+    auto atom = *atomIt;
+    auto it = std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx());
+    if (it != atomIndices.end()) {
+      RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
+      newAtom->setFormalCharge(atom->getFormalCharge());
+      newMol.addAtom(newAtom, true, true);
+      auto pos = conf.getAtomPos(atom->getIdx());
+      newMolConf->setAtomPos(newAtom->getIdx(), pos);
+
+      RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+      std::string atomName = atom->getMonomerInfo()->getName();
+      std::string altLoc = res->getAltLoc();
+      std::string resName = res->getResidueName();
+      int resSeq = res->getResidueNumber();
+      std::string chainId = res->getChainId();
+      RDKit::AtomPDBResidueInfo atomInfo = {
+          atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq, chainId};
+      atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
+      atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
+
+      RDKit::AtomMonomerInfo *copy =
+          static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
+      newAtom->setMonomerInfo(copy);
+
+    }
+  }
+
+  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+  //   auto bond = *bondIt;
+  //   if (atomIndices.find(bond->getBeginAtomIdx()) != atomIndices.end() &&
+  //       atomIndices.find(bond->getEndAtomIdx()) != atomIndices.end()) {
+  //     newMol.addBond(bond);
+  //   }
+  // }
+
+  newMol.addConformer(newMolConf, true);
+
+  return newMol;
 }

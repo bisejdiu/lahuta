@@ -35,6 +35,7 @@ inline std::set<std::string> peptide_base_names = {"APN", "CPN", "TPN", "GPN"};
 
 inline std::set<std::string> combined_amino_acid_names = union_of_many_sets({amino_acid_names_long, amino_acid_names_dextro});
 inline std::set<std::string> combined_base_names = union_of_many_sets({rna_base_names, dna_base_names, peptide_base_names});
+inline std::set<std::string> combined_all_names = union_of_many_sets({combined_amino_acid_names, combined_base_names});
 
 // Define the unordered_map using custom hash function
 inline std::unordered_map<std::tuple<std::string, std::string, std::string>, int, key_hash> intra_bond_order_table;

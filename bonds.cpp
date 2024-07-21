@@ -3,6 +3,7 @@
 #include "GraphMol/MonomerInfo.h"
 #include <gemmi/neighbor.hpp>
 #include <model.hpp>
+#include <unordered_set>
 // #include "GraphMol/RWMol.h"
 // #include "GraphMol/PeriodicTable.h"
 #include "bonds.hpp"
@@ -107,12 +108,39 @@ bool shouldSkip(RDKit::Atom &atom) {
   return false;
 }
 
+void perceiveBonds(RDKit::RWMol &mol, RDKit::RWMol &newMol,
+                   std::vector<int> atomIndices, const NSResults &results,
+                   const float covFactor) {
+
+  for (auto i = 0; i < results.getNeighbors().size(); i++) {
+    auto res = results.getNeighbors()[i];
+    auto dist_sq = results.distances[i];
+
+    auto *a = mol.getAtomWithIdx(res.first);
+    auto *b = mol.getAtomWithIdx(res.second);
+
+    // NOTE: first let's handle only within non-protein atoms
+    auto aIt = std::find(atomIndices.begin(), atomIndices.end(), a->getIdx());
+    auto bIt = std::find(atomIndices.begin(), atomIndices.end(), b->getIdx());
+    if (aIt != atomIndices.end() && bIt != atomIndices.end()) {
+      if (connectOBMol(a, b, dist_sq, covFactor)) {
+        // we need to add the bond to newMol, so we need to get the index of
+        // the atoms in newMol that correspond to a and b
+        int indexA = std::distance(atomIndices.begin(), aIt);
+        int indexB = std::distance(atomIndices.begin(), bIt);
+        newMol.addBond(indexA, indexB, RDKit::Bond::BondType::SINGLE);
+      }
+    }
+  }
+}
+
 void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
                    const float covFactor) {
 
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
+
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
 
@@ -122,6 +150,8 @@ void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
     // }
 
     if (connectOBMol(a, b, dist_sq, covFactor)) {
+      // FIX: Neighbor indices are guaranteed to be unique, so we don't need
+      // this.
       if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
         return;
       }
@@ -250,7 +280,10 @@ inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
   return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
 }
 
-void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results) {
+std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
+                                             const NSResults &results) {
+
+  std::unordered_set<int> non_protein_indices;
 
   initialize_bond_order_table();
   // std::cout << "x. size: " << results.getNeighbors().size() << std::endl;
@@ -267,6 +300,13 @@ void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results) {
     RDKit::AtomPDBResidueInfo *residueB =
         dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiB);
 
+    if (!combined_all_names.count(residueA->getResidueName()) &&
+        !combined_all_names.count(residueB->getResidueName())) {
+      non_protein_indices.insert(a->getIdx());
+      non_protein_indices.insert(b->getIdx());
+      continue;
+    }
+
     if (!is_same_conformer(residueA->getAltLoc(), residueB->getAltLoc())) {
       continue;
     }
@@ -281,13 +321,22 @@ void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results) {
         a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
     if (dist_sq <= pairingThreshold * pairingThreshold) {
-      if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
-        return;
-      }
+      // if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
+      //   continue;
+      // }
       int order =
           get_intra_bond_order(residueA->getResidueName(), residueA->getName(),
                                b->getMonomerInfo()->getName());
       mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }
+
+  std::vector<int> non_protein_indices_vec;
+  non_protein_indices_vec.insert(non_protein_indices_vec.end(),
+                                 non_protein_indices.begin(),
+                                 non_protein_indices.end());
+
+  // sort the indices
+  std::sort(non_protein_indices_vec.begin(), non_protein_indices_vec.end());
+  return non_protein_indices_vec;
 };
