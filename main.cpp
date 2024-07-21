@@ -74,28 +74,28 @@ int main(int argc, char const *argv[]) {
     PerceiveBondOrders(mol);
 
     std::cout << "printing bond orders\n";
-    auto count = 0;
-    for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-      RDKit::Bond *bond = *bondIt;
-      auto res1 = mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
-      auto res2 = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
-
-      // auto resiA = a->getMonomerInfo();
-      // RDKit::AtomPDBResidueInfo *residueA =
-      //     dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiA);
-
-      AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
-      AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
-
-      if (!combined_all_names.count(residue1->getResidueName()) &&
-          !combined_all_names.count(residue2->getResidueName())) {
-        count++;
-        std::cout << std::to_string(bond->getBeginAtomIdx()) << " " << mol.getAtomWithIdx(bond->getBeginAtomIdx())->getSymbol() << " " << residue1->getResidueName() << " "
-                  << std::to_string(bond->getEndAtomIdx()) << " " << mol.getAtomWithIdx(bond->getEndAtomIdx())->getSymbol() << " " << residue2->getResidueName() << " "
-                  << std::to_string(bond->getBondType()) << "\n";
-      }
-    }
-    std::cout << "Non prot: " << count << std::endl;
+    // auto count = 0;
+    // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+    //   RDKit::Bond *bond = *bondIt;
+    //   auto res1 = mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
+    //   auto res2 = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
+    //
+    //   // auto resiA = a->getMonomerInfo();
+    //   // RDKit::AtomPDBResidueInfo *residueA =
+    //   //     dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiA);
+    //
+    //   AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
+    //   AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
+    //
+    //   if (!combined_all_names.count(residue1->getResidueName()) &&
+    //       !combined_all_names.count(residue2->getResidueName())) {
+    //     count++;
+    //     std::cout << std::to_string(bond->getBeginAtomIdx()) << " " << mol.getAtomWithIdx(bond->getBeginAtomIdx())->getSymbol() << " " << residue1->getResidueName() << " "
+    //               << std::to_string(bond->getEndAtomIdx()) << " " << mol.getAtomWithIdx(bond->getEndAtomIdx())->getSymbol() << " " << residue2->getResidueName() << " "
+    //               << std::to_string(bond->getBondType()) << "\n";
+    //   }
+    // }
+    // std::cout << "Non prot: " << count << std::endl;
   }
   // for (gemmi::Connection &conn : st.connections) {
   //   // FIX: Need to iterate over all models
@@ -144,23 +144,23 @@ int main(int argc, char const *argv[]) {
     PerceiveBondOrders(newMol);
 
     std::cout << "printing newMol bond orders\n";
-    int count = 0;
-    for (auto bondIt = newMol.beginBonds(); bondIt != newMol.endBonds();
-         ++bondIt) {
-      RDKit::Bond *bond = *bondIt;
-      auto res1 =
-          newMol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
-      auto res2 =
-          newMol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
-
-      AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
-      AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
-
-      std::cout << std::to_string(bond->getBeginAtomIdx()) << " " << newMol.getAtomWithIdx(bond->getBeginAtomIdx())->getSymbol() << " "
-                << std::to_string(bond->getEndAtomIdx()) << " " << newMol.getAtomWithIdx(bond->getEndAtomIdx())->getSymbol() << " "
-                << std::to_string(bond->getBondType()) << "\n";
-      count++; 
-    }
+    // int count = 0;
+    // for (auto bondIt = newMol.beginBonds(); bondIt != newMol.endBonds();
+    //      ++bondIt) {
+    //   RDKit::Bond *bond = *bondIt;
+    //   auto res1 =
+    //       newMol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
+    //   auto res2 =
+    //       newMol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
+    //
+    //   AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
+    //   AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
+    //
+    //   std::cout << std::to_string(bond->getBeginAtomIdx()) << " " << newMol.getAtomWithIdx(bond->getBeginAtomIdx())->getSymbol() << " "
+    //             << std::to_string(bond->getEndAtomIdx()) << " " << newMol.getAtomWithIdx(bond->getEndAtomIdx())->getSymbol() << " "
+    //             << std::to_string(bond->getBondType()) << "\n";
+    //   count++; 
+    // }
     auto end = std::chrono::high_resolution_clock::now();
     std::cout << "Time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(end -
@@ -168,7 +168,7 @@ int main(int argc, char const *argv[]) {
                      .count()
               << "ms" << std::endl;
     std::cout << "Done: Finding bond orders" << std::endl;
-    std::cout << "Non prot: " << count << std::endl;
+    // std::cout << "Non prot: " << count << std::endl;
   }
 
   // std::string bondOrders = "";

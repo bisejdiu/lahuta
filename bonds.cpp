@@ -344,11 +344,11 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
 
 RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
 
-  std::unordered_set<int> non_protein_indices;
-
   initialize_bond_order_table();
-  // std::cout << "x. size: " << results.getNeighbors().size() << std::endl;
-  std::unordered_map<int, std::vector<int>> bonds;
+
+  std::vector<int> non_protein_indices;
+  std::vector<std::pair<int, int>> bonds;
+
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
@@ -364,11 +364,12 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
 
     if (!combined_all_names.count(residueA->getResidueName()) &&
         !combined_all_names.count(residueB->getResidueName())) {
-      non_protein_indices.insert(a->getIdx());
-      non_protein_indices.insert(b->getIdx());
+      non_protein_indices.push_back(a->getIdx());
+      non_protein_indices.push_back(b->getIdx());
 
       if (connectOBMol(a, b, dist_sq, 0.45)) {
-        bonds[a->getIdx()].push_back(b->getIdx());
+        // bonds.push_back({a->getIdx(), b->getIdx()});
+        bonds.emplace_back(a->getIdx(), b->getIdx());
       }
       continue;
     }
@@ -397,30 +398,32 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
     }
   }
 
-  std::vector<int> non_protein_indices_vec;
-  non_protein_indices_vec.insert(non_protein_indices_vec.end(),
-                                 non_protein_indices.begin(),
-                                 non_protein_indices.end());
+  std::sort(non_protein_indices.begin(), non_protein_indices.end());
+  non_protein_indices.erase(
+      std::unique(non_protein_indices.begin(), non_protein_indices.end()),
+      non_protein_indices.end());
 
-  // sort the indices
-  std::sort(non_protein_indices_vec.begin(), non_protein_indices_vec.end());
+  auto newMol = rdMolFromRDKitMol(mol, non_protein_indices);
+  // Map old indices to new indices
+  std::unordered_map<int, int> old_to_new_index;
+  for (size_t i = 0; i < non_protein_indices.size(); ++i) {
+    old_to_new_index[non_protein_indices[i]] = i;
+  }
 
-  auto newMol = rdMolFromRDKitMol(mol, non_protein_indices_vec);
-  for (auto it = bonds.begin(); it != bonds.end(); ++it) {
-    auto a = it->first;
-    auto b = it->second;
+  // Add bonds to the newMol
+  for (const auto &bond : bonds) {
+    auto it_a = old_to_new_index.find(bond.first);
+    auto it_b = old_to_new_index.find(bond.second);
 
-    auto aIt = std::find(non_protein_indices_vec.begin(),
-                         non_protein_indices_vec.end(), a);
-    for (auto i = 0; i < b.size(); i++) {
-      auto aIx = std::distance(non_protein_indices_vec.begin(), aIt);
-      auto bIt = std::find(non_protein_indices_vec.begin(),
-                           non_protein_indices_vec.end(), b[i]);
-      auto bIx = std::distance(non_protein_indices_vec.begin(), bIt);
+    if (it_a != old_to_new_index.end() && it_b != old_to_new_index.end()) {
+      int aIx = it_a->second;
+      int bIx = it_b->second;
+
       if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
         newMol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
       }
     }
   }
+
   return newMol;
 };
