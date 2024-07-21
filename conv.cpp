@@ -147,6 +147,7 @@ RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
         res.name,  res.seqid.num.value, chain.name};
     bool het_flag = res.het_flag == 'H';
     atomInfo.setIsHeteroAtom(het_flag);
+    atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
 
     RDKit::AtomMonomerInfo *copy =
         static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
@@ -156,9 +157,6 @@ RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
 
     aIx += 1;
   }
-  std::cout << "Number of atoms in gemmi obj: : " << aIx << std::endl;
-  std::cout << "Number of atoms in RDKit obj: : " << mol.getNumAtoms()
-            << std::endl;
 
   return mol;
 }

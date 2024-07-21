@@ -243,8 +243,8 @@ void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
 // //
 
 // inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
-//   std::cout << "Comparing " << altlocA << " and " << altlocB << " Should give: " << (altlocA == altlocB) << std::endl;
-//   return altlocA == altlocB;
+//   std::cout << "Comparing " << altlocA << " and " << altlocB << " Should
+//   give: " << (altlocA == altlocB) << std::endl; return altlocA == altlocB;
 // }
 inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
   return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
@@ -267,12 +267,7 @@ void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results) {
     RDKit::AtomPDBResidueInfo *residueB =
         dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiB);
 
-    // std::cout << "AltLocs are: " << residueA->getAltLoc() << " and "
-    //           << residueB->getAltLoc() << std::endl;
-
     if (!is_same_conformer(residueA->getAltLoc(), residueB->getAltLoc())) {
-      // std::cout << "Skipping bond between " << a->getIdx() << " and "
-      //           << b->getIdx() << std::endl;
       continue;
     }
 
@@ -285,17 +280,13 @@ void findBondsDeconstructedRDKit(RDKit::RWMol &mol, const NSResults &results) {
     double pairingThreshold = getPairingThreshold(
         a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
-    // std::cout << "Pairing threshold: " << pairingThreshold << '\n';
-    auto dist = std::sqrt(dist_sq);
-    if (dist <= pairingThreshold) {
+    if (dist_sq <= pairingThreshold * pairingThreshold) {
       if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
         return;
       }
       int order =
           get_intra_bond_order(residueA->getResidueName(), residueA->getName(),
                                b->getMonomerInfo()->getName());
-      // std::cout << "Adding bond between " << a->getIdx() << " and "
-      //           << b->getIdx() << " with order " << order << std::endl;
       mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }
