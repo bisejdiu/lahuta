@@ -112,23 +112,25 @@ int main(int argc, char const *argv[]) {
 
   if (flag_b) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto r = findBondsDeconstructedRDKit(mol, results);
-    for (auto it = r.begin(); it != r.end(); ++it) {
-      std::cout << "Non prot: " << *it << std::endl;
-    }
+    // auto r = findBondsDeconstructedRDKit(mol, results);
+    // for (auto it = r.begin(); it != r.end(); ++it) {
+    //   std::cout << "Non prot: " << *it << std::endl;
+    // }
 
-    auto newMol = rdMolFromRDKitMol(mol, r);
+    // auto newMol = rdMolFromRDKitMol(mol, r);
+    auto newMol = lahutaBondAssignment(mol, results);
     std::cout << "newMol numAtoms: " << newMol.getNumAtoms() << std::endl;
     std::cout << "atom info + coords: \n";
-    for (auto atomIt = newMol.beginAtoms(); atomIt != newMol.endAtoms();
-         ++atomIt) {
-      auto atom = *atomIt;
-      std::cout << atom->getIdx() << " " << atom->getSymbol() << " "
-                << atom->getMonomerInfo()->getName() << " "
-                << newMol.getConformer().getAtomPos(atom->getIdx()) << "\n";
-    }
+    // for (auto atomIt = newMol.beginAtoms(); atomIt != newMol.endAtoms();
+    //      ++atomIt) {
+    //   auto atom = *atomIt;
+    //   std::cout << atom->getIdx() << " " << atom->getSymbol() << " "
+    //             << atom->getMonomerInfo()->getName() << " "
+    //             << newMol.getConformer().getAtomPos(atom->getIdx()) << "\n";
+    // }
 
-    perceiveBonds(mol, newMol, r, results, 0.45);
+    // perceiveBonds(mol, newMol, r, results, 0.45);
+
     auto newMolConf = newMol.getConformer();
     std::cout << "newMol Conf numAtoms: " << newMolConf.getNumAtoms()
               << std::endl;

@@ -7,6 +7,7 @@
 // #include "GraphMol/RWMol.h"
 // #include "GraphMol/PeriodicTable.h"
 #include "bonds.hpp"
+#include "conv.hpp"
 #include "nsgrid.hpp"
 
 #include "elements.h"
@@ -339,4 +340,87 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
   // sort the indices
   std::sort(non_protein_indices_vec.begin(), non_protein_indices_vec.end());
   return non_protein_indices_vec;
+};
+
+RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
+
+  std::unordered_set<int> non_protein_indices;
+
+  initialize_bond_order_table();
+  // std::cout << "x. size: " << results.getNeighbors().size() << std::endl;
+  std::unordered_map<int, std::vector<int>> bonds;
+  for (auto i = 0; i < results.getNeighbors().size(); i++) {
+    auto res = results.getNeighbors()[i];
+    auto dist_sq = results.distances[i];
+    auto *a = mol.getAtomWithIdx(res.first);
+    auto *b = mol.getAtomWithIdx(res.second);
+
+    auto resiA = a->getMonomerInfo();
+    RDKit::AtomPDBResidueInfo *residueA =
+        dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiA);
+    auto resiB = b->getMonomerInfo();
+    RDKit::AtomPDBResidueInfo *residueB =
+        dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiB);
+
+    if (!combined_all_names.count(residueA->getResidueName()) &&
+        !combined_all_names.count(residueB->getResidueName())) {
+      non_protein_indices.insert(a->getIdx());
+      non_protein_indices.insert(b->getIdx());
+
+      if (connectOBMol(a, b, dist_sq, 0.45)) {
+        bonds[a->getIdx()].push_back(b->getIdx());
+      }
+      continue;
+    }
+
+    if (!is_same_conformer(residueA->getAltLoc(), residueB->getAltLoc())) {
+      continue;
+    }
+
+    // if: (1) same chain and (2) same residue and (3) same
+
+    double thresholdB = getElementThreshold(b->getAtomicNum());
+    double thresholdA = getElementThreshold(a->getAtomicNum());
+
+    // these are likely going to be too many lookups. Needs to be optimized
+    double pairingThreshold = getPairingThreshold(
+        a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
+
+    if (dist_sq <= pairingThreshold * pairingThreshold) {
+      // if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
+      //   continue;
+      // }
+      int order =
+          get_intra_bond_order(residueA->getResidueName(), residueA->getName(),
+                               b->getMonomerInfo()->getName());
+      mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
+    }
+  }
+
+  std::vector<int> non_protein_indices_vec;
+  non_protein_indices_vec.insert(non_protein_indices_vec.end(),
+                                 non_protein_indices.begin(),
+                                 non_protein_indices.end());
+
+  // sort the indices
+  std::sort(non_protein_indices_vec.begin(), non_protein_indices_vec.end());
+
+  auto newMol = rdMolFromRDKitMol(mol, non_protein_indices_vec);
+  for (auto it = bonds.begin(); it != bonds.end(); ++it) {
+    auto a = it->first;
+    auto b = it->second;
+
+    auto aIt = std::find(non_protein_indices_vec.begin(),
+                         non_protein_indices_vec.end(), a);
+    for (auto i = 0; i < b.size(); i++) {
+      auto aIx = std::distance(non_protein_indices_vec.begin(), aIt);
+      auto bIt = std::find(non_protein_indices_vec.begin(),
+                           non_protein_indices_vec.end(), b[i]);
+      auto bIx = std::distance(non_protein_indices_vec.begin(), bIt);
+      if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
+        newMol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
+      }
+    }
+  }
+  return newMol;
 };

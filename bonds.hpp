@@ -1,7 +1,6 @@
 #include <GraphMol/PeriodicTable.h>
 #include <GraphMol/RWMol.h>
 #include <gemmi/neighbor.hpp>
-#include <unordered_set>
 
 #include "nsgrid.hpp"
 
@@ -34,3 +33,6 @@ void findBondsDeconstructed(Structure &st, Model &model, RDKit::RWMol &mol,
 
 std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
                                              const NSResults &results);
+
+
+RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results);
