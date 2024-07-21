@@ -349,6 +349,7 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
   std::vector<int> non_protein_indices;
   std::vector<std::pair<int, int>> bonds;
 
+  std::cout << "1\n";
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
@@ -403,7 +404,9 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
       std::unique(non_protein_indices.begin(), non_protein_indices.end()),
       non_protein_indices.end());
 
+  std::cout << "2\n";
   auto newMol = rdMolFromRDKitMol(mol, non_protein_indices);
+  std::cout << "3\n";
   // Map old indices to new indices
   std::unordered_map<int, int> old_to_new_index;
   for (size_t i = 0; i < non_protein_indices.size(); ++i) {
@@ -424,6 +427,7 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
       }
     }
   }
+  std::cout << "4\n";
 
   return newMol;
 };

@@ -168,41 +168,58 @@ RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices)
   RDKit::Conformer conf = mol.getConformer();
   RDKit::RWMol newMol;
   RDKit::Conformer *newMolConf = new RDKit::Conformer();
-  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
-    auto atom = *atomIt;
-    auto it = std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx());
-    if (it != atomIndices.end()) {
-      RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
-      newAtom->setFormalCharge(atom->getFormalCharge());
-      newMol.addAtom(newAtom, true, true);
-      auto pos = conf.getAtomPos(atom->getIdx());
-      newMolConf->setAtomPos(newAtom->getIdx(), pos);
-
-      RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-      std::string atomName = atom->getMonomerInfo()->getName();
-      std::string altLoc = res->getAltLoc();
-      std::string resName = res->getResidueName();
-      int resSeq = res->getResidueNumber();
-      std::string chainId = res->getChainId();
-      RDKit::AtomPDBResidueInfo atomInfo = {
-          atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq, chainId};
-      atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
-      atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
-
-      RDKit::AtomMonomerInfo *copy =
-          static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
-      newAtom->setMonomerInfo(copy);
-
-    }
-  }
-
-  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-  //   auto bond = *bondIt;
-  //   if (atomIndices.find(bond->getBeginAtomIdx()) != atomIndices.end() &&
-  //       atomIndices.find(bond->getEndAtomIdx()) != atomIndices.end()) {
-  //     newMol.addBond(bond);
+  // for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
+  //   auto atom = *atomIt;
+  //   auto it = std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx());
+  //   if (it != atomIndices.end()) {
+  //     RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
+  //     newAtom->setFormalCharge(atom->getFormalCharge());
+  //     newMol.addAtom(newAtom, true, true);
+  //     auto pos = conf.getAtomPos(atom->getIdx());
+  //     newMolConf->setAtomPos(newAtom->getIdx(), pos);
+  //
+  //     RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+  //     std::string atomName = atom->getMonomerInfo()->getName();
+  //     std::string altLoc = res->getAltLoc();
+  //     std::string resName = res->getResidueName();
+  //     int resSeq = res->getResidueNumber();
+  //     std::string chainId = res->getChainId();
+  //     RDKit::AtomPDBResidueInfo atomInfo = {
+  //         atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq, chainId};
+  //     atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
+  //     atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
+  //
+  //     RDKit::AtomMonomerInfo *copy =
+  //         static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
+  //     newAtom->setMonomerInfo(copy);
+  //
   //   }
   // }
+
+  for (auto atomIdx : atomIndices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
+    newAtom->setFormalCharge(atom->getFormalCharge());
+    newMol.addAtom(newAtom, true, true);
+    auto pos = conf.getAtomPos(atom->getIdx());
+    newMolConf->setAtomPos(newAtom->getIdx(), pos);
+
+    RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    std::string atomName = atom->getMonomerInfo()->getName();
+    std::string altLoc = res->getAltLoc();
+    std::string resName = res->getResidueName();
+    int resSeq = res->getResidueNumber();
+    std::string chainId = res->getChainId();
+    RDKit::AtomPDBResidueInfo atomInfo = {
+        atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq, chainId};
+    atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
+    atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
+
+    RDKit::AtomMonomerInfo *copy =
+        static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
+    newAtom->setMonomerInfo(copy);
+  }
+
 
   newMol.addConformer(newMolConf, true);
 
