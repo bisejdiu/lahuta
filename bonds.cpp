@@ -326,8 +326,8 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
       //   continue;
       // }
       int order =
-          get_intra_bond_order(residueA->getResidueName(), residueA->getName(),
-                               b->getMonomerInfo()->getName());
+          get_intra_bond_order(residueA->getResidueName(), &(residueA->getName()),
+                               &(b->getMonomerInfo()->getName()));
       mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }
@@ -342,11 +342,10 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
   return non_protein_indices_vec;
 };
 
-RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
+RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results, std::vector<int> &non_protein_indices) {
 
   initialize_bond_order_table();
 
-  std::vector<int> non_protein_indices;
   std::vector<std::pair<int, int>> bonds;
 
   std::cout << "1\n";
@@ -393,8 +392,8 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results) {
       //   continue;
       // }
       int order =
-          get_intra_bond_order(residueA->getResidueName(), residueA->getName(),
-                               b->getMonomerInfo()->getName());
+          get_intra_bond_order(residueA->getResidueName(), &(residueA->getName()),
+                               &(b->getMonomerInfo()->getName()));
       mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }

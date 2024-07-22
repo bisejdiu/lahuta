@@ -11,7 +11,7 @@ ROOT = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi
 
 # CXXFLAGS = -DDYNAMIC_CRC_TABLE -I$(ROOT)/include -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -I/home/bisejdiu/raw_dev/lahuta_cpp/gemmi/lahuta/SimSIMD/include 
 
-CXXFLAGS = -DDYNAMIC_CRC_TABLE -I$(ROOT)/lahuta/lahuta_cpp/bond_table -I$(ROOT)/lahuta/bond_order -I$(ROOT)/include -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -I/home/bisejdiu/tmp/dpnblist/only_cpu/ -O3
+CXXFLAGS = -DDYNAMIC_CRC_TABLE -I$(ROOT)/lahuta/lahuta_cpp/bond_table -I$(ROOT)/lahuta/bond_order -I$(ROOT)/include -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -I/home/bisejdiu/tmp/dpnblist/only_cpu/ -O0
 
 
 # GEMMI_BASE = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi

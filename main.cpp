@@ -111,14 +111,21 @@ int main(int argc, char const *argv[]) {
   //
 
   if (flag_b) {
-    auto start = std::chrono::high_resolution_clock::now();
     // auto r = findBondsDeconstructedRDKit(mol, results);
     // for (auto it = r.begin(); it != r.end(); ++it) {
     //   std::cout << "Non prot: " << *it << std::endl;
     // }
 
     // auto newMol = rdMolFromRDKitMol(mol, r);
-    auto newMol = lahutaBondAssignment(mol, results);
+    auto start = std::chrono::high_resolution_clock::now();
+    std::vector<int> non_protein_indices;
+    auto newMol = lahutaBondAssignment(mol, results, non_protein_indices);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "x: ->: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
     std::cout << "newMol numAtoms: " << newMol.getNumAtoms() << std::endl;
     std::cout << "atom info + coords: \n";
     // for (auto atomIt = newMol.beginAtoms(); atomIt != newMol.endAtoms();
@@ -143,6 +150,20 @@ int main(int argc, char const *argv[]) {
     }
     PerceiveBondOrders(newMol);
 
+    for (auto bondIt = newMol.beginBonds(); bondIt != newMol.endBonds();
+         ++bondIt) {
+      RDKit::Bond *bond = *bondIt;
+      auto bAtomIdx = bond->getBeginAtomIdx();
+      auto eAtomIdx = bond->getEndAtomIdx();
+
+      int bIdx = non_protein_indices[bAtomIdx];
+      int eIdx = non_protein_indices[eAtomIdx];
+
+      if (mol.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
+        mol.addBond(bIdx, eIdx, bond->getBondType());
+      }
+    }
+
     std::cout << "printing newMol bond orders\n";
     // int count = 0;
     // for (auto bondIt = newMol.beginBonds(); bondIt != newMol.endBonds();
@@ -161,7 +182,7 @@ int main(int argc, char const *argv[]) {
     //             << std::to_string(bond->getBondType()) << "\n";
     //   count++; 
     // }
-    auto end = std::chrono::high_resolution_clock::now();
+    end = std::chrono::high_resolution_clock::now();
     std::cout << "Time: "
               << std::chrono::duration_cast<std::chrono::milliseconds>(end -
                                                                        start)
@@ -171,28 +192,26 @@ int main(int argc, char const *argv[]) {
     // std::cout << "Non prot: " << count << std::endl;
   }
 
-  // std::string bondOrders = "";
-  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-  //   RDKit::Bond *bond = *bondIt;
-  //   auto res1 =
-  //   mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo(); auto res2
-  //   = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
-  //
-  //   AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
-  //   AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
-  //
-  //   bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
-  //                 // res1->getName() + " " + residue1->getResidueName() + " "
-  //                 +
-  //                 // residue1->getAltLoc() + " " +
-  //                 std::to_string(bond->getEndAtomIdx()) + " " +
-  //                 // res2->getName() + " " + residue2->getResidueName() + " "
-  //                 +
-  //                 // residue2->getAltLoc() + " " +
-  //                 std::to_string(bond->getBondType()) + "\n";
-  // }
-  // std::cout << "FINAL RESULT: " << std::endl;
-  // std::cout << bondOrders << std::endl;
+  std::string bondOrders = "";
+  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+    RDKit::Bond *bond = *bondIt;
+    auto res1 =
+    mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo(); auto res2
+    = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
+
+    AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
+    AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
+
+    bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
+                  // res1->getName() + " " + residue1->getResidueName() + " " +
+                  // residue1->getAltLoc() + " " +
+                  std::to_string(bond->getEndAtomIdx()) + " " +
+                  // res2->getName() + " " + residue2->getResidueName() + " " +
+                  // residue2->getAltLoc() + " " +
+                  std::to_string(bond->getBondType()) + "\n";
+  }
+  std::cout << "FINAL RESULT: " << std::endl;
+  std::cout << bondOrders << std::endl;
 
   return 0;
 }

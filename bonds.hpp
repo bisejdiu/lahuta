@@ -35,4 +35,4 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
                                              const NSResults &results);
 
 
-RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results);
+RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results, std::vector<int> &non_protein_indices);

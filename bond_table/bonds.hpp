@@ -92,6 +92,6 @@ inline void initialize_bond_order_table() {
   intra_bond_order_table[{"DT", "C4", "O4"}] = 2;
 }
 
-int get_intra_bond_order(const std::string &comp_id, std::string atom_id1, std::string atom_id2);
+int get_intra_bond_order(const std::string &comp_id, const std::string *atom_id1, const std::string *atom_id2);
 RDKit::Atom::HybridizationType get_intra_bond_order(const RDKit::Atom *atom1, const RDKit::Atom *atom2);
 
