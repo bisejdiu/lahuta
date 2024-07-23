@@ -5,14 +5,14 @@
 #include "bonds.hpp"
 #include "conv.hpp"
 
-#include "bond_utils.hpp"
 #include "bond_order.hpp"
+#include "bond_utils.hpp"
 
 #include "elements.h"
 #include "kekulize.h"
 
-#include <iostream>
 #include <chrono>
+#include <iostream>
 
 using namespace gemmi;
 using namespace RDKit;
@@ -194,7 +194,11 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
 
   RDKit::Conformer &conf = mol.getConformer();
 
-
+  // Set all atoms to sp hybridization (1 for openbabel)
+  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
+    auto atom = *atomIt;
+    atom->setHybridization(HybridizationType::SP);
+  }
 
   auto start = std::chrono::high_resolution_clock::now();
   SubstructMatchParameters params;
