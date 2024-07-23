@@ -35,8 +35,11 @@ int main(int argc, char const *argv[]) {
   FastNS grid(atom_coords, cutoff);
   auto results = grid.selfSearch();
 
+  auto start = T();
   std::vector<int> non_protein_indices;
   auto newMol = lahutaBondAssignment(mol, results, non_protein_indices);
+  auto end = T();
+  std::cout << "perf: " << TO_MS(end - start).count() << "ms" << std::endl;
 
   auto newMolConf = newMol.getConformer();
   newMol.updatePropertyCache(false);
@@ -76,8 +79,17 @@ int main(int argc, char const *argv[]) {
   // }
 
   // std::string bO = "";
-  // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-  //   RDKit::Bond *bond = *bondIt;
+  int FirstOrderCount = 0;
+  int SecondOrderCount = 0;
+  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+    RDKit::Bond *bond = *bondIt;
+
+    if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
+      FirstOrderCount++;
+    } else if (bond->getBondType() == RDKit::Bond::BondType::DOUBLE) {
+      SecondOrderCount++;
+    }
+
   //   auto res1 = mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
   //   auto res2 = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
   //
@@ -91,9 +103,12 @@ int main(int argc, char const *argv[]) {
   //         // res2->getName() + " " + residue2->getResidueName() + " " +
   //         // residue2->getAltLoc() + " " +
   //         std::to_string(bond->getBondType()) + "\n";
-  // }
+  }
   // std::cout << "FINAL RESULT: " << std::endl;
-  // std::cout << bO << std::endl;
+  // std::cout << bO << std::endl; 
+  std::cout << "First Order Count: " << FirstOrderCount << std::endl;
+  std::cout << "Second Order Count: " << SecondOrderCount << std::endl;
+  
 
   return 0;
 }

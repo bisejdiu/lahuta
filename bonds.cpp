@@ -7,6 +7,7 @@
 
 #include "bond_table/bonds.hpp"
 #include "bond_table/table.hpp"
+#include <valgrind/callgrind.h>
 
 using namespace gemmi;
 
@@ -171,11 +172,12 @@ void logAtomInfoIf(RDKit::Atom *a, RDKit::Atom *b, int idx) {
 RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
                                   std::vector<int> &non_protein_indices) {
 
-  initialize_bond_order_table();
+
+  CALLGRIND_START_INSTRUMENTATION;
 
   std::vector<std::pair<int, int>> bonds;
 
-  std::cout << "1\n";
+  // std::cout << "1\n";
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
@@ -185,10 +187,8 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
     auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(a->getMonomerInfo());
     auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(b->getMonomerInfo());
 
-    bool aIsProtein = combined_all_names.find(infoA->getResidueName()) !=
-                      combined_all_names.end();
-    bool bIsProtein = combined_all_names.find(infoB->getResidueName()) !=
-                      combined_all_names.end();
+    auto aIsProtein = getToken(infoA->getResidueName());
+    auto bIsProtein = getToken(infoB->getResidueName());
 
     // most likely both atoms are protein atoms
     if (aIsProtein && bIsProtein) {
@@ -217,7 +217,7 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       non_protein_indices.push_back(a->getIdx());
       non_protein_indices.push_back(b->getIdx());
       if (connectOBMol(a, b, dist_sq, 0.45)) {
-        logAtomInfoIf(a, b, 60115);
+        // logAtomInfoIf(a, b, 60115);
         bonds.emplace_back(a->getIdx(), b->getIdx());
       }
       continue;
@@ -244,9 +244,9 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       std::unique(non_protein_indices.begin(), non_protein_indices.end()),
       non_protein_indices.end());
 
-  std::cout << "2\n";
+  // std::cout << "2\n";
   auto newMol = rdMolFromRDKitMol(mol, non_protein_indices);
-  std::cout << "3\n";
+  // std::cout << "3\n";
   // Map old indices to new indices
   std::unordered_map<int, int> old_to_new_index;
   for (size_t i = 0; i < non_protein_indices.size(); ++i) {
@@ -267,7 +267,8 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       }
     }
   }
-  std::cout << "4\n";
+  CALLGRIND_STOP_INSTRUMENTATION;
+  // std::cout << "4\n";
 
   return newMol;
 };
