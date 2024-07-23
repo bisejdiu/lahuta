@@ -325,9 +325,9 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
       // if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
       //   continue;
       // }
-      int order =
-          get_intra_bond_order(residueA->getResidueName(), &(residueA->getName()),
-                               &(b->getMonomerInfo()->getName()));
+      int order = get_intra_bond_order(residueA->getResidueName(),
+                                       &(residueA->getName()),
+                                       &(b->getMonomerInfo()->getName()));
       mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }
@@ -342,7 +342,18 @@ std::vector<int> findBondsDeconstructedRDKit(RDKit::RWMol &mol,
   return non_protein_indices_vec;
 };
 
-RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results, std::vector<int> &non_protein_indices) {
+void logAtomInfoIf(RDKit::Atom *a, RDKit::Atom *b, int idx) {
+  if (a->getIdx() == idx || b->getIdx() == idx) {
+    std::cout << "Atom 1: " << a->getIdx() << " " << a->getSymbol() << " "
+              << a->getMonomerInfo()->getName() << " " << a->getAtomicNum()
+              << " " << "Atom 2: " << b->getIdx() << " " << b->getSymbol()
+              << " " << b->getMonomerInfo()->getName() << " "
+              << b->getAtomicNum() << std::endl;
+  }
+}
+
+RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
+                                  std::vector<int> &non_protein_indices) {
 
   initialize_bond_order_table();
 
@@ -355,46 +366,60 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results, s
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
 
-    auto resiA = a->getMonomerInfo();
-    RDKit::AtomPDBResidueInfo *residueA =
-        dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiA);
-    auto resiB = b->getMonomerInfo();
-    RDKit::AtomPDBResidueInfo *residueB =
-        dynamic_cast<RDKit::AtomPDBResidueInfo *>(resiB);
+    auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(a->getMonomerInfo());
+    auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(b->getMonomerInfo());
 
-    if (!combined_all_names.count(residueA->getResidueName()) &&
-        !combined_all_names.count(residueB->getResidueName())) {
+    bool aIsProtein = combined_all_names.find(infoA->getResidueName()) !=
+                      combined_all_names.end();
+    bool bIsProtein = combined_all_names.find(infoB->getResidueName()) !=
+                      combined_all_names.end();
+
+    // most likely both atoms are protein atoms
+    if (aIsProtein && bIsProtein) {
+      if (!is_same_conformer(infoA->getAltLoc(), infoB->getAltLoc())) {
+        continue;
+      }
+
+      double thresholdB = getElementThreshold(b->getAtomicNum());
+      double thresholdA = getElementThreshold(a->getAtomicNum());
+
+      // these are likely going to be too many lookups. Needs to be optimized
+      double pairingThreshold = getPairingThreshold(
+          a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
+
+      if (dist_sq <= pairingThreshold * pairingThreshold) {
+        // if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
+        //   continue;
+        // }
+        int order =
+            get_intra_bond_order(infoA->getResidueName(), &(infoA->getName()),
+                                 &(b->getMonomerInfo()->getName()));
+        mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
+      }
+      continue;
+    } else if (!aIsProtein && !bIsProtein) {
       non_protein_indices.push_back(a->getIdx());
       non_protein_indices.push_back(b->getIdx());
-
       if (connectOBMol(a, b, dist_sq, 0.45)) {
-        // bonds.push_back({a->getIdx(), b->getIdx()});
+        logAtomInfoIf(a, b, 60115);
         bonds.emplace_back(a->getIdx(), b->getIdx());
       }
       continue;
-    }
-
-    if (!is_same_conformer(residueA->getAltLoc(), residueB->getAltLoc())) {
+    } else {
+      // logAtomInfoIf(a, b, 60115);
+      if (connectOBMol(a, b, dist_sq, 0.45)) {
+        // double thresholdB = getElementThreshold(b->getAtomicNum());
+        // double thresholdA = getElementThreshold(a->getAtomicNum());
+        //
+        // // these are likely going to be too many lookups. Needs to be
+        // optimized double pairingThreshold = getPairingThreshold(
+        //     a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
+        // if (dist_sq <= pairingThreshold * pairingThreshold) {
+        // std::cout << "Unhandled potential bond: " << a->getIdx() << " - "
+        //           << b->getIdx() << std::endl;
+        // logAtomInfoIf(a, b, 60115);
+      }
       continue;
-    }
-
-    // if: (1) same chain and (2) same residue and (3) same
-
-    double thresholdB = getElementThreshold(b->getAtomicNum());
-    double thresholdA = getElementThreshold(a->getAtomicNum());
-
-    // these are likely going to be too many lookups. Needs to be optimized
-    double pairingThreshold = getPairingThreshold(
-        a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
-
-    if (dist_sq <= pairingThreshold * pairingThreshold) {
-      // if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
-      //   continue;
-      // }
-      int order =
-          get_intra_bond_order(residueA->getResidueName(), &(residueA->getName()),
-                               &(b->getMonomerInfo()->getName()));
-      mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
     }
   }
 
