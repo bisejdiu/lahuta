@@ -4,16 +4,9 @@
 #include "conv.hpp"   // for gemmiStructureToRDKit
 #include "nsgrid.hpp" // for FastNS
 
-#include <chrono>
-
 #include "bond_order.hpp"
-#include "bond_utils.hpp" // for CleanUpMolecule
 
-#include "bond_table/bonds.hpp"
-#include "bond_table/table.hpp"
-
-#include "kekulize.h"
-
+#include <chrono>
 #include <iostream>
 
 #define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
@@ -41,23 +34,9 @@ int main(int argc, char const *argv[]) {
   std::vector<RDGeom::Point3D> atom_coords = conf->getPositions();
   FastNS grid(atom_coords, cutoff);
   auto results = grid.selfSearch();
-  std::cout << "Done: Computing Neighbors" << results.getNeighborPairsSize()
-            << std::endl;
 
-  // if (!flag_b) {
-  //   perceiveBonds(mol, results, 0.45);
-  //
-  //   mol.updatePropertyCache(false);
-  //   CleanUpMolecule(mol, *conf);
-  //
-  //   PerceiveBondOrders(mol);
-  // }
-
-  auto start = T();
   std::vector<int> non_protein_indices;
   auto newMol = lahutaBondAssignment(mol, results, non_protein_indices);
-  auto end = T();
-  std::cout << "T1" << TO_MS(end - start).count() << "ms" << std::endl;
 
   auto newMolConf = newMol.getConformer();
   newMol.updatePropertyCache(false);
@@ -96,7 +75,7 @@ int main(int argc, char const *argv[]) {
   //   }
   // }
 
-  // std::string bondOrders = "";
+  // std::string bO = "";
   // for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
   //   RDKit::Bond *bond = *bondIt;
   //   auto res1 = mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
@@ -105,16 +84,16 @@ int main(int argc, char const *argv[]) {
   //   AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
   //   AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
   //
-  //   bondOrders += std::to_string(bond->getBeginAtomIdx()) + " " +
-  //                 // res1->getName() + " " + residue1->getResidueName() + " " +
-  //                 // residue1->getAltLoc() + " " +
-  //                 std::to_string(bond->getEndAtomIdx()) + " " +
-  //                 // res2->getName() + " " + residue2->getResidueName() + " " +
-  //                 // residue2->getAltLoc() + " " +
-  //                 std::to_string(bond->getBondType()) + "\n";
+  //   bO += std::to_string(bond->getBeginAtomIdx()) + " " +
+  //         // res1->getName() + " " + residue1->getResidueName() + " " +
+  //         // residue1->getAltLoc() + " " +
+  //         std::to_string(bond->getEndAtomIdx()) + " " +
+  //         // res2->getName() + " " + residue2->getResidueName() + " " +
+  //         // residue2->getAltLoc() + " " +
+  //         std::to_string(bond->getBondType()) + "\n";
   // }
   // std::cout << "FINAL RESULT: " << std::endl;
-  // std::cout << bondOrders << std::endl;
+  // std::cout << bO << std::endl;
 
   return 0;
 }
