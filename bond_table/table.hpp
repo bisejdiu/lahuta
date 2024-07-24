@@ -105,6 +105,7 @@ inline std::unordered_map<int, double> __ElementPairThresholds = {
 
 const double __DefaultBondingRadius = 2.001;
 
+// FIX: not being used
 inline std::vector<std::string> metals = {
     "LI", "NA", "K",  "RB", "CS", "FR", "BE", "MG", "CA", "SR", "BA", "RA",
     "AL", "GA", "IN", "SN", "TL", "PB", "BI", "SC", "TI", "V",  "CR", "MN",
