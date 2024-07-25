@@ -1,4 +1,4 @@
-#include "bonds.hpp"
+#include "bond_table/bonds.hpp"
 
 int get_intra_bond_order(const std::string &comp_id,
                          const std::string *atom_id1,

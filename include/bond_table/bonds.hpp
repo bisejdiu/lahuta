@@ -3,7 +3,7 @@
 
 #include "bond_order_hash.hpp"
 #include "res_name_table.hpp"
-#include "tokens_table.cpp"
+#include "tokens_table.hpp"
 
 #include "GraphMol/Atom.h"
 
