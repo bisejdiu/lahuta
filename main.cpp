@@ -59,24 +59,22 @@ int main(int argc, char const *argv[]) {
     }
   }
 
-  // for (gemmi::Connection &conn : st.connections) {
-  //   // FIX: Need to iterate over all models
-  //   gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
-  //   gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
-  //
-  //   if (mol.getBondBetweenAtoms(a1->serial - 1, a2->serial - 1) == nullptr) {
-  //     // compute distance between the two atoms:
-  //     double dist =
-  //         (atom_coords[a1->serial - 1] - atom_coords[a2->serial -
-  //         1]).length();
-  //     std::cout << "conn pair: " << a1->serial << " " << a2->serial << " "
-  //               << dist << std::endl;
-  //     // mol.addBond((unsigned int)a1->serial - 1, (unsigned int)a2->serial -
-  //     1,
-  //     //             RDKit::Bond::BondType::SINGLE);
-  //     // continue;
-  //   }
-  // }
+  for (gemmi::Connection &conn : st.connections) {
+    // FIX: Need to iterate over all models
+    gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
+    gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
+
+    if (mol.getBondBetweenAtoms(a1->serial - 1, a2->serial - 1) == nullptr) {
+      // compute distance between the two atoms:
+      double dist =
+          (atom_coords[a1->serial - 1] - atom_coords[a2->serial - 1]).length();
+      std::cout << "conn pair: " << a1->serial << " " << a2->serial << " "
+                << dist << std::endl;
+      // mol.addBond((unsigned int)a1->serial - 1, (unsigned int)a2->serial-1,
+      //             RDKit::Bond::BondType::SINGLE);
+      // continue;
+    }
+  }
 
   // std::string bO = "";
   int FirstOrderCount = 0;
@@ -90,25 +88,27 @@ int main(int argc, char const *argv[]) {
       SecondOrderCount++;
     }
 
-  //   auto res1 = mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo();
-  //   auto res2 = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
-  //
-  //   AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo *>(res1);
-  //   AtomPDBResidueInfo *residue2 = dynamic_cast<AtomPDBResidueInfo *>(res2);
-  //
-  //   bO += std::to_string(bond->getBeginAtomIdx()) + " " +
-  //         // res1->getName() + " " + residue1->getResidueName() + " " +
-  //         // residue1->getAltLoc() + " " +
-  //         std::to_string(bond->getEndAtomIdx()) + " " +
-  //         // res2->getName() + " " + residue2->getResidueName() + " " +
-  //         // residue2->getAltLoc() + " " +
-  //         std::to_string(bond->getBondType()) + "\n";
+    //   auto res1 =
+    //   mol.getAtomWithIdx(bond->getBeginAtomIdx())->getMonomerInfo(); auto
+    //   res2 = mol.getAtomWithIdx(bond->getEndAtomIdx())->getMonomerInfo();
+    //
+    //   AtomPDBResidueInfo *residue1 = dynamic_cast<AtomPDBResidueInfo
+    //   *>(res1); AtomPDBResidueInfo *residue2 =
+    //   dynamic_cast<AtomPDBResidueInfo *>(res2);
+    //
+    //   bO += std::to_string(bond->getBeginAtomIdx()) + " " +
+    //         // res1->getName() + " " + residue1->getResidueName() + " " +
+    //         // residue1->getAltLoc() + " " +
+    //         std::to_string(bond->getEndAtomIdx()) + " " +
+    //         // res2->getName() + " " + residue2->getResidueName() + " " +
+    //         // residue2->getAltLoc() + " " +
+    //         std::to_string(bond->getBondType()) + "\n";
   }
   // std::cout << "FINAL RESULT: " << std::endl;
-  // std::cout << bO << std::endl; 
+  // std::cout << bO << std::endl;
   std::cout << "First Order Count: " << FirstOrderCount << std::endl;
   std::cout << "Second Order Count: " << SecondOrderCount << std::endl;
-  
+  std::cout << "Total Bonds: " << mol.getNumBonds() << std::endl;
 
   return 0;
 }
