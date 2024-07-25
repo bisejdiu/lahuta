@@ -1,16 +1,15 @@
 CXX = g++
 CC = gcc
 
-ROOT = /home/bisejdiu/raw_dev/lahuta_cpp/gemmi
 GEMMI = external/gemmi
 
-CXXFLAGS = -DDYNAMIC_CRC_TABLE -Iinclude -I$(GEMMI)/include -Ibond_table -I$(ROOT)/third_party -I$(ROOT)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -O3
+CXXFLAGS = -DDYNAMIC_CRC_TABLE -Iinclude -I$(GEMMI)/include -Ibond_table -I$(GEMMI)/third_party -I$(GEMMI)/third_party/zlib -I$(CONDA_PREFIX)/include/rdkit -O3
 
 LDFLAGS = -L$(CONDA_PREFIX)/lib -Wl,-rpath,$(CONDA_PREFIX)/lib
 LDLIBS =  -lRDKitGraphMol -lRDKitRDGeneral -lRDKitRDGeometryLib -lRDKitSubstructMatch -lRDKitSmilesParse
 
 SRCS = $(wildcard src/*cpp src/bond_table/*.cpp) $(wildcard $(GEMMI)/src/*.cpp) 
-ZLIB_SRCS = $(wildcard $(ROOT)/third_party/zlib/*.c)
+ZLIB_SRCS = $(wildcard $(GEMMI)/third_party/zlib/*.c)
 OBJS = $(SRCS:.cpp=.o) $(ZLIB_SRCS:.c=.o)
 
 TARGET = rk
