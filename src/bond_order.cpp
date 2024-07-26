@@ -380,13 +380,9 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
   //      Currently we have explicit code to do this, but a "bond typer"
   //      is in progress to make it simpler to test and debug.
 
-  auto start4a = std::chrono::high_resolution_clock::now();
+  auto start4 = std::chrono::high_resolution_clock::now();
   OBBondTypeAssignment(mol);
-  auto end4a = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed4a = end4a - start4a;
-  std::cout << "Pass 4a: " << elapsed4a.count() * 1e3 << " ms" << std::endl;
 
-  auto start4b = std::chrono::high_resolution_clock::now();
   std::string carbo("[#8D1;!-][#6](*)(*)");
   RDKit::ROMol *pattern = RDKit::SmartsToMol(carbo);
 
@@ -423,12 +419,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     }
 
   } // Carbonyl oxygen
-  auto end4b = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed4b = end4b - start4b;
-  std::cout << "Pass 4b: " << elapsed4b.count() * 1e3 << " ms" << std::endl;
 
   // thione C=S
-  auto start4c = std::chrono::high_resolution_clock::now();
   std::string thione("[#16D1][#6](*)(*)");
   RDKit::ROMol *pattern2 = RDKit::SmartsToMol(thione);
 
@@ -464,12 +456,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       }
     }
   } // thione
-  auto end4c = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed4c = end4c - start4c;
-  std::cout << "Pass 4c: " << elapsed4c.count() * 1e3 << " ms" << std::endl;
 
   // Isocyanate N=C=O or Isothiocyanate
-  auto start4d = std::chrono::high_resolution_clock::now();
   std::string isocyanate("[#8,#16;D1][#6D2][#7D2]");
   RDKit::ROMol *pattern3 = RDKit::SmartsToMol(isocyanate);
 
@@ -507,12 +495,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       bond2->setBondType(Bond::BondType::DOUBLE);
     }
   } // Isocyanate
-  auto end4d = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed4d = end4d - start4d;
-  std::cout << "Pass 4d: " << elapsed4d.count() * 1e3 << " ms" << std::endl;
 
   // oxime C=S
-  auto start4e = std::chrono::high_resolution_clock::now();
   std::string oxime("[#6D3][#7D2][#8D2]");
   RDKit::ROMol *pattern4 = RDKit::SmartsToMol(oxime);
 
@@ -548,12 +532,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       }
     }
   } // oxime
-  auto end4e = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed4e = end4e - start4e;
-  std::cout << "Pass 4e: " << elapsed4e.count() * 1e3 << " ms" << std::endl;
 
   // oxido-n+ (e.g., pyridine-N-oxide)
-  auto start4f = std::chrono::high_resolution_clock::now();
   std::string oxidopyr("[#8D1][#7D3r6]");
   RDKit::ROMol *pattern5 = RDKit::SmartsToMol(oxidopyr);
 
@@ -575,9 +555,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       a2->setFormalCharge(+1); // nitrogen
     }
   } // oxido-n+
-  auto end4f = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed4f = end4f - start4f;
-  std::cout << "Pass 4f: " << elapsed4f.count() * 1e3 << " ms" << std::endl;
+  auto end4 = std::chrono::high_resolution_clock::now();
+  std::cout << "Pass 4f: " << (end4-start4).count() * 1e3 << " ms" << std::endl;
 
   // Pass 5: Check for aromatic rings and assign bonds as appropriate
   // This is just a quick and dirty approximation that marks everything
