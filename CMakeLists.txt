@@ -3,13 +3,32 @@ project(lahuta VERSION 1.0.0 LANGUAGES CXX C)
 
 # Set C++ standard to C++17
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
+
+# Set the build type if not set
+# if(NOT CMAKE_BUILD_TYPE)
+#     set(CMAKE_BUILD_TYPE Release)
+# endif()
+
+# Set the default install prefix
+# if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+#     set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR}/install CACHE PATH "Install path prefix" FORCE)
+
+include(CheckIncludeFile)
 
 # Add compile definitions
 # add_compile_definitions(DYNAMIC_CRC_TABLE)
 # Define an option
-option(DYNAMIC_CRC_TABLE "DYNAMIC_CRC_TABLE" OFF)
+# option(DYNAMIC_CRC_TABLE "DYNAMIC_CRC_TABLE" OFF)
+add_compile_definitions(DYNAMIC_CRC_TABLE)
+add_compile_definitions(NO_GZCOMPRESS)
+check_include_file("unistd.h" have_unistd_h)
+if(have_unistd_h)
+    add_compile_definitions(Z_HAVE_UNISTD_H)
+endif()
 
 
 # Set default RDKit_ROOT if not provided
@@ -49,11 +68,13 @@ file(GLOB_RECURSE SOURCES
     "src/bond_table/*.cpp"
     "external/ob/*.cpp"
     "external/gemmi/src/*.cpp"
+)
+file(GLOB_RECURSE C_SOURCES
     "external/gemmi/third_party/zlib/*.c"
 )
 
 # Create the executable
-add_executable(${PROJECT_NAME} main.cpp ${SOURCES})
+add_executable(${PROJECT_NAME} main.cpp ${SOURCES} ${C_SOURCES})
 
 # Check the option and add the definition for the target
 if (DYNAMIC_CRC_TABLE)
