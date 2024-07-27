@@ -1,5 +1,6 @@
-#include <gemmi/mmread_gz.hpp> // for read_structure_gz
+#include <memory>
 #include "lahuta.hpp"
+#include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 #include <chrono>
 #include <iostream>
@@ -18,27 +19,19 @@ int main(int argc, char const *argv[]) {
   }
   std::string file_name = argv[1];
 
-  auto prog_start = T();
   auto load_start = T();
   Structure st = read_structure_gz(file_name);
   auto load_end = T();
   std::cout << "Done: Loading structure" << std::endl;
-  std::cout << "perf: " << TO_MS(load_end - load_start).count() << "ms"
-            << std::endl;
+  std::cout << "perf: " << TO_MS(load_end - load_start).count() << "ms" << std::endl;
 
-  // Lahuta lahuta(st);
-  // RDKit::RWMol mol = lahuta.getMol();
-  RDKit::RWMol mol;
-  std::cout << "1\n";
-  auto source = MolecularStructure::GemmiStructureSource(mol);
-  source.process(st);
-  std::cout << "2\n";
-  MolecularStructure::MoleculeProcessor processor(source);
-  std::cout << "3\n";
-  processor.processStructure(mol);
-  std::cout << "4\n";
-  // RDKit::RWMol &mol = processor.getMolecule();
-  std::cout << "Done: Processing structure" << std::endl;
+  std::unique_ptr<RDKit::RWMol> mol = std::make_unique<RDKit::RWMol>();
+  auto luni = Lahuta::GemmiSource(mol.get());
+  luni.process(st);
+  Lahuta::MoleculeProcessor processor(luni);
+  processor.processStructure(mol.get());
+
+  // std::unique_ptr<RDKit::RWMol> xmol = std::make_unique<RDKit::RWMol>(mol);
 
   // for (gemmi::Connection &conn : st.connections) {
   //   // FIX: Need to iterate over all models
@@ -62,7 +55,7 @@ int main(int argc, char const *argv[]) {
   // std::string bO = "";
   int FirstOrderCount = 0;
   int SecondOrderCount = 0;
-  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
+  for (auto bondIt = mol->beginBonds(); bondIt != mol->endBonds(); ++bondIt) {
     RDKit::Bond *bond = *bondIt;
 
     if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
@@ -91,10 +84,10 @@ int main(int argc, char const *argv[]) {
   // std::cout << bO << std::endl;
   std::cout << "First Order Count: " << FirstOrderCount << std::endl;
   std::cout << "Second Order Count: " << SecondOrderCount << std::endl;
-  std::cout << "Total Bonds: " << mol.getNumBonds() << std::endl;
+  std::cout << "Total Bonds: " << mol->getNumBonds() << std::endl;
 
   auto prog_end = T();
-  std::cout << "Total Time: " << TO_MS(prog_end - prog_start).count() << "ms"
+  std::cout << "Total Time: " << TO_MS(prog_end - load_start).count() << "ms"
             << std::endl;
 
   return 0;
