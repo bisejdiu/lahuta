@@ -1,9 +1,8 @@
-#include <gemmi/mmread_gz.hpp> // for read_structure_gz
 #include "lahuta.hpp"
+#include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 #include <chrono>
 #include <iostream>
-
 
 #define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
 #define T() std::chrono::high_resolution_clock::now()
@@ -27,8 +26,19 @@ int main(int argc, char const *argv[]) {
   std::cout << "perf: " << TO_MS(load_end - load_start).count() << "ms"
             << std::endl;
 
-  Lahuta lahuta(st);
-  RDKit::RWMol mol = lahuta.getMol();
+  // Lahuta lahuta(st);
+  // RDKit::RWMol mol = lahuta.getMol();
+  RDKit::RWMol mol;
+  std::cout << "1\n";
+  auto source = MolecularStructure::GemmiStructureSource(mol);
+  source.process(st);
+  std::cout << "2\n";
+  MolecularStructure::MoleculeProcessor processor(source);
+  std::cout << "3\n";
+  processor.processStructure(mol);
+  std::cout << "4\n";
+  // RDKit::RWMol &mol = processor.getMolecule();
+  std::cout << "Done: Processing structure" << std::endl;
 
   // for (gemmi::Connection &conn : st.connections) {
   //   // FIX: Need to iterate over all models
@@ -38,10 +48,12 @@ int main(int argc, char const *argv[]) {
   //   if (mol.getBondBetweenAtoms(a1->serial - 1, a2->serial - 1) == nullptr) {
   //     // compute distance between the two atoms:
   //     double dist =
-  //         (atom_coords[a1->serial - 1] - atom_coords[a2->serial - 1]).length();
+  //         (atom_coords[a1->serial - 1] - atom_coords[a2->serial -
+  //         1]).length();
   //     std::cout << "conn pair: " << a1->serial << " " << a2->serial << " "
   //               << dist << std::endl;
-  //     // mol.addBond((unsigned int)a1->serial - 1, (unsigned int)a2->serial-1,
+  //     // mol.addBond((unsigned int)a1->serial - 1, (unsigned
+  //     int)a2->serial-1,
   //     //             RDKit::Bond::BondType::SINGLE);
   //     // continue;
   //   }

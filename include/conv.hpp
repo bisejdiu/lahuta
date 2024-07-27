@@ -5,7 +5,7 @@
 
 using namespace gemmi;
 
-RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
+void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Conformer &conf,
                                    bool ign_h = true);
 
 RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol,

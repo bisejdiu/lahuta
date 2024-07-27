@@ -9,10 +9,10 @@
 #include "GraphMol/MonomerInfo.h"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \
-  for (Model & model : st.models)                                              \
-    for (Chain & chain : model.chains)                                         \
-      for (Residue & res : chain.residues)                                     \
-        for (Atom & atom : res.atoms)
+  for (const Model & model : st.models)                                              \
+    for (const Chain & chain : model.chains)                                         \
+      for (const Residue & res : chain.residues)                                     \
+        for (const Atom & atom : res.atoms)
 
 using namespace gemmi;
 
@@ -103,10 +103,10 @@ using namespace gemmi;
 //   }
 // }
 
-RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
+void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Conformer &conf,
                                    bool ign_h) {
 
-  RDKit::RWMol mol;
+  // RDKit::RWMol mol;
 
   int aIx = 0;
   ITER_GEMMI_ATOMS(st, atom) {
@@ -159,7 +159,6 @@ RDKit::RWMol gemmiStructureToRDKit(Structure st, RDKit::Conformer &conf,
     aIx += 1;
   }
 
-  return mol;
 }
 
 

@@ -1,5 +1,5 @@
-#include "GraphMol/MonomerInfo.h"
 #include "bonds.hpp"
+#include "GraphMol/MonomerInfo.h"
 #include "conv.hpp"
 #include "nsgrid.hpp"
 
@@ -7,7 +7,6 @@
 
 #include "bond_table/bonds.hpp"
 #include "bond_table/table.hpp"
-#include <valgrind/callgrind.h>
 
 using namespace gemmi;
 
@@ -172,9 +171,6 @@ void logAtomInfoIf(RDKit::Atom *a, RDKit::Atom *b, int idx) {
 RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
                                   std::vector<int> &non_protein_indices) {
 
-
-  CALLGRIND_START_INSTRUMENTATION;
-
   std::vector<std::pair<int, int>> bonds;
 
   // std::cout << "1\n";
@@ -190,7 +186,7 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
     auto aIsProtein = getToken(infoA->getResidueName());
     auto bIsProtein = getToken(infoB->getResidueName());
 
-    // most likely both atoms are protein atoms
+    // most likely both atoms are protein atoms, so this check is first
     if (aIsProtein && bIsProtein) {
       if (!is_same_conformer(infoA->getAltLoc(), infoB->getAltLoc())) {
         continue;
@@ -199,14 +195,13 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       double thresholdB = getElementThreshold(b->getAtomicNum());
       double thresholdA = getElementThreshold(a->getAtomicNum());
 
-      // these are likely going to be too many lookups. Needs to be optimized
+      // FIX: these are likely going to be too many lookups. Needs to be optimized
       double pairingThreshold = getPairingThreshold(
           a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
       if (dist_sq <= pairingThreshold * pairingThreshold) {
-        // if (mol.getBondBetweenAtoms(a->getIdx(), b->getIdx()) != nullptr) {
-        //   continue;
-        // }
+        // NOTE: we do not need to check if the bond already exists, since 
+        // the neighbor indices are guaranteed to be unique
         int order =
             get_intra_bond_order(infoA->getResidueName(), &(infoA->getName()),
                                  &(b->getMonomerInfo()->getName()));
@@ -217,28 +212,18 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       non_protein_indices.push_back(a->getIdx());
       non_protein_indices.push_back(b->getIdx());
       if (connectOBMol(a, b, dist_sq, 0.45)) {
-        // logAtomInfoIf(a, b, 60115);
         bonds.emplace_back(a->getIdx(), b->getIdx());
       }
       continue;
     } else {
-      // logAtomInfoIf(a, b, 60115);
-      if (connectOBMol(a, b, dist_sq, 0.45)) {
-        // double thresholdB = getElementThreshold(b->getAtomicNum());
-        // double thresholdA = getElementThreshold(a->getAtomicNum());
-        //
-        // // these are likely going to be too many lookups. Needs to be
-        // optimized double pairingThreshold = getPairingThreshold(
-        //     a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
-        // if (dist_sq <= pairingThreshold * pairingThreshold) {
-        // std::cout << "Unhandled potential bond: " << a->getIdx() << " - "
-        //           << b->getIdx() << std::endl;
-        // logAtomInfoIf(a, b, 60115);
-      }
+      if (connectOBMol(a, b, dist_sq, 0.45)) {}
       continue;
     }
   }
 
+  // Here we have all the non-protein atoms in the molecule, we need to sort
+  // them and remove duplicates, so we can create a new molecule with the
+  // correct indices
   std::sort(non_protein_indices.begin(), non_protein_indices.end());
   non_protein_indices.erase(
       std::unique(non_protein_indices.begin(), non_protein_indices.end()),
@@ -267,7 +252,6 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       }
     }
   }
-  CALLGRIND_STOP_INSTRUMENTATION;
   // std::cout << "4\n";
 
   return newMol;
