@@ -2,14 +2,13 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
 
+#include "ob/elements.h"
+#include "ob/kekulize.h"
+#include "ob/bond_utils.hpp"
+
 #include "bonds.hpp"
 #include "conv.hpp"
-
 #include "bond_order.hpp"
-#include "bond_utils.hpp"
-
-#include "elements.h"
-#include "kekulize.h"
 
 #include <chrono>
 #include <iostream>

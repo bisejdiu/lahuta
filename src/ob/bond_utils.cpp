@@ -4,8 +4,8 @@
 #include "GraphMol/RDKitBase.h"
 #include "GraphMol/RWMol.h"
 
-#include "elements.h"
-#include "bond_utils.hpp"
+#include "external/ob/elements.h"
+#include "ob/bond_utils.hpp"
 
 double computeLengthSq(const RDKit::Conformer &conf, const RDKit::Bond *bond) {
   auto a1Pos = conf.getAtomPos(bond->getBeginAtomIdx());

@@ -1,9 +1,9 @@
-#include "bonds.hpp"
 #include "GraphMol/MonomerInfo.h"
+#include "bonds.hpp"
 #include "conv.hpp"
 #include "nsgrid.hpp"
 
-#include "elements.h"
+#include "external/ob/elements.h"
 
 #include "bond_table/bonds.hpp"
 #include "bond_table/table.hpp"

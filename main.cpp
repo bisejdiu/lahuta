@@ -1,5 +1,5 @@
-#include "lahuta.hpp"
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
+#include "lahuta.hpp"
 
 #include <chrono>
 #include <iostream>

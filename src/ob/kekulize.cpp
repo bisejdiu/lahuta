@@ -20,8 +20,8 @@ GNU General Public License for more details.
 #include "GraphMol/Bond.h"
 #include "GraphMol/RWMol.h"
 
-#include "bitvec.h"
-#include "kekulize.h"
+#include "external/ob/bitvec.h"
+#include "ob/kekulize.h"
 #include <cstdlib>
 #include <cstring>
 

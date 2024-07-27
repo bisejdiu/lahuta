@@ -7,7 +7,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Add compile definitions
-add_compile_definitions(DYNAMIC_CRC_TABLE)
+# add_compile_definitions(DYNAMIC_CRC_TABLE)
+# Define an option
+option(DYNAMIC_CRC_TABLE "DYNAMIC_CRC_TABLE" OFF)
+
 
 # Set default RDKit_ROOT if not provided
 if(NOT DEFINED RDKit_ROOT)
@@ -28,8 +31,10 @@ find_package(RDKit REQUIRED)
 # Set include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
     ${CMAKE_CURRENT_SOURCE_DIR}/bond_table
+    ${CMAKE_CURRENT_SOURCE_DIR}/ob
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
     ${RDKit_INCLUDE_DIRS}
@@ -40,13 +45,24 @@ include_directories(
 # Collect source files
 file(GLOB_RECURSE SOURCES
     "src/*.cpp"
+    "src/ob/*.cpp"
     "src/bond_table/*.cpp"
+    "external/ob/*.cpp"
     "external/gemmi/src/*.cpp"
     "external/gemmi/third_party/zlib/*.c"
 )
 
 # Create the executable
 add_executable(${PROJECT_NAME} main.cpp ${SOURCES})
+
+# Check the option and add the definition for the target
+if (DYNAMIC_CRC_TABLE)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DYNAMIC_CRC_TABLE)
+    message(STATUS "DYNAMIC_CRC_TABLE is defined")
+else()
+    message(STATUS "DYNAMIC_CRC_TABLE is not defined")
+endif()
+
 
 # Set compile options
 target_compile_options(${PROJECT_NAME} PRIVATE -O3)
