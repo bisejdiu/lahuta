@@ -2,16 +2,13 @@
 #include <GraphMol/SmilesParse/SmilesParse.h>
 #include <GraphMol/Substruct/SubstructMatch.h>
 
+#include "ob/bond_utils.hpp"
 #include "ob/elements.h"
 #include "ob/kekulize.h"
-#include "ob/bond_utils.hpp"
 
+#include "bond_order.hpp"
 #include "bonds.hpp"
 #include "conv.hpp"
-#include "bond_order.hpp"
-
-#include <chrono>
-#include <iostream>
 
 using namespace gemmi;
 using namespace RDKit;
@@ -89,13 +86,6 @@ void OBBondTypeAssignment(RDKit::ROMol &mol) {
     params.maxMatches = 100000000;
     std::vector<RDKit::MatchVectType> matchList;
     matchList = RDKit::SubstructMatch(mol, *pattern, params);
-
-    // debug:
-    // if (matchList.size() != 0) {
-    //   std::cout << "Match Success with: " << smarts << " " <<
-    //   matchList.size()
-    //             << std::endl;
-    // }
 
     for (const auto &match : matchList) {
       for (auto j = 0; j < bondVector.size(); j += 3) {
@@ -199,17 +189,11 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     atom->setHybridization(HybridizationType::SP);
   }
 
-  auto start = std::chrono::high_resolution_clock::now();
   SubstructMatchParameters params;
   // params.maxMatches = 500; // 00000;
   // params.numThreads = 1;
   RDKitSmartsMatch(mol, params);
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = end - start;
-  std::cout << "Time to match SMARTS pattern: " << elapsed.count() * 1000
-            << " ms" << std::endl;
 
-  auto start1 = std::chrono::high_resolution_clock::now();
   // Pass 1: Assign estimated hybridization based on average bond angles
   // taken from AtomIsInRing
   auto ringInfo = mol.getRingInfo();
@@ -239,17 +223,12 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     } // pass 1
     //
   }
-  auto end1 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed1 = end1 - start1;
-  std::cout << "Pass 1: " << elapsed1.count() * 1e3 << " ms" << std::endl;
 
   // Pass 2: look for 5-memmbered rings with torsions <= 7.5 degrees
   //         and 6-membered rings with torsions <= 12 degrees
   //         (set all atoms with at least two bonds to sp2)
 
-  auto start2 = std::chrono::high_resolution_clock::now();
   if (!mol.getRingInfo()->isInitialized()) {
-    std::cout << "SSSR not initialized" << std::endl;
     RDKit::MolOps::findSSSR(mol);
   }
 
@@ -334,9 +313,6 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       }
     }
   }
-  auto end2 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed2 = end2 - start2;
-  std::cout << "Pass 2: " << elapsed2.count() * 1e3 << " ms" << std::endl;
 
   // Pass 3: "Antialiasing" If an atom marked as sp hybrid isn't
   //          bonded to another or an sp2 hybrid isn't bonded
@@ -345,7 +321,6 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
 
   // NOTE: Hybridization assignment for all atoms is done before function is
   // called
-  auto start3 = std::chrono::high_resolution_clock::now();
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     RDKit::Atom *atom = *atomIt;
     if (atom->getHybridization() == HybridizationType::SP ||
@@ -370,16 +345,12 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     }
   }
   // pass 3
-  auto end3 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed3 = end3 - start3;
-  std::cout << "Pass 3: " << elapsed3.count() * 1e3 << " ms" << std::endl;
 
   // Pass 4: Check for known functional group patterns and assign bonds
   //         to the canonical form
   //      Currently we have explicit code to do this, but a "bond typer"
   //      is in progress to make it simpler to test and debug.
 
-  auto start4 = std::chrono::high_resolution_clock::now();
   OBBondTypeAssignment(mol);
 
   std::string carbo("[#8D1;!-][#6](*)(*)");
@@ -554,8 +525,6 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       a2->setFormalCharge(+1); // nitrogen
     }
   } // oxido-n+
-  auto end4 = std::chrono::high_resolution_clock::now();
-  std::cout << "Pass 4f: " << (end4-start4).count() * 1e3 << " ms" << std::endl;
 
   // Pass 5: Check for aromatic rings and assign bonds as appropriate
   // This is just a quick and dirty approximation that marks everything
@@ -566,7 +535,6 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
   //  which would "break ties" on complicated multi-ring systems
   // (Most of the current problems lie in the interface with the
   //   Kekulize code anyway, not in marking everything as potentially aromatic)
-  auto start5 = std::chrono::high_resolution_clock::now();
   bool needs_kekulization = false;
   bool typed = false;
   unsigned int loopSize;
@@ -617,7 +585,4 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     }
     bool ok = OBKekulize(&mol);
   }
-  auto end5 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed5 = end5 - start5;
-  std::cout << "Pass 5: " << elapsed5.count() * 1e3 << " ms" << std::endl;
 }

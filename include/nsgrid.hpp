@@ -23,6 +23,8 @@ struct NSResults {
   const NeighborPairs &getNeighbors() const { return neighbor_pairs; }
 
   size_t getNeighborPairsSize() const { return neighbor_pairs.size(); }
+
+  NSResults filterByDistance(float dist) const;
 };
 
 class FastNS {

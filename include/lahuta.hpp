@@ -2,16 +2,17 @@
 #include "bonds.hpp"
 #include "conv.hpp"
 #include "nsgrid.hpp"
+#include <optional>
 #include <vector>
 
 namespace Lahuta {
 
 class ISource {
 public:
+  // FIX: RDKit provides ROMol and RWMol 
   virtual RDKit::RWMol &getMolecule() = 0;
   virtual const RDKit::RWMol &getMolecule() const = 0;
-  virtual RDKit::Conformer &getConformer() = 0;
-  virtual const RDKit::Conformer &getConformer() const = 0;
+  virtual RDKit::Conformer &getConformer(int id = -1) = 0;
   virtual ~ISource() = default;
 
   virtual void process(const gemmi::Structure &st) = 0;
@@ -19,44 +20,24 @@ public:
 
 class GemmiSource : public ISource {
 private:
-  // std::shared_ptr<RDKit::RWMol> mol;
-  RDKit::RWMol *mol;
+  std::unique_ptr<RDKit::RWMol> mol = std::make_unique<RDKit::RWMol>();
 
 public:
-  explicit GemmiSource(RDKit::RWMol *mol) : mol(mol) {}
+  explicit GemmiSource() = default;
 
   void process(const gemmi::Structure &st) override {
     RDKit::Conformer *conformer = new RDKit::Conformer();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
-    std::cout << "NUmber of coordinates: " << conformer->getPositions().size()
-              << std::endl;
     mol->addConformer(conformer, true);
-    std::cout << "xx Number of coordinates: \n";
-    std::cout << mol->getConformer().getPositions().size() << std::endl;
   }
 
   RDKit::RWMol &getMolecule() override { return *mol; }
-
   const RDKit::RWMol &getMolecule() const override { return *mol; }
 
-  RDKit::Conformer &getConformer() override { return mol->getConformer(); }
-
-  const RDKit::Conformer &getConformer() const override {
-    return mol->getConformer();
+  RDKit::Conformer &getConformer(int id = -1) override {
+    return mol->getConformer(id);
   }
-};
 
-class NeighborSearch {
-private:
-  double cutoff;
-
-public:
-  explicit NeighborSearch(double cut = 4.5) : cutoff(cut) {}
-
-  NSResults findNeighbors(const std::vector<RDGeom::Point3D> &coords) const {
-    FastNS grid(coords, cutoff);
-    return grid.selfSearch();
-  }
 };
 
 class BondComputation {
@@ -111,42 +92,48 @@ public:
   }
 };
 
-class MoleculeProcessor {
+class Luni {
 private:
-  ISource &moleculeSource;
-  NeighborSearch neighborSearch;
-  // RDKit::RWMol &molecule;
-  std::vector<RDGeom::Point3D> atomCoords;
+  ISource &source;
   NSResults neighborResults;
+  double _cutoff;
 
 public:
-  explicit MoleculeProcessor(ISource &source, double cutoff = 4.5)
-      : moleculeSource(source), neighborSearch(cutoff) {
-    initializeMolecule();
+  explicit Luni(ISource &source) : source(source), _cutoff(4.5) {
+    initAndCompBonds();
   }
 
-  void initializeMolecule() {
-    // molecule = moleculeSource.getMolecule();
-    std::cout << "Processing molecule..." << std::endl;
-    std::cout << "Num atoms: " << moleculeSource.getMolecule().getNumAtoms()
-              << std::endl;
-    const auto &conf = moleculeSource.getConformer();
-    std::cout << "-> Number of coordinates: \n";
-    std::cout << conf.getPositions().size() << std::endl;
-    atomCoords = conf.getPositions();
-    neighborResults = neighborSearch.findNeighbors(atomCoords);
+  void initAndCompBonds() {
+    const auto &conf = source.getConformer();
+    FastNS grid(conf.getPositions(), _cutoff);
+    neighborResults = grid.selfSearch();
+    BondComputation::computeBonds(source.getMolecule(), neighborResults);
   }
 
-  void processStructure(RDKit::RWMol *molecule) {
-    BondComputation::computeBonds(*molecule, neighborResults);
-  }
-
-  // RDKit::RWMol& getMolecule() { return molecule; }
-  // const RDKit::RWMol& getMolecule() const { return molecule; }
-  const std::vector<RDGeom::Point3D> &getAtomCoords() const {
-    return atomCoords;
+  RDKit::RWMol &getMolecule() { return source.getMolecule(); }
+  const RDKit::RWMol &getMolecule() const { return source.getMolecule(); }
+  const std::vector<RDGeom::Point3D> &getPositions() const {
+    return source.getConformer().getPositions();
   }
   const NSResults &getNeighborResults() const { return neighborResults; }
+  double getCutoff() const { return _cutoff; }
+
+  void setNeighborResults(const NSResults &results) {
+    neighborResults = results;
+  }
+
+  NSResults findNeighbors(std::optional<double> cutoff) const {
+    auto value = cutoff.value_or(_cutoff);
+
+    if (value == _cutoff) {
+      return neighborResults;
+    } else if (value < _cutoff) {
+      return neighborResults.filterByDistance(value);
+    }
+
+    FastNS grid(getPositions(), value);
+    return grid.selfSearch();
+  }
 };
 
 } // namespace Lahuta

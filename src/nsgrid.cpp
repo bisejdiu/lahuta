@@ -218,6 +218,17 @@ void NSResults::reserveSpace(size_t input_size) {
   distances.reserve(input_size);
 }
 
+NSResults NSResults::filterByDistance(float dist) const {
+  NSResults filtered; // we'll not reserve space 
+  for (size_t i = 0; i < distances.size(); ++i) {
+    if (distances[i] >= dist) {
+      filtered.addNeighbors(neighbor_pairs[i].first, neighbor_pairs[i].second,
+                            distances[i]);
+    }
+  }
+  return filtered;
+}
+
 void transformCoords(std::vector<RDGeom::Point3D> &coords,
                      std::array<float, kDIMENSIONS> &pseudobox) {
 
