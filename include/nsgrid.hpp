@@ -29,7 +29,9 @@ struct NSResults {
 
 class FastNS {
 public:
-  FastNS(const RDGeom::POINT3D_VECT &coords, const float cutoff);
+
+  FastNS() = default;
+  FastNS(const RDGeom::POINT3D_VECT &coords, float cutoff);
 
   NSResults selfSearch() const;
 

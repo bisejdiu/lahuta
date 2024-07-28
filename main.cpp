@@ -35,22 +35,19 @@ int main(int argc, char const *argv[]) {
 
   auto r = luni.getNeighborResults();
   auto neighbors = r.getNeighbors();
-  for (size_t i = 0; i <= 50; ++i) {
-    std::cout << neighbors[i].first << " " << neighbors[i].second << " "
-              << r.distances[i] << std::endl;
-  }
+
   // float new_cutoff = 3.0;
-  // auto r = luni.getNeighborResults().filterByDistance(new_cutoff);
+  // r = luni.getNeighborResults().filterByDistance(new_cutoff);
   // std::cout << "Updated cutoff NP size: " << r.getNeighborPairsSize()
   //           << std::endl;
-
+  //
   // float big_cutoff = 10.0;
-  // auto r = luni.getNeighborResults().filterByDistance(big_cutoff);
+  // r = luni.getNeighborResults().filterByDistance(big_cutoff);
   // std::cout << "filter (should be zero?): " << r.getNeighborPairsSize() << std::endl;
   //
   // r = luni.findNeighbors(big_cutoff);
   // std::cout << "Big cutoff NP size recomp: " << r.getNeighborPairsSize() << std::endl;
-  // auto neighbors = r.getNeighbors();
+  // neighbors = r.getNeighbors();
   // for (size_t i = 0; i <= 10; ++i) {
   //   std::cout << neighbors[i].first << " " << neighbors[i].second << " "
   //             << r.distances[i] << std::endl;

@@ -9,7 +9,7 @@ namespace Lahuta {
 
 class ISource {
 public:
-  // FIX: RDKit provides ROMol and RWMol 
+  // FIX: RDKit provides ROMol and RWMol
   virtual RDKit::RWMol &getMolecule() = 0;
   virtual const RDKit::RWMol &getMolecule() const = 0;
   virtual RDKit::Conformer &getConformer(int id = -1) = 0;
@@ -37,7 +37,6 @@ public:
   RDKit::Conformer &getConformer(int id = -1) override {
     return mol->getConformer(id);
   }
-
 };
 
 class BondComputation {
@@ -97,6 +96,7 @@ private:
   ISource &source;
   NSResults neighborResults;
   float _cutoff;
+  FastNS grid;
 
 public:
   explicit Luni(ISource &source) : source(source), _cutoff(4.5) {
@@ -105,16 +105,15 @@ public:
 
   void initAndCompBonds() {
     const auto &conf = source.getConformer();
-    FastNS grid(conf.getPositions(), _cutoff);
+    grid = FastNS(conf.getPositions(), _cutoff);
     neighborResults = grid.selfSearch();
     BondComputation::computeBonds(source.getMolecule(), neighborResults);
   }
 
   RDKit::RWMol &getMolecule() { return source.getMolecule(); }
   const RDKit::RWMol &getMolecule() const { return source.getMolecule(); }
-  const std::vector<RDGeom::Point3D> &getPositions() const {
-    // FIX: provide conf id
-    return source.getConformer().getPositions();
+  const std::vector<RDGeom::Point3D> &getPositions(int confId = -1) const {
+    return source.getConformer(confId).getPositions();
   }
   const NSResults &getNeighborResults() const { return neighborResults; }
   double getCutoff() const { return _cutoff; }
@@ -123,7 +122,7 @@ public:
     neighborResults = results;
   }
 
-  NSResults findNeighbors(std::optional<double> cutoff) const {
+  NSResults findNeighbors(std::optional<double> cutoff) {
     auto value = cutoff.value_or(_cutoff);
 
     if (value == _cutoff) {
@@ -132,7 +131,7 @@ public:
       return neighborResults.filterByDistance(value);
     }
 
-    FastNS grid(getPositions(), value);
+    grid.updateCutoff(value);
     return grid.selfSearch();
   }
 };
