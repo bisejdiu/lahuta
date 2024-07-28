@@ -33,6 +33,7 @@ constexpr std::array<std::array<int, kDIMENSIONS>, 13> neighborCells = {
 FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, const float cutoff)
     : cutoff(cutoff) {
 
+  std::cout << "Creating FastNS with cutoff: " << cutoff << std::endl;
   std::array<float, kDIMENSIONS> pbox = {0.0f, 0.0f, 0.0f};
   std::vector<RDGeom::Point3D> _coords(coords);
   transformCoords(_coords, pbox);
@@ -219,6 +220,7 @@ void NSResults::reserveSpace(size_t input_size) {
 }
 
 NSResults NSResults::filterByDistance(float dist) const {
+  std::cout << "Filtering by distance: " << dist << std::endl;
   NSResults filtered; // we'll not reserve space 
   for (size_t i = 0; i < distances.size(); ++i) {
     if (distances[i] >= dist) {

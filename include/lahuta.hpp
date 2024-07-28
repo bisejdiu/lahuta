@@ -96,7 +96,7 @@ class Luni {
 private:
   ISource &source;
   NSResults neighborResults;
-  double _cutoff;
+  float _cutoff;
 
 public:
   explicit Luni(ISource &source) : source(source), _cutoff(4.5) {
@@ -113,6 +113,7 @@ public:
   RDKit::RWMol &getMolecule() { return source.getMolecule(); }
   const RDKit::RWMol &getMolecule() const { return source.getMolecule(); }
   const std::vector<RDGeom::Point3D> &getPositions() const {
+    // FIX: provide conf id
     return source.getConformer().getPositions();
   }
   const NSResults &getNeighborResults() const { return neighborResults; }
