@@ -150,8 +150,8 @@ set_target_properties(lahuta_cpp PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 
-add_executable(lxahuta_cpp main.cpp)
-target_link_libraries(lxahuta_cpp PRIVATE lahuta_cpp)
+add_executable(lahuta main.cpp)
+target_link_libraries(lahuta PRIVATE lahuta_cpp)
 
 
 # FIX: test the different paths
@@ -204,16 +204,15 @@ if (USE_PYTHON)
     find_package(pybind11 2.6 CONFIG REQUIRED)
     message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
   endif()
-  pybind11_add_module(lahuta_py
-          python/lahuta.cpp)
+  pybind11_add_module(lahuta_py python/lahuta.cpp)
   if (STANDALONE_PYTHON_MODULE)
     target_sources(lahuta_py PRIVATE $<TARGET_OBJECTS:lahuta_cpp>)
     get_target_property(_lahuta_libs lahuta_cpp LINK_LIBRARIES)
     set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_libs})
   else()
-    target_link_libraries(lahuta_py PRIVATE lahuta)
+    target_link_libraries(lahuta_py PRIVATE _lahuta)
   endif()
-  set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME lahuta)
+  set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
     target_compile_options(lahuta_py PRIVATE "-Wno-shadow")
   endif()
@@ -273,66 +272,3 @@ if (USE_PYTHON)
   endif()
 endif()
 
-
-
-# Set include directories
-# include_directories(
-#     ${CMAKE_CURRENT_SOURCE_DIR}/include
-#     ${CMAKE_CURRENT_SOURCE_DIR}/bond_table
-#     ${CMAKE_CURRENT_SOURCE_DIR}/ob
-#     ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
-#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
-#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
-#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
-#     ${RDKit_INCLUDE_DIRS}
-#     ${RDKit_ROOT}/include
-#     ${EIGEN3_INCLUDE_DIR}
-# )
-#
-# # Collect source files
-# file(GLOB_RECURSE SOURCES
-#     "src/*.cpp"
-#     "src/ob/*.cpp"
-#     "src/bond_table/*.cpp"
-#     "external/ob/*.cpp"
-#     "external/gemmi/src/*.cpp"
-# )
-# file(GLOB_RECURSE C_SOURCES
-#     "external/gemmi/third_party/zlib/*.c"
-# )
-#
-# # Create the executable
-# add_executable(${PROJECT_NAME} main.cpp ${SOURCES} ${C_SOURCES})
-#
-# # Check the option and add the definition for the target
-# if (DYNAMIC_CRC_TABLE)
-#     target_compile_definitions(${PROJECT_NAME} PRIVATE DYNAMIC_CRC_TABLE)
-#     message(STATUS "DYNAMIC_CRC_TABLE is defined")
-# else()
-#     message(STATUS "DYNAMIC_CRC_TABLE is not defined")
-# endif()
-#
-#
-# # Set compile options
-# target_compile_options(${PROJECT_NAME} PRIVATE -O3)
-#
-# Link libraries
-# target_link_libraries(${PROJECT_NAME} PRIVATE
-# target_link_libraries(lahuta_cpp PRIVATE
-#     $ENV{CONDA_PREFIX}/lib/libRDKitGraphMol.so
-#     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeneral.so
-#     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeometryLib.so
-#     $ENV{CONDA_PREFIX}/lib/libRDKitSubstructMatch.so
-#     $ENV{CONDA_PREFIX}/lib/libRDKitSmilesParse.so
-# )
-
-# Set RPATH for shared libraries
-# set_target_properties(lahuta_cpp PROPERTIES
-#     INSTALL_RPATH "${RDKit_ROOT}/lib"
-#     BUILD_WITH_INSTALL_RPATH TRUE
-# )
-#
-# # Install target
-# install(TARGETS lahuta_cpp
-#     RUNTIME DESTINATION bin
-# )

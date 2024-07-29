@@ -53,7 +53,7 @@ void test_lahuta(py::module &LT) {
 }
 
 
-PYBIND11_MODULE(lahuta, m) {
+PYBIND11_MODULE(_lahuta, m) {
   m.doc() = "Lahuta: A Python binding for the Lahuta library";
   test_lahuta(m);
 }
