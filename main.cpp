@@ -18,16 +18,17 @@ int main(int argc, char const *argv[]) {
   }
   std::string file_name = argv[1];
 
-  auto load_start = T();
-  Structure st = read_structure_gz(file_name);
-  auto loadTime = TO_MS(T() - load_start).count();
-  std::cout << "Load: " << loadTime << "ms" << std::endl;
+  // auto load_start = T();
+  // Structure st = read_structure_gz(file_name);
+  // auto loadTime = TO_MS(T() - load_start).count();
+  // std::cout << "Load: " << loadTime << "ms" << std::endl;
 
   // Current API
-  auto source = Lahuta::GemmiSource();
-  source.process(st);
+  // auto source = Lahuta::GemmiSource();
+  // source.process(file_name);
 
-  Lahuta::Luni luni(source);
+  // Lahuta::Luni luni(source);
+  Lahuta::Luni luni(file_name);
 
   // FIX: replace getNeighborPairsSize with just Size()
   std::cout << "Neighbors: " << luni.getNeighborResults().getNeighborPairsSize()

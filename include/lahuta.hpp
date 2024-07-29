@@ -4,6 +4,7 @@
 #include "nsgrid.hpp"
 #include <optional>
 #include <vector>
+#include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 namespace Lahuta {
 
@@ -15,18 +16,26 @@ public:
   virtual RDKit::Conformer &getConformer(int id = -1) = 0;
   virtual ~ISource() = default;
 
-  virtual void process(const gemmi::Structure &st) = 0;
+  // virtual void process(const gemmi::Structure &st) = 0;
+  virtual void process(std::string file_name) = 0;
 };
 
 class GemmiSource : public ISource {
 private:
-  std::unique_ptr<RDKit::RWMol> mol = std::make_unique<RDKit::RWMol>();
+  std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
 
 public:
   explicit GemmiSource() = default;
 
-  void process(const gemmi::Structure &st) override {
+  // copy constructor
+  GemmiSource(const GemmiSource &source) {
+    mol = std::make_unique<RDKit::RWMol>(*source.mol);
+  }
+
+  // void process(const gemmi::Structure &st) override {
+  void process(std::string file_name) override {
     RDKit::Conformer *conformer = new RDKit::Conformer();
+    Structure st = read_structure_gz(file_name);
     gemmiStructureToRDKit(*mol, st, *conformer, false);
     mol->addConformer(conformer, true);
   }
@@ -93,27 +102,32 @@ public:
 
 class Luni {
 private:
-  ISource &source;
+  std::unique_ptr<ISource> source;
   NSResults neighborResults;
   float _cutoff;
   FastNS grid;
 
 public:
-  explicit Luni(ISource &source) : source(source), _cutoff(4.5) {
+  // explicit Luni(GemmiSource &source) : source(&source), _cutoff(4.5) { 
+  //   initAndCompBonds();
+  // }
+  explicit Luni(std::string file_name) : _cutoff(4.5) { 
+    source = std::make_unique<GemmiSource>();
+    source->process(file_name);
     initAndCompBonds();
   }
 
   void initAndCompBonds() {
-    const auto &conf = source.getConformer();
+    const auto &conf = source->getConformer();
     grid = FastNS(conf.getPositions(), _cutoff);
     neighborResults = grid.selfSearch();
-    BondComputation::computeBonds(source.getMolecule(), neighborResults);
+    BondComputation::computeBonds(source->getMolecule(), neighborResults);
   }
 
-  RDKit::RWMol &getMolecule() { return source.getMolecule(); }
-  const RDKit::RWMol &getMolecule() const { return source.getMolecule(); }
+  RDKit::RWMol &getMolecule() { return source->getMolecule(); }
+  const RDKit::RWMol &getMolecule() const { return source->getMolecule(); }
   const std::vector<RDGeom::Point3D> &getPositions(int confId = -1) const {
-    return source.getConformer(confId).getPositions();
+    return source->getConformer(confId).getPositions();
   }
   const NSResults &getNeighborResults() const { return neighborResults; }
   double getCutoff() const { return _cutoff; }
