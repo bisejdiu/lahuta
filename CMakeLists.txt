@@ -10,29 +10,15 @@ if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
   #set(CMAKE_INSTALL_BINDIR "${SKBUILD_SCRIPTS_DIR}")
 endif()
 
-# option(BUILD_GEMMI_PROGRAM "Build gemmi command-line program" ON)
 option(USE_PYTHON "Build Python bindings" ON)
 option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
 option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" OFF)
 option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" ON)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
-option(EXTRA_WARNINGS "Set extra warning flags" OFF)
-# option(USE_WMAIN "(Windows only) take Unicode arguments in gemmi program" ON)
 option(STANDALONE_PYTHON_MODULE "Avoid linking Python module to liblahuta_cpp DLL" ON)
 
 if (DEFINED Python_EXECUTABLE)
   set(USE_PYTHON ON CACHE BOOL "Build Python bindings" FORCE)
-endif()
-
-if (NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION)
-  include(CheckIPOSupported)
-  check_ipo_supported(RESULT is_ipo_supported OUTPUT ipo_error)
-  if(is_ipo_supported)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ON)
-  else()
-    message(STATUS "Interprocedural optimization not supported: ${error}")
-  endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -40,7 +26,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
-# build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -59,131 +44,154 @@ if (NOT CMAKE_BUILD_TYPE AND NOT USING_ENV_CXXFLAGS)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-
-if (FETCH_ZLIB_NG)
-  message(STATUS " =============== fetching and building zlib-ng ===============")
-  include(FetchContent)
-  FetchContent_Declare(zlib-ng GIT_REPOSITORY https://github.com/zlib-ng/zlib-ng.git
-                               GIT_TAG        2.1.x
-                               GIT_SHALLOW TRUE)
-  FetchContent_GetProperties(zlib-ng)
-  if (NOT zlib-ng_POPULATED)
-    FetchContent_Populate(zlib-ng)
-    set(ZLIB_ENABLE_TESTS OFF CACHE INTERNAL "")
-    # set(BUILD_SHARED_LIBS_here ${BUILD_SHARED_LIBS})
-    # set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "build static zlib-ng")
-    add_subdirectory(${zlib-ng_SOURCE_DIR} ${zlib-ng_BINARY_DIR} EXCLUDE_FROM_ALL)
-    # set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS_here} CACHE BOOL "Build shared library" FORCE)
-    set_property(TARGET zlib PROPERTY POSITION_INDEPENDENT_CODE ON)
-    # zlib-ng, unless built WITH_NATIVE_INSTRUCTIONS=ON (-march=native),
-    # builds multiple variants of some functions, using different CPU features.
-    # IPO (LTO) has been reported to mess it up leading to illegal-instruction
-    # crash. When zlib-ng is built as a standalone project, not subdirectory,
-    # these flags are set in zlib-ng/CMakeLists.txt.
-    if (NOT WITH_NATIVE_INSTRUCTIONS)
-      set_target_properties(zlib PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF
-                                            INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF
-                                            INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL OFF)
-    endif()
-    message(STATUS " =============== end of zlib-ng configuration ===============\n")
-  endif()
-elseif (USE_ZLIB_NG)
-    # FIX: Test this path
-    set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/external/gemmi/third_party")
-  find_package(ZLIB_NG REQUIRED)
-else()
-  if (NOT INTERNAL_ZLIB)
-    # CMake >= 3.24 respects variable ZLIB_USE_STATIC_LIBS
-    find_package(ZLIB)
-  endif()
-  if (NOT ZLIB_FOUND)
-    message(STATUS "The build will use zlib code from third_party/zlib.")
-  endif()
-endif()
-
-# Set default RDKit_ROOT if not provided
-# FIX: installation should also support pip
 if(NOT DEFINED RDKit_ROOT)
     if(DEFINED ENV{CONDA_PREFIX})
         set(RDKit_ROOT $ENV{CONDA_PREFIX})
     else()
-        message(FATAL_ERROR "RDKit_ROOT not set and CONDA_PREFIX environment variable not found. Please set RDKit_ROOT manually.")
+        message(FATAL_ERROR "No rkdit")
     endif()
 endif()
 
-# Add RDKit_ROOT to CMAKE_PREFIX_PATH
-# FIX: should we instead use find_package(RDKit) here? 
 list(APPEND CMAKE_PREFIX_PATH ${RDKit_ROOT}) 
 
 # Find external dependencies
-find_package(Eigen3 REQUIRED)
 find_package(RDKit REQUIRED)
 
+
+# Set include directories
+# include_directories(
+#     ${CMAKE_CURRENT_SOURCE_DIR}/include
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
+# )
+
+# file(GLOB_RECURSE SOURCES
+#     "src/*.cpp"
+#     "src/ob/*.cpp"
+#     "src/bond_table/*.cpp"
+#     "external/ob/*.cpp"
+#     "external/gemmi/src/*.cpp"
+# )
+file(GLOB_RECURSE C_SOURCES
+    "external/gemmi/third_party/zlib/*.c"
+)
+# add_library(lahuta_cpp ${SOURCES} ${C_SOURCES})
+
 add_library(lahuta_cpp
-            src/bonds.cpp src/bond_order.cpp src/conv.cpp src/nsgrid.cpp
+            src/bonds.cpp src/bond_order.cpp src/conv.cpp src/nsgrid.cpp 
             src/bond_table/bonds.cpp src/ob/kekulize.cpp src/ob/bond_utils.cpp 
             external/gemmi/src/ddl.cpp external/gemmi/src/gz.cpp external/gemmi/src/json.cpp
             external/gemmi/src/mmcif.cpp external/gemmi/src/mmread_gz.cpp external/gemmi/src/polyheur.cpp
             external/gemmi/src/read_cif.cpp external/gemmi/src/resinfo.cpp
-            external/ob/bitvec.cpp external/ob/elements.cpp)
-
-target_compile_features(lahuta_cpp INTERFACE cxx_std_17)
+            external/ob/bitvec.cpp external/ob/elements.cpp 
+            ${C_SOURCES}
+)
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_compile_definitions(lahuta_cpp PRIVATE LAHUTA_BUILD)
+# target_compile_definitions(lahuta_cpp PRIVATE LAHUTA_BUILD)
 
-target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/ob")
-target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include")
-target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party")
-target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib")
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/ob")
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include")
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party")
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib")
 
-target_link_libraries(lahuta_cpp PRIVATE
+target_include_directories(lahuta_cpp PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  # ${CMAKE_CURRENT_SOURCE_DIR}/bond_table
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
+)
+
+target_link_libraries(lahuta_cpp PUBLIC
     $ENV{CONDA_PREFIX}/lib/libRDKitGraphMol.so
     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeneral.so
     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeometryLib.so
     $ENV{CONDA_PREFIX}/lib/libRDKitSubstructMatch.so
     $ENV{CONDA_PREFIX}/lib/libRDKitSmilesParse.so
 )
-set_target_properties(lahuta_cpp PROPERTIES
-    INSTALL_RPATH "${RDKit_ROOT}/lib"
-    BUILD_WITH_INSTALL_RPATH TRUE
-)
+# set_target_properties(lahuta_cpp PROPERTIES
+#     INSTALL_RPATH "${RDKit_ROOT}/lib"
+#     BUILD_WITH_INSTALL_RPATH TRUE
+# )
 
-add_executable(lahuta main.cpp)
-target_link_libraries(lahuta PRIVATE lahuta_cpp)
+# target_sources(lahuta_cpp PRIVATE
+#       "external/gemmi/third_party/zlib/adler32.c"
+#       "external/gemmi/third_party/zlib/crc32.c"
+#       "external/gemmi/third_party/zlib/gzlib.c"
+#       "external/gemmi/third_party/zlib/gzread.c"
+#       "external/gemmi/third_party/zlib/inflate.c"
+#       "external/gemmi/third_party/zlib/inftrees.c"
+#       "external/gemmi/third_party/zlib/inffast.c"
+#       "external/gemmi/third_party/zlib/zutil.c")
+# check_include_file(unistd.h has_unistd_h)
+# target_compile_definitions(lahuta_cpp PRIVATE NO_GZCOMPRESS=1 DYNAMIC_CRC_TABLE=1)
+# if (has_unistd_h)
+#   target_compile_definitions(lahuta_cpp PRIVATE Z_HAVE_UNISTD_H=1)
+# endif()
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib")
+# if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+#   # /wd4267 - conversion from 'size_t' to 'unsigned int', possible loss of data
+#   target_compile_options(lahuta_cpp PRIVATE /wd4267)
+# endif()
 
 
-# FIX: test the different paths
-if (FETCH_ZLIB_NG)
-  target_compile_definitions(lahuta_cpp PRIVATE USE_ZLIB_NG=1)
-  target_link_libraries(lahuta_cpp PRIVATE zlib)
-elseif (ZLIB_NG_FOUND)
-  target_compile_definitions(lahuta_cpp PRIVATE USE_ZLIB_NG=1)
-  target_link_libraries(lahuta_cpp PRIVATE ZLIB_NG::ZLIB_NG)
-elseif (ZLIB_FOUND)
-  target_link_libraries(lahuta_cpp PRIVATE ZLIB::ZLIB)
-else()
-  target_sources(lahuta_cpp PRIVATE
-      "external/gemmi/third_party/zlib/adler32.c"
-      "external/gemmi/third_party/zlib/crc32.c"
-      "external/gemmi/third_party/zlib/gzlib.c"
-      "external/gemmi/third_party/zlib/gzread.c"
-      "external/gemmi/third_party/zlib/inflate.c"
-      "external/gemmi/third_party/zlib/inftrees.c"
-      "external/gemmi/third_party/zlib/inffast.c"
-      "external/gemmi/third_party/zlib/zutil.c")
-  check_include_file(unistd.h has_unistd_h)
-  target_compile_definitions(lahuta_cpp PRIVATE NO_GZCOMPRESS=1 DYNAMIC_CRC_TABLE=1)
-  if (has_unistd_h)
-    target_compile_definitions(lahuta_cpp PRIVATE Z_HAVE_UNISTD_H=1)
-  endif()
-  target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib")
-  if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    # /wd4267 - conversion from 'size_t' to 'unsigned int', possible loss of data
-    target_compile_options(lahuta_cpp PRIVATE /wd4267)
-  endif()
+add_compile_definitions(DYNAMIC_CRC_TABLE)
+add_compile_definitions(NO_GZCOMPRESS)
+check_include_file("unistd.h" have_unistd_h)
+if(have_unistd_h)
+    add_compile_definitions(Z_HAVE_UNISTD_H)
 endif()
+
+
+## Add lahuta executable
+# add_executable(lahuta main.cpp ${SOURCES} ${C_SOURCES})
+
+if (DYNAMIC_CRC_TABLE)
+  # target_compile_definitions(${PROJECT_NAME} PRIVATE DYNAMIC_CRC_TABLE)
+    target_compile_definitions(lahuta_cpp PRIVATE DYNAMIC_CRC_TABLE)
+    message(STATUS "DYNAMIC_CRC_TABLE is defined")
+else()
+    message(STATUS "DYNAMIC_CRC_TABLE is not defined")
+endif()
+
+# Set compile options
+# target_compile_options(${PROJECT_NAME} PRIVATE -O3)
+
+# Set RPATH for shared libraries
+# set_target_properties(lahuta PROPERTIES
+#     INSTALL_RPATH "${RDKit_ROOT}/lib"
+#     BUILD_WITH_INSTALL_RPATH TRUE
+# )
+# target_link_libraries(lahuta PRIVATE
+#     $ENV{CONDA_PREFIX}/lib/libRDKitGraphMol.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeneral.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeometryLib.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitSubstructMatch.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitSmilesParse.so
+# )
+# target_link_libraries(lahuta PRIVATE lahuta_cpp)
+
+
+# Define the executable target
+add_executable(lex main.cpp)
+
+# Link lahuta_cpp to lex
+target_link_libraries(lex PRIVATE lahuta_cpp)
+
+# Retrieve include directories from lahuta_cpp
+get_target_property(lex lahuta_cpp INCLUDE_DIRECTORIES)
+target_include_directories(lex PRIVATE ${lahuta_cpp_includes})
+
+# Retrieve link libraries from lahuta_cpp
+get_target_property(lahuta_cpp_link_libs lahuta_cpp INTERFACE_LINK_LIBRARIES)
+target_link_libraries(lex PRIVATE ${lahuta_cpp_link_libs})
+
+
 
 ### Python bindings ###
 if (USE_PYTHON)
@@ -202,6 +210,17 @@ if (USE_PYTHON)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
   pybind11_add_module(lahuta_py python/lahuta.cpp)
+  get_target_property(_lahuta_libs lahuta_cpp INCLUDE_DIRECTORIES)
+  set_property(TARGET lahuta_py APPEND PROPERTY INCLUDE_DIRECTORIES ${_lahuta_libs})
+  # target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
+  # target_include_directories(lahuta_py PRIVATE
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/include
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
+  #   ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
+  # )
+
 
   target_sources(lahuta_py PRIVATE $<TARGET_OBJECTS:lahuta_cpp>)
   get_target_property(_lahuta_libs lahuta_cpp LINK_LIBRARIES)
@@ -267,3 +286,58 @@ if (USE_PYTHON)
   endif()
 endif()
 
+# add_compile_definitions(DYNAMIC_CRC_TABLE)
+# add_compile_definitions(NO_GZCOMPRESS)
+# add_compile_definitions(Z_HAVE_UNISTD_H)
+#
+# # Set include directories
+# include_directories(
+#     ${CMAKE_CURRENT_SOURCE_DIR}/include
+#     ${CMAKE_CURRENT_SOURCE_DIR}/bond_table
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
+#     ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
+#     ${RDKit_INCLUDE_DIRS}
+#     ${RDKit_ROOT}/include
+#     ${EIGEN3_INCLUDE_DIR}
+# )
+#
+# # add_executable(lahuta main.cpp)
+# # Collect source files
+# file(GLOB_RECURSE SOURCES
+#     "src/*.cpp"
+#     "src/bond_table/*.cpp"
+#     "external/ob/*.cpp"
+#     "external/gemmi/src/*.cpp"
+# )
+# file(GLOB_RECURSE C_SOURCES
+#     "external/gemmi/third_party/zlib/*.c"
+# )
+#
+# add_executable(lahuta main.cpp ${SOURCES} ${C_SOURCES})
+#
+# # Link libraries
+# target_link_libraries(lahuta PRIVATE
+#     $ENV{CONDA_PREFIX}/lib/libRDKitGraphMol.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeneral.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitRDGeometryLib.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitSubstructMatch.so
+#     $ENV{CONDA_PREFIX}/lib/libRDKitSmilesParse.so
+# )
+#
+# # Link external libraries
+# # target_link_libraries(${PROJECT_NAME} PRIVATE
+# #     gzlib
+# # )
+#
+# # Set RPATH for shared libraries
+# set_target_properties(lahuta PROPERTIES
+#     INSTALL_RPATH "${RDKit_ROOT}/lib"
+#     BUILD_WITH_INSTALL_RPATH TRUE
+# )
+#
+# # Install target
+# install(TARGETS lahuta
+#     RUNTIME DESTINATION bin
+# )
