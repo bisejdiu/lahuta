@@ -187,31 +187,26 @@ endif()
 
 ### Python bindings ###
 if (USE_PYTHON)
-  message(STATUS "The python module will be built.")
+  message(STATUS "Building Python module.")
   # CMake >=3.18 has subcomponent Development.Module, scikit-build-core also has it
   if (${CMAKE_VERSION} VERSION_LESS 3.18 AND NOT SKBUILD)
     find_package(Python ${PYTHON_VERSION} REQUIRED COMPONENTS Interpreter Development)
   else()
     find_package(Python ${PYTHON_VERSION} REQUIRED COMPONENTS Interpreter Development.Module)
   endif()
-  if (EXISTS "${CMAKE_HOME_DIRECTORY}/pybind11")
-        message(STATUS "Using ${CMAKE_HOME_DIRECTORY}/pybind11 (internal copy).") # FIX: what's this?
-    add_subdirectory(pybind11)
-  else()
-    # use pybind11-config (if available) to determine pybind11_DIR
-    execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR)
-    string(STRIP "${pybind11_DIR}" pybind11_DIR)
-    find_package(pybind11 2.6 CONFIG REQUIRED)
-    message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
-  endif()
+
+  # use pybind11-config (if available) to determine pybind11_DIR
+  execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR)
+  string(STRIP "${pybind11_DIR}" pybind11_DIR)
+  find_package(pybind11 2.6 CONFIG REQUIRED)
+  message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
+
   pybind11_add_module(lahuta_py python/lahuta.cpp)
-  if (STANDALONE_PYTHON_MODULE)
-    target_sources(lahuta_py PRIVATE $<TARGET_OBJECTS:lahuta_cpp>)
-    get_target_property(_lahuta_libs lahuta_cpp LINK_LIBRARIES)
-    set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_libs})
-  else()
-    target_link_libraries(lahuta_py PRIVATE _lahuta)
-  endif()
+
+  target_sources(lahuta_py PRIVATE $<TARGET_OBJECTS:lahuta_cpp>)
+  get_target_property(_lahuta_libs lahuta_cpp LINK_LIBRARIES)
+  set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_libs})
+
   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
     target_compile_options(lahuta_py PRIVATE "-Wno-shadow")
