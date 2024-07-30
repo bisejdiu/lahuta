@@ -10,9 +10,9 @@ if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
 endif()
 
 option(USE_PYTHON "Build Python bindings" ON)
-option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
+option(USE_ZLIB_NG "Use zlib-ng instead of zlib" ON)
 option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" OFF)
-option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" ON)
+option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
 option(STANDALONE_PYTHON_MODULE "Avoid linking Python module to liblahuta_cpp DLL" ON)
 
@@ -56,18 +56,25 @@ list(APPEND CMAKE_PREFIX_PATH ${RDKit_ROOT})
 # Find external dependencies
 find_package(RDKit REQUIRED)
 
+
+### Compile gemmi in external/gemmi ###
+add_subdirectory(external/gemmi)
+
+
+
+
 file(GLOB_RECURSE C_SOURCES
     "external/gemmi/third_party/zlib/*.c"
 )
-
-add_library(lahuta_cpp
+#
+add_library(lahuta_cpp SHARED
             src/bonds.cpp src/bond_order.cpp src/conv.cpp src/nsgrid.cpp 
             src/bond_table/bonds.cpp src/ob/kekulize.cpp src/ob/bond_utils.cpp 
-            external/gemmi/src/ddl.cpp external/gemmi/src/gz.cpp external/gemmi/src/json.cpp
-            external/gemmi/src/mmcif.cpp external/gemmi/src/mmread_gz.cpp external/gemmi/src/polyheur.cpp
-            external/gemmi/src/read_cif.cpp external/gemmi/src/resinfo.cpp
+            # external/gemmi/src/ddl.cpp external/gemmi/src/gz.cpp external/gemmi/src/json.cpp
+            # external/gemmi/src/mmcif.cpp external/gemmi/src/mmread_gz.cpp external/gemmi/src/polyheur.cpp
+            # external/gemmi/src/read_cif.cpp external/gemmi/src/resinfo.cpp
             external/ob/bitvec.cpp external/ob/elements.cpp 
-            ${C_SOURCES}
+            # ${C_SOURCES}
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -76,9 +83,9 @@ set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
+  # ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
+  # ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party
+  # ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib
 )
 
 target_link_libraries(lahuta_cpp PUBLIC
@@ -89,29 +96,78 @@ target_link_libraries(lahuta_cpp PUBLIC
     $ENV{CONDA_PREFIX}/lib/libRDKitSmilesParse.so
 )
 
-target_sources(lahuta_cpp PRIVATE
-      "external/gemmi/third_party/zlib/adler32.c"
-      "external/gemmi/third_party/zlib/crc32.c"
-      "external/gemmi/third_party/zlib/gzlib.c"
-      "external/gemmi/third_party/zlib/gzread.c"
-      "external/gemmi/third_party/zlib/inflate.c"
-      "external/gemmi/third_party/zlib/inftrees.c"
-      "external/gemmi/third_party/zlib/inffast.c"
-      "external/gemmi/third_party/zlib/zutil.c")
-check_include_file(unistd.h has_unistd_h)
-target_compile_definitions(lahuta_cpp PRIVATE NO_GZCOMPRESS=1 DYNAMIC_CRC_TABLE=1)
-if (has_unistd_h)
-  target_compile_definitions(lahuta_cpp PRIVATE Z_HAVE_UNISTD_H=1)
-endif()
-target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib")
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  # /wd4267 - conversion from 'size_t' to 'unsigned int', possible loss of data
-  target_compile_options(lahuta_cpp PRIVATE /wd4267)
-endif()
+
+target_compile_definitions(lahuta_cpp PUBLIC GEMMI_SHARED)
+
+# target_sources(lahuta_cpp PRIVATE
+#       "external/gemmi/third_party/zlib/adler32.c"
+#       "external/gemmi/third_party/zlib/crc32.c"
+#       "external/gemmi/third_party/zlib/gzlib.c"
+#       "external/gemmi/third_party/zlib/gzread.c"
+#       "external/gemmi/third_party/zlib/inflate.c"
+#       "external/gemmi/third_party/zlib/inftrees.c"
+#       "external/gemmi/third_party/zlib/inffast.c"
+#       "external/gemmi/third_party/zlib/zutil.c")
+# check_include_file(unistd.h has_unistd_h)
+# target_compile_definitions(lahuta_cpp PRIVATE NO_GZCOMPRESS=1 DYNAMIC_CRC_TABLE=1)
+# if (has_unistd_h)
+#   target_compile_definitions(lahuta_cpp PRIVATE Z_HAVE_UNISTD_H=1)
+# endif()
+# target_include_directories(lahuta_cpp PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/third_party/zlib")
+# if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+#   # /wd4267 - conversion from 'size_t' to 'unsigned int', possible loss of data
+#   target_compile_options(lahuta_cpp PRIVATE /wd4267)
+# endif()
+#
+# link lahuta_cpp to gemmi
+# target_link_libraries(lahuta_cpp PRIVATE gemmi_cpp)
+# target_link_libraries(lahuta_cpp PRIVATE gemmi_cpp)
+
+# merge gemmi and lahuta_cpp into one library
+# add_library(lahuta::lahuta_cpp ALIAS lahuta_cpp)
+
+# Define the library target
+# add_library(lahuta_cpp SHARED ${LAHUTA_SOURCES})
+target_link_libraries(lahuta_cpp PRIVATE gemmi_cpp)
+#
+# target_include_directories(lahuta_cpp PUBLIC
+#   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+#   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+# )
+
+target_compile_definitions(lahuta_cpp PRIVATE LAHUTA_BUILD)
+# set_target_properties(lahuta_cpp PROPERTIES
+#   VERSION ${PROJECT_VERSION}
+#   SOVERSION ${PROJECT_VERSION_MAJOR}
+#   OUTPUT_NAME lahuta_cpp
+# )
+#
+# # Install the library
+# install(TARGETS lahuta_cpp
+#   EXPORT lahutaTargets
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+#   ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+# )
+#
+# # Install the headers
+# # install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
+#
+# # Export the targets
+# install(EXPORT lahutaTargets
+#   FILE lahutaTargets.cmake
+#   NAMESPACE lahuta::
+#   DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/cmake/lahuta
+# )
+
+
+
+
 
 # Define the executable target
 add_executable(lex main.cpp)
-target_link_libraries(lex PRIVATE lahuta_cpp)
+# target_link_libraries(lex PRIVATE lahuta_cpp)
+# link to gemmi instead
+target_link_libraries(lex PRIVATE lahuta_cpp gemmi_cpp)
 
 
 ### Python bindings ###
@@ -131,7 +187,7 @@ if (USE_PYTHON)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
   pybind11_add_module(lahuta_py python/lahuta.cpp)
-  target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
+  target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp)
 
   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
