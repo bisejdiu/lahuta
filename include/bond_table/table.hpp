@@ -136,14 +136,78 @@ inline double getElementThreshold(int i) {
                                                : __DefaultBondingRadius;
 }
 
-inline double getElementPairThreshold(int i, int j) {
-  if (i < 0 || j < 0)
-    return -1;
-  int key =
-      (i < j) ? (i + j) * (i + j + 1) / 2 + j : (i + j) * (i + j + 1) / 2 + i;
-  auto it = __ElementPairThresholds.find(key);
-  return (it != __ElementPairThresholds.end()) ? it->second : -1;
+constexpr std::size_t isqrt_impl(std::size_t sq, std::size_t dlt,
+                                 std::size_t value) {
+  return sq <= value ? isqrt_impl(sq + dlt, dlt + 2, value) : (dlt >> 1) - 1;
 }
+
+// https://stackoverflow.com/a/8625010/8040171
+// faster implementation possible, but unnecessary here
+constexpr std::size_t isqrt(std::size_t value) {
+  return isqrt_impl(1, 3, value);
+}
+
+constexpr int MAX_ELEMENTS = 120;
+
+// Helper function to reverse Cantor pairing
+constexpr std::pair<int, int> reverseCantor(int k) {
+  // int w = static_cast<int>((std::sqrt(8.0 * k + 1) - 1) / 2.0);
+  int w = static_cast<int>(isqrt(8 * k + 1) - 1) / 2;
+  int t = (w * (w + 1)) / 2;
+  int j = k - t;
+  int i = w - j;
+  return {i, j};
+}
+
+// Constexpr function to create the precomputed table
+constexpr auto createPairThresholds() {
+  // create a 2D array of thresholds with all values initialized to -1
+  std::array<std::array<double, MAX_ELEMENTS>, MAX_ELEMENTS> thresholds{-1};
+
+  // Populate with known values
+  constexpr std::array<std::pair<int, double>, 63> knownPairs{
+      {{0, 0.8},     {20, 1.31},   {27, 1.2},    {35, 1.15},   {44, 1.1},
+       {54, 1},      {60, 1.84},   {72, 1.88},   {84, 1.75},   {85, 1.56},
+       {86, 1.76},   {98, 1.6},    {99, 1.68},   {100, 1.63},  {112, 1.6},
+       {113, 1.59},  {114, 1.36},  {129, 1.45},  {135, 1.47},  {144, 1.6},
+       {152, 1.45},  {170, 1.4},   {180, 1.55},  {202, 2.4},   {222, 2.24},
+       {224, 1.91},  {225, 1.98},  {243, 2.02},  {269, 2},     {293, 1.9},
+       {316, 1.8},   {420, 2.37},  {480, 2.3},   {512, 2.3},   {544, 2.3},
+       {612, 2.1},   {629, 1.54},  {665, 1},     {813, 2.6},   {854, 2.27},
+       {894, 1.93},  {896, 2.1},   {937, 2.05},  {938, 2.06},  {981, 1.62},
+       {1258, 2.68}, {1309, 2.33}, {1484, 1},    {1763, 2.14}, {1823, 2.48},
+       {1882, 2.1},  {1944, 1.72}, {2380, 2.34}, {3367, 2.44}, {3733, 2.11},
+       {3819, 2.6},  {3821, 2.36}, {4736, 2.75}, {5724, 2.73}, {5959, 2.63},
+       {6519, 2.84}, {6750, 2.87}, {8991, 2.81}}};
+
+  for (const auto &[key, value] : knownPairs) {
+    auto [i, j] = reverseCantor(key);
+    thresholds[i][j] = value;
+    thresholds[j][i] = value; // Ensure symmetry
+  }
+
+  return thresholds;
+}
+
+// The precomputed pair thresholds
+inline constexpr auto precomputedPairThresholds = createPairThresholds();
+
+// Function to get the element pair threshold using the precomputed table
+inline constexpr double getElementPairThreshold(int i, int j) {
+  if (i < 0 || j < 0 || i >= MAX_ELEMENTS || j >= MAX_ELEMENTS)
+    return -1;
+  return precomputedPairThresholds[i][j];
+}
+
+// inline double getElementPairThreshold(int i, int j) {
+//   if (i < 0 || j < 0)
+//     return -1;
+//   int key =
+//       (i < j) ? (i + j) * (i + j + 1) / 2 + j : (i + j) * (i + j + 1) / 2 +
+//       i;
+//   auto it = __ElementPairThresholds.find(key);
+//   return (it != __ElementPairThresholds.end()) ? it->second : -1;
+// }
 
 inline bool isHydrogen(int i) {
   static int H_ID = getElementIdx("H");
@@ -151,10 +215,9 @@ inline bool isHydrogen(int i) {
 }
 
 inline double getPairingThreshold(int elementIndexA, int elementIndexB,
-                           double thresholdA, double thresholdB) {
+                                  double thresholdA, double thresholdB) {
   double thresholdAB = getElementPairThreshold(elementIndexA, elementIndexB);
   return thresholdAB > 0     ? thresholdAB
          : elementIndexB < 0 ? thresholdA
                              : (thresholdA + thresholdB) / 1.95;
 }
-
