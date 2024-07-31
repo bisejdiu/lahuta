@@ -187,7 +187,7 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
 
   std::vector<std::pair<int, int>> bonds;
   std::vector<bool> seen(mol.getNumAtoms(), false);
-
+  
   constexpr int MAX_INDEX = std::numeric_limits<int>::max();
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
@@ -225,6 +225,14 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       continue;
 
     } else if (!aIsProtein && !bIsProtein) {
+
+      // handle wanter (TIP3)  special case
+      if (infoA->getResidueName() == "TIP" && infoB->getResidueName() == "TIP") {
+        if (connectOBMol(a, b, dist_sq, 0.45)) {
+          mol.addBond(a->getIdx(), b->getIdx(), RDKit::Bond::SINGLE);
+        }
+        continue;
+      }
 
       if (!seen[a->getIdx()]) {
         non_protein_indices.push_back(a->getIdx());
