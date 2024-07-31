@@ -81,6 +81,7 @@ public:
     // auto proteinMol = computeProteinBonds(resultMol, neighborResults);
 
     std::vector<int> non_protein_indices;
+    non_protein_indices.reserve(mol.getNumAtoms());
     auto newMol =
         lahutaBondAssignment(mol, neighborResults, non_protein_indices);
     newMol.updatePropertyCache(false);

@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "GraphMol/MonomerInfo.h"
 #include "bonds.hpp"
 #include "conv.hpp"
@@ -168,12 +170,25 @@ void logAtomInfoIf(RDKit::Atom *a, RDKit::Atom *b, int idx) {
   }
 }
 
+// NOTE: The current approach is to split the molecule into two, one with the
+// protein atoms and the other with the non-protein atoms. This split is
+// arbitrary, and done only because of predefiend bond orders for protein atoms.
+// There are other molecules for which we can define bond orders (water being
+// the most important, for example). This would drastically improve performance,
+// since the current bottleneck is in SMARTS matching (done for non-protein
+// atoms).
+// TODO: Implement a struct to hold both RWMol and the non-protein indices
+// the non-protein indices should perhaps be put into a set first, to avoid
+// duplicates.
+// Function to collect unique indices during iteration over neighboring pairs
+
 RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
                                   std::vector<int> &non_protein_indices) {
 
   std::vector<std::pair<int, int>> bonds;
+  std::vector<bool> seen(mol.getNumAtoms(), false);
 
-  // std::cout << "1\n";
+  constexpr int MAX_INDEX = std::numeric_limits<int>::max();
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
@@ -195,12 +210,12 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       double thresholdB = getElementThreshold(b->getAtomicNum());
       double thresholdA = getElementThreshold(a->getAtomicNum());
 
-      // FIX: these are likely going to be too many lookups. Needs to be optimized
+      // FIX: Can be further optimized by getting the square directly
       double pairingThreshold = getPairingThreshold(
           a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
       if (dist_sq <= pairingThreshold * pairingThreshold) {
-        // NOTE: we do not need to check if the bond already exists, since 
+        // NOTE: we do not need to check if the bond already exists, since
         // the neighbor indices are guaranteed to be unique
         int order =
             get_intra_bond_order(infoA->getResidueName(), &(infoA->getName()),
@@ -208,51 +223,47 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
         mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
       }
       continue;
+
     } else if (!aIsProtein && !bIsProtein) {
-      non_protein_indices.push_back(a->getIdx());
-      non_protein_indices.push_back(b->getIdx());
+
+      if (!seen[a->getIdx()]) {
+        non_protein_indices.push_back(a->getIdx());
+        seen[a->getIdx()] = true;
+      }
+
+      if (!seen[b->getIdx()]) {
+        non_protein_indices.push_back(b->getIdx());
+        seen[b->getIdx()] = true;
+      }
+
       if (connectOBMol(a, b, dist_sq, 0.45)) {
         bonds.emplace_back(a->getIdx(), b->getIdx());
       }
       continue;
     } else {
-      if (connectOBMol(a, b, dist_sq, 0.45)) {}
+      // if (connectOBMol(a, b, dist_sq, 0.45)) {}
       continue;
     }
   }
 
-  // Here we have all the non-protein atoms in the molecule, we need to sort
-  // them and remove duplicates, so we can create a new molecule with the
-  // correct indices
-  std::sort(non_protein_indices.begin(), non_protein_indices.end());
-  non_protein_indices.erase(
-      std::unique(non_protein_indices.begin(), non_protein_indices.end()),
-      non_protein_indices.end());
-
-  // std::cout << "2\n";
   auto newMol = rdMolFromRDKitMol(mol, non_protein_indices);
-  // std::cout << "3\n";
-  // Map old indices to new indices
-  std::unordered_map<int, int> old_to_new_index;
+
+  std::vector<int> index_mapping;
+  index_mapping.resize(mol.getNumAtoms(), -1);
+
   for (size_t i = 0; i < non_protein_indices.size(); ++i) {
-    old_to_new_index[non_protein_indices[i]] = i;
+    index_mapping[non_protein_indices[i]] = static_cast<int>(i);
   }
 
   // Add bonds to the newMol
   for (const auto &bond : bonds) {
-    auto it_a = old_to_new_index.find(bond.first);
-    auto it_b = old_to_new_index.find(bond.second);
+    int aIx = index_mapping[bond.first];
+    int bIx = index_mapping[bond.second];
 
-    if (it_a != old_to_new_index.end() && it_b != old_to_new_index.end()) {
-      int aIx = it_a->second;
-      int bIx = it_b->second;
-
-      if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
-        newMol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
-      }
+    if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
+      newMol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
     }
   }
-  // std::cout << "4\n";
 
   return newMol;
 };
