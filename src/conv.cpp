@@ -1,110 +1,21 @@
-// #include <gemmi/mmcif.hpp>
-// #include <gemmi/atox.hpp>    // for string_to_int
-// #include <gemmi/mmcif_impl.hpp> // for set_cell_from_mmcif
-// // #include <gemmi/enumstr.hpp> // for entity_type_from_string,
-// polymer_type_from_string #include <gemmi/polyheur.hpp>  // for
-// restore_full_ccd_codes
 #include "conv.hpp"
-#include "GraphMol/RDKitBase.h"
 #include "GraphMol/MonomerInfo.h"
+#include "GraphMol/RDKitBase.h"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \
-  for (const Model & model : st.models)                                              \
-    for (const Chain & chain : model.chains)                                         \
-      for (const Residue & res : chain.residues)                                     \
-        for (const Atom & atom : res.atoms)
+  for (const Model &model : st.models)                                         \
+    for (const Chain &chain : model.chains)                                    \
+      for (const Residue &res : chain.residues)                                \
+        for (const Atom &atom : res.atoms)
 
 using namespace gemmi;
 
-// void copy_int(const cif::Table::Row& row, int n, int& dest) {
-//   if (row.has2(n))
-//     dest = cif::as_int(row[n]);
-// }
-// void copy_double(const cif::Table::Row& row, int n, double& dest) {
-//   if (row.has2(n))
-//     dest = cif::as_number(row[n]);
-// }
-// void copy_string(const cif::Table::Row& row, int n, std::string& dest) {
-//   if (row.has2(n))
-//     dest = cif::as_string(row[n]);
-// }
-//
-// enum Type { Covale=0, Disulf, Hydrog, MetalC, Unknown };
-//
-// std::string connection_type_to_string(Type t) {
-//   switch (t) {
-//     case Covale: return "covale";
-//     case Disulf: return "disulf";
-//     case Hydrog: return "hydrog";
-//     case MetalC: return "metalc";
-//     default: return "unknown";
-//   }
-// }
-//
-// Type connection_type_from_string(std::string& t) {
-//   for (int i = 0; i != Connection::Unknown; ++i)
-//     if (connection_type_to_string(Type(i)) == t)
-//       return Type(i);
-//   return Unknown;
-// }
-//
-// void read_connectivity(cif::Block& block, Structure& st) {
-//   enum {
-//     kId=0, kConnTypeId=1,
-//     kAuthAsymId=2/*-3*/,  kLabelAsymId=4/*-5*/, kLabelCompId=6/*-7*/,
-//     kLabelAtomId=8/*-9*/, kLabelAltId=10/*-11*/,
-//     kAuthSeqId=12/*-13*/, kLabelSeqId=14/*-15*/, kInsCode=16/*-17*/,
-//     kSym1=18, kSym2=19, kDistValue=20, kLinkId=21
-//   };
-//   // label_ identifiers are not sufficient for HOH:
-//   // waters have null label_seq_id so we need auth_seq_id+icode.
-//   // And since we need auth_seq_id, we also use auth_asym_id for consistency.
-//   // Unless only label_*_id are available.
-//   for (const auto row : block.find("_struct_conn.", {
-//         "id", "conn_type_id",                                   // 0-1
-//         "?ptnr1_auth_asym_id", "?ptnr2_auth_asym_id",           // 2-3
-//         "?ptnr1_label_asym_id", "?ptnr2_label_asym_id",         // 4-5
-//         "ptnr1_label_comp_id", "ptnr2_label_comp_id",           // 6-7
-//         "ptnr1_label_atom_id", "ptnr2_label_atom_id",           // 8-9
-//         "?pdbx_ptnr1_label_alt_id", "?pdbx_ptnr2_label_alt_id", // 10-11
-//         "?ptnr1_auth_seq_id", "?ptnr2_auth_seq_id",             // 12-13
-//         "?ptnr1_label_seq_id", "?ptnr2_label_seq_id",           // 14-15
-//         "?pdbx_ptnr1_PDB_ins_code", "?pdbx_ptnr2_PDB_ins_code", // 16-17
-//         "?ptnr1_symmetry", "?ptnr2_symmetry",                   // 18-19
-//         "?pdbx_dist_value", "?ccp4_link_id"})) {                // 20-21
-//     Connection c;
-//     c.name = row.str(kId);
-//     copy_string(row, kLinkId, c.link_id);
-//     c.type = connection_type_from_string(row.str(kConnTypeId));
-//     if (row.has2(kSym1) && row.has2(kSym2)) {
-//       c.asu = (row.str(kSym1) == row.str(kSym2) ? Asu::Same :
-//       Asu::Different);
-//     }
-//     copy_double(row, kDistValue, c.reported_distance);
-//     for (int i = 0; i < 2; ++i) {
-//       AtomAddress& a = (i == 0 ? c.partner1 : c.partner2);
-//       if (row.has(kAuthAsymId+i) && row.has(kAuthSeqId+i)) {
-//         a.chain_name = row.str(kAuthAsymId+i);
-//         a.res_id = make_resid(row.str(kLabelCompId+i),
-//                               row.str(kAuthSeqId+i), row.ptr_at(kInsCode+i));
-//       } else if (row.has(kLabelAsymId+i) && row.has(kLabelSeqId+i)) {
-//         set_part_of_address_from_label(a, st.first_model(),
-//                                        row.str(kLabelAsymId+i),
-//                                        row[kLabelSeqId+i]);
-//         a.res_id.name = row.str(kLabelCompId+i);
-//       } else {
-//         fail("_struct_conn without either _auth_ or _label_ asym_id+seq_id");
-//       }
-//       a.atom_name = row.str(kLabelAtomId+i);
-//       if (row.has2(kLabelAltId+i))
-//         a.altloc = cif::as_char(row[kLabelAltId+i], '\0');
-//     }
-//     st.connections.emplace_back(c);
-//   }
-// }
-
-void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Conformer &conf,
-                                   bool ign_h) {
+// TODO: (@bis):
+// 1. Residue names are truncated to 3 characters by gemmi. This may cause
+// issues with some residues.
+// 1. Cleanup the code and remove unnecessary comments
+void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st,
+                           RDKit::Conformer &conf, bool ign_h) {
 
   // RDKit::RWMol mol;
 
@@ -141,8 +52,9 @@ void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Confor
     // std::string altLoc(1, atom.altloc) means that altLoc is a string of
     // length 1, with the first character being atom.altloc
     // This is done to convert char to string
-    std::string altLoc = (atom.altloc == '\0') ? "" : std::string(1, atom.altloc);
-    // std::cout << "ALTLOC: " << altLoc << std::endl;
+    std::string altLoc =
+        (atom.altloc == '\0') ? "" : std::string(1, atom.altloc);
+    // std::cout << "res.name" << res.name << std::endl;
     RDKit::AtomPDBResidueInfo atomInfo = {
         atom.name, atom.serial,         altLoc,
         res.name,  res.seqid.num.value, chain.name};
@@ -154,37 +66,34 @@ void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Confor
         static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
     rAtom->setMonomerInfo(copy);
 
-    // std::cout << "stored altloc value is: " << atomInfo.getAltLoc() << std::endl;
-
     aIx += 1;
   }
-
 }
 
-
 // FIX: Not efficient, because we have to re-find the atoms in the new molecule
-RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices) {
+RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol,
+                               std::vector<int> &atomIndices) {
   RDKit::Conformer conf = mol.getConformer();
   RDKit::RWMol newMol;
   RDKit::Conformer *newMolConf = new RDKit::Conformer();
   // for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
   //   auto atom = *atomIt;
-  //   auto it = std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx());
-  //   if (it != atomIndices.end()) {
+  //   auto it = std::find(atomIndices.begin(), atomIndices.end(),
+  //   atom->getIdx()); if (it != atomIndices.end()) {
   //     RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
   //     newAtom->setFormalCharge(atom->getFormalCharge());
   //     newMol.addAtom(newAtom, true, true);
   //     auto pos = conf.getAtomPos(atom->getIdx());
   //     newMolConf->setAtomPos(newAtom->getIdx(), pos);
   //
-  //     RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-  //     std::string atomName = atom->getMonomerInfo()->getName();
-  //     std::string altLoc = res->getAltLoc();
-  //     std::string resName = res->getResidueName();
-  //     int resSeq = res->getResidueNumber();
-  //     std::string chainId = res->getChainId();
-  //     RDKit::AtomPDBResidueInfo atomInfo = {
-  //         atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq, chainId};
+  //     RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo
+  //     *>(atom->getMonomerInfo()); std::string atomName =
+  //     atom->getMonomerInfo()->getName(); std::string altLoc =
+  //     res->getAltLoc(); std::string resName = res->getResidueName(); int
+  //     resSeq = res->getResidueNumber(); std::string chainId =
+  //     res->getChainId(); RDKit::AtomPDBResidueInfo atomInfo = {
+  //         atomName, static_cast<int>(atom->getIdx()), altLoc, resName,
+  //         resSeq, chainId};
   //     atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
   //     atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
   //
@@ -203,14 +112,16 @@ RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices)
     auto pos = conf.getAtomPos(atom->getIdx());
     newMolConf->setAtomPos(newAtom->getIdx(), pos);
 
-    RDKit::AtomPDBResidueInfo *res = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    RDKit::AtomPDBResidueInfo *res =
+        dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     std::string atomName = atom->getMonomerInfo()->getName();
     std::string altLoc = res->getAltLoc();
     std::string resName = res->getResidueName();
     int resSeq = res->getResidueNumber();
     std::string chainId = res->getChainId();
     RDKit::AtomPDBResidueInfo atomInfo = {
-        atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq, chainId};
+        atomName, static_cast<int>(atom->getIdx()), altLoc, resName, resSeq,
+        chainId};
     atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
     atomInfo.setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
 
@@ -218,7 +129,6 @@ RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices)
         static_cast<RDKit::AtomMonomerInfo *>(atomInfo.copy());
     newAtom->setMonomerInfo(copy);
   }
-
 
   newMol.addConformer(newMolConf, true);
 
