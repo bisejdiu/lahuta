@@ -108,6 +108,7 @@ inline bool is_same_conformer(char altloc1, char altloc2) {
 /// Represents atom site in macromolecular structure (~100 bytes).
 struct Atom {
   static const char* what() { return "Atom"; }
+  unsigned int idx = 0;  // index in the input file (@bisejdiu)
   std::string name;
   char altloc = '\0'; // 0 if not set
   signed char charge = 0;  // [-8, +8]

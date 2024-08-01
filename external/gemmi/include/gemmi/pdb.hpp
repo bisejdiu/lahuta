@@ -94,7 +94,8 @@ inline SeqId read_seq_id(const char* str) {
 }
 
 inline ResidueId read_res_id(const char* seq_id, const char* name) {
-  return {read_seq_id(seq_id), {}, read_string(name, 3)};
+  // @bisejdiu, changed res name length 3->4, not tested!
+  return {read_seq_id(seq_id), {}, read_string(name, 4)}; 
 }
 
 inline char read_altloc(char c) { return c == ' ' ? '\0' : c; }
@@ -218,6 +219,7 @@ template<typename Stream>
 Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
                                const PdbReadOptions& options) {
   int line_num = 0;
+  unsigned int atom_num = 0;
   auto wrong = [&line_num](const std::string& msg) {
     fail("Problem in line " + std::to_string(line_num) + ": " + msg);
   };
@@ -287,6 +289,7 @@ Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
       }
 
       Atom atom;
+      atom.idx = atom_num++;
       atom.serial = read_serial(line+6);
       atom.name = read_string(line+12, 4);
       atom.altloc = read_altloc(line[16]);

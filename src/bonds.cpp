@@ -227,7 +227,7 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
     } else if (!aIsProtein && !bIsProtein) {
 
       // handle wanter (TIP3)  special case
-      if (infoA->getResidueName() == "TIP" && infoB->getResidueName() == "TIP") {
+      if (infoA->getResidueName() == "TIP3" && infoB->getResidueName() == "TIP3") {
         if (connectOBMol(a, b, dist_sq, 0.45)) {
           mol.addBond(a->getIdx(), b->getIdx(), RDKit::Bond::SINGLE);
         }

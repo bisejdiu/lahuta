@@ -727,6 +727,7 @@ Structure make_structure_from_block(const cif::Block& block_) {
       model = &st.find_or_add_model(atom_table[0].str(kModelNum));
     else
       model = &st.find_or_add_model("1");
+    unsigned int atomIdx = 0;
     for (auto row : atom_table) {
       if (row.has(kModelNum) && row[kModelNum] != model->name) {
         model = &st.find_or_add_model(row.str(kModelNum));
@@ -760,6 +761,7 @@ Structure make_structure_from_block(const cif::Block& block_) {
         fail("Inconsistent sequence ID: " + resi->str() + " / " + rid.str());
       }
       Atom atom;
+      atom.idx = atomIdx++;
       atom.name = cif::as_string(row[kAtomId]);
       // altloc is always a single letter (not guaranteed by the mmCIF spec)
       atom.altloc = cif::as_char(row[kAltId], '\0');

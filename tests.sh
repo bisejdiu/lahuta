@@ -16,6 +16,8 @@ data_dir=$2
 output_file="OUT"
 expected_results="$data_dir/results.txt"
 
+trap "rm -f $output_file" EXIT
+
 if [ ! -f "$expected_results" ]; then
     echo "Error: Expected results file '$expected_results' not found."
     exit 1
@@ -23,12 +25,12 @@ fi
 
 # Run the tests
 for input_file in "$data_dir"/*.cif; do
-    if [ ! -f "$input_file" ]; then
-        echo "Warning: No .cif files found in directory '$data_dir'."
+    echo "Running test on $input_file..."
+    if ! ./"$executable" "$input_file" | grep "^1." >> "$output_file"; then
+        echo "Error: Executable failed on file '$input_file'."
         exit 1
     fi
-    ./"$executable" "$input_file"
-done | grep "^1." > "$output_file"
+done
 
 if diff "$output_file" "$expected_results" > /dev/null; then
     echo "All tests passed."
