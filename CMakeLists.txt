@@ -11,9 +11,9 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(USE_PYTHON "Build Python bindings" ON)
-option(USE_ZLIB_NG "Use zlib-ng instead of zlib" ON)
-option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" OFF)
-option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
+# option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
+# option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" ON)
+# option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
 option(STANDALONE_PYTHON_MODULE "Avoid linking Python module to liblahuta_cpp DLL" ON)
 

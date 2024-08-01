@@ -9,10 +9,10 @@ string(REGEX REPLACE ".+\"([0-9]+\.[0-9]+\.[0-9]+)(-dev)?\"" "\\1"
 project(gemmi LANGUAGES C CXX VERSION ${gemmi_version_str})
 message(STATUS "Gemmi version ${PROJECT_VERSION}")
 
-option(BUILD_SHARED_LIBS "Build shared library" ON)
-option(USE_ZLIB_NG "Use zlib-ng instead of zlib" ON)
+option(BUILD_SHARED_LIBS "Build shared library" ON) # currently, always ON
+option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
 option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" OFF)
-option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
+option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" ON)
 
 include(GNUInstallDirs)  # for CMAKE_INSTALL_LIBDIR, etc
 include(CheckIncludeFile)  # for check_include_file
