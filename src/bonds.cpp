@@ -59,11 +59,7 @@ bool connectVdW(RDKit::Atom p, RDKit::Atom q, double dist_sq,
                                   q.getAtomicNum());
   double rcov1 = covFactor * OBElements::GetCovalentRad(p.getAtomicNum());
   double rcov2 = covFactor * OBElements::GetCovalentRad(q.getAtomicNum());
-  // std::cout << "Distance: " << dist_sq << std::endl;
-  // std::cout << "Rcov1: " << rcov1 << std::endl;
-  // std::cout << "Rcov2: " << rcov2 << std::endl;
-  // std::cout << "Rcov1*: " << _rcov1 << std::endl;
-  // std::cout << "Rcov2*: " << _rcov2 << std::endl;
+
   if (dist_sq <= (rcov1 + rcov2) * (rcov1 + rcov2)) {
     return true;
   }
@@ -81,11 +77,6 @@ bool connectOBMol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
   //                                q.getAtomicNum());
   double rcov1 = OBElements::GetCovalentRad(p->getAtomicNum());
   double rcov2 = OBElements::GetCovalentRad(q->getAtomicNum());
-  // std::cout << "Distance: " << dist_sq << std::endl;
-  // std::cout << "Rcov1: " << rcov1 << std::endl;
-  // std::cout << "Rcov2: " << rcov2 << std::endl;
-  // std::cout << "Rcov1*: " << _rcov1 << std::endl;
-  // std::cout << "Rcov2*: " << _rcov2 << std::endl;
   if (dist_sq <= (rcov1 + rcov2 + tolerance) * (rcov1 + rcov2 + tolerance)) {
     return true;
   }
@@ -156,38 +147,16 @@ void perceiveBonds(RDKit::RWMol &mol, const NSResults &results,
   }
 }
 
-inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
-  return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
-}
-
-void logAtomInfoIf(RDKit::Atom *a, RDKit::Atom *b, int idx) {
-  if (a->getIdx() == idx || b->getIdx() == idx) {
-    std::cout << "Atom 1: " << a->getIdx() << " " << a->getSymbol() << " "
-              << a->getMonomerInfo()->getName() << " " << a->getAtomicNum()
-              << " " << "Atom 2: " << b->getIdx() << " " << b->getSymbol()
-              << " " << b->getMonomerInfo()->getName() << " "
-              << b->getAtomicNum() << std::endl;
-  }
-}
-
-// NOTE: The current approach is to split the molecule into two, one with the
-// protein atoms and the other with the non-protein atoms. This split is
-// arbitrary, and done only because of predefiend bond orders for protein atoms.
-// There are other molecules for which we can define bond orders (water being
-// the most important, for example). This would drastically improve performance,
-// since the current bottleneck is in SMARTS matching (done for non-protein
-// atoms).
 // TODO: Implement a struct to hold both RWMol and the non-protein indices
 // the non-protein indices should perhaps be put into a set first, to avoid
 // duplicates.
 // Function to collect unique indices during iteration over neighboring pairs
-
 RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
                                   std::vector<int> &non_protein_indices) {
 
   std::vector<std::pair<int, int>> bonds;
   std::vector<bool> seen(mol.getNumAtoms(), false);
-  
+
   constexpr int MAX_INDEX = std::numeric_limits<int>::max();
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
@@ -195,45 +164,28 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
 
-    auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(a->getMonomerInfo());
-    auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(b->getMonomerInfo());
+    auto order = getIntraBondOrder(a, b);
 
-    auto aIsProtein = getToken(infoA->getResidueName());
-    auto bIsProtein = getToken(infoB->getResidueName());
-
-    // most likely both atoms are protein atoms, so this check is first
-    if (aIsProtein && bIsProtein) {
-      if (!is_same_conformer(infoA->getAltLoc(), infoB->getAltLoc())) {
-        continue;
-      }
+    if (order) { // true only if both atoms are in the table
 
       double thresholdB = getElementThreshold(b->getAtomicNum());
       double thresholdA = getElementThreshold(a->getAtomicNum());
 
-      // FIX: Can be further optimized by getting the square directly
+      // FIX: Get the square directly
       double pairingThreshold = getPairingThreshold(
           a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
       if (dist_sq <= pairingThreshold * pairingThreshold) {
-        // NOTE: we do not need to check if the bond already exists, since
-        // the neighbor indices are guaranteed to be unique
-        int order =
-            get_intra_bond_order(infoA->getResidueName(), &(infoA->getName()),
-                                 &(b->getMonomerInfo()->getName()));
-        mol.addBond(a->getIdx(), b->getIdx(), (RDKit::Bond::BondType)order);
+        mol.addBond(a->getIdx(), b->getIdx(),
+                    (RDKit::Bond::BondType)(int)order);
       }
       continue;
 
-    } else if (!aIsProtein && !bIsProtein) {
+    } else if (!order.atom1_in_table && !order.atom2_in_table) {
 
-      // handle wanter (TIP3)  special case
-      if (infoA->getResidueName() == "TIP3" && infoB->getResidueName() == "TIP3") {
-        if (connectOBMol(a, b, dist_sq, 0.45)) {
-          mol.addBond(a->getIdx(), b->getIdx(), RDKit::Bond::SINGLE);
-        }
-        continue;
-      }
-
+      // NOTE: I am adding bonds regardless of checking the nature of the atoms.
+      // This results in metalic bonds being added and likely bonds to different
+      // ions, etc.
       if (!seen[a->getIdx()]) {
         non_protein_indices.push_back(a->getIdx());
         seen[a->getIdx()] = true;
@@ -249,8 +201,13 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       }
       continue;
     } else {
-      // if (connectOBMol(a, b, dist_sq, 0.45)) {}
-      continue;
+      // non-handled bonds (e.g. matalic bonds, etc.)
+      // auto *infoA = static_cast<RDKit::AtomPDBResidueInfo
+      // *>(a->getMonomerInfo()); auto *infoB =
+      // static_cast<RDKit::AtomPDBResidueInfo *>(b->getMonomerInfo());
+      // std::cout << "Unhandled bond: " << a->getIdx() << " " << b->getIdx() <<
+      // " " << a->getSymbol() << " " << b->getSymbol() << " " <<
+      // infoA->getResidueName() << " " << infoB->getResidueName() << std::endl;
     }
   }
 

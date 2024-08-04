@@ -4,6 +4,7 @@
 #include "nsgrid.hpp"
 #include <optional>
 #include <vector>
+#include "ob/bond_utils.hpp"
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 namespace Lahuta {
@@ -84,6 +85,7 @@ public:
     non_protein_indices.reserve(mol.getNumAtoms());
     auto newMol =
         lahutaBondAssignment(mol, neighborResults, non_protein_indices);
+    CleanUpMolecule(newMol, newMol.getConformer());
     newMol.updatePropertyCache(false);
     perceiveBondOrders(newMol);
 

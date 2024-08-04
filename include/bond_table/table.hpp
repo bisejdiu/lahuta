@@ -136,13 +136,12 @@ inline double getElementThreshold(int i) {
                                                : __DefaultBondingRadius;
 }
 
+// https://stackoverflow.com/a/8625010/8040171
+// faster implementation possible, but unnecessary here
 constexpr std::size_t isqrt_impl(std::size_t sq, std::size_t dlt,
                                  std::size_t value) {
   return sq <= value ? isqrt_impl(sq + dlt, dlt + 2, value) : (dlt >> 1) - 1;
 }
-
-// https://stackoverflow.com/a/8625010/8040171
-// faster implementation possible, but unnecessary here
 constexpr std::size_t isqrt(std::size_t value) {
   return isqrt_impl(1, 3, value);
 }
@@ -151,7 +150,6 @@ constexpr int MAX_ELEMENTS = 120;
 
 // Helper function to reverse Cantor pairing
 constexpr std::pair<int, int> reverseCantor(int k) {
-  // int w = static_cast<int>((std::sqrt(8.0 * k + 1) - 1) / 2.0);
   int w = static_cast<int>(isqrt(8 * k + 1) - 1) / 2;
   int t = (w * (w + 1)) / 2;
   int j = k - t;
@@ -161,10 +159,8 @@ constexpr std::pair<int, int> reverseCantor(int k) {
 
 // Constexpr function to create the precomputed table
 constexpr auto createPairThresholds() {
-  // create a 2D array of thresholds with all values initialized to -1
   std::array<std::array<double, MAX_ELEMENTS>, MAX_ELEMENTS> thresholds{-1};
 
-  // Populate with known values
   constexpr std::array<std::pair<int, double>, 63> knownPairs{
       {{0, 0.8},     {20, 1.31},   {27, 1.2},    {35, 1.15},   {44, 1.1},
        {54, 1},      {60, 1.84},   {72, 1.88},   {84, 1.75},   {85, 1.56},
@@ -189,7 +185,6 @@ constexpr auto createPairThresholds() {
   return thresholds;
 }
 
-// The precomputed pair thresholds
 inline constexpr auto precomputedPairThresholds = createPairThresholds();
 
 // Function to get the element pair threshold using the precomputed table
