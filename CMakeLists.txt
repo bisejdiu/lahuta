@@ -60,7 +60,7 @@ add_subdirectory(external/gemmi)
 
 add_library(lahuta_cpp
             src/bonds.cpp src/bond_order.cpp src/conv.cpp src/nsgrid.cpp 
-            src/bond_table/bonds.cpp src/ob/kekulize.cpp src/ob/bond_utils.cpp 
+            src/ob/kekulize.cpp src/ob/bond_utils.cpp 
             external/ob/bitvec.cpp external/ob/elements.cpp 
 )
 

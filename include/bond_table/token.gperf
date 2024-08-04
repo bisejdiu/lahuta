@@ -1,0 +1,139 @@
+%compare-strncmp
+%define class-name resNameKeyword
+%define initializer-suffix ,static_cast<resTokenType>(0)
+%define lookup-function-name look_up
+%define slot-name string_offset
+%enum
+%language=C++
+%pic
+%readonly-tables
+%struct-type
+
+%{
+#include <stddef.h>
+#include <string.h>
+#include "token.h"
+
+namespace lahuta {
+namespace {
+%}
+struct keywordEntry {
+  int string_offset;
+  resTokenType type;
+};
+
+%%
+GLY,    resTokenType::GLY
+ALA,    resTokenType::ALA
+VAL,    resTokenType::VAL
+LEU,    resTokenType::LEU
+ILE,    resTokenType::ILE
+SER,    resTokenType::SER
+THR,    resTokenType::THR
+CYS,    resTokenType::CYS
+MET,    resTokenType::MET
+PRO,    resTokenType::PRO
+PHE,    resTokenType::PHE
+TYR,    resTokenType::TYR
+TRP,    resTokenType::TRP
+HIS,    resTokenType::HIS
+GLU,    resTokenType::GLU
+ASP,    resTokenType::ASP
+ASN,    resTokenType::ASN
+GLN,    resTokenType::GLN
+LYS,    resTokenType::LYS
+ARG,    resTokenType::ARG
+PCA,    resTokenType::PCA
+DAL,    resTokenType::DAL
+DAR,    resTokenType::DAR
+DSG,    resTokenType::DSG
+DAS,    resTokenType::DAS
+DCY,    resTokenType::DCY
+DGL,    resTokenType::DGL
+DGN,    resTokenType::DGN
+DHI,    resTokenType::DHI
+DIL,    resTokenType::DIL
+DLE,    resTokenType::DLE
+DLY,    resTokenType::DLY
+MED,    resTokenType::MED
+DPN,    resTokenType::DPN
+DPR,    resTokenType::DPR
+DSN,    resTokenType::DSN
+DTH,    resTokenType::DTH
+DTR,    resTokenType::DTR
+DTY,    resTokenType::DTY
+DVA,    resTokenType::DVA
+DNE,    resTokenType::DNE
+HSD,    resTokenType::HSD
+HSE,    resTokenType::HSE
+HSP,    resTokenType::HSP
+HID,    resTokenType::HID
+HIE,    resTokenType::HIE
+HIP,    resTokenType::HIP
+GLUP,   resTokenType::GLUP
+ASH,    resTokenType::ASH
+ASPP,   resTokenType::ASPP
+GLH,    resTokenType::GLH
+LSN,    resTokenType::LSN
+LYN,    resTokenType::LYN
+SEP,    resTokenType::SEP
+TPO,    resTokenType::TPO
+SEC,    resTokenType::SEC
+MSE,    resTokenType::MSE
+HYP,    resTokenType::HYP
+PTR,    resTokenType::PTR
+PYL,    resTokenType::PYL
+A,      resTokenType::A
+C,      resTokenType::C
+G,      resTokenType::G
+T,      resTokenType::T
+U,      resTokenType::U
+I,      resTokenType::I
+N,      resTokenType::N
+DA,     resTokenType::DA
+DC,     resTokenType::DC
+DG,     resTokenType::DG
+DT,     resTokenType::DT
+DI,     resTokenType::DI
+DU,     resTokenType::DU
+DN,     resTokenType::DN
+APN,    resTokenType::APN
+CPN,    resTokenType::CPN
+TPN,    resTokenType::TPN
+GPN,    resTokenType::GPN
+NME,    resTokenType::NME
+ACE,    resTokenType::ACE
+NH2,    resTokenType::NH2
+FOR,    resTokenType::FOR
+FMT,    resTokenType::FMT
+E1H,    resTokenType::E1H
+HOA,    resTokenType::HOA
+NEH,    resTokenType::NEH
+MOH,    resTokenType::MOH
+SOL,    resTokenType::SOL
+WAT,    resTokenType::WAT
+HOH,    resTokenType::HOH
+H2O,    resTokenType::H2O
+W,      resTokenType::W
+DOD,    resTokenType::DOD
+D3O,    resTokenType::D3O
+TIP,    resTokenType::TIP
+TIP3,   resTokenType::TIP3
+TIP4,   resTokenType::TIP4
+SPC,    resTokenType::SPC
+%%
+}
+
+#ifndef LOOKUP_IDENTIFIER_DEFINED
+#define LOOKUP_IDENTIFIER_DEFINED
+
+inline resTokenType res_name_table(const char* res_name, std::size_t size) noexcept {
+  const keywordEntry *entry = resNameKeyword::look_up(res_name, size);
+  if (entry) {
+    return entry->type;
+  } else {
+    return resTokenType::UNKNOWN;
+  }
+}
+}
+#endif
