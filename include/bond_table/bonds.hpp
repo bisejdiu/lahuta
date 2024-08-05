@@ -313,11 +313,11 @@ private:
   bool atom2_is_metal = false;
 };
 
-inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) {
-
-  static auto is_same_conformer = [](std::string altlocA, std::string altlocB) {
+inline auto is_same_conformer(const std::string& altlocA, const std::string& altlocB) {
     return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
-  };
+};
+
+inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) {
 
   auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
   auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
