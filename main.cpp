@@ -1,3 +1,4 @@
+#include <GraphMol/RDKitBase.h> 
 #include "lahuta.hpp"
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
 

@@ -1,4 +1,3 @@
-#include "GraphMol/RDKitBase.h"
 #include <GraphMol/Substruct/SubstructMatch.h>
 #include <GraphMol/SmilesParse/SmilesParse.h>
 

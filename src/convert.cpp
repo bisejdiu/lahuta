@@ -1,6 +1,5 @@
+#include <GraphMol/MonomerInfo.h>
 #include "convert.hpp"
-#include "GraphMol/MonomerInfo.h"
-#include "GraphMol/RDKitBase.h"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \
   for (const Model &model : st.models)                                         \
@@ -11,10 +10,6 @@
 using namespace gemmi;
 using namespace RDKit;
 
-// TODO: (@bis):
-// 1. Residue names are truncated to 3 characters by gemmi. This may cause
-// issues with some residues.
-// 1. Cleanup the code and remove unnecessary comments
 void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
                            bool ign_h) {
 
@@ -45,7 +40,6 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
   }
 }
 
-// TODO: there might be a better way to filter atoms from an RDKit molecule
 RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices) {
   Conformer conf = mol.getConformer();
   RWMol newMol;

@@ -1,3 +1,4 @@
+#include <GraphMol/RDKitBase.h>
 #include "bond_order.hpp"
 #include "ob/bond_utils.hpp"
 #include "ob/kekulize.h"
@@ -95,7 +96,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
         for (const auto &atomIdx : ring) {
           RDKit::Atom *atom = mol.getAtomWithIdx(atomIdx);
           // if (atom->getDegree() == 2) {
-          if (GetExplicitValenceFromAtomBonds(mol, atom) == 2) {
+          if (ob_explicit_valence(mol, atom) == 2) {
             atom->setHybridization(HybridizationType::SP2);
           }
         }
@@ -134,8 +135,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
         for (const auto &atomIdx : ring) {
           RDKit::Atom *atom = mol.getAtomWithIdx(atomIdx);
           // if (atom->getDegree() == 2 || atom->getDegree() == 3) {
-          if (GetExplicitValenceFromAtomBonds(mol, atom) == 2 ||
-              GetExplicitValenceFromAtomBonds(mol, atom) == 3) {
+          if (ob_explicit_valence(mol, atom) == 2 ||
+              ob_explicit_valence(mol, atom) == 3) {
             atom->setHybridization(HybridizationType::SP2);
           }
         }
@@ -160,7 +161,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
       for (; nbrIdx != endNbr; ++nbrIdx) {
         const RDKit::Atom *neighbor = mol.getAtomWithIdx(*nbrIdx);
         if (neighbor->getHybridization() < HybridizationType::SP3 ||
-            GetExplicitValenceFromAtomBonds(mol, neighbor) == 1) {
+            ob_explicit_valence(mol, neighbor) == 1) {
           openNbr = true;
           break;
         }
