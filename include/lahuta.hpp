@@ -8,11 +8,6 @@
 #include <vector>
 #include "ob/clean_mol.hpp"
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
-//
-#include <chrono>
-
-#define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
-#define T() std::chrono::high_resolution_clock::now()
 
 namespace Lahuta {
 
@@ -90,15 +85,8 @@ public:
 
     std::vector<int> non_protein_indices;
     non_protein_indices.reserve(mol.getNumAtoms());
-    auto newMol =
-        assign_bonds(mol, neighborResults, non_protein_indices);
-    // compute time to clean molecule in ms:
-    auto start = T();
+    auto newMol = assign_bonds(mol, neighborResults, non_protein_indices);
     clean_bonds(newMol, newMol.getConformer());
-    auto cleanTime = TO_MS(T() - start).count();
-    std::cout << "Time to clean molecule: " << cleanTime << "ms" << std::endl;
-
-
     
     newMol.updatePropertyCache(false);
     perceiveBondOrders(newMol);

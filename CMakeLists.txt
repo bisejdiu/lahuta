@@ -60,8 +60,7 @@ add_subdirectory(external/gemmi)
 
 add_library(lahuta_cpp
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp 
-            src/ob/kekulize.cpp src/ob/clean_mol.cpp 
-            external/ob/bitvec.cpp external/ob/elements.cpp 
+            src/ob/kekulize.cpp src/ob/clean_mol.cpp external/ob/bitvec.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)

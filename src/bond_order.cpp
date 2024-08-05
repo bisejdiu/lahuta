@@ -21,7 +21,6 @@ double average_ring_dihedral(const RDKit::ROMol &mol, const RDKit::Conformer &co
 
     double torsionsSum = 0.0;
     for (size_t i = 0; i < ringSize; ++i) {
-
         torsionsSum += fabs(compute_dihedral(
             *positions[i],
             *positions[(i + 1) % ringSize], 
