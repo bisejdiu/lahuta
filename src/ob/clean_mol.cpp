@@ -1,5 +1,5 @@
 #include <GraphMol/RDKitBase.h> 
-#include "ob/bond_utils.hpp"
+#include "ob/clean_mol.hpp"
 #include "bonds/table.hpp"
 
 // NOTE: Performance is dependent on bond removal (which is the most expensive

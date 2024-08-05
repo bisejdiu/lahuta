@@ -1,6 +1,6 @@
 #include <GraphMol/RDKitBase.h>
 #include "bond_order.hpp"
-#include "ob/bond_utils.hpp"
+#include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
 
 using namespace RDKit;

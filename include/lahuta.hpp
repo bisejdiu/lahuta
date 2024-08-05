@@ -1,10 +1,12 @@
+#include <GraphMol/RDKitBase.h>
+
 #include "bond_order.hpp"
 #include "bonds.hpp"
 #include "convert.hpp"
 #include "nsgrid.hpp"
 #include <optional>
 #include <vector>
-#include "ob/bond_utils.hpp"
+#include "ob/clean_mol.hpp"
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
 //
 #include <chrono>
