@@ -1,359 +1,263 @@
 #ifndef LAHUTA_BONDS_HPP
 #define LAHUTA_BONDS_HPP
+
 #include <string>
 
+#include "rules.hpp"
 #include "token-gperf-generated.hpp"
-#include "token.h"
 
 #include "GraphMol/Atom.h"
 #include "GraphMol/MonomerInfo.h"
 
 using namespace lahuta;
 
-// Function pointer type for our handlers
+// Function pointer type for bond rules
 using HandlerFunc = int (*)(std::string_view s2, std::string_view s3);
 
-inline int defaultHandler(std::string_view s2, std::string_view s3) {
-  return 1;
-}
-inline int defaultAminoAcidHandler(std::string_view s2, std::string_view s3) {
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
-}
-inline int defaultBaseHandler(std::string_view s2, std::string_view s3) {
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
+constexpr inline auto default_fn = [](std::string_view s2, std::string_view s3) { return 1; };
+
+constexpr inline int default_amino_acid_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::default_amino_acid) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
   return 1;
 }
 
-// Implementation of handler functions
-inline int HIS(std::string_view s2, std::string_view s3) {
-  if (s2 == "CD2" && s3 == "CG") {
-    return 2;
-  }
-  if (s2 == "CE1" && s3 == "ND1") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
+constexpr inline int default_base_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::default_base) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
   return 1;
 }
 
-inline int ARG(std::string_view s2, std::string_view s3) {
-  if (s2 == "CZ" && s3 == "NH2") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int his_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::his_rules) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int PHE(std::string_view s2, std::string_view s3) {
-  if (s2 == "CE1" && s3 == "CZ") {
-    return 2;
-  }
-  if (s2 == "CD2" && s3 == "CE2") {
-    return 2;
-  }
-  if (s2 == "CD1" && s3 == "CG") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int arg(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::arg_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int TRP(std::string_view s2, std::string_view s3) {
-  if (s2 == "CD1" && s3 == "CG") {
-    return 2;
-  }
-  if (s2 == "CD2" && s3 == "CE2") {
-    return 2;
-  }
-  if (s2 == "CE3" && s3 == "CZ3") {
-    return 2;
-  }
-  if (s2 == "CH2" && s3 == "CZ2") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int phe_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::phe_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int ASN(std::string_view s2, std::string_view s3) {
-  if (s2 == "CG" && s3 == "OD1") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int trp_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::trp_rule) { 
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int GLN(std::string_view s2, std::string_view s3) {
-  if (s2 == "CD" && s3 == "OE1") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int asn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::asn_rule) { 
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int TYR(std::string_view s2, std::string_view s3) {
-  if (s2 == "CD1" && s3 == "CG") {
-    return 2;
-  }
-  if (s2 == "CD2" && s3 == "CE2") {
-    return 2;
-  }
-  if (s2 == "CE1" && s3 == "CZ") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int gln(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::gln_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int ASP(std::string_view s2, std::string_view s3) {
-  if (s2 == "CG" && s3 == "OD1") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int tyr_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::tyr_rule) { 
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int GLU(std::string_view s2, std::string_view s3) {
-  if (s2 == "CD" && s3 == "OE1") {
-    return 2;
-  }
-  if (s3 == "O" && s2 == "C") {
-    return 2;
-  }
-  return 1;
+constexpr inline int asp_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::asp_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int G(std::string_view s2, std::string_view s3) {
-  if (s2 == "C8" && s3 == "N7") {
-    return 2;
-  }
-  if (s2 == "C4" && s3 == "C5") {
-    return 2;
-  }
-  if (s2 == "C2" && s3 == "N3") {
-    return 2;
-  }
-  if (s2 == "C6" && s3 == "O6") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int glu_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::glu_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int C(std::string_view s2, std::string_view s3) {
-  if (s2 == "C4" && s3 == "N3") {
-    return 2;
-  }
-  if (s2 == "C5" && s3 == "C6") {
-    return 2;
-  }
-  if (s2 == "C2" && s3 == "O2") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int g_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::g_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int A(std::string_view s2, std::string_view s3) {
-  if (s2 == "C2" && s3 == "N3") {
-    return 2;
-  }
-  if (s2 == "C6" && s3 == "N1") {
-    return 2;
-  }
-  if (s2 == "C4" && s3 == "C5") {
-    return 2;
-  }
-  if (s2 == "C8" && s3 == "N7") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int c_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::c_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int U(std::string_view s2, std::string_view s3) {
-  if (s2 == "C5" && s3 == "C6") {
-    return 2;
-  }
-  if (s2 == "C2" && s3 == "O2") {
-    return 2;
-  }
-  if (s2 == "C4" && s3 == "O4") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int a_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::a_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int DG(std::string_view s2, std::string_view s3) {
-  if (s2 == "C8" && s3 == "N7") {
-    return 2;
-  }
-  if (s2 == "C4" && s3 == "C5") {
-    return 2;
-  }
-  if (s2 == "C2" && s3 == "N3") {
-    return 2;
-  }
-  if (s2 == "C6" && s3 == "O6") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int u_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::u_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int DC(std::string_view s2, std::string_view s3) {
-  if (s2 == "C4" && s3 == "N3") {
-    return 2;
-  }
-  if (s2 == "C5" && s3 == "C6") {
-    return 2;
-  }
-  if (s2 == "C2" && s3 == "O2") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int dg_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::dg_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int DA(std::string_view s2, std::string_view s3) {
-  if (s2 == "C2" && s3 == "N3") {
-    return 2;
-  }
-  if (s2 == "C6" && s3 == "N1") {
-    return 2;
-  }
-  if (s2 == "C4" && s3 == "C5") {
-    return 2;
-  }
-  if (s2 == "C8" && s3 == "N7") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int dc_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::dc_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
-inline int DT(std::string_view s2, std::string_view s3) {
-  if (s2 == "C5" && s3 == "C6") {
-    return 2;
-  }
-  if (s2 == "C2" && s3 == "O2") {
-    return 2;
-  }
-  if (s2 == "C4" && s3 == "O4") {
-    return 2;
-  }
-  if (s2 == "OP1" && s3 == "P") {
-    return 2;
-  }
-  return 1;
+constexpr inline int da_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::da_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
 }
 
+constexpr inline int dt_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::dt_rule) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+        }
+    }
+    return 1;
+}
+
+// Function pointer lookup
 constexpr HandlerFunc getHandler(resTokenType type) {
   switch (type) {
-  case resTokenType::PHE:
-    return PHE;
-  case resTokenType::TYR:
-    return TYR;
-  case resTokenType::TRP:
-    return TRP;
-  // NOTE: Atom types are not unique among different force fields, so this approach is not
-  // going to work as simple as this.
-  case resTokenType::HIS:
-  case resTokenType::HSD:
-  case resTokenType::HSE:
-  case resTokenType::HSP:
-  case resTokenType::HID:
-  case resTokenType::HIE:
-  case resTokenType::HIP:
-    return HIS;
-  case resTokenType::GLU:
-    return GLU;
-  case resTokenType::ASP:
-    return ASP;
-  case resTokenType::ASN:
-    return ASN;
-  case resTokenType::GLN:
-    return GLN;
-  case resTokenType::ARG:
-    return ARG;
-  case resTokenType::G:
-    return G;
-  case resTokenType::C:
-    return C;
-  case resTokenType::A:
-    return A;
-  case resTokenType::U:
-    return U;
-  case resTokenType::DA:
-    return DA;
-  case resTokenType::DC:
-    return DC;
-  case resTokenType::DG:
-    return DG;
-  case resTokenType::DT:
-    return DT;
-  case resTokenType::I:
-  case resTokenType::N:
-  case resTokenType::DI:
-  case resTokenType::DU:
-  case resTokenType::DN:
-  case resTokenType::APN:
-  case resTokenType::CPN:
-  case resTokenType::TPN:
-  case resTokenType::GPN:
-    return defaultBaseHandler;
+    case resTokenType::PHE:
+      return phe_fn;
+    case resTokenType::TYR:
+      return tyr_fn;
+    case resTokenType::TRP:
+      return trp_fn;
+    // NOTE: Atom types are not unique among different force fields, so this approach is not
+    // going to work as simple as this.
+    case resTokenType::HIS:
+    case resTokenType::HSD:
+    case resTokenType::HSE:
+    case resTokenType::HSP:
+    case resTokenType::HID:
+    case resTokenType::HIE:
+    case resTokenType::HIP:
+      return his_fn;
+    case resTokenType::GLU:
+      return glu_fn;
+    case resTokenType::ASP:
+      return asp_fn;
+    case resTokenType::ASN:
+      return asn;
+    case resTokenType::GLN:
+      return gln;
+    case resTokenType::ARG:
+      return arg;
+    case resTokenType::G:
+      return g_fn;
+    case resTokenType::C:
+      return c_fn;
+    case resTokenType::A:
+      return a_fn;
+    case resTokenType::U:
+      return u_fn;
+    case resTokenType::DA:
+      return da_fn;
+    case resTokenType::DC:
+      return dc_fn;
+    case resTokenType::DG:
+      return dg_fn;
+    case resTokenType::DT:
+      return dt_fn;
+    case resTokenType::I:
+    case resTokenType::N:
+    case resTokenType::DI:
+    case resTokenType::DU:
+    case resTokenType::DN:
+    case resTokenType::APN:
+    case resTokenType::CPN:
+    case resTokenType::TPN:
+    case resTokenType::GPN:
+      return default_base_fn;
 
-  case resTokenType::SOL:
-  case resTokenType::WAT:
-  case resTokenType::HOH:
-  case resTokenType::H2O:
-  case resTokenType::W:
-  case resTokenType::DOD:
-  case resTokenType::D3O:
-  case resTokenType::TIP:
-  case resTokenType::TIP3:
-  case resTokenType::TIP4:
-  case resTokenType::SPC:
-    return defaultHandler;
+    case resTokenType::SOL:
+    case resTokenType::WAT:
+    case resTokenType::HOH:
+    case resTokenType::H2O:
+    case resTokenType::W:
+    case resTokenType::DOD:
+    case resTokenType::D3O:
+    case resTokenType::TIP:
+    case resTokenType::TIP3:
+    case resTokenType::TIP4:
+    case resTokenType::SPC:
+      return default_fn; 
 
-  default:
-    return defaultAminoAcidHandler;
+    default:
+      return default_amino_acid_fn;
   }
 }
 
@@ -376,7 +280,7 @@ constexpr auto handlers = generateHandlerArray(
 
 // Main processing function
 inline int process(resTokenType t, std::string_view s2, std::string_view s3) {
-  // now `process` is responsible for swapping the arguments if necessary
+  // `process` is responsible for swapping the arguments if necessary
   if (s2 > s3) {
     std::swap(s2, s3);
   }
@@ -409,16 +313,14 @@ private:
   bool atom2_is_metal = false;
 };
 
-inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
-  return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
-}
+inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) {
 
-inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1,
-                                        RDKit::Atom *atom2) {
-  auto *infoA =
-      static_cast<RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
-  auto *infoB =
-      static_cast<RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
+  static auto is_same_conformer = [](std::string altlocA, std::string altlocB) {
+    return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
+  };
+
+  auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
+  auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
 
   auto entryA = res_name_table(infoA->getResidueName().c_str(),
                                infoA->getResidueName().length());
