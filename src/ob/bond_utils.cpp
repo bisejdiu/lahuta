@@ -1,10 +1,11 @@
-#include "Geometry/point.h"
-#include "GraphMol/Atom.h"
-#include "GraphMol/Bond.h"
+// #include "GraphMol/Atom.h"
+// #include "GraphMol/Bond.h"
 #include "GraphMol/RDKitBase.h"
-#include "GraphMol/RWMol.h"
+// #include "GraphMol/RWMol.h"
+// #include "Geometry/point.h"
 
-#include "external/ob/elements.h"
+#include "bonds/table.hpp"
+// #include "external/ob/elements.h"
 #include "ob/bond_utils.hpp"
 
 double computeLengthSq(const RDKit::Conformer &conf, const RDKit::Bond *bond) {
@@ -143,7 +144,8 @@ void CleanUpMolecule(RDKit::RWMol &mol, RDKit::Conformer &conf) {
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     auto atom = *atomIt;
     while (GetExplicitValenceFromAtomBonds(mol, atom) >
-               OBElements::GetMaxBonds(atom->getAtomicNum()) ||
+                max_bonds[atom->getAtomicNum()] ||
+               // OBElements::GetMaxBonds(atom->getAtomicNum()) ||
            // SmallestBondAngle(mol, conf, atom)) {
            ComputeSmallestBondAngle(mol, conf, atom) < 45.0) {
 
