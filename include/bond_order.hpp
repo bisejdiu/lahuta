@@ -208,8 +208,7 @@ inline double AverageBondAngle(const RDKit::Atom *atom) {
   direction.  The operation is symmetrical in that if you reverse the image
   (look from C to B and rotate D over A), you get the same answer.
 */
-// FIX: RDKit likely has a function for this
-inline double CalcTorsionAngle(const RDGeom::Point3D &a, const RDGeom::Point3D &b,
+inline double compute_dihedral(const RDGeom::Point3D &a, const RDGeom::Point3D &b,
                         const RDGeom::Point3D &c, const RDGeom::Point3D &d) {
 
   double torsion;
@@ -229,4 +228,4 @@ inline double CalcTorsionAngle(const RDGeom::Point3D &a, const RDGeom::Point3D &
 }
 
 
-void PerceiveBondOrders(RDKit::RWMol &mol);
+void perceive_bond_orders_obabel(RDKit::RWMol &mol);

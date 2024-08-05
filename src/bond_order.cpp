@@ -1,14 +1,35 @@
-#include <GraphMol/RDKitBase.h>
+#include <GraphMol/RDKitBase.h> // FIX: import just the necessary headers
 #include "bond_order.hpp"
 #include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
 
-using namespace RDKit;
-
+// using namespace RDKit;
 using HybridizationType = RDKit::Atom::HybridizationType;
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
 
-void PerceiveBondOrders(RDKit::RWMol &mol) {
+double average_ring_dihedral(const RDKit::ROMol &mol, const RDKit::Conformer &conf, const std::vector<int> &ring) {
+    size_t ringSize = ring.size();
+    std::vector<const RDGeom::Point3D*> positions(ringSize);
+
+    for (size_t i = 0; i < ringSize; ++i) {
+        positions[i] = &conf.getAtomPos(mol.getAtomWithIdx(ring[i])->getIdx());
+    }
+
+    double torsionsSum = 0.0;
+    for (size_t i = 0; i < ringSize; ++i) {
+
+        torsionsSum += fabs(compute_dihedral(
+            *positions[i],
+            *positions[(i + 1) % ringSize], 
+            *positions[(i + 2) % ringSize],
+            *positions[(i + 3) % ringSize]
+        ));
+    }
+
+    return torsionsSum / ringSize;
+}
+
+void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
 
   RDKit::Conformer &conf = mol.getConformer();
 
@@ -62,7 +83,6 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
     RDKit::MolOps::findSSSR(mol);
   }
 
-  double torsions = 0.0;
   auto rlist = mol.getRingInfo()->atomRings();
   for (const auto &ring : rlist) {
     if (ring.size() == 5) {
@@ -71,28 +91,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
         atom_indices.push_back(atomIdx);
       }
 
-      RDKit::Atom *a0, *a1, *a2, *a3, *a4;
-      a0 = mol.getAtomWithIdx(atom_indices[0]);
-      a1 = mol.getAtomWithIdx(atom_indices[1]);
-      a2 = mol.getAtomWithIdx(atom_indices[2]);
-      a3 = mol.getAtomWithIdx(atom_indices[3]);
-      a4 = mol.getAtomWithIdx(atom_indices[4]);
-
-      // Get the coordinates of the atoms
-      RDGeom::Point3D pos0 = conf.getAtomPos(a0->getIdx());
-      RDGeom::Point3D pos1 = conf.getAtomPos(a1->getIdx());
-      RDGeom::Point3D pos2 = conf.getAtomPos(a2->getIdx());
-      RDGeom::Point3D pos3 = conf.getAtomPos(a3->getIdx());
-      RDGeom::Point3D pos4 = conf.getAtomPos(a4->getIdx());
-
-      torsions = (fabs(CalcTorsionAngle(pos0, pos1, pos2, pos3)) +
-                  fabs(CalcTorsionAngle(pos1, pos2, pos3, pos4)) +
-                  fabs(CalcTorsionAngle(pos2, pos3, pos4, pos0)) +
-                  fabs(CalcTorsionAngle(pos3, pos4, pos0, pos1)) +
-                  fabs(CalcTorsionAngle(pos4, pos0, pos1, pos2))) /
-                 5.0;
-
-      if (torsions <= 7.5) {
+      if (average_ring_dihedral(mol, conf, ring) <= 7.5) {
         for (const auto &atomIdx : ring) {
           RDKit::Atom *atom = mol.getAtomWithIdx(atomIdx);
           // if (atom->getDegree() == 2) {
@@ -107,31 +106,7 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
         atom_indices.push_back(atomIdx);
       }
 
-      RDKit::Atom *a0, *a1, *a2, *a3, *a4, *a5;
-      a0 = mol.getAtomWithIdx(atom_indices[0]);
-      a1 = mol.getAtomWithIdx(atom_indices[1]);
-      a2 = mol.getAtomWithIdx(atom_indices[2]);
-      a3 = mol.getAtomWithIdx(atom_indices[3]);
-      a4 = mol.getAtomWithIdx(atom_indices[4]);
-      a5 = mol.getAtomWithIdx(atom_indices[5]);
-
-      // Get the coordinates of the atoms
-      RDGeom::Point3D pos0 = conf.getAtomPos(a0->getIdx());
-      RDGeom::Point3D pos1 = conf.getAtomPos(a1->getIdx());
-      RDGeom::Point3D pos2 = conf.getAtomPos(a2->getIdx());
-      RDGeom::Point3D pos3 = conf.getAtomPos(a3->getIdx());
-      RDGeom::Point3D pos4 = conf.getAtomPos(a4->getIdx());
-      RDGeom::Point3D pos5 = conf.getAtomPos(a5->getIdx());
-
-      torsions = (fabs(CalcTorsionAngle(pos0, pos1, pos2, pos3)) +
-                  fabs(CalcTorsionAngle(pos1, pos2, pos3, pos4)) +
-                  fabs(CalcTorsionAngle(pos2, pos3, pos4, pos5)) +
-                  fabs(CalcTorsionAngle(pos3, pos4, pos5, pos0)) +
-                  fabs(CalcTorsionAngle(pos4, pos5, pos0, pos1)) +
-                  fabs(CalcTorsionAngle(pos5, pos0, pos1, pos2))) /
-                 6.0;
-
-      if (torsions <= 12.0) {
+      if (average_ring_dihedral(mol, conf, ring) <= 12.0) {
         for (const auto &atomIdx : ring) {
           RDKit::Atom *atom = mol.getAtomWithIdx(atomIdx);
           // if (atom->getDegree() == 2 || atom->getDegree() == 3) {

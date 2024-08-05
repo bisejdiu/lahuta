@@ -66,7 +66,7 @@ public:
 
   static void perceiveBondOrders(RDKit::RWMol &mol) {
     mol.updatePropertyCache(false);
-    PerceiveBondOrders(mol);
+    perceive_bond_orders_obabel(mol);
   }
 
   static void mergeBonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
