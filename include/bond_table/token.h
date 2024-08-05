@@ -84,6 +84,10 @@ enum class common_protein_caps : std::uint8_t {
   // MOH, // part of peptidomimetics
 };
 
+enum class common_lipid_names : std::uint8_t {
+  POPC,
+};
+
 enum class resTokenType : std::uint8_t {
   // Amino Acid Names L
   GLY,  // glycine

@@ -292,6 +292,8 @@ constexpr HandlerFunc getHandler(resTokenType type) {
     return TYR;
   case resTokenType::TRP:
     return TRP;
+  // NOTE: Atom types are not unique among different force fields, so this approach is not
+  // going to work as simple as this.
   case resTokenType::HIS:
   case resTokenType::HSD:
   case resTokenType::HSE:
@@ -362,7 +364,13 @@ constexpr auto generateHandlerArray(std::index_sequence<Is...>) {
       getHandler(static_cast<resTokenType>(Is))...};
 }
 
-// The main handler array
+// NOTE: The compile-time generation is unlikely to lead to any meaningful
+// performance improvement. We should instead generate it as part of the main
+// Lahuta interface as part of parsing the input file. This way the size of the
+// predefined data is not a concern, and we can only generate the handlers
+// (residues) that are actually needed.
+// NOTE: Any performance improvements are not due to lookup times, but rather
+// decreasing the number of atoms for SMARTS pattern matching.
 constexpr auto handlers = generateHandlerArray(
     std::make_index_sequence<static_cast<size_t>(resTokenType::UNKNOWN)>{});
 
@@ -382,7 +390,7 @@ struct PossiblyBonded {
 
   PossiblyBonded(int order) : bond_order(order) {}
   PossiblyBonded(bool a1, bool a2, int order)
-      : atom1_in_table(a1), atom2_in_table(a2), bond_order(order) {} 
+      : atom1_in_table(a1), atom2_in_table(a2), bond_order(order) {}
 
   operator int() const { return bond_order; }
   explicit operator bool() const { return bond_order != 0; }
@@ -405,26 +413,30 @@ inline bool is_same_conformer(std::string altlocA, std::string altlocB) {
   return altlocA.empty() || altlocB.empty() || altlocA == altlocB;
 }
 
-inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) {
-    auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
-    auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
+inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1,
+                                        RDKit::Atom *atom2) {
+  auto *infoA =
+      static_cast<RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
+  auto *infoB =
+      static_cast<RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
 
-    auto entryA = res_name_table(infoA->getResidueName().c_str(), infoA->getResidueName().length()); 
-    auto entryB = res_name_table(infoB->getResidueName().c_str(), infoB->getResidueName().length());
-    
-    bool atom1_in_table = entryA != resTokenType::UNKNOWN;
-    bool atom2_in_table = entryB != resTokenType::UNKNOWN;
+  auto entryA = res_name_table(infoA->getResidueName().c_str(),
+                               infoA->getResidueName().length());
+  auto entryB = res_name_table(infoB->getResidueName().c_str(),
+                               infoB->getResidueName().length());
 
-    if (entryA == resTokenType::UNKNOWN || entryB == resTokenType::UNKNOWN) {
-      return PossiblyBonded{atom1_in_table, atom2_in_table, 0};
-    }
-    if (!is_same_conformer(infoA->getAltLoc(), infoB->getAltLoc())) {
-      return PossiblyBonded{atom1_in_table, atom2_in_table, 0};
-    }
+  bool atom1_in_table = entryA != resTokenType::UNKNOWN;
+  bool atom2_in_table = entryB != resTokenType::UNKNOWN;
 
-    int order = process(entryA, infoA->getName(), infoB->getName());
-    return {atom1_in_table, atom2_in_table, order};
+  if (entryA == resTokenType::UNKNOWN || entryB == resTokenType::UNKNOWN) {
+    return PossiblyBonded{atom1_in_table, atom2_in_table, 0};
+  }
+  if (!is_same_conformer(infoA->getAltLoc(), infoB->getAltLoc())) {
+    return PossiblyBonded{atom1_in_table, atom2_in_table, 0};
+  }
+
+  int order = process(entryA, infoA->getName(), infoB->getName());
+  return {atom1_in_table, atom2_in_table, order};
 }
-
 
 #endif // LAHUTA_BONDS_HPP
