@@ -7,8 +7,8 @@
 
 #include "external/ob/elements.h"
 
-#include "bond_table/bonds.hpp"
-#include "bond_table/table.hpp"
+#include "bonds/bonds.hpp"
+#include "bonds/table.hpp"
 
 using namespace gemmi;
 

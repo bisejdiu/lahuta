@@ -319,6 +319,8 @@ inline auto is_same_conformer(const std::string& altlocA, const std::string& alt
 
 inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) {
 
+inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) {
+
   auto *infoA = static_cast<RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
   auto *infoB = static_cast<RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
 
