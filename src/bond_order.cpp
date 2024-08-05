@@ -1,4 +1,8 @@
-#include <GraphMol/RDKitBase.h> // FIX: import just the necessary headers
+#include <GraphMol/RWMol.h>
+#include <GraphMol/MolOps.h>
+#include <GraphMol/AtomIterators.h>
+#include <GraphMol/BondIterators.h>
+
 #include "bond_order.hpp"
 #include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"

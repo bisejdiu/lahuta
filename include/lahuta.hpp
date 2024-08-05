@@ -1,4 +1,4 @@
-#include <GraphMol/RDKitBase.h>
+#include <GraphMol/BondIterators.h>
 
 #include "bond_order.hpp"
 #include "bonds.hpp"

@@ -1,4 +1,6 @@
-#include <GraphMol/RDKitBase.h> 
+#include <GraphMol/AtomIterators.h> 
+#include <GraphMol/BondIterators.h> 
+
 #include "ob/clean_mol.hpp"
 #include "bonds/table.hpp"
 
