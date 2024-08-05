@@ -1,36 +1,25 @@
-#include <GraphMol/PeriodicTable.h>
 #include "bonds.hpp"
-#include "convert.hpp"
 #include "bonds/bonds.hpp"
 #include "bonds/table.hpp"
+#include "convert.hpp"
 
 auto PeriodicTable = RDKit::PeriodicTable::getTable();
 
-bool connectOBMol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
-                  double tolerance) {
-  if (dist_sq < 0.16) {
-    return false;
-  }
-  double rcov1 = PeriodicTable->getRcovalent(p->getAtomicNum());
-  double rcov2 = PeriodicTable->getRcovalent(q->getAtomicNum());
-
-  if (dist_sq <= (rcov1 + rcov2 + tolerance) * (rcov1 + rcov2 + tolerance)) {
-    return true;
-  }
-  return false;
-}
-
-// TODO: Implement a struct to hold both RWMol and the non-protein indices the
-// non-protein indices should perhaps be put into a set first, to avoid
-// duplicates.
-// Function to collect unique indices during iteration over neighboring pairs
-RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
-                                  std::vector<int> &non_protein_indices) {
+// NOTE: this funciton performs two distinct tasks: (1) assign bond orders using
+// a table lookup and (2) use smart pattern matching to assign bond orders
+// NOTE: simplify by perhaps returning a struct
+RDKit::RWMol assign_bonds(RDKit::RWMol &mol, const NSResults &results,
+                          std::vector<int> &non_predef_atom_indices) {
 
   std::vector<std::pair<int, int>> bonds;
   std::vector<bool> seen(mol.getNumAtoms(), false);
 
-  constexpr int MAX_INDEX = std::numeric_limits<int>::max();
+  std::vector<float> rcov;
+  rcov.resize(mol.getNumAtoms());
+  for (const auto atom : mol.atoms()) {
+    rcov[atom->getIdx()] = PeriodicTable->getRcovalent(atom->getAtomicNum());
+  }
+
   for (auto i = 0; i < results.getNeighbors().size(); i++) {
     auto res = results.getNeighbors()[i];
     auto dist_sq = results.distances[i];
@@ -60,16 +49,16 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
       // This results in metalic bonds being added and likely bonds to different
       // ions, etc.
       if (!seen[a->getIdx()]) {
-        non_protein_indices.push_back(a->getIdx());
+        non_predef_atom_indices.push_back(a->getIdx());
         seen[a->getIdx()] = true;
       }
 
       if (!seen[b->getIdx()]) {
-        non_protein_indices.push_back(b->getIdx());
+        non_predef_atom_indices.push_back(b->getIdx());
         seen[b->getIdx()] = true;
       }
 
-      if (connectOBMol(a, b, dist_sq, 0.45)) {
+      if (is_bonded_obmol(a, b, dist_sq, 0.45, rcov)) {
         bonds.emplace_back(a->getIdx(), b->getIdx());
       }
       continue;
@@ -84,13 +73,13 @@ RDKit::RWMol lahutaBondAssignment(RDKit::RWMol &mol, const NSResults &results,
     }
   }
 
-  auto newMol = rdMolFromRDKitMol(mol, non_protein_indices);
+  auto newMol = rdMolFromRDKitMol(mol, non_predef_atom_indices);
 
   std::vector<int> index_mapping;
   index_mapping.resize(mol.getNumAtoms(), -1);
 
-  for (size_t i = 0; i < non_protein_indices.size(); ++i) {
-    index_mapping[non_protein_indices[i]] = static_cast<int>(i);
+  for (size_t i = 0; i < non_predef_atom_indices.size(); ++i) {
+    index_mapping[non_predef_atom_indices[i]] = static_cast<int>(i);
   }
 
   // Add bonds to the newMol

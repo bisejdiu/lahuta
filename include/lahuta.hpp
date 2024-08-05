@@ -60,8 +60,8 @@ class BondComputation {
 public:
   static RDKit::RWMol computeProteinBonds(RDKit::RWMol &mol,
                                           const NSResults &neighbors) {
-    std::vector<int> non_protein_indices;
-    return lahutaBondAssignment(mol, neighbors, non_protein_indices);
+    std::vector<int> non_predef_atom_indices;
+    return assign_bonds(mol, neighbors, non_predef_atom_indices);
   }
 
   static void perceiveBondOrders(RDKit::RWMol &mol) {
@@ -91,7 +91,7 @@ public:
     std::vector<int> non_protein_indices;
     non_protein_indices.reserve(mol.getNumAtoms());
     auto newMol =
-        lahutaBondAssignment(mol, neighborResults, non_protein_indices);
+        assign_bonds(mol, neighborResults, non_protein_indices);
     // compute time to clean molecule in ms:
     auto start = T();
     clean_bonds(newMol, newMol.getConformer());
