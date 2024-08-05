@@ -1,183 +1,11 @@
-#include "GraphMol/RDKitBase.h"
-#include <GraphMol/SmilesParse/SmilesParse.h>
-#include <GraphMol/Substruct/SubstructMatch.h>
-
+#include "bond_order.hpp"
 #include "ob/bond_utils.hpp"
-#include "ob/elements.h"
 #include "ob/kekulize.h"
 
-#include "bond_order.hpp"
-#include "bonds.hpp"
-#include "conv.hpp"
-
-using namespace gemmi;
 using namespace RDKit;
 
 using HybridizationType = RDKit::Atom::HybridizationType;
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
-
-int GetExpVal(const RDKit::Atom *atom) {
-  double valence = 0;
-  for (auto bondIt = atom->getOwningMol().getAtomBonds(atom);
-       bondIt.first != bondIt.second; ++bondIt.first) {
-    const RDKit::Bond *bond = atom->getOwningMol()[*bondIt.first];
-    valence += bond->getBondTypeAsDouble();
-  }
-  return valence;
-}
-
-SubStrMatches performSubstructMatch(RDKit::ROMol &mol, RDKit::ROMol &pattern,
-                                    SubstructMatchParameters &params) {
-  SubStrMatches matchList;
-  matchList = RDKit::SubstructMatch(mol, pattern, params);
-
-  if (matchList.size() == params.maxMatches) {
-    SubstructMatchParameters largeParams = params;
-    largeParams.maxMatches = mol.getNumAtoms();
-    matchList = RDKit::SubstructMatch(mol, pattern, largeParams);
-  }
-
-  return matchList;
-}
-
-void RDKitSmartsMatch(RDKit::ROMol &mol, SubstructMatchParameters &params) {
-  // Precompute patterns statically
-  static std::array<RDKit::ROMol *, std::size(smartsList)> patterns = [] {
-    std::array<RDKit::ROMol *, std::size(smartsList)> temp{};
-    for (size_t i = 0; i < std::size(smartsList); ++i) {
-      temp[i] = RDKit::SmartsToMol(smartsList[i].first);
-    }
-    return temp;
-  }();
-
-  for (size_t i = 0; i < std::size(smartsList); ++i) {
-    const auto &[smarts, hybridType] = smartsList[i];
-    RDKit::ROMol *pattern = patterns[i];
-
-    // FIX: supplying the param list leads to performance issues
-    // SubStrMatches matchList = performSubstructMatch(mol, *pattern, params);
-    SubStrMatches matchList;
-    RDKit::SubstructMatch(mol, *pattern, matchList);
-
-    for (const auto &match : matchList) {
-      auto atom = mol.getAtomWithIdx(match[0].second);
-      atom->setHybridization(hybridType);
-    }
-  }
-}
-
-void OBBondTypeAssignment(RDKit::ROMol &mol) {
-
-  // Precompute patterns statically
-  static std::vector<RDKit::ROMol *> patterns = [] {
-    std::vector<RDKit::ROMol *> temp;
-    temp.resize(bondSmarts.size());
-    for (size_t i = 0; i < bondSmarts.size(); ++i) {
-      temp[i] = RDKit::SmartsToMol(bondSmarts[i].first);
-    }
-    return temp;
-  }();
-
-  for (size_t i = 0; i < bondSmarts.size(); ++i) {
-    const auto &[smarts, bondVector] = bondSmarts[i];
-    RDKit::ROMol *pattern = patterns[i];
-
-    SubstructMatchParameters params;
-    params.maxMatches = 100000000;
-    std::vector<RDKit::MatchVectType> matchList;
-    matchList = RDKit::SubstructMatch(mol, *pattern, params);
-
-    for (const auto &match : matchList) {
-      for (auto j = 0; j < bondVector.size(); j += 3) {
-        auto bond = mol.getBondBetweenAtoms(match[bondVector[j]].second,
-                                            match[bondVector[j + 1]].second);
-        if (bond) {
-          // FIX: there is an implicit conversion from int to BondType
-          bond->setBondType(Bond::BondType(bondVector[j + 2]));
-        }
-      }
-    }
-  }
-}
-
-double AverageBondAngle(const RDKit::Atom *atom) {
-  double avgDegrees = 0.0;
-  int n = 0;
-
-  const RDKit::ROMol &mol = atom->getOwningMol();
-  const RDKit::Conformer &conf = mol.getConformer();
-
-  for (auto bondIt1 = mol.getAtomBonds(atom); bondIt1.first != bondIt1.second;
-       ++bondIt1.first) {
-    const RDKit::Bond *bond1 = mol[*bondIt1.first];
-    const RDKit::Atom *neighbor1 = bond1->getOtherAtom(atom);
-
-    for (auto bondIt2 = bondIt1; ++bondIt2.first != bondIt2.second;) {
-      const RDKit::Bond *bond2 = mol[*bondIt2.first];
-      const RDKit::Atom *neighbor2 = bond2->getOtherAtom(atom);
-
-      // Get the coordinates of the atoms
-      RDGeom::Point3D pos1 = conf.getAtomPos(atom->getIdx());
-      RDGeom::Point3D pos2 = conf.getAtomPos(neighbor1->getIdx());
-      RDGeom::Point3D pos3 = conf.getAtomPos(neighbor2->getIdx());
-
-      // Calculate the vectors
-      RDGeom::Point3D v1 = pos2 - pos1;
-      RDGeom::Point3D v2 = pos3 - pos1;
-
-      // Normalize the vectors
-      v1.normalize();
-      v2.normalize();
-
-      // Calculate the angle in radians
-      double angle = acos(v1.dotProduct(v2));
-
-      // Convert to degrees
-      double degrees = angle * 180.0 / M_PI;
-
-      avgDegrees += degrees;
-      n++;
-    }
-  }
-
-  if (n >= 1) {
-    avgDegrees /= n;
-  }
-
-  return avgDegrees;
-}
-
-// FIX: RDKit likely has a function for this
-//
-/*!  This function calculates the torsion angle of three vectors, represented
-  by four points A--B--C--D, i.e. B and C are vertexes, but none of A--B,
-  B--C, and C--D are colinear.  A "torsion angle" is the amount of "twist"
-  or torsion needed around the B--C axis to bring A--B into the same plane
-  as B--C--D.  The torsion is measured by "looking down" the vector B--C so
-  that B is superimposed on C, then noting how far you'd have to rotate
-  A--B to superimpose A over D.  Angles are + in the anti-clockwise
-  direction.  The operation is symmetrical in that if you reverse the image
-  (look from C to B and rotate D over A), you get the same answer.
-*/
-
-double CalcTorsionAngle(const RDGeom::Point3D &a, const RDGeom::Point3D &b,
-                        const RDGeom::Point3D &c, const RDGeom::Point3D &d) {
-
-  double torsion;
-  RDGeom::Point3D b1, b2, b3, c1, c2, c3;
-
-  b1 = a - b;
-  b2 = b - c;
-  b3 = c - d;
-
-  double rb2 = sqrt(b2.dotProduct(b2));
-
-  RDGeom::Point3D b2xb3 = b2.crossProduct(b3);
-  RDGeom::Point3D b1xb2 = b1.crossProduct(b2);
-  torsion = -atan2(rb2 * b1.dotProduct(b2xb3), b1xb2.dotProduct(b2xb3));
-
-  return (torsion * 180.0 / M_PI);
-}
 
 void PerceiveBondOrders(RDKit::RWMol &mol) {
 
@@ -190,7 +18,8 @@ void PerceiveBondOrders(RDKit::RWMol &mol) {
   }
 
   SubstructMatchParameters params;
-  // params.maxMatches = 500; // 00000;
+  params.maxMatches = mol.getNumAtoms();
+  // NOTE: SmartsMatching can take the number of threads as a parameter
   // params.numThreads = 1;
   RDKitSmartsMatch(mol, params);
 

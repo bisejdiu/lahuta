@@ -2,7 +2,7 @@
 
 #include "GraphMol/MonomerInfo.h"
 #include "bonds.hpp"
-#include "conv.hpp"
+#include "convert.hpp"
 #include "nsgrid.hpp"
 
 #include "external/ob/elements.h"
