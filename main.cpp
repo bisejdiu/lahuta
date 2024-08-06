@@ -38,7 +38,7 @@ int main(int argc, char const *argv[]) {
   auto neighbors = r.getNeighbors();
 
 
-  RDKit::RWMol *mol = &luni.getMolecule();
+  RDKit::RWMol *mol = &luni.get_molecule();
   int o1 = 0;
   int o2 = 0;
   for (auto bondIt = mol->beginBonds(); bondIt != mol->endBonds(); ++bondIt) {

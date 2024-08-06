@@ -1,25 +1,22 @@
 #include <GraphMol/BondIterators.h>
+#include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
-#include "bond_order.hpp"
 #include "bonds.hpp"
+#include "bond_order.hpp"
 #include "convert.hpp"
 #include "nsgrid.hpp"
-#include <optional>
-#include <vector>
 #include "ob/clean_mol.hpp"
-#include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 namespace Lahuta {
 
 class ISource {
 public:
   // FIX: RDKit provides ROMol and RWMol
-  virtual RDKit::RWMol &getMolecule() = 0;
-  virtual const RDKit::RWMol &getMolecule() const = 0;
-  virtual RDKit::Conformer &getConformer(int id = -1) = 0;
+  virtual RDKit::RWMol &get_molecule() = 0;
+  virtual const RDKit::RWMol &get_molecule() const = 0;
+  virtual RDKit::Conformer &get_conformer(int id = -1) = 0;
   virtual ~ISource() = default;
 
-  // virtual void process(const gemmi::Structure &st) = 0;
   virtual void process(std::string file_name) = 0;
 };
 
@@ -30,12 +27,10 @@ private:
 public:
   explicit GemmiSource() = default;
 
-  // copy constructor
   GemmiSource(const GemmiSource &source) {
     mol = std::make_unique<RDKit::RWMol>(*source.mol);
   }
 
-  // void process(const gemmi::Structure &st) override {
   void process(std::string file_name) override {
     RDKit::Conformer *conformer = new RDKit::Conformer();
     Structure st = read_structure_gz(file_name);
@@ -43,28 +38,17 @@ public:
     mol->addConformer(conformer, true);
   }
 
-  RDKit::RWMol &getMolecule() override { return *mol; }
-  const RDKit::RWMol &getMolecule() const override { return *mol; }
+  RDKit::RWMol &get_molecule() override { return *mol; }
+  const RDKit::RWMol &get_molecule() const override { return *mol; }
 
-  RDKit::Conformer &getConformer(int id = -1) override {
+  RDKit::Conformer &get_conformer(int id = -1) override {
     return mol->getConformer(id);
   }
 };
 
 class BondComputation {
 public:
-  static RDKit::RWMol computeProteinBonds(RDKit::RWMol &mol,
-                                          const NSResults &neighbors) {
-    std::vector<int> non_predef_atom_indices;
-    return assign_bonds(mol, neighbors, non_predef_atom_indices);
-  }
-
-  static void perceiveBondOrders(RDKit::RWMol &mol) {
-    mol.updatePropertyCache(false);
-    perceive_bond_orders_obabel(mol);
-  }
-
-  static void mergeBonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
+  static void merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
                          const std::vector<int> &indexMap) {
     for (auto bondIt = sourceMol.beginBonds(); bondIt != sourceMol.endBonds();
          ++bondIt) {
@@ -77,31 +61,15 @@ public:
     }
   }
 
-  static void computeBonds(RDKit::RWMol &mol,
-                           const NSResults &neighborResults) {
-
-    // RDKit::RWMol resultMol = mol;
-    // auto proteinMol = computeProteinBonds(resultMol, neighborResults);
-
-    std::vector<int> non_protein_indices;
-    non_protein_indices.reserve(mol.getNumAtoms());
-    auto newMol = assign_bonds(mol, neighborResults, non_protein_indices);
-    clean_bonds(newMol, newMol.getConformer());
-    
-    newMol.updatePropertyCache(false);
-    perceiveBondOrders(newMol);
-
-    for (auto bondIt = newMol.beginBonds(); bondIt != newMol.endBonds();
-         ++bondIt) {
-      RDKit::Bond *bond = *bondIt;
-      auto bAtomIdx = bond->getBeginAtomIdx();
-      auto eAtomIdx = bond->getEndAtomIdx();
-      int bIdx = non_protein_indices[bAtomIdx];
-      int eIdx = non_protein_indices[eAtomIdx];
-      if (mol.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
-        mol.addBond(bIdx, eIdx, bond->getBondType());
-      }
+  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {
+    auto result = assign_bonds(mol, neighborResults);
+    if (!result.has_unlisted_resnames) {
+      return;
     }
+    clean_bonds(result.mol, result.mol.getConformer());
+    result.mol.updatePropertyCache(false);
+    perceive_bond_orders_obabel(result.mol);
+    merge_bonds(mol, result.mol, result.atom_indices);
   }
 };
 
@@ -113,35 +81,32 @@ private:
   FastNS grid;
 
 public:
-  // explicit Luni(GemmiSource &source) : source(&source), _cutoff(4.5) { 
-  //   initAndCompBonds();
-  // }
-  explicit Luni(std::string file_name) : _cutoff(4.5) { 
+  explicit Luni(std::string file_name) : _cutoff(4.5) {
     source = std::make_unique<GemmiSource>();
     source->process(file_name);
-    initAndCompBonds();
+    init_and_compute_bonds();
   }
 
-  void initAndCompBonds() {
-    const auto &conf = source->getConformer();
+  void init_and_compute_bonds() {
+    const auto &conf = source->get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
     neighborResults = grid.selfSearch();
-    BondComputation::computeBonds(source->getMolecule(), neighborResults);
+    BondComputation::compute_bonds(source->get_molecule(), neighborResults);
   }
 
-  RDKit::RWMol &getMolecule() { return source->getMolecule(); }
-  const RDKit::RWMol &getMolecule() const { return source->getMolecule(); }
-  const std::vector<RDGeom::Point3D> &getPositions(int confId = -1) const {
-    return source->getConformer(confId).getPositions();
+  RDKit::RWMol &get_molecule() { return source->get_molecule(); }
+  const RDKit::RWMol &get_molecule() const { return source->get_molecule(); }
+  const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
+    return source->get_conformer(confId).getPositions();
   }
   const NSResults &getNeighborResults() const { return neighborResults; }
-  double getCutoff() const { return _cutoff; }
+  double get_cutoff() const { return _cutoff; }
 
   void setNeighborResults(const NSResults &results) {
     neighborResults = results;
   }
 
-  NSResults findNeighbors(std::optional<double> cutoff) {
+  NSResults find_neighbors(std::optional<double> cutoff) {
     auto value = cutoff.value_or(_cutoff);
 
     if (value == _cutoff) {

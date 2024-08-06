@@ -8,9 +8,10 @@ auto PeriodicTable = RDKit::PeriodicTable::getTable();
 // NOTE: this funciton performs two distinct tasks: (1) assign bond orders using
 // a table lookup and (2) use smart pattern matching to assign bond orders
 // NOTE: simplify by perhaps returning a struct
-RDKit::RWMol assign_bonds(RDKit::RWMol &mol, const NSResults &results,
-                          std::vector<int> &non_predef_atom_indices) {
+BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
+  std::vector<int> non_predef_atom_indices;
+  non_predef_atom_indices.reserve(mol.getNumAtoms());
   std::vector<std::pair<int, int>> bonds;
   std::vector<bool> seen(mol.getNumAtoms(), false);
 
@@ -73,7 +74,11 @@ RDKit::RWMol assign_bonds(RDKit::RWMol &mol, const NSResults &results,
     }
   }
 
-  auto newMol = rdMolFromRDKitMol(mol, non_predef_atom_indices);
+  if (non_predef_atom_indices.size() == 0) {
+    return {}; 
+  }
+
+  auto new_mol = rdMolFromRDKitMol(mol, non_predef_atom_indices);
 
   std::vector<int> index_mapping;
   index_mapping.resize(mol.getNumAtoms(), -1);
@@ -87,10 +92,10 @@ RDKit::RWMol assign_bonds(RDKit::RWMol &mol, const NSResults &results,
     int aIx = index_mapping[bond.first];
     int bIx = index_mapping[bond.second];
 
-    if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
-      newMol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
+    if (new_mol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
+      new_mol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
     }
   }
 
-  return newMol;
+  return {new_mol, non_predef_atom_indices};
 };

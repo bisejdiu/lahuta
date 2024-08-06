@@ -39,8 +39,8 @@ void test_lahuta(py::module &LT) {
       // .def(py::init<Lahuta::GemmiSource>(), py::return_value_policy::copy)
       .def(py::init<std::string>())
       .def("getNeighborResults", &Lahuta::Luni::getNeighborResults)
-      .def("findNeighbors", &Lahuta::Luni::findNeighbors)
-      .def("getCutoff", &Lahuta::Luni::getCutoff);
+      .def("findNeighbors", &Lahuta::Luni::find_neighbors)
+      .def("getCutoff", &Lahuta::Luni::get_cutoff);
       // .def("getMolecule", &Lahuta::Luni::getMolecule);
 
   py::class_<NSResults>(LT, "NSResults")
