@@ -38,18 +38,18 @@ void test_lahuta(py::module &LT) {
   Luni
       // .def(py::init<Lahuta::GemmiSource>(), py::return_value_policy::copy)
       .def(py::init<std::string>())
-      .def("getNeighborResults", &Lahuta::Luni::getNeighborResults)
+      .def("getNeighborResults", &Lahuta::Luni::get_neighbors)
       .def("findNeighbors", &Lahuta::Luni::find_neighbors)
       .def("getCutoff", &Lahuta::Luni::get_cutoff);
       // .def("getMolecule", &Lahuta::Luni::getMolecule);
 
   py::class_<NSResults>(LT, "NSResults")
       .def(py::init<>())
-      .def("addNeighbors", &NSResults::addNeighbors)
-      .def("reserveSpace", &NSResults::reserveSpace)
-      .def("getNeighbors", &NSResults::getNeighbors)
-      .def("getNeighborPairsSize", &NSResults::getNeighborPairsSize)
-      .def("filterByDistance", &NSResults::filterByDistance);
+      .def("addNeighbors", &NSResults::add_neighbors)
+      .def("reserveSpace", &NSResults::reserve_space)
+      .def("getNeighbors", &NSResults::get_neighbors)
+      .def("getNeighborPairsSize", &NSResults::size)
+      .def("filterByDistance", &NSResults::filter);
 }
 
 

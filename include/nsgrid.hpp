@@ -8,23 +8,23 @@ const int kDIMENSIONS = 3;
 using FlatCoords = std::vector<float>;
 using NeighborPairs = std::vector<std::pair<int, int>>;
 
-void transformCoords(std::vector<RDGeom::Point3D> &coords,
+void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                      std::array<float, 3> &pseudobox);
-FlatCoords flattenCoords(std::vector<RDGeom::Point3D> &coords);
+FlatCoords flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
 
 struct NSResults {
   std::vector<std::pair<int, int>> neighbor_pairs;
   std::vector<float> distances;
 
-  void addNeighbors(int i, int j, float d2);
+  void add_neighbors(int i, int j, float d2);
 
-  void reserveSpace(size_t input_size);
+  void reserve_space(size_t input_size);
 
-  const NeighborPairs &getNeighbors() const { return neighbor_pairs; }
+  const NeighborPairs &get_neighbors() const { return neighbor_pairs; }
 
-  size_t getNeighborPairsSize() const { return neighbor_pairs.size(); }
+  size_t size() const { return neighbor_pairs.size(); }
 
-  NSResults filterByDistance(float dist) const;
+  NSResults filter(float distance) const;
 };
 
 class FastNS {
@@ -33,9 +33,9 @@ public:
   FastNS() = default;
   FastNS(const RDGeom::POINT3D_VECT &coords, float cutoff);
 
-  NSResults selfSearch() const;
+  NSResults self_search() const;
 
-  void updateCutoff(float new_cutoff);
+  void update_cutoff(float new_cutoff);
 
 private:
   float cutoff;
@@ -48,19 +48,19 @@ private:
   std::vector<int> head_id;
   std::vector<int> next_id;
 
-  void prepareBox();
-  void packGrid();
-  void buildGrid();
+  void prepare_box();
+  void pack_grid();
+  void build_grid();
 
-  inline int _coord2CellId(const float *__restrict coord) const;
+  inline int _coord_to_cell_id(const float *__restrict coord) const;
 
-  inline void _coord2CellXYZ(const float *__restrict coord,
+  inline void _coord_to_cell_xyz(const float *__restrict coord,
                              std::array<int, 3> &xyz) const;
 
-  inline int _cellXYZ2CellId(int cx, int cy, int cz) const;
+  inline int _cell_xyz_to_cell_id(int cx, int cy, int cz) const;
 
-  inline float calcDistSq(const float *__restrict a,
+  inline float dist_sq(const float *__restrict a,
                           const float *__restrict b) const;
-  inline bool IsWithinCutoff(const float *__restrict a,
+  inline bool is_within_cutoff(const float *__restrict a,
                              const float *__restrict b, float cutoff2) const;
 };

@@ -1,4 +1,4 @@
-CXX = g++ -std=c++17 -g
+CXX = g++ -std=c++17
 CC = gcc
 
 GEMMI = external/gemmi

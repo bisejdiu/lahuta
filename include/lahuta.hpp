@@ -7,6 +7,12 @@
 #include "nsgrid.hpp"
 #include "ob/clean_mol.hpp"
 
+#include <memory>
+#include <optional>
+#include <string>
+
+#define LAHUTA_VERSION "0.10.0"
+
 namespace Lahuta {
 
 class ISource {
@@ -76,7 +82,7 @@ public:
 class Luni {
 private:
   std::unique_ptr<ISource> source;
-  NSResults neighborResults;
+  NSResults neighbors;
   float _cutoff;
   FastNS grid;
 
@@ -90,8 +96,8 @@ public:
   void init_and_compute_bonds() {
     const auto &conf = source->get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
-    neighborResults = grid.selfSearch();
-    BondComputation::compute_bonds(source->get_molecule(), neighborResults);
+    neighbors = grid.self_search();
+    BondComputation::compute_bonds(source->get_molecule(), neighbors);
   }
 
   RDKit::RWMol &get_molecule() { return source->get_molecule(); }
@@ -99,24 +105,20 @@ public:
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return source->get_conformer(confId).getPositions();
   }
-  const NSResults &getNeighborResults() const { return neighborResults; }
+  const NSResults &get_neighbors() const { return neighbors; }
   double get_cutoff() const { return _cutoff; }
-
-  void setNeighborResults(const NSResults &results) {
-    neighborResults = results;
-  }
 
   NSResults find_neighbors(std::optional<double> cutoff) {
     auto value = cutoff.value_or(_cutoff);
 
     if (value == _cutoff) {
-      return neighborResults;
+      return neighbors;
     } else if (value < _cutoff) {
-      return neighborResults.filterByDistance(value);
+      return neighbors.filter(value);
     }
 
-    grid.updateCutoff(value);
-    return grid.selfSearch();
+    grid.update_cutoff(value);
+    return grid.self_search();
   }
 };
 

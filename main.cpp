@@ -31,11 +31,11 @@ int main(int argc, char const *argv[]) {
   Lahuta::Luni luni(file_name);
 
   // FIX: replace getNeighborPairsSize with just Size()
-  std::cout << "Neighbors: " << luni.getNeighborResults().getNeighborPairsSize()
+  std::cout << "Neighbors: " << luni.get_neighbors().size()
             << std::endl;
 
-  auto r = luni.getNeighborResults();
-  auto neighbors = r.getNeighbors();
+  auto r = luni.get_neighbors();
+  auto neighbors = r.get_neighbors();
 
 
   RDKit::RWMol *mol = &luni.get_molecule();

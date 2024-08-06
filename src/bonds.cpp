@@ -21,8 +21,8 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     rcov[atom->getIdx()] = PeriodicTable->getRcovalent(atom->getAtomicNum());
   }
 
-  for (auto i = 0; i < results.getNeighbors().size(); i++) {
-    auto res = results.getNeighbors()[i];
+  for (auto i = 0; i < results.get_neighbors().size(); i++) {
+    auto res = results.get_neighbors()[i];
     auto dist_sq = results.distances[i];
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
