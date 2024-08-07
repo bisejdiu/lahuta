@@ -64,7 +64,7 @@ add_library(lahuta_cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-# target_compile_definitions(lahuta_cpp PRIVATE LAHUTA_BUILD)
+target_compile_definitions(lahuta_cpp PUBLIC LAHUTA_BUILD)
  
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -81,6 +81,24 @@ target_link_libraries(lahuta_cpp PUBLIC
 
 add_executable(lex main.cpp)
 target_link_libraries(lex PRIVATE lahuta_cpp gemmi_cpp)
+
+install(TARGETS lahuta_cpp)
+# install(TARGETS lahuta_cpp EXPORT lahuta_cpp
+#         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#
+# install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+#
+# install(EXPORT lahuta_cpp
+#         FILE lahuta_cpp-config.cmake
+#         NAMESPACE lahuta_cpp::
+#         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/lahuta_cpp)
+#
+# export(TARGETS lahuta_cpp NAMESPACE lahuta_cpp:: FILE lahuta_cpp-config.cmake)
+
+
 
 ### Python bindings ###
 if (USE_PYTHON)
@@ -99,7 +117,20 @@ if (USE_PYTHON)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
   pybind11_add_module(lahuta_py python/lahuta.cpp)
-  target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp)
+  # target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp)
+
+  if (1)
+    target_sources(lahuta_py PRIVATE 
+    $<TARGET_OBJECTS:lahuta_cpp>
+    $<TARGET_OBJECTS:gemmi_cpp>
+    )
+    get_target_property(_lahuta_cpp_libs lahuta_cpp LINK_LIBRARIES)
+    get_target_property(_gemmi_cpp_libs gemmi_cpp LINK_LIBRARIES)
+    set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_cpp_libs})
+    set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_gemmi_cpp_libs})
+  else()
+    target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp)
+  endif()
 
   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
@@ -116,14 +147,10 @@ if (USE_PYTHON)
     add_custom_command(TARGET lahuta_py POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E env
          "PYTHONPATH=$<TARGET_FILE_DIR:lahuta_py>${sep}$ENV{PYTHONPATH}"
-       ${Python_EXECUTABLE} -m pybind11_stubgen gemmi
-         --enum-class-locations=Ignore:gemmi.ContactSearch
-         --enum-class-locations=.+:gemmi
-         --numpy-array-remove-parameters
-         --output-dir stubs
-     COMMAND ${CMAKE_COMMAND} -E touch stubs/gemmi/py.typed
+       ${Python_EXECUTABLE} -m pybind11_stubgen _lahuta
+     COMMAND ${CMAKE_COMMAND} -E touch stubs/py.typed
      COMMENT "Generate type stubs with pybind11-stubgen"
-     BYPRODUCTS stubs/gemmi/__init__.pyi stubs/gemmi/cif.pyi stubs/gemmi/py.typed
+     BYPRODUCTS stubs/__init__.pyi stubs/_lahuta.pyi stubs/py.typed
      VERBATIM)
   endif()
 else()
@@ -131,33 +158,33 @@ else()
 endif()
 
 
-if (USE_PYTHON)
-  if (DEFINED PYTHON_INSTALL_DIR)
-    message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
-    set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
-  endif()
-  file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
-  # Using Python_SITEARCH/SITELIB is not good, because they are absolute
-  # and don't respect CMAKE_INSTALL_PREFIX.
-  # https://discourse.cmake.org/t/findpython3-how-to-specify-local-installation-directory-for-python-module/3580/5
-  if (BUILD_SHARED_LIBS AND NOT STANDALONE_PYTHON_MODULE)
-    if (DEFINED SKBUILD)
-      # When building via pip, Python_SITEARCH is /tmp.../wheel/platlib,
-      # different from the actual install path. Best guess:
-      set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
-    else()
-      file(RELATIVE_PATH rpath_rel
-           "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-    endif()
-    set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
-  endif()
-  install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
-  install(DIRECTORY examples DESTINATION "${Python_SITEARCH}/lahuta" COMPONENT py
-          FILES_MATCHING PATTERN "*.py"
-          PATTERN "[._]*" EXCLUDE)
-  if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/lahuta"
-            DESTINATION "${Python_SITEARCH}" COMPONENT py)
-  endif()
-endif()
-
+# if (USE_PYTHON)
+#   if (DEFINED PYTHON_INSTALL_DIR)
+#     message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
+#     set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
+#   endif()
+#   file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
+#   # Using Python_SITEARCH/SITELIB is not good, because they are absolute
+#   # and don't respect CMAKE_INSTALL_PREFIX.
+#   # https://discourse.cmake.org/t/findpython3-how-to-specify-local-installation-directory-for-python-module/3580/5
+#   if (BUILD_SHARED_LIBS AND NOT STANDALONE_PYTHON_MODULE)
+#     if (DEFINED SKBUILD)
+#       # When building via pip, Python_SITEARCH is /tmp.../wheel/platlib,
+#       # different from the actual install path. Best guess:
+#       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
+#     else()
+#       file(RELATIVE_PATH rpath_rel
+#            "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+#     endif()
+#     set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
+#   endif()
+#   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
+#   # install(DIRECTORY examples DESTINATION "${Python_SITEARCH}/_lahuta" COMPONENT py
+#   #         FILES_MATCHING PATTERN "*.py"
+#   #         PATTERN "[._]*" EXCLUDE)
+#   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
+#     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/_lahuta"
+#             DESTINATION "${Python_SITEARCH}" COMPONENT py)
+#   endif()
+# endif()
+#
