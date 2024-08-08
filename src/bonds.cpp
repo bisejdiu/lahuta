@@ -2,8 +2,9 @@
 #include "bonds/bonds.hpp"
 #include "bonds/table.hpp"
 #include "convert.hpp"
+#include <GraphMol/PeriodicTable.h>
 
-auto PeriodicTable = RDKit::PeriodicTable::getTable();
+const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
 
 // NOTE: this funciton performs two distinct tasks: (1) assign bond orders using
 // a table lookup and (2) use smart pattern matching to assign bond orders
@@ -18,7 +19,7 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
   std::vector<float> rcov;
   rcov.resize(mol.getNumAtoms());
   for (const auto atom : mol.atoms()) {
-    rcov[atom->getIdx()] = PeriodicTable->getRcovalent(atom->getAtomicNum());
+    rcov[atom->getIdx()] = tbl->getRcovalent(atom->getAtomicNum());
   }
 
   for (auto i = 0; i < results.get_neighbors().size(); i++) {

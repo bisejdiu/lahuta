@@ -56,6 +56,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   }
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     RDKit::Atom *atom = *atomIt;
+    atom->getAtomicNum();
     double avgDegrees = AverageBondAngle(atom);
 
     if (avgDegrees > 155.0) {
