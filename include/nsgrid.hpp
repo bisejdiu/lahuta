@@ -1,7 +1,6 @@
 #pragma once
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 #include <array>
-// #include <cmath>
 #include <vector>
 
 const int kDIMENSIONS = 3;

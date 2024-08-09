@@ -15,15 +15,24 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ***********************************************************************/
-#include <boost/range/iterator_range_core.hpp>
-#include "GraphMol/Atom.h"
-#include "GraphMol/Bond.h"
-#include "GraphMol/RWMol.h"
+/*
+ * File:   kekulize.cpp
+ * Modified by:  Besian I. Sejdiu
+ * Redistributed as part of the Lahuta project and in compliance with the
+ * GNU General Public License. See Open Babel (https://openbabel.org/)
+ * for more information. The Open Babel license information is included
+ * with the redistributed code ($LAHUTA_ROOT/exteranl/ob/LICENSE) and the
+ * Lahuta license information is $LAHUTA_ROOT/LICENSE.
+ */
+// #include <boost/range/iterator_range_core.hpp>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/Bond.h>
+#include <rdkit/GraphMol/RWMol.h>
 
-#include "external/ob/bitvec.h"
-#include "ob/kekulize.h"
 #include <cstdlib>
 #include <cstring>
+#include "ob/bitvec.h"
+#include "ob/kekulize.h"
 
 using namespace RDKit;
 // using namespace OB;

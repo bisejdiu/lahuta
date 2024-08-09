@@ -1,4 +1,4 @@
-#include <GraphMol/BondIterators.h>
+#include <rdkit/GraphMol/BondIterators.h>
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 #include "bonds.hpp"

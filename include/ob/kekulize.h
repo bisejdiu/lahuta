@@ -13,7 +13,16 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ***********************************************************************/
-#include <GraphMol/ROMol.h>
+/*
+ * File:   kekulize.h
+ * Modified by:  Besian I. Sejdiu
+ * Redistributed as part of the Lahuta project and in compliance with the
+ * GNU General Public License. See Open Babel (https://openbabel.org/)
+ * for more information. The Open Babel license information is included
+ * with the redistributed code ($LAHUTA_ROOT/exteranl/ob/LICENSE) and the
+ * Lahuta license information is $LAHUTA_ROOT/LICENSE.
+ */
+#include <rdkit/GraphMol/ROMol.h>
 
 // namespace OpenBabel
 // {  /**

@@ -1,8 +1,8 @@
+#include <rdkit/GraphMol/PeriodicTable.h>
 #include "bonds.hpp"
 #include "bonds/bonds.hpp"
 #include "bonds/table.hpp"
 #include "convert.hpp"
-#include <GraphMol/PeriodicTable.h>
 
 const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
 

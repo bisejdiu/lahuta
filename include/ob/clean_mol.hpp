@@ -1,5 +1,5 @@
-#include <GraphMol/Atom.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 inline unsigned int ob_explicit_valence(const RDKit::RWMol &mol,
                                              const RDKit::Atom *atom) {

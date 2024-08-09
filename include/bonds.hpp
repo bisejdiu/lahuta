@@ -1,6 +1,6 @@
+#include <rdkit/GraphMol/PeriodicTable.h>
+#include <rdkit/GraphMol/RWMol.h>
 #include "nsgrid.hpp"
-#include <GraphMol/PeriodicTable.h>
-#include <GraphMol/RWMol.h>
 
 inline bool is_bonded_obmol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
                             double tolerance, std::vector<float> &rcov) {
