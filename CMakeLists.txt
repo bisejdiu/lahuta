@@ -107,24 +107,16 @@ if (USE_PYTHON)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
   pybind11_add_module(lahuta_py python/lahuta.cpp)
-  target_link_libraries(lahuta_py PRIVATE lahuta_cpp) # gemmi_cpp rdkit)
 
-  # if (1)
-  #   target_sources(lahuta_py PRIVATE 
-  #   $<TARGET_OBJECTS:lahuta_cpp>
-  #   # $<TARGET_OBJECTS:gemmi_cpp>
-  #   # $<TARGET_OBJECTS:rdkit>
-  #   )
-  #   get_target_property(_lahuta_cpp_libs lahuta_cpp LINK_LIBRARIES)
-  #   # get_target_property(_gemmi_cpp_libs gemmi_cpp LINK_LIBRARIES)
-  #   # get_target_property(_rdkit_libs rdkit LINK_LIBRARIES)
-  #   set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_cpp_libs})
-  #   # set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_gemmi_cpp_libs})
-  #   # set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_rdkit_libs})
-  # else()
-  #   # target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp rdkit)
-  #   target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
-  # endif()
+  if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
+    target_sources(lahuta_py PRIVATE 
+    $<TARGET_OBJECTS:lahuta_cpp>
+    )
+    get_target_property(_lahuta_cpp_libs lahuta_cpp LINK_LIBRARIES)
+    set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_cpp_libs})
+  else()
+    target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
+  endif()
 
   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
@@ -182,3 +174,54 @@ endif()
 #   endif()
 # endif()
 #
+if (USE_PYTHON)
+  message(STATUS "USE_PYTHON is enabled.")
+
+  if (DEFINED PYTHON_INSTALL_DIR)
+    message(STATUS "PYTHON_INSTALL_DIR is defined as: ${PYTHON_INSTALL_DIR}")
+    set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
+  else()
+    message(STATUS "PYTHON_INSTALL_DIR is not defined. Using default Python_SITEARCH.")
+  endif()
+
+  file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
+  message(STATUS "Normalized Python_SITEARCH path: ${Python_SITEARCH}")
+
+  if (BUILD_SHARED_LIBS)
+    message(STATUS "Building shared libraries.")
+    
+    if (DEFINED SKBUILD)
+      message(STATUS "SKBUILD is defined. Adjusting rpath_rel for pip build.")
+      set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
+      message(STATUS "Set rpath_rel to: ${rpath_rel}")
+    else()
+      message(STATUS "SKBUILD is not defined. Calculating relative path for rpath.")
+      file(RELATIVE_PATH rpath_rel
+           "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+      message(STATUS "Calculated rpath_rel as: ${rpath_rel}")
+    endif()
+
+    set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
+    message(STATUS "Set INSTALL_RPATH for lahuta_py to: ${origin}/${rpath_rel}")
+  else()
+    message(STATUS "Not building shared libraries.")
+  endif()
+
+  install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
+  message(STATUS "Installed lahuta_py to: ${Python_SITEARCH}")
+
+  if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
+    message(STATUS "Generating stubs and not cross-compiling.")
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/_lahuta"
+            DESTINATION "${Python_SITEARCH}" COMPONENT py)
+    message(STATUS "Installed stubs to: ${Python_SITEARCH}")
+  elseif(GENERATE_STUBS)
+    message(STATUS "GENERATE_STUBS is enabled, but cross-compiling. Stubs not installed.")
+  else()
+    message(STATUS "GENERATE_STUBS is not enabled.")
+  endif()
+
+else()
+  message(STATUS "USE_PYTHON is not enabled. Python-related logic skipped.")
+endif()
+
