@@ -1,4 +1,4 @@
-#include <GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
 #include "convert.hpp"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \

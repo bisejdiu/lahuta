@@ -1,7 +1,7 @@
-#include <GraphMol/RWMol.h>
-#include <GraphMol/MolOps.h>
-#include <GraphMol/AtomIterators.h>
-#include <GraphMol/BondIterators.h>
+#include <rdkit/GraphMol/RWMol.h>
+#include <rdkit/GraphMol/MolOps.h>
+#include <rdkit/GraphMol/AtomIterators.h>
+#include <rdkit/GraphMol/BondIterators.h>
 
 #include "bond_order.hpp"
 #include "ob/clean_mol.hpp"
@@ -56,6 +56,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   }
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     RDKit::Atom *atom = *atomIt;
+    atom->getAtomicNum();
     double avgDegrees = AverageBondAngle(atom);
 
     if (avgDegrees > 155.0) {

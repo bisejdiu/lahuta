@@ -1,6 +1,6 @@
 #include "lahuta.hpp"
 #include "nsgrid.hpp"
-#include <GraphMol/RDKitBase.h>
+#include <rdkit/GraphMol/RDKitBase.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 

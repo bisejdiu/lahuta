@@ -44,45 +44,35 @@ if (NOT CMAKE_BUILD_TYPE AND NOT USING_ENV_CXXFLAGS)
 endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-if(NOT DEFINED RDKit_ROOT)
-    if(DEFINED ENV{CONDA_PREFIX})
-        set(RDKit_ROOT $ENV{CONDA_PREFIX})
+if(NOT DEFINED BOOST_ROOT)
+  if(DEFINED ENV{CONDA_PREFIX})
+    set(BOOST_ROOT $ENV{CONDA_PREFIX})
     else()
-        message(FATAL_ERROR "RDKit_ROOT is not defined. Please set it to the RDKit installation directory.")
+     message(FATAL_ERROR "BOOST_ROOT is not defined. Please set it to the RDKit installation directory.")
     endif()
 endif()
 
-list(APPEND CMAKE_PREFIX_PATH ${RDKit_ROOT}) 
-
-find_package(RDKit REQUIRED)
-
 add_subdirectory(external/gemmi)
+add_subdirectory(external/rdkit)
 
-add_library(lahuta_cpp
+add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp 
-            src/ob/kekulize.cpp src/ob/clean_mol.cpp external/ob/bitvec.cpp
+            src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_compile_definitions(lahuta_cpp PUBLIC LAHUTA_BUILD)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit)
  
 target_include_directories(lahuta_cpp PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/ob
-)
-
-target_link_libraries(lahuta_cpp PUBLIC
-    $ENV{CONDA_PREFIX}/lib/libRDKitGraphMol.so
-    $ENV{CONDA_PREFIX}/lib/libRDKitRDGeneral.so
-    $ENV{CONDA_PREFIX}/lib/libRDKitRDGeometryLib.so
-    $ENV{CONDA_PREFIX}/lib/libRDKitSubstructMatch.so
-    $ENV{CONDA_PREFIX}/lib/libRDKitSmilesParse.so
+  ${CMAKE_SOURCE_DIR}/include # our own headers
+  ${CMAKE_SOURCE_DIR}/external # for external headers
+  ${CMAKE_SOURCE_DIR}/external/gemmi/include # for gemmi headers
 )
 
 add_executable(lex main.cpp)
-target_link_libraries(lex PRIVATE lahuta_cpp gemmi_cpp)
+target_link_libraries(lex PUBLIC lahuta_cpp) 
 
-install(TARGETS lahuta_cpp)
+# install(TARGETS lahuta_cpp)
 # install(TARGETS lahuta_cpp EXPORT lahuta_cpp
 #         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -117,20 +107,24 @@ if (USE_PYTHON)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
   pybind11_add_module(lahuta_py python/lahuta.cpp)
-  # target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp)
+  target_link_libraries(lahuta_py PRIVATE lahuta_cpp) # gemmi_cpp rdkit)
 
-  if (1)
-    target_sources(lahuta_py PRIVATE 
-    $<TARGET_OBJECTS:lahuta_cpp>
-    $<TARGET_OBJECTS:gemmi_cpp>
-    )
-    get_target_property(_lahuta_cpp_libs lahuta_cpp LINK_LIBRARIES)
-    get_target_property(_gemmi_cpp_libs gemmi_cpp LINK_LIBRARIES)
-    set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_cpp_libs})
-    set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_gemmi_cpp_libs})
-  else()
-    target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp)
-  endif()
+  # if (1)
+  #   target_sources(lahuta_py PRIVATE 
+  #   $<TARGET_OBJECTS:lahuta_cpp>
+  #   # $<TARGET_OBJECTS:gemmi_cpp>
+  #   # $<TARGET_OBJECTS:rdkit>
+  #   )
+  #   get_target_property(_lahuta_cpp_libs lahuta_cpp LINK_LIBRARIES)
+  #   # get_target_property(_gemmi_cpp_libs gemmi_cpp LINK_LIBRARIES)
+  #   # get_target_property(_rdkit_libs rdkit LINK_LIBRARIES)
+  #   set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_cpp_libs})
+  #   # set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_gemmi_cpp_libs})
+  #   # set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_rdkit_libs})
+  # else()
+  #   # target_link_libraries(lahuta_py PRIVATE lahuta_cpp gemmi_cpp rdkit)
+  #   target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
+  # endif()
 
   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")

@@ -1,5 +1,5 @@
-#include <GraphMol/AtomIterators.h> 
-#include <GraphMol/BondIterators.h> 
+#include <rdkit/GraphMol/AtomIterators.h> 
+#include <rdkit/GraphMol/BondIterators.h> 
 
 #include "ob/clean_mol.hpp"
 #include "bonds/table.hpp"

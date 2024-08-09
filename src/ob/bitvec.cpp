@@ -17,7 +17,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ***********************************************************************/
 
-#include "bitvec.h"
+#include "ob/bitvec.h"
 #include <cstdlib>
 #include <iostream>
 #include <ostream>

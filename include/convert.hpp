@@ -1,6 +1,6 @@
-#include <Geometry/point.h>
-#include <GraphMol/MonomerInfo.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/Geometry/point.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/RWMol.h>
 #include <gemmi/mmread_gz.hpp>
 
 using namespace gemmi;

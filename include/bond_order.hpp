@@ -1,5 +1,5 @@
-#include <GraphMol/Substruct/SubstructMatch.h>
-#include <GraphMol/SmilesParse/SmilesParse.h>
+#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
+#include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 
 using namespace RDKit;
 

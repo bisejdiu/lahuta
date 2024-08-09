@@ -95,7 +95,7 @@ target_include_directories(gemmi_headers INTERFACE
 target_compile_features(gemmi_headers INTERFACE cxx_std_11)
 set_target_properties(gemmi_headers PROPERTIES EXPORT_NAME headers)
 
-add_library(gemmi_cpp SHARED
+add_library(gemmi_cpp STATIC
             src/ddl.cpp src/gz.cpp src/json.cpp src/mmcif.cpp src/mmread_gz.cpp
             src/polyheur.cpp src/read_cif.cpp src/resinfo.cpp)
 
@@ -122,7 +122,8 @@ elseif (ZLIB_FOUND)
   target_link_libraries(gemmi_cpp PUBLIC ZLIB::ZLIB)
 else()
   message(STATUS "->: Using internal zlib code.")
-  target_sources(gemmi_cpp PUBLIC
+  add_library(zlib STATIC
+  # target_sources(gemmi_cpp PUBLIC
       "third_party/zlib/adler32.c"
       "third_party/zlib/crc32.c"
       "third_party/zlib/gzlib.c"
@@ -132,11 +133,11 @@ else()
       "third_party/zlib/inffast.c"
       "third_party/zlib/zutil.c")
   check_include_file(unistd.h has_unistd_h)
-  target_compile_definitions(gemmi_cpp PUBLIC NO_GZCOMPRESS=1 DYNAMIC_CRC_TABLE=1)
+  target_compile_definitions(zlib PRIVATE NO_GZCOMPRESS=1 DYNAMIC_CRC_TABLE=1)
   if (has_unistd_h)
-    target_compile_definitions(gemmi_cpp PUBLIC Z_HAVE_UNISTD_H=1)
+    target_compile_definitions(zlib PRIVATE Z_HAVE_UNISTD_H=1)
   endif()
-  target_include_directories(gemmi_cpp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/zlib")
+  target_link_libraries(gemmi_cpp PUBLIC zlib)
   if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     # /wd4267 - conversion from 'size_t' to 'unsigned int', possible loss of data
     target_compile_options(gemmi_cpp PUBLIC /wd4267)
