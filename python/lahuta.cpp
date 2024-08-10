@@ -22,7 +22,9 @@ void test_lahuta(py::module &_lahuta) {
 
   Luni.def(py::init<std::string>())
       .def("get_neighbors", &Lahuta::Luni::get_neighbors)
+      .def("get_distances", &Lahuta::Luni::get_distances)
       .def("find_neighbors", &Lahuta::Luni::find_neighbors)
+      .def("match_smarts_string", &Lahuta::Luni::match_smarts_string)
       .def("get_cutoff", &Lahuta::Luni::get_cutoff);
 
   py::class_<NSResults>(_lahuta, "NSResults")

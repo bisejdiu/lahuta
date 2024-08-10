@@ -144,84 +144,79 @@ else()
 endif()
 
 
-# if (USE_PYTHON)
-#   if (DEFINED PYTHON_INSTALL_DIR)
-#     message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
-#     set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
-#   endif()
-#   file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
-#   # Using Python_SITEARCH/SITELIB is not good, because they are absolute
-#   # and don't respect CMAKE_INSTALL_PREFIX.
-#   # https://discourse.cmake.org/t/findpython3-how-to-specify-local-installation-directory-for-python-module/3580/5
-#   if (BUILD_SHARED_LIBS AND NOT STANDALONE_PYTHON_MODULE)
-#     if (DEFINED SKBUILD)
-#       # When building via pip, Python_SITEARCH is /tmp.../wheel/platlib,
-#       # different from the actual install path. Best guess:
-#       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
-#     else()
-#       file(RELATIVE_PATH rpath_rel
-#            "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-#     endif()
-#     set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
-#   endif()
-#   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   # install(DIRECTORY examples DESTINATION "${Python_SITEARCH}/_lahuta" COMPONENT py
-#   #         FILES_MATCHING PATTERN "*.py"
-#   #         PATTERN "[._]*" EXCLUDE)
-#   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
-#     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/_lahuta"
-#             DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   endif()
-# endif()
-#
 if (USE_PYTHON)
-  message(STATUS "USE_PYTHON is enabled.")
-
   if (DEFINED PYTHON_INSTALL_DIR)
-    message(STATUS "PYTHON_INSTALL_DIR is defined as: ${PYTHON_INSTALL_DIR}")
+    message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
     set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
-  else()
-    message(STATUS "PYTHON_INSTALL_DIR is not defined. Using default Python_SITEARCH.")
   endif()
-
   file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
-  message(STATUS "Normalized Python_SITEARCH path: ${Python_SITEARCH}")
-
-  if (BUILD_SHARED_LIBS)
-    message(STATUS "Building shared libraries.")
-    
+  # Using Python_SITEARCH/SITELIB is not good, because they are absolute
+  # and don't respect CMAKE_INSTALL_PREFIX.
+  # https://discourse.cmake.org/t/findpython3-how-to-specify-local-installation-directory-for-python-module/3580/5
+  if (BUILD_SHARED_LIBS AND NOT STANDALONE_PYTHON_MODULE)
     if (DEFINED SKBUILD)
-      message(STATUS "SKBUILD is defined. Adjusting rpath_rel for pip build.")
+      # When building via pip, Python_SITEARCH is /tmp.../wheel/platlib,
+      # different from the actual install path. Best guess:
       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
-      message(STATUS "Set rpath_rel to: ${rpath_rel}")
     else()
-      message(STATUS "SKBUILD is not defined. Calculating relative path for rpath.")
       file(RELATIVE_PATH rpath_rel
            "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-      message(STATUS "Calculated rpath_rel as: ${rpath_rel}")
     endif()
-
     set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
-    message(STATUS "Set INSTALL_RPATH for lahuta_py to: ${origin}/${rpath_rel}")
-  else()
-    message(STATUS "Not building shared libraries.")
   endif()
-
   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
-  message(STATUS "Installed lahuta_py to: ${Python_SITEARCH}")
-
   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
-    message(STATUS "Generating stubs and not cross-compiling.")
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/_lahuta"
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs"
             DESTINATION "${Python_SITEARCH}" COMPONENT py)
-    message(STATUS "Installed stubs to: ${Python_SITEARCH}")
-  elseif(GENERATE_STUBS)
-    message(STATUS "GENERATE_STUBS is enabled, but cross-compiling. Stubs not installed.")
-  else()
-    message(STATUS "GENERATE_STUBS is not enabled.")
   endif()
-
-else()
-  message(STATUS "USE_PYTHON is not enabled. Python-related logic skipped.")
 endif()
-
+#
+# if (USE_PYTHON)
+#   if (DEFINED PYTHON_INSTALL_DIR)
+#     message(STATUS "PYTHON_INSTALL_DIR is defined as: ${PYTHON_INSTALL_DIR}")
+#     set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
+#   else()
+#     message(STATUS "PYTHON_INSTALL_DIR is not defined. Using default Python_SITEARCH.")
+#   endif()
+#
+#   file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
+#   message(STATUS "Normalized Python_SITEARCH path: ${Python_SITEARCH}")
+#
+#   if (BUILD_SHARED_LIBS)
+#     message(STATUS "Building shared libraries.")
+#     
+#     if (DEFINED SKBUILD)
+#       message(STATUS "SKBUILD is defined. Adjusting rpath_rel for pip build.")
+#       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
+#       message(STATUS "Set rpath_rel to: ${rpath_rel}")
+#     else()
+#       message(STATUS "SKBUILD is not defined. Calculating relative path for rpath.")
+#       file(RELATIVE_PATH rpath_rel
+#            "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+#       message(STATUS "Calculated rpath_rel as: ${rpath_rel}")
+#     endif()
+#
+#     set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
+#     message(STATUS "Set INSTALL_RPATH for lahuta_py to: ${origin}/${rpath_rel}")
+#   else()
+#     message(STATUS "Not building shared libraries.")
+#   endif()
+#
+#   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
+#   message(STATUS "Installed lahuta_py to: ${Python_SITEARCH}")
+#
+#   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
+#     message(STATUS "Generating stubs and not cross-compiling.")
+#     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/_lahuta"
+#             DESTINATION "${Python_SITEARCH}" COMPONENT py)
+#     message(STATUS "Installed stubs to: ${Python_SITEARCH}")
+#   elseif(GENERATE_STUBS)
+#     message(STATUS "GENERATE_STUBS is enabled, but cross-compiling. Stubs not installed.")
+#   else()
+#     message(STATUS "GENERATE_STUBS is not enabled.")
+#   endif()
+#
+# else()
+#   message(STATUS "USE_PYTHON is not enabled. Python-related logic skipped.")
+# endif()
+#

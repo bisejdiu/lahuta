@@ -1,4 +1,6 @@
 #include <rdkit/GraphMol/BondIterators.h>
+#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
+#include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
 
 #include "bonds.hpp"
@@ -105,8 +107,9 @@ public:
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return source->get_conformer(confId).getPositions();
   }
-  const NSResults &get_neighbors() const { return neighbors; }
-  double get_cutoff() const { return _cutoff; }
+  const NeighborPairs &get_neighbors() const { return neighbors.get_neighbors(); }
+  const std::vector<float> &get_distances() const { return neighbors.get_distances(); }
+  const double get_cutoff() const { return _cutoff; }
 
   NSResults find_neighbors(std::optional<double> cutoff) {
     auto value = cutoff.value_or(_cutoff);
@@ -119,6 +122,22 @@ public:
 
     grid.update_cutoff(value);
     return grid.self_search();
+  }
+  int match_smarts_string(std::string sm) const {
+    std::vector<RDKit::MatchVectType> match_list;
+    auto sm_mol = RDKit::SmartsToMol(sm);
+    source->get_molecule().updatePropertyCache(false);
+    // NOTE: do H make a difference
+    // std::cout << "smart string processing: " << sm_mol->getNumAtoms() << std::endl;
+    RDKit::SubstructMatch(source->get_molecule(), *sm_mol, match_list);
+    return match_list.size();
+    // std::vector<int> results(match_list.size());
+    // for (auto &match : match_list) {
+    //   auto atom = source->get_molecule().getAtomWithIdx(match[0].second);
+    //   // std::cout << atom->getIdx() << 
+    //   results.push_back(match[0].second);
+    // }
+    // return 0;
   }
 };
 

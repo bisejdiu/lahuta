@@ -18,6 +18,7 @@ int main(int argc, char const *argv[]) {
   }
   std::string file_name = argv[1];
 
+
   // auto load_start = T();
   // Structure st = read_structure_gz(file_name);
   // auto loadTime = TO_MS(T() - load_start).count();
@@ -34,8 +35,7 @@ int main(int argc, char const *argv[]) {
   std::cout << "Neighbors: " << luni.get_neighbors().size()
             << std::endl;
 
-  auto r = luni.get_neighbors();
-  auto neighbors = r.get_neighbors();
+  auto neighbors = luni.get_neighbors();
 
 
   RDKit::RWMol *mol = &luni.get_molecule();

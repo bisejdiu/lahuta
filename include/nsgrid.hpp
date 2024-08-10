@@ -20,6 +20,7 @@ struct NSResults {
   void reserve_space(size_t input_size);
 
   const NeighborPairs &get_neighbors() const { return neighbor_pairs; }
+  const std::vector<float> &get_distances() const { return distances; }
 
   size_t size() const { return neighbor_pairs.size(); }
 
