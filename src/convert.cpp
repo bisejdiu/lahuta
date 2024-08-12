@@ -13,9 +13,10 @@ using namespace RDKit;
 void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
                            bool ign_h) {
 
+  ign_h = false; // FIX: ign_h=true is broken
   ITER_GEMMI_ATOMS(st, atom) {
 
-    if (atom.element == Element("H") && ign_h) {
+    if (atom.element == Element("H") && ign_h) { // FIX: faster to swap the order
       continue;
     }
 

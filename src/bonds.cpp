@@ -65,6 +65,15 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
       }
       continue;
     } else {
+
+      // if (is_bonded_obmol(a, b, dist_sq, 0.45, rcov)) {
+      //   if (a->getSymbol() == "Fe" || b->getSymbol() == "Fe") {
+      //     std::cout << "Fe bond: " << a->getIdx() << " " << b->getIdx() <<
+      //     std::endl;
+      //   mol.addBond(a->getIdx(), b->getIdx(), RDKit::Bond::BondType::DATIVEONE);
+      //   }
+      // }
+
       // non-handled bonds (e.g. matalic bonds, etc.)
       // auto *infoA = static_cast<RDKit::AtomPDBResidueInfo
       // *>(a->getMonomerInfo()); auto *infoB =

@@ -18,7 +18,6 @@ int main(int argc, char const *argv[]) {
   }
   std::string file_name = argv[1];
 
-
   // auto load_start = T();
   // Structure st = read_structure_gz(file_name);
   // auto loadTime = TO_MS(T() - load_start).count();
@@ -32,24 +31,33 @@ int main(int argc, char const *argv[]) {
   Lahuta::Luni luni(file_name);
 
   // FIX: replace getNeighborPairsSize with just Size()
-  std::cout << "Neighbors: " << luni.get_neighbors().size()
-            << std::endl;
+  std::cout << "Neighbors: " << luni.get_neighbors().size() << std::endl;
 
   auto neighbors = luni.get_neighbors();
-
 
   RDKit::RWMol *mol = &luni.get_molecule();
   int o1 = 0;
   int o2 = 0;
+  int aromatic = 0;
   for (auto bondIt = mol->beginBonds(); bondIt != mol->endBonds(); ++bondIt) {
     RDKit::Bond *bond = *bondIt;
     if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
+      // std::cout << "b. " << bond->getBeginAtomIdx() << " " <<
+      // bond->getEndAtomIdx() << " " << 1 << std::endl;
       o1++;
     } else if (bond->getBondType() == RDKit::Bond::BondType::DOUBLE) {
+      // std::cout << "b. " << bond->getBeginAtomIdx() << " "
+      //           << bond->getEndAtomIdx() << " " << 2 << std::endl;
       o2++;
     }
+    if (bond->getIsAromatic()) {
+      // std::cout << "b. " << bond->getBeginAtomIdx() << " "
+      //           << bond->getEndAtomIdx() << " " << "a" << std::endl;
+      aromatic++;
+    }
   }
-  std::cout << "1: " << o1 << " 2: " << o2 << " t: " << o1 + o2 << std::endl;
+  std::cout << "1: " << o1 << " 2: " << o2 << " a: " << aromatic 
+            << " t: " << o1 + o2 + aromatic << std::endl;
   std::cout << "Nr. Bonds: " << mol->getNumBonds() << std::endl;
 
   auto totTime = TO_MS(T() - startTotTime).count();

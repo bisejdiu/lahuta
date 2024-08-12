@@ -3,6 +3,9 @@
 
 #include <cstdint>
 
+// TODO: Add an enum identifier for protein vs non proteins that I can use as a
+// lookup check if the residue is a protein or not.
+
 namespace lahuta {
 
 enum class amino_acid_names_l : std::uint8_t {

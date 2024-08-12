@@ -50,6 +50,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
 
   // Pass 1: Assign estimated hybridization based on average bond angles
   // taken from AtomIsInRing
+  // FIX: Check performance of this operation
   auto ringInfo = mol.getRingInfo();
   if (!ringInfo->isSssrOrBetter()) {
     RDKit::MolOps::findSSSR(mol);

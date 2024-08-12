@@ -1,17 +1,21 @@
-#include <rdkit/GraphMol/BondIterators.h>
-#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
-#include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
+#include <rdkit/GraphMol/BondIterators.h>
+#include <rdkit/GraphMol/MolOps.h>
+#include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
+#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 
-#include "bonds.hpp"
 #include "bond_order.hpp"
+#include "bonds.hpp"
 #include "convert.hpp"
+#include "gemmi/model.hpp"
 #include "nsgrid.hpp"
 #include "ob/clean_mol.hpp"
+#include "ob/kekulize.h"
 
 #include <memory>
 #include <optional>
 #include <string>
+#include <chrono>
 
 #define LAHUTA_VERSION "0.10.0"
 
@@ -23,6 +27,7 @@ public:
   virtual RDKit::RWMol &get_molecule() = 0;
   virtual const RDKit::RWMol &get_molecule() const = 0;
   virtual RDKit::Conformer &get_conformer(int id = -1) = 0;
+  virtual Structure &get_structure() = 0; // FIX: delete after test
   virtual ~ISource() = default;
 
   virtual void process(std::string file_name) = 0;
@@ -31,6 +36,7 @@ public:
 class GemmiSource : public ISource {
 private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
+  Structure st;
 
 public:
   explicit GemmiSource() = default;
@@ -41,8 +47,9 @@ public:
 
   void process(std::string file_name) override {
     RDKit::Conformer *conformer = new RDKit::Conformer();
-    Structure st = read_structure_gz(file_name);
+    st = read_structure_gz(file_name);
     gemmiStructureToRDKit(*mol, st, *conformer, false);
+    mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
   }
 
@@ -52,12 +59,49 @@ public:
   RDKit::Conformer &get_conformer(int id = -1) override {
     return mol->getConformer(id);
   }
+
+  Structure &get_structure() override { return st; }
 };
+
+inline void basic_mol_cleanup(RWMol &mol) {
+  ROMol::VERTEX_ITER atBegin, atEnd;
+  boost::tie(atBegin, atEnd) = mol.getVertices();
+  while (atBegin != atEnd) {
+    RDKit::Atom *atom = mol[*atBegin];
+    // atom->updatePropertyCache(false);
+    atom->calcExplicitValence(false);
+
+    // correct four-valent neutral N -> N+
+    // This was github #1029
+    if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 &&
+        atom->getExplicitValence() == 4) {
+      atom->setFormalCharge(1);
+    }
+    ++atBegin;
+  }
+}
 
 class BondComputation {
 public:
+  static void cleanup(RDKit::RWMol &mol) {
+    basic_mol_cleanup(mol);
+    auto start = std::chrono::high_resolution_clock::now();
+    MolOps::fastFindRings(mol);
+    // MolOps::findSSSR(mol);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Rings: " << elapsed.count() << "s" << std::endl;
+
+
+    auto start2 = std::chrono::high_resolution_clock::now();
+    MolOps::setAromaticity(mol);
+    auto end2 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed2 = end2 - start2;
+    std::cout << "Aromaticity: " << elapsed2.count() << "s" << std::endl;
+  }
+
   static void merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
-                         const std::vector<int> &indexMap) {
+                          const std::vector<int> &indexMap) {
     for (auto bondIt = sourceMol.beginBonds(); bondIt != sourceMol.endBonds();
          ++bondIt) {
       const RDKit::Bond *bond = *bondIt;
@@ -69,15 +113,45 @@ public:
     }
   }
 
-  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {
+  static void compute_bonds(RDKit::RWMol &mol, Structure &st,
+                            const NSResults &neighborResults) {
     auto result = assign_bonds(mol, neighborResults);
+
+    // FIX: Refactor!
+
+    // for (gemmi::Connection &conn : st.connections) {
+    //   // Iterate over all models
+    //   gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
+    //   gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
+    //
+    //   if (mol.getBondBetweenAtoms(a1->serial-1, a2->serial-1) == nullptr) {
+    //     mol.addBond((unsigned int)a1->serial-1, (unsigned int)a2->serial-1,
+    //                 RDKit::Bond::BondType::SINGLE);
+    //   }
+    // }
+
     if (!result.has_unlisted_resnames) {
+      mol.updatePropertyCache(false);
+      auto start = std::chrono::high_resolution_clock::now();
+      cleanup(mol);
+      auto end = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> elapsed = end - start;
+      std::cout << "Cleanup predef: " << elapsed.count() << "s" << std::endl;
       return;
     }
-    clean_bonds(result.mol, result.mol.getConformer());
+
     result.mol.updatePropertyCache(false);
+    std::cout << "Unlisted residues: " << result.atom_indices.size() << std::endl;
+    clean_bonds(result.mol, result.mol.getConformer());
     perceive_bond_orders_obabel(result.mol);
     merge_bonds(mol, result.mol, result.atom_indices);
+
+    mol.updatePropertyCache(false);
+    auto start = std::chrono::high_resolution_clock::now();
+    cleanup(mol);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Cleanup non-def: " << elapsed.count() << "s" << std::endl;
   }
 };
 
@@ -99,7 +173,8 @@ public:
     const auto &conf = source->get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
     neighbors = grid.self_search();
-    BondComputation::compute_bonds(source->get_molecule(), neighbors);
+    BondComputation::compute_bonds(source->get_molecule(),
+                                   source->get_structure(), neighbors);
   }
 
   RDKit::RWMol &get_molecule() { return source->get_molecule(); }
@@ -107,8 +182,12 @@ public:
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return source->get_conformer(confId).getPositions();
   }
-  const NeighborPairs &get_neighbors() const { return neighbors.get_neighbors(); }
-  const std::vector<float> &get_distances() const { return neighbors.get_distances(); }
+  const NeighborPairs &get_neighbors() const {
+    return neighbors.get_neighbors();
+  }
+  const std::vector<float> &get_distances() const {
+    return neighbors.get_distances();
+  }
   const double get_cutoff() const { return _cutoff; }
 
   NSResults find_neighbors(std::optional<double> cutoff) {
@@ -123,18 +202,30 @@ public:
     grid.update_cutoff(value);
     return grid.self_search();
   }
-  int match_smarts_string(std::string sm) const {
+  int match_smarts_string(std::string sm, std::string atype = "",
+                          bool log_values = false) const {
     std::vector<RDKit::MatchVectType> match_list;
     auto sm_mol = RDKit::SmartsToMol(sm);
     source->get_molecule().updatePropertyCache(false);
     // NOTE: do H make a difference
-    // std::cout << "smart string processing: " << sm_mol->getNumAtoms() << std::endl;
+    // std::cout << "smart string processing: " << sm_mol->getNumAtoms() <<
+    // std::endl;
     RDKit::SubstructMatch(source->get_molecule(), *sm_mol, match_list);
+    if (log_values) {
+      std::string values = "Matched: ";
+      for (auto &match : match_list) {
+        // for (auto &pair : match) {
+        values += std::to_string(match[0].second) + " ";
+        // }
+      }
+      std::cout << atype << " " << values << std::endl;
+    }
+
     return match_list.size();
     // std::vector<int> results(match_list.size());
     // for (auto &match : match_list) {
     //   auto atom = source->get_molecule().getAtomWithIdx(match[0].second);
-    //   // std::cout << atom->getIdx() << 
+    //   // std::cout << atom->getIdx() <<
     //   results.push_back(match[0].second);
     // }
     // return 0;
