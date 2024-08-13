@@ -1,7 +1,9 @@
+#include "GraphMol/Bond.h"
 #include <array>
 #include <string_view>
 
 // clang-format off
+typedef RDKit::Bond::BondType BondType;
 
 namespace lahuta {
 namespace rules {
@@ -9,136 +11,188 @@ namespace rules {
 struct Rule {
     std::string_view s2;
     std::string_view s3;
-    int result;
+    BondType result;
 };
 
-constexpr std::array<Rule, 3> def = {{
-    {"C", "O", 2},
+constexpr std::array<Rule, 1> default_aa_rules = {{
+    {"C", "O", BondType::DOUBLE},
 }};
 
-constexpr std::array<Rule, 1> default_amino_acid = {{
-    {"C", "O", 2},
+constexpr std::array<Rule, 1> default_base_rules = {{
+    {"OP1", "P", BondType::DOUBLE},
 }};
 
-constexpr std::array<Rule, 1> default_base = {{
-    {"OP1", "P", 2},
+constexpr std::array<Rule, 6> his_rules = {{
+    {"CE1", "NE2", BondType::AROMATIC},
+    {"CD2", "NE2", BondType::AROMATIC},
+    {"CE1", "ND1", BondType::AROMATIC},
+    {"CD2", "CG", BondType::AROMATIC},
+    {"CG", "ND1", BondType::AROMATIC},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 3> his_rules = {{
-    {"CD2", "CG", 2},
-    {"CE1", "ND1", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 2> arg_rules = {{
+    {"CZ", "NH2", BondType::DOUBLE},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 2> arg_rule = {{
-    {"CZ", "NH2", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 7> phe_rules = {{
+    {"CD1", "CE1", BondType::AROMATIC},
+    {"CD1", "CG", BondType::AROMATIC},
+    {"CD2", "CE2", BondType::AROMATIC},
+    {"CD2", "CG", BondType::AROMATIC},
+    {"CE1", "CZ", BondType::AROMATIC},
+    {"CE2", "CZ", BondType::AROMATIC},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 4> phe_rule = {{
-    {"CE1", "CZ", 2},
-    {"CD2", "CE2", 2},
-    {"CD1", "CG", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 11> trp_rules = {{
+    {"CH2", "CZ3", BondType::AROMATIC},
+    {"CH2", "CZ2", BondType::AROMATIC},
+    {"CE3", "CZ3", BondType::AROMATIC},
+    {"CD2", "CE3", BondType::AROMATIC},
+    {"CD2", "CG", BondType::AROMATIC},
+    {"CD2", "CE2", BondType::AROMATIC},
+    {"CE2", "CZ2", BondType::AROMATIC},
+    {"CE2", "NE1", BondType::AROMATIC},
+    {"CD1", "NE1", BondType::AROMATIC},
+    {"CD1", "CG", BondType::AROMATIC},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 5> trp_rule = {{
-    {"CD1", "CG", 2},
-    {"CD2", "CE2", 2},
-    {"CE3", "CZ3", 2},
-    {"CH2", "CZ2", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 2> asn_rules = {{
+    {"CG", "OD1", BondType::DOUBLE},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 2> asn_rule = {{
-    {"CG", "OD1", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 2> gln_rules = {{
+    {"CD", "OE1", BondType::DOUBLE},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 2> gln_rule = {{
-    {"CD", "OE1", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 7> tyr_rules = {{
+    {"CD1", "CE1", BondType::AROMATIC},
+    {"CD1", "CG", BondType::AROMATIC},
+    {"CD2", "CE2", BondType::AROMATIC},
+    {"CD2", "CG", BondType::AROMATIC},
+    {"CE1", "CZ", BondType::AROMATIC},
+    {"CE2", "CZ", BondType::AROMATIC},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 4> tyr_rule = {{
-    {"CD1", "CG", 2},
-    {"CD2", "CE2", 2},
-    {"CE1", "CZ", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 2> asp_rules = {{
+    {"CG", "OD1", BondType::DOUBLE},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 2> asp_rule = {{
-    {"CG", "OD1", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 2> glu_rules = {{
+    {"CD", "OE1", BondType::DOUBLE},
+    {"C", "O", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 2> glu_rule = {{
-    {"CD", "OE1", 2},
-    {"C", "O", 2}
+constexpr std::array<Rule, 11> a_rules = {{
+    {"C2", "N1", BondType::AROMATIC},
+    {"C6", "N1", BondType::AROMATIC},
+    {"C4", "N9", BondType::AROMATIC},
+    {"C8", "N9", BondType::AROMATIC},
+    {"C4", "N3", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C5", "C6", BondType::AROMATIC},
+    {"C5", "N7", BondType::AROMATIC},
+    {"C8", "N7", BondType::AROMATIC},
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 5> g_rule = {{
-    {"C8", "N7", 2},
-    {"C4", "C5", 2},
-    {"C2", "N3", 2},
-    {"C6", "O6", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 12> g_rules = {{
+    {"C2", "N1", BondType::AROMATIC}, //
+    {"C6", "N1", BondType::AROMATIC}, //
+    {"C4", "N9", BondType::AROMATIC}, //
+    {"C8", "N9", BondType::AROMATIC}, //
+    {"C4", "N3", BondType::AROMATIC}, //
+    {"C4", "C5", BondType::AROMATIC}, //
+    {"C2", "N3", BondType::AROMATIC}, //
+    {"C5", "C6", BondType::AROMATIC}, //
+    {"C5", "N7", BondType::AROMATIC}, //
+    {"C8", "N7", BondType::AROMATIC}, //
+    {"C6", "O6", BondType::DOUBLE}, //
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-
-constexpr std::array<Rule, 4> c_rule = {{
-    {"C4", "N3", 2},
-    {"C5", "C6", 2},
-    {"C2", "O2", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 8> c_rules = {{
+    {"C4", "N3", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C5", "C6", BondType::AROMATIC},
+    {"C2", "N1", BondType::AROMATIC},
+    {"C6", "N1", BondType::AROMATIC},
+    {"C2", "O2", BondType::DOUBLE},
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-
-constexpr std::array<Rule, 5> a_rule = {{
-    {"C2", "N3", 2},
-    {"C6", "N1", 2},
-    {"C4", "C5", 2},
-    {"C8", "N7", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 9> u_rules = {{
+    {"C5", "C6", BondType::AROMATIC},
+    {"C6", "N1", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C4", "N3", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C2", "N1", BondType::AROMATIC},
+    {"C4", "O4", BondType::DOUBLE},
+    {"C2", "O2", BondType::DOUBLE},
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 4> u_rule = {{
-    {"C5", "C6", 2},
-    {"C2", "O2", 2},
-    {"C4", "O4", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 12> dg_rules = {{
+    {"C5", "C6", BondType::AROMATIC},
+    {"C6", "N1", BondType::AROMATIC},
+    {"C5", "N7", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C8", "N7", BondType::AROMATIC},
+    {"C8", "N9", BondType::AROMATIC},
+    {"C4", "N3", BondType::AROMATIC},
+    {"C4", "N9", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C2", "N1", BondType::AROMATIC},
+    {"C6", "O6", BondType::DOUBLE},
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 5> dg_rule = {{
-    {"C8", "N7", 2},
-    {"C4", "C5", 2},
-    {"C2", "N3", 2},
-    {"C6", "O6", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 8> dc_rules = {{
+    {"C6", "N1", BondType::AROMATIC},
+    {"C5", "C6", BondType::AROMATIC},
+    {"C2", "N1", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C4", "N3", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C2", "O2", BondType::DOUBLE},
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 4> dc_rule = {{
-    {"C4", "N3", 2},
-    {"C5", "C6", 2},
-    {"C2", "O2", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 11> da_rules = {{
+    {"C4", "N3", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C4", "N9", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C2", "N1", BondType::AROMATIC},
+    {"C6", "N1", BondType::AROMATIC},
+    {"C5", "N7", BondType::AROMATIC},
+    {"C5", "C6", BondType::AROMATIC},
+    {"C8", "N7", BondType::AROMATIC},
+    {"C8", "N9", BondType::AROMATIC},
+    {"OP1", "P", BondType::DOUBLE}
 }};
 
-constexpr std::array<Rule, 5> da_rule = {{
-    {"C2", "N3", 2},
-    {"C6", "N1", 2},
-    {"C4", "C5", 2},
-    {"C8", "N7", 2},
-    {"OP1", "P", 2}
+constexpr std::array<Rule, 9> dt_rules = {{
+    {"C4", "N3", BondType::AROMATIC},
+    {"C4", "C5", BondType::AROMATIC},
+    {"C2", "N3", BondType::AROMATIC},
+    {"C5", "C6", BondType::AROMATIC},
+    {"C2", "N1", BondType::AROMATIC},
+    {"C6", "N1", BondType::AROMATIC},
+    {"C2", "O2", BondType::DOUBLE},
+    {"C4", "O4", BondType::DOUBLE},
+    {"OP1", "P", BondType::DOUBLE}
 }};
-
-constexpr std::array<Rule, 4> dt_rule = {{
-    {"C5", "C6", 2},
-    {"C2", "O2", 2},
-    {"C4", "O4", 2},
-    {"OP1", "P", 2}
-}};
-
 
 } // namespace rules
 } // namespace lahuta

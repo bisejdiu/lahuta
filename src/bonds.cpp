@@ -28,9 +28,9 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
 
-    auto order = getIntraBondOrder(a, b);
+    auto bonded = getIntraBondOrder(a, b);
 
-    if (order) { // true only if both atoms are in the table
+    if (bonded) { // true only if both atoms are in the table
 
       double thresholdB = getElementThreshold(b->getAtomicNum());
       double thresholdA = getElementThreshold(a->getAtomicNum());
@@ -40,12 +40,11 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
           a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
       if (dist_sq <= pairingThreshold * pairingThreshold) {
-        mol.addBond(a->getIdx(), b->getIdx(),
-                    (RDKit::Bond::BondType)(int)order);
+        mol.addBond(a->getIdx(), b->getIdx(), bonded.bond_type); 
       }
       continue;
 
-    } else if (!order.atom1_in_table && !order.atom2_in_table) {
+    } else if (!bonded.atom1_is_predef && !bonded.atom2_is_predef) {
 
       // NOTE: I am adding bonds regardless of checking the nature of the atoms.
       // This results in metalic bonds being added and likely bonds to different

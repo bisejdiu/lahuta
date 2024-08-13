@@ -2,7 +2,10 @@
 #define LAHUTA_BONDS_HPP
 
 #include <string>
+#include <string_view>
 
+#include "GraphMol/Bond.h"
+#include "bonds/token.h"
 #include "rules.hpp"
 #include "token-gperf-generated.hpp"
 
@@ -10,181 +13,185 @@
 #include "GraphMol/MonomerInfo.h"
 
 using namespace lahuta;
+// using namespace RDKit;
+typedef RDKit::Bond::BondType BondType;
 
 // Function pointer type for bond rules
-using HandlerFunc = int (*)(std::string_view s2, std::string_view s3);
+using HandlerFunc = BondType (*)(std::string_view s2, std::string_view s3);
 
-constexpr inline auto default_fn = [](std::string_view s2, std::string_view s3) { return 1; };
+constexpr auto default_fn = [](std::string_view s2, std::string_view s3){ return BondType::SINGLE; };
 
-constexpr inline int default_amino_acid_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::default_amino_acid) {
+// FIX: All of these functions can be simplified to a single function (or defined dynamically)
+constexpr inline BondType default_amino_acid_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::default_aa_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-  return 1;
+  return BondType::SINGLE;
 }
 
-constexpr inline int default_base_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::default_base) {
+constexpr inline BondType default_base_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::default_base_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-  return 1;
+  return BondType::SINGLE; 
 }
 
-constexpr inline int his_fn(std::string_view s2, std::string_view s3) {
+constexpr inline BondType his_fn(std::string_view s2, std::string_view s3) {
     for (const auto& rule : rules::his_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int arg(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::arg_rule) {
+constexpr inline BondType arg(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::arg_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int phe_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::phe_rule) {
+constexpr inline BondType phe_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::phe_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int trp_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::trp_rule) { 
+constexpr inline BondType trp_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::trp_rules) { 
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int asn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::asn_rule) { 
+constexpr inline BondType asn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::asn_rules) { 
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int gln(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::gln_rule) {
+constexpr inline BondType gln(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::gln_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int tyr_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::tyr_rule) { 
+constexpr inline BondType tyr_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::tyr_rules) { 
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int asp_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::asp_rule) {
+constexpr inline BondType asp_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::asp_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int glu_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::glu_rule) {
+constexpr inline BondType glu_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::glu_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int g_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::g_rule) {
+constexpr inline BondType g_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::g_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int c_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::c_rule) {
+constexpr inline BondType c_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::c_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int a_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::a_rule) {
+constexpr inline BondType a_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::a_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int u_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::u_rule) {
+constexpr inline BondType u_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::u_rules) {
+        if (rule.s2 == s2 && rule.s3 == s3) {
+            return rule.result;
+            break;
+        }
+    }
+    return BondType::SINGLE;
+}
+
+constexpr inline BondType dg_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::dg_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int dg_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::dg_rule) {
+constexpr inline BondType dc_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::dc_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int dc_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::dc_rule) {
+constexpr inline BondType da_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::da_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
+    return BondType::SINGLE;
 }
 
-constexpr inline int da_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::da_rule) {
+constexpr inline BondType dt_fn(std::string_view s2, std::string_view s3) {
+    for (const auto& rule : rules::dt_rules) {
         if (rule.s2 == s2 && rule.s3 == s3) {
             return rule.result;
         }
     }
-    return 1;
-}
-
-constexpr inline int dt_fn(std::string_view s2, std::string_view s3) {
-    for (const auto& rule : rules::dt_rule) {
-        if (rule.s2 == s2 && rule.s3 == s3) {
-            return rule.result;
-        }
-    }
-    return 1;
+    return BondType::SINGLE;
 }
 
 // Function pointer lookup
@@ -254,7 +261,7 @@ constexpr HandlerFunc getHandler(resTokenType type) {
     case resTokenType::TIP3:
     case resTokenType::TIP4:
     case resTokenType::SPC:
-      return default_fn; 
+      return default_fn;
 
     default:
       return default_amino_acid_fn;
@@ -279,7 +286,7 @@ constexpr auto handlers = generateHandlerArray(
     std::make_index_sequence<static_cast<size_t>(resTokenType::UNKNOWN)>{});
 
 // Main processing function
-inline int process(resTokenType t, std::string_view s2, std::string_view s3) {
+inline BondType process(resTokenType t, std::string_view s2, std::string_view s3) {
   // `process` is responsible for swapping the arguments if necessary
   if (s2 > s3) {
     std::swap(s2, s3);
@@ -288,29 +295,17 @@ inline int process(resTokenType t, std::string_view s2, std::string_view s3) {
 }
 
 struct PossiblyBonded {
-  bool atom1_in_table = false;
-  bool atom2_in_table = false;
-  int bond_order = 0;
+  bool atom1_is_predef = false;
+  bool atom2_is_predef = false;
+  BondType bond_type = BondType::UNSPECIFIED;
 
-  PossiblyBonded(int order) : bond_order(order) {}
-  PossiblyBonded(bool a1, bool a2, int order)
-      : atom1_in_table(a1), atom2_in_table(a2), bond_order(order) {}
+  PossiblyBonded() = default;
+  PossiblyBonded(BondType bt) : bond_type(bt) {};
+  PossiblyBonded(bool a1, bool a2, BondType bt)
+      : atom1_is_predef(a1), atom2_is_predef(a2), bond_type(bt) {}
 
-  operator int() const { return bond_order; }
-  explicit operator bool() const { return bond_order != 0; }
+  explicit operator bool() const { return bond_type != BondType::UNSPECIFIED; } 
 
-  void setOrder(int order) { bond_order = order; }
-  void setIsMetal(int atom) {
-    if (atom == 1) {
-      atom1_is_metal = true;
-    } else {
-      atom2_is_metal = true;
-    }
-  }
-
-private:
-  bool atom1_is_metal = false;
-  bool atom2_is_metal = false;
 };
 
 inline auto is_same_conformer(const std::string& altlocA, const std::string& altlocB) {
@@ -331,14 +326,16 @@ inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1, RDKit::Atom *atom2) 
   bool atom2_in_table = entryB != resTokenType::UNKNOWN;
 
   if (entryA == resTokenType::UNKNOWN || entryB == resTokenType::UNKNOWN) {
-    return PossiblyBonded{atom1_in_table, atom2_in_table, 0};
+    return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::UNSPECIFIED};
   }
   if (!is_same_conformer(infoA->getAltLoc(), infoB->getAltLoc())) {
-    return PossiblyBonded{atom1_in_table, atom2_in_table, 0};
+    return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::UNSPECIFIED};
   }
 
-  int order = process(entryA, infoA->getName(), infoB->getName());
-  return {atom1_in_table, atom2_in_table, order};
+  BondType bond_type = process(entryA, infoA->getName(), infoB->getName());
+  PossiblyBonded pb{atom1_in_table, atom2_in_table, bond_type}; 
+
+  return pb; 
 }
 
 #endif // LAHUTA_BONDS_HPP

@@ -68,7 +68,6 @@ inline void basic_mol_cleanup(RWMol &mol) {
   boost::tie(atBegin, atEnd) = mol.getVertices();
   while (atBegin != atEnd) {
     RDKit::Atom *atom = mol[*atBegin];
-    // atom->updatePropertyCache(false);
     atom->calcExplicitValence(false);
 
     // correct four-valent neutral N -> N+
@@ -83,11 +82,18 @@ inline void basic_mol_cleanup(RWMol &mol) {
 
 class BondComputation {
 public:
+  static void cleanup_predef(RDKit::RWMol &mol) {
+    basic_mol_cleanup(mol);
+  }
+
   static void cleanup(RDKit::RWMol &mol) {
     basic_mol_cleanup(mol);
     auto start = std::chrono::high_resolution_clock::now();
-    MolOps::fastFindRings(mol);
+    // MolOps::fastFindRings(mol);
     // MolOps::findSSSR(mol);
+    bool include_dative_bonds = true;
+    MolOps::symmetrizeSSSR(mol, include_dative_bonds);
+    // MolOps::Kekulize(mol);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     std::cout << "Rings: " << elapsed.count() << "s" << std::endl;
@@ -116,6 +122,12 @@ public:
   static void compute_bonds(RDKit::RWMol &mol, Structure &st,
                             const NSResults &neighborResults) {
     auto result = assign_bonds(mol, neighborResults);
+    // mol.updatePropertyCache(false);
+    // for (auto &atom: mol.atoms()) {
+    //   if (atom->getIsAromatic()) {
+    //     std::cout << "Aromatic atom: " << atom->getIdx() << std::endl;
+    //   }
+    // }
 
     // FIX: Refactor!
 
@@ -133,7 +145,7 @@ public:
     if (!result.has_unlisted_resnames) {
       mol.updatePropertyCache(false);
       auto start = std::chrono::high_resolution_clock::now();
-      cleanup(mol);
+      cleanup_predef(mol);
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       std::cout << "Cleanup predef: " << elapsed.count() << "s" << std::endl;
@@ -143,15 +155,22 @@ public:
     result.mol.updatePropertyCache(false);
     std::cout << "Unlisted residues: " << result.atom_indices.size() << std::endl;
     clean_bonds(result.mol, result.mol.getConformer());
+    result.mol.updatePropertyCache(false);
     perceive_bond_orders_obabel(result.mol);
+    result.mol.updatePropertyCache(false);
+    cleanup(result.mol);
+
+
+    mol.updatePropertyCache(false);
+    cleanup_predef(mol);
     merge_bonds(mol, result.mol, result.atom_indices);
 
     mol.updatePropertyCache(false);
-    auto start = std::chrono::high_resolution_clock::now();
-    cleanup(mol);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Cleanup non-def: " << elapsed.count() << "s" << std::endl;
+    // auto start = std::chrono::high_resolution_clock::now();
+    // cleanup(mol);
+    // auto end = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> elapsed = end - start;
+    // std::cout << "Cleanup non-def: " << elapsed.count() << "s" << std::endl;
   }
 };
 
