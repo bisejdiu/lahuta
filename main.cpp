@@ -37,6 +37,13 @@ int main(int argc, char const *argv[]) {
   auto neighbors = luni.get_neighbors();
   RDKit::RWMol *mol = &luni.get_molecule();
 
+
+  // std::string smarts_test = "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1";
+  // auto match = luni.match_smarts_string(smarts_test);
+  // // RDKit::RWMol *smarts_mol = RDKit::SmartsToMol(smarts_test);
+  // // auto match = RDKit::SubstructMatch(*mol, *smarts_mol);
+  // std::cout << "Match: " << match.size() << std::endl;
+
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());
     auto second_atom = mol->getAtomWithIdx(bond->getEndAtomIdx());

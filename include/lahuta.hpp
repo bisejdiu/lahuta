@@ -12,10 +12,12 @@
 #include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
 
+#include "atom_types.hpp"
+
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
-#include <chrono>
 
 #define LAHUTA_VERSION "0.10.0"
 
@@ -82,28 +84,16 @@ inline void basic_mol_cleanup(RWMol &mol) {
 
 class BondComputation {
 public:
-  static void cleanup_predef(RDKit::RWMol &mol) {
-    basic_mol_cleanup(mol);
-  }
+  static void cleanup_predef(RDKit::RWMol &mol) { basic_mol_cleanup(mol); }
 
   static void cleanup(RDKit::RWMol &mol) {
     basic_mol_cleanup(mol);
-    auto start = std::chrono::high_resolution_clock::now();
+
     // MolOps::fastFindRings(mol);
     // MolOps::findSSSR(mol);
     bool include_dative_bonds = true;
     MolOps::symmetrizeSSSR(mol, include_dative_bonds);
-    // MolOps::Kekulize(mol);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Rings: " << elapsed.count() << "s" << std::endl;
-
-
-    auto start2 = std::chrono::high_resolution_clock::now();
     MolOps::setAromaticity(mol);
-    auto end2 = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed2 = end2 - start2;
-    std::cout << "Aromaticity: " << elapsed2.count() << "s" << std::endl;
   }
 
   static void merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
@@ -122,12 +112,6 @@ public:
   static void compute_bonds(RDKit::RWMol &mol, Structure &st,
                             const NSResults &neighborResults) {
     auto result = assign_bonds(mol, neighborResults);
-    // mol.updatePropertyCache(false);
-    // for (auto &atom: mol.atoms()) {
-    //   if (atom->getIsAromatic()) {
-    //     std::cout << "Aromatic atom: " << atom->getIdx() << std::endl;
-    //   }
-    // }
 
     // FIX: Refactor!
 
@@ -149,28 +133,49 @@ public:
       auto end = std::chrono::high_resolution_clock::now();
       std::chrono::duration<double> elapsed = end - start;
       std::cout << "Cleanup predef: " << elapsed.count() << "s" << std::endl;
+
+      // std::cout << "starting atom typing.. " << std::endl;
+      auto start2 = std::chrono::high_resolution_clock::now();
+      for (auto atom : mol.atoms()) {
+        auto *info =
+            static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+        AtomType atom_type = get_atom_type(atom);
+        std::cout << info->getResidueName() << " " << info->getName() << " "
+        << atom_type_to_string(atom_type) << std::endl;
+      }
+      auto end2 = std::chrono::high_resolution_clock::now();
+      std::chrono::duration<double> elapsed2 = end2 - start2;
+      std::cout << "Atom typing: " << elapsed2.count() << "s" << std::endl;
+
       return;
     }
 
     result.mol.updatePropertyCache(false);
-    std::cout << "Unlisted residues: " << result.atom_indices.size() << std::endl;
+    std::cout << "Unlisted residues: " << result.atom_indices.size()
+              << std::endl;
     clean_bonds(result.mol, result.mol.getConformer());
     result.mol.updatePropertyCache(false);
     perceive_bond_orders_obabel(result.mol);
     result.mol.updatePropertyCache(false);
     cleanup(result.mol);
 
-
     mol.updatePropertyCache(false);
     cleanup_predef(mol);
     merge_bonds(mol, result.mol, result.atom_indices);
 
     mol.updatePropertyCache(false);
-    // auto start = std::chrono::high_resolution_clock::now();
-    // cleanup(mol);
-    // auto end = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed = end - start;
-    // std::cout << "Cleanup non-def: " << elapsed.count() << "s" << std::endl;
+
+    // auto start2 = std::chrono::high_resolution_clock::now();
+    // for (auto atom : mol.atoms()) {
+    //   auto *info =
+    //       static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    //   AtomType atom_type = get_atom_type(atom);
+    //   std::cout << info->getResidueName() << " " << info->getName() << " " <<
+    //   atomTypeToString(atom_type) << std::endl;
+    // }
+    // auto end2 = std::chrono::high_resolution_clock::now();
+    // std::chrono::duration<double> elapsed2 = end2 - start2;
+    // std::cout << "Atom typing: " << elapsed2.count() << "s" << std::endl;
   }
 };
 
@@ -221,33 +226,19 @@ public:
     grid.update_cutoff(value);
     return grid.self_search();
   }
-  int match_smarts_string(std::string sm, std::string atype = "",
-                          bool log_values = false) const {
+  std::vector<RDKit::MatchVectType>
+  match_smarts_string(std::string sm, std::string atype = "",
+                      bool log_values = false) const {
+
+    // initialize ringinfo
+    if (!source->get_molecule().getRingInfo()->isInitialized()) {
+      RDKit::MolOps::symmetrizeSSSR(source->get_molecule());
+    }
     std::vector<RDKit::MatchVectType> match_list;
     auto sm_mol = RDKit::SmartsToMol(sm);
     source->get_molecule().updatePropertyCache(false);
-    // NOTE: do H make a difference
-    // std::cout << "smart string processing: " << sm_mol->getNumAtoms() <<
-    // std::endl;
     RDKit::SubstructMatch(source->get_molecule(), *sm_mol, match_list);
-    if (log_values) {
-      std::string values = "Matched: ";
-      for (auto &match : match_list) {
-        // for (auto &pair : match) {
-        values += std::to_string(match[0].second) + " ";
-        // }
-      }
-      std::cout << atype << " " << values << std::endl;
-    }
-
-    return match_list.size();
-    // std::vector<int> results(match_list.size());
-    // for (auto &match : match_list) {
-    //   auto atom = source->get_molecule().getAtomWithIdx(match[0].second);
-    //   // std::cout << atom->getIdx() <<
-    //   results.push_back(match[0].second);
-    // }
-    // return 0;
+    return match_list;
   }
 };
 
