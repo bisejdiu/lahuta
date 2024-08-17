@@ -395,4 +395,6 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     }
     bool ok = OBKekulize(&mol);
   }
+
+  mol.updatePropertyCache(false);
 }

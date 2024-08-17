@@ -23,6 +23,36 @@
 
 namespace Lahuta {
 
+
+inline std::vector<AtomType> AtomTypeMatch(RDKit::ROMol &mol, SubstructMatchParameters &params) {
+  static std::array<RDKit::ROMol *, std::size(AtomTypeSMARTS)> patterns = [] {
+    std::array<RDKit::ROMol *, std::size(AtomTypeSMARTS)> temp{};
+    for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
+      temp[i] = RDKit::SmartsToMol(AtomTypeSMARTS[i].first);
+    }
+    return temp;
+  }();
+
+  std::vector<AtomType> types = {mol.getNumAtoms(), AtomType::NONE};
+  // types.reserve(mol.getNumAtoms());
+  for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
+    const auto &[smarts, atom_type] = AtomTypeSMARTS[i];
+    RDKit::ROMol *pattern = patterns[i];
+
+    SubStrMatches matchList;
+    RDKit::SubstructMatch(mol, *pattern, matchList);
+
+    for (const auto &match : matchList) {
+      // std::cout << "Match: " << match[0].second << " " << atom_type_to_string(atom_type) << std::endl;
+      types[match[0].second] |= atom_type;
+    }
+  }
+
+  return types;
+}
+
+
+
 class ISource {
 public:
   // FIX: RDKit provides ROMol and RWMol
@@ -126,56 +156,53 @@ public:
     //   }
     // }
 
-    if (!result.has_unlisted_resnames) {
-      mol.updatePropertyCache(false);
-      auto start = std::chrono::high_resolution_clock::now();
-      cleanup_predef(mol);
-      auto end = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> elapsed = end - start;
-      std::cout << "Cleanup predef: " << elapsed.count() << "s" << std::endl;
-
-      // std::cout << "starting atom typing.. " << std::endl;
-      auto start2 = std::chrono::high_resolution_clock::now();
-      for (auto atom : mol.atoms()) {
-        auto *info =
-            static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-        AtomType atom_type = get_atom_type(atom);
-        std::cout << info->getResidueName() << " " << info->getName() << " "
-        << atom_type_to_string(atom_type) << std::endl;
-      }
-      auto end2 = std::chrono::high_resolution_clock::now();
-      std::chrono::duration<double> elapsed2 = end2 - start2;
-      std::cout << "Atom typing: " << elapsed2.count() << "s" << std::endl;
-
-      return;
-    }
-
-    result.mol.updatePropertyCache(false);
-    std::cout << "Unlisted residues: " << result.atom_indices.size()
-              << std::endl;
-    clean_bonds(result.mol, result.mol.getConformer());
-    result.mol.updatePropertyCache(false);
-    perceive_bond_orders_obabel(result.mol);
-    result.mol.updatePropertyCache(false);
-    cleanup(result.mol);
-
+    // auto *i = static_cast<RDKit::AtomPDBResidueInfo*>(at->getMonomerInfo());
     mol.updatePropertyCache(false);
     cleanup_predef(mol);
-    merge_bonds(mol, result.mol, result.atom_indices);
 
-    mol.updatePropertyCache(false);
 
-    // auto start2 = std::chrono::high_resolution_clock::now();
-    // for (auto atom : mol.atoms()) {
-    //   auto *info =
-    //       static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    //   AtomType atom_type = get_atom_type(atom);
-    //   std::cout << info->getResidueName() << " " << info->getName() << " " <<
-    //   atomTypeToString(atom_type) << std::endl;
-    // }
-    // auto end2 = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed2 = end2 - start2;
-    // std::cout << "Atom typing: " << elapsed2.count() << "s" << std::endl;
+
+    std::vector<int> invalid_indices; 
+    invalid_indices.reserve(mol.getNumAtoms());
+    for (auto atom : mol.atoms()) {
+      AtomType atom_type = get_atom_type(atom);
+      if (atom_type == AtomType::INVALID && atom->getAtomicNum() != 1) {
+        invalid_indices.push_back(atom->getIdx());
+      }
+    }
+
+    std::cout << "sizes: " << result.atom_indices.size() << " " << invalid_indices.size() << std::endl;
+    auto with_bonds = true;
+    auto new_mol = rdMolFromRDKitMol(mol, invalid_indices, with_bonds);
+    std::cout << "created new mol\n";
+    SubstructMatchParameters params;
+    params.maxMatches = new_mol.getNumAtoms();
+    std::cout << "sizes all: " << result.atom_indices.size() << " " << invalid_indices.size() << " " << new_mol.getNumAtoms() << std::endl;
+    
+    // initialize ringinfo
+    if (!new_mol.getRingInfo()->isInitialized()) {
+      RDKit::MolOps::symmetrizeSSSR(new_mol);
+    }
+    auto vec = AtomTypeMatch(new_mol, params);
+    for (auto i = 0; i < vec.size(); ++i) {
+      // AtomType atom_type = get_atom_type(atom);
+      AtomType atom_type = vec[i];
+      auto atom = new_mol.getAtomWithIdx(i);
+      if (atom_type != AtomType::INVALID) {
+        std::cout << "x atom: " << atom->getIdx() << " " << atom->getSymbol() << " " << atom_type_to_string(vec[i]) << std::endl;
+        // std::cout << "x atom: " << atom_type_to_string(atom_type) << std::endl;
+      }
+    }
+
+    if (result.has_unlisted_resnames) {
+      std::cout << "Unlisted residues: " << result.atom_indices.size()
+                << std::endl;
+      clean_bonds(result.mol, result.mol.getConformer());
+      perceive_bond_orders_obabel(result.mol);
+      cleanup(result.mol);
+
+      merge_bonds(mol, result.mol, result.atom_indices);
+    }
   }
 };
 

@@ -49,6 +49,7 @@ RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices) {
   for (auto atomIdx : atomIndices) {
     auto atom = mol.getAtomWithIdx(atomIdx);
     RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
+    // RDKit::Atom *newAtom = new RDKit::Atom(*atom); // FIX: check if this copies the monomer info
     newAtom->setFormalCharge(atom->getFormalCharge());
     newMol.addAtom(newAtom, true, true);
     auto pos = conf.getAtomPos(atom->getIdx());
@@ -69,6 +70,96 @@ RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices) {
   }
 
   newMol.addConformer(newMolConf, true);
+  newMol.updatePropertyCache(false);
 
   return newMol;
+}
+
+RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices, bool with_bonds) {
+  if (!with_bonds) {
+    return rdMolFromRDKitMol(mol, atomIndices);
+  }
+  Conformer conf = mol.getConformer();
+  RWMol newMol;
+  Conformer *newMolConf = new Conformer();
+
+  for (auto atomIdx : atomIndices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    if (atom->getAtomicNum() == 1) {
+      continue;
+    }
+    RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
+    newAtom->setFormalCharge(atom->getFormalCharge());
+    newAtom->setIsAromatic(atom->getIsAromatic());
+    newMol.addAtom(newAtom, true, true);
+    auto pos = conf.getAtomPos(atom->getIdx());
+    newMolConf->setAtomPos(newAtom->getIdx(), pos);
+
+    auto *res = dynamic_cast<AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    AtomPDBResidueInfo atomInfo = {atom->getMonomerInfo()->getName(),
+                                   static_cast<int>(atom->getIdx()),
+                                   res->getAltLoc(),
+                                   res->getResidueName(),
+                                   res->getResidueNumber(),
+                                   res->getChainId()};
+    atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
+    atomInfo.setMonomerType(AtomMonomerInfo::PDBRESIDUE);
+
+    auto *copy = static_cast<AtomMonomerInfo *>(atomInfo.copy());
+    newAtom->setMonomerInfo(copy);
+
+    // std::cout << "Adding atom: " << newAtom->getIdx() << " " << newAtom->getSymbol() << std::endl;
+    // // Add bonds to the newMol
+    // for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
+    //      ++bondIt.first) {
+    //   const RDKit::Bond *bond = mol[*bondIt.first];
+    //   auto otherAtom = bond->getOtherAtom(atom);
+    //   if (std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()) != atomIndices.end()) {
+    //     int aIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx()));
+    //     int bIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()));
+    //     if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
+    //       newMol.addBond(aIx, bIx, bond->getBondType());
+    //     }
+    //   }
+    // }
+
+
+  }
+
+  for (auto atomIdx : atomIndices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    if (atom->getAtomicNum() == 1) {
+      continue;
+    }
+
+    // std::cout << "Adding atom: " << atom->getIdx() << " " << atom->getSymbol() << std::endl;
+    // Add bonds to the newMol
+    for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
+         ++bondIt.first) {
+      const RDKit::Bond *bond = mol[*bondIt.first];
+      auto otherAtom = bond->getOtherAtom(atom);
+      if (otherAtom->getAtomicNum() == 1) {
+        continue;
+      }
+      if (std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()) != atomIndices.end()) {
+        int aIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx()));
+        int bIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()));
+        if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
+          newMol.addBond(aIx, bIx, bond->getBondType());
+        }
+      }
+    }
+
+
+  }
+
+  newMol.addConformer(newMolConf, true);
+
+
+
+
+
+  newMol.updatePropertyCache(false);
+  return newMol;
+
 }

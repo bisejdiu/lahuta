@@ -3,6 +3,7 @@
 #include <GraphMol/RWMol.h>
 #include <cstdint>
 
+
 enum class AtomType : uint32_t {
   NONE = 0x0,
   HBOND_ACCEPTOR = 0x1,
@@ -17,7 +18,59 @@ enum class AtomType : uint32_t {
   HYDROPHOBIC = 0x200,
   XBOND_ACCEPTOR = 0x400,
   XBOND_DONOR = 0x800,
+  INVALID = 0x1000,
+  // HYDROGEN = 0x2000,
 };
+
+
+constexpr std::pair<const char*, AtomType> AtomTypeSMARTS[] = {
+  {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::HBOND_ACCEPTOR},
+  {"[$([nH]:@c(=O))]", AtomType::HBOND_ACCEPTOR},
+  {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::HBOND_ACCEPTOR},
+  {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::HBOND_ACCEPTOR}, 
+
+  {"[N!H0v3,N!H0+v4,OH+0,SH+0,nH+0]", AtomType::HBOND_DONOR},
+  {"[$([O;H0;$(O=C([OH])-*)])]", AtomType::HBOND_DONOR},
+  {"[$(n:a:[nH])]", AtomType::HBOND_DONOR},
+  {"[$([O;H0;$(O=C-[NH2])])]", AtomType::HBOND_DONOR},
+
+  // FIX: These seem to be very similar to weak hbond acceptor?
+  // {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::XBOND_ACCEPTOR},
+  // {"[$([nH]:@c(=O))]", AtomType::XBOND_ACCEPTOR},
+  // {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::XBOND_ACCEPTOR},
+  // {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::XBOND_ACCEPTOR},
+  // {"[Xx]", AtomType::XBOND_ACCEPTOR},
+  // {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::XBOND_DONOR},
+
+  {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[$([nH]:@c(=O))]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[#6!H0]", AtomType::WEAK_HBOND_DONOR},
+
+  {"[$([N;H2&+0][C;!$(C=*)]),$([N;H1&+0]([C;!$(C=*)])[C;!$(C=*)]),$([N;H0&+0]([C;!$(C=*)])([C;!$(C=*)])[C;!$(C=*)]);!$(N[a])]", AtomType::POS_IONISABLE},
+  {"[n;R1]1[c;R1][n;R1][c;R1][c;R1]1", AtomType::POS_IONISABLE},
+  {"NC(=N)", AtomType::POS_IONISABLE},
+  {"[#7;+;!$([N+]-[O-])]", AtomType::POS_IONISABLE},
+  {"[$([*+1,*+2,*+3]);!$([N+]-[O-])]", AtomType::POS_IONISABLE},
+  {"[Li,Be,Na,Mg,Al,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,Tc,Ru,Rh,Pd,Ag,Cd,In,Sn,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,Lu,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf]", AtomType::POS_IONISABLE},
+
+  {"[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]", AtomType::NEG_IONISABLE},
+  {"[*-1,*-2]", AtomType::NEG_IONISABLE},
+
+  {"[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]", AtomType::HYDROPHOBIC},
+
+  {"[$([OH0]=[CX3,c]);!$([OH0]=[CX3,c]-[OH,O-])]", AtomType::CARBONYL_OXYGEN},
+  {"[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]", AtomType::CARBONYL_CARBON},
+
+  {"[a;r4,!R1&r3]1:[a;r4,!R1&r3]:[a;r4,!R1&r3]:[a;r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+};
+
 
 inline AtomType operator|(AtomType lhs, AtomType rhs) {
   return static_cast<AtomType>(static_cast<uint32_t>(lhs) |
@@ -53,32 +106,25 @@ inline AtomType operator~(AtomType flag) {
   return static_cast<AtomType>(~static_cast<uint32_t>(flag));
 }
 
-inline bool hasFlag(AtomType flags, AtomType flag) {
+inline bool has(AtomType flags, AtomType flag) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) != 0;
 }
 
-inline bool hasAllFlags(AtomType flags, AtomType toCheck) {
+inline bool all(AtomType flags, AtomType toCheck) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(toCheck)) ==
          static_cast<uint32_t>(toCheck);
 }
 
-inline bool hasAnyFlag(AtomType flags, AtomType toCheck) {
+inline bool any(AtomType flags, AtomType toCheck) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(toCheck)) != 0;
 }
 
-inline bool hasNoFlag(AtomType flags, AtomType toCheck) {
+inline bool none(AtomType flags, AtomType toCheck) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(toCheck)) == 0;
 }
 
-inline bool getFlag(AtomType flags, AtomType flag) {
-  return hasFlag(flags, flag);
-}
+inline bool empty(AtomType flags) { return flags == AtomType::NONE; }
 
-inline void setFlag(AtomType &flags, AtomType flag) { flags |= flag; }
-
-inline void clearFlag(AtomType &flags, AtomType flag) { flags &= ~flag; }
-
-inline void toggleFlag(AtomType &flags, AtomType flag) { flags ^= flag; }
 
 constexpr inline unsigned encode_uint(const char A, const char B = '\0',
                                       const char C = '\0') {
@@ -95,7 +141,7 @@ constexpr inline unsigned encode_uint(const char A, const char B = '\0',
   }
   return result;
 }
-inline auto sfx = [](const std::string &name) {
+inline auto encode_atom_name = [](const std::string &name) {
   if (name.size() == 1) {
     return encode_uint(name[0]);
   }
@@ -108,6 +154,9 @@ inline auto sfx = [](const std::string &name) {
 // FIX: This function does not need to check for non-standard residue; instead
 // the caller should take over that responsibility.
 static AtomType get_atom_type(RDKit::Atom *at) {
+  // if (at->getAtomicNum() == 1) {
+  //   return AtomType::HYDROGEN;
+  // }
 
   auto *info = static_cast<RDKit::AtomPDBResidueInfo *>(at->getMonomerInfo());
 
@@ -115,11 +164,11 @@ static AtomType get_atom_type(RDKit::Atom *at) {
                                       info->getResidueName().length());
 
   if (static_cast<int>(entry) >= 20) { // only standard amino acids handled
-    return AtomType::NONE;
+    return AtomType::INVALID;
   }
   std::string name = info->getName();
 
-  switch (sfx(name)) {
+  switch (encode_atom_name(name)) {
   case encode_uint('N'):
     if (info->getResidueName() == "PRO") {
       return AtomType::NONE;
@@ -361,29 +410,29 @@ inline std::string atom_type_to_string(AtomType type) {
     return "None";
 
   std::string result;
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::HBOND_ACCEPTOR)))
+  if (static_cast<uint32_t>(has(type, AtomType::HBOND_ACCEPTOR)))
     result += "HBOND_ACCEPTOR ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::HBOND_DONOR)))
+  if (static_cast<uint32_t>(has(type, AtomType::HBOND_DONOR)))
     result += "HBOND_DONOR ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::WEAK_HBOND_ACCEPTOR)))
+  if (static_cast<uint32_t>(has(type, AtomType::WEAK_HBOND_ACCEPTOR)))
     result += "WEAK_HBOND_ACCEPTOR ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::WEAK_HBOND_DONOR)))
+  if (static_cast<uint32_t>(has(type, AtomType::WEAK_HBOND_DONOR)))
     result += "WEAK_HBOND_DONOR ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::POS_IONISABLE)))
+  if (static_cast<uint32_t>(has(type, AtomType::POS_IONISABLE)))
     result += "POS_IONISABLE ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::NEG_IONISABLE)))
+  if (static_cast<uint32_t>(has(type, AtomType::NEG_IONISABLE)))
     result += "NEG_IONISABLE ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::CARBONYL_OXYGEN)))
+  if (static_cast<uint32_t>(has(type, AtomType::CARBONYL_OXYGEN)))
     result += "CARBONYL_OXYGEN ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::CARBONYL_CARBON)))
+  if (static_cast<uint32_t>(has(type, AtomType::CARBONYL_CARBON)))
     result += "CARBONYL_CARBON ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::AROMATIC)))
+  if (static_cast<uint32_t>(has(type, AtomType::AROMATIC)))
     result += "AROMATIC ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::HYDROPHOBIC)))
+  if (static_cast<uint32_t>(has(type, AtomType::HYDROPHOBIC)))
     result += "HYDROPHOBIC ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::XBOND_ACCEPTOR)))
+  if (static_cast<uint32_t>(has(type, AtomType::XBOND_ACCEPTOR)))
     result += "XBOND_ACCEPTOR ";
-  if (static_cast<uint32_t>(hasFlag(type, AtomType::XBOND_DONOR)))
+  if (static_cast<uint32_t>(has(type, AtomType::XBOND_DONOR)))
     result += "XBOND_DONOR ";
 
   return result.empty() ? "Unknown" : result;
