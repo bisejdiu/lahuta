@@ -1,4 +1,5 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
+#include <unordered_map>
 #include "convert.hpp"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \
@@ -75,91 +76,47 @@ RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices) {
   return newMol;
 }
 
-RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices, bool with_bonds) {
+RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &indices, bool with_bonds) {
   if (!with_bonds) {
-    return rdMolFromRDKitMol(mol, atomIndices);
+    return rdMolFromRDKitMol(mol, indices);
   }
+  RWMol new_mol;
   Conformer conf = mol.getConformer();
-  RWMol newMol;
-  Conformer *newMolConf = new Conformer();
+  Conformer *new_conf = new Conformer();
 
-  for (auto atomIdx : atomIndices) {
-    auto atom = mol.getAtomWithIdx(atomIdx);
-    if (atom->getAtomicNum() == 1) {
-      continue;
+  std::unordered_set<unsigned int> _ixs; 
+  auto get_or_add_atom = [&](const RDKit::Atom *at, unsigned int &_ix) {
+
+    if (_ixs.find(_ix) == _ixs.end()) {
+      RDKit::Atom *atom = new RDKit::Atom(*at);
+      new_mol.addAtom(atom, true, true);
+      _ixs.insert(_ix);
+
+      auto pos = conf.getAtomPos(atom->getIdx());
+      new_conf->setAtomPos(atom->getIdx(), pos);
     }
-    RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
-    newAtom->setFormalCharge(atom->getFormalCharge());
-    newAtom->setIsAromatic(atom->getIsAromatic());
-    newMol.addAtom(newAtom, true, true);
-    auto pos = conf.getAtomPos(atom->getIdx());
-    newMolConf->setAtomPos(newAtom->getIdx(), pos);
+    return _ix++; 
+  };
 
-    auto *res = dynamic_cast<AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    AtomPDBResidueInfo atomInfo = {atom->getMonomerInfo()->getName(),
-                                   static_cast<int>(atom->getIdx()),
-                                   res->getAltLoc(),
-                                   res->getResidueName(),
-                                   res->getResidueNumber(),
-                                   res->getChainId()};
-    atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
-    atomInfo.setMonomerType(AtomMonomerInfo::PDBRESIDUE);
+  unsigned int _ix = 0;
+  for (auto idx: indices) {
+    auto at = mol.getAtomWithIdx(idx);
+    auto a_ix = get_or_add_atom(at, _ix);
 
-    auto *copy = static_cast<AtomMonomerInfo *>(atomInfo.copy());
-    newAtom->setMonomerInfo(copy);
-
-    // std::cout << "Adding atom: " << newAtom->getIdx() << " " << newAtom->getSymbol() << std::endl;
-    // // Add bonds to the newMol
-    // for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
-    //      ++bondIt.first) {
-    //   const RDKit::Bond *bond = mol[*bondIt.first];
-    //   auto otherAtom = bond->getOtherAtom(atom);
-    //   if (std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()) != atomIndices.end()) {
-    //     int aIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx()));
-    //     int bIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()));
-    //     if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
-    //       newMol.addBond(aIx, bIx, bond->getBondType());
-    //     }
-    //   }
-    // }
-
-
-  }
-
-  for (auto atomIdx : atomIndices) {
-    auto atom = mol.getAtomWithIdx(atomIdx);
-    if (atom->getAtomicNum() == 1) {
-      continue;
-    }
-
-    // std::cout << "Adding atom: " << atom->getIdx() << " " << atom->getSymbol() << std::endl;
-    // Add bonds to the newMol
-    for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
-         ++bondIt.first) {
+    for (auto bondIt = mol.getAtomBonds(at); bondIt.first != bondIt.second; ++bondIt.first) {
       const RDKit::Bond *bond = mol[*bondIt.first];
-      auto otherAtom = bond->getOtherAtom(atom);
-      if (otherAtom->getAtomicNum() == 1) {
-        continue;
-      }
-      if (std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()) != atomIndices.end()) {
-        int aIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), atom->getIdx()));
-        int bIx = std::distance(atomIndices.begin(), std::find(atomIndices.begin(), atomIndices.end(), otherAtom->getIdx()));
-        if (newMol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
-          newMol.addBond(aIx, bIx, bond->getBondType());
+      auto oat = bond->getOtherAtom(at);
+      if (std::find(indices.begin(), indices.end(), oat->getIdx()) != indices.end()) {
+        auto b_ix = get_or_add_atom(oat, _ix);
+        if (new_mol.getBondBetweenAtoms(a_ix, b_ix) == nullptr) {
+          new_mol.addBond(a_ix, b_ix, bond->getBondType());
         }
       }
     }
-
-
   }
 
-  newMol.addConformer(newMolConf, true);
-
-
-
-
-
-  newMol.updatePropertyCache(false);
-  return newMol;
+  new_mol.addConformer(new_conf, true);
+  new_mol.updatePropertyCache(false);
+  return new_mol;
 
 }

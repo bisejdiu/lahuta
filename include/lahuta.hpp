@@ -200,7 +200,9 @@ public:
       clean_bonds(result.mol, result.mol.getConformer());
       perceive_bond_orders_obabel(result.mol);
       cleanup(result.mol);
-
+ 
+      // FIX: test if insertMol is a solution. In our case we are not so much merging or inserting, but 
+      // rather adding bonds on mol based on result.mol connectivity and bond types. 
       merge_bonds(mol, result.mol, result.atom_indices);
     }
   }
