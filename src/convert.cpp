@@ -42,115 +42,75 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
   }
 }
 
-// FIX: It seems RDKit automatically copies bonds or coordinates when adding 
-// atoms directly. Need to investigate this. 
-RWMol filter_atoms(RWMol &mol, std::vector<int> &atomIndices) {
-  RWMol newMol;
-
-  for (auto atomIdx : atomIndices) {
-    auto atom = mol.getAtomWithIdx(atomIdx);
-    RDKit::Atom *newAtom = new RDKit::Atom(*atom); 
-    newMol.addAtom(newAtom, true, true);
-  }
-
-  newMol.updatePropertyCache(false);
-
-  return newMol;
-}
-
-RWMol filter_atom_conf(RWMol &mol, std::vector<int> &atomIndices) {
-  Conformer conf = mol.getConformer();
-  RWMol newMol;
-  Conformer *newMolConf = new Conformer();
-
-  for (auto atomIdx : atomIndices) {
-    auto atom = mol.getAtomWithIdx(atomIdx);
-    RDKit::Atom *newAtom = new RDKit::Atom(*atom); 
-    newMol.addAtom(newAtom, true, true);
-    auto pos = conf.getAtomPos(atom->getIdx());
-    newMolConf->setAtomPos(newAtom->getIdx(), pos);
-  }
-
-  newMol.addConformer(newMolConf, true);
-  newMol.updatePropertyCache(false);
-
-  return newMol;
-}
-
-RWMol filter_with_atom_data(RWMol &mol, std::vector<int> &atomIndices) {
-  Conformer conf = mol.getConformer();
-  RWMol newMol;
-  Conformer *newMolConf = new Conformer();
-
-  for (auto atomIdx : atomIndices) {
-    auto atom = mol.getAtomWithIdx(atomIdx);
-    RDKit::Atom *newAtom = new RDKit::Atom(atom->getAtomicNum());
-    // RDKit::Atom *newAtom = new RDKit::Atom(*atom); // FIX: check if this copies the monomer info
-    newAtom->setFormalCharge(atom->getFormalCharge());
-    newMol.addAtom(newAtom, true, true);
-    auto pos = conf.getAtomPos(atom->getIdx());
-    newMolConf->setAtomPos(newAtom->getIdx(), pos);
-
-    auto *res = dynamic_cast<AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    AtomPDBResidueInfo atomInfo = {atom->getMonomerInfo()->getName(),
-                                   static_cast<int>(atom->getIdx()),
-                                   res->getAltLoc(),
-                                   res->getResidueName(),
-                                   res->getResidueNumber(),
-                                   res->getChainId()};
-    atomInfo.setIsHeteroAtom(res->getIsHeteroAtom());
-    atomInfo.setMonomerType(AtomMonomerInfo::PDBRESIDUE);
-
-    auto *copy = static_cast<AtomMonomerInfo *>(atomInfo.copy());
-    newAtom->setMonomerInfo(copy);
-  }
-
-  newMol.addConformer(newMolConf, true);
-  newMol.updatePropertyCache(false);
-
-  return newMol;
-}
-
-RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &indices) {
-
+RWMol filter_atoms(RWMol &mol, std::vector<int> &indices) {
   RWMol new_mol;
+
+  for (auto atomIdx : indices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    RDKit::Atom *new_atom = new RDKit::Atom(*atom); 
+    new_mol.addAtom(new_atom, true, true);
+  }
+  new_mol.updatePropertyCache(false);
+
+  return new_mol;
+}
+
+RWMol filter_with_conf(RWMol &mol, std::vector<int> &indices) {
   Conformer conf = mol.getConformer();
+  RWMol new_mol;
   Conformer *new_conf = new Conformer();
 
-  std::unordered_set<unsigned int> _ixs; 
-  auto get_or_add_atom = [&](const RDKit::Atom *at, unsigned int &_ix) {
-
-    if (_ixs.find(_ix) == _ixs.end()) {
-      RDKit::Atom *atom = new RDKit::Atom(*at);
-      new_mol.addAtom(atom, true, true);
-      _ixs.insert(_ix);
-
-      auto pos = conf.getAtomPos(atom->getIdx());
-      new_conf->setAtomPos(atom->getIdx(), pos);
-    }
-    return _ix++; 
-  };
-
-  unsigned int _ix = 0;
-  for (auto idx: indices) {
-    auto at = mol.getAtomWithIdx(idx);
-    auto a_ix = get_or_add_atom(at, _ix);
-
-    for (auto bondIt = mol.getAtomBonds(at); bondIt.first != bondIt.second; ++bondIt.first) {
-      const RDKit::Bond *bond = mol[*bondIt.first];
-      auto oat = bond->getOtherAtom(at);
-      if (std::find(indices.begin(), indices.end(), oat->getIdx()) != indices.end()) {
-        auto b_ix = get_or_add_atom(oat, _ix);
-        if (new_mol.getBondBetweenAtoms(a_ix, b_ix) == nullptr) {
-          new_mol.addBond(a_ix, b_ix, bond->getBondType());
-        }
-      }
-    }
+  for (auto atomIdx : indices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    RDKit::Atom *newAtom = new RDKit::Atom(*atom); 
+    new_mol.addAtom(newAtom, true, true);
+    auto pos = conf.getAtomPos(atom->getIdx());
+    new_conf->setAtomPos(newAtom->getIdx(), pos);
   }
-
   new_mol.addConformer(new_conf, true);
   new_mol.updatePropertyCache(false);
-  return new_mol;
 
+  return new_mol;
+}
+
+RWMol filter_with_bonds(const RWMol &mol, const std::vector<int> &indices) {
+    RWMol new_mol;
+    const Conformer &conf = mol.getConformer();
+    auto *new_conf = new Conformer();
+    
+    // for faster index lookup
+    std::unordered_map<int, int> old_to_new_index;
+    
+    for (size_t i = 0; i < indices.size(); ++i) {
+        int idx = indices[i];
+        const RDKit::Atom *atom = mol.getAtomWithIdx(idx);
+        int new_idx = new_mol.addAtom(new RDKit::Atom(*atom), false, true);
+        old_to_new_index[idx] = new_idx;
+        new_conf->setAtomPos(new_idx, conf.getAtomPos(idx));
+    }
+    
+    for (int old_idx : indices) {
+        for (const auto &bond : mol.atomBonds(mol.getAtomWithIdx(old_idx))) {
+            int begin_idx = bond->getBeginAtomIdx();
+            int end_idx = bond->getEndAtomIdx();
+            
+            auto begin_it = old_to_new_index.find(begin_idx);
+            auto end_it = old_to_new_index.find(end_idx);
+            
+            if (begin_it != old_to_new_index.end() && end_it != old_to_new_index.end()) {
+                int new_begin_idx = begin_it->second;
+                int new_end_idx = end_it->second;
+                if (new_begin_idx > new_end_idx) std::swap(new_begin_idx, new_end_idx);
+                
+                if (!new_mol.getBondBetweenAtoms(new_begin_idx, new_end_idx)) {
+                    new_mol.addBond(new_begin_idx, new_end_idx, bond->getBondType());
+                }
+            }
+        }
+    }
+    
+    new_mol.addConformer(new_conf, true);
+    new_mol.updatePropertyCache(false);
+    return new_mol;
 }
 

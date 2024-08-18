@@ -111,8 +111,12 @@ inline void RDKitSmartsMatch(RDKit::ROMol &mol, SubstructMatchParameters &params
     RDKit::SubstructMatch(mol, *pattern, matchList);
 
     for (const auto &match : matchList) {
-      auto atom = mol.getAtomWithIdx(match[0].second);
-      atom->setHybridization(hybridType);
+      for (const auto &pair : match) {
+        auto atom = mol.getAtomWithIdx(pair.second);
+        atom->setHybridization(hybridType);
+      }
+      // auto atom = mol.getAtomWithIdx(match[0].second);
+      // atom->setHybridization(hybridType);
     }
   }
 }

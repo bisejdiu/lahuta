@@ -87,7 +87,7 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     return {}; 
   }
 
-  auto new_mol = filter_with_atom_data(mol, non_predef_atom_indices);
+  auto new_mol = filter_with_conf(mol, non_predef_atom_indices);
 
   std::vector<int> index_mapping;
   index_mapping.resize(mol.getNumAtoms(), -1);
