@@ -42,7 +42,42 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
   }
 }
 
-RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices) {
+// FIX: It seems RDKit automatically copies bonds or coordinates when adding 
+// atoms directly. Need to investigate this. 
+RWMol filter_atoms(RWMol &mol, std::vector<int> &atomIndices) {
+  RWMol newMol;
+
+  for (auto atomIdx : atomIndices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    RDKit::Atom *newAtom = new RDKit::Atom(*atom); 
+    newMol.addAtom(newAtom, true, true);
+  }
+
+  newMol.updatePropertyCache(false);
+
+  return newMol;
+}
+
+RWMol filter_atom_conf(RWMol &mol, std::vector<int> &atomIndices) {
+  Conformer conf = mol.getConformer();
+  RWMol newMol;
+  Conformer *newMolConf = new Conformer();
+
+  for (auto atomIdx : atomIndices) {
+    auto atom = mol.getAtomWithIdx(atomIdx);
+    RDKit::Atom *newAtom = new RDKit::Atom(*atom); 
+    newMol.addAtom(newAtom, true, true);
+    auto pos = conf.getAtomPos(atom->getIdx());
+    newMolConf->setAtomPos(newAtom->getIdx(), pos);
+  }
+
+  newMol.addConformer(newMolConf, true);
+  newMol.updatePropertyCache(false);
+
+  return newMol;
+}
+
+RWMol filter_with_atom_data(RWMol &mol, std::vector<int> &atomIndices) {
   Conformer conf = mol.getConformer();
   RWMol newMol;
   Conformer *newMolConf = new Conformer();
@@ -76,10 +111,8 @@ RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &atomIndices) {
   return newMol;
 }
 
-RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &indices, bool with_bonds) {
-  if (!with_bonds) {
-    return rdMolFromRDKitMol(mol, indices);
-  }
+RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &indices) {
+
   RWMol new_mol;
   Conformer conf = mol.getConformer();
   Conformer *new_conf = new Conformer();
@@ -120,3 +153,4 @@ RWMol rdMolFromRDKitMol(RWMol &mol, std::vector<int> &indices, bool with_bonds) 
   return new_mol;
 
 }
+

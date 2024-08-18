@@ -9,4 +9,11 @@ void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Confor
                                    bool ign_h = true);
 
 RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices);
-RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices, bool with_bonds);
+// RDKit::RWMol _rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<int> &atomIndices);
+// RDKit::RWMol rdMolFromRDKitMol(RDKit::RWMol &mol, std::vector<std::optional<int>> &atomIndices);
+
+
+RDKit::RWMol filter_atoms(RDKit::RWMol &mol, std::vector<int> &atomIndices);
+RDKit::RWMol filter_atom_conf(RDKit::RWMol &mol, std::vector<int> &atomIndices);
+RDKit::RWMol filter_with_atom_data(RDKit::RWMol &mol, std::vector<int> &atomIndices);
+

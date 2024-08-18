@@ -43,6 +43,13 @@ inline std::vector<AtomType> AtomTypeMatch(RDKit::ROMol &mol, SubstructMatchPara
     RDKit::SubstructMatch(mol, *pattern, matchList);
 
     for (const auto &match : matchList) {
+      auto *atom = mol.getAtomWithIdx(match[0].second);
+        if (atom->getAtomicNum() == 26) {
+          auto *info = static_cast<RDKit::AtomPDBResidueInfo*>(atom->getMonomerInfo());
+          std::cout << "-> Fe: " << info->getResidueName() << " "
+                    << info->getName() << " " << atom_type_to_string(atom_type)
+                    << std::endl;
+        }
       // std::cout << "Match: " << match[0].second << " " << atom_type_to_string(atom_type) << std::endl;
       types[match[0].second] |= atom_type;
     }
@@ -160,37 +167,39 @@ public:
     mol.updatePropertyCache(false);
     cleanup_predef(mol);
 
+    std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
+    std::vector<int> invalid_indices;
 
-
-    std::vector<int> invalid_indices; 
-    invalid_indices.reserve(mol.getNumAtoms());
+    // First pass: populate `indices` and track invalid non-hydrogen atoms.
     for (auto atom : mol.atoms()) {
       AtomType atom_type = get_atom_type(atom);
+      indices[atom->getIdx()] = atom_type;
       if (atom_type == AtomType::INVALID && atom->getAtomicNum() != 1) {
         invalid_indices.push_back(atom->getIdx());
+      } 
+    }
+
+    // Handle invalid indices using a new RDKit object.
+    if (!invalid_indices.empty()) {
+      auto new_mol = rdMolFromRDKitMol(mol, invalid_indices);
+      SubstructMatchParameters params;
+      params.maxMatches = new_mol.getNumAtoms();
+      auto vec = AtomTypeMatch(new_mol, params);
+
+      // Map results back 
+      for (size_t i = 0; i < invalid_indices.size(); ++i) {
+        indices[invalid_indices[i]] = vec[i];
       }
     }
 
-    std::cout << "sizes: " << result.atom_indices.size() << " " << invalid_indices.size() << std::endl;
-    auto with_bonds = true;
-    auto new_mol = rdMolFromRDKitMol(mol, invalid_indices, with_bonds);
-    std::cout << "created new mol\n";
-    SubstructMatchParameters params;
-    params.maxMatches = new_mol.getNumAtoms();
-    std::cout << "sizes all: " << result.atom_indices.size() << " " << invalid_indices.size() << " " << new_mol.getNumAtoms() << std::endl;
-    
-    // initialize ringinfo
-    if (!new_mol.getRingInfo()->isInitialized()) {
-      RDKit::MolOps::symmetrizeSSSR(new_mol);
-    }
-    auto vec = AtomTypeMatch(new_mol, params);
-    for (auto i = 0; i < vec.size(); ++i) {
-      // AtomType atom_type = get_atom_type(atom);
-      AtomType atom_type = vec[i];
-      auto atom = new_mol.getAtomWithIdx(i);
-      if (atom_type != AtomType::INVALID) {
-        std::cout << "x atom: " << atom->getIdx() << " " << atom->getSymbol() << " " << atom_type_to_string(vec[i]) << std::endl;
-        // std::cout << "x atom: " << atom_type_to_string(atom_type) << std::endl;
+    for (size_t i = 0; i < indices.size(); ++i) {
+      auto atom = mol.getAtomWithIdx(i);
+      auto *info =
+          static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+
+      if (atom->getAtomicNum() != 1) {
+        std::cout << info->getResidueName() << " " << info->getName() << " "
+                  << atom_type_to_string(indices[i]) << std::endl;
       }
     }
 
