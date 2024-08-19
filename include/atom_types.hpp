@@ -22,56 +22,6 @@ enum class AtomType : uint32_t {
   // HYDROGEN = 0x2000,
 };
 
-
-constexpr std::pair<const char*, AtomType> AtomTypeSMARTS[] = {
-  {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::HBOND_ACCEPTOR},
-  {"[$([nH]:@c(=O))]", AtomType::HBOND_ACCEPTOR},
-  {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::HBOND_ACCEPTOR},
-  {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::HBOND_ACCEPTOR}, 
-
-  {"[N!H0v3,N!H0+v4,OH+0,SH+0,nH+0]", AtomType::HBOND_DONOR},
-  {"[$([O;H0;$(O=C([OH])-*)])]", AtomType::HBOND_DONOR},
-  {"[$(n:a:[nH])]", AtomType::HBOND_DONOR},
-  {"[$([O;H0;$(O=C-[NH2])])]", AtomType::HBOND_DONOR},
-
-  // FIX: These seem to be very similar to weak hbond acceptor?
-  // {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::XBOND_ACCEPTOR},
-  // {"[$([nH]:@c(=O))]", AtomType::XBOND_ACCEPTOR},
-  // {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::XBOND_ACCEPTOR},
-  // {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::XBOND_ACCEPTOR},
-  // {"[Xx]", AtomType::XBOND_ACCEPTOR},
-  // {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::XBOND_DONOR},
-
-  {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::WEAK_HBOND_ACCEPTOR},
-  {"[$([nH]:@c(=O))]", AtomType::WEAK_HBOND_ACCEPTOR},
-  {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::WEAK_HBOND_ACCEPTOR},
-  {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::WEAK_HBOND_ACCEPTOR},
-  {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::WEAK_HBOND_ACCEPTOR},
-  {"[#6!H0]", AtomType::WEAK_HBOND_DONOR},
-
-  {"[$([N;H2&+0][C;!$(C=*)]),$([N;H1&+0]([C;!$(C=*)])[C;!$(C=*)]),$([N;H0&+0]([C;!$(C=*)])([C;!$(C=*)])[C;!$(C=*)]);!$(N[a])]", AtomType::POS_IONISABLE},
-  {"[n;R1]1[c;R1][n;R1][c;R1][c;R1]1", AtomType::POS_IONISABLE},
-  {"NC(=N)", AtomType::POS_IONISABLE},
-  {"[#7;+;!$([N+]-[O-])]", AtomType::POS_IONISABLE},
-  {"[$([*+1,*+2,*+3]);!$([N+]-[O-])]", AtomType::POS_IONISABLE},
-  {"[Li,Be,Na,Mg,Al,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,Tc,Ru,Rh,Pd,Ag,Cd,In,Sn,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,Lu,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf]", AtomType::POS_IONISABLE},
-
-  {"[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]", AtomType::NEG_IONISABLE},
-  {"[*-1,*-2]", AtomType::NEG_IONISABLE},
-
-  {"[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]", AtomType::HYDROPHOBIC},
-
-  {"[$([OH0]=[CX3,c]);!$([OH0]=[CX3,c]-[OH,O-])]", AtomType::CARBONYL_OXYGEN},
-  {"[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]", AtomType::CARBONYL_CARBON},
-
-  {"[a;r4,!R1&r3]1:[a;r4,!R1&r3]:[a;r4,!R1&r3]:[a;r4,!R1&r3]:1", AtomType::AROMATIC},
-  {"[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
-  {"[a;r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
-  {"[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
-  {"[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
-};
-
-
 inline AtomType operator|(AtomType lhs, AtomType rhs) {
   return static_cast<AtomType>(static_cast<uint32_t>(lhs) |
                                static_cast<uint32_t>(rhs));
@@ -124,6 +74,17 @@ inline bool none(AtomType flags, AtomType toCheck) {
 }
 
 inline bool empty(AtomType flags) { return flags == AtomType::NONE; }
+
+inline std::vector<AtomType> print_flags(AtomType flags) {
+  std::vector<AtomType> result;
+  for (int i = 0; i < 32; ++i) {
+    AtomType flag = static_cast<AtomType>(1 << i);
+    if (has(flags, flag)) {
+      result.push_back(flag);
+    }
+  }
+  return result;
+}
 
 
 constexpr inline unsigned encode_uint(const char A, const char B = '\0',
@@ -405,35 +366,118 @@ static AtomType get_atom_type(RDKit::Atom *at) {
   }
 }
 
+// inline std::string atom_type_to_string(AtomType type) {
+//   if (type == AtomType::NONE)
+//     return "None";
+//
+//   std::string result;
+//   if (static_cast<uint32_t>(has(type, AtomType::HBOND_ACCEPTOR)))
+//     result += "HBOND_ACCEPTOR ";
+//   if (static_cast<uint32_t>(has(type, AtomType::HBOND_DONOR)))
+//     result += "HBOND_DONOR ";
+//   if (static_cast<uint32_t>(has(type, AtomType::WEAK_HBOND_ACCEPTOR)))
+//     result += "WEAK_HBOND_ACCEPTOR ";
+//   if (static_cast<uint32_t>(has(type, AtomType::WEAK_HBOND_DONOR)))
+//     result += "WEAK_HBOND_DONOR ";
+//   if (static_cast<uint32_t>(has(type, AtomType::POS_IONISABLE)))
+//     result += "POS_IONISABLE ";
+//   if (static_cast<uint32_t>(has(type, AtomType::NEG_IONISABLE)))
+//     result += "NEG_IONISABLE ";
+//   if (static_cast<uint32_t>(has(type, AtomType::CARBONYL_OXYGEN)))
+//     result += "CARBONYL_OXYGEN ";
+//   if (static_cast<uint32_t>(has(type, AtomType::CARBONYL_CARBON)))
+//     result += "CARBONYL_CARBON ";
+//   if (static_cast<uint32_t>(has(type, AtomType::AROMATIC)))
+//     result += "AROMATIC ";
+//   if (static_cast<uint32_t>(has(type, AtomType::HYDROPHOBIC)))
+//     result += "HYDROPHOBIC ";
+//   if (static_cast<uint32_t>(has(type, AtomType::XBOND_ACCEPTOR)))
+//     result += "XBOND_ACCEPTOR ";
+//   if (static_cast<uint32_t>(has(type, AtomType::XBOND_DONOR)))
+//     result += "XBOND_DONOR ";
+//
+//   return result.empty() ? "Unknown" : result;
+// }
+
 inline std::string atom_type_to_string(AtomType type) {
   if (type == AtomType::NONE)
     return "None";
 
   std::string result;
-  if (static_cast<uint32_t>(has(type, AtomType::HBOND_ACCEPTOR)))
+  if (has(type, AtomType::HBOND_ACCEPTOR))
     result += "HBOND_ACCEPTOR ";
-  if (static_cast<uint32_t>(has(type, AtomType::HBOND_DONOR)))
+  if (has(type, AtomType::HBOND_DONOR))
     result += "HBOND_DONOR ";
-  if (static_cast<uint32_t>(has(type, AtomType::WEAK_HBOND_ACCEPTOR)))
+  if (has(type, AtomType::WEAK_HBOND_ACCEPTOR))
     result += "WEAK_HBOND_ACCEPTOR ";
-  if (static_cast<uint32_t>(has(type, AtomType::WEAK_HBOND_DONOR)))
+  if (has(type, AtomType::WEAK_HBOND_DONOR))
     result += "WEAK_HBOND_DONOR ";
-  if (static_cast<uint32_t>(has(type, AtomType::POS_IONISABLE)))
+  if (has(type, AtomType::POS_IONISABLE))
     result += "POS_IONISABLE ";
-  if (static_cast<uint32_t>(has(type, AtomType::NEG_IONISABLE)))
+  if (has(type, AtomType::NEG_IONISABLE))
     result += "NEG_IONISABLE ";
-  if (static_cast<uint32_t>(has(type, AtomType::CARBONYL_OXYGEN)))
+  if (has(type, AtomType::CARBONYL_OXYGEN))
     result += "CARBONYL_OXYGEN ";
-  if (static_cast<uint32_t>(has(type, AtomType::CARBONYL_CARBON)))
+  if (has(type, AtomType::CARBONYL_CARBON))
     result += "CARBONYL_CARBON ";
-  if (static_cast<uint32_t>(has(type, AtomType::AROMATIC)))
+  if (has(type, AtomType::AROMATIC))
     result += "AROMATIC ";
-  if (static_cast<uint32_t>(has(type, AtomType::HYDROPHOBIC)))
+  if (has(type, AtomType::HYDROPHOBIC))
     result += "HYDROPHOBIC ";
-  if (static_cast<uint32_t>(has(type, AtomType::XBOND_ACCEPTOR)))
+  if (has(type, AtomType::XBOND_ACCEPTOR))
     result += "XBOND_ACCEPTOR ";
-  if (static_cast<uint32_t>(has(type, AtomType::XBOND_DONOR)))
+  if (has(type, AtomType::XBOND_DONOR))
     result += "XBOND_DONOR ";
+  if (has(type, AtomType::INVALID))
+    result += "UNKNOWN ";
 
   return result.empty() ? "Unknown" : result;
 }
+
+constexpr std::pair<const char*, AtomType> AtomTypeSMARTS[] = {
+  {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::HBOND_ACCEPTOR},
+  {"[$([nH]:@c(=O))]", AtomType::HBOND_ACCEPTOR},
+  {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::HBOND_ACCEPTOR},
+  {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::HBOND_ACCEPTOR}, 
+
+  {"[N!H0v3,N!H0+v4,OH+0,SH+0,nH+0]", AtomType::HBOND_DONOR},
+  {"[$([O;H0;$(O=C([OH])-*)])]", AtomType::HBOND_DONOR},
+  {"[$(n:a:[nH])]", AtomType::HBOND_DONOR},
+  {"[$([O;H0;$(O=C-[NH2])])]", AtomType::HBOND_DONOR},
+
+  // FIX: These seem to be very similar to weak hbond acceptor?
+  // {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::XBOND_ACCEPTOR},
+  // {"[$([nH]:@c(=O))]", AtomType::XBOND_ACCEPTOR},
+  // {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::XBOND_ACCEPTOR},
+  // {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::XBOND_ACCEPTOR},
+  // {"[Xx]", AtomType::XBOND_ACCEPTOR},
+  // {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::XBOND_DONOR},
+
+  {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[$([nH]:@c(=O))]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::WEAK_HBOND_ACCEPTOR},
+  {"[#6!H0]", AtomType::WEAK_HBOND_DONOR},
+
+  {"[$([N;H2&+0][C;!$(C=*)]),$([N;H1&+0]([C;!$(C=*)])[C;!$(C=*)]),$([N;H0&+0]([C;!$(C=*)])([C;!$(C=*)])[C;!$(C=*)]);!$(N[a])]", AtomType::POS_IONISABLE},
+  {"[n;R1]1[c;R1][n;R1][c;R1][c;R1]1", AtomType::POS_IONISABLE},
+  {"NC(=N)", AtomType::POS_IONISABLE},
+  {"[#7;+;!$([N+]-[O-])]", AtomType::POS_IONISABLE},
+  {"[$([*+1,*+2,*+3]);!$([N+]-[O-])]", AtomType::POS_IONISABLE},
+  {"[Li,Be,Na,Mg,Al,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,Tc,Ru,Rh,Pd,Ag,Cd,In,Sn,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,Lu,Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,Cf]", AtomType::POS_IONISABLE},
+
+  {"[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]", AtomType::NEG_IONISABLE},
+  {"[*-1,*-2]", AtomType::NEG_IONISABLE},
+
+  {"[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]", AtomType::HYDROPHOBIC},
+
+  {"[$([OH0]=[CX3,c]);!$([OH0]=[CX3,c]-[OH,O-])]", AtomType::CARBONYL_OXYGEN},
+  {"[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]", AtomType::CARBONYL_CARBON},
+
+  {"[a;r4,!R1&r3]1:[a;r4,!R1&r3]:[a;r4,!R1&r3]:[a;r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+  {"[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
+};

@@ -150,7 +150,7 @@ public:
     }
   }
 
-  static void assign_atom_types(RDKit::RWMol &mol) {
+  static std::vector<AtomType> assign_atom_types(RDKit::RWMol &mol) {
 
     std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
     std::vector<int> invalid_indices;
@@ -180,15 +180,18 @@ public:
     }
 
     // for (size_t i = 0; i < indices.size(); ++i) {
-    //   auto atom = mol.getAtomWithIdx(i);
-    //   auto *info =
-    //       static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    //
-    //   if (atom->getAtomicNum() != 1) {
-    //     std::cout << info->getResidueName() << " " << info->getName() << " "
-    //               << atom_type_to_string(indices[i]) << std::endl;
-    //   }
-    // }
+    for (size_t i = 0; i < 10; ++i) {
+      auto atom = mol.getAtomWithIdx(i);
+      auto *info =
+          static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+
+      if (atom->getAtomicNum() != 1) {
+        std::cout << info->getResidueName() << " " << info->getName() << " "
+                  << atom_type_to_string(indices[i]) << std::endl;
+      }
+    }
+
+    return indices;
   }
 
 
@@ -221,7 +224,7 @@ public:
       merge_bonds(mol, result.mol, result.atom_indices);
     }
 
-    assign_atom_types(mol);
+    // assign_atom_types(mol);
   }
 };
 
@@ -231,6 +234,7 @@ private:
   NSResults neighbors;
   float _cutoff;
   FastNS grid;
+  std::vector<AtomType> atom_types;
 
 public:
   explicit Luni(std::string file_name) : _cutoff(4.5) {
@@ -245,6 +249,7 @@ public:
     neighbors = grid.self_search();
     BondComputation::compute_bonds(source->get_molecule(),
                                    source->get_structure(), neighbors);
+    atom_types = BondComputation::assign_atom_types(source->get_molecule());
   }
 
   RDKit::RWMol &get_molecule() { return source->get_molecule(); }
@@ -259,6 +264,8 @@ public:
     return neighbors.get_distances();
   }
   const double get_cutoff() const { return _cutoff; }
+
+  const std::vector<AtomType> &get_atom_types() const { return atom_types; }
 
   NSResults find_neighbors(std::optional<double> cutoff) {
     auto value = cutoff.value_or(_cutoff);
