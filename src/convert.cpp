@@ -11,6 +11,8 @@
 using namespace gemmi;
 using namespace RDKit;
 
+namespace lahuta {
+
 void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
                            bool ign_h) {
 
@@ -114,3 +116,4 @@ RWMol filter_with_bonds(const RWMol &mol, const std::vector<int> &indices) {
     return new_mol;
 }
 
+} // namespace lahuta

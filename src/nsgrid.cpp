@@ -1,9 +1,12 @@
-#include <rdkit/Geometry/point.h>
 #include <algorithm>
-#include <array>
-#include <vector>
+// #include <array>
+#include <rdkit/Geometry/point.h>
+// #include <vector>
 
 #include "nsgrid.hpp"
+#include "lahuta.hpp"
+
+namespace lahuta {
 
 static const int END = -1;
 static const int MAX_GRID_DIM = 1290;
@@ -170,25 +173,48 @@ inline float FastNS::dist_sq(const float *__restrict a,
 }
 
 void NSResults::add_neighbors(int i, int j, float d2) {
-  neighbor_pairs.emplace_back(i, j);
-  distances.push_back(d2);
+  m_pairs.emplace_back(i, j);
+  m_distances.push_back(d2);
 }
 
 void NSResults::reserve_space(size_t input_size) {
-  neighbor_pairs.reserve(input_size);
-  distances.reserve(input_size);
+  m_pairs.reserve(input_size);
+  m_distances.reserve(input_size);
 }
 
 NSResults NSResults::filter(float dist) const {
   NSResults filtered; // we'll not reserve space
   auto dist_sq = dist * dist;
-  for (size_t i = 0; i < distances.size(); ++i) {
-    if (distances[i] >= dist_sq) {
-      filtered.add_neighbors(neighbor_pairs[i].first, neighbor_pairs[i].second,
-                             distances[i]);
+  for (size_t i = 0; i < m_distances.size(); ++i) {
+    if (m_distances[i] >= dist_sq) {
+      filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second,
+                             m_distances[i]);
     }
   }
   return filtered;
+}
+
+// FIX: use overloads to handle different filter conditions
+NSResults NSResults::filter_by_atom_type(AtomType type, int partner) {
+  _NeighborPairs filtered;
+  std::vector<float> distances;
+  for (size_t i = 0; i < m_pairs.size(); ++i) {
+    if (partner == 0) {
+      if (has(m_luni->atom_types[m_pairs[i].first], type)) {
+        filtered.push_back(m_pairs[i]);
+        distances.push_back(m_distances[i]);
+      }
+    } else if (partner == 1) {
+      if (has(m_luni->atom_types[m_pairs[i].second], type)) {
+        filtered.push_back(m_pairs[i]);
+        distances.push_back(m_distances[i]);
+      }
+    } else {
+      std::cerr << "Invalid partner: " << partner << std::endl;
+    }
+  }
+  // return NSResults(*this, std::move(filtered), std::move(distances));
+  return NSResults(*this->get_luni(), filtered, distances); 
 }
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
@@ -227,3 +253,5 @@ std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords) {
   }
   return flat_coords;
 }
+
+} // namespace lahuta

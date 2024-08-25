@@ -1,5 +1,5 @@
-#ifndef LAHUTA_BONDS_HPP
-#define LAHUTA_BONDS_HPP
+#ifndef LAHUTA_BBONDS_HPP
+#define LAHUTA_BBONDS_HPP
 
 #include <iterator>
 #include <string>
@@ -13,7 +13,8 @@
 #include "GraphMol/Atom.h"
 #include "GraphMol/MonomerInfo.h"
 
-using namespace lahuta;
+namespace lahuta {
+
 // using namespace RDKit;
 typedef RDKit::Bond::BondType BondType;
 
@@ -191,4 +192,6 @@ inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1,
   return pb;
 }
 
-#endif // LAHUTA_BONDS_HPP
+} // namespace lahuta
+
+#endif // LAHUTA_BBONDS_HPP

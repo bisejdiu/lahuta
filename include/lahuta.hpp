@@ -1,8 +1,23 @@
+#ifndef LAHUTA_HPP
+#define LAHUTA_HPP
+
+#include <chrono>
+#include <memory>
+#include <optional>
+#include <string>
+#include <array>
+#include <vector>
+
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
 #include <rdkit/GraphMol/BondIterators.h>
 #include <rdkit/GraphMol/MolOps.h>
 #include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 #include <rdkit/GraphMol/Substruct/SubstructMatch.h>
+
+#include <boost/range/iterator_range.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/join.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 #include "bond_order.hpp"
 #include "bonds.hpp"
@@ -12,17 +27,12 @@
 #include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
 
-#include "atom_types.hpp"
+// #include "atom_types.hpp"
 
-#include <chrono>
-#include <memory>
-#include <optional>
-#include <string>
 
 #define LAHUTA_VERSION "0.10.0"
 
-namespace Lahuta {
-
+namespace lahuta {
 
 inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
   static std::array<RDKit::ROMol *, std::size(AtomTypeSMARTS)> patterns = [] {
@@ -180,16 +190,16 @@ public:
     }
 
     // for (size_t i = 0; i < indices.size(); ++i) {
-    for (size_t i = 0; i < 10; ++i) {
-      auto atom = mol.getAtomWithIdx(i);
-      auto *info =
-          static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-
-      if (atom->getAtomicNum() != 1) {
-        std::cout << info->getResidueName() << " " << info->getName() << " "
-                  << atom_type_to_string(indices[i]) << std::endl;
-      }
-    }
+    // for (size_t i = 0; i < 10; ++i) {
+    //   auto atom = mol.getAtomWithIdx(i);
+    //   auto *info =
+    //       static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    //
+    //   if (atom->getAtomicNum() != 1) {
+    //     std::cout << info->getResidueName() << " " << info->getName() << " "
+    //               << atom_type_to_string(indices[i]) << std::endl;
+    //   }
+    // }
 
     return indices;
   }
@@ -228,10 +238,12 @@ public:
   }
 };
 
+
+
 class Luni {
 private:
-  std::unique_ptr<ISource> source;
-  NSResults neighbors;
+  std::shared_ptr<ISource> source;
+  NSResults bonded_neighbors;
   float _cutoff;
   FastNS grid;
   std::vector<AtomType> atom_types;
@@ -246,9 +258,9 @@ public:
   void init_and_compute_bonds() {
     const auto &conf = source->get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
-    neighbors = grid.self_search();
+    bonded_neighbors = grid.self_search();
     BondComputation::compute_bonds(source->get_molecule(),
-                                   source->get_structure(), neighbors);
+                                   source->get_structure(), bonded_neighbors);
     atom_types = BondComputation::assign_atom_types(source->get_molecule());
   }
 
@@ -257,28 +269,55 @@ public:
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return source->get_conformer(confId).getPositions();
   }
-  const NeighborPairs &get_neighbors() const {
-    return neighbors.get_neighbors();
+  auto &get_neighbors() const {
+    return bonded_neighbors.get_neighbors();
   }
-  const std::vector<float> &get_distances() const {
-    return neighbors.get_distances();
-  }
+  // const std::vector<float> &get_distances() const {
+  //   return neighbors.get_distances();
+  // }
   const double get_cutoff() const { return _cutoff; }
 
   const std::vector<AtomType> &get_atom_types() const { return atom_types; }
+  
+  const RDKit::Atom &get_atom(int index) const {
+    return *source->get_molecule().getAtomWithIdx(index);
+  }
 
-  NSResults find_neighbors(std::optional<double> cutoff) {
-    auto value = cutoff.value_or(_cutoff);
+  NSResults filter_by_atom_type(AtomType type, int partner) {
+    _NeighborPairs filtered;
+    std::vector<float> distances;
+    for (size_t i = 0; i < bonded_neighbors.size(); ++i) {
+      if (partner == 0) {
+        if (has(atom_types[bonded_neighbors.get_neighbors()[i].first], type)) {
+          filtered.push_back(bonded_neighbors.get_neighbors()[i]);
+          distances.push_back(bonded_neighbors.get_distances()[i]);
+        }
+      } else if (partner == 1) {
+        if (has(atom_types[bonded_neighbors.get_neighbors()[i].second], type)) {
+          filtered.push_back(bonded_neighbors.get_neighbors()[i]);
+          distances.push_back(bonded_neighbors.get_distances()[i]);
+        }
+      } else {
+        std::cerr << "Invalid partner: " << partner << std::endl;
+      }
+    }
+    return NSResults(*this, std::move(filtered), std::move(distances));
+  }
 
-    if (value == _cutoff) {
-      return neighbors;
-    } else if (value < _cutoff) {
-      return neighbors.filter(value);
+  NSResults find_neighbors(double cutoff = 4.5) {
+
+    if (cutoff == _cutoff) {
+      return bonded_neighbors;
+    } else if (cutoff < _cutoff) {
+      return bonded_neighbors.filter(cutoff);
     }
 
-    grid.update_cutoff(value);
-    return grid.self_search();
+    grid.update_cutoff(cutoff);
+    auto ns = grid.self_search();
+    ns.m_luni = this; 
+    return ns;
   }
+
   std::vector<RDKit::MatchVectType>
   match_smarts_string(std::string sm, std::string atype = "",
                       bool log_values = false) const {
@@ -292,7 +331,18 @@ public:
     source->get_molecule().updatePropertyCache(false);
     RDKit::SubstructMatch(source->get_molecule(), *sm_mol, match_list);
     return match_list;
-  }
+  };
+
+
+  friend class NSResults;
+
+};
+
+struct Pairs {
+    std::pair<int, int> neighbor_pair;
+    float distance;
 };
 
 } // namespace Lahuta
+
+#endif // LAHUTA_HPP

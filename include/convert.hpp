@@ -1,3 +1,7 @@
+#ifndef LAHUTA_CONVERT_HPP
+#define LAHUTA_CONVERT_HPP
+
+#include <vector>
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <rdkit/GraphMol/RWMol.h>
@@ -5,9 +9,15 @@
 
 using namespace gemmi;
 
+namespace lahuta {
+
 void gemmiStructureToRDKit(RDKit::RWMol &mol, const Structure &st, RDKit::Conformer &conf,
                                    bool ign_h = true);
 
 RDKit::RWMol filter_atoms(RDKit::RWMol &mol, std::vector<int> &indices);
 RDKit::RWMol filter_with_conf(RDKit::RWMol &mol, std::vector<int> &indices);
 RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol, const std::vector<int> &indices);
+
+} // namespace lahuta
+//
+#endif // LAHUTA_CONVERT_HPP

@@ -1,10 +1,15 @@
+#include <array>
+#include <vector>
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include "bonds.hpp"
 #include "bonds/bonds.hpp"
 #include "bonds/table.hpp"
 #include "convert.hpp"
 
-const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
+namespace lahuta {
+
+// FIX: see if this fixes the issue with the periodic table
+static const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
 
 // NOTE: this funciton performs two distinct tasks: (1) assign bond orders using
 // a table lookup and (2) use smart pattern matching to assign bond orders
@@ -24,7 +29,7 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
   for (auto i = 0; i < results.get_neighbors().size(); i++) {
     auto res = results.get_neighbors()[i];
-    auto dist_sq = results.distances[i];
+    auto dist_sq = results.get_distances()[i];
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
 
@@ -108,3 +113,5 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
   return {new_mol, non_predef_atom_indices};
 };
+
+} // namespace lahuta

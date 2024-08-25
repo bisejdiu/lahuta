@@ -1,6 +1,11 @@
+// #ifndef LAHUTA_BONDS_HPP
+// #define LAHUTA_BONDS_HPP
+#include <vector>
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include <rdkit/GraphMol/RWMol.h>
 #include "nsgrid.hpp"
+
+namespace lahuta { 
 
 inline bool is_bonded_obmol(RDKit::Atom *p, RDKit::Atom *q, double dist_sq,
                             double tolerance, std::vector<float> &rcov) {
@@ -45,3 +50,7 @@ struct BondAssignmentResult {
 };
 
 BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results);
+
+} // namespace lahuta
+
+// #endif // LAHUTA_BONDS_HPP

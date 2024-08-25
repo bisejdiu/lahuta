@@ -1,3 +1,6 @@
+#ifndef LAHUTA_RULES_HPP
+#define LAHUTA_RULES_HPP
+
 #include "GraphMol/Bond.h"
 #include <array>
 #include <string_view>
@@ -196,3 +199,5 @@ constexpr std::array<Rule, 9> dt_rules = {{
 
 } // namespace rules
 } // namespace lahuta
+//
+#endif // LAHUTA_RULES_HPP

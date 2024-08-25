@@ -1,3 +1,6 @@
+#ifndef _TOKEN_H_
+#define _TOKEN_H_
+
 /* C++ code produced by gperf version 3.1 */
 /* Command-line: gperf token.gperf  */
 /* Computed positions: -k'1-2,$' */
@@ -771,8 +774,8 @@ resNameKeyword::look_up (const char *str, size_t len)
 
 }
 
-#ifndef LOOKUP_IDENTIFIER_DEFINED
-#define LOOKUP_IDENTIFIER_DEFINED
+// #ifndef LOOKUP_IDENTIFIER_DEFINED
+// #define LOOKUP_IDENTIFIER_DEFINED
 
 inline resTokenType res_name_table(const char* res_name, std::size_t size) noexcept {
   const keywordEntry *entry = resNameKeyword::look_up(res_name, size);
@@ -783,4 +786,5 @@ inline resTokenType res_name_table(const char* res_name, std::size_t size) noexc
   }
 }
 }
+// #endif
 #endif

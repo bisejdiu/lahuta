@@ -1,8 +1,12 @@
+#ifndef ATOM_TYPES_HPP
+#define ATOM_TYPES_HPP
+
 #include "bonds/token-gperf-generated.hpp"
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RWMol.h>
 #include <cstdint>
 
+namespace lahuta {
 
 enum class AtomType : uint32_t {
   NONE = 0x0,
@@ -481,3 +485,7 @@ constexpr std::pair<const char*, AtomType> AtomTypeSMARTS[] = {
   {"[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
   {"[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
 };
+
+} // namespace lahuta
+
+#endif // ATOM_TYPES_HPP

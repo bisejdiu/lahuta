@@ -6,6 +6,8 @@ using namespace RDKit;
 using HybridizationType = RDKit::Atom::HybridizationType;
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
 
+namespace lahuta {
+
 constexpr std::pair<const char *, HybridizationType> smartsList[] = {
     {"[D4]", HybridizationType::SP3},
     {"[D5]", HybridizationType::SP3D},
@@ -233,3 +235,5 @@ inline double compute_dihedral(const RDGeom::Point3D &a, const RDGeom::Point3D &
 
 
 void perceive_bond_orders_obabel(RDKit::RWMol &mol);
+
+} // namespace lahuta

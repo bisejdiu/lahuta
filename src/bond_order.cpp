@@ -7,6 +7,8 @@
 #include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
 
+namespace lahuta {
+
 // using namespace RDKit;
 using HybridizationType = RDKit::Atom::HybridizationType;
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
@@ -398,3 +400,5 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
 
   mol.updatePropertyCache(false);
 }
+
+} // namespace lahuta
