@@ -1,13 +1,13 @@
 """Classes to load and manage biological structure data.
 
-The two main classes are `GemmiLoader` and `TopologyLoader`, each designed to work with a 
+The two main classes are `GemmiLoader` and `TopologyLoader`, each designed to work with a
 specific library, Gemmi and MDAnalysis respectively, to load and handle structure data.
 
-Both loaders extend from an abstract base class `BaseLoader` which outlines the necessary 
+Both loaders extend from an abstract base class `BaseLoader` which outlines the necessary
 methods and properties all loader classes should have.
 
-The module also provides a unified way to manage atoms, residues, and chains information 
-through the ARC class instance. It includes various methods for querying the data and converting 
+The module also provides a unified way to manage atoms, residues, and chains information
+through the ARC class instance. It includes various methods for querying the data and converting
 them into other common bioinformatics and chemoinformatics formats.
 
 Classes:
@@ -17,7 +17,6 @@ Classes:
     TopologyLoader: Class to load and manage biological structure data using the MDAnalysis library.
     ```
 """
-
 
 from abc import ABC, abstractmethod
 from typing import Any, Iterator, Literal, NamedTuple, Optional, overload
@@ -110,12 +109,10 @@ class BaseLoader(ABC):
         return self.arc.atoms
 
     @overload
-    def to(self, fmt: Literal["mda"]) -> AtomGroupType:
-        ...
+    def to(self, fmt: Literal["mda"]) -> AtomGroupType: ...
 
     @overload
-    def to(self, fmt: Literal["mol"]) -> MolType:
-        ...
+    def to(self, fmt: Literal["mol"]) -> MolType: ...
 
     def to(self, fmt: Literal["mol", "mda"]) -> MolType | AtomGroupType:
         """Convert the loaded biological structure data into a different format.
@@ -278,13 +275,13 @@ class GemmiLoader(BaseLoader):
             prt1 = PartnerData(
                 atom_name=conn.partner1.atom_name,
                 chain_name=conn.partner1.chain_name,
-                res_id_seq_num=conn.partner1.res_id.seqid.num,
+                res_id_seq_num=conn.partner1.res_id.seqid.num,  # type: ignore
                 res_id_name=conn.partner1.res_id.name,
             )
             prt2 = PartnerData(
                 atom_name=conn.partner2.atom_name,
                 chain_name=conn.partner2.chain_name,
-                res_id_seq_num=conn.partner2.res_id.seqid.num,
+                res_id_seq_num=conn.partner2.res_id.seqid.num,  # type: ignore
                 res_id_name=conn.partner2.res_id.name,
             )
             conn_store.append(ConnectionData(prt1, prt2))
