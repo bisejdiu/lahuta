@@ -1,4 +1,5 @@
 """Downloader."""
+
 import asyncio
 import logging
 
@@ -79,7 +80,7 @@ class FileDownloader:
         download_all: Download all files.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         *,
         file_names: list[str] | Generator[str, None, None],

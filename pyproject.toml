@@ -71,7 +71,7 @@ lint.ignore = [
 lint.mccabe = { max-complexity = 14 }
 lint.isort = { known-first-party = ['lahuta', 'tests', 'bin'] }
 target-version = "py310"
-exclude=['lahuta/scripts', 'cachedir', 'docs/plugins']
+exclude=['lahuta/scripts', 'cachedir', 'docs/plugins', 'docs/notebooks']
 
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 

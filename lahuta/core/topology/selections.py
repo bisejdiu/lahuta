@@ -40,6 +40,7 @@ class ResTypeSelectionTokens(Enum):
     LIPID = tuple(LIPIDS)
     SUGAR = tuple(SUGARS)
 
+
 class SecondaryStructureTokens(Enum):
     """Secondary structure tokens."""
 
@@ -68,7 +69,7 @@ class BaseSelection:
         nmidx = resname_attr.nmidx[group.resindices]
 
         # intersect atom's resname index and matches to prot_res
-        mask: NDArray[np.bool_] = np.in1d(nmidx, matches)
+        mask: NDArray[np.bool_] = np.in1d(nmidx, matches)  # noqa: NPY201
         return group[mask]
 
     def _match_indices(self, resname_attr: Resnames) -> NDArray[np.int32]:
@@ -147,12 +148,12 @@ def create_dssp_selection_classes() -> list[type[Selection]]:
 
     return types
 
-class LigandSelection(Selection): # type: ignore
+
+class LigandSelection(Selection):  # type: ignore
     """Selection for ligands."""
 
     token: str = "ligand"
 
     def _apply(self, group: AtomGroupType) -> AtomGroupType:
-
         exclusion_elements = ["protein", "nucleic", "water", "ion", "lipid", "sugar"]
         return group.select_atoms(f"not ({' or '.join(exclusion_elements)})")

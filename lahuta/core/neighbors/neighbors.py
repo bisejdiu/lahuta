@@ -174,7 +174,7 @@ class NeighborPairs:
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
         nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
-        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)
+        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # noqa: NPY201
 
         return self.new(self.pairs[mask], self.distances[mask])
 
@@ -195,7 +195,7 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
-        mask = np.in1d(self.pairs[:, partner - 1], indices)
+        mask = np.in1d(self.pairs[:, partner - 1], indices)  # noqa: NPY201
         return self.new(self.pairs[mask], self.distances[mask])
 
     def distance_filter(self, distance: float) -> Self:

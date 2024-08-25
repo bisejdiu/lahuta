@@ -38,7 +38,7 @@ EXPECTED_RESULTS = {
 }
 
 
-@pytest.fixture()
+@pytest.fixture
 def non_transformed_maps(setup_data: T) -> T:  # noqa: F811
     s1, s2 = setup_data
     return s1, s2

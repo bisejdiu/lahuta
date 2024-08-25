@@ -1,7 +1,7 @@
 """Contains a suite of utility functions for operations on 2D numpy arrays, particularly arrays
 representing atom pairs. These operations include finding shared pairs, determining non-matching indices,
-and various set-like operations including intersection, difference, symmetric difference, union, and 
-subset/superset/equality checks. It also provides functions to check for uniqueness 
+and various set-like operations including intersection, difference, symmetric difference, union, and
+subset/superset/equality checks. It also provides functions to check for uniqueness
 and strict subset/superset relations.
 
 Functions:
@@ -22,15 +22,15 @@ Functions:
     ```
 
 Each function operates on numpy arrays (with a shape of (n,2) for most functions,
-representing pairs of atom indices) and returns either a new array resulting from the 
+representing pairs of atom indices) and returns either a new array resulting from the
 operation or a boolean value representing the relationship between arrays.
 
 Notes:
-    This module is intended for use with arrays of atom pair indices. However, most of these 
+    This module is intended for use with arrays of atom pair indices. However, most of these
     functions would be applicable to other data as long as the input is 2D numpy arrays.
 
-    Functions like `intersection`, `difference`, `union` etc. perform set operations considering each row of the input 
-    arrays as an element of the set. This makes these functions particularly useful for operations on collections of 
+    Functions like `intersection`, `difference`, `union` etc. perform set operations considering each row of the input
+    arrays as an element of the set. This makes these functions particularly useful for operations on collections of
     atom pairs, where each pair is represented by a row in the array.
 
 """
@@ -208,7 +208,7 @@ def intersection(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bo
     """
     arr1_void = asvoid(arr1)
     arr2_void = asvoid(arr2)
-    return np.in1d(arr1_void, arr2_void, assume_unique)
+    return np.in1d(arr1_void, arr2_void, assume_unique)  # noqa: NPY201
 
 
 def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool = False) -> NDArray[np.bool_]:
@@ -239,7 +239,7 @@ def difference(arr1: NDArray[_DType], arr2: NDArray[_DType], assume_unique: bool
     arr1_void = asvoid(arr1)
     arr2_void = asvoid(arr2)
 
-    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)
+    return np.in1d(arr1_void, arr2_void, assume_unique, invert=True)  # noqa: NPY201
 
 
 def symmetric_difference(
@@ -452,7 +452,7 @@ def isunique(arr: NDArray[_DType]) -> bool:
         False
         ```
     """
-    return arr.shape[0] == np.unique(arr, axis=0).shape[0] # type: ignore
+    return arr.shape[0] == np.unique(arr, axis=0).shape[0]  # type: ignore
 
 
 def is_strict_subset(arr1: NDArray[_DType], arr2: NDArray[_DType]) -> bool:

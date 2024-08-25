@@ -1,4 +1,5 @@
 """Tests for basic Luni functionality."""
+
 import hashlib
 
 import numpy as np
@@ -56,7 +57,7 @@ def test_attributes(luni: Luni, pdb_class: type[BaseFile], pdb_name: str) -> Non
     assert luni.n_chains == 1
     assert luni.arc is not None
 
-    chainauths, chainids, chainids = luni.chainauths, luni.chainids, luni.chainids
+    chainauths, chainids = luni.chainauths, luni.chainids
     assert chainauths is not None and chainids is not None and chainids is not None
     assert unique_size_counts(chainauths) == (np.array(["A"], dtype="<U10"), np.array([1249]))
     assert unique_size_counts(chainids) == (np.array([1]), np.array([1249]))

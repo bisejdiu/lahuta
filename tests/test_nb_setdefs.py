@@ -41,7 +41,7 @@ def setup_data(request: FixtureRequest) -> T:
     return s1, s2
 
 
-@pytest.fixture()
+@pytest.fixture
 def non_transformed_maps(setup_data: T) -> T:
     s1, s2 = setup_data
     return s1, s2
