@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 import lahuta.utils.array_utils as au
 from lahuta.core.luni import Luni
 from lahuta.core.neighbors import NeighborPairs
-from lahuta.tests import X2
+from lahuta.utils.download_files import X2
 
 pytestmark = pytest.mark.nb
 
@@ -17,8 +17,7 @@ TestFuncCallable = Callable[[NDArray[np.int32], float, float], NDArray[np.int32]
 
 
 def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0) -> NDArray[np.int32]:
-    """
-    Generate unique pairs of integers.
+    """Generate unique pairs of integers.
 
     This function generates unique pairs of integers that are not already present in the 'pairs' array.
     Generated pairs are unique in the sense that they do not contain any repeated elements.
@@ -31,7 +30,6 @@ def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0) -> NDArray
     Returns:
         NDArray[np.int32]: An array of unique pairs of integers.
     """
-
     total_elements = size * 2
 
     # Generate unique elements excluding existing ones
@@ -39,7 +37,8 @@ def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0) -> NDArray
     unique_elements = np.setdiff1d(np.arange(start, upper_bound), np.unique(pairs), assume_unique=True)
 
     # Select elements randomly
-    unique_elements = np.random.choice(unique_elements, total_elements, replace=False)
+    rng = np.random.default_rng()
+    unique_elements = rng.choice(unique_elements, total_elements, replace=False)
 
     # Reshape into desired format
     new_pairs = unique_elements.reshape(-1, 2)
@@ -48,8 +47,7 @@ def unique_pairs(pairs: NDArray[np.int32], size: int, start: int = 0) -> NDArray
 
 
 def _generate_test_data(pairs: NDArray[np.int32], subset_ratio: float, extra_ratio: float = 0) -> NDArray[np.int32]:
-    """
-    Generate test data.
+    """Generate test data.
 
     This function generates test data by retaining a subset of the original pairs and adding new unique pairs.
     The way the new pairs are generated is by first generating unique pairs that are not already present in the
@@ -84,8 +82,7 @@ def _generate_test_data(pairs: NDArray[np.int32], subset_ratio: float, extra_rat
 
 @pytest.fixture(scope="module", name="call_func")
 def generate_test_data() -> TestFuncCallable:
-    """
-    Fixture that returns a function that generates test data.
+    """Fixture that returns a function that generates test data.
 
     Returns:
         function: A function that generates test data.
@@ -95,9 +92,7 @@ def generate_test_data() -> TestFuncCallable:
 
 @pytest.fixture(scope="session")
 def data_loader() -> NeighborPairs:
-    """
-    Fixture to load the data for the tests.
-    """
+    """Fixture to load the data for the tests."""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         universe = Luni(X2().file_loc)
@@ -118,15 +113,14 @@ def neighbors(data_loader: NeighborPairs) -> NeighborPairs:
     return data_loader
 
 
-@pytest.mark.parametrize("subset_ratio,_", params)
+@pytest.mark.parametrize(("subset_ratio", "_"), params)
 def test_intersection(
     call_func: TestFuncCallable,
     subset_ratio: float,
     _: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the intersection of two NeighborPairs objects.
+    """Test the intersection of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -149,15 +143,14 @@ def test_intersection(
     assert (resulting_ns.pairs == ref_intersect_pairs).all()
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_union(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the union of two NeighborPairs objects.
+    """Test the union of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -177,15 +170,14 @@ def test_union(
     assert (resulting_ns.pairs == ref_union_pairs).all()
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_difference(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the difference of two NeighborPairs objects.
+    """Test the difference of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -207,15 +199,14 @@ def test_difference(
     assert (resulting_ns.pairs == ref_diff_pairs).all()
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_symmetric_difference(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the symmetric difference of two NeighborPairs objects.
+    """Test the symmetric difference of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -238,15 +229,14 @@ def test_symmetric_difference(
     assert (resulting_ns.pairs == ref_sym_diff_pairs).all()
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_isdisjoint(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the isdisjoint method of two NeighborPairs objects.
+    """Test the isdisjoint method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -264,15 +254,14 @@ def test_isdisjoint(
     assert ns.isdisjoint(new_ns) == au.isdisjoint(ns.pairs, new_pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_issubset(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the issubset method of two NeighborPairs objects.
+    """Test the issubset method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -290,15 +279,14 @@ def test_issubset(
     assert ns.issubset(new_ns) == au.issubset(ns.pairs, new_pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_issuperset(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the issuperset method of two NeighborPairs objects.
+    """Test the issuperset method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -316,15 +304,14 @@ def test_issuperset(
     assert ns.issuperset(new_ns) == au.issuperset(ns.pairs, new_pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_isequal(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the isequal method of two NeighborPairs objects.
+    """Test the isequal method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -342,15 +329,14 @@ def test_isequal(
     assert ns.isequal(new_ns) == au.isequal(ns.pairs, new_pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_isunique(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the isunique method of two NeighborPairs objects.
+    """Test the isunique method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -370,15 +356,14 @@ def test_isunique(
     assert new_ns.isunique() == au.isunique(new_ns.pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_is_strict_subset(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the is_strict_subset method of two NeighborPairs objects.
+    """Test the is_strict_subset method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -391,15 +376,14 @@ def test_is_strict_subset(
     assert ns.is_strict_subset(new_ns) == au.is_strict_subset(ns.pairs, new_pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("subset_ratio", "extra_ratio"), params)
 def test_is_strict_superset(
     call_func: TestFuncCallable,
     subset_ratio: float,
     extra_ratio: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the is_strict_superset method of two NeighborPairs objects.
+    """Test the is_strict_superset method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -412,15 +396,14 @@ def test_is_strict_superset(
     assert ns.is_strict_superset(new_ns) == au.is_strict_superset(ns.pairs, new_pairs)
 
 
-@pytest.mark.parametrize("subset_ratio,_", params)
+@pytest.mark.parametrize(("subset_ratio", "_"), params)
 def test_contains(
     call_func: TestFuncCallable,
     subset_ratio: float,
     _: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the contains method of two NeighborPairs objects.
+    """Test the contains method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
@@ -439,15 +422,13 @@ def test_eq(
     _: float,
     ns: NeighborPairs,
 ) -> None:
-    """
-    Test the eq method of two NeighborPairs objects.
+    """Test the eq method of two NeighborPairs objects.
 
     Args:
         call_func (TestFuncCallable): A function that generates test data.
         _ (float): Unused.
         ns (NeighborPairs): The NeighborPairs object to test.
     """
-
     new_pairs = call_func(ns.pairs, 1, 0)
     new_ns = ns.new(new_pairs, ns.distances[np.arange(new_pairs.shape[0])])
     assert new_ns == ns

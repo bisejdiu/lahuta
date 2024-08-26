@@ -1,5 +1,4 @@
-"""
-Tests for the array_utils.py module.
+"""Tests for the array_utils.py module.
 
 The tests are parameterized to test the functions with different input sizes and ratios of
 shared elements between the arrays.
@@ -13,15 +12,13 @@ from numpy.typing import NDArray
 
 import lahuta.utils.array_utils as au
 
-
 pytestmark = pytest.mark.au
 
 TestFuncCallable = Callable[[int, float, float], tuple[NDArray[np.int32], NDArray[np.int32]]]
 
 
 def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
-    """
-    Generate an array of unique pairs.
+    """Generate an array of unique pairs.
 
     We generate an array of unique pairs by first generating an array of unique elements and then reshaping
     it into an array of pairs. This way we can ensure that the pairs are unique.
@@ -37,7 +34,8 @@ def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
     total_elements = size * 2
 
     # Generate unique elements
-    unique_elements = np.random.choice(range(start, start + total_elements), total_elements, replace=False)
+    rng = np.random.default_rng()
+    unique_elements = rng.choice(range(start, start + total_elements), total_elements, replace=False)
 
     # Reshape into desired format
     pairs = unique_elements.reshape(-1, 2)
@@ -48,8 +46,7 @@ def unique_pairs(size: int, start: int = 0) -> NDArray[np.int32]:
 def _generate_test_data(
     size: int, subset_ratio: float = 0.5, extra_ratio: float = 0.1
 ) -> tuple[NDArray[np.int32], NDArray[np.int32]]:
-    """
-    Generate test data for the array_utils tests.
+    """Generate test data for the array_utils tests.
 
     This function generates two arrays of size `size` where `subset_ratio` of the elements in the first array
     are also in the second array. Additionally, `extra_ratio` of the elements in the second array are not in
@@ -94,8 +91,7 @@ def _generate_test_data(
 
 
 def check_mask(mask: NDArray[np.bool_], arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
-    """
-    Check the properties of the boolean mask.
+    """Check the properties of the boolean mask.
 
     Args:
         mask (NDArray[np.bool_]): The boolean mask.
@@ -111,8 +107,7 @@ def check_mask(mask: NDArray[np.bool_], arr1: NDArray[np.int32], arr2: NDArray[n
 
 
 def check_edge_cases(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
-    """
-    Check the properties of the arrays when they contain edge cases.
+    """Check the properties of the arrays when they contain edge cases.
 
     Args:
         arr1 (NDArray[np.int32]): The first array.
@@ -127,7 +122,8 @@ def check_edge_cases(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
     assert mask.sum() == 0
 
     # Test with identical arrays
-    arr1 = np.random.randint(0, 10000, size=(1000, 2))
+    rng = np.random.default_rng()
+    arr1 = rng.integers(0, 10000, size=(1000, 2))  # type: ignore
     arr2 = arr1.copy()
     mask = au.find_shared_pairs(arr1, arr2)
     assert mask.all()
@@ -136,8 +132,7 @@ def check_edge_cases(arr1: NDArray[np.int32], arr2: NDArray[np.int32]) -> None:
 def check_union(
     union_arr: NDArray[np.int32], indices: NDArray[np.int32], arr1: NDArray[np.int32], arr2: NDArray[np.int32]
 ) -> None:
-    """
-    Check the properties of a union of arrays.
+    """Check the properties of a union of arrays.
 
     Args:
         union_arr (NDArray[np.int32]): The union of arr1 and arr2.
@@ -148,7 +143,6 @@ def check_union(
     Returns:
         None
     """
-
     unique_concat = np.unique(np.concatenate((arr1, arr2), axis=0), axis=0)
 
     assert union_arr.shape[0] == unique_concat.shape[0]
@@ -160,8 +154,7 @@ def check_union(
 def check_symmetric_difference(
     mask_a: NDArray[np.bool_], mask_b: NDArray[np.bool_], arr1: NDArray[np.int32], arr2: NDArray[np.int32]
 ) -> None:
-    """
-    Check the properties of a symmetric difference of arrays.
+    """Check the properties of a symmetric difference of arrays.
 
     Args:
         mask_a (NDArray[np.bool_]): The boolean mask for arr1.
@@ -182,8 +175,7 @@ def check_symmetric_difference(
 
 @pytest.fixture(scope="module", name="call_func")
 def generate_test_data() -> TestFuncCallable:
-    """
-    Fixture that returns a function that generates test data.
+    """Fixture that returns a function that generates test data.
 
     Returns:
         function: A function that generates test data.
@@ -201,15 +193,14 @@ for _ in range(10):
     params.append((a, b, c))
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_shared_pairs(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the find_shared_pairs function by verifying that the returned boolean mask identifies the correct
+    """Test the find_shared_pairs function by verifying that the returned boolean mask identifies the correct
     elements in `arr1` that also appear in `arr2`.
 
     Args:
@@ -229,15 +220,14 @@ def test_shared_pairs(
     check_edge_cases(arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_intersection(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the intersection function by verifying that the returned boolean mask identifies the correct
+    """Test the intersection function by verifying that the returned boolean mask identifies the correct
     elements in `arr1` that also appear in `arr2`.
 
     Args:
@@ -257,15 +247,14 @@ def test_intersection(
     check_edge_cases(arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_difference(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the difference function by verifying that the returned boolean mask identifies the correct
+    """Test the difference function by verifying that the returned boolean mask identifies the correct
     elements in `arr1` that are not in `arr2`.
 
     Args:
@@ -288,15 +277,14 @@ def test_difference(
     check_edge_cases(arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_union(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the union function by verifying that the returned boolean mask identifies the correct
+    """Test the union function by verifying that the returned boolean mask identifies the correct
     elements in `arr1` and `arr2`.
 
     Args:
@@ -314,15 +302,14 @@ def test_union(
     check_union(union_arr, indices, arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_symmetric_difference(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the symmetric_difference function by verifying that the returned boolean masks identify the correct
+    """Test the symmetric_difference function by verifying that the returned boolean masks identify the correct
     elements in `arr1` and `arr2`.
 
     Args:
@@ -341,15 +328,14 @@ def test_symmetric_difference(
     check_symmetric_difference(mask_a, mask_b, arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_isdisjoint(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the isdisjoint function by verifying that it returns the correct boolean output
+    """Test the isdisjoint function by verifying that it returns the correct boolean output
     when given two disjoint arrays and two non-disjoint arrays.
 
     Args:
@@ -372,15 +358,14 @@ def test_isdisjoint(
     assert not au.isdisjoint(arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_issubset(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the issubset function by verifying that it returns the correct boolean output
+    """Test the issubset function by verifying that it returns the correct boolean output
     when given an array and a larger array that contains it.
 
     Args:
@@ -401,15 +386,14 @@ def test_issubset(
     assert not au.issubset(arr2, arr1)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_issuperset(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the issuperset function by verifying that it returns the correct boolean output
+    """Test the issuperset function by verifying that it returns the correct boolean output
     when given an array and a smaller array that it contains.
 
     Args:
@@ -432,15 +416,14 @@ def test_issuperset(
     assert not au.issuperset(arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,extra_ratio", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "extra_ratio"), params)
 def test_isequal(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     extra_ratio: float,
 ) -> None:
-    """
-    Test the isequal function by verifying that it returns the correct boolean output
+    """Test the isequal function by verifying that it returns the correct boolean output
     when given two identical arrays and two non-identical arrays.
 
     Args:
@@ -461,15 +444,14 @@ def test_isequal(
     assert not au.isequal(arr1, arr2)
 
 
-@pytest.mark.parametrize("size,subset_ratio,_", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "_"), params)
 def test_isunique(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     _: float,
 ) -> None:
-    """
-    Test the isunique function by verifying that it returns the correct boolean output
+    """Test the isunique function by verifying that it returns the correct boolean output
     when given an array with no duplicates and an array with duplicates.
 
     Args:
@@ -492,15 +474,14 @@ def test_isunique(
     assert not au.isunique(arr3)
 
 
-@pytest.mark.parametrize("size,subset_ratio,_", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "_"), params)
 def test_is_strict_subset(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     _: float,
 ) -> None:
-    """
-    Test the is_strict_subset function by verifying that it returns the correct boolean output
+    """Test the is_strict_subset function by verifying that it returns the correct boolean output
     when given an array and a larger array that contains it and when given two identical arrays.
 
     Args:
@@ -512,7 +493,6 @@ def test_is_strict_subset(
     Returns:
         None
     """
-
     arr1, arr2 = call_func(size, subset_ratio, 0)
     # Check if arr1 is a strict subset of arr2
     assert au.is_strict_subset(arr2, arr1)
@@ -522,15 +502,14 @@ def test_is_strict_subset(
     assert not au.is_strict_subset(arr2, arr1)
 
 
-@pytest.mark.parametrize("size,subset_ratio,_", params)
+@pytest.mark.parametrize(("size", "subset_ratio", "_"), params)
 def test_is_strict_superset(
     call_func: TestFuncCallable,
     size: int,
     subset_ratio: float,
     _: float,
 ) -> None:
-    """
-    Test the is_strict_superset function by verifying that it returns the correct boolean output
+    """Test the is_strict_superset function by verifying that it returns the correct boolean output
     when given an array and a smaller array that it contains and when given two identical arrays.
 
     Args:

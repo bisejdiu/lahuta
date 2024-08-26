@@ -1,13 +1,14 @@
 """Handle atom related operations, including finding neighbors and preparation for computation."""
+
 from concurrent.futures import ThreadPoolExecutor
 from typing import Literal, Optional
 
 import gemmi
 import numpy as np
-from gemmi import ContactSearch, NeighborSearch
+from gemmi import ContactSearch, NeighborSearch, Structure
 from numpy.typing import NDArray
 
-from lahuta._types.gemmi import SearchResults, Structure
+from lahuta._types.gemmi import SearchResults
 from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.core.neighbors import BaseNeighborSearch, PairsDistances
 
@@ -28,28 +29,28 @@ class GemmiNeighborSearch(BaseNeighborSearch):
         og_resids (np.ndarray): The residue IDs of each atom in the universe.
     """
 
-    def __init__(self, mda: AtomGroupType, structure: Structure, radius: float=5.0):
+    def __init__(self, mda: AtomGroupType, structure: Structure, radius: float = 5.0):
         super().__init__(mda)
         structure.assign_serial_numbers()
         self.structure = structure
         self.radius = radius
         self.results: list[SearchResults] = []
-        
+
     def _get_contacts(self, radius: float) -> list[SearchResults]:
         ns = NeighborSearch(self.structure[0], self.structure.cell, radius)
         ns.populate(include_h=False)
         cs = ContactSearch(radius)
         cs.ignore = gemmi.ContactSearch.Ignore.Nothing
 
-        return cs.find_contacts(ns) # type: ignore
+        return cs.find_contacts(ns)  # type: ignore
 
     def compute(
-            self,
-            radius: float = 5.0,
-            res_dif: int = 1, 
-            n_threads: int = 1, 
-            chain_type: Optional[Literal["inter", "intra"]] = None, 
-            image: Optional[Literal["inter", "intra"]] = None
+        self,
+        radius: float = 5.0,
+        res_dif: int = 1,
+        n_threads: int = 1,
+        chain_type: Optional[Literal["inter", "intra"]] = None,
+        image: Optional[Literal["inter", "intra"]] = None,
     ) -> PairsDistances:
         """Compute the neighbors of each atom in the loaded system.
 
@@ -85,10 +86,8 @@ class GemmiNeighborSearch(BaseNeighborSearch):
         return pairs, distances
 
     def _compute(
-            self, 
-            results: list[SearchResults], 
-            n_threads: int
-            ) -> tuple[NDArray[np.int32], NDArray[np.float32], NDArray[np.int32]]:
+        self, results: list[SearchResults], n_threads: int
+    ) -> tuple[NDArray[np.int32], NDArray[np.float32], NDArray[np.int32]]:
         n_results = len(results)
         pairs = np.empty((n_results, 2), dtype=np.int32)
         distances = np.empty(n_results, dtype=np.float32)
@@ -98,9 +97,9 @@ class GemmiNeighborSearch(BaseNeighborSearch):
 
         with ThreadPoolExecutor() as executor:
             futures = {
-                executor.submit(
-                    self.fetch_attributes, results[i:i+slice_size]
-                ): i for i in range(0, n_results, slice_size)}
+                executor.submit(self.fetch_attributes, results[i : i + slice_size]): i
+                for i in range(0, n_results, slice_size)
+            }
 
         # Collate results
         for future, start_idx in futures.items():
@@ -110,14 +109,14 @@ class GemmiNeighborSearch(BaseNeighborSearch):
             distances[start_idx:end_idx] = slice_distances
             image_ids[start_idx:end_idx] = slice_image_ids
 
-        pairs -= 1 
+        pairs -= 1
 
         return pairs, distances, image_ids
 
     @staticmethod
     def fetch_attributes(
-        results_slice: list[SearchResults]
-        ) -> tuple[NDArray[np.int32], NDArray[np.float32], NDArray[np.int32]]:
+        results_slice: list[SearchResults],
+    ) -> tuple[NDArray[np.int32], NDArray[np.float32], NDArray[np.int32]]:
         """Fetch the attributes from a slice of SearchResults.
 
         Args:
@@ -165,19 +164,16 @@ class GemmiNeighborSearch(BaseNeighborSearch):
             NDArray[np.bool_]: An array of shape (n_pairs,) containing the indices of the pairs to keep.
         """
         assert chain_type in ["inter", "intra"], f"Invalid chain_type: {chain_type}. Must be 'inter' or 'intra'."
-        
+
         chain_ids: NDArray[np.int32] = self.chain_ids[pairs]
         if chain_type == "inter":
-            return chain_ids[:, 0] != chain_ids[:, 1] # type: ignore
-        
-        return chain_ids[:, 0] == chain_ids[:, 1] # type: ignore
-    
+            return chain_ids[:, 0] != chain_ids[:, 1]  # type: ignore
+
+        return chain_ids[:, 0] == chain_ids[:, 1]  # type: ignore
+
     def filter_image(
-            self, 
-            image_ids: NDArray[np.int32], 
-            pairs: NDArray[np.int32], 
-            image: Literal["inter", "intra"]
-        ) -> NDArray[np.bool_]:
+        self, image_ids: NDArray[np.int32], pairs: NDArray[np.int32], image: Literal["inter", "intra"]
+    ) -> NDArray[np.bool_]:
         """Remove pairs where the image ids are the same.
 
         Args:
@@ -191,6 +187,6 @@ class GemmiNeighborSearch(BaseNeighborSearch):
         assert image in ["inter", "intra"], f"Invalid image: {image}. Must be 'inter' or 'intra'."
         image_pairs = image_ids[pairs]
         if image == "inter":
-            return image_pairs[:, 0] != image_pairs[:, 1] # type: ignore
+            return image_pairs[:, 0] != image_pairs[:, 1]  # type: ignore
 
-        return image_pairs[:, 0] == image_pairs[:, 1] # type: ignore
+        return image_pairs[:, 0] == image_pairs[:, 1]  # type: ignore

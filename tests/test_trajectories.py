@@ -8,20 +8,18 @@ import pytest
 from _pytest.fixtures import FixtureRequest
 
 from lahuta import Luni
-
+from lahuta._types.mdanalysis import UniverseType
 from lahuta.contacts import contacts as C
 from lahuta.core.neighbors import NeighborPairs
-from lahuta._types.mdanalysis import UniverseType
-
 
 pytestmark = pytest.mark.trajs
 
 HISTIDINE_RESNAMES = ["HIS", "HID", "HIE", "HIP"]
-AROMATIC_RESNAMES = ["PHE", "TYR", "TRP"] + HISTIDINE_RESNAMES
+AROMATIC_RESNAMES = ["PHE", "TYR", "TRP", *HISTIDINE_RESNAMES]
 
 
 class ContactType:
-    """Helper class to compute and store the neighbors of a given type"""
+    """Helper class to compute and store the neighbors of a given type."""
 
     def __init__(
         self,
@@ -37,36 +35,36 @@ class ContactType:
         self.neighbors_diff: Optional[NeighborPairs] = None
 
     def compute_neighbors(self, res_dif: int) -> None:
-        """Compute the neighbors of the given type"""
+        """Compute the neighbors of the given type."""
         self.neighbors_ref = self.universe.u_ref.compute_neighbors(res_dif=res_dif)
         self.neighbors = self.universe.u.compute_neighbors(res_dif=res_dif)
 
     def compute_diff(self) -> None:
-        """Compute the difference between the neighbors of the given type"""
+        """Compute the difference between the neighbors of the given type."""
         assert self.neighbors is not None
         assert self.neighbors_ref is not None
         self.neighbors_diff = self.func(self.neighbors_ref) - self.func(self.neighbors)
 
     def pairs(self) -> tuple[int, ...]:
-        """Return the number of pairs"""
+        """Return the number of pairs."""
         assert self.neighbors is not None
         return self.func(self.neighbors).pairs.shape
 
     def pairs_ref(self) -> tuple[int, ...]:
-        """Return the number of pairs in the reference"""
+        """Return the number of pairs in the reference."""
         assert self.neighbors_ref is not None
         return self.func(self.neighbors_ref).pairs.shape
 
 
 @pytest.fixture(scope="session")
 def universe_ref(mda_universe: UniverseType) -> Luni:
-    """Create a reference universe"""
+    """Create a reference universe."""
     with warnings.catch_warnings(record=True) as _:
         return Luni(mda_universe.atoms)
 
 
 class UniverseWrapper:
-    """Helper class to store the universe and the selection"""
+    """Helper class to store the universe and the selection."""
 
     def __init__(self, mda_u: UniverseType, selection: str, u_ref: Luni) -> None:
         self.mda_u = mda_u
@@ -80,7 +78,7 @@ class UniverseWrapper:
 
 @pytest.fixture(scope="session")
 def mda_universe(request: FixtureRequest) -> UniverseType:
-    """Create a MDAnalysis universe"""
+    """Create a MDAnalysis universe."""
     use_large_files = request.config.getoption("--large-files")
     if use_large_files:
         coords = Path(__file__).parent / "data" / "197.pdb"
@@ -103,11 +101,11 @@ selections_res_difs = [
 
 
 class TestMDAnalysis:
-    """Test the MDAnalysis implementation of the contacts"""
+    """Test the MDAnalysis implementation of the contacts."""
 
     @pytest.fixture(params=selections_res_difs, autouse=True)
     def setup_method(self, request: FixtureRequest, mda_universe: UniverseType, universe_ref: Luni) -> None:
-        """Setup the test"""
+        """Setup the test."""
         selection, res_dif = request.param
         with warnings.catch_warnings(record=True) as _:
             self.universe = UniverseWrapper(mda_universe, selection, universe_ref)
@@ -133,7 +131,7 @@ class TestMDAnalysis:
             contact_type.compute_diff()
 
     def test_subset_check(self) -> None:
-        """Test that the neighbors are a subset of the reference neighbors"""
+        """Test that the neighbors are a subset of the reference neighbors."""
         for contact_type in self.contact_types:
             message = f"{contact_type.name} neighbors are not a subset of the reference neighbors"
             assert contact_type.neighbors is not None, "Neighbors are None"
@@ -141,14 +139,14 @@ class TestMDAnalysis:
             assert contact_type.neighbors.issubset(contact_type.neighbors_ref), message
 
     def test_number_of_pairs(self) -> None:
-        """Test that the number of pairs is correct"""
+        """Test that the number of pairs is correct."""
         for contact_type in self.contact_types:
             assert (
                 contact_type.pairs() <= contact_type.pairs_ref()
             ), f"{contact_type.name} neighbors pairs are not less than or equal to the reference neighbors pairs"
 
     def test_correct_residue_content(self) -> None:
-        """Test that the pairs are correct"""
+        """Test that the pairs are correct."""
         atoms = self.mda.universe.atoms
         assert atoms is not None
         for contact_type in self.contact_types:

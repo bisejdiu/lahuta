@@ -71,7 +71,7 @@ class ComputeElementwiseProtocol(Protocol):
         self,
         atoms: AtomGroupType,
         pair: NDArray[np.int32],
-        distance: NDArray[np.float_],
+        distance: NDArray[np.float32],
     ) -> T | None:
         """Compute contacts based on the neighbor pairs."""
 

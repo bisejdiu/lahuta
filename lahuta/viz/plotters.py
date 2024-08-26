@@ -21,8 +21,8 @@ class FullPlotter(BasePlotter):
         """
         self.half_only = half_only
 
-        min_idx = np.min(self.pairs)
-        max_idx = np.max(self.pairs)
+        min_idx = np.min(self.pairs).astype(int)
+        max_idx = np.max(self.pairs).astype(int)
         shape = (max_idx - min_idx + 1, max_idx - min_idx + 1)
         offset_pairs = [(x - min_idx, y - min_idx) for x, y in self.pairs]
         contact_map = self._initialize_map(shape, offset_pairs)

@@ -1,13 +1,13 @@
 """Classes to load and manage biological structure data.
 
-The two main classes are `GemmiLoader` and `TopologyLoader`, each designed to work with a 
+The two main classes are `GemmiLoader` and `TopologyLoader`, each designed to work with a
 specific library, Gemmi and MDAnalysis respectively, to load and handle structure data.
 
-Both loaders extend from an abstract base class `BaseLoader` which outlines the necessary 
+Both loaders extend from an abstract base class `BaseLoader` which outlines the necessary
 methods and properties all loader classes should have.
 
-The module also provides a unified way to manage atoms, residues, and chains information 
-through the ARC class instance. It includes various methods for querying the data and converting 
+The module also provides a unified way to manage atoms, residues, and chains information
+through the ARC class instance. It includes various methods for querying the data and converting
 them into other common bioinformatics and chemoinformatics formats.
 
 Classes:
@@ -18,9 +18,8 @@ Classes:
     ```
 """
 
-
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, Literal, Optional, overload
+from typing import Any, Iterator, Literal, NamedTuple, Optional, overload
 
 import gemmi
 import MDAnalysis as mda
@@ -34,6 +33,22 @@ from lahuta.utils.radii import v_radii_assignment
 
 from .arc import ARC, Atoms, Chains, Residues
 from .obmol import OBMol
+
+
+class PartnerData(NamedTuple):
+    """Store gemmi.ConnectionList atom partner data."""
+
+    atom_name: str
+    chain_name: str
+    res_id_seq_num: int
+    res_id_name: str
+
+
+class ConnectionData(NamedTuple):
+    """Store gemmi.ConnectionList atom connection data."""
+
+    partner1: PartnerData
+    partner2: PartnerData
 
 
 class BaseLoader(ABC):
@@ -65,7 +80,6 @@ class BaseLoader(ABC):
         self._residues = None
         self._atoms = None
 
-        self.structure = None
         self.arc: Optional[ARC] = None
 
     @property
@@ -95,12 +109,10 @@ class BaseLoader(ABC):
         return self.arc.atoms
 
     @overload
-    def to(self, fmt: Literal["mda"]) -> AtomGroupType:
-        ...
+    def to(self, fmt: Literal["mda"]) -> AtomGroupType: ...
 
     @overload
-    def to(self, fmt: Literal["mol"]) -> MolType:
-        ...
+    def to(self, fmt: Literal["mol"]) -> MolType: ...
 
     def to(self, fmt: Literal["mol", "mda"]) -> MolType | AtomGroupType:
         """Convert the loaded biological structure data into a different format.
@@ -164,7 +176,7 @@ class GemmiLoader(BaseLoader):
             block = gemmi.cif.read(self.file_path).sole_block()
             structure = gemmi.make_structure_from_block(block)
 
-        self.structure = structure
+        self.conn_store = self.store_connections(structure.connections)
         atom_site_data: dict[str, Any] = block.get_mmcif_category("_atom_site.")
 
         self.arc = ARC(self, atom_site_data)
@@ -227,6 +239,7 @@ class GemmiLoader(BaseLoader):
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("chainIDs", self.arc.chains.auths)
         uv.add_TopologyAttr("ids", self.arc.atoms.ids)
+        uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
 
         uv.atoms.positions = self.arc.atoms.coordinates
         uv.filename = self.file_path
@@ -240,14 +253,40 @@ class GemmiLoader(BaseLoader):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
-        assert self.structure is not None, "structure should not be None"
         obmol = OBMol()
         obmol.create_mol(
             self.arc,
-            self.structure.connections,
+            self.conn_store,
         )
         assert obmol.mol is not None
         return obmol.mol
+
+    def store_connections(self, connections: gemmi.ConnectionList) -> list[ConnectionData]:
+        """Store the atom connections from the gemmi structure object.
+
+        Args:
+            connections (gemmi.ConnectionList): The atom connections from the gemmi structure object.
+
+        Returns:
+            list[ConnectionData]: A list of ConnectionData objects containing the atom connections.
+        """
+        conn_store = []
+        for conn in connections:
+            prt1 = PartnerData(
+                atom_name=conn.partner1.atom_name,
+                chain_name=conn.partner1.chain_name,
+                res_id_seq_num=conn.partner1.res_id.seqid.num,  # type: ignore
+                res_id_name=conn.partner1.res_id.name,
+            )
+            prt2 = PartnerData(
+                atom_name=conn.partner2.atom_name,
+                chain_name=conn.partner2.chain_name,
+                res_id_seq_num=conn.partner2.res_id.seqid.num,  # type: ignore
+                res_id_name=conn.partner2.res_id.name,
+            )
+            conn_store.append(ConnectionData(prt1, prt2))
+
+        return conn_store
 
 
 class TopologyLoader(BaseLoader):
@@ -293,10 +332,7 @@ class TopologyLoader(BaseLoader):
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
         assert self.arc is not None, "arc has not been initialized"
         obmol = OBMol()
-        obmol.create_mol(
-            self.arc,
-            self.structure,
-        )
+        obmol.create_mol(self.arc)
         assert obmol.mol is not None
         return obmol.mol
 
@@ -316,7 +352,6 @@ class TopologyLoader(BaseLoader):
 
         top_loader.ag = ag.copy()
         top_loader.ag._u = ag.universe.copy()  # noqa: SLF001
-        top_loader.structure = None
         top_loader.ag.universe.filename = ag.universe.filename
 
         top_loader.arc = ARC(top_loader, top_loader.ag)
