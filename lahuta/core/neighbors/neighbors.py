@@ -77,6 +77,8 @@ class NeighborPairs:
         self.luni = luni
         self.atoms = luni.to("mda").universe.atoms
 
+        self._future_neighbors = None
+
         self._pairs = np.array([], dtype=np.int32).reshape(0, 2)
         self._distances = np.array([], dtype=np.float32)
         self._annotations: dict[str, NDArray[Any]] = {}
@@ -145,6 +147,14 @@ class NeighborPairs:
         partner2 = 1 if partner == 2 else 2
 
         return self._get_pair_column(partner), self._get_pair_column(partner2)
+
+    # def _new_type_filter(self, atom_type: str, partner: int) -> Self:
+    #     atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
+    #     nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
+    #     mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # noqa: NPY201
+    #
+    #     new_ns = self.new(self.pairs[mask], self.distances[mask])
+    #     new_ns._future_neighbors = self._future_neighbors
 
     def type_filter(self, atom_type: str, partner: int) -> Self:
         """Filter pairs based on atom types.

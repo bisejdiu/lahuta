@@ -1,56 +1,52 @@
 #ifndef LAHUTA_NSGRID_HPP
 #define LAHUTA_NSGRID_HPP
 
-#include <array>
-#include <vector>
-#include <rdkit/Geometry/point.h>
 #include "atom_types.hpp"
+#include <array>
+#include <rdkit/Geometry/point.h>
+#include <vector>
 
 namespace lahuta {
 
 const int kDIMENSIONS = 3;
-using FlatCoords = std::vector<float>;
-using _NeighborPairs = std::vector<std::pair<int, int>>;
+using Pairs = std::vector<std::pair<int, int>>;
+using Distances = std::vector<float>;
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, 3> &pseudobox);
-FlatCoords flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
+std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
 
 class Luni;
 
 struct NSResults {
-  _NeighborPairs m_pairs;
-  std::vector<float> m_distances;
 
-public:
   NSResults() = default;
   NSResults(const NSResults &other) = default;
   NSResults(NSResults &&other) = default;
   NSResults &operator=(const NSResults &other) = default;
   NSResults &operator=(NSResults &&other) = default;
 
-  NSResults(_NeighborPairs &&pairs, std::vector<float> &&dists)
-      : m_pairs(std::move(pairs)), m_distances(std::move(dists)) {}
+  NSResults(Pairs &&pairs, std::vector<float> &&dists)
+      : m_pairs(std::move(pairs)), m_dists(std::move(dists)) {}
 
-  NSResults(_NeighborPairs &pairs, std::vector<float> &dists)
-      : m_pairs(pairs), m_distances(dists) {}
+  NSResults(Pairs &pairs, std::vector<float> &dists)
+      : m_pairs(pairs), m_dists(dists) {}
 
-  NSResults(Luni &luni, _NeighborPairs &&pairs, std::vector<float> &&dists)
-      : m_pairs(std::move(pairs)), m_distances(std::move(dists)) {
+  NSResults(Luni &luni, Pairs &&pairs, std::vector<float> &&dists)
+      : m_pairs(std::move(pairs)), m_dists(std::move(dists)) {
     this->m_luni = &luni;
   }
 
-  explicit NSResults(Luni &luni, _NeighborPairs &pairs,
-                     std::vector<float> &dists)
-      : m_pairs(pairs), m_distances(dists) {
+  NSResults(Luni &luni, Pairs &pairs, std::vector<float> &dists)
+      : m_pairs(pairs), m_dists(dists) {
     this->m_luni = &luni;
   }
 
   // NSResults results = {{1, 2}, {3, 4}, {5, 6}}, {0.1f, 0.2f, 0.3f}};
-  NSResults(std::initializer_list<std::pair<int, int>> pairs,
-            std::initializer_list<float> dists)
+  explicit NSResults(std::initializer_list<std::pair<int, int>> pairs,
+                     std::initializer_list<float> dists)
       : m_pairs(pairs.begin(), pairs.end()),
-        m_distances(dists.begin(), dists.end()) {
+        m_dists(dists.begin(), dists.end()) {
     if (pairs.size() != dists.size()) {
       throw std::invalid_argument(
           "Number of pairs must match number of distances");
@@ -63,25 +59,29 @@ public:
 
   void reserve_space(size_t input_size);
 
-  const _NeighborPairs &get_neighbors() const { return m_pairs; }
-  const std::vector<float> &get_distances() const { return m_distances; }
-
   size_t size() const { return m_pairs.size(); }
 
   [[nodiscard]] NSResults filter(float distance) const;
 
   void clear() {
     m_pairs.clear();
-    m_distances.clear();
+    m_dists.clear();
   }
 
-  NSResults filter_by_atom_type(AtomType type, int partner);
+  NSResults type_filter(AtomType type, int partner);
+
+  const Pairs &get_pairs() const { return m_pairs; }
+  const Distances &get_distances() const { return m_dists; }
+
+  auto begin() { return m_pairs.begin(); }
+  auto end() { return m_pairs.end(); }
 
   friend class Luni;
 
 private:
+  Pairs m_pairs;
+  Distances m_dists;
   Luni *m_luni = nullptr;
-  // std::vector<AtomType> &atom_types = m_luni->atom_types;
 };
 
 class FastNS {
@@ -100,7 +100,7 @@ private:
   std::array<float, kDIMENSIONS> cellsize;
   std::array<int, kDIMENSIONS> cell_offsets;
 
-  FlatCoords coords_bbox;
+  std::vector<float> coords_bbox;
   std::vector<int> head_id;
   std::vector<int> next_id;
 

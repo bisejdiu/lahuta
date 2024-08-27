@@ -1,12 +1,15 @@
+#ifndef LAHUTA_BOND_ORDER_HPP
+#define LAHUTA_BOND_ORDER_HPP
+
 #include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 #include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 
 using namespace RDKit;
 
+namespace lahuta {
+
 using HybridizationType = RDKit::Atom::HybridizationType;
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
-
-namespace lahuta {
 
 constexpr std::pair<const char *, HybridizationType> smartsList[] = {
     {"[D4]", HybridizationType::SP3},
@@ -237,3 +240,5 @@ inline double compute_dihedral(const RDGeom::Point3D &a, const RDGeom::Point3D &
 void perceive_bond_orders_obabel(RDKit::RWMol &mol);
 
 } // namespace lahuta
+
+#endif // LAHUTA_BOND_ORDER_HPP

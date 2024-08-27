@@ -1,4 +1,3 @@
-#include <array>
 #include <vector>
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include "bonds.hpp"
@@ -27,8 +26,8 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     rcov[atom->getIdx()] = tbl->getRcovalent(atom->getAtomicNum());
   }
 
-  for (auto i = 0; i < results.get_neighbors().size(); i++) {
-    auto res = results.get_neighbors()[i];
+  for (auto i = 0; i < results.get_pairs().size(); i++) {
+    auto res = results.get_pairs()[i];
     auto dist_sq = results.get_distances()[i];
     auto *a = mol.getAtomWithIdx(res.first);
     auto *b = mol.getAtomWithIdx(res.second);
@@ -88,20 +87,18 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     }
   }
 
-  if (non_predef_atom_indices.size() == 0) {
+  if (non_predef_atom_indices.empty()) {
     return {}; 
   }
 
-  auto new_mol = filter_with_conf(mol, non_predef_atom_indices);
-
   std::vector<int> index_mapping;
   index_mapping.resize(mol.getNumAtoms(), -1);
-
   for (size_t i = 0; i < non_predef_atom_indices.size(); ++i) {
     index_mapping[non_predef_atom_indices[i]] = static_cast<int>(i);
   }
 
-  // Add bonds to the newMol
+  auto new_mol = filter_with_conf(mol, non_predef_atom_indices);
+
   for (const auto &bond : bonds) {
     int aIx = index_mapping[bond.first];
     int bIx = index_mapping[bond.second];

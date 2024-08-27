@@ -12,18 +12,18 @@ Similar to the Atoms class, it provides functionalities to retrieve information 
 as well as to iterate over and access data of multiple residues.
 
 - `Chains`: This class models and manages the properties of chains in the system.
-Again, similar to the Atoms and Residues classes, it provides functionalities to retrieve information 
+Again, similar to the Atoms and Residues classes, it provides functionalities to retrieve information
 about individual chains, as well as to iterate over and access data of multiple chains.
 
 - `ARC`: This class integrates the Atoms, Residues, and Chains (ARC) module, by creating and storing
-instances of Atoms, Residues, and Chains classes. Depending on the type of the input object 
-(either GemmiLoader or TopologyLoader), it uses the appropriate method from Atoms, Residues, and 
-Chains classes to initialize them. It provides methods to retrieve atom, residue, 
+instances of Atoms, Residues, and Chains classes. Depending on the type of the input object
+(either GemmiLoader or TopologyLoader), it uses the appropriate method from Atoms, Residues, and
+Chains classes to initialize them. It provides methods to retrieve atom, residue,
 and chain information individually or together, as well as methods to iterate over and access this data.
 
-- `Atom`: This class models and manages the properties of an atom in the system. 
+- `Atom`: This class models and manages the properties of an atom in the system.
 It is created with keyword arguments, which allows it to dynamically store any attributes passed.
-The attributes include, but are not limited to, atom name, ID, element, type, 
+The attributes include, but are not limited to, atom name, ID, element, type,
 residue name, residue ID, chain label, and chain ID.
 
 Example:
@@ -109,7 +109,6 @@ class Atoms:
         label_atom_id: list[str] = gemmi_block["label_atom_id"]
         data = np.empty(len(label_atom_id), dtype=cls_instance.dtype)
         data["name"] = np.array(label_atom_id)
-        # data["id"] = np.arange(data["name"].size)
         data["id"] = np.array(gemmi_block.get("id"), dtype=np.int32) - 1
         data["element"] = np.array(gemmi_block.get("type_symbol"))
         data["type"] = np.array(gemmi_block.get("type_symbol"))

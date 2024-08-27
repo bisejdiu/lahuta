@@ -1,6 +1,6 @@
 """Implements the core logic for calculating different types of atomic contacts in proteins. It provides
-a variety of functions, each corresponding to a specific type of atomic contact including covalent, metallic, 
-carbonyl, ionic, aromatic, hydrophobic, van der Waals, and different kinds of hydrogen bonds. 
+a variety of functions, each corresponding to a specific type of atomic contact including covalent, metallic,
+carbonyl, ionic, aromatic, hydrophobic, van der Waals, and different kinds of hydrogen bonds.
 
 Functions:
     covalent_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes covalent contacts.
@@ -15,18 +15,18 @@ Functions:
     polar_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes polar hydrogen bonds.
     weak_polar_hbond_neighbors(ns: NeighborPairs) -> NeighborPairs: Computes weak polar hydrogen bonds.
 
-Each function takes a `NeighborPairs` object, which represents precomputed neighbor relationships between atoms, 
-and an optional distance cutoff parameter for certain types of contacts. Each function returns a new `NeighborPairs` 
+Each function takes a `NeighborPairs` object, which represents precomputed neighbor relationships between atoms,
+and an optional distance cutoff parameter for certain types of contacts. Each function returns a new `NeighborPairs`
 object that represents the specific contacts computed by that function.
 
 Notes:
-    Each atomic contact type is computed based on a set of conditions, primarily involving the types of the two 
-    interacting atoms and the distance between them. For example, carbonyl contacts are calculated by filtering 
-    for neighbor pairs where one atom is a carbonyl oxygen and the other is a carbonyl carbon, and the distance 
+    Each atomic contact type is computed based on a set of conditions, primarily involving the types of the two
+    interacting atoms and the distance between them. For example, carbonyl contacts are calculated by filtering
+    for neighbor pairs where one atom is a carbonyl oxygen and the other is a carbonyl carbon, and the distance
     between them is less than a predefined cutoff.
-    
-    Most contact calculation functions also accept a `distance` argument specifying the cutoff distance for 
-    considering two atoms as neighbors in the contact type calculation. These cutoffs are defined in the 
+
+    Most contact calculation functions also accept a `distance` argument specifying the cutoff distance for
+    considering two atoms as neighbors in the contact type calculation. These cutoffs are defined in the
     `lahuta.config.defaults` module and can be adjusted as per user requirements.
 
 """
@@ -287,17 +287,11 @@ def hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = None) 
     """
     handler = _handler or HBondHandler(ns)
 
-    hbond_atom12 = (
-        ns.type_filter("hbond_donor", 1)
-        .type_filter("hbond_acceptor", 2)
-    )
+    hbond_atom12 = ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2)
     hbond_atom12 = handler.hbond_distance_filter(hbond_atom12, partner=2)
     hbond_atom12 = handler.hbond_angle_filter(hbond_atom12, partner=1)
 
-    hbond_atom21 = (
-        ns.type_filter("hbond_donor", 2)
-        .type_filter("hbond_acceptor", 1)
-    )
+    hbond_atom21 = ns.type_filter("hbond_donor", 2).type_filter("hbond_acceptor", 1)
     hbond_atom21 = handler.hbond_distance_filter(hbond_atom21, partner=1)
     hbond_atom21 = handler.hbond_angle_filter(hbond_atom21, partner=2)
 
@@ -326,17 +320,11 @@ def weak_hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = N
         (NeighborPairs): A NeighborPairs object containing only weak hydrogen bonds.
     """
     handler = _handler or HBondHandler(ns)
-    hbond_atom12 = (
-        ns.type_filter("hbond_acceptor", 1)
-        .type_filter("weak_hbond_donor", 2)
-    )
+    hbond_atom12 = ns.type_filter("hbond_acceptor", 1).type_filter("weak_hbond_donor", 2)
     hbond_atom12 = handler.hbond_distance_filter(hbond_atom12, partner=1)
     hbond_atom12 = handler.hbond_angle_filter(hbond_atom12, partner=2, weak=True)
 
-    hbond_atom21 = (
-        ns.type_filter("hbond_acceptor", 2)
-        .type_filter("weak_hbond_donor", 1)
-    )
+    hbond_atom21 = ns.type_filter("hbond_acceptor", 2).type_filter("weak_hbond_donor", 1)
     hbond_atom21 = handler.hbond_distance_filter(hbond_atom21, partner=2)
     hbond_atom21 = handler.hbond_angle_filter(hbond_atom21, partner=1, weak=True)
 

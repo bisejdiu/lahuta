@@ -1,10 +1,10 @@
 """Handle atom related operations, including finding neighbors and preparation for computation.
 
-This module contains the MDAnalysisNeighborSearch class that handles atom related operations, 
+This module contains the MDAnalysisNeighborSearch class that handles atom related operations,
 including finding neighbors and preparation for computation.
 
 Classes:
-    MDAnalysisNeighborSearch: Class to handle atom related operations, including finding neighbors 
+    MDAnalysisNeighborSearch: Class to handle atom related operations, including finding neighbors
                     and preparation for computation.
 
 """
@@ -56,6 +56,7 @@ class MDAnalysisNeighborSearch(BaseNeighborSearch):
             raise NotImplementedError("Image handling not implemented yet.")
 
         pairs, distances = self.get_neighbors(radius)
+        print("(Lahuta DEBUG) mda FastNS: ", pairs.shape, distances.shape)
 
         if res_dif > 0:
             idx = self.remove_adjacent_residue_pairs(pairs, res_dif=res_dif)

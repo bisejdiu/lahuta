@@ -174,47 +174,50 @@ inline float FastNS::dist_sq(const float *__restrict a,
 
 void NSResults::add_neighbors(int i, int j, float d2) {
   m_pairs.emplace_back(i, j);
-  m_distances.push_back(d2);
+  m_dists.push_back(d2);
 }
 
 void NSResults::reserve_space(size_t input_size) {
   m_pairs.reserve(input_size);
-  m_distances.reserve(input_size);
+  m_dists.reserve(input_size);
 }
 
 NSResults NSResults::filter(float dist) const {
   NSResults filtered; // we'll not reserve space
   auto dist_sq = dist * dist;
-  for (size_t i = 0; i < m_distances.size(); ++i) {
-    if (m_distances[i] >= dist_sq) {
+  for (size_t i = 0; i < m_dists.size(); ++i) {
+    if (m_dists[i] >= dist_sq) {
       filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second,
-                             m_distances[i]);
+                             m_dists[i]);
     }
   }
   return filtered;
 }
 
 // FIX: use overloads to handle different filter conditions
-NSResults NSResults::filter_by_atom_type(AtomType type, int partner) {
-  _NeighborPairs filtered;
-  std::vector<float> distances;
+NSResults NSResults::type_filter(AtomType type, int partner) {
+  if (partner != 0 || partner != 1) {
+    throw std::runtime_error("Invalid partner: " + std::to_string(partner) +
+                             ". Must be 0 or 1.");
+  }
+  Pairs filtered;
+  Distances dists;
   for (size_t i = 0; i < m_pairs.size(); ++i) {
     if (partner == 0) {
       if (has(m_luni->atom_types[m_pairs[i].first], type)) {
         filtered.push_back(m_pairs[i]);
-        distances.push_back(m_distances[i]);
+        dists.push_back(m_dists[i]);
       }
     } else if (partner == 1) {
       if (has(m_luni->atom_types[m_pairs[i].second], type)) {
         filtered.push_back(m_pairs[i]);
-        distances.push_back(m_distances[i]);
+        dists.push_back(m_dists[i]);
       }
     } else {
       std::cerr << "Invalid partner: " << partner << std::endl;
     }
   }
-  // return NSResults(*this, std::move(filtered), std::move(distances));
-  return NSResults(*this->get_luni(), filtered, distances); 
+  return NSResults(*this->get_luni(), filtered, dists); 
 }
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,

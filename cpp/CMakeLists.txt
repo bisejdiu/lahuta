@@ -144,6 +144,12 @@ else()
 endif()
 
 
+### Installation ###
+# Python module installation:
+set(PYTHON_INSTALL_DIR "${CMAKE_BINARY_DIR}/../../lahuta/lib")
+message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
+
+
 if (USE_PYTHON)
   if (DEFINED PYTHON_INSTALL_DIR)
     message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")

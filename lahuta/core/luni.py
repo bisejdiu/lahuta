@@ -23,6 +23,8 @@ from numpy.typing import NDArray
 from scipy.sparse import csc_array, load_npz, save_npz
 from typing_extensions import Self
 
+from lahuta.lib import cLuni, cAtomType
+
 from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
@@ -105,6 +107,9 @@ class Luni:
         self._mol: Optional["MolType"] = None
         self._mda = self._file_loader.to("mda")
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+
+        self._luni = cLuni(self._file_loader.file_path)
+        self._at = self._luni.get_atom_types()
 
         self._structure, self._trajectories = structure, trajectories
 
@@ -292,7 +297,7 @@ class Luni:
             import gemmi
 
             # TODO(bisejdiu): image is not being passed
-            structure = gemmi.read_pdb(self._input_structure) # type: ignore
+            structure = gemmi.read_pdb(self._input_structure)  # type: ignore
             neighbors = GemmiNeighborSearch(mda, structure)
         elif backend == "mda":
             neighbors = MDAnalysisNeighborSearch(mda)
@@ -309,7 +314,10 @@ class Luni:
             cross_indices = cross_interaction_indices(pairs, self.indices, target_spec.indices)
             pairs, distances = pairs[cross_indices], distances[cross_indices]
 
+        print("(Lahuta DEBUG) filtered neighbors ", pairs.shape, distances.shape)
         ns = NeighborPairs(self)
+        ns._future_neighbors = self._luni.find_neighbors(radius)
+        print("(Lahuta DEBUG) future neighbors: ", len(ns._future_neighbors.get_pairs()))
         ns.set_neighbors(pairs, distances)
         return ns
 

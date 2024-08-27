@@ -1,12 +1,18 @@
 #ifndef ATOM_TYPES_HPP
 #define ATOM_TYPES_HPP
 
-#include "bonds/token-gperf-generated.hpp"
-#include <GraphMol/MonomerInfo.h>
-#include <GraphMol/RWMol.h>
 #include <cstdint>
+#include <rdkit/GraphMol/RWMol.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/MolOps.h>
+#include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
+#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
+
+#include "bonds/token-gperf-generated.hpp"
 
 namespace lahuta {
+
+using SubStrMatches = std::vector<RDKit::MatchVectType>;
 
 enum class AtomType : uint32_t {
   NONE = 0x0,
@@ -485,6 +491,45 @@ constexpr std::pair<const char*, AtomType> AtomTypeSMARTS[] = {
   {"[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
   {"[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1", AtomType::AROMATIC},
 };
+
+inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
+  static std::array<RDKit::ROMol *, std::size(AtomTypeSMARTS)> patterns = [] {
+    std::array<RDKit::ROMol *, std::size(AtomTypeSMARTS)> temp{};
+    for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
+      temp[i] = RDKit::SmartsToMol(AtomTypeSMARTS[i].first);
+    }
+    return temp;
+  }();
+
+  RDKit::SubstructMatchParameters params;
+  params.maxMatches = mol.getNumAtoms();
+
+  std::vector<AtomType> types = {mol.getNumAtoms(), AtomType::NONE};
+  for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
+    const auto &[smarts, atom_type] = AtomTypeSMARTS[i];
+    RDKit::ROMol *pattern = patterns[i];
+
+    SubStrMatches matchList;
+    RDKit::SubstructMatch(mol, *pattern, matchList);
+
+    for (const auto &match : matchList) {
+      for (const auto &pair : match) {
+        types[pair.second] |= atom_type;
+      }
+      // auto *atom = mol.getAtomWithIdx(match[0].second);
+      // if (atom->getAtomicNum() == 26) {
+      //   auto *info =
+      //   static_cast<RDKit::AtomPDBResidueInfo*>(atom->getMonomerInfo());
+      //   std::cout << "-> Fe: " << info->getResidueName() << " "
+      //             << info->getName() << " " << atom_type_to_string(atom_type)
+      //             << std::endl;
+      // }
+      // types[match[0].second] |= atom_type;
+    }
+  }
+
+  return types;
+}
 
 } // namespace lahuta
 

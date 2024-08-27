@@ -5,8 +5,10 @@
 #include <iostream>
 #include <string>
 
-#define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
+#include "test.hpp"
+
 #define T() std::chrono::high_resolution_clock::now()
+#define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
 
 using namespace gemmi;
 using namespace RDKit;
@@ -31,12 +33,32 @@ int main(int argc, char const *argv[]) {
   // Lahuta::Luni luni(source);
   lahuta::Luni luni(file_name);
 
-  // FIX: replace getNeighborPairsSize with just Size()
-  std::cout << "Neighbors: " << luni.get_neighbors().size() << std::endl;
-
-  auto neighbors = luni.get_neighbors();
+  auto neighbors = luni.find_neighbors();
 
   RDKit::RWMol *mol = &luni.get_molecule();
+
+
+  auto atom_iter_start = T();
+  for (auto &atom: mol->atoms()) {
+    auto *res1 = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+  };
+  auto iterTime = TO_MS(T() - atom_iter_start).count();
+  std::cout << "Atom ITER TIME: " << iterTime << " ms" << std::endl;
+
+
+
+  auto& atoms = getAtoms();
+
+  // Create a generator with a function that prints the atom index
+  AtomGenerator<zAtom> gen(atoms, [](zAtom& atom) {
+    std::cout << "Atom index: " << atom.getIdx() << std::endl;
+  });
+
+  // Iterate over the generator
+  for (auto& atom : gen) {
+    // Do something with each atom after the function is applied, if needed
+    // std::cout << "Atom index: " << atom.getIdx() << std::endl;
+  }
 
 
   // std::string smarts_test = "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1";

@@ -13,40 +13,6 @@ void test_lahuta(py::module &_lahuta) {
   py::class_<GemmiSource> GemmiSource(_lahuta, "GemmiSource");
   py::class_<Luni> Luni(_lahuta, "Luni");
 
-  // inline AtomType operator|(AtomType lhs, AtomType rhs) {
-  //   return static_cast<AtomType>(static_cast<uint32_t>(lhs) |
-  //                                static_cast<uint32_t>(rhs));
-  // }
-  //
-  // inline AtomType &operator|=(AtomType &lhs, AtomType rhs) {
-  //   lhs = lhs | rhs;
-  //   return lhs;
-  // }
-  //
-  // inline AtomType operator&(AtomType lhs, AtomType rhs) {
-  //   return static_cast<AtomType>(static_cast<uint32_t>(lhs) &
-  //                                static_cast<uint32_t>(rhs));
-  // }
-  //
-  // inline AtomType &operator&=(AtomType &lhs, AtomType rhs) {
-  //   lhs = lhs & rhs;
-  //   return lhs;
-  // }
-  //
-  // inline AtomType operator^(AtomType lhs, AtomType rhs) {
-  //   return static_cast<AtomType>(static_cast<uint32_t>(lhs) ^
-  //                                static_cast<uint32_t>(rhs));
-  // }
-  //
-  // inline AtomType &operator^=(AtomType &lhs, AtomType rhs) {
-  //   lhs = lhs ^ rhs;
-  //   return lhs;
-  // }
-  //
-  // inline AtomType operator~(AtomType flag) {
-  //   return static_cast<AtomType>(~static_cast<uint32_t>(flag));
-  // }
-
   py::enum_<AtomType> AtomType(_lahuta, "AtomType");
   AtomType.value("NONE", AtomType::NONE)
       .value("HBOND_ACCEPTOR", AtomType::HBOND_ACCEPTOR)
@@ -137,20 +103,19 @@ void test_lahuta(py::module &_lahuta) {
       .def(py::init<>())
       .def("add_neighbors", &NSResults::add_neighbors)
       .def("reserve_space", &NSResults::reserve_space)
-      .def("get_neighbors", &NSResults::get_neighbors)
       .def("size", &NSResults::size)
       .def("filter", &NSResults::filter)
-      .def("filter_by_atom_type", &NSResults::filter_by_atom_type)
+      .def("type_filter", &NSResults::type_filter)
+      .def("clear", &NSResults::clear)
+      .def("get_pairs", &NSResults::get_pairs)
+      .def("get_distances", &NSResults::get_distances)
       .def("get_luni", &NSResults::get_luni);
       // .def_property_readonly("luni", &NSResults::luni);
 
   Luni.def(py::init<std::string>())
-      .def("get_neighbors", &Luni::get_neighbors)
-      // .def("get_distances", &Luni::get_distances)
       .def("find_neighbors", &Luni::find_neighbors)
       .def("get_atom_types", &Luni::get_atom_types)
       .def("match_smarts_string", &Luni::match_smarts_string)
-      .def("filter_by_atom_type", &Luni::filter_by_atom_type)
       .def("get_cutoff", &Luni::get_cutoff);
 
 
