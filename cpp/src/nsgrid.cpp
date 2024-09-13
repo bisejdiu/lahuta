@@ -3,8 +3,8 @@
 #include <rdkit/Geometry/point.h>
 // #include <vector>
 
-#include "nsgrid.hpp"
 #include "lahuta.hpp"
+#include "nsgrid.hpp"
 
 namespace lahuta {
 
@@ -31,7 +31,11 @@ FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, float cutoff)
 
   std::array<float, kDIMENSIONS> pbox = {0.0f, 0.0f, 0.0f};
   std::vector<RDGeom::Point3D> _coords(coords);
-  transform_coordinates(_coords, pbox);
+
+  std::vector<double> _lmin(3, std::numeric_limits<double>::max());
+  std::vector<double> _lmax(3, std::numeric_limits<double>::lowest());
+
+  transform_coordinates(_coords, pbox, _lmin, _lmax);
 
   if (pbox[0] <= 0.0f || pbox[1] <= 0.0f || pbox[2] <= 0.0f) {
     throw std::runtime_error(
@@ -47,6 +51,8 @@ FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, float cutoff)
 
   coords_bbox = std::move(flat_coords);
   box = std::move(pbox);
+  lmin = std::move(_lmin);
+  lmax = std::move(_lmax);
 
   build_grid();
 }
@@ -102,6 +108,58 @@ NSResults FastNS::self_search() const {
       }
     }
   }
+  return results;
+}
+
+NSResults FastNS::search(const RDGeom::POINT3D_VECT &search_coords) const {
+  NSResults results;
+  results.reserve_space(search_coords.size());
+
+  float cutoff2 = cutoff * cutoff;
+
+  if (search_coords.empty()) {
+    return results;
+  }
+
+  std::vector<RDGeom::Point3D> scoords(search_coords);
+  for (auto it = scoords.begin(); it != scoords.end(); ++it) {
+    for (int i = 0; i < 3; ++i) {
+      (*it)[i] -= lmin[i];
+    }
+  }
+
+  for (size_t i = 0; i < search_coords.size(); ++i) {
+    std::array<float, 3> tmpcoord = {static_cast<float>(scoords[i].x),
+                                     static_cast<float>(scoords[i].y),
+                                     static_cast<float>(scoords[i].z)};
+
+    std::array<int, 3> cellcoord;
+    _coord_to_cell_xyz(tmpcoord.data(), cellcoord);
+    for (int xi = 0; xi < 3; ++xi) {
+      for (int yi = 0; yi < 3; ++yi) {
+        for (int zi = 0; zi < 3; ++zi) {
+          int cx = cellcoord[0] - 1 + xi;
+          int cy = cellcoord[1] - 1 + yi;
+          int cz = cellcoord[2] - 1 + zi;
+
+          int cellid = _cell_xyz_to_cell_id(cx, cy, cz);
+          if (cellid == END) {
+            continue;
+          }
+
+          int j = head_id[cellid];
+          while (j != END) {
+            float d2 = dist_sq(tmpcoord.data(), &coords_bbox[3 * j]);
+            if (d2 <= cutoff2) {
+              results.add_neighbors(i, j, d2);
+            }
+            j = next_id[j];
+          }
+        }
+      }
+    }
+  }
+
   return results;
 }
 
@@ -187,8 +245,7 @@ NSResults NSResults::filter(float dist) const {
   auto dist_sq = dist * dist;
   for (size_t i = 0; i < m_dists.size(); ++i) {
     if (m_dists[i] >= dist_sq) {
-      filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second,
-                             m_dists[i]);
+      filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second, m_dists[i]);
     }
   }
   return filtered;
@@ -196,7 +253,7 @@ NSResults NSResults::filter(float dist) const {
 
 // FIX: use overloads to handle different filter conditions
 NSResults NSResults::type_filter(AtomType type, int partner) {
-  if (partner != 0 || partner != 1) {
+  if (partner != 0 && partner != 1) {
     throw std::runtime_error("Invalid partner: " + std::to_string(partner) +
                              ". Must be 0 or 1.");
   }
@@ -204,12 +261,14 @@ NSResults NSResults::type_filter(AtomType type, int partner) {
   Distances dists;
   for (size_t i = 0; i < m_pairs.size(); ++i) {
     if (partner == 0) {
-      if (has(m_luni->atom_types[m_pairs[i].first], type)) {
+      auto atype = m_luni->topology.atom_types[m_pairs[i].first];
+      if (AtomTypeFlags::has(atype, type)) {
         filtered.push_back(m_pairs[i]);
         dists.push_back(m_dists[i]);
       }
     } else if (partner == 1) {
-      if (has(m_luni->atom_types[m_pairs[i].second], type)) {
+      auto atype = m_luni->topology.atom_types[m_pairs[i].second];
+      if (AtomTypeFlags::has(atype, type)) {
         filtered.push_back(m_pairs[i]);
         dists.push_back(m_dists[i]);
       }
@@ -217,14 +276,41 @@ NSResults NSResults::type_filter(AtomType type, int partner) {
       std::cerr << "Invalid partner: " << partner << std::endl;
     }
   }
-  return NSResults(*this->get_luni(), filtered, dists); 
+  return NSResults(*this->get_luni(), filtered, dists);
+}
+
+NSResults NSResults::remove_adjascent_residueid_pairs(int res_diff) {
+  Pairs filtered;
+  Distances dists;
+  for (size_t i = 0; i < m_pairs.size(); ++i) {
+    auto *fatom = m_luni->get_molecule().getAtomWithIdx(m_pairs[i].first);
+    auto *finfo =
+        static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
+    auto *satom = m_luni->get_molecule().getAtomWithIdx(m_pairs[i].second);
+    auto *sinfo =
+        static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
+
+    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)
+      continue; // skip H atoms (hydrogens)
+
+    auto f_resid = finfo->getResidueNumber();
+    auto s_resid = sinfo->getResidueNumber();
+
+    if (std::abs(f_resid - s_resid) > res_diff) {
+      filtered.push_back(m_pairs[i]);
+      dists.push_back(m_dists[i]);
+    }
+  }
+  return NSResults(*this->get_luni(), filtered, dists);
 }
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
-                           std::array<float, kDIMENSIONS> &pseudobox) {
+                           std::array<float, kDIMENSIONS> &pseudobox,
+                           std::vector<double> &lmin,
+                           std::vector<double> &lmax) {
 
-  std::vector<double> lmax(3, std::numeric_limits<double>::lowest());
-  std::vector<double> lmin(3, std::numeric_limits<double>::max());
+  // std::vector<double> lmax(3, std::numeric_limits<double>::lowest());
+  // std::vector<double> lmin(3, std::numeric_limits<double>::max());
 
   for (const auto &coord : coords) {
     for (int i = 0; i < 3; ++i) {

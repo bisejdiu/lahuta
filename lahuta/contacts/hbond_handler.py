@@ -4,6 +4,7 @@ Classes:
     HBondHandler: A class used to compute various properties of hydrogen bonds for a given atomic group.
 
 """
+
 from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
@@ -31,7 +32,18 @@ class HBondHandler:
 
     def __init__(self, ns: "NeighborPairs"):
         self.atoms = ns.atoms
+        # print("HBondHandler initialized")
+        # print("OBabel number of atoms: ", ns.luni.to("mol").NumAtoms())
         self.hbond_array = find_hydrogen_bonded_atoms(ns.luni.to("mol"), self.atoms.n_atoms)
+
+    def get_hbond_distances2(self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType) -> NDArray[np.float32]:
+        indices = hbound_attr_col.atoms.indices
+        hbond_array = self.hbond_array[indices].toarray()  # Directly convert to a NumPy array
+        hbound_atom_indices = np.zeros_like(hbond_array, dtype=np.int32)
+        hbound_atom_indices[np.nonzero(hbond_array)] = hbond_array[np.nonzero(hbond_array)]
+
+        hbound_atom_pos = np.take(self.atoms.positions, hbound_atom_indices, axis=0)
+        hbound_atom_pos[hbound_atom_indices == 0] = np.nan
 
     def get_hbond_distances(self, attr_col: AtomGroupType, hbound_attr_col: AtomGroupType) -> NDArray[np.float32]:
         """Compute the distances between hydrogen atoms and their respective bonded atoms.
@@ -103,7 +115,7 @@ class HBondHandler:
         point_c = atom2_pos[:, np.newaxis, :]
 
         return calc_vertex_angles(point_b, point_a, point_c, degrees=False)
-    
+
     def hbond_distance_filter(self, ns: "NeighborPairs", partner: int, vdw_comp_factor: float = 0.1) -> "NeighborPairs":
         """Filter the pairs based on the distance between the hydrogen bonded atoms.
 
@@ -122,10 +134,12 @@ class HBondHandler:
         attr_col, hbound_attr_col = ns.get_partners(partner)
 
         vdw_distances = self.get_vdw_distances(attr_col, vdw_comp_factor)
+        # hbond_dist = self.get_hbond_distances(attr_col, hbound_attr_col)
         hbond_dist = self.get_hbond_distances(attr_col, hbound_attr_col)
 
         distances_mask = np.any(hbond_dist <= vdw_distances[:, np.newaxis], axis=1)
         hbond_dist_pairs = ns.pairs[distances_mask]
+        # print(">>>>", ns.distances, ns.distances.shape)
         hbond_distances = ns.distances[distances_mask]
 
         return ns.new(hbond_dist_pairs, hbond_distances)

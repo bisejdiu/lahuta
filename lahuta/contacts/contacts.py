@@ -141,6 +141,7 @@ def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]
     Returns:
         (NeighborPairs): A NeighborPairs object containing only carbonyl contacts.
     """
+    distance *= distance
     contacts_atom12 = ns.type_filter("carbonyl_oxygen", 1).type_filter("carbonyl_carbon", 2).distance_filter(distance)
 
     contacts_atom21 = ns.type_filter("carbonyl_carbon", 1).type_filter("carbonyl_oxygen", 2).distance_filter(distance)
@@ -170,6 +171,7 @@ def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["dist
         (NeighborPairs): A NeighborPairs object containing only ionic contacts.
 
     """
+    distance *= distance
     contacts_atom12 = ns.type_filter("pos_ionisable", 1).type_filter("neg_ionisable", 2).distance_filter(distance)
 
     contacts_atom21 = ns.type_filter("neg_ionisable", 1).type_filter("pos_ionisable", 2).distance_filter(distance)
@@ -198,6 +200,7 @@ def aromatic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["aromatic"]
     Returns:
         (NeighborPairs): A NeighborPairs object containing only aromatic contacts.
     """
+    distance *= distance
     return ns.type_filter("aromatic", 1).type_filter("aromatic", 2).distance_filter(distance)
 
 
@@ -223,7 +226,8 @@ def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydroph
     Returns:
         (NeighborPairs): A NeighborPairs object containing only hydrophobic contacts.
     """
-    return ns.type_filter("hydrophobe", 1).type_filter("hydrophobe", 2).distance_filter(distance)
+    distance *= distance
+    return ns.type_filter("hydrophobic", 1).type_filter("hydrophobic", 2).distance_filter(distance)
 
 
 def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashes: bool = True) -> NeighborPairs:
@@ -252,14 +256,14 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
     """
     vdw_radii = ns.atoms.vdw_radii[ns.pairs[:, 0]] + ns.atoms.vdw_radii[ns.pairs[:, 1]]
 
-    distance_mask = ns.distances <= vdw_radii + vdw_comp_factor
+    distance_mask = ns._ns.get_distances() <= vdw_radii + vdw_comp_factor
     vdw_comp_pairs = ns.pairs[distance_mask]
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
         return ns.new(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
 
-    vdw_clash_pairs = ns.pairs[ns.distances < vdw_radii]
+    vdw_clash_pairs = ns.pairs[ns._ns.get_distances() < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
     return ns.new(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])
@@ -352,6 +356,7 @@ def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]
     Returns:
         (NeighborPairs): A NeighborPairs object containing only polar hydrogen bonds.
     """
+    distance *= distance
     hbond_atom12 = ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2).distance_filter(distance)
 
     hbond_atom21 = ns.type_filter("hbond_donor", 2).type_filter("hbond_acceptor", 1).distance_filter(distance)
@@ -380,6 +385,7 @@ def weak_polar_hbond_neighbors(
     Returns:
         (NeighborPairs): A NeighborPairs object containing only weak polar hydrogen bonds.ff
     """
+    distance *= distance
     hbond_atom12 = ns.type_filter("hbond_acceptor", 1).type_filter("weak_hbond_donor", 2).distance_filter(distance)
 
     hbond_atom21 = ns.type_filter("hbond_acceptor", 2).type_filter("weak_hbond_donor", 1).distance_filter(distance)

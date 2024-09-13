@@ -9,6 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import Self
 
+from lahuta.lib import cAtomType
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.utils import array_utils as au
 
@@ -78,6 +79,7 @@ class NeighborPairs:
         self.atoms = luni.to("mda").universe.atoms
 
         self._future_neighbors = None
+        self._ns = None
 
         self._pairs = np.array([], dtype=np.int32).reshape(0, 2)
         self._distances = np.array([], dtype=np.float32)
@@ -156,6 +158,14 @@ class NeighborPairs:
     #     new_ns = self.new(self.pairs[mask], self.distances[mask])
     #     new_ns._future_neighbors = self._future_neighbors
 
+    def _type_filter(self, atom_type: str, partner: int) -> Self:
+        atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
+
+        nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
+        mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # noqa: NPY201
+
+        return self.new(self.pairs[mask], self.distances[mask])
+
     def type_filter(self, atom_type: str, partner: int) -> Self:
         """Filter pairs based on atom types.
 
@@ -182,9 +192,85 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
+
+        c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
+
+        from lahuta.lib import cNSResults
+
+        # cns = cNSResults(self.luni._luni, self.pairs, self.distances)
+        cns = cNSResults(self.luni._file_loader.luni, self.pairs, self.distances)
+        result = cns.type_filter(c_atom_type, partner - 1)
+        pairs, distances = result.get_pairs(), np.array(result.get_distances_sq())
+        # if atom_type == "carbonyl_oxygen":
+        #     print("check: ", pairs[:10], distances[:10])
+
+        self._ns = cns
+
+        return self.new(pairs, distances)
+
+        # ns = self.__class__(self.luni)
+        # ns.set_neighbors(pairs, distances)
+        # ns._ns = cns
+        # return ns
+
+        c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
+
+        from lahuta.lib import cNSResults
+
+        cns = cNSResults(self.luni._luni, self.pairs, self.distances)
+        result = cns.type_filter(c_atom_type, partner - 1)
+        pairs, distances = result.get_pairs(), result.get_distances()
+
+        ns = self.__class__(self.luni)
+        ns.set_neighbors(pairs, distances)
+        ns._ns = cns
+        return ns
+
+        test = self._ns.type_filter(c_atom_type, partner - 1)
+        # pairs, distances = NeighborPairs.sort_inputs(test.get_pairs(), test.get_distances())
+        pairs, distances = test.get_pairs(), test.get_distances()
+        new_ns = self.new(pairs, distances)
+        new_ns._future_neighbors = self._future_neighbors
+        new_ns._ns = test
+        return new_ns
+
+    def _bk_type_filter(self, atom_type: str, partner: int) -> Self:
+        """Filter pairs based on atom types.
+
+        The method selects pairs from the NeighborPairs object where the atoms have the specified type.
+        The `partner` parameter specifies the column (1 or 2) from which the atom types are selected.
+
+        Args:
+            atom_type (str): Specifies the atom type. Must be one of:
+
+                - 'carbonyl_oxygen'
+                - 'weak_hbond_donor'
+                - 'pos_ionisable'
+                - 'carbonyl_carbon'
+                - 'hbond_acceptor'
+                - 'hbond_donor'
+                - 'neg_ionisable'
+                - 'weak_hbond_acceptor'
+                - 'xbond_acceptor'
+                - 'aromatic'
+                - 'hydrophobe'
+
+            partner (int): The column for atom type selection. Can be either 1 or 2.
+
+        Returns:
+            A NeighborPairs object containing the pairs that meet the atom type filter.
+        """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
+        # print(AVAILABLE_ATOM_TYPES, atom_type_col_num, atom_type)
+
+        # c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
+        # test = self._ns.type_filter(c_atom_type, partner - 1)
+        # print("-->>>>>", test.get_pairs().size)
+
         nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # noqa: NPY201
+
+        # print("->mask<-", self.pairs[mask].size)
 
         return self.new(self.pairs[mask], self.distances[mask])
 
@@ -192,6 +278,7 @@ class NeighborPairs:
         self,
         indices: NDArray[np.int32],
         partner: int,
+        reverse: bool = False,
     ) -> Self:
         """Select pairs based on the atom indices.
 
@@ -206,6 +293,8 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the index filter.
         """
         mask = np.in1d(self.pairs[:, partner - 1], indices)  # noqa: NPY201
+        if reverse:
+            mask = ~mask
         return self.new(self.pairs[mask], self.distances[mask])
 
     def distance_filter(self, distance: float) -> Self:
@@ -581,6 +670,7 @@ class NeighborPairs:
         new.luni = self.luni
         new.atoms = self.atoms
         new.set_neighbors(pairs, distances, sort=False)
+        new._ns = self._ns
         new.annotations = {}  # reset annotations
         return new
 
@@ -787,6 +877,9 @@ class NeighborPairs:
             self._pairs, self._distances = NeighborPairs.sort_inputs(pairs, distances)
         else:
             self._pairs, self._distances = pairs, distances
+
+    def _set_cppns(self, cppns):
+        self._ns = cppns
 
     @property
     def distances(self) -> NDArray[np.float32]:

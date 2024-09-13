@@ -106,7 +106,7 @@ if (USE_PYTHON)
   find_package(pybind11 2.6 CONFIG REQUIRED)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-  pybind11_add_module(lahuta_py python/lahuta.cpp)
+  pybind11_add_module(lahuta_py python/lahuta.cpp python/at.cpp)
 
   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
     target_sources(lahuta_py PRIVATE 
@@ -176,53 +176,3 @@ if (USE_PYTHON)
             DESTINATION "${Python_SITEARCH}" COMPONENT py)
   endif()
 endif()
-#
-# if (USE_PYTHON)
-#   if (DEFINED PYTHON_INSTALL_DIR)
-#     message(STATUS "PYTHON_INSTALL_DIR is defined as: ${PYTHON_INSTALL_DIR}")
-#     set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
-#   else()
-#     message(STATUS "PYTHON_INSTALL_DIR is not defined. Using default Python_SITEARCH.")
-#   endif()
-#
-#   file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
-#   message(STATUS "Normalized Python_SITEARCH path: ${Python_SITEARCH}")
-#
-#   if (BUILD_SHARED_LIBS)
-#     message(STATUS "Building shared libraries.")
-#     
-#     if (DEFINED SKBUILD)
-#       message(STATUS "SKBUILD is defined. Adjusting rpath_rel for pip build.")
-#       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
-#       message(STATUS "Set rpath_rel to: ${rpath_rel}")
-#     else()
-#       message(STATUS "SKBUILD is not defined. Calculating relative path for rpath.")
-#       file(RELATIVE_PATH rpath_rel
-#            "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-#       message(STATUS "Calculated rpath_rel as: ${rpath_rel}")
-#     endif()
-#
-#     set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
-#     message(STATUS "Set INSTALL_RPATH for lahuta_py to: ${origin}/${rpath_rel}")
-#   else()
-#     message(STATUS "Not building shared libraries.")
-#   endif()
-#
-#   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   message(STATUS "Installed lahuta_py to: ${Python_SITEARCH}")
-#
-#   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
-#     message(STATUS "Generating stubs and not cross-compiling.")
-#     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs/_lahuta"
-#             DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#     message(STATUS "Installed stubs to: ${Python_SITEARCH}")
-#   elseif(GENERATE_STUBS)
-#     message(STATUS "GENERATE_STUBS is enabled, but cross-compiling. Stubs not installed.")
-#   else()
-#     message(STATUS "GENERATE_STUBS is not enabled.")
-#   endif()
-#
-# else()
-#   message(STATUS "USE_PYTHON is not enabled. Python-related logic skipped.")
-# endif()
-#

@@ -17,7 +17,7 @@ about individual chains, as well as to iterate over and access data of multiple 
 
 - `ARC`: This class integrates the Atoms, Residues, and Chains (ARC) module, by creating and storing
 instances of Atoms, Residues, and Chains classes. Depending on the type of the input object
-(either GemmiLoader or TopologyLoader), it uses the appropriate method from Atoms, Residues, and
+(either LahutaCPPLoader or TopologyLoader), it uses the appropriate method from Atoms, Residues, and
 Chains classes to initialize them. It provides methods to retrieve atom, residue,
 and chain information individually or together, as well as methods to iterate over and access this data.
 
@@ -28,8 +28,8 @@ residue name, residue ID, chain label, and chain ID.
 
 Example:
     ``` py
-    >>> from arc import ARC, GemmiLoader
-    >>> loader = GemmiLoader("path_to_structure")
+    >>> from arc import ARC, LahutaCPPLoader
+    >>> loader = LahutaCPPLoader("path_to_structure")
     >>> arc = ARC(loader, loader.atom_site_data)
     >>> atom_0 = arc.get_atom(0)
     >>> print(atom_0)
@@ -44,10 +44,11 @@ from typing import TYPE_CHECKING, Any, Iterator, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
+from lahuta.lib import cLuni
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 
 if TYPE_CHECKING:
-    from .loaders import GemmiLoader, TopologyLoader
+    from .loaders import LahutaCPPLoader, TopologyLoader, GemmiLoader
 
 
 class Atoms:
@@ -116,6 +117,25 @@ class Atoms:
 
         cls_instance.data = data
         cls_instance.coords = np.zeros((0, 3), dtype=np.float32)
+
+        return cls_instance
+
+    @classmethod
+    def from_cpp(cls, luni: cLuni) -> "Atoms":
+        cls_instance = cls.__new__(cls)
+
+        data = np.empty(luni.n_atoms, dtype=cls_instance.dtype)
+        data["name"] = np.array(luni.names)
+        data["id"] = np.array(luni.indices, dtype=np.int32) - 1
+        data["element"] = np.array(luni.elements)
+        data["type"] = np.array(luni.names)
+        # data["b_iso"] = np.array(gemmi_block.get("B_iso_or_equiv"))
+
+        cls_instance.data = data
+        cls_instance.coords = np.zeros((0, 3), dtype=np.float32)
+
+        cls_instance.data = data
+        cls_instance.coords = luni.coordinates()
 
         return cls_instance
 
@@ -420,7 +440,7 @@ class ARC:
 
     The ARC class integrates the Atoms, Residues, and Chains (ARC) module, by creating and storing
     instances of Atoms, Residues, and Chains classes.
-    Depending on the type of the input object (either GemmiLoader or TopologyLoader), it uses the
+    Depending on the type of the input object (either LahutaCPPLoader or TopologyLoader), it uses the
     appropriate method from Atoms, Residues, and Chains classes to initialize them.
 
     It provides methods to retrieve atom, residue, and chain information individually or together,
@@ -433,8 +453,8 @@ class ARC:
 
     Examples:
         ``` py
-        >>> from arc import ARC, GemmiLoader
-        >>> loader = GemmiLoader("path_to_structure")
+        >>> from arc import ARC, LahutaCPPLoader
+        >>> loader = LahutaCPPLoader("path_to_structure")
         >>> arc = ARC(loader, loader.site_data)
         >>> atom_0 = arc.get_atom(0)
         >>> print(atom_0)
@@ -450,14 +470,14 @@ class ARC:
 
     def __init__(
         self,
-        obj: Union["GemmiLoader", "TopologyLoader"],
-        site_data: dict[str, Any] | AtomGroupType,
+        obj_type: Union["LahutaCPPLoader", "TopologyLoader", "GemmiLoader"],
+        obj: cLuni | AtomGroupType,
     ):
-        obj_name: str = obj.__class__.__name__
+        obj_name: str = obj_type.__class__.__name__
         obj_map = self._obj_map(obj_name)
-        self._atoms: Atoms = getattr(Atoms, obj_map)(site_data)
-        self._residues: Residues = getattr(Residues, obj_map)(site_data)
-        self._chains: Chains = getattr(Chains, obj_map)(site_data)
+        self._atoms: Atoms = getattr(Atoms, obj_map)(obj)
+        self._residues: Residues = getattr(Residues, obj_map)(obj)
+        self._chains: Chains = getattr(Chains, obj_map)(obj)
 
     def _obj_map(self, obj_name: str) -> str:
         """Map the object name to the appropriate class method.
@@ -469,6 +489,7 @@ class ARC:
             str: The name of the class method.
         """
         mapping = {
+            "LahutaCPPLoader": "from_gemmi",
             "GemmiLoader": "from_gemmi",
             "TopologyLoader": "from_mda",
         }

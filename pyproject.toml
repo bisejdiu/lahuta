@@ -60,12 +60,12 @@ lint.extend-select = [
     'A', 'ANN', 'ARG', 'B', 'BLE', 'C4', 'C90', 'COM', 'D', 'ERA',
     'FIX', 'FLY', 'I', 'INT', 'NPY', 'PD', 'PERF', 'PL', 'PT', 'PTH',
     'PYI', 'Q', 'RET', 'RUF', 'RUF100', 'SIM', 'SLF', 'TD', 'TCH', 'TID',
-    'TRY'
+    'TRY',
 ]
 lint.ignore = [
     'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
     'D205', 'D213', 'D406', 'D407', 'D413', 'D415', 'ERA001', 'FIX002', 'PERF401', 'PLR2004', 'PLW0127', 'TD003',
-    'TRY003', 'PT018', 'RET504'
+    'TRY003', 'PT018', 'RET504', 'D102'
 ]
 
 lint.mccabe = { max-complexity = 14 }

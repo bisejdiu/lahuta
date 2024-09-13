@@ -33,6 +33,7 @@ class Rings:
     """
 
     def __init__(self) -> None:
+        self.rings = []
         self._centers: list[NDArray[np.float32]] = []
         self._normals: list[NDArray[np.float32]] = []
         self._atoms: list[list[int]] = []
@@ -44,13 +45,16 @@ class Rings:
         Args:
             ob_ring (ObRingType): The ring to be added.
         """
+        self.rings.append(ob_ring)
         ob_vector3_wrapper = ObVector3Wrapper(ob.vector3(), ob.vector3())
         center = ob_vector3_wrapper.center
         normal = ob_vector3_wrapper.normal
         ob_ring.findCenterAndNormal(center, normal, ob.vector3())
         center_coords: NDArray[np.float32] = np.array([center.GetX(), center.GetY(), center.GetZ()])
         normal_coords: NDArray[np.float32] = np.array([normal.GetX(), normal.GetY(), normal.GetZ()])
-        atoms = sorted(ob_ring._path)  # noqa: SLF001
+        # FIX: _path is not really the atom id?
+        atoms = sorted([x - 1 for x in ob_ring._path])  # noqa: SLF001
+        # atoms = sorted([x for x in ob_ring._path])  # noqa: SLF001
 
         self._centers.append(center_coords)
         self._normals.append(normal_coords)

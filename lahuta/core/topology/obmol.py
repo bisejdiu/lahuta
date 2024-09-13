@@ -1,10 +1,10 @@
 """Generate an Open Babel molecule from an ARC object.
 
 Generating an Open Babel molecule from an ARC object is done by creating a new OBMol object and calling the
-create_mol method with the ARC object as an argument. This is necessary because of the quite involved 
-process of creating a molecule using the provided Open Babel API. It, unfortunately, does not support 
+create_mol method with the ARC object as an argument. This is necessary because of the quite involved
+process of creating a molecule using the provided Open Babel API. It, unfortunately, does not support
 vectorized operations, so we have to create the molecule atom by atom. There is a performance penalty
-for this. 
+for this.
 
 Classes:
     ```
@@ -19,6 +19,7 @@ Example:
     ```
 
 """
+
 from typing import Any, Optional
 
 import gemmi

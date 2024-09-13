@@ -13,7 +13,7 @@ using Pairs = std::vector<std::pair<int, int>>;
 using Distances = std::vector<float>;
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
-                           std::array<float, 3> &pseudobox);
+                           std::array<float, 3> &pseudobox, std::vector<double> &lmin, std::vector<double> &lmax);
 std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
 
 class Luni;
@@ -69,9 +69,20 @@ struct NSResults {
   }
 
   NSResults type_filter(AtomType type, int partner);
+  NSResults remove_adjascent_residueid_pairs(int res_diff);
 
   const Pairs &get_pairs() const { return m_pairs; }
   const Distances &get_distances() const { return m_dists; }
+  // const Distances &get_distances() const { 
+  //   if (m_dists.empty()) {
+  //     return m_dists;
+  //   }
+  //   auto *dists = new Distances(m_dists.size());
+  //   for (size_t i = 0; i < m_dists.size(); ++i) {
+  //     (*dists)[i] = std::sqrt(m_dists[i]);
+  //   }
+  //   return *dists;
+  // }
 
   auto begin() { return m_pairs.begin(); }
   auto end() { return m_pairs.end(); }
@@ -90,10 +101,22 @@ public:
   FastNS(const RDGeom::POINT3D_VECT &coords, float cutoff);
 
   NSResults self_search() const;
+  // NSResults search(const std::vector<std::array<float, 3>>& search_coords) const;
+  NSResults search(const RDGeom::POINT3D_VECT& search_coords) const;
 
   void update_cutoff(float new_cutoff);
 
 private:
+  // std::vector<double> lmax(3, std::numeric_limits<double>::lowest());
+  // std::vector<double> lmin(3, std::numeric_limits<double>::max());
+  std::vector<double> lmin = {std::numeric_limits<double>::max(),
+                              std::numeric_limits<double>::max(),
+                              std::numeric_limits<double>::max()};
+  std::vector<double> lmax = {std::numeric_limits<double>::lowest(),
+                              std::numeric_limits<double>::lowest(),
+                              std::numeric_limits<double>::lowest()};
+
+
   float cutoff;
   std::array<float, kDIMENSIONS> box;
   std::array<int, kDIMENSIONS> ncells;

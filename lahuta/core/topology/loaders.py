@@ -18,7 +18,7 @@ Classes:
     ```
 """
 
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
 from typing import Any, Iterator, Literal, NamedTuple, Optional, overload
 
 import gemmi
@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from lahuta.lib import cLuni, cAtomType
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 from lahuta._types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
@@ -76,37 +77,36 @@ class BaseLoader(ABC):
 
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self._chains = None
-        self._residues = None
-        self._atoms = None
-
-        self.arc: Optional[ARC] = None
 
     @property
+    @abstractmethod
     def n_atoms(self) -> int:
         """The number of atoms in the loaded biological structure data."""
-        return len(self.atoms)
+        ...
 
     @property
-    def chains(self) -> Chains:
-        """The chains in the loaded biological structure data."""
-        if self.arc is None:
-            raise ValueError("arc has not been initialized")
-        return self.arc.chains
+    @abstractmethod
+    def ids(self) -> int:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    # @property
+    # @abstractmethod
+    # def chains(self) -> Chains:
+    #     """The chains in the loaded biological structure data."""
+    #     ...
 
     @property
-    def residues(self) -> Residues:
-        """The residues in the loaded biological structure data."""
-        if self.arc is None:
-            raise ValueError("arc has not been initialized")
-        return self.arc.residues
+    @abstractmethod
+    def resnames(self) -> NDArray[np.str_]:
+        """The residue names in the loaded biological structure data."""
+        ...
 
     @property
-    def atoms(self) -> Atoms:
-        """The atoms in the loaded biological structure data."""
-        if self.arc is None:
-            raise ValueError("arc has not been initialized")
-        return self.arc.atoms
+    @abstractmethod
+    def resids(self) -> NDArray[np.int32]:
+        """The residue IDs in the loaded biological structure data."""
+        ...
 
     @overload
     def to(self, fmt: Literal["mda"]) -> AtomGroupType: ...
@@ -140,14 +140,121 @@ class BaseLoader(ABC):
     def to_mol(self) -> MolType:
         """Convert the loaded biological structure data into an OpenBabel Mol object."""
 
-    def __iter__(self) -> Iterator[Atoms | Residues | Chains]:
-        """Iterate over atoms, residues, and chains."""
-        yield self.atoms
-        yield self.residues
-        yield self.chains
+
+class LahutaCPPLoader(BaseLoader):
+    def __init__(self, file_path: str):
+        self.file_path = file_path
+        self.luni = cLuni(file_path)
+
+    @property
+    def n_atoms(self) -> int:
+        return self.luni.n_atoms()
+
+    @property
+    def ids(self) -> NDArray[np.int32]:
+        val = self.luni.indices()
+        return np.array(val)
+
+    @property
+    def indices(self) -> NDArray[np.int32]:
+        val = self.luni.indices()
+        return np.array(val)
+
+    @property
+    def names(self) -> NDArray[np.str_]:
+        val = self.luni.names()
+        return np.array(val)
+
+    @property
+    def elements(self) -> NDArray[np.str_]:
+        val = self.luni.elements()
+        return np.array(val)
+
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        val = self.luni.resnames()
+        return np.array(val)
+
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        val = self.luni.resids()
+        return np.array(val)
+
+    @property
+    def resindices(self) -> NDArray[np.int32]:
+        val = self.luni.resindices()
+        return np.array(val)
+
+    @property
+    def chainlabels(self) -> NDArray[np.int32]:
+        val = self.luni.chainlabels()
+        return np.array(val)
+
+    @property
+    def coordinates(self) -> NDArray[np.float32]:
+        return self.luni.coordinates()
+
+    def _create_mda(self) -> AtomGroupType:
+        """Create an MDAnalysis AtomGroup object from the loaded data.
+
+        Returns:
+            AtomGroupType: An MDAnalysis AtomGroup object.
+        """
+        # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
+        struct_arr = np.rec.fromarrays(  # type: ignore
+            [self.resnames, self.resids, self.chainlabels],
+            names=str("resnames, resids, chain_ids"),  # type: ignore
+        )
+
+        # Use factorize to get the labels and unique values
+        resindices, uniques = pd.factorize(struct_arr)
+        resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
+        # print("resindices", resindices)
+        # print("resindices", resindices.shape, self.n_atoms)
+        # print("chain_labels", self.chainlabels, self.chainlabels.shape, np.unique(self.chainlabels))
+        # print("chain_labels", chain_ids, chain_ids.shape)
+
+        _, int_array = np.unique(chain_ids, return_inverse=True)
+
+        # Convert 0-based labels to 1-based labels
+        int_array += 1
+        # print("chain_ids", int_array, int_array.shape)
+
+        # Create a new Universe
+        uv: UniverseType = mda.Universe.empty(
+            n_atoms=self.n_atoms,
+            n_residues=uniques.size,
+            n_segments=self.chainlabels.size,
+            atom_resindex=resindices,
+            residue_segindex=int_array,
+            trajectory=True,
+        )
+
+        # Add topology attributes
+        uv.add_TopologyAttr("names", self.names)
+        uv.add_TopologyAttr("type", self.names)
+        uv.add_TopologyAttr("elements", self.elements)
+        uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.elements))
+        uv.add_TopologyAttr("resnames", resnames)
+        uv.add_TopologyAttr("resids", resids)
+        uv.add_TopologyAttr("chainIDs", self.chainlabels)
+        uv.add_TopologyAttr("ids", self.indices)
+        # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
+
+        uv.atoms.positions = self.coordinates
+        uv.filename = self.file_path
+
+        return uv.atoms
+
+    def to_mda(self) -> AtomGroupType:
+        """Convert the loaded biological structure data into an MDAnalysis AtomGroup object."""
+        return self._create_mda()
+
+    def to_mol(self) -> Any:
+        return None
 
 
-class GemmiLoader(BaseLoader):
+class GemmiLoader:
     """Class for loading biological structure data using the gemmi library.
 
     `GemmiLoader` is a subclass of `BaseLoader` and provides the implementation to read,
@@ -168,7 +275,8 @@ class GemmiLoader(BaseLoader):
     """
 
     def __init__(self, file_path: str, is_pdb: bool = False):
-        super().__init__(file_path)
+        # super().__init__(file_path)
+        self.file_path = file_path
         if is_pdb:
             structure = gemmi.read_pdb(self.file_path)
             block = structure.make_mmcif_document().sole_block()
@@ -196,7 +304,8 @@ class GemmiLoader(BaseLoader):
         Raises:
             ValueError: If the atom_site data does not contain the required information.
         """
-        coords_array: NDArray[np.float32] = np.zeros((self.n_atoms, 3), dtype=np.float32)
+        # coords_array: NDArray[np.float32] = np.zeros((self.n_atoms, 3), dtype=np.float32)
+        coords_array: NDArray[np.float32] = np.zeros((len(atom_site_data.get("id")), 3), dtype=np.float32)
         coords_array[:, 0] = atom_site_data.get("Cartn_x")
         coords_array[:, 1] = atom_site_data.get("Cartn_y")
         coords_array[:, 2] = atom_site_data.get("Cartn_z")
