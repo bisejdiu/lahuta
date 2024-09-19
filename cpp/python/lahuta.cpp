@@ -1,5 +1,5 @@
 #include "lahuta.hpp"
-// #include "atom_types.hpp"
+#include "neighbors.hpp"
 #include "nsgrid.hpp"
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
@@ -48,12 +48,7 @@ auto point3d_to_pyarray = [](const RDGeom::Point3D &vec) {
 };
 
 void bind(py::module &_lahuta) {
-  py::class_<GemmiSource> GemmiSource(_lahuta, "GemmiSource");
   py::class_<Luni> Luni(_lahuta, "Luni");
-
-  GemmiSource.def(py::init<>())
-      .def("process", &GemmiSource::process)
-      .def("get_conformer", &GemmiSource::get_conformer);
 
   // .def("get_molecule",
   //      (RDKit::RWMol & (GemmiSource::*)()) & GemmiSource::get_molecule)
@@ -69,7 +64,6 @@ void bind(py::module &_lahuta) {
           "norm1", [](RingData &rd) { return point3d_to_pyarray(rd.norm1); })
       .def_property_readonly(
           "norm2", [](RingData &rd) { return point3d_to_pyarray(rd.norm2); });
-
 
   py::class_<RingDataVec>(_lahuta, "RingDataVec")
       .def(py::init<>())
@@ -90,37 +84,39 @@ void bind(py::module &_lahuta) {
       //   }
       //
       //   return result;
-      // }) 
-      .def_property_readonly("centers", [](RingDataVec &rdv) {
-        ssize_t n = rdv.rings.size();
-        ssize_t dim = 3;
-        auto result = py::array_t<double>({n, dim});
-        auto buf = result.request();
-        double *ptr = static_cast<double *>(buf.ptr);
+      // })
+      .def_property_readonly("centers",
+                             [](RingDataVec &rdv) {
+                               ssize_t n = rdv.rings.size();
+                               ssize_t dim = 3;
+                               auto result = py::array_t<double>({n, dim});
+                               auto buf = result.request();
+                               double *ptr = static_cast<double *>(buf.ptr);
 
-        for (size_t i = 0; i < n; ++i) {
-          ptr[i * dim] = rdv.rings[i].center.x;
-          ptr[i * dim + 1] = rdv.rings[i].center.y;
-          ptr[i * dim + 2] = rdv.rings[i].center.z;
-        }
+                               for (size_t i = 0; i < n; ++i) {
+                                 ptr[i * dim] = rdv.rings[i].center.x;
+                                 ptr[i * dim + 1] = rdv.rings[i].center.y;
+                                 ptr[i * dim + 2] = rdv.rings[i].center.z;
+                               }
 
-        return result;
-      }) 
-      .def_property_readonly("norm1", [](RingDataVec &rdv) {
-        ssize_t n = rdv.rings.size();
-        ssize_t dim = 3;
-        auto result = py::array_t<double>({n, dim});
-        auto buf = result.request();
-        double *ptr = static_cast<double *>(buf.ptr);
+                               return result;
+                             })
+      .def_property_readonly("norm1",
+                             [](RingDataVec &rdv) {
+                               ssize_t n = rdv.rings.size();
+                               ssize_t dim = 3;
+                               auto result = py::array_t<double>({n, dim});
+                               auto buf = result.request();
+                               double *ptr = static_cast<double *>(buf.ptr);
 
-        for (size_t i = 0; i < n; ++i) {
-          ptr[i * dim] = rdv.rings[i].norm1.x;
-          ptr[i * dim + 1] = rdv.rings[i].norm1.y;
-          ptr[i * dim + 2] = rdv.rings[i].norm1.z;
-        }
+                               for (size_t i = 0; i < n; ++i) {
+                                 ptr[i * dim] = rdv.rings[i].norm1.x;
+                                 ptr[i * dim + 1] = rdv.rings[i].norm1.y;
+                                 ptr[i * dim + 2] = rdv.rings[i].norm1.z;
+                               }
 
-        return result;
-      })
+                               return result;
+                             })
       .def_property_readonly("norm2", [](RingDataVec &rdv) {
         ssize_t n = rdv.rings.size();
         ssize_t dim = 3;
@@ -136,8 +132,6 @@ void bind(py::module &_lahuta) {
 
         return result;
       });
-
-
 
   py::class_<NSResults>(_lahuta, "NSResults")
       .def(py::init<>())
@@ -220,8 +214,185 @@ void bind(py::module &_lahuta) {
            })
       .def("get_luni", &NSResults::get_luni);
 
+  // py::enum_<ContactType>(_lahuta, "ContactType")
+  //     .value("AtomAtom", ContactType::AtomAtom)
+  //     .value("AtomRing", ContactType::AtomRing);
+
+  py::class_<AtomAtomPair>(_lahuta, "AtomAtomPair")
+      .def(py::init<int, int, float>())
+      .def_readonly("i", &AtomAtomPair::i)
+      .def_readonly("j", &AtomAtomPair::j)
+      .def_readonly("d", &AtomAtomPair::d)
+      .def("get_pair", &AtomAtomPair::get_pair)
+      .def("get_i", &AtomAtomPair::get_i)
+      .def("get_j", &AtomAtomPair::get_j)
+      .def("names", &AtomAtomPair::names);
+
+  py::class_<AtomRingPair>(_lahuta, "AtomRingPair")
+      .def(py::init<int, int, float>())
+      .def_readonly("i", &AtomRingPair::i)
+      .def_readonly("j", &AtomRingPair::j)
+      .def_readonly("d", &AtomRingPair::d)
+      .def("get_pair", &AtomRingPair::get_pair)
+      .def("get_i", &AtomRingPair::get_i)
+      .def("get_j", &AtomRingPair::get_j)
+      .def("names", &AtomRingPair::names);
+
+  py::class_<Neighbors<AtomAtomPair>>(_lahuta, "AtomAtomNeighbors")
+      .def(py::init([](class Luni &luni, std::vector<AtomAtomPair> data,
+                       const AtomAtomPair::RefType &ctx,
+                       bool is_sorted = false) {
+        return Neighbors<AtomAtomPair>(luni, data, is_sorted);
+      }))
+      .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
+                       const AtomAtomPair::RefType &ctx,
+                       bool is_sorted = false) {
+        return Neighbors<AtomAtomPair>(luni, pairs, dists, is_sorted);
+      }))
+      // .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
+      //                  ContactType c,
+      //                  bool is_sorted = false) {
+      //   return Neighbors<AtomAtomPair>(luni, pairs, dists, c, is_sorted);
+      // }))
+      .def_readonly("data", &Neighbors<AtomAtomPair>::data)
+      .def("size", &Neighbors<AtomAtomPair>::size)
+      .def("type_filter", &Neighbors<AtomAtomPair>::type_filter)
+      // .def("type_filter",
+      //      [](class Neighbors<AtomAtomPair> &self, int type, int partner) {
+      //        return self.type_filter(type, partner);
+      //      })
+
+      // .def("remove_adjascent_pairs",
+      //      &NSResults::remove_adjascent_residueid_pairs)
+      // .def("clear", &NSResults::clear)
+      // .def("get_pairs", &NSResults::get_pairs)
+      .def("get_pairs",
+           [](Neighbors<AtomAtomPair> &nsr) {
+             auto pairs = nsr.get_pairs();
+             ssize_t n = pairs.size();
+             ssize_t dim = 2;
+             auto result = py::array_t<int>({n, dim});
+             auto buf = result.request();
+             int *ptr = static_cast<int *>(buf.ptr);
+
+             for (size_t i = 0; i < n; ++i) {
+               ptr[i * 2] = pairs[i].first;
+               ptr[i * 2 + 1] = pairs[i].second;
+             }
+
+             return result;
+           })
+      // .def("get_distances_sq", &NSResults::get_distances)
+      .def("get_distances",
+           [](Neighbors<AtomAtomPair> &nsr) {
+             auto distances = nsr.get_distances();
+             ssize_t n = distances.size();
+             auto result = py::array_t<float>(n);
+             auto buf = result.request();
+             float *ptr = static_cast<float *>(buf.ptr);
+
+             for (size_t i = 0; i < n; ++i) {
+               // ptr[i] = distances[i];
+               ptr[i] = sqrt(distances[i]);
+             }
+
+             return result;
+           })
+      .def("intersection_x", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+        return Neighbors<AtomAtomPair>::intersection(self.data, other.data);
+      })
+      .def("intersection", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+        return self.intersection(other);
+      })
+      .def("difference", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+        return self.difference(other);
+      })
+      .def("union", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+        return self.union_(other);
+      })
+      .def("symmetric_difference", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+        return self.symmetric_difference(other);
+      })
+      .def("get_luni", &Neighbors<AtomAtomPair>::get_luni);
+
+
+  py::class_<Neighbors<AtomRingPair>>(_lahuta, "AtomRingNeighbors")
+      .def(py::init([](class Luni &luni, std::vector<AtomRingPair> data,
+                       const AtomRingPair::RefType &ctx,
+                       bool is_sorted = false) {
+        return Neighbors<AtomRingPair>(luni, data, is_sorted);
+      }))
+      .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
+                       const AtomRingPair::RefType &ctx,
+                       bool is_sorted = false) {
+        return Neighbors<AtomRingPair>(luni, pairs, dists, is_sorted);
+      }))
+      // .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
+      //                  ContactType c,
+      //                  bool is_sorted = false) {
+      //   return Neighbors<AtomAtomPair>(luni, pairs, dists, c, is_sorted);
+      // }))
+      .def("size", &Neighbors<AtomRingPair>::size)
+      .def("type_filter", &Neighbors<AtomRingPair>::type_filter)
+      // .def("type_filter",
+      //      [](class Neighbors<AtomAtomPair> &self, int type, int partner) {
+      //        return self.type_filter(type, partner);
+      //      })
+
+      // .def("remove_adjascent_pairs",
+      //      &NSResults::remove_adjascent_residueid_pairs)
+      // .def("clear", &NSResults::clear)
+      // .def("get_pairs", &NSResults::get_pairs)
+
+
+  // Neighbors<T> intersection(const Neighbors<T> &other) const {
+  //   std::vector<T> result = intersection(data, other.data);
+  //   return Neighbors<T>(*m_luni, result);
+  // }
+
+      .def("get_pairs",
+           [](Neighbors<AtomRingPair> &nsr) {
+             auto pairs = nsr.get_pairs();
+             ssize_t n = pairs.size();
+             ssize_t dim = 2;
+             auto result = py::array_t<int>({n, dim});
+             auto buf = result.request();
+             int *ptr = static_cast<int *>(buf.ptr);
+
+             for (size_t i = 0; i < n; ++i) {
+               ptr[i * 2] = pairs[i].first;
+               ptr[i * 2 + 1] = pairs[i].second;
+             }
+
+             return result;
+           })
+      // .def("get_distances_sq", &NSResults::get_distances)
+      .def("get_distances",
+           [](Neighbors<AtomRingPair> &nsr) {
+             auto distances = nsr.get_distances();
+             ssize_t n = distances.size();
+             auto result = py::array_t<float>(n);
+             auto buf = result.request();
+             float *ptr = static_cast<float *>(buf.ptr);
+
+             for (size_t i = 0; i < n; ++i) {
+               // ptr[i] = distances[i];
+               ptr[i] = sqrt(distances[i]);
+             }
+
+             return result;
+           })
+      .def("get_luni", &Neighbors<AtomRingPair>::get_luni);
+
+
+
   Luni.def(py::init<std::string>())
-      .def("find_neighbors", &Luni::find_neighbors)
+      .def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)
+      .def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)
+      .def("find_neighbors", [](class Luni &luni, float cutoff) {
+        return luni._find_neighbors(cutoff);
+      }) 
+      // .def("find_find_neighbors", &Luni::find_find_neighbors)
       .def("get_atom_types", &Luni::get_atom_types)
       .def("get_rings", &Luni::get_rings)
       .def("match_smarts_string", &Luni::match_smarts_string)

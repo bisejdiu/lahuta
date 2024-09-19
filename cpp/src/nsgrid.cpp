@@ -26,7 +26,7 @@ constexpr std::array<std::array<int, kDIMENSIONS>, 13> neighborCells = {
      {-1, 1, 1},
      {0, 0, 1}}};
 
-FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, float cutoff)
+FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, double cutoff)
     : cutoff(cutoff) {
 
   std::array<float, kDIMENSIONS> pbox = {0.0f, 0.0f, 0.0f};
@@ -37,10 +37,10 @@ FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, float cutoff)
 
   transform_coordinates(_coords, pbox, _lmin, _lmax);
 
-  if (pbox[0] <= 0.0f || pbox[1] <= 0.0f || pbox[2] <= 0.0f) {
-    throw std::runtime_error(
-        "Failed creating valid box from input coordinates");
-  }
+  // if (pbox[0] <= 0.0f || pbox[1] <= 0.0f || pbox[2] <= 0.0f) {
+  //   throw std::runtime_error(
+  //       "Failed creating valid box from input coordinates");
+  // }
 
   if (pbox[0] < cutoff || pbox[1] < cutoff || pbox[2] < cutoff) {
     throw std::runtime_error(
@@ -163,13 +163,20 @@ NSResults FastNS::search(const RDGeom::POINT3D_VECT &search_coords) const {
   return results;
 }
 
-void FastNS::update_cutoff(float new_cutoff) {
+void FastNS::update_cutoff(double new_cutoff) {
+  ncells = {0, 0, 0};
+  cellsize = {0.0f, 0.0f, 0.0f};
+  cell_offsets = {0, 0, 0};
+  head_id.clear();
+  next_id.clear();
   cutoff = new_cutoff;
+
   build_grid();
 };
 
 void FastNS::prepare_box() {
   double min_cellsize = cutoff + 0.001;
+  std::cout << "min_cellsize: " << min_cellsize << std::endl;
 
   for (int i = 0; i < 3; ++i) {
     ncells[i] = std::min(static_cast<int>(std::floor(box[i] / min_cellsize)),
@@ -240,11 +247,11 @@ void NSResults::reserve_space(size_t input_size) {
   m_dists.reserve(input_size);
 }
 
-NSResults NSResults::filter(float dist) const {
+NSResults NSResults::filter(double dist) const {
   NSResults filtered; // we'll not reserve space
   auto dist_sq = dist * dist;
   for (size_t i = 0; i < m_dists.size(); ++i) {
-    if (m_dists[i] >= dist_sq) {
+    if (m_dists[i] <= dist_sq) {
       filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second, m_dists[i]);
     }
   }
@@ -308,9 +315,6 @@ void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, kDIMENSIONS> &pseudobox,
                            std::vector<double> &lmin,
                            std::vector<double> &lmax) {
-
-  // std::vector<double> lmax(3, std::numeric_limits<double>::lowest());
-  // std::vector<double> lmin(3, std::numeric_limits<double>::max());
 
   for (const auto &coord : coords) {
     for (int i = 0; i < 3; ++i) {

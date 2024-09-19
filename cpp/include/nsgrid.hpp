@@ -61,7 +61,7 @@ struct NSResults {
 
   size_t size() const { return m_pairs.size(); }
 
-  [[nodiscard]] NSResults filter(float distance) const;
+  [[nodiscard]] NSResults filter(double distance) const;
 
   void clear() {
     m_pairs.clear();
@@ -98,13 +98,15 @@ private:
 class FastNS {
 public:
   FastNS() = default;
-  FastNS(const RDGeom::POINT3D_VECT &coords, float cutoff);
+  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff);
 
   NSResults self_search() const;
   // NSResults search(const std::vector<std::array<float, 3>>& search_coords) const;
   NSResults search(const RDGeom::POINT3D_VECT& search_coords) const;
 
-  void update_cutoff(float new_cutoff);
+  void update_cutoff(double new_cutoff);
+
+  double get_cutoff() const { return cutoff; }
 
 private:
   // std::vector<double> lmax(3, std::numeric_limits<double>::lowest());
@@ -117,7 +119,8 @@ private:
                               std::numeric_limits<double>::lowest()};
 
 
-  float cutoff;
+  // FIXME: provide default values for these
+  double cutoff;
   std::array<float, kDIMENSIONS> box;
   std::array<int, kDIMENSIONS> ncells;
   std::array<float, kDIMENSIONS> cellsize;
