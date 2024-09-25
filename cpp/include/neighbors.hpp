@@ -4,10 +4,11 @@
 #include <algorithm>
 #include <vector>
 
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "atom_types.hpp"
 #include "nsgrid.hpp"
 #include "rings.hpp"
-#include <rdkit/GraphMol/RWMol.h>
 
 namespace lahuta {
 
@@ -20,9 +21,6 @@ struct AtomRingPairType {
   const RDKit::RWMol *i;
   const RingDataVec *j;
 };
-
-enum class ContactType { AtomAtom, AtomRing };
-
 
 template <typename T>
 class BasePair {
@@ -90,24 +88,9 @@ public:
 
   const RingData* get_j(RefType *ref) const {
     return &(ref->j->rings[j]);
-    // return &(ref->j->rings.at(j)); // FIXME: use [] instead of at
   }
 
-  // FIXME: not yet implemented. 
   std::string names(const ContextProvider<AtomRingPair> &ctx) const;
-  // std::string names(RefType *ref) const {
-  //   std::vector<int> atom_ids;
-  //   auto ring = ref->j->rings.at(j);
-  //   for (const auto &atom : ring.atom_ids) {
-  //     atom_ids.push_back(atom);
-  //   }
-  //   std::string atom_ids_str;
-  //   for (const auto &id : atom_ids) {
-  //     atom_ids_str += std::to_string(id) + " ";
-  //   }
-  //
-  //   return "->" + get_i(ref)->getSymbol() + " " + atom_ids_str;
-  // }
 };
 
 ///////////////////////////////////////////////////////
@@ -117,17 +100,22 @@ public:
 template<>
 class ContextProvider<AtomAtomPair> {
 public:
-    const RDKit::RWMol *molecule;
-    ContextProvider(const Luni& mainCtx);
+    explicit ContextProvider(const Luni& ctx);
+    const RDKit::RWMol& molecule() const;
+private:
+  const Luni* luni;
 };
 
 template<>
 class ContextProvider<AtomRingPair> {
 public:
-    const RDKit::RWMol *molecule;
-    const RingDataVec *rings;
-
     ContextProvider(const Luni& mainCtx);
+
+    const RDKit::RWMol& molecule() const;
+    const RingDataVec& rings() const;
+
+private:
+  const Luni *luni;
 };
 
 template <typename T>
@@ -141,14 +129,14 @@ public:
   
 public:
   Neighbors(const Luni &luni, std::vector<T> data, bool is_sorted = false): 
-    m_luni(&luni), data(std::move(data)), contextProvider(luni) {
+    data(std::move(data)), contextProvider(luni) {
     if (!is_sorted) {
       std::sort(this->data.begin(), this->data.end());
     }
   }
 
   Neighbors(const Luni &luni, Pairs pairs, Distances dists, bool is_sorted = false): 
-    m_luni(&luni), contextProvider(luni) {
+    contextProvider(luni) {
     if (pairs.size() != dists.size()) {
       throw std::runtime_error("Pairs and distances must have the same size");
     }
@@ -226,8 +214,10 @@ public:
     return Neighbors<T>(*m_luni, result);
   }
 
-  // FIXME: Should FastNS be resonsible for defining these methods? 
+  // NOTE: type_filter needs to be a supported member
   Neighbors<T> type_filter(AtomType type, int partner);
+
+  // FIXME: Should FastNS be resonsible for defining these methods? 
   Neighbors<T> remove_adjascent_residueid_pairs(int res_diff);
 
   // void add_neighbor(int i, int j, float d, bool sort = true) {
@@ -238,7 +228,6 @@ public:
   //   T new_val(i, j, d);
   //   auto it = std::lower_bound(data.begin(), data.end(), new_val);
   //   data.insert(it, new_val);
-  //
   // }
 
 

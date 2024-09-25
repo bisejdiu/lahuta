@@ -1,12 +1,13 @@
 #ifndef LAHUTA_HPP
 #define LAHUTA_HPP
 
-#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include <gemmi/mmread_gz.hpp> // for read_structure_gz
+#include <gemmi/model.hpp>
+#include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include <boost/range/adaptor/filtered.hpp>
@@ -14,17 +15,14 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/join.hpp>
 
-#include "Geometry/point.h"
 #include "bond_order.hpp"
 #include "bonds.hpp"
 #include "convert.hpp"
-#include "gemmi/model.hpp"
-#include "gemmi/seqid.hpp"
-#include "nsgrid.hpp"
-#include "rings.hpp"
 #include "neighbors.hpp"
+#include "nsgrid.hpp"
 #include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
+#include "rings.hpp"
 
 #define LAHUTA_VERSION "0.11.0"
 
@@ -32,55 +30,12 @@ namespace lahuta {
 
 static float BONDED_NS_CUTOFF = 4.5;
 
-inline void basic_mol_cleanup(RWMol &mol) {
-  ROMol::VERTEX_ITER atBegin, atEnd;
-  boost::tie(atBegin, atEnd) = mol.getVertices();
-  while (atBegin != atEnd) {
-    RDKit::Atom *atom = mol[*atBegin];
-    atom->calcExplicitValence(false);
-
-    // correct four-valent neutral N -> N+
-    // This was github #1029
-    if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 &&
-        atom->getExplicitValence() == 4) {
-      atom->setFormalCharge(1);
-    }
-    ++atBegin;
-  }
-}
-
 class Topology {
 public:
   std::vector<AtomType> atom_types;
   RingDataVec rings_vec;
 
 public:
-  static void cleanup_predef(RDKit::RWMol &mol) { basic_mol_cleanup(mol); }
-
-  static void cleanup(RDKit::RWMol &mol) {
-    basic_mol_cleanup(mol);
-
-    // FIXME: provide the mechanism as an option? 
-    // MolOps::fastFindRings(mol);
-    // MolOps::findSSSR(mol);
-    bool include_dative_bonds = true;
-    MolOps::symmetrizeSSSR(mol, include_dative_bonds);
-    MolOps::setAromaticity(mol);
-  }
-
-  static void merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
-                          const std::vector<int> &indexMap) {
-    for (auto bondIt = sourceMol.beginBonds(); bondIt != sourceMol.endBonds();
-         ++bondIt) {
-      const RDKit::Bond *bond = *bondIt;
-      int bIdx = indexMap[bond->getBeginAtomIdx()];
-      int eIdx = indexMap[bond->getEndAtomIdx()];
-      if (targetMol.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
-        targetMol.addBond(bIdx, eIdx, bond->getBondType());
-      }
-    }
-  }
-
   void assign_atom_types(RDKit::RWMol &mol) {
 
     std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
@@ -96,15 +51,13 @@ public:
         invalid_indices.push_back(atom->getIdx());
       }
 
-      // if (has(atom_type, AtomType::CYCLICAL) || has(atom_type, AtomType::AROMATIC)) {
       if (AtomTypeFlags::has(atom_type, AtomType::AROMATIC)) {
         rings.add_ring_atom(atom);
         RDGeom::Point3D atom_pos = mol.getConformer().getAtomPos(atom->getIdx());
-
       }
     }
     rings.process_rings(mol);
-    auto _rings_vec = rings.getRingsVector();
+    RingDataVec _rings_vec = rings.get_rings_vector();
 
     // Handle invalid indices using a new RDKit object.
     if (!invalid_indices.empty()) {
@@ -122,7 +75,8 @@ public:
       auto new_mol_rings = new_mol.getRingInfo()->atomRings();
       for (auto &ring : new_mol_rings) {
         RDGeom::Point3D center, norm1, norm2;
-        Rings::find_center_and_normal(new_mol.getConformer(), ring, center, norm1, norm2);
+        Rings::find_center_and_normal(new_mol.getConformer(), ring, center,
+                                      norm1, norm2);
         std::vector<int> mapped_ring;
         for (const int &atom_idx : ring) {
           auto mappped_idx = invalid_indices[atom_idx];
@@ -150,7 +104,8 @@ public:
     rings_vec = std::move(_rings_vec);
   }
 
-  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {
+  static void compute_bonds(RDKit::RWMol &mol,
+                            const NSResults &neighborResults) {
     auto result = assign_bonds(mol, neighborResults);
 
     // FIX: Refactor!
@@ -177,6 +132,50 @@ public:
       merge_bonds(mol, result.mol, result.atom_indices);
     }
   }
+
+private:
+  static void cleanup_predef(RWMol &mol) {
+    ROMol::VERTEX_ITER atBegin, atEnd;
+    boost::tie(atBegin, atEnd) = mol.getVertices();
+    while (atBegin != atEnd) {
+      RDKit::Atom *atom = mol[*atBegin];
+      atom->calcExplicitValence(false);
+
+      // correct four-valent neutral N -> N+
+      // This was github #1029
+      if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 &&
+          atom->getExplicitValence() == 4) {
+        atom->setFormalCharge(1);
+      }
+      ++atBegin;
+    }
+  }
+
+  static void cleanup(RDKit::RWMol &mol) {
+    cleanup_predef(mol);
+
+    // FIXME: provide the mechanism as an option?
+    // MolOps::fastFindRings(mol);
+    // MolOps::findSSSR(mol);
+    bool include_dative_bonds = true;
+    MolOps::symmetrizeSSSR(mol, include_dative_bonds);
+    MolOps::setAromaticity(mol);
+  }
+
+  static void merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol,
+                          const std::vector<int> &indexMap) {
+    for (auto bondIt = sourceMol.beginBonds(); bondIt != sourceMol.endBonds();
+         ++bondIt) {
+      const RDKit::Bond *bond = *bondIt;
+      int bIdx = indexMap[bond->getBeginAtomIdx()];
+      int eIdx = indexMap[bond->getEndAtomIdx()];
+      if (targetMol.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
+        targetMol.addBond(bIdx, eIdx, bond->getBondType());
+      }
+    }
+  }
+
+
 };
 
 class Luni {
@@ -185,7 +184,7 @@ private:
   Structure st;
   NSResults bonded_nps;
   double _cutoff;
-  FastNS grid; // FIXME: is this needed? 
+  FastNS grid; // FIXME: is this needed?
   Topology topology;
 
   void process_file(std::string file_name) {
@@ -230,7 +229,9 @@ public:
 
   const double get_cutoff() const { return _cutoff; }
 
-  const std::vector<AtomType> &get_atom_types() const { return topology.atom_types; }
+  const std::vector<AtomType> &get_atom_types() const {
+    return topology.atom_types;
+  }
   const RingDataVec &get_rings() const { return topology.rings_vec; }
 
   NSResults _find_neighbors(double cutoff = BONDED_NS_CUTOFF) {
@@ -247,8 +248,7 @@ public:
     return ns;
   }
 
-  template <typename T>
-  Neighbors<T> find_neighbors(double cutoff) {
+  template <typename T> Neighbors<T> find_neighbors(double cutoff) {
 
     if (fabs(cutoff - _cutoff) < 1e-6) {
       return {*this, bonded_nps.get_pairs(), bonded_nps.get_distances(), false};
@@ -406,18 +406,12 @@ public:
   }
 
   friend class NSResults;
-  // friend Neighbors<AtomAtomPair>;
-  // friend Neighbors<AtomRingPair>;
-
-  template <typename T>
-  friend class Neighbors;
-
+  template <typename T> friend class Neighbors;
 
 private:
   template <typename T>
   std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const {
     std::vector<T> attrs;
-    // auto &mol = source->get_molecule();
     attrs.reserve(mol->getNumAtoms());
     for (const auto atom : mol->atoms()) {
       attrs.push_back(func(atom));
@@ -429,7 +423,6 @@ private:
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const {
     std::vector<std::reference_wrapper<const T>> attributes;
-    // auto &mol = source->get_molecule();
     attributes.reserve(mol->getNumAtoms());
     for (const auto atom : mol->atoms()) {
       attributes.push_back(std::cref(func(atom)));

@@ -1,12 +1,9 @@
 #ifndef LAHUTA_RINGS_HPP
 #define LAHUTA_RINGS_HPP
 
-#include "GraphMol/Atom.h"
-#include "GraphMol/Conformer.h"
-#include "GraphMol/MonomerInfo.h"
-#include "GraphMol/ROMol.h"
 #include <vector>
 #include <rdkit/Geometry/point.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 namespace lahuta {
 
@@ -53,6 +50,7 @@ struct RingDataVec {
     return centers;
   }
 
+  // FIX: probably not needed? 
   RDGeom::POINT3D_VECT centers_rkdit() const {
     RDGeom::POINT3D_VECT centers;
     for (const auto &ring : rings) {
@@ -99,12 +97,11 @@ public:
     }
   };
 
-
+  // FIX: benchmark performance for many ring systems? 
   using RingMap = std::unordered_map<ResId, RingData, ResIdHash>;
-  using AtomOrderMap =
-      std::unordered_map<std::string, std::vector<std::string>>;
+  using AtomOrderMap = std::unordered_map<std::string, std::vector<std::string>>;
 
-  Rings() { initializeAtomOrders(); }
+  Rings() { init_atom_order_table(); }
 
   void add_ring_atom(const RDKit::Atom *atom) {
     auto *info =
@@ -134,9 +131,7 @@ public:
     }
   }
 
-  RingData getRing(const ResId &res_id) { return rings_[res_id]; }
-
-  const RingDataVec getRingsVector() {
+  const RingDataVec get_rings_vector() {
     RingDataVec ring_data;
     for (auto &[res_id, data] : rings_) {
       ring_data.rings.push_back(data);
@@ -144,14 +139,14 @@ public:
     return ring_data;
   }
 
-
-  const RingMap &getRings() const { return rings_; }
+  RingData get_ring(const ResId &res_id) { return rings_[res_id]; }
+  const RingMap &get_rings() const { return rings_; }
 
 private:
   RingMap rings_;
   AtomOrderMap atom_orders_;
 
-  void initializeAtomOrders() {
+  void init_atom_order_table() {
     atom_orders_["PRO"] = {"CG", "CB", "CA", "N", "CD"};
     atom_orders_["TYR"] = {"CE2", "CZ", "CE1", "CD1", "CG", "CD2"};
     atom_orders_["HIS"] = {"CD2", "NE2", "CE1", "ND1", "CG"};
@@ -187,6 +182,7 @@ private:
   }
 
 public:
+  // FIX: is norm2 needed? 
   static void find_center_and_normal(const RDKit::Conformer &conf,
                                      const std::vector<int> &ring,
                                      RDGeom::Point3D &center,
@@ -213,4 +209,4 @@ public:
 
 } // namespace lahuta
 
-#endif // LAjsonHUTA_RINGS_HPP
+#endif // LAHUTA_RINGS_HPP

@@ -206,7 +206,7 @@ class Luni:
 
         # neighbors = MDAnalysisNeighborSearch(mda)
 
-        neighbors = self._file_loader.luni.find_neighbors(radius)
+        neighbors = self._file_loader.luni._find_neighbors(radius)
         neighbors = neighbors.remove_adjascent_pairs(res_dif)
         # print("ff", ff.get_pairs().shape)
         pairs, distances = neighbors.get_pairs(), np.array(neighbors.get_distances_sq())

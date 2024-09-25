@@ -256,11 +256,11 @@ void bind(py::module &_lahuta) {
       // }))
       .def_readonly("data", &Neighbors<AtomAtomPair>::data)
       .def("size", &Neighbors<AtomAtomPair>::size)
-      .def("type_filter", &Neighbors<AtomAtomPair>::type_filter)
-      // .def("type_filter",
-      //      [](class Neighbors<AtomAtomPair> &self, int type, int partner) {
-      //        return self.type_filter(type, partner);
-      //      })
+      // .def("type_filter", &Neighbors<AtomAtomPair>::type_filter)
+      .def("type_filter",
+           [](Neighbors<AtomAtomPair> &self, AtomType type, int partner) {
+             return self.type_filter(type, partner);
+           })
 
       // .def("remove_adjascent_pairs",
       //      &NSResults::remove_adjascent_residueid_pairs)
@@ -298,6 +298,7 @@ void bind(py::module &_lahuta) {
 
              return result;
            })
+      // FIX: we can expose the two types of declarations but it's better to handle the calls on the Python side
       .def("intersection_x", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
         return Neighbors<AtomAtomPair>::intersection(self.data, other.data);
       })
@@ -333,11 +334,11 @@ void bind(py::module &_lahuta) {
       //   return Neighbors<AtomAtomPair>(luni, pairs, dists, c, is_sorted);
       // }))
       .def("size", &Neighbors<AtomRingPair>::size)
-      .def("type_filter", &Neighbors<AtomRingPair>::type_filter)
-      // .def("type_filter",
-      //      [](class Neighbors<AtomAtomPair> &self, int type, int partner) {
-      //        return self.type_filter(type, partner);
-      //      })
+      // .def("type_filter", &Neighbors<AtomRingPair>::type_filter)
+      .def("type_filter",
+           [](Neighbors<AtomRingPair> &self, AtomType type, int partner) {
+             return self.type_filter(type, partner);
+           })
 
       // .def("remove_adjascent_pairs",
       //      &NSResults::remove_adjascent_residueid_pairs)
