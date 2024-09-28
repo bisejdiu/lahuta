@@ -1,6 +1,6 @@
-#include "neighbors.hpp"
 #include "GraphMol/RWMol.h"
 #include "lahuta.hpp"
+#include "neighbors.hpp"
 
 namespace lahuta {
 
@@ -56,24 +56,25 @@ Neighbors<T> Neighbors<T>::type_filter(AtomType type, int partner) {
 
   Pairs filtered;
   Distances dists;
-  for (size_t i = 0; i < data.size(); ++i) {
+  for (size_t i = 0; i < _data.size(); ++i) {
     if (partner == 0) {
-      auto atype = m_luni->topology.atom_types[data[i].i];
+      auto atype = m_luni->topology.atom_types[_data[i].i];
       if (AtomTypeFlags::has(atype, type)) {
-        filtered.push_back(data[i].get_pair());
-        dists.push_back(data[i].d);
+        filtered.push_back(_data[i].get_pair());
+        dists.push_back(_data[i].d);
       }
     } else if (partner == 1) {
-      auto atype = m_luni->topology.atom_types[data[i].j];
+      auto atype = m_luni->topology.atom_types[_data[i].j];
       if (AtomTypeFlags::has(atype, type)) {
-        filtered.push_back(data[i].get_pair());
-        dists.push_back(data[i].d);
+        filtered.push_back(_data[i].get_pair());
+        dists.push_back(_data[i].d);
       }
     } else {
       std::cerr << "Invalid partner: " << partner << std::endl;
     }
   }
-  return Neighbors(*this->get_luni(), filtered, dists, false);
+  // FIX: does this cause problems on the python side? 
+  return Neighbors(*this->get_luni(), std::move(filtered), std::move(dists), false);
 }
 
 // Required for pybind11 bindings to work
@@ -82,30 +83,35 @@ Neighbors<AtomAtomPair>::type_filter(AtomType type, int partner);
 template Neighbors<AtomRingPair>
 Neighbors<AtomRingPair>::type_filter(AtomType type, int partner);
 
-template <typename T>
-Neighbors<T> Neighbors<T>::remove_adjascent_residueid_pairs(int res_diff) {
-  Pairs filtered;
-  Distances dists;
-  for (size_t i = 0; i < data.size(); ++i) {
-    auto *fatom = m_luni->get_molecule().getAtomWithIdx(data[i].i);
-    auto *finfo =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
-    auto *satom = m_luni->get_molecule().getAtomWithIdx(data[i].j);
-    auto *sinfo =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
+/*template <typename T>*/
+/*Neighbors<T> Neighbors<T>::remove_adjascent_residueid_pairs(int res_diff) {*/
+/*  Pairs filtered;*/
+/*  Distances dists;*/
+/*  for (size_t i = 0; i < _data.size(); ++i) {*/
+/*    auto *fatom = m_luni->get_molecule().getAtomWithIdx(_data[i].i);*/
+/*    auto *finfo = static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());*/
+/*    auto *satom = m_luni->get_molecule().getAtomWithIdx(_data[i].j);*/
+/*    auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());*/
+/**/
+/*    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)*/
+/*      continue; // skip H atoms (hydrogens)*/
+/**/
+/*    auto f_resid = finfo->getResidueNumber();*/
+/*    auto s_resid = sinfo->getResidueNumber();*/
+/**/
+/*    if (std::abs(f_resid - s_resid) > res_diff) {*/
+/*      filtered.push_back(_data[i].get_pair());*/
+/*      dists.push_back(_data[i].d);*/
+/*    }*/
+/*  }*/
+/*  return Neighbors(*this->get_luni(), std::move(filtered), std::move(dists), false);*/
+/*}*/
 
-    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)
-      continue; // skip H atoms (hydrogens)
+// Required for pybind11 bindings to work
+/*template Neighbors<AtomAtomPair>*/
+/*Neighbors<AtomAtomPair>::remove_adjascent_residueid_pairs(int res_diff);*/
+/*template Neighbors<AtomRingPair>*/
+/*Neighbors<AtomRingPair>::remove_adjascent_residueid_pairs(int res_diff);*/
 
-    auto f_resid = finfo->getResidueNumber();
-    auto s_resid = sinfo->getResidueNumber();
-
-    if (std::abs(f_resid - s_resid) > res_diff) {
-      filtered.push_back(data[i].get_pair());
-      dists.push_back(data[i].d);
-    }
-  }
-  return Neighbors(*this->get_luni(), filtered, dists, false);
-}
 
 } // namespace lahuta

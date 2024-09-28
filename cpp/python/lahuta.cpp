@@ -1,6 +1,3 @@
-#include "lahuta.hpp"
-#include "neighbors.hpp"
-#include "nsgrid.hpp"
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
@@ -11,6 +8,9 @@
 #include <rdkit/GraphMol/RDKitBase.h>
 
 #include "at.hpp"
+#include "lahuta.hpp"
+#include "neighbors.hpp"
+#include "nsgrid.hpp"
 
 namespace py = pybind11;
 using namespace lahuta;
@@ -47,13 +47,36 @@ auto point3d_to_pyarray = [](const RDGeom::Point3D &vec) {
   return result;
 };
 
+py::array string_array(const std::vector<std::string> &data) {
+  size_t n = data.size();
+  // Create a NumPy array with dtype=object to hold Python strings
+  auto result = py::array_t<PyObject *>(n);
+
+  auto buf = result.request();
+  auto **ptr = static_cast<PyObject **>(buf.ptr);
+
+  for (size_t i = 0; i < n; ++i) {
+    ptr[i] = PyUnicode_FromString(data[i].c_str());
+  }
+
+  return result;
+}
+
+py::array int_array(const std::vector<int> &data) {
+  size_t n = data.size();
+  auto result = py::array_t<int>(n);
+  auto buf = result.request();
+  int *ptr = static_cast<int *>(buf.ptr);
+
+  for (size_t i = 0; i < n; ++i) {
+    ptr[i] = data[i];
+  }
+
+  return result;
+}
+
 void bind(py::module &_lahuta) {
   py::class_<Luni> Luni(_lahuta, "Luni");
-
-  // .def("get_molecule",
-  //      (RDKit::RWMol & (GemmiSource::*)()) & GemmiSource::get_molecule)
-  // .def("get_molecule", (const RDKit::RWMol &(GemmiSource::*)() const) &
-  //                          GemmiSource::get_molecule);
 
   py::class_<RingData>(_lahuta, "RingData")
       .def(py::init<>())
@@ -133,87 +156,6 @@ void bind(py::module &_lahuta) {
         return result;
       });
 
-  py::class_<NSResults>(_lahuta, "NSResults")
-      .def(py::init<>())
-      .def(py::init<const NSResults &>())
-      .def(py::init<Pairs &&, std::vector<float> &&>())
-      .def(py::init<Pairs &, std::vector<float> &>())
-      .def(py::init(
-          [](class Luni &luni, Pairs &pairs, std::vector<float> &dists) {
-            return NSResults(luni, pairs, dists);
-          }))
-      .def(py::init(
-          [](class Luni &luni, Pairs &&pairs, std::vector<float> &&dists) {
-            return NSResults(luni, std::move(pairs), std::move(dists));
-          }))
-      .def(py::init([](py::list pairs, py::list dists) {
-        if (pairs.size() != dists.size()) {
-          throw std::invalid_argument(
-              "Number of pairs must match number of distances");
-        }
-        std::vector<std::pair<int, int>> cpp_pairs;
-        std::vector<float> cpp_dists;
-
-        for (const auto &pair : pairs) {
-          cpp_pairs.emplace_back(pair.cast<std::pair<int, int>>());
-        }
-        for (const auto &dist : dists) {
-          cpp_dists.push_back(dist.cast<float>());
-        }
-
-        return NSResults(std::move(cpp_pairs), std::move(cpp_dists));
-      }))
-
-      .def("add_neighbors", &NSResults::add_neighbors)
-      .def("reserve_space", &NSResults::reserve_space)
-      .def("size", &NSResults::size)
-      .def("filter", &NSResults::filter)
-      // .def("type_filter", &NSResults::type_filter)
-      .def("type_filter",
-           [](NSResults &nsr, AtomType type, int partner) {
-             return nsr.type_filter(type, partner);
-           })
-      // .def("type_filter2", [](NSResults &nsr, AtomType type, int partner) {
-      //   return nsr.type_filter(type, partner);
-      // })
-      .def("remove_adjascent_pairs",
-           &NSResults::remove_adjascent_residueid_pairs)
-      .def("clear", &NSResults::clear)
-      // .def("get_pairs", &NSResults::get_pairs)
-      .def("get_pairs",
-           [](NSResults &nsr) {
-             auto pairs = nsr.get_pairs();
-             ssize_t n = pairs.size();
-             ssize_t dim = 2;
-             auto result = py::array_t<int>({n, dim});
-             auto buf = result.request();
-             int *ptr = static_cast<int *>(buf.ptr);
-
-             for (size_t i = 0; i < n; ++i) {
-               ptr[i * 2] = pairs[i].first;
-               ptr[i * 2 + 1] = pairs[i].second;
-             }
-
-             return result;
-           })
-      .def("get_distances_sq", &NSResults::get_distances)
-      .def("get_distances",
-           [](NSResults &nsr) {
-             auto distances = nsr.get_distances();
-             ssize_t n = distances.size();
-             auto result = py::array_t<float>(n);
-             auto buf = result.request();
-             float *ptr = static_cast<float *>(buf.ptr);
-
-             for (size_t i = 0; i < n; ++i) {
-               // ptr[i] = distances[i];
-               ptr[i] = sqrt(distances[i]);
-             }
-
-             return result;
-           })
-      .def("get_luni", &NSResults::get_luni);
-
   // py::enum_<ContactType>(_lahuta, "ContactType")
   //     .value("AtomAtom", ContactType::AtomAtom)
   //     .value("AtomRing", ContactType::AtomRing);
@@ -240,32 +182,23 @@ void bind(py::module &_lahuta) {
 
   py::class_<Neighbors<AtomAtomPair>>(_lahuta, "AtomAtomNeighbors")
       .def(py::init([](class Luni &luni, std::vector<AtomAtomPair> data,
-                       const AtomAtomPair::RefType &ctx,
                        bool is_sorted = false) {
         return Neighbors<AtomAtomPair>(luni, data, is_sorted);
       }))
-      .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
-                       const AtomAtomPair::RefType &ctx,
-                       bool is_sorted = false) {
-        return Neighbors<AtomAtomPair>(luni, pairs, dists, is_sorted);
+      .def(py::init([](class Luni &luni, const Pairs &&pairs,
+                       const Distances &&dists, bool is_sorted = false) {
+        return Neighbors<AtomAtomPair>(luni, std::move(pairs), std::move(dists),
+                                       is_sorted);
       }))
-      // .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
-      //                  ContactType c,
-      //                  bool is_sorted = false) {
-      //   return Neighbors<AtomAtomPair>(luni, pairs, dists, c, is_sorted);
-      // }))
-      .def_readonly("data", &Neighbors<AtomAtomPair>::data)
+      .def_property_readonly(
+          "data", [](Neighbors<AtomAtomPair> &self) { return self.data(); })
+      /*.def("data", &Neighbors<AtomAtomPair>::data) */
       .def("size", &Neighbors<AtomAtomPair>::size)
       // .def("type_filter", &Neighbors<AtomAtomPair>::type_filter)
       .def("type_filter",
            [](Neighbors<AtomAtomPair> &self, AtomType type, int partner) {
              return self.type_filter(type, partner);
            })
-
-      // .def("remove_adjascent_pairs",
-      //      &NSResults::remove_adjascent_residueid_pairs)
-      // .def("clear", &NSResults::clear)
-      // .def("get_pairs", &NSResults::get_pairs)
       .def("get_pairs",
            [](Neighbors<AtomAtomPair> &nsr) {
              auto pairs = nsr.get_pairs();
@@ -282,7 +215,7 @@ void bind(py::module &_lahuta) {
 
              return result;
            })
-      // .def("get_distances_sq", &NSResults::get_distances)
+      .def("get_distances_sq", &Neighbors<AtomAtomPair>::get_distances)
       .def("get_distances",
            [](Neighbors<AtomAtomPair> &nsr) {
              auto distances = nsr.get_distances();
@@ -298,24 +231,30 @@ void bind(py::module &_lahuta) {
 
              return result;
            })
-      // FIX: we can expose the two types of declarations but it's better to handle the calls on the Python side
-      .def("intersection_x", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
-        return Neighbors<AtomAtomPair>::intersection(self.data, other.data);
-      })
-      .def("intersection", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
-        return self.intersection(other);
-      })
-      .def("difference", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
-        return self.difference(other);
-      })
-      .def("union", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
-        return self.union_(other);
-      })
-      .def("symmetric_difference", [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
-        return self.symmetric_difference(other);
-      })
+      // FIX: we can expose the two types of declarations but it's better to
+      // handle the calls on the Python side
+      .def("intersection_x",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return Neighbors<AtomAtomPair>::intersection(self.data(),
+                                                          other.data());
+           })
+      .def("intersection",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.intersection(other);
+           })
+      .def("difference",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.difference(other);
+           })
+      .def("union",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.union_(other);
+           })
+      .def("symmetric_difference",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.symmetric_difference(other);
+           })
       .def("get_luni", &Neighbors<AtomAtomPair>::get_luni);
-
 
   py::class_<Neighbors<AtomRingPair>>(_lahuta, "AtomRingNeighbors")
       .def(py::init([](class Luni &luni, std::vector<AtomRingPair> data,
@@ -326,30 +265,23 @@ void bind(py::module &_lahuta) {
       .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
                        const AtomRingPair::RefType &ctx,
                        bool is_sorted = false) {
-        return Neighbors<AtomRingPair>(luni, pairs, dists, is_sorted);
+        /*return Neighbors<AtomRingPair>(luni, pairs, dists, is_sorted);*/
+        return Neighbors<AtomRingPair>(luni, std::move(pairs), std::move(dists),
+                                       is_sorted);
       }))
       // .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
       //                  ContactType c,
       //                  bool is_sorted = false) {
       //   return Neighbors<AtomAtomPair>(luni, pairs, dists, c, is_sorted);
       // }))
+      .def_property_readonly(
+          "data", [](Neighbors<AtomRingPair> &self) { return self.data(); })
       .def("size", &Neighbors<AtomRingPair>::size)
       // .def("type_filter", &Neighbors<AtomRingPair>::type_filter)
       .def("type_filter",
            [](Neighbors<AtomRingPair> &self, AtomType type, int partner) {
              return self.type_filter(type, partner);
            })
-
-      // .def("remove_adjascent_pairs",
-      //      &NSResults::remove_adjascent_residueid_pairs)
-      // .def("clear", &NSResults::clear)
-      // .def("get_pairs", &NSResults::get_pairs)
-
-
-  // Neighbors<T> intersection(const Neighbors<T> &other) const {
-  //   std::vector<T> result = intersection(data, other.data);
-  //   return Neighbors<T>(*m_luni, result);
-  // }
 
       .def("get_pairs",
            [](Neighbors<AtomRingPair> &nsr) {
@@ -367,7 +299,7 @@ void bind(py::module &_lahuta) {
 
              return result;
            })
-      // .def("get_distances_sq", &NSResults::get_distances)
+      .def("get_distances_sq", &Neighbors<AtomRingPair>::get_distances)
       .def("get_distances",
            [](Neighbors<AtomRingPair> &nsr) {
              auto distances = nsr.get_distances();
@@ -385,20 +317,18 @@ void bind(py::module &_lahuta) {
            })
       .def("get_luni", &Neighbors<AtomRingPair>::get_luni);
 
-
-
   Luni.def(py::init<std::string>())
-      .def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)
-      .def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)
-      .def("find_neighbors", [](class Luni &luni, float cutoff) {
-        return luni._find_neighbors(cutoff);
-      }) 
-      // .def("find_find_neighbors", &Luni::find_find_neighbors)
+      /*.def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)*/
+      /*.def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)*/
+      .def("fn_aa", &Luni::find_neighbors<AtomAtomPair>)
+      .def("fn_ar", &Luni::find_neighbors<AtomRingPair>)
+      /*.def("find_neighbors",*/
+      /*     [](class Luni &luni, float cutoff) {*/
+      /*       return luni.find_neighbors_opt(cutoff);*/
+      /*     })*/
       .def("get_atom_types", &Luni::get_atom_types)
       .def("get_rings", &Luni::get_rings)
-      .def("match_smarts_string", &Luni::match_smarts_string)
-      // .def("atoms", &Luni::atoms,
-      // py::return_value_policy::reference_internal)
+      /*.def("match_smarts_string", &Luni::match_smarts_string)*/
       .def("n_atoms", &Luni::n_atoms)
 
       .def(
@@ -410,16 +340,6 @@ void bind(py::module &_lahuta) {
           "Return the coordinates of the molecule as a numpy array")
 
       .def("names", &Luni::names)
-      // .def("names", [](class Luni &luni) {
-      //     auto names = luni.names();
-      //     py::list result;
-      //
-      //     for (const auto& name : names) {
-      //         result.append(py::str(name));
-      //     }
-      //
-      //     return py::array(result);
-      // })
       .def("symbols", &Luni::symbols)
       .def("indices", &Luni::indices)
       .def("elements", &Luni::elements)
@@ -427,6 +347,47 @@ void bind(py::module &_lahuta) {
       .def("resids", &Luni::resids)
       .def("resindices", &Luni::resindices)
       .def("chainlabels", &Luni::chainlabels)
+
+      .def("names_npy",
+           [](class Luni &luni) {
+             auto names = luni.names();
+             return string_array(names);
+           })
+      .def("symbols_npy",
+           [](class Luni &luni) {
+             auto symbols = luni.symbols();
+             return string_array(symbols);
+           })
+      .def("indices_npy",
+           [](class Luni &luni) {
+             auto indices = luni.indices();
+             return int_array(indices);
+           })
+      .def("elements_npy",
+           [](class Luni &luni) {
+             auto elements = luni.elements();
+             return string_array(elements);
+           })
+      .def("resnames_npy",
+           [](class Luni &luni) {
+             auto resnames = luni.resnames();
+             return string_array(resnames);
+           })
+      .def("resids_npy",
+           [](class Luni &luni) {
+             auto resids = luni.resids();
+             return int_array(resids);
+           })
+      .def("resindices_npy",
+           [](class Luni &luni) {
+             auto resindices = luni.resindices();
+             return int_array(resindices);
+           })
+      .def("chainlabels_npy",
+           [](class Luni &luni) {
+             auto chainlabels = luni.chainlabels();
+             return string_array(chainlabels);
+           })
       .def("get_cutoff", &Luni::get_cutoff);
 
   py::class_<RDGeom::Point3D>(_lahuta, "Point3D")
@@ -434,8 +395,6 @@ void bind(py::module &_lahuta) {
       .def_readwrite("x", &RDGeom::Point3D::x)
       .def_readwrite("y", &RDGeom::Point3D::y)
       .def_readwrite("z", &RDGeom::Point3D::z);
-
-  // _lahuta.def("atom_type_to_string", &atom_type_to_string);
 }
 
 PYBIND11_MODULE(_lahuta, m) {

@@ -176,7 +176,6 @@ void FastNS::update_cutoff(double new_cutoff) {
 
 void FastNS::prepare_box() {
   double min_cellsize = cutoff + 0.001;
-  std::cout << "min_cellsize: " << min_cellsize << std::endl;
 
   for (int i = 0; i < 3; ++i) {
     ncells[i] = std::min(static_cast<int>(std::floor(box[i] / min_cellsize)),
@@ -256,59 +255,6 @@ NSResults NSResults::filter(double dist) const {
     }
   }
   return filtered;
-}
-
-// FIX: use overloads to handle different filter conditions
-NSResults NSResults::type_filter(AtomType type, int partner) {
-  if (partner != 0 && partner != 1) {
-    throw std::runtime_error("Invalid partner: " + std::to_string(partner) +
-                             ". Must be 0 or 1.");
-  }
-  Pairs filtered;
-  Distances dists;
-  for (size_t i = 0; i < m_pairs.size(); ++i) {
-    if (partner == 0) {
-      auto atype = m_luni->topology.atom_types[m_pairs[i].first];
-      if (AtomTypeFlags::has(atype, type)) {
-        filtered.push_back(m_pairs[i]);
-        dists.push_back(m_dists[i]);
-      }
-    } else if (partner == 1) {
-      auto atype = m_luni->topology.atom_types[m_pairs[i].second];
-      if (AtomTypeFlags::has(atype, type)) {
-        filtered.push_back(m_pairs[i]);
-        dists.push_back(m_dists[i]);
-      }
-    } else {
-      std::cerr << "Invalid partner: " << partner << std::endl;
-    }
-  }
-  return NSResults(*this->get_luni(), filtered, dists);
-}
-
-NSResults NSResults::remove_adjascent_residueid_pairs(int res_diff) {
-  Pairs filtered;
-  Distances dists;
-  for (size_t i = 0; i < m_pairs.size(); ++i) {
-    auto *fatom = m_luni->get_molecule().getAtomWithIdx(m_pairs[i].first);
-    auto *finfo =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
-    auto *satom = m_luni->get_molecule().getAtomWithIdx(m_pairs[i].second);
-    auto *sinfo =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
-
-    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)
-      continue; // skip H atoms (hydrogens)
-
-    auto f_resid = finfo->getResidueNumber();
-    auto s_resid = sinfo->getResidueNumber();
-
-    if (std::abs(f_resid - s_resid) > res_diff) {
-      filtered.push_back(m_pairs[i]);
-      dists.push_back(m_dists[i]);
-    }
-  }
-  return NSResults(*this->get_luni(), filtered, dists);
 }
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,

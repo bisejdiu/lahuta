@@ -1,9 +1,9 @@
-#include "lahuta.hpp"
-#include <gemmi/mmread_gz.hpp> // for read_structure_gz
-
 #include <chrono>
 #include <iostream>
 #include <string>
+
+#include "lahuta.hpp"
+#include "neighbors.hpp"
 
 #define T() std::chrono::high_resolution_clock::now()
 #define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
@@ -19,58 +19,19 @@ int main(int argc, char const *argv[]) {
   }
   std::string file_name = argv[1];
 
-  // auto load_start = T();
-  // Structure st = read_structure_gz(file_name);
-  // auto loadTime = TO_MS(T() - load_start).count();
-  // std::cout << "Load: " << loadTime << "ms" << std::endl;
-
-  // Current API
-  // auto source = Lahuta::GemmiSource();
-  // source.process(file_name);
-
-  // Lahuta::Luni luni(source);
   lahuta::Luni luni(file_name);
-
-  auto neighbors = luni._find_neighbors();
-
-  RDKit::RWMol *mol = &luni.get_molecule();
-
-
-  auto atom_iter_start = T();
-  for (auto &atom: mol->atoms()) {
-    auto *res1 = dynamic_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-  };
-  auto iterTime = TO_MS(T() - atom_iter_start).count();
-  std::cout << "Atom ITER TIME: " << iterTime << " ms" << std::endl;
-
-  // std::string smarts_test = "[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1";
-  // auto match = luni.match_smarts_string(smarts_test);
-  // // RDKit::RWMol *smarts_mol = RDKit::SmartsToMol(smarts_test);
-  // // auto match = RDKit::SubstructMatch(*mol, *smarts_mol);
-  // std::cout << "Match: " << match.size() << std::endl;
-  // // log match indices
-  // for (auto &m : match) {
-  //   auto atom = mol->getAtomWithIdx(m[0].second);
-  //   std::cout << "Match: " << atom->getIdx() << " " << atom->getSymbol() << std::endl;
-  // }
+  auto neighbors = luni.find_neighbors<lahuta::AtomAtomPair>(5.0, 1);
+  auto mol = &luni.get_molecule();
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());
     auto second_atom = mol->getAtomWithIdx(bond->getEndAtomIdx());
-
-    // residue info
-    auto *res1 =
-        dynamic_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
-    auto *res2 = dynamic_cast<RDKit::AtomPDBResidueInfo *>(
-        second_atom->getMonomerInfo());
-
+    auto *res1 = static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
+    auto *res2 = static_cast<RDKit::AtomPDBResidueInfo *>(second_atom->getMonomerInfo());
     auto atom1_name = res1->getName();
     auto atom2_name = res2->getName();
-    //
-    std::string residue1 =
-        res1->getResidueName() + "-" + std::to_string(res1->getResidueNumber());
-    std::string residue2 =
-        res2->getResidueName() + "-" + std::to_string(res2->getResidueNumber());
+    std::string residue1 = res1->getResidueName() + "-" + std::to_string(res1->getResidueNumber());
+    std::string residue2 = res2->getResidueName() + "-" + std::to_string(res2->getResidueNumber());
 
     auto bond_order = std::to_string(bond->getBondTypeAsDouble());
     if (bond->getIsAromatic()) {
@@ -83,21 +44,16 @@ int main(int argc, char const *argv[]) {
               << bond_order << std::endl;
   };
 
-  int o1 = 0;
-  int o2 = 0;
-  int aromatic = 0;
+  int o1{}, o2{}, aromatic{};
   for (auto bondIt = mol->beginBonds(); bondIt != mol->endBonds(); ++bondIt) {
     RDKit::Bond *bond = *bondIt;
 
     if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
-      // log_bond_info(bond);
       o1++;
     } else if (bond->getBondType() == RDKit::Bond::BondType::DOUBLE) {
-      // log_bond_info(bond);
       o2++;
     }
     if (bond->getIsAromatic()) {
-      // log_bond_info(bond);
       aromatic++;
     }
   }

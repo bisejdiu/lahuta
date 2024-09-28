@@ -195,10 +195,12 @@ class NeighborPairs:
 
         c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
 
-        from lahuta.lib import cNSResults
+        # from lahuta.lib import cNSResults
+        from lahuta.lib import cNeighbors
 
         # cns = cNSResults(self.luni._luni, self.pairs, self.distances)
-        cns = cNSResults(self.luni._file_loader.luni, self.pairs, self.distances)
+        # cns = cNSResults(self.luni._file_loader.luni, self.pairs, self.distances)
+        cns = cNeighbors(self.luni._file_loader.luni, self.pairs, self.distances, False)
         result = cns.type_filter(c_atom_type, partner - 1)
         pairs, distances = result.get_pairs(), np.array(result.get_distances_sq())
         # if atom_type == "carbonyl_oxygen":

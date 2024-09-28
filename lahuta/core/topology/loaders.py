@@ -86,7 +86,31 @@ class BaseLoader(ABC):
 
     @property
     @abstractmethod
+    def indices(self) -> NDArray[np.int32]:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
     def ids(self) -> int:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def names(self) -> int:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def elements(self) -> int:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def coordinates(self) -> NDArray[np.float32]:
         """The number of atoms in the loaded biological structure data."""
         ...
 
@@ -145,6 +169,7 @@ class LahutaCPPLoader(BaseLoader):
     def __init__(self, file_path: str):
         self.file_path = file_path
         self.luni = cLuni(file_path)
+        print("Done with C++")
 
     @property
     def n_atoms(self) -> int:
@@ -201,20 +226,31 @@ class LahutaCPPLoader(BaseLoader):
             AtomGroupType: An MDAnalysis AtomGroup object.
         """
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
+        import time
+
+        start = time.time()
         struct_arr = np.rec.fromarrays(  # type: ignore
             [self.resnames, self.resids, self.chainlabels],
             names=str("resnames, resids, chain_ids"),  # type: ignore
         )
+        print("Time taken to create structured array", time.time() - start)
+        start = time.time()
 
         # Use factorize to get the labels and unique values
         resindices, uniques = pd.factorize(struct_arr)
+        print("Time taken to factorize", time.time() - start)
+        start = time.time()
         resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
+        print("Time taken to get uniques", time.time() - start)
+        start = time.time()
         # print("resindices", resindices)
         # print("resindices", resindices.shape, self.n_atoms)
         # print("chain_labels", self.chainlabels, self.chainlabels.shape, np.unique(self.chainlabels))
         # print("chain_labels", chain_ids, chain_ids.shape)
 
         _, int_array = np.unique(chain_ids, return_inverse=True)
+        print("Time taken to get unique and inverse", time.time() - start)
+        start = time.time()
 
         # Convert 0-based labels to 1-based labels
         int_array += 1
@@ -229,20 +265,26 @@ class LahutaCPPLoader(BaseLoader):
             residue_segindex=int_array,
             trajectory=True,
         )
+        print("Time taken to create Universe", time.time() - start)
+        start = time.time()
 
         # Add topology attributes
         uv.add_TopologyAttr("names", self.names)
         uv.add_TopologyAttr("type", self.names)
         uv.add_TopologyAttr("elements", self.elements)
         uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.elements))
+        # uv.add_TopologyAttr("vdw_radii", v_radii)
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
         uv.add_TopologyAttr("chainIDs", self.chainlabels)
         uv.add_TopologyAttr("ids", self.indices)
         # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
+        print("Time taken to add topology attributes", time.time() - start)
+        start = time.time()
 
         uv.atoms.positions = self.coordinates
         uv.filename = self.file_path
+        print("Time taken to set positions", time.time() - start)
 
         return uv.atoms
 
@@ -466,3 +508,35 @@ class TopologyLoader(BaseLoader):
         top_loader.arc = ARC(top_loader, top_loader.ag)
 
         return top_loader
+
+    @property
+    def n_atoms(self) -> int:
+        return self.ag.n_atoms
+
+    @property
+    def indices(self) -> NDArray[np.int32]:
+        return self.ag.indices
+
+    @property
+    def ids(self) -> NDArray[np.int32]:
+        return self.ag.ids
+
+    @property
+    def resnames(self) -> NDArray[np.str_]:
+        return self.ag.resnames
+
+    @property
+    def resids(self) -> NDArray[np.int32]:
+        return self.ag.resids
+
+    @property
+    def names(self) -> NDArray[np.str_]:
+        return self.ag.names
+
+    @property
+    def elements(self) -> NDArray[np.str_]:
+        return self.ag.elements
+
+    @property
+    def coordinates(self) -> NDArray[np.float32]:
+        return self.ag.positions

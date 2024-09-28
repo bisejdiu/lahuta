@@ -82,15 +82,19 @@ class Luni:
         self._file_loader: BaseLoader
         self._input_structure: str | Path | "AtomGroupType" = structure
         structure = str(structure) if isinstance(structure, Path) else structure
+        print("->", structure, trajectories)
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
+                print("converting from MDA")
                 self._file_loader = TopologyLoader.from_mda(s)  # type: ignore
             case (str(s), None):
                 # Check if we can use GemmiLoader.
                 file_format, is_pdb = Luni._check_gemmi_support(s)
                 if file_format:
+                    print("-> to bench")
                     self._file_loader = LahutaCPPLoader(s)
                 elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
+                    print("MDA")
                     self._file_loader = TopologyLoader((s))
                 else:
                     fmts = self._get_supported_fmts()
@@ -107,7 +111,9 @@ class Luni:
                 )
 
         self._mol: Optional["MolType"] = None
+        print("before mda")
         self._mda = self._file_loader.to("mda")
+        print("after mda")
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # self._luni = cLuni(self._file_loader.file_path)
@@ -206,9 +212,13 @@ class Luni:
 
         # neighbors = MDAnalysisNeighborSearch(mda)
 
-        neighbors = self._file_loader.luni._find_neighbors(radius)
-        neighbors = neighbors.remove_adjascent_pairs(res_dif)
+        # neighbors = self._file_loader.luni.find_neighbors(radius)
+        # neighbors = neighbors.remove_adjascent_pairs(res_dif)
+        print("a")
+        neighbors = self._file_loader.luni.fn_aa(radius, res_dif)
+        print("b")
         # print("ff", ff.get_pairs().shape)
+        print("-> neighbors: ", neighbors.get_pairs().shape)
         pairs, distances = neighbors.get_pairs(), np.array(neighbors.get_distances_sq())
         # pairs, distances = neighbors.get_pairs(), neighbors.get_distances()
 

@@ -18,8 +18,8 @@ template<typename T>
 class ContextProvider;
 
 struct AtomRingPairType {
-  const RDKit::RWMol *i;
-  const RingDataVec *j;
+  const RDKit::RWMol *atom;
+  const RingDataVec *ring;
 };
 
 template <typename T>
@@ -67,6 +67,7 @@ class AtomAtomPair : public BasePair<RDKit::RWMol> {
 public:
     using BasePair::BasePair;
 
+    // FIXME: RefType, along with get_i and get_j are not being used. 
     const RDKit::Atom* get_i(RefType *mol) const {
         return mol->getAtomWithIdx(i);
     }
@@ -83,11 +84,11 @@ public:
   using BasePair::BasePair;
 
   const RDKit::Atom* get_i(RefType *ref) const {
-    return ref->i->getAtomWithIdx(i);
+    return ref->atom->getAtomWithIdx(i);
   }
 
   const RingData* get_j(RefType *ref) const {
-    return &(ref->j->rings[j]);
+    return &(ref->ring->rings[j]);
   }
 
   std::string names(const ContextProvider<AtomRingPair> &ctx) const;
@@ -102,6 +103,8 @@ class ContextProvider<AtomAtomPair> {
 public:
     explicit ContextProvider(const Luni& ctx);
     const RDKit::RWMol& molecule() const;
+
+    const Luni* get_luni() const { return luni; }
 private:
   const Luni* luni;
 };
@@ -114,6 +117,8 @@ public:
     const RDKit::RWMol& molecule() const;
     const RingDataVec& rings() const;
 
+    const Luni* get_luni() const { return luni; }
+
 private:
   const Luni *luni;
 };
@@ -122,29 +127,46 @@ template <typename T>
 class Neighbors {
 
 public:
-  using RefType = typename T::RefType;
-
-  std::vector<T> data;
-  const ContextProvider<T> contextProvider;
-  
-public:
   Neighbors(const Luni &luni, std::vector<T> data, bool is_sorted = false): 
-    data(std::move(data)), contextProvider(luni) {
+    _data(std::move(data)), ctx(luni) {
     if (!is_sorted) {
-      std::sort(this->data.begin(), this->data.end());
+      std::sort(this->_data.begin(), this->_data.end());
     }
   }
 
-  Neighbors(const Luni &luni, Pairs pairs, Distances dists, bool is_sorted = false): 
-    contextProvider(luni) {
+  /*Neighbors(const Luni &luni, Pairs pairs, Distances dists, bool is_sorted = false): */
+  /*  contextProvider(luni) {*/
+  /*  if (pairs.size() != dists.size()) {*/
+  /*    throw std::runtime_error("Pairs and distances must have the same size");*/
+  /*  }*/
+  /*  for (size_t i = 0; i < pairs.size(); ++i) {*/
+  /*    _data.push_back({pairs[i].first, pairs[i].second, dists[i]});*/
+  /*  }*/
+  /*  if (!is_sorted) {*/
+  /*    std::sort(this->_data.begin(), this->_data.end());*/
+  /*  }*/
+  /*}*/
+  // copy assignment
+  Neighbors &operator=(const Neighbors &other) {
+    if (this != &other) {
+      _data = other._data;
+    }
+    return *this;
+  }
+  
+  Neighbors(Neighbors &&other) noexcept: 
+    ctx(other.ctx), m_luni(other.m_luni), _data(std::move(other._data)) {}
+
+  Neighbors(const Luni &luni, const Pairs &&pairs, const Distances &&dists, bool is_sorted = false): 
+    ctx(luni) {
     if (pairs.size() != dists.size()) {
       throw std::runtime_error("Pairs and distances must have the same size");
     }
     for (size_t i = 0; i < pairs.size(); ++i) {
-      data.push_back({pairs[i].first, pairs[i].second, dists[i]});
+      _data.push_back({pairs[i].first, pairs[i].second, dists[i]});
     }
     if (!is_sorted) {
-      std::sort(this->data.begin(), this->data.end());
+      std::sort(this->_data.begin(), this->_data.end());
     }
   }
 
@@ -189,28 +211,28 @@ public:
   }
 
   Neighbors<T> intersection(const Neighbors<T> &other) const {
-    std::vector<T> result = intersection(data, other.data);
+    std::vector<T> result = intersection(_data, other._data);
     return Neighbors<T>(*m_luni, result);
   }
 
   Neighbors<T> difference(const Neighbors<T> &other) const {
-    std::vector<T> result = difference(data, other.data);
+    std::vector<T> result = difference(_data, other._data);
     return Neighbors<T>(*m_luni, result);
   }
 
   Neighbors<T> symmetric_difference(const Neighbors<T> &other) const {
-    std::vector<T> result = symmetric_difference(data, other.data);
+    std::vector<T> result = symmetric_difference(_data, other._data);
     return Neighbors<T>(*m_luni, result);
   }
 
   Neighbors<T> union_(const Neighbors<T> &other) const {
-    std::vector<T> result = union_(data, other.data);
+    std::vector<T> result = union_(_data, other._data);
     return Neighbors<T>(*m_luni, result);
   }
 
   Neighbors<T> filter(std::function<bool(const T &)> predicate) const {
     std::vector<T> result;
-    std::copy_if(data.begin(), data.end(), std::back_inserter(result), predicate);
+    std::copy_if(_data.begin(), _data.end(), std::back_inserter(result), predicate);
     return Neighbors<T>(*m_luni, result);
   }
 
@@ -218,7 +240,7 @@ public:
   Neighbors<T> type_filter(AtomType type, int partner);
 
   // FIXME: Should FastNS be resonsible for defining these methods? 
-  Neighbors<T> remove_adjascent_residueid_pairs(int res_diff);
+  /*Neighbors<T> remove_adjascent_residueid_pairs(int res_diff);*/
 
   // void add_neighbor(int i, int j, float d, bool sort = true) {
   //   // data.push_back({i, j, d});
@@ -233,15 +255,15 @@ public:
 
   std::vector<std::string> names() const {
     std::vector<std::string> result;
-    for (const T &p : data) {
-      result.push_back(p.names(contextProvider));
+    for (const T &p : _data) {
+      result.push_back(p.names(ctx));
     }
     return result;
   }
 
   Pairs get_pairs() const { 
     std::vector<std::pair<int, int>> result;
-    for (const T &p : data) {
+    for (const T &p : _data) {
       result.push_back({p.i, p.j});
     }
     return result;
@@ -249,22 +271,23 @@ public:
 
   Distances get_distances() const {
     std::vector<float> result;
-    for (const T &p : data) {
+    for (const T &p : _data) {
       result.push_back(p.d);
     }
     return result;
   }
 
-  size_t size() const { return data.size(); }
+  size_t size() const { return _data.size(); }
   auto get_luni() const { return m_luni; }
+  std::vector<T> data() const { return _data; }
 
   friend class Luni;
 
-public:
-  const Luni* const m_luni = nullptr;
-  // Luni &m_luni;
-  // std::unique_ptr<Luni> m_luni = nullptr;
-
+private:
+  using RefType = typename T::RefType;
+  const ContextProvider<T> ctx;
+  const Luni* const m_luni = ctx.get_luni();
+  std::vector<T> _data;
 };
 
 } // namespace lahuta

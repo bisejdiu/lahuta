@@ -35,6 +35,13 @@ public:
   std::vector<AtomType> atom_types;
   RingDataVec rings_vec;
 
+  Topology() = default;
+  Topology(const Topology &other) = default;
+  Topology(Topology &&other) = default;
+  Topology &operator=(const Topology &other) = default;
+  Topology &operator=(Topology &&other) = default;
+  ~Topology() = default;
+
 public:
   void assign_atom_types(RDKit::RWMol &mol) {
 
@@ -53,7 +60,8 @@ public:
 
       if (AtomTypeFlags::has(atom_type, AtomType::AROMATIC)) {
         rings.add_ring_atom(atom);
-        RDGeom::Point3D atom_pos = mol.getConformer().getAtomPos(atom->getIdx());
+        RDGeom::Point3D atom_pos =
+            mol.getConformer().getAtomPos(atom->getIdx());
       }
     }
     rings.process_rings(mol);
@@ -174,8 +182,6 @@ private:
       }
     }
   }
-
-
 };
 
 class Luni {
@@ -189,25 +195,93 @@ private:
 
   void process_file(std::string file_name) {
     RDKit::Conformer *conformer = new RDKit::Conformer();
+    auto start = std::chrono::high_resolution_clock::now();
     st = read_structure_gz(file_name);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    /*std::cout << "Read Structure using gemmi: " << elapsed_seconds.count() <<
+     * "s\n";*/
+    std::cout << "Read Structure using gemmi: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
+    start = std::chrono::high_resolution_clock::now();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_seconds = end - start;
+    /*std::cout << "Convert gemmi to RDKit: " << elapsed_seconds.count() <<
+     * "s\n";*/
+    std::cout << "Convert gemmi to RDKit: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
+    start = std::chrono::high_resolution_clock::now();
     mol->updatePropertyCache(false);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_seconds = end - start;
+    /*std::cout << "Update Property Cache: " << elapsed_seconds.count() <<
+     * "s\n";*/
+    std::cout << "Update Property Cache: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
+    start = std::chrono::high_resolution_clock::now();
     mol->addConformer(conformer, true);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_seconds = end - start;
+    /*std::cout << "Add Conformer: " << elapsed_seconds.count() << "s\n";*/
+    std::cout << "Add Conformer: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
   }
 
 public:
   explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
     process_file(file_name);
+    auto start = std::chrono::high_resolution_clock::now();
     create_topology();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Create Topology: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
   }
 
   void create_topology() {
     const auto &conf = get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
+    auto start = std::chrono::high_resolution_clock::now();
     bonded_nps = grid.self_search();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::cout << "Self Search: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
 
+    start = std::chrono::high_resolution_clock::now();
     Topology::compute_bonds(*mol, bonded_nps);
+    end = std::chrono::high_resolution_clock::now();
+    std::cout << "Compute Bonds: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
+
+    start = std::chrono::high_resolution_clock::now();
     topology.assign_atom_types(*mol);
+    end = std::chrono::high_resolution_clock::now();
+    std::cout << "Assign Atom Types: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
+                                                                       start)
+                     .count()
+              << "ms" << std::endl;
 
     // topology.rings = std::move(top.rings);
     // topology = top;
@@ -234,201 +308,68 @@ public:
   }
   const RingDataVec &get_rings() const { return topology.rings_vec; }
 
-  NSResults _find_neighbors(double cutoff = BONDED_NS_CUTOFF) {
-
-    if (cutoff == _cutoff) {
-      return bonded_nps;
-    } else if (cutoff < _cutoff) {
-      return bonded_nps.filter(cutoff);
-    }
-
-    grid.update_cutoff(cutoff);
-    auto ns = grid.self_search();
-    ns.m_luni = this;
-    return ns;
+  template <typename T> Neighbors<T> find_neighbors(double cutoff, int res_dif) {
+    NSResults ns = find_neighbors_opt(cutoff);
+    auto _ns = remove_adjascent_residueid_pairs(ns, res_dif);
+    return Neighbors<T>(*this, std::move(_ns.get_pairs()),
+                        std::move(_ns.get_distances()), false);
   }
-
-  template <typename T> Neighbors<T> find_neighbors(double cutoff) {
-
-    if (fabs(cutoff - _cutoff) < 1e-6) {
-      return {*this, bonded_nps.get_pairs(), bonded_nps.get_distances(), false};
-    } else if (cutoff < _cutoff) {
-      NSResults val = bonded_nps.filter(cutoff);
-      return {*this, val.get_pairs(), val.get_distances(), false};
-    }
-
-    // const auto &conf = get_conformer();
-    // auto _grid = FastNS(conf.getPositions(), cutoff);
-    // NSResults new_ns = _grid.self_search();
-    //
-    // auto p = new_ns.get_pairs();
-    // auto d = new_ns.get_distances();
-    // std::vector<T> _p1;
-    // for (size_t i = 0; i < p.size(); ++i) {
-    //   _p1.push_back({p[i].first, p[i].second, d[i]});
-    // }
-    // Neighbors<T> _n1(*this, _p1);
-    // return _n1;
-
-    // FIX: update_cutoff is not working:
-    grid.update_cutoff(cutoff);
-    NSResults ns = grid.self_search();
-
-    return Neighbors<T>(*this, ns.get_pairs(), ns.get_distances(), false);
-  }
-
-  std::vector<RDKit::MatchVectType>
-  match_smarts_string(std::string sm, std::string atype = "",
-                      bool log_values = false) const {
-
-    // initialize ringinfo
-    if (!mol->getRingInfo()->isInitialized()) {
-      RDKit::MolOps::symmetrizeSSSR(*mol);
-    }
-    std::vector<RDKit::MatchVectType> match_list;
-    auto sm_mol = RDKit::SmartsToMol(sm);
-    mol->updatePropertyCache(false);
-    RDKit::SubstructMatch(*mol, *sm_mol, match_list);
-    return match_list;
-  };
 
   // FIX: move to source
   const RDKit::Atom &get_atom(int index) const {
     return *mol->getAtomWithIdx(index);
   }
 
+  //! Returns the atoms of the molecule.
   const auto atoms() const { return mol->atoms(); }
 
   //! Returns the number of atoms in the molecule.
   const auto n_atoms() const { return mol->getNumAtoms(); }
 
-  const auto coordinates() const {
-    auto coords = mol->getConformer().getPositions();
-    auto ccoords = reinterpret_cast<std::vector<std::vector<float>> &>(coords);
-    return ccoords;
-    // return reinterpret_cast<std::vector<std::vector<float>>&>(coords);
-  }
-
-  // manually create std::vector<std::vector<float>> from RDGeom::Point3D
-  const auto coordinates2() const {
-    auto coords = mol->getConformer().getPositions();
-    std::vector<std::vector<double>> ccoords;
-    for (const auto &coord : coords) {
-      ccoords.push_back({coord.x, coord.y, coord.z});
-    }
-    return ccoords;
-  }
-
   //! Returns the names of the atoms.
-  const auto names() const {
-    return atom_attrs_ref<std::string>(
-        [](const RDKit::Atom *atom) -> const std::string & {
-          auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-              atom->getMonomerInfo());
-          return info->getName();
-        });
-  }
-  const auto _names() const {
-    std::vector<std::string> names = std::vector<std::string>();
-    for (const auto atom : mol->atoms()) {
-      auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-          atom->getMonomerInfo());
-      names.push_back((std::string)info->getName());
-    }
-    return names;
-  }
+  const std::vector<std::string> names() const;
 
-  const auto symbols() const {
-    return atom_attrs<std::string>(
-        [](const RDKit::Atom *atom) { return atom->getSymbol(); });
-  }
-  // const auto symbols() const {
-  //   std::vector<std::string> symbols;
-  //   for (const auto atom : source->get_molecule().atoms()) {
-  //     symbols.push_back(atom->getSymbol());
-  //   }
-  //   return symbols;
-  // }
+  //! Returns the symbols of the atoms.
+  const std::vector<std::string> symbols() const;
 
   //! Returns the residue indices of the atoms.
-  const auto indices() const {
-    return atom_attrs<int>(
-        [](const RDKit::Atom *atom) { return atom->getIdx(); });
-  }
+  const std::vector<int> indices() const;
 
   //! Returns the atomic numbers of the atoms.
-  const auto atomic_numbers() const {
-    return atom_attrs<int>(
-        [](const RDKit::Atom *atom) { return atom->getAtomicNum(); });
-  }
+  const std::vector<int> atomic_numbers() const;
 
   //! Returns the elements of the atoms.
-  const auto elements() const {
-    const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
-    return atom_attrs<std::string>([&tbl](const RDKit::Atom *atom) {
-      return tbl->getElementSymbol(atom->getAtomicNum());
-    });
-  }
+  const std::vector<std::string> elements() const;
 
   //! Returns the residue names of the atoms.
-  const auto resnames() const {
-    return atom_attrs_ref<std::string>(
-        [](const RDKit::Atom *atom) -> const std::string & {
-          auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-              atom->getMonomerInfo());
-          return info->getResidueName();
-        });
-  }
+  const std::vector<std::string> resnames() const;
 
-  const auto resids() const {
-    return atom_attrs<int>([](const RDKit::Atom *atom) -> int {
-      auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-          atom->getMonomerInfo());
-      return info->getResidueNumber();
-    });
-  }
+  //! Returns the residue ids of the atoms.
+  const std::vector<int> resids() const;
 
-  const auto resindices() const {
-    return atom_attrs<int>([](const RDKit::Atom *atom) -> int {
-      auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-          atom->getMonomerInfo());
-      return info->getSegmentNumber();
-    });
-  }
+  //! Returns the residue indices of the atoms.
+  const std::vector<int> resindices() const;
 
-  const auto chainlabels() const {
-    return atom_attrs_ref<std::string>(
-        [](const RDKit::Atom *atom) -> const std::string & {
-          auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-              atom->getMonomerInfo());
-          return info->getChainId();
-        });
-  }
+  //! Returns the chain labels of the atoms.
+  const std::vector<std::string> chainlabels() const;
 
-  friend class NSResults;
   template <typename T> friend class Neighbors;
 
 private:
   template <typename T>
-  std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const {
-    std::vector<T> attrs;
-    attrs.reserve(mol->getNumAtoms());
-    for (const auto atom : mol->atoms()) {
-      attrs.push_back(func(atom));
-    }
-    return attrs;
-  }
+  std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
 
   template <typename T>
   std::vector<std::reference_wrapper<const T>>
-  atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const {
-    std::vector<std::reference_wrapper<const T>> attributes;
-    attributes.reserve(mol->getNumAtoms());
-    for (const auto atom : mol->atoms()) {
-      attributes.push_back(std::cref(func(atom)));
-    }
-    return attributes;
-  }
+  atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
+
+  // FIX: might need to make find_neighbors_opt public
+  NSResults find_neighbors_opt(double cutoff = BONDED_NS_CUTOFF);
+  NSResults remove_adjascent_residueid_pairs(NSResults &results, int res_diff);
+
+  std::vector<RDKit::MatchVectType>
+  match_smarts_string(std::string sm, std::string atype = "",
+                      bool log_values = false) const;
 };
 
 } // namespace lahuta

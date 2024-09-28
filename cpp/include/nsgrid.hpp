@@ -1,7 +1,6 @@
 #ifndef LAHUTA_NSGRID_HPP
 #define LAHUTA_NSGRID_HPP
 
-#include "atom_types.hpp"
 #include <array>
 #include <rdkit/Geometry/point.h>
 #include <vector>
@@ -15,8 +14,6 @@ using Distances = std::vector<float>;
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, 3> &pseudobox, std::vector<double> &lmin, std::vector<double> &lmax);
 std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
-
-class Luni;
 
 struct NSResults {
 
@@ -32,16 +29,6 @@ struct NSResults {
   NSResults(Pairs &pairs, std::vector<float> &dists)
       : m_pairs(pairs), m_dists(dists) {}
 
-  NSResults(Luni &luni, Pairs &&pairs, std::vector<float> &&dists)
-      : m_pairs(std::move(pairs)), m_dists(std::move(dists)) {
-    this->m_luni = &luni;
-  }
-
-  NSResults(Luni &luni, Pairs &pairs, std::vector<float> &dists)
-      : m_pairs(pairs), m_dists(dists) {
-    this->m_luni = &luni;
-  }
-
   // NSResults results = {{1, 2}, {3, 4}, {5, 6}}, {0.1f, 0.2f, 0.3f}};
   explicit NSResults(std::initializer_list<std::pair<int, int>> pairs,
                      std::initializer_list<float> dists)
@@ -53,46 +40,23 @@ struct NSResults {
     }
   }
 
-  [[nodiscard]] Luni *get_luni() const { return m_luni; }
-
   void add_neighbors(int i, int j, float d2);
-
   void reserve_space(size_t input_size);
-
   size_t size() const { return m_pairs.size(); }
-
   [[nodiscard]] NSResults filter(double distance) const;
-
   void clear() {
     m_pairs.clear();
     m_dists.clear();
   }
 
-  NSResults type_filter(AtomType type, int partner);
-  NSResults remove_adjascent_residueid_pairs(int res_diff);
-
   const Pairs &get_pairs() const { return m_pairs; }
+  /*Pairs &get_pairs() { return m_pairs; }*/
   const Distances &get_distances() const { return m_dists; }
-  // const Distances &get_distances() const { 
-  //   if (m_dists.empty()) {
-  //     return m_dists;
-  //   }
-  //   auto *dists = new Distances(m_dists.size());
-  //   for (size_t i = 0; i < m_dists.size(); ++i) {
-  //     (*dists)[i] = std::sqrt(m_dists[i]);
-  //   }
-  //   return *dists;
-  // }
-
-  auto begin() { return m_pairs.begin(); }
-  auto end() { return m_pairs.end(); }
-
-  friend class Luni;
+  /*Distances &get_distances() { return m_dists; }*/
 
 private:
   Pairs m_pairs;
   Distances m_dists;
-  Luni *m_luni = nullptr;
 };
 
 class FastNS {
