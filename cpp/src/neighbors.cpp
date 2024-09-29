@@ -21,14 +21,18 @@ ContextProvider<AtomRingPair>::ContextProvider(const Luni &ctx) : luni(&ctx){};
 
 std::string
 AtomAtomPair::names(const ContextProvider<AtomAtomPair> &ctx) const {
-  return ctx.molecule().getAtomWithIdx(i)->getSymbol() + " " +
-         ctx.molecule().getAtomWithIdx(j)->getSymbol();
+  // FIX: Luni should support a member function: Luni::atom_name(int idx)
+  auto atom1 = ctx.molecule().getAtomWithIdx(i);
+  auto atom2 = ctx.molecule().getAtomWithIdx(j);
+  auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
+  auto res2 = static_cast<const RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
+  return res1->getName() + " " + res2->getName();
 }
 
 std::string
 AtomRingPair::names(const ContextProvider<AtomRingPair> &ctx) const {
   std::vector<int> atom_ids;
-  auto ring = ctx.rings().rings[j];
+  auto ring = ctx.rings().rings[i];
   for (const auto &atom : ring.atom_ids) {
     atom_ids.push_back(atom);
   }
@@ -37,8 +41,10 @@ AtomRingPair::names(const ContextProvider<AtomRingPair> &ctx) const {
     atom_ids_str += std::to_string(id) + " ";
   }
 
-  return "->" + ctx.molecule().getAtomWithIdx(i)->getSymbol() + " " +
-         atom_ids_str;
+  auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(
+      ctx.molecule().getAtomWithIdx(ring.atom_ids[0])->getMonomerInfo());
+
+  return res1->getResidueName() + " " + atom_ids_str;
 }
 
 template class Neighbors<AtomAtomPair>;

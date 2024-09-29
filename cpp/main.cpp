@@ -1,31 +1,15 @@
 #include <chrono>
 #include <iostream>
+#include <random>
 #include <string>
 
 #include "lahuta.hpp"
 #include "neighbors.hpp"
-#include "parser.hpp"
 #include "visitor.hpp"
 
 using namespace gemmi;
 using namespace RDKit;
 using namespace lahuta;
-
-//! Parse the expression and return the filtered indices
-std::vector<int> parse_and_filter(const Luni &luni,
-                                  const std::string &selection) {
-  std::vector<std::string> tokens = Luni::tokenize(selection);
-  lahuta::Parser parser(tokens);
-
-  // Parse the expression
-  lahuta::NodePtr root = parser.parse_expression();
-
-  lahuta::FilterVisitor visitor(luni);
-  root->accept(visitor);
-
-  const std::vector<int> &filtered_indices = visitor.get_result();
-  return filtered_indices;
-}
 
 // Define test selection strings
 std::vector<std::string> selections = {
@@ -96,53 +80,30 @@ int main(int argc, char const *argv[]) {
   auto neighbors = luni.find_neighbors<AtomAtomPair>(5.0, 1);
   auto mol = &luni.get_molecule();
 
-  std::cout << "\n\n PARSER TEST \n\n";
-  for (const auto &selection : selections) {
-    std::cout << "Selection: " << selection << std::endl;
+  Pairs p = neighbors.get_pairs();
+  Distances d = neighbors.get_distances();
 
-    // Parse and filter the selection
-    std::vector<int> indices = parse_and_filter(luni, selection);
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<> dis(0, p.size() - 1);
+  std::uniform_real_distribution<float> disf(0.0, 1.0); // random float between 0 and 1
 
-    std::cout << "Filtered indices (" << indices.size() << "): ";
-    for (int index : indices) {
-      std::cout << index << " ";
-    }
-    std::cout << std::endl << std::endl;
-  }
-
-  std::cout << "\n\n PARSER DONE \n\n";
-
-  std::cout << "Testing filtering" << std::endl;
-  std::vector<int> atom_indices;
-  for (int i = 0; i < 134; i++) {
-    atom_indices.push_back(i);
-  }
-  Luni new_luni = luni.filter_luni(atom_indices);
-  auto new_mol = &new_luni.get_molecule();
-  std::cout << "Luni n_atoms" << luni.n_atoms() << std::endl;
-  std::cout << "New Mol: " << new_mol->getNumAtoms() << std::endl;
-  // first 20
-  std::vector<int> atom_indices2 = {0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
-                                    10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-  Luni new_luni2 = new_luni.filter_luni(atom_indices2);
-  auto new_mol2 = &new_luni2.get_molecule();
-  std::cout << "Luni n_atoms" << luni.n_atoms() << std::endl;
-  std::cout << "New Mol2: " << new_mol2->getNumAtoms() << std::endl;
-
-  // log aromatic atoms
-  for (auto &atom : new_luni.get_molecule().atoms()) {
-    if (atom->getIsAromatic()) {
-      std::cout << "Aromatic Atom: " << atom->getIdx() << std::endl;
+  std::cout << "p size: " << p.size() << "\n";
+  std::vector<AtomAtomPair> _p2; // store only the first 20 pairs
+  for (size_t i = 0; i < p.size(); ++i) {
+    if (i < 20) {
+      _p2.push_back(AtomAtomPair(p[i].first, p[i].second, d[i]));
     }
   }
-  RingDataVec rings = new_luni.get_rings();
-  for (auto &ring : rings.rings) {
-    std::cout << "Ring: ";
-    for (auto &atom : ring.atom_ids) {
-      std::cout << atom << " ";
-    }
-    std::cout << std::endl;
-  }
+  Neighbors<AtomAtomPair> _n1(neighbors);
+  Neighbors<AtomAtomPair> _n2(luni, _p2);
+  auto ns = _n1.intersection(_n1.get_data(), _n2.get_data());
+  auto _ns_ = _n1.intersection(_n2);
+  std::cout << "ns size: " << ns.size() << "\n";
+  std::cout << "_ns_ size: " << _ns_.size() << "\n";
+
+  auto nn = luni.find_ring_neighbors(6.0);
+  std::cout << "nn size: " << nn.size() << "\n";
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());

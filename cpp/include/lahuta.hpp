@@ -24,6 +24,10 @@
 #include "ob/kekulize.h"
 #include "rings.hpp"
 
+// selection parser
+#include "parser.hpp"
+#include "visitor.hpp"
+
 #define LAHUTA_VERSION "0.11.0"
 #define t() std::chrono::high_resolution_clock::now()
 #define to_ms(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
@@ -199,21 +203,24 @@ private:
     RDKit::Conformer *conformer = new RDKit::Conformer();
     auto start = std::chrono::high_resolution_clock::now();
     st = read_structure_gz(file_name);
-    std::cout << "Read Structure using gemmi: " << to_ms(t() - start).count() << "\n";
+    std::cout << "Read Structure using gemmi: " << to_ms(t() - start).count()
+              << "\n";
 
     start = std::chrono::high_resolution_clock::now();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
-    std::cout << "Convert gemmi to RDKit: " << to_ms(t() - start).count() << "\n";
+    std::cout << "Convert gemmi to RDKit: " << to_ms(t() - start).count()
+              << "\n";
 
     start = std::chrono::high_resolution_clock::now();
     mol->updatePropertyCache(false);
-    std::cout << "Update Property Cache: " << to_ms(t() - start).count() << "\n";
+    std::cout << "Update Property Cache: " << to_ms(t() - start).count()
+              << "\n";
 
     start = std::chrono::high_resolution_clock::now();
     mol->addConformer(conformer, true);
     std::cout << "Add Conformer: " << to_ms(t() - start).count() << "\n";
   }
-  
+
   void create_topology() {
     auto start = std::chrono::high_resolution_clock::now();
     const auto &conf = get_conformer();
@@ -240,8 +247,6 @@ public:
     std::cout << "Create Topology: " << to_ms(t() - start).count() << "\n";
   }
 
-  Luni filter_luni(const std::vector<int> &atom_indices);
-
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return get_conformer(confId).getPositions();
   }
@@ -260,10 +265,22 @@ public:
   }
   const RingDataVec &get_rings() const { return topology.rings_vec; }
 
-  template <typename T> Neighbors<T> find_neighbors(double cutoff, int res_dif) {
+  template <typename T>
+  Neighbors<T> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
     ns = remove_adjascent_residueid_pairs(ns, res_dif);
     return Neighbors<T>(*this, std::move(ns), false);
+  }
+
+  // FIX: computed distances represent atom-ring center distances.
+  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff) {
+
+    auto rings = topology.rings_vec; 
+    auto grid = FastNS(mol->getConformer().getPositions(), 6.0);
+    auto centers = rings.centers_rkdit();
+
+    NSResults nbrs = grid.search(centers);
+    return Neighbors<AtomRingPair>(*this, std::move(nbrs), false);
   }
 
   // FIX: move to source
@@ -314,7 +331,7 @@ private:
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
 
-  // FIX: might need to make find_neighbors_opt public
+  // FIX: make find_neighbors_opt public?
   NSResults find_neighbors_opt(double cutoff = BONDED_NS_CUTOFF);
   NSResults remove_adjascent_residueid_pairs(NSResults &results, int res_diff);
 
@@ -325,7 +342,13 @@ private:
 public:
   static std::vector<std::string> tokenize(const std::string &str);
   static std::vector<std::string> tokenize_simple(const std::string &str);
+  std::vector<int> parse_and_filter(const std::string &selection) const;
+  bool parse_expression(const std::string &selection);
+  Luni filter_luni(const std::vector<int> &atom_indices) const;
+  Luni filter() const;
 
+private:
+  std::vector<int> filtered_indices;
 };
 
 } // namespace lahuta

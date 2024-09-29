@@ -191,7 +191,7 @@ void bind(py::module &_lahuta) {
                                        is_sorted);
       }))
       .def_property_readonly(
-          "data", [](Neighbors<AtomAtomPair> &self) { return self.data(); })
+          "data", [](Neighbors<AtomAtomPair> &self) { return self.get_data(); })
       /*.def("data", &Neighbors<AtomAtomPair>::data) */
       .def("size", &Neighbors<AtomAtomPair>::size)
       // .def("type_filter", &Neighbors<AtomAtomPair>::type_filter)
@@ -235,8 +235,8 @@ void bind(py::module &_lahuta) {
       // handle the calls on the Python side
       .def("intersection_x",
            [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
-             return Neighbors<AtomAtomPair>::intersection(self.data(),
-                                                          other.data());
+             return Neighbors<AtomAtomPair>::intersection(self.get_data(),
+                                                          other.get_data());
            })
       .def("intersection",
            [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
@@ -275,7 +275,7 @@ void bind(py::module &_lahuta) {
       //   return Neighbors<AtomAtomPair>(luni, pairs, dists, c, is_sorted);
       // }))
       .def_property_readonly(
-          "data", [](Neighbors<AtomRingPair> &self) { return self.data(); })
+          "data", [](Neighbors<AtomRingPair> &self) { return self.get_data(); })
       .def("size", &Neighbors<AtomRingPair>::size)
       // .def("type_filter", &Neighbors<AtomRingPair>::type_filter)
       .def("type_filter",
@@ -326,6 +326,8 @@ void bind(py::module &_lahuta) {
       /*     [](class Luni &luni, float cutoff) {*/
       /*       return luni.find_neighbors_opt(cutoff);*/
       /*     })*/
+      .def("filter", &Luni::filter)
+      .def("parse_expression", &Luni::parse_expression)
       .def("get_atom_types", &Luni::get_atom_types)
       .def("get_rings", &Luni::get_rings)
       /*.def("match_smarts_string", &Luni::match_smarts_string)*/

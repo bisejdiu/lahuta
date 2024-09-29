@@ -84,6 +84,14 @@ RWMol filter_with_bonds(const RWMol &mol, const std::vector<int> &indices) {
   // for faster index lookup
   std::unordered_map<int, int> old_to_new_index;
 
+  // sanity check
+  auto max_idx = std::max_element(indices.begin(), indices.end());
+  if (max_idx == indices.end() || *max_idx >= mol.getNumAtoms()) {
+    new_mol.addConformer(new_conf, true);
+    new_mol.updatePropertyCache(false);
+    return new_mol;
+  }
+
   for (size_t i = 0; i < indices.size(); ++i) {
     int idx = indices[i];
     const RDKit::Atom *atom = mol.getAtomWithIdx(idx);

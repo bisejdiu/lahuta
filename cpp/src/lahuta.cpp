@@ -170,7 +170,7 @@ NSResults Luni::find_neighbors_opt(double cutoff) {
   return ns;
 }
 
-Luni Luni::filter_luni(const std::vector<int> &atom_indices) {
+Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {
 
   auto new_mol = filter_with_bonds(*mol, atom_indices);
   new_mol.updatePropertyCache(false);
@@ -276,6 +276,47 @@ std::vector<std::string> Luni::tokenize(const std::string &str) {
   }
 
   return tokens;
+}
+
+bool Luni::parse_expression(const std::string &selection) {
+  try {
+    std::vector<std::string> tokens = Luni::tokenize(selection);
+    lahuta::Parser parser(tokens);
+
+    // Parse the expression
+    lahuta::NodePtr root = parser.parse_expression();
+
+    lahuta::FilterVisitor visitor(*this);
+    root->accept(visitor);
+
+    filtered_indices = visitor.get_result();
+    return true;
+  } catch (const std::exception &e) {
+    // Handle parsing errors
+    filtered_indices.clear();
+    return false;
+  }
+}
+
+Luni Luni::filter() const {
+  if (filtered_indices.empty()) {
+    std::cerr << "Selection not parsed or empty" << std::endl;
+  }
+  return filter_luni(filtered_indices);
+}
+
+std::vector<int> Luni::parse_and_filter(const std::string &selection) const {
+  std::vector<std::string> tokens = Luni::tokenize(selection);
+  lahuta::Parser parser(tokens);
+
+  // Parse the expression
+  lahuta::NodePtr root = parser.parse_expression();
+
+  lahuta::FilterVisitor visitor(*this);
+  root->accept(visitor);
+
+  const std::vector<int> &filtered_indices = visitor.get_result();
+  return filtered_indices;
 }
 
 NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results,

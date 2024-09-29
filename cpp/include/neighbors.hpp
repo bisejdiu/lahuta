@@ -14,82 +14,78 @@ namespace lahuta {
 
 class Luni;
 
-template<typename T>
-class ContextProvider;
+template <typename T> class ContextProvider;
 
 struct AtomRingPairType {
-  const RDKit::RWMol *atom;
+  const RDKit::RWMol *mol;
   const RingDataVec *ring;
 };
 
-template <typename T>
-class BasePair {
+template <typename T> class BasePair {
 public:
-    int i;
-    int j;
-    float d;
+  int i;
+  int j;
+  float d;
 
-    using RefType = const T;
+  using RefType = const T;
 
-    BasePair(int i, int j, float d) : d(d) {
-      std::tie(this->i, this->j) = std::minmax(i, j);
-    }
+  BasePair(int i, int j, float d) : d(d) {
+    std::tie(this->i, this->j) = std::minmax(i, j);
+  }
 
-    bool operator==(const BasePair &other) const {
-        return (i == other.i) && (j == other.j);
-    }
+  bool operator==(const BasePair &other) const {
+    return (i == other.i) && (j == other.j);
+  }
 
-    bool operator!=(const BasePair &other) const {
-        return i != other.i || j != other.j;
-    }
+  bool operator!=(const BasePair &other) const {
+    return i != other.i || j != other.j;
+  }
 
-    bool operator<(const BasePair &other) const {
-        return i != other.i ? i < other.i : j < other.j;
-    }
+  bool operator<(const BasePair &other) const {
+    return i != other.i ? i < other.i : j < other.j;
+  }
 
-    bool operator>(const BasePair &other) const {
-        return i != other.i ? i > other.i : j > other.j;
-    }
+  bool operator>(const BasePair &other) const {
+    return i != other.i ? i > other.i : j > other.j;
+  }
 
-    bool operator<=(const BasePair &other) const {
-        return i != other.i ? i <= other.i : j <= other.j;
-    }
+  bool operator<=(const BasePair &other) const {
+    return i != other.i ? i <= other.i : j <= other.j;
+  }
 
-    bool operator>=(const BasePair &other) const {
-        return i != other.i ? i >= other.i : j >= other.j;
-    }
+  bool operator>=(const BasePair &other) const {
+    return i != other.i ? i >= other.i : j >= other.j;
+  }
 
-    std::pair<int, int> get_pair() const { return {i, j}; }
-    float get_distance() const { return d; }
+  std::pair<int, int> get_pair() const { return {i, j}; }
+  float get_distance() const { return d; }
 };
 
 class AtomAtomPair : public BasePair<RDKit::RWMol> {
 public:
-    using BasePair::BasePair;
+  using BasePair::BasePair;
 
-    // FIXME: RefType, along with get_i and get_j are not being used. 
-    const RDKit::Atom* get_i(RefType *mol) const {
-        return mol->getAtomWithIdx(i);
-    }
+  // FIXME: RefType, along with get_i and get_j are not being used.
+  const RDKit::Atom *get_i(RefType *mol) const {
+    return mol->getAtomWithIdx(i);
+  }
 
-    const RDKit::Atom* get_j(RefType *mol) const {
-        return mol->getAtomWithIdx(j);
-    }
+  const RDKit::Atom *get_j(RefType *mol) const {
+    return mol->getAtomWithIdx(j);
+  }
 
-    std::string names(const ContextProvider<AtomAtomPair> &ctx) const;
+  std::string names(const ContextProvider<AtomAtomPair> &ctx) const;
 };
 
 class AtomRingPair : public BasePair<AtomRingPairType> {
 public:
   using BasePair::BasePair;
 
-  const RDKit::Atom* get_i(RefType *ref) const {
-    return ref->atom->getAtomWithIdx(i);
+  const RDKit::Atom *get_i(RefType *ref) const {
+    return ref->mol->getAtomWithIdx(i);
   }
 
-  const RingData* get_j(RefType *ref) const {
-    return &(ref->ring->rings[j]);
-  }
+  const RingData *get_j(RefType *ref) const { return &(ref->ring->rings[j]); }
 
   std::string names(const ContextProvider<AtomRingPair> &ctx) const;
 };
@@ -98,41 +94,40 @@ public:
 ///////////////// Neighbors class /////////////////////
 ///////////////////////////////////////////////////////
 
-template<>
-class ContextProvider<AtomAtomPair> {
+template <> class ContextProvider<AtomAtomPair> {
 public:
-    explicit ContextProvider(const Luni& ctx);
-    const RDKit::RWMol& molecule() const;
+  explicit ContextProvider(const Luni &ctx);
+  const RDKit::RWMol &molecule() const;
 
-    const Luni* get_luni() const { return luni; }
-private:
-  const Luni* luni;
-};
-
-template<>
-class ContextProvider<AtomRingPair> {
-public:
-    ContextProvider(const Luni& mainCtx);
-
-    const RDKit::RWMol& molecule() const;
-    const RingDataVec& rings() const;
-
-    const Luni* get_luni() const { return luni; }
+  const Luni *get_luni() const { return luni; }
 
 private:
   const Luni *luni;
 };
 
-template <typename T>
-class Neighbors {
+template <> class ContextProvider<AtomRingPair> {
+public:
+  ContextProvider(const Luni &mainCtx);
+
+  const RDKit::RWMol &molecule() const;
+  const RingDataVec &rings() const;
+
+  const Luni *get_luni() const { return luni; }
+
+private:
+  const Luni *luni;
+};
+
+template <typename T> class Neighbors {
 
 public:
-  Neighbors(const Luni &luni, std::vector<T> data, bool is_sorted = false): 
-    _data(std::move(data)), ctx(luni) {
-    if (!is_sorted) {
-      std::sort(this->_data.begin(), this->_data.end());
-    }
-  }
+  Neighbors() = delete;
+  Neighbors(const Luni &luni) : ctx(luni), m_luni(&luni) {}
+  Neighbors(const Neighbors &other)
+      : ctx(other.ctx), m_luni(other.m_luni), _data(other._data) {}
+
+  Neighbors(Neighbors &&other) noexcept
+      : ctx(other.ctx), m_luni(other.m_luni), _data(std::move(other._data)) {}
 
   Neighbors &operator=(const Neighbors &other) {
     if (this != &other) {
@@ -140,79 +135,86 @@ public:
     }
     return *this;
   }
-  
-  Neighbors(Neighbors &&other) noexcept: 
-    ctx(other.ctx), m_luni(other.m_luni), _data(std::move(other._data)) {}
 
-  Neighbors(const Luni &luni, const Pairs &&pairs, const Distances &&dists, bool is_sorted = false): 
-    ctx(luni) {
+  Neighbors &operator=(Neighbors &&other) noexcept {
+    if (this != &other) {
+      _data = std::move(other._data);
+    }
+    return *this;
+  }
+
+  Neighbors(const Luni &luni, std::vector<T> data, bool is_sorted = false)
+      : _data(std::move(data)), ctx(luni) {
+    if (!is_sorted) {
+      std::sort(this->_data.begin(), this->_data.end());
+    }
+  }
+
+  Neighbors(const Luni &luni, const Pairs &&pairs, const Distances &&dists,
+            bool is_sorted = false)
+      : ctx(luni) {
     if (pairs.size() != dists.size()) {
       throw std::runtime_error("Pairs and distances must have the same size");
     }
     _data.reserve(pairs.size());
     for (size_t i = 0; i < pairs.size(); ++i) {
-      _data.push_back({std::move(pairs[i].first), std::move(pairs[i].second), std::move(dists[i])});
+      _data.push_back({std::move(pairs[i].first), std::move(pairs[i].second),
+                       std::move(dists[i])});
     }
     if (!is_sorted) {
       std::sort(this->_data.begin(), this->_data.end());
     }
   }
 
-  Neighbors(const Luni &luni, NSResults &&results, bool is_sorted = false): 
-    ctx(luni) {
+  Neighbors(const Luni &luni, NSResults &&results, bool is_sorted = false)
+      : ctx(luni) {
     if (results.get_pairs().size() != results.get_distances().size()) {
       throw std::runtime_error("Pairs and distances must have the same size");
     }
     _data.reserve(results.get_pairs().size());
     for (size_t i = 0; i < results.get_pairs().size(); ++i) {
-      _data.push_back({
-        std::move(results.get_pairs()[i].first),
-        std::move(results.get_pairs()[i].second),
-        std::move(results.get_distances()[i])
-      });
+      _data.push_back({std::move(results.get_pairs()[i].first),
+                       std::move(results.get_pairs()[i].second),
+                       std::move(results.get_distances()[i])});
     }
     if (!is_sorted) {
       std::sort(this->_data.begin(), this->_data.end());
     }
-  } 
+  }
 
   // FIXME: here I am making a copy
-  static inline std::vector<T> intersection(std::vector<T> data, std::vector<T> other) {
+  static inline std::vector<T> intersection(std::vector<T> data,
+                                            std::vector<T> other) {
     std::vector<T> result;
     // std::sort(data.begin(), data.end());
     // std::sort(other.begin(), other.end());
 
-    std::set_intersection(data.begin(), data.end(),
-      other.begin(), other.end(),
-      std::back_inserter(result) 
-    );
+    std::set_intersection(data.begin(), data.end(), other.begin(), other.end(),
+                          std::back_inserter(result));
     return result;
   }
 
-  static inline std::vector<T> difference(std::vector<T> data, std::vector<T> other) {
+  static inline std::vector<T> difference(std::vector<T> data,
+                                          std::vector<T> other) {
     std::vector<T> result;
-    std::set_difference(data.begin(), data.end(),
-      other.begin(), other.end(),
-      std::back_inserter(result)
-    );
+    std::set_difference(data.begin(), data.end(), other.begin(), other.end(),
+                        std::back_inserter(result));
     return result;
   }
 
-  static inline std::vector<T> union_(std::vector<T> data, std::vector<T> other) {
+  static inline std::vector<T> union_(std::vector<T> data,
+                                      std::vector<T> other) {
     std::vector<T> result;
-    std::set_union(data.begin(), data.end(),
-      other.begin(), other.end(),
-      std::back_inserter(result)
-    );
+    std::set_union(data.begin(), data.end(), other.begin(), other.end(),
+                   std::back_inserter(result));
     return result;
   }
 
-  static inline std::vector<T> symmetric_difference(std::vector<T> data, std::vector<T> other) {
+  static inline std::vector<T> symmetric_difference(std::vector<T> data,
+                                                    std::vector<T> other) {
     std::vector<T> result;
-    std::set_symmetric_difference(data.begin(), data.end(),
-      other.begin(), other.end(),
-      std::back_inserter(result)
-    );
+    std::set_symmetric_difference(data.begin(), data.end(), other.begin(),
+                                  other.end(), std::back_inserter(result));
     return result;
   }
 
@@ -238,14 +240,15 @@ public:
 
   Neighbors<T> filter(std::function<bool(const T &)> predicate) const {
     std::vector<T> result;
-    std::copy_if(_data.begin(), _data.end(), std::back_inserter(result), predicate);
+    std::copy_if(_data.begin(), _data.end(), std::back_inserter(result),
+                 predicate);
     return Neighbors<T>(*m_luni, result);
   }
 
   // NOTE: type_filter needs to be a supported member
   Neighbors<T> type_filter(AtomType type, int partner);
 
-  // FIXME: Should FastNS be resonsible for defining these methods? 
+  // FIXME: Should FastNS be resonsible for defining these methods?
   /*Neighbors<T> remove_adjascent_residueid_pairs(int res_diff);*/
 
   // void add_neighbor(int i, int j, float d, bool sort = true) {
@@ -258,7 +261,6 @@ public:
   //   data.insert(it, new_val);
   // }
 
-
   std::vector<std::string> names() const {
     std::vector<std::string> result;
     for (const T &p : _data) {
@@ -267,7 +269,7 @@ public:
     return result;
   }
 
-  Pairs get_pairs() const { 
+  Pairs get_pairs() const {
     std::vector<std::pair<int, int>> result;
     for (const T &p : _data) {
       result.push_back({p.i, p.j});
@@ -285,14 +287,14 @@ public:
 
   size_t size() const { return _data.size(); }
   auto get_luni() const { return m_luni; }
-  std::vector<T> data() const { return _data; }
+  std::vector<T> get_data() const { return _data; }
 
   friend class Luni;
 
 private:
   using RefType = typename T::RefType;
   const ContextProvider<T> ctx;
-  const Luni* const m_luni = ctx.get_luni();
+  const Luni *const m_luni = ctx.get_luni();
   std::vector<T> _data;
 };
 
