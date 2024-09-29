@@ -1,6 +1,7 @@
 #ifndef LAHUTA_RINGS_HPP
 #define LAHUTA_RINGS_HPP
 
+#include "GraphMol/MonomerInfo.h"
 #include <vector>
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RWMol.h>
@@ -123,6 +124,8 @@ public:
   void process_rings(const RDKit::ROMol &mol) {
     const RDKit::Conformer &conf = mol.getConformer();
     for (auto &[res_id, ring_data] : rings_) {
+      // FIX: with filter_luni, the atom_ids can be any number (e.g., 0, 1, 2, etc.)
+      // How is centering and normal calculation affected by this?
       if (!ring_data.atom_ids.empty()) {
         order_atoms(res_id.res_name, ring_data.atom_ids, mol);
         find_center_and_normal(conf, ring_data.atom_ids, ring_data.center,

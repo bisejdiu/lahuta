@@ -329,6 +329,7 @@ void bind(py::module &_lahuta) {
       .def("get_atom_types", &Luni::get_atom_types)
       .def("get_rings", &Luni::get_rings)
       /*.def("match_smarts_string", &Luni::match_smarts_string)*/
+      .def("filter_luni", &Luni::filter_luni)
       .def("n_atoms", &Luni::n_atoms)
 
       .def(

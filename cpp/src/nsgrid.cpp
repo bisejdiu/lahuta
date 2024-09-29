@@ -257,6 +257,19 @@ NSResults NSResults::filter(double dist) const {
   return filtered;
 }
 
+NSResults NSResults::filter(const std::vector<int> &atom_indices) const {
+  NSResults filtered;
+  filtered.reserve_space(m_pairs.size());
+  std::unordered_set<int> atom_indices_set(atom_indices.begin(), atom_indices.end());
+  for (size_t i = 0; i < m_pairs.size(); ++i) {
+    if (atom_indices_set.find(m_pairs[i].first) != atom_indices_set.end() ||
+        atom_indices_set.find(m_pairs[i].second) != atom_indices_set.end()) {
+      filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second, m_dists[i]);
+    }
+  }
+  return filtered;
+}
+
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, kDIMENSIONS> &pseudobox,
                            std::vector<double> &lmin,

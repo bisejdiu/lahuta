@@ -5,9 +5,6 @@
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 
-#define T() std::chrono::high_resolution_clock::now()
-#define TO_MS(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
-
 using namespace gemmi;
 using namespace RDKit;
 
@@ -22,6 +19,40 @@ int main(int argc, char const *argv[]) {
   lahuta::Luni luni(file_name);
   auto neighbors = luni.find_neighbors<lahuta::AtomAtomPair>(5.0, 1);
   auto mol = &luni.get_molecule();
+
+  std::cout << "Testing filtering" << std::endl;
+  std::vector<int> atom_indices;
+  for (int i = 0; i < 134; i++) {
+    atom_indices.push_back(i);
+  }
+  lahuta::Luni new_luni = luni.filter_luni(atom_indices);
+  auto new_mol = &new_luni.get_molecule();
+  std::cout << "Luni n_atoms" << luni.n_atoms() << std::endl; 
+  std::cout << "New Mol: " << new_mol->getNumAtoms() << std::endl;
+  // first 20
+  std::vector<int> atom_indices2 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
+                                    10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
+  lahuta::Luni new_luni2 = new_luni.filter_luni(atom_indices2);
+  auto new_mol2 = &new_luni2.get_molecule();
+  std::cout << "Luni n_atoms" << luni.n_atoms() << std::endl;
+  std::cout << "New Mol2: " << new_mol2->getNumAtoms() << std::endl;
+  
+  // log aromatic atoms
+  for (auto &atom: new_luni.get_molecule().atoms()) {
+    if (atom->getIsAromatic()) {
+      std::cout << "Aromatic Atom: " << atom->getIdx() << std::endl;
+    }
+  }
+  lahuta::RingDataVec rings = new_luni.get_rings();
+  for (auto &ring: rings.rings) {
+    std::cout << "Ring: ";
+    for (auto &atom: ring.atom_ids) {
+      std::cout << atom << " ";
+    }
+    std::cout << std::endl;
+  }
+
+
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());
@@ -61,7 +92,7 @@ int main(int argc, char const *argv[]) {
             << " t: " << o1 + o2 + aromatic << std::endl;
   std::cout << "Nr. Bonds: " << mol->getNumBonds() << std::endl;
 
-  auto totTime = TO_MS(T() - startTotTime).count();
+  auto totTime = to_ms(t() - startTotTime).count();
   std::cout << "Total Time: " << totTime << "ms" << std::endl;
 
   return 0;

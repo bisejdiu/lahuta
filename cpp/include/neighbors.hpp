@@ -134,19 +134,6 @@ public:
     }
   }
 
-  /*Neighbors(const Luni &luni, Pairs pairs, Distances dists, bool is_sorted = false): */
-  /*  contextProvider(luni) {*/
-  /*  if (pairs.size() != dists.size()) {*/
-  /*    throw std::runtime_error("Pairs and distances must have the same size");*/
-  /*  }*/
-  /*  for (size_t i = 0; i < pairs.size(); ++i) {*/
-  /*    _data.push_back({pairs[i].first, pairs[i].second, dists[i]});*/
-  /*  }*/
-  /*  if (!is_sorted) {*/
-  /*    std::sort(this->_data.begin(), this->_data.end());*/
-  /*  }*/
-  /*}*/
-  // copy assignment
   Neighbors &operator=(const Neighbors &other) {
     if (this != &other) {
       _data = other._data;
@@ -162,13 +149,32 @@ public:
     if (pairs.size() != dists.size()) {
       throw std::runtime_error("Pairs and distances must have the same size");
     }
+    _data.reserve(pairs.size());
     for (size_t i = 0; i < pairs.size(); ++i) {
-      _data.push_back({pairs[i].first, pairs[i].second, dists[i]});
+      _data.push_back({std::move(pairs[i].first), std::move(pairs[i].second), std::move(dists[i])});
     }
     if (!is_sorted) {
       std::sort(this->_data.begin(), this->_data.end());
     }
   }
+
+  Neighbors(const Luni &luni, NSResults &&results, bool is_sorted = false): 
+    ctx(luni) {
+    if (results.get_pairs().size() != results.get_distances().size()) {
+      throw std::runtime_error("Pairs and distances must have the same size");
+    }
+    _data.reserve(results.get_pairs().size());
+    for (size_t i = 0; i < results.get_pairs().size(); ++i) {
+      _data.push_back({
+        std::move(results.get_pairs()[i].first),
+        std::move(results.get_pairs()[i].second),
+        std::move(results.get_distances()[i])
+      });
+    }
+    if (!is_sorted) {
+      std::sort(this->_data.begin(), this->_data.end());
+    }
+  } 
 
   // FIXME: here I am making a copy
   static inline std::vector<T> intersection(std::vector<T> data, std::vector<T> other) {

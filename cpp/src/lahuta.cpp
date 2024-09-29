@@ -116,6 +116,19 @@ NSResults Luni::find_neighbors_opt(double cutoff) {
   return ns;
 }
 
+Luni Luni::filter_luni(const std::vector<int> &atom_indices) {
+
+  auto new_mol = filter_with_bonds(*mol, atom_indices);
+  new_mol.updatePropertyCache(false);
+
+  Luni new_luni;
+  new_luni.mol = std::make_shared<RDKit::RWMol>(new_mol);
+  new_luni.bonded_nps = bonded_nps.filter(atom_indices);
+  new_luni.topology.assign_atom_types(new_mol);
+
+  return new_luni;
+}
+
 NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results,
                                                  int res_diff) {
   Pairs filtered;

@@ -44,6 +44,7 @@ struct NSResults {
   void reserve_space(size_t input_size);
   size_t size() const { return m_pairs.size(); }
   [[nodiscard]] NSResults filter(double distance) const;
+  [[nodiscard]] NSResults filter(const std::vector<int> &atom_indices) const;
   void clear() {
     m_pairs.clear();
     m_dists.clear();

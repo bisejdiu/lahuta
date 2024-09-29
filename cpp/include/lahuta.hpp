@@ -25,6 +25,8 @@
 #include "rings.hpp"
 
 #define LAHUTA_VERSION "0.11.0"
+#define t() std::chrono::high_resolution_clock::now()
+#define to_ms(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
 
 namespace lahuta {
 
@@ -197,98 +199,48 @@ private:
     RDKit::Conformer *conformer = new RDKit::Conformer();
     auto start = std::chrono::high_resolution_clock::now();
     st = read_structure_gz(file_name);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    /*std::cout << "Read Structure using gemmi: " << elapsed_seconds.count() <<
-     * "s\n";*/
-    std::cout << "Read Structure using gemmi: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
+    std::cout << "Read Structure using gemmi: " << to_ms(t() - start).count() << "\n";
+
     start = std::chrono::high_resolution_clock::now();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
-    end = std::chrono::high_resolution_clock::now();
-    elapsed_seconds = end - start;
-    /*std::cout << "Convert gemmi to RDKit: " << elapsed_seconds.count() <<
-     * "s\n";*/
-    std::cout << "Convert gemmi to RDKit: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
+    std::cout << "Convert gemmi to RDKit: " << to_ms(t() - start).count() << "\n";
+
     start = std::chrono::high_resolution_clock::now();
     mol->updatePropertyCache(false);
-    end = std::chrono::high_resolution_clock::now();
-    elapsed_seconds = end - start;
-    /*std::cout << "Update Property Cache: " << elapsed_seconds.count() <<
-     * "s\n";*/
-    std::cout << "Update Property Cache: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
+    std::cout << "Update Property Cache: " << to_ms(t() - start).count() << "\n";
+
     start = std::chrono::high_resolution_clock::now();
     mol->addConformer(conformer, true);
-    end = std::chrono::high_resolution_clock::now();
-    elapsed_seconds = end - start;
-    /*std::cout << "Add Conformer: " << elapsed_seconds.count() << "s\n";*/
-    std::cout << "Add Conformer: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
+    std::cout << "Add Conformer: " << to_ms(t() - start).count() << "\n";
   }
-
-public:
-  explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
-    process_file(file_name);
-    auto start = std::chrono::high_resolution_clock::now();
-    create_topology();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::cout << "Create Topology: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
-  }
-
+  
   void create_topology() {
+    auto start = std::chrono::high_resolution_clock::now();
     const auto &conf = get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
-    auto start = std::chrono::high_resolution_clock::now();
     bonded_nps = grid.self_search();
-    auto end = std::chrono::high_resolution_clock::now();
-    std::cout << "Self Search: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
+    std::cout << "Self Search: " << to_ms(t() - start).count() << "\n";
 
     start = std::chrono::high_resolution_clock::now();
     Topology::compute_bonds(*mol, bonded_nps);
-    end = std::chrono::high_resolution_clock::now();
-    std::cout << "Compute Bonds: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
+    std::cout << "Compute Bonds: " << to_ms(t() - start).count() << "\n";
 
     start = std::chrono::high_resolution_clock::now();
     topology.assign_atom_types(*mol);
-    end = std::chrono::high_resolution_clock::now();
-    std::cout << "Assign Atom Types: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end -
-                                                                       start)
-                     .count()
-              << "ms" << std::endl;
-
-    // topology.rings = std::move(top.rings);
-    // topology = top;
+    std::cout << "Assign Atom Types: " << to_ms(t() - start).count() << "\n";
   }
 
-  // RDKit::RWMol &get_molecule() { return source->get_molecule(); }
-  // const RDKit::RWMol &get_molecule() const { return source->get_molecule(); }
+public:
+  Luni() = default;
+  explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
+    process_file(file_name);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    create_topology();
+    std::cout << "Create Topology: " << to_ms(t() - start).count() << "\n";
+  }
+
+  Luni filter_luni(const std::vector<int> &atom_indices);
 
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return get_conformer(confId).getPositions();
@@ -310,9 +262,8 @@ public:
 
   template <typename T> Neighbors<T> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
-    auto _ns = remove_adjascent_residueid_pairs(ns, res_dif);
-    return Neighbors<T>(*this, std::move(_ns.get_pairs()),
-                        std::move(_ns.get_distances()), false);
+    ns = remove_adjascent_residueid_pairs(ns, res_dif);
+    return Neighbors<T>(*this, std::move(ns), false);
   }
 
   // FIX: move to source
@@ -370,6 +321,8 @@ private:
   std::vector<RDKit::MatchVectType>
   match_smarts_string(std::string sm, std::string atype = "",
                       bool log_values = false) const;
+
+
 };
 
 } // namespace lahuta

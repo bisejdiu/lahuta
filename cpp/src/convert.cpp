@@ -1,6 +1,6 @@
+#include "convert.hpp"
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <unordered_map>
-#include "convert.hpp"
 
 #define ITER_GEMMI_ATOMS(st, atom)                                             \
   for (const Model &model : st.models)                                         \
@@ -19,7 +19,8 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
   ign_h = false; // FIX: ign_h=true is broken
   ITER_GEMMI_ATOMS(st, atom) {
 
-    if (atom.element == Element("H") && ign_h) { // FIX: faster to swap the order
+    if (atom.element == Element("H") &&
+        ign_h) { // FIX: faster to swap the order
       continue;
     }
 
@@ -49,7 +50,7 @@ RWMol filter_atoms(RWMol &mol, std::vector<int> &indices) {
 
   for (auto atomIdx : indices) {
     auto atom = mol.getAtomWithIdx(atomIdx);
-    RDKit::Atom *new_atom = new RDKit::Atom(*atom); 
+    RDKit::Atom *new_atom = new RDKit::Atom(*atom);
     new_mol.addAtom(new_atom, true, true);
   }
   new_mol.updatePropertyCache(false);
@@ -64,7 +65,7 @@ RWMol filter_with_conf(RWMol &mol, std::vector<int> &indices) {
 
   for (auto atomIdx : indices) {
     auto atom = mol.getAtomWithIdx(atomIdx);
-    RDKit::Atom *newAtom = new RDKit::Atom(*atom); 
+    RDKit::Atom *newAtom = new RDKit::Atom(*atom);
     new_mol.addAtom(newAtom, true, true);
     auto pos = conf.getAtomPos(atom->getIdx());
     new_conf->setAtomPos(newAtom->getIdx(), pos);
@@ -76,44 +77,46 @@ RWMol filter_with_conf(RWMol &mol, std::vector<int> &indices) {
 }
 
 RWMol filter_with_bonds(const RWMol &mol, const std::vector<int> &indices) {
-    RWMol new_mol;
-    const Conformer &conf = mol.getConformer();
-    auto *new_conf = new Conformer();
-    
-    // for faster index lookup
-    std::unordered_map<int, int> old_to_new_index;
-    
-    for (size_t i = 0; i < indices.size(); ++i) {
-        int idx = indices[i];
-        const RDKit::Atom *atom = mol.getAtomWithIdx(idx);
-        int new_idx = new_mol.addAtom(new RDKit::Atom(*atom), false, true);
-        old_to_new_index[idx] = new_idx;
-        new_conf->setAtomPos(new_idx, conf.getAtomPos(idx));
-    }
-    
-    for (int old_idx : indices) {
-        for (const auto &bond : mol.atomBonds(mol.getAtomWithIdx(old_idx))) {
-            int begin_idx = bond->getBeginAtomIdx();
-            int end_idx = bond->getEndAtomIdx();
-            
-            auto begin_it = old_to_new_index.find(begin_idx);
-            auto end_it = old_to_new_index.find(end_idx);
-            
-            if (begin_it != old_to_new_index.end() && end_it != old_to_new_index.end()) {
-                int new_begin_idx = begin_it->second;
-                int new_end_idx = end_it->second;
-                if (new_begin_idx > new_end_idx) std::swap(new_begin_idx, new_end_idx);
-                
-                if (!new_mol.getBondBetweenAtoms(new_begin_idx, new_end_idx)) {
-                    new_mol.addBond(new_begin_idx, new_end_idx, bond->getBondType());
-                }
-            }
+  RWMol new_mol;
+  const Conformer &conf = mol.getConformer();
+  auto *new_conf = new Conformer();
+
+  // for faster index lookup
+  std::unordered_map<int, int> old_to_new_index;
+
+  for (size_t i = 0; i < indices.size(); ++i) {
+    int idx = indices[i];
+    const RDKit::Atom *atom = mol.getAtomWithIdx(idx);
+    int new_idx = new_mol.addAtom(new RDKit::Atom(*atom), false, true);
+    old_to_new_index[idx] = new_idx;
+    new_conf->setAtomPos(new_idx, conf.getAtomPos(idx));
+  }
+
+  for (int old_idx : indices) {
+    for (const auto &bond : mol.atomBonds(mol.getAtomWithIdx(old_idx))) {
+      int begin_idx = bond->getBeginAtomIdx();
+      int end_idx = bond->getEndAtomIdx();
+
+      auto begin_it = old_to_new_index.find(begin_idx);
+      auto end_it = old_to_new_index.find(end_idx);
+
+      if (begin_it != old_to_new_index.end() &&
+          end_it != old_to_new_index.end()) {
+        int new_begin_idx = begin_it->second;
+        int new_end_idx = end_it->second;
+        if (new_begin_idx > new_end_idx)
+          std::swap(new_begin_idx, new_end_idx);
+
+        if (!new_mol.getBondBetweenAtoms(new_begin_idx, new_end_idx)) {
+          new_mol.addBond(new_begin_idx, new_end_idx, bond->getBondType());
         }
+      }
     }
-    
-    new_mol.addConformer(new_conf, true);
-    new_mol.updatePropertyCache(false);
-    return new_mol;
+  }
+
+  new_mol.addConformer(new_conf, true);
+  new_mol.updatePropertyCache(false);
+  return new_mol;
 }
 
 } // namespace lahuta
