@@ -322,6 +322,9 @@ private:
   match_smarts_string(std::string sm, std::string atype = "",
                       bool log_values = false) const;
 
+public:
+  static std::vector<std::string> tokenize(const std::string &str);
+  static std::vector<std::string> tokenize_simple(const std::string &str);
 
 };
 
