@@ -192,7 +192,6 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
-
         c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
 
         # from lahuta.lib import cNSResults
@@ -200,13 +199,22 @@ class NeighborPairs:
 
         # cns = cNSResults(self.luni._luni, self.pairs, self.distances)
         # cns = cNSResults(self.luni._file_loader.luni, self.pairs, self.distances)
-        cns = cNeighbors(self.luni._file_loader.luni, self.pairs, self.distances, False)
+
+        # print("-->", np.unique(self.resnames[:, 0]))  # , np.unique(self.resnames[:, 1]))
+        cns = cNeighbors(self.luni._file_loader.luni, self.pairs, self.distances, True)
+        # print("++>", np.unique(self.atoms[cns.get_pairs()].resnames[:, 0]))
         result = cns.type_filter(c_atom_type, partner - 1)
+        # print("**>", np.unique(self.atoms[result.get_pairs()].resnames[:, 0]))
         pairs, distances = result.get_pairs(), np.array(result.get_distances_sq())
         # if atom_type == "carbonyl_oxygen":
         #     print("check: ", pairs[:10], distances[:10])
 
+        # FIX: we are saving the cns that's not filtered. Is that correct?
         self._ns = cns
+
+        # print("~" * 80)
+        # print(self.labels.shape)
+        # print(self.resnames)
 
         return self.new(pairs, distances)
 
@@ -314,6 +322,25 @@ class NeighborPairs:
         mask = self.distances <= distance
         return self.new(self.pairs[mask], self.distances[mask])
 
+    def angle_filter(self, angles: NDArray[np.float32], cutoff: float) -> Self:
+        """Select pairs based on a numeric cutoff.
+
+        The method selects pairs from the NeighborPairs object where the values in the specified array are less than or
+        equal to the cutoff (if `lte` is True) or greater than the cutoff (if `lte` is False).
+
+        Args:
+            angles (NDArray[np.float32]): The array containing the values to compare with the cutoff.
+            cutoff (float): The cutoff value for the filter.
+
+        Returns:
+            A NeighborPairs object containing the pairs that meet the numeric filter.
+        """
+        # if the angle is larger than 90.0, use: angle = 180.0 - angle instead
+        angles = np.where(angles > 90.0, 180.0 - angles, angles)
+        mask = angles <= cutoff
+        # print("mask", mask.shape, mask.nonzero())
+        return self.new(self.pairs[mask], self.distances[mask])
+
     def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> Self:
         """Select pairs based on a numeric cutoff.
 
@@ -328,6 +355,7 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the numeric filter.
         """
         mask = array <= cutoff
+        # print("mask", mask.shape, mask.nonzero())
         return self.new(self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> Self:

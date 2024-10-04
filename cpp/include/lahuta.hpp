@@ -273,13 +273,16 @@ public:
   }
 
   // FIX: computed distances represent atom-ring center distances.
-  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff) {
+  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif=1) {
 
     auto rings = topology.rings_vec; 
     auto grid = FastNS(mol->getConformer().getPositions(), 6.0);
     auto centers = rings.centers_rkdit();
 
     NSResults nbrs = grid.search(centers);
+    if (res_dif > 0) {
+      nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);
+    }
     return Neighbors<AtomRingPair>(*this, std::move(nbrs), false);
   }
 

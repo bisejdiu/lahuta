@@ -59,6 +59,7 @@ class Rings:
         self._centers.append(center_coords)
         self._normals.append(normal_coords)
         self._atoms.append(atoms)
+        atoms.sort()
         self._first_atom_idx.append(atoms[0])
 
     @property

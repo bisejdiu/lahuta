@@ -27,6 +27,7 @@ AtomAtomPair::names(const ContextProvider<AtomAtomPair> &ctx) const {
   auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
   auto res2 = static_cast<const RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
   return res1->getName() + " " + res2->getName();
+
 }
 
 std::string
@@ -80,7 +81,7 @@ Neighbors<T> Neighbors<T>::type_filter(AtomType type, int partner) {
     }
   }
   // FIX: does this cause problems on the python side? 
-  return Neighbors(*this->get_luni(), std::move(filtered), std::move(dists), false);
+  return Neighbors(*this->get_luni(), std::move(filtered), std::move(dists), true);
 }
 
 // Required for pybind11 bindings to work

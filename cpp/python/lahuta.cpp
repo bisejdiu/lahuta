@@ -81,6 +81,8 @@ void bind(py::module &_lahuta) {
   py::class_<RingData>(_lahuta, "RingData")
       .def(py::init<>())
       .def_readwrite("atom_ids", &RingData::atom_ids)
+      .def("compute_angle", &RingData::compute_angle)
+      /*.def("compute_angle2", &RingData::compute_angle2)*/
       .def_property_readonly(
           "center", [](RingData &rd) { return point3d_to_pyarray(rd.center); })
       .def_property_readonly(
@@ -91,6 +93,12 @@ void bind(py::module &_lahuta) {
   py::class_<RingDataVec>(_lahuta, "RingDataVec")
       .def(py::init<>())
       .def_readwrite("rings", &RingDataVec::rings)
+      .def("compute_angles", &RingDataVec::compute_angles)
+      .def("root_atom_ids", &RingDataVec::root_atom_ids)
+      /*.def("compute_angles",*/
+      /*     [](RingDataVec &rdv, const std::vector<std::vector<double>> &points) {*/
+      /*       return rdv.compute_angles(points);*/
+      /*     })*/
       // .def_property_readonly("centers", &RingDataVec::centers)
       // .def_property_readonly("centers", [](RingDataVec &rdv) {
       //   auto centers = rdv.centers();
@@ -166,8 +174,8 @@ void bind(py::module &_lahuta) {
       .def_readonly("j", &AtomAtomPair::j)
       .def_readonly("d", &AtomAtomPair::d)
       .def("get_pair", &AtomAtomPair::get_pair)
-      .def("get_i", &AtomAtomPair::get_i)
-      .def("get_j", &AtomAtomPair::get_j)
+      /*.def("get_i", &AtomAtomPair::get_i)*/
+      /*.def("get_j", &AtomAtomPair::get_j)*/
       .def("names", &AtomAtomPair::names);
 
   py::class_<AtomRingPair>(_lahuta, "AtomRingPair")
@@ -176,17 +184,17 @@ void bind(py::module &_lahuta) {
       .def_readonly("j", &AtomRingPair::j)
       .def_readonly("d", &AtomRingPair::d)
       .def("get_pair", &AtomRingPair::get_pair)
-      .def("get_i", &AtomRingPair::get_i)
-      .def("get_j", &AtomRingPair::get_j)
+      /*.def("get_i", &AtomRingPair::get_i)*/
+      /*.def("get_j", &AtomRingPair::get_j)*/
       .def("names", &AtomRingPair::names);
 
   py::class_<Neighbors<AtomAtomPair>>(_lahuta, "AtomAtomNeighbors")
       .def(py::init([](class Luni &luni, std::vector<AtomAtomPair> data,
-                       bool is_sorted = false) {
+                       bool is_sorted) {
         return Neighbors<AtomAtomPair>(luni, data, is_sorted);
       }))
       .def(py::init([](class Luni &luni, const Pairs &&pairs,
-                       const Distances &&dists, bool is_sorted = false) {
+                       const Distances &&dists, bool is_sorted) {
         return Neighbors<AtomAtomPair>(luni, std::move(pairs), std::move(dists),
                                        is_sorted);
       }))
@@ -258,12 +266,12 @@ void bind(py::module &_lahuta) {
 
   py::class_<Neighbors<AtomRingPair>>(_lahuta, "AtomRingNeighbors")
       .def(py::init([](class Luni &luni, std::vector<AtomRingPair> data,
-                       const AtomRingPair::RefType &ctx,
+                       /*const AtomRingPair::RefType &ctx,*/
                        bool is_sorted = false) {
         return Neighbors<AtomRingPair>(luni, data, is_sorted);
       }))
       .def(py::init([](class Luni &luni, Pairs pairs, Distances dists,
-                       const AtomRingPair::RefType &ctx,
+                       /*const AtomRingPair::RefType &ctx,*/
                        bool is_sorted = false) {
         /*return Neighbors<AtomRingPair>(luni, pairs, dists, is_sorted);*/
         return Neighbors<AtomRingPair>(luni, std::move(pairs), std::move(dists),
@@ -322,6 +330,7 @@ void bind(py::module &_lahuta) {
       /*.def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)*/
       .def("fn_aa", &Luni::find_neighbors<AtomAtomPair>)
       .def("fn_ar", &Luni::find_neighbors<AtomRingPair>)
+      .def("find_ring_neighbors", &Luni::find_ring_neighbors)
       /*.def("find_neighbors",*/
       /*     [](class Luni &luni, float cutoff) {*/
       /*       return luni.find_neighbors_opt(cutoff);*/

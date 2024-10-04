@@ -32,6 +32,7 @@ from lahuta.core.neighbors import NeighborPairs
 from lahuta.utils.array_utils import non_matching_indices, sorting_indices
 from lahuta.utils.math import calc_vec_line_angles
 from lahuta.utils.ob import enumerate_rings
+from lahuta.config.atoms import METALS
 
 __all__ = [
     "cation_pi",
@@ -59,7 +60,7 @@ def compute_neighbors(
     if reference.shape[0] == 0 or positions.shape[0] == 0:
         return np.empty((0, 2), dtype=np.int32), np.empty(0, dtype=np.float32)
     pairs, distances = mda_distances.capped_distance(reference, positions, max_cutoff, return_distances=True)
-    print("PAIRS size: ", pairs.shape)
+    # print("PAIRS size: ", pairs.shape)
     return pairs, distances**2
 
 
@@ -67,8 +68,6 @@ def calc_ringnormal_pos_angle(
     positions: NDArray[np.float32], ring_centers: NDArray[np.float32], ring_normals: NDArray[np.float32]
 ) -> NDArray[np.float32]:
     """Calculate the angle between the ring normal and the vector connecting the ring center and the atom."""
-    # for i in range(10):
-    #     print("positions: ", positions[i], "ring_centers: ", ring_centers[i], "ring_normals: ", ring_normals[i])
     return calc_vec_line_angles(
         ring_normals,
         ring_centers - positions,
@@ -110,183 +109,66 @@ class AtomPlaneContacts:
     """
 
     def __init__(self, ns: NeighborPairs, allow_metal_participation: bool = False) -> None:
-        # allow_metal_participation: A boolean option to include or exclude metal atoms in pi-system interactions.
         mda = ns.luni.to("mda")
+        rings = ns.luni._file_loader.luni.get_rings()
 
-        self.rings = enumerate_rings(ns.luni.to("mol"))
-        print("____" * 10)
-        # for ix, ring in enumerate(self.rings.rings):
-        #     print("ring: ", ring, self.rings._atoms)
-        # print("ring: ", self.rings._atoms)
-        _atoms = self.rings._atoms
-        for x in _atoms:
-            if 1197 in x:  # or 1517 in x:
-                xx = " ".join([str(y) for y in x])
-                print("x: ", xx)
+        from lahuta.lib import cAtomType
 
-        print("number of rings: ", self.rings.centers.shape[0])
-        _rings = ns.luni._file_loader.luni.get_rings()
-        _first_atom_idx = []
-        for _ring in _rings.rings:
-            atom_ids = _ring.atom_ids
-            atom_ids.sort()
-            _first_atom_idx.append(atom_ids[0])
+        first_atom_idx = np.array(rings.root_atom_ids())
 
-        self.ring_first_idxs = mda.universe.atoms.indices[self.rings.first_atom_idx]
-        _first_atom_idx = np.array(_first_atom_idx)
-        # print("Diff: ", np.all(self.ring_first_idxs == self.rings.first_atom_idx))
-        # print("first_atom_idx: ", sorted(self.ring_first_idxs), type(self.ring_first_idxs))
-        # print("_first_atom_idx: ", sorted(_first_atom_idx), type(_first_atom_idx))
-
-        # no rings means no contacts
-        if self.rings.centers.shape[0] == 0:
+        if rings.centers.shape[0] == 0:
             self.ns = NeighborPairs(ns.luni)
             self.angles = np.empty(0, dtype=np.float32)
+            self.metal_indices = np.empty(0, dtype=np.int32)
             return
 
-        # FIX: A big issue is that the registered distances are to ring centers, but stored as if
-        # they were atom-atom distances. This is very confusing!
-        pairs, distances = compute_neighbors(mda.positions, self.rings.centers)
-        _pairs, _distances = compute_neighbors(mda.positions, _rings.centers)
+        # FIX: distances are to ring centers, but stored as if they were atom-atom distances.
+        # NOTE: rings are in the first axis
+        pairs, distances = compute_neighbors(mda.positions, rings.centers)
+        print("neighbor count: ", pairs.shape[0])
 
-        # print("shape: ", mda.universe.atoms.positions.shape, self.rings.centers.shape, self.rings.normals.shape)
-        # angs = calc_ringnormal_pos_angle(mda.universe.atoms.positions[:10], self.rings.centers, self.rings.normals)
-        # print("angles: ", angs)
+        mapped_pairs = np.array([first_atom_idx[pairs[:, 0]], pairs[:, 1]]).T
+        print("mapped_pairs: ", mapped_pairs[:10])
 
-        # key: kurrent index, value: use this index
-        # ring_order_indices = {
-        #     2: 0,
-        #     6: 1,
-        #     3: 2,
-        #     7: 3,
-        #     8: 4,
-        #     9: 5,
-        #     5: 6,
-        #     0: 7,
-        #     1: 8,
-        #     4: 9,
-        # }
-        # reversed_ring_order_indices = {v: k for k, v in ring_order_indices.items()}
+        # this is created so that I can call type_filter
+        ns = NeighborPairs(ns.luni)
+        ns.set_neighbors(mapped_pairs, distances, sort=False)
 
-        # print("computing 1 angle for each ring: ")
-        # for ix, ring in enumerate(self.rings.rings):
-        #     # print("ring: ", ring)
-        #     pos = mda.universe.atoms[ix].position.reshape(1, 3)
-        #     # print("pos: ", pos)
-        #     use_index = ring_order_indices[ix]
-        #     use_ring_center = self.rings.centers[use_index].reshape(1, 3)
-        #     use_ring_normal = self.rings.normals[use_index].reshape(1, 3)
-        #     print("center: ", self.rings.centers[ix])
-        #     # print("normal: ", self.rings.normals[ix])
-        #     ang = calc_ringnormal_pos_angle(
-        #         pos,
-        #         use_ring_center,
-        #         use_ring_normal,
-        #         # pos, self.rings.centers[ix].reshape(1, 3), self.rings.normals[ix].reshape(1, 3)
-        #     )
-        #     # print("angle: ", ang)
+        _ns_ = NeighborPairs(ns.luni)
+        _ns_.set_neighbors(pairs, distances, sort=False)
+        na = _ns_.type_filter("aromatic", partner=2)
+        print("XXX na: ", na.pairs.shape)
 
-        # for k, v in reversed_ring_order_indices.items():
-        #     for ix, ring in enumerate(self.rings.rings):
-        #         if ix == v:
-        #             pos = mda.universe.atoms[k].position.reshape(1, 3)
-        #             # use_index = ring_order_indices[ix]
-        #             use_ring_center = self.rings.centers[ix].reshape(1, 3)
-        #             use_ring_normal = self.rings.normals[ix].reshape(1, 3)
-        #             print("center: ", use_ring_center)
-        #             print("normal: ", use_ring_normal)
-        #             print("pos: ", pos)
-        #             ang = calc_ringnormal_pos_angle(
-        #                 pos,
-        #                 use_ring_center,
-        #                 use_ring_normal,
-        #                 # pos, self.rings.centers[ix].reshape(1, 3), self.rings.normals[ix].reshape(1, 3)
-        #             )
-        #             print("angle: ", ang)
+        # avoid ring-ring contacts
+        non_aroms = non_matching_indices(mapped_pairs, ns.type_filter("aromatic", partner=2).pairs)
+        pairs = pairs[non_aroms]
+        print("->", pairs.shape, ns.type_filter("aromatic", partner=2).pairs.shape)
 
-        NN = NeighborPairs(ns.luni)
-        NN.set_neighbors(_pairs, _distances, sort=False)
+        # TODO: 1. Remove double setting of neighbors  # noqa: TD002
+        ns.set_neighbors(ns.pairs[non_aroms], ns.distances[non_aroms], sort=False)
 
-        mapped_pairs = np.array([self.ring_first_idxs[pairs[:, 0]], pairs[:, 1]]).T
-        _mapped_pairs = np.array([_first_atom_idx[_pairs[:, 0]], _pairs[:, 1]]).T
+        # TODO: 2. Group removal of metal atoms with the aromatic atoms  # noqa: TD002
+        self.metal_indices = ns.atoms.select_atoms("element " + " ".join(METALS)).indices
 
-        # print("mapped_pairs: ", mapped_pairs)
-        # print("_mapped_pairs: ", _mapped_pairs)
+        self.ns = ns
 
-        nn = NeighborPairs(ns.luni)
-        nn.set_neighbors(mapped_pairs, distances, sort=False)
+        ring_indices = pairs[:, 0]
+        anles = rings.compute_angles(ring_indices, mda.universe.atoms[pairs[:, 1]].positions)
 
-        _nn = NeighborPairs(ns.luni)
-        _nn.set_neighbors(_mapped_pairs, _distances, sort=False)
+        self.angles = np.array(anles)
 
-        # NOTE: negative selection for non aromatic atoms in the second partner
-        # that's because this class handles atom-plane contacts, and we already have planes
-        # in the rings system.
-        npairs = non_matching_indices(mapped_pairs, nn.type_filter("aromatic", partner=2).pairs)
-        pairs = pairs[npairs]
-
-        _npairs = non_matching_indices(_mapped_pairs, _nn.type_filter("aromatic", partner=2).pairs)
-        _pairs = _pairs[_npairs]
-
-        nn.set_neighbors(nn.pairs[npairs], nn.distances[npairs], sort=False)
-        _nn.set_neighbors(_nn.pairs[_npairs], _nn.distances[_npairs], sort=False)
-        # for x in _nn:
-        #     print("->", x.labels, np.sqrt(x.distances))
-
-        from lahuta.config.atoms import METALS
-
-        metal_indices = _nn.atoms.select_atoms("element " + " ".join(METALS)).indices
-        self.metal_indices = metal_indices
-
-        # neg_nn = _nn.index_filter(metal_indices, partner=1)
-        # _nn = _nn - neg_nn
-
-        # _nn.set_neighbors(tmp.pairs, tmp.distances, sort=False)
-        # print("p shape: ", _nn.pairs.shape)
-        # neg_nn = _nn.index_filter(metal_indices, partner=2)
-        # print("neg_nn: ", neg_nn)
-        # _nn = _nn - neg_nn
-
-        indices = sorting_indices(nn.pairs)
-        nn.set_neighbors(nn.pairs[indices], nn.distances[indices], sort=False)
-        pairs = pairs[indices]
-
-        _indices = sorting_indices(_nn.pairs)
-        _nn.set_neighbors(_nn.pairs[_indices], _nn.distances[_indices], sort=False)
-        # for x in _nn:
-        #     print("->", x.pairs, x.distances)
-        # for ix, x in enumerate(_nn.labels):
-        #     print("->", x, np.sqrt(_nn.distances[ix]))
-        _pairs = _pairs[_indices]
-
-        # print("final nn: ", nn)
-
-        self.ns = nn
-        self._ns = _nn
-
-        self.angles = calc_ringnormal_pos_angle(
-            mda.universe.atoms[pairs[:, 1]].positions, self.rings.centers[pairs[:, 0]], self.rings.normals[pairs[:, 0]]
-        )
-        # print("angles: ", self.angles)
-        # print("angles: ", self.angles.shape, np.unique(self.angles).shape)
-        _angles = calc_ringnormal_pos_angle(
-            mda.universe.atoms[_pairs[:, 1]].positions, _rings.centers[_pairs[:, 0]], _rings.norm1[_pairs[:, 0]]
-        )
-        self._angles = _angles
-        # print("angles: ", self.angles.shape)
-        # print("_angles: ", _angles.shape)
-
-        # mapped_neighbors = ns.new(mapped_pairs, distances)
-        # neighbors = ns.new(pairs, distances)
-
-        # self.ns_ = neighbors - neighbors.type_filter("aromatic", partner=2)
-        # self.ns = mapped_neighbors - mapped_neighbors.type_filter("aromatic", partner=2)
-
-        # self.angles = calc_ringnormal_pos_angle2(
-        #     mda.universe.atoms[self.ns_.pairs[:, 1]].positions,
-        #     self.rings.centers[self.ns_.pairs[:, 0]],
-        #     self.rings.normals[self.ns_.pairs[:, 0]]
-        # )
+        # This is the updated version of the code
+        # _ns_ = NeighborPairs(ns.luni)
+        # _ns_.set_neighbors(pairs, distances, sort=False)
+        # na = _ns_.type_filter("aromatic", partner=2)
+        #
+        # self.ns = _ns_ - na
+        # self.metal_indices = self.ns.atoms.select_atoms("element " + " ".join(METALS)).indices
+        #
+        # ring_indices = self.ns.pairs[:, 0]
+        # a = rings.compute_angles(ring_indices, mda.universe.atoms[self.ns.pairs[:, 1]].positions)
+        #
+        # self.angles = np.array(a)
 
     def donor_pi(self, angle_cutoff: float = 30.0) -> NeighborPairs:
         """Handle the computation of donor pi contacts in a molecular system.
@@ -314,17 +196,9 @@ class AtomPlaneContacts:
             NeighborPairs: The computed donor-pi contacts.
         """
         distance = DEFAULT_CONTACT_DISTS["donor_pi"]
-        # print("distance", distance)
         distance *= distance
-        # print("distance", distance)
-        # print("x", self.ns.distances)
         return (
-            self._ns.numeric_filter(self._angles, angle_cutoff)
-            .distance_filter(distance)
-            .type_filter("hbond_donor", partner=2)
-        )
-        return (
-            self.ns.numeric_filter(self.angles, angle_cutoff)
+            self.ns.angle_filter(self.angles, angle_cutoff)
             .distance_filter(distance)
             .type_filter("hbond_donor", partner=2)
         )
@@ -351,7 +225,7 @@ class AtomPlaneContacts:
         """
         distance = DEFAULT_CONTACT_DISTS["sulphur_pi"]
         distance *= distance
-        indices = self._ns.partner2.select_atoms("resname MET and element S").indices
+        indices = self.ns.partner2.select_atoms("resname MET and element S").indices
         return self.ns.index_filter(indices, partner=2).distance_filter(distance)
 
     def carbon_pi(self, angle_cutoff: float = 30.0) -> NeighborPairs:
@@ -381,15 +255,13 @@ class AtomPlaneContacts:
 
         """
         distance = DEFAULT_CONTACT_DISTS["carbon_pi"]
-        print("distance: ", distance)
         distance *= distance
-        print("distance: ", distance)
         return (
-            self._ns.numeric_filter(self._angles, angle_cutoff)
+            self.ns.angle_filter(self.angles, angle_cutoff)
             .index_filter(self.ns.partner2.select_atoms("element C").indices, partner=2)
             .distance_filter(distance)
             .type_filter("weak_hbond_donor", partner=2)
-            # .index_filter(self.metal_indices, partner=1, reverse=True)
+            .index_filter(self.metal_indices, partner=1, reverse=True)
         )
 
     def cation_pi(self, angle_cutoff: float = 30.0) -> NeighborPairs:
@@ -421,7 +293,7 @@ class AtomPlaneContacts:
         distance = DEFAULT_CONTACT_DISTS["cation_pi"]
         distance *= distance
         return (
-            self._ns.numeric_filter(self._angles, angle_cutoff)
+            self.ns.angle_filter(self.angles, angle_cutoff)
             .distance_filter(distance)
             .type_filter("pos_ionisable", partner=2)
         )

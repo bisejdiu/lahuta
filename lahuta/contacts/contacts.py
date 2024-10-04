@@ -227,6 +227,10 @@ def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydroph
         (NeighborPairs): A NeighborPairs object containing only hydrophobic contacts.
     """
     distance *= distance
+    n1 = ns.type_filter("hydrophobic", 1)
+    n2 = ns.type_filter("hydrophobic", 2)
+    n = (n1 & n2).distance_filter(distance)
+    return n
     return ns.type_filter("hydrophobic", 1).type_filter("hydrophobic", 2).distance_filter(distance)
 
 

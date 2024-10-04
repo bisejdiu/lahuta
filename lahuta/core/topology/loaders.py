@@ -226,31 +226,31 @@ class LahutaCPPLoader(BaseLoader):
             AtomGroupType: An MDAnalysis AtomGroup object.
         """
         # Create a structured array to ensure unique values for each combination of resname, resid, and chain_id
-        import time
+        # import time
 
-        start = time.time()
+        # start = time.time()
         struct_arr = np.rec.fromarrays(  # type: ignore
             [self.resnames, self.resids, self.chainlabels],
             names=str("resnames, resids, chain_ids"),  # type: ignore
         )
-        print("Time taken to create structured array", time.time() - start)
-        start = time.time()
+        # print("Time taken to create structured array", time.time() - start)
+        # start = time.time()
 
         # Use factorize to get the labels and unique values
         resindices, uniques = pd.factorize(struct_arr)
-        print("Time taken to factorize", time.time() - start)
-        start = time.time()
+        # print("Time taken to factorize", time.time() - start)
+        # start = time.time()
         resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
-        print("Time taken to get uniques", time.time() - start)
-        start = time.time()
+        # print("Time taken to get uniques", time.time() - start)
+        # start = time.time()
         # print("resindices", resindices)
         # print("resindices", resindices.shape, self.n_atoms)
         # print("chain_labels", self.chainlabels, self.chainlabels.shape, np.unique(self.chainlabels))
         # print("chain_labels", chain_ids, chain_ids.shape)
 
         _, int_array = np.unique(chain_ids, return_inverse=True)
-        print("Time taken to get unique and inverse", time.time() - start)
-        start = time.time()
+        # print("Time taken to get unique and inverse", time.time() - start)
+        # start = time.time()
 
         # Convert 0-based labels to 1-based labels
         int_array += 1
@@ -265,8 +265,8 @@ class LahutaCPPLoader(BaseLoader):
             residue_segindex=int_array,
             trajectory=True,
         )
-        print("Time taken to create Universe", time.time() - start)
-        start = time.time()
+        # print("Time taken to create Universe", time.time() - start)
+        # start = time.time()
 
         # Add topology attributes
         uv.add_TopologyAttr("names", self.names)
@@ -279,12 +279,12 @@ class LahutaCPPLoader(BaseLoader):
         uv.add_TopologyAttr("chainIDs", self.chainlabels)
         uv.add_TopologyAttr("ids", self.indices)
         # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
-        print("Time taken to add topology attributes", time.time() - start)
-        start = time.time()
+        # print("Time taken to add topology attributes", time.time() - start)
+        # start = time.time()
 
         uv.atoms.positions = self.coordinates
         uv.filename = self.file_path
-        print("Time taken to set positions", time.time() - start)
+        # print("Time taken to set positions", time.time() - start)
 
         return uv.atoms
 

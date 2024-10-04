@@ -29,8 +29,18 @@ public:
 
   using RefType = const T;
 
-  BasePair(int i, int j, float d) : d(d) {
-    std::tie(this->i, this->j) = std::minmax(i, j);
+  BasePair(int i, int j, float d, bool sort=true) : d(d) {
+    // swap = 1 if i > j and sort is true, else 0
+    int swap = sort && (i > j);
+    this->i = i * !swap + j * swap;
+    this->j = j * !swap + i * swap;
+
+    /*if (sort) {*/
+    /*  std::tie(this->i, this->j) = std::minmax(i, j);*/
+    /*} else {*/
+    /*  this->i = i;*/
+    /*  this->j = j;*/
+    /*}*/
   }
 
   bool operator==(const BasePair &other) const {
@@ -79,13 +89,16 @@ public:
 
 class AtomRingPair : public BasePair<AtomRingPairType> {
 public:
-  using BasePair::BasePair;
+  // FIXME: 
+  /*using BasePair::BasePair;*/
+  AtomRingPair(int i, int j, float d, bool sort=false) : BasePair(i, j, d, false) {}
+  /*AtomRingPair(int i, int j, float d) : BasePair(i, j, d, false) {}*/
 
-  const RDKit::Atom *get_i(RefType *ref) const {
-    return ref->mol->getAtomWithIdx(i);
-  }
+  /*const RDKit::Atom *get_i(RefType *ref) const {*/
+  /*  return ref->mol->getAtomWithIdx(i);*/
+  /*}*/
 
-  const RingData *get_j(RefType *ref) const { return &(ref->ring->rings[j]); }
+  /*const RingData *get_j(RefType *ref) const { return &(ref->ring->rings[j]); }*/
 
   std::string names(const ContextProvider<AtomRingPair> &ctx) const;
 };
@@ -159,13 +172,16 @@ public:
     _data.reserve(pairs.size());
     for (size_t i = 0; i < pairs.size(); ++i) {
       _data.push_back({std::move(pairs[i].first), std::move(pairs[i].second),
-                       std::move(dists[i])});
+                       std::move(dists[i]), !is_sorted});
     }
     if (!is_sorted) {
       std::sort(this->_data.begin(), this->_data.end());
     }
   }
 
+  // FIX: URGENT: 
+  // AtomRingPair won't get initialized robustly because the constructor will sort the pair, 
+  // which will lead to rings being put in the wrong axis.
   Neighbors(const Luni &luni, NSResults &&results, bool is_sorted = false)
       : ctx(luni) {
     if (results.get_pairs().size() != results.get_distances().size()) {
@@ -246,8 +262,8 @@ public:
   }
 
   // NOTE: type_filter needs to be a supported member
-  Neighbors<T> type_filter(AtomType type, int partner);
-
+  Neighbors<T> type_filter(AtomType type, int partner); 
+ 
   // FIXME: Should FastNS be resonsible for defining these methods?
   /*Neighbors<T> remove_adjascent_residueid_pairs(int res_diff);*/
 

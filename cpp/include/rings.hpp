@@ -2,22 +2,83 @@
 #define LAHUTA_RINGS_HPP
 
 #include "GraphMol/MonomerInfo.h"
-#include <vector>
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RWMol.h>
+#include <vector>
 
 namespace lahuta {
 
 struct RingData {
-    std::vector<int> atom_ids;
-    RDGeom::Point3D center;
-    RDGeom::Point3D norm1;
-    RDGeom::Point3D norm2;
+  std::vector<int> atom_ids;
+  RDGeom::Point3D center;
+  RDGeom::Point3D norm1;
+  RDGeom::Point3D norm2;
+  /*int ring_id = -1; // FIX: is this needed?*/
+  int root_atom_id = -1;
 
-    RingData() = default;
-    RingData(RDGeom::Point3D center, RDGeom::Point3D norm1, RDGeom::Point3D norm2,
-             std::vector<int> atom_ids)
-        : center(center), norm1(norm1), norm2(norm2), atom_ids(atom_ids) {}
+  RingData() = default;
+  RingData(RDGeom::Point3D center, RDGeom::Point3D norm1, RDGeom::Point3D norm2,
+           std::vector<int> atom_ids)
+      : center(center), norm1(norm1), norm2(norm2), atom_ids(atom_ids) {
+    /*auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());*/
+    /*root_atom_id = *min_atom_id;*/
+  }
+
+  /*void update_root_atom_id() {*/
+  /*  auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());*/
+  /*  root_atom_id = *min_atom_id;*/
+  /*}*/
+  int get_root_atom_id() const {
+    auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());
+    return *min_atom_id;
+  }
+
+  //! Compute the angle between the provided point and the ring 
+  /*double compute_angle(const std::vector<double> &_point) const {*/
+  /*  RDGeom::Point3D point(_point[0], _point[1], _point[2]);*/
+  /*  RDGeom::Point3D vector_point_to_plane = point - center;*/
+  /*  vector_point_to_plane.normalize();*/
+  /**/
+  /*  double dot_product = vector_point_to_plane.dotProduct(norm1);*/
+  /**/
+  /*  double magnitude_vector = vector_point_to_plane.length();*/
+  /*  double cos_theta = dot_product / magnitude_vector;*/
+  /**/
+  /*  cos_theta = std::max(-1.0, std::min(1.0, cos_theta));*/
+  /*  double theta_radians = std::acos(cos_theta);*/
+  /*  return theta_radians * (180.0 / M_PI);*/
+  /*}*/
+
+//! Compute the angle between the provided point and the ring 
+double compute_angle(const std::vector<double>& _point) const {
+    RDGeom::Point3D point(_point[0], _point[1], _point[2]);
+    auto vector_point_to_plane = point - center;
+    vector_point_to_plane.normalize();
+
+    double cos_theta = vector_point_to_plane.dotProduct(norm1);
+    cos_theta = std::max(-1.0, std::min(1.0, cos_theta));
+
+    double theta_radians = std::acos(cos_theta); // in radians
+    return theta_radians * (180.0 / M_PI);
+}
+
+
+  // Function to compute the angle between the point and the plane
+  double compute_angle_(const std::vector<double> _point) const {
+    RDGeom::Point3D point(_point[0], _point[1], _point[2]);
+    RDGeom::Point3D vector_point_to_plane = point - center;
+
+    RDGeom::Point3D normalized_line_direction = vector_point_to_plane;
+    normalized_line_direction.normalize();  // Ensure the direction vector is unit length
+    double dot_product = normalized_line_direction.dotProduct(norm1);
+
+    double raw_angle = std::acos(dot_product);  // Result in radians
+    double adjusted_angle = std::copysign(raw_angle, dot_product);
+    if (adjusted_angle < 0.0) {
+      adjusted_angle += M_PI;
+    }
+    return adjusted_angle * (180.0 / M_PI);
+  }
 };
 
 struct RingDataVec {
@@ -42,7 +103,7 @@ struct RingDataVec {
     }
     return *this;
   }
-  
+
   std::vector<std::vector<double>> centers() const {
     std::vector<std::vector<double>> centers;
     for (const auto &ring : rings) {
@@ -51,7 +112,7 @@ struct RingDataVec {
     return centers;
   }
 
-  // FIX: probably not needed? 
+  // FIX: probably not needed?
   RDGeom::POINT3D_VECT centers_rkdit() const {
     RDGeom::POINT3D_VECT centers;
     for (const auto &ring : rings) {
@@ -75,8 +136,40 @@ struct RingDataVec {
     }
     return normals;
   }
+
+  std::vector<int> root_atom_ids() const {
+    std::vector<int> root_atom_ids;
+    for (const auto &ring : rings) {
+      root_atom_ids.push_back(ring.get_root_atom_id());
+    }
+    return root_atom_ids;
+  }
+
+  /*std::vector<double> compute_angles(const std::vector<std::vector<double>> &points) const {*/
+  /*  if (points.size() != rings.size()) {*/
+  /*    throw std::runtime_error("Number of points must be the same as the number of rings");*/
+  /*  }*/
+  /*  std::vector<double> angles;*/
+  /*  angles.reserve(rings.size());*/
+  /*  for (size_t i = 0; i < rings.size(); ++i) {*/
+  /*    angles.push_back(rings[i].compute_angle(points[i]));*/
+  /*  }*/
+  /*  return angles;*/
+  /*}*/
+  std::vector<double> compute_angles(const std::vector<int> &ring_indices,
+    const std::vector<std::vector<double>> &points) const {
+    std::vector<double> angles;
+    angles.reserve(ring_indices.size());
+    for (size_t i = 0; i < ring_indices.size(); ++i) {
+      angles.push_back(rings[ring_indices[i]].compute_angle(points[i]));
+    }
+    return angles;
+  }
 };
 
+// FIX: protein aromatics are stored based on their name/identity. It makes
+// sense to have a sanitize algorithm that deletes rings if they do not satisfy
+// certain criteria (e.g. planarity)
 class Rings {
 public:
   struct ResId {
@@ -98,9 +191,10 @@ public:
     }
   };
 
-  // FIX: benchmark performance for many ring systems? 
+  // FIX: benchmark performance for many ring systems?
   using RingMap = std::unordered_map<ResId, RingData, ResIdHash>;
-  using AtomOrderMap = std::unordered_map<std::string, std::vector<std::string>>;
+  using AtomOrderMap =
+      std::unordered_map<std::string, std::vector<std::string>>;
 
   Rings() { init_atom_order_table(); }
 
@@ -124,9 +218,10 @@ public:
   void process_rings(const RDKit::ROMol &mol) {
     const RDKit::Conformer &conf = mol.getConformer();
     for (auto &[res_id, ring_data] : rings_) {
-      // FIX: with filter_luni, the atom_ids can be any number (e.g., 0, 1, 2, etc.)
-      // How is centering and normal calculation affected by this?
+      // FIX: with filter_luni, the atom_ids can be any number (e.g., 0, 1, 2,
+      // etc.) How is centering and normal calculation affected by this?
       if (!ring_data.atom_ids.empty()) {
+        /*ring_data.update_root_atom_id();*/
         order_atoms(res_id.res_name, ring_data.atom_ids, mol);
         find_center_and_normal(conf, ring_data.atom_ids, ring_data.center,
                                ring_data.norm1, ring_data.norm2);
@@ -185,7 +280,7 @@ private:
   }
 
 public:
-  // FIX: is norm2 needed? 
+  // FIX: is norm2 needed?
   static void find_center_and_normal(const RDKit::Conformer &conf,
                                      const std::vector<int> &ring,
                                      RDGeom::Point3D &center,
