@@ -1,4 +1,5 @@
 #include "lahuta.hpp"
+#include "parser.hpp"
 
 namespace lahuta {
 

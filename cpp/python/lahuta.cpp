@@ -76,7 +76,7 @@ py::array int_array(const std::vector<int> &data) {
 }
 
 void bind(py::module &_lahuta) {
-  py::class_<Luni> Luni(_lahuta, "Luni");
+  py::class_<Luni> Luni(_lahuta, "LahutaCPP");
 
   py::class_<RingData>(_lahuta, "RingData")
       .def(py::init<>())
@@ -96,7 +96,8 @@ void bind(py::module &_lahuta) {
       .def("compute_angles", &RingDataVec::compute_angles)
       .def("root_atom_ids", &RingDataVec::root_atom_ids)
       /*.def("compute_angles",*/
-      /*     [](RingDataVec &rdv, const std::vector<std::vector<double>> &points) {*/
+      /*     [](RingDataVec &rdv, const std::vector<std::vector<double>>
+         &points) {*/
       /*       return rdv.compute_angles(points);*/
       /*     })*/
       // .def_property_readonly("centers", &RingDataVec::centers)
@@ -189,10 +190,10 @@ void bind(py::module &_lahuta) {
       .def("names", &AtomRingPair::names);
 
   py::class_<Neighbors<AtomAtomPair>>(_lahuta, "AtomAtomNeighbors")
-      .def(py::init([](class Luni &luni, std::vector<AtomAtomPair> data,
-                       bool is_sorted) {
-        return Neighbors<AtomAtomPair>(luni, data, is_sorted);
-      }))
+      .def(py::init(
+          [](class Luni &luni, std::vector<AtomAtomPair> data, bool is_sorted) {
+            return Neighbors<AtomAtomPair>(luni, data, is_sorted);
+          }))
       .def(py::init([](class Luni &luni, const Pairs &&pairs,
                        const Distances &&dists, bool is_sorted) {
         return Neighbors<AtomAtomPair>(luni, std::move(pairs), std::move(dists),
@@ -262,6 +263,22 @@ void bind(py::module &_lahuta) {
            [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
              return self.symmetric_difference(other);
            })
+      .def("__add__",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.union_(other);
+           })
+      .def("__sub__",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.difference(other);
+           })
+      .def("__xor__",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.symmetric_difference(other);
+           })
+      .def("__and__",
+           [](Neighbors<AtomAtomPair> &self, Neighbors<AtomAtomPair> &other) {
+             return self.intersection(other);
+           })
       .def("get_luni", &Neighbors<AtomAtomPair>::get_luni);
 
   py::class_<Neighbors<AtomRingPair>>(_lahuta, "AtomRingNeighbors")
@@ -323,13 +340,30 @@ void bind(py::module &_lahuta) {
 
              return result;
            })
+      .def("__add__",
+           [](Neighbors<AtomRingPair> &self, Neighbors<AtomRingPair> &other) {
+             return self.union_(other);
+           })
+      .def("__sub__",
+           [](Neighbors<AtomRingPair> &self, Neighbors<AtomRingPair> &other) {
+             return self.difference(other);
+           })
+      .def("__xor__",
+           [](Neighbors<AtomRingPair> &self, Neighbors<AtomRingPair> &other) {
+             return self.symmetric_difference(other);
+           })
+      .def("__and__",
+           [](Neighbors<AtomRingPair> &self, Neighbors<AtomRingPair> &other) {
+             return self.intersection(other);
+           })
       .def("get_luni", &Neighbors<AtomRingPair>::get_luni);
 
   Luni.def(py::init<std::string>())
+      .def("find_neighbors", &Luni::find_neighbors)
       /*.def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)*/
       /*.def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)*/
-      .def("fn_aa", &Luni::find_neighbors<AtomAtomPair>)
-      .def("fn_ar", &Luni::find_neighbors<AtomRingPair>)
+      /*.def("fn_aa", &Luni::find_neighbors<AtomAtomPair>)*/
+      /*.def("fn_ar", &Luni::find_neighbors<AtomRingPair>)*/
       .def("find_ring_neighbors", &Luni::find_ring_neighbors)
       /*.def("find_neighbors",*/
       /*     [](class Luni &luni, float cutoff) {*/
@@ -341,7 +375,10 @@ void bind(py::module &_lahuta) {
       .def("get_rings", &Luni::get_rings)
       /*.def("match_smarts_string", &Luni::match_smarts_string)*/
       .def("filter_luni", &Luni::filter_luni)
-      .def("n_atoms", &Luni::n_atoms)
+      /*.def("get_n_atoms", &Luni::n_atoms)*/
+      .def_property_readonly("n_atoms", [](class Luni &luni) {
+        return luni.n_atoms();
+      })
 
       .def(
           "coordinates",
@@ -351,55 +388,95 @@ void bind(py::module &_lahuta) {
           },
           "Return the coordinates of the molecule as a numpy array")
 
+      .def("get_indices", &Luni::indices)
+      .def_property_readonly("indices",
+                             [](class Luni &luni) {
+                               auto indices = luni.indices();
+                               return int_array(indices);
+                             })
       .def("names", &Luni::names)
+      .def_property_readonly("names",
+                             [](class Luni &luni) {
+                               auto names = luni.names();
+                               return string_array(names);
+                             })
       .def("symbols", &Luni::symbols)
-      .def("indices", &Luni::indices)
+      .def_property_readonly("symbols",
+                             [](class Luni &luni) {
+                               auto symbols = luni.symbols();
+                               return string_array(symbols);
+                             })
       .def("elements", &Luni::elements)
+      .def_property_readonly("elements",
+                             [](class Luni &luni) {
+                               auto elements = luni.elements();
+                               return string_array(elements);
+                             })
       .def("resnames", &Luni::resnames)
+      .def_property_readonly("resnames",
+                             [](class Luni &luni) {
+                               auto resnames = luni.resnames();
+                               return string_array(resnames);
+                             })
       .def("resids", &Luni::resids)
+      .def_property_readonly("resids",
+                             [](class Luni &luni) {
+                               auto resids = luni.resids();
+                               return int_array(resids);
+                             })
       .def("resindices", &Luni::resindices)
+      .def_property_readonly("resindices",
+                             [](class Luni &luni) {
+                               auto resindices = luni.resindices();
+                               return int_array(resindices);
+                             })
       .def("chainlabels", &Luni::chainlabels)
+      .def_property_readonly("chainlabels",
+                             [](class Luni &luni) {
+                               auto chainlabels = luni.chainlabels();
+                               return string_array(chainlabels);
+                             })
 
-      .def("names_npy",
-           [](class Luni &luni) {
-             auto names = luni.names();
-             return string_array(names);
-           })
-      .def("symbols_npy",
-           [](class Luni &luni) {
-             auto symbols = luni.symbols();
-             return string_array(symbols);
-           })
-      .def("indices_npy",
-           [](class Luni &luni) {
-             auto indices = luni.indices();
-             return int_array(indices);
-           })
-      .def("elements_npy",
-           [](class Luni &luni) {
-             auto elements = luni.elements();
-             return string_array(elements);
-           })
-      .def("resnames_npy",
-           [](class Luni &luni) {
-             auto resnames = luni.resnames();
-             return string_array(resnames);
-           })
-      .def("resids_npy",
-           [](class Luni &luni) {
-             auto resids = luni.resids();
-             return int_array(resids);
-           })
-      .def("resindices_npy",
-           [](class Luni &luni) {
-             auto resindices = luni.resindices();
-             return int_array(resindices);
-           })
-      .def("chainlabels_npy",
-           [](class Luni &luni) {
-             auto chainlabels = luni.chainlabels();
-             return string_array(chainlabels);
-           })
+      /*.def("names_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto names = luni.names();*/
+      /*       return string_array(names);*/
+      /*     })*/
+      /*.def("symbols_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto symbols = luni.symbols();*/
+      /*       return string_array(symbols);*/
+      /*     })*/
+      /*.def("indices_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto indices = luni.indices();*/
+      /*       return int_array(indices);*/
+      /*     })*/
+      /*.def("elements_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto elements = luni.elements();*/
+      /*       return string_array(elements);*/
+      /*     })*/
+      /*.def("resnames_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto resnames = luni.resnames();*/
+      /*       return string_array(resnames);*/
+      /*     })*/
+      /*.def("resids_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto resids = luni.resids();*/
+      /*       return int_array(resids);*/
+      /*     })*/
+      /*.def("resindices_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto resindices = luni.resindices();*/
+      /*       return int_array(resindices);*/
+      /*     })*/
+      /*.def("chainlabels_npy",*/
+      /*     [](class Luni &luni) {*/
+      /*       auto chainlabels = luni.chainlabels();*/
+      /*       return string_array(chainlabels);*/
+      /*     })*/
       .def("get_cutoff", &Luni::get_cutoff);
 
   py::class_<RDGeom::Point3D>(_lahuta, "Point3D")

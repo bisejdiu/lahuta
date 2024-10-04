@@ -25,7 +25,6 @@
 #include "rings.hpp"
 
 // selection parser
-#include "parser.hpp"
 #include "visitor.hpp"
 
 #define LAHUTA_VERSION "0.11.0"
@@ -265,18 +264,17 @@ public:
   }
   const RingDataVec &get_rings() const { return topology.rings_vec; }
 
-  template <typename T>
-  Neighbors<T> find_neighbors(double cutoff, int res_dif) {
+  Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
     ns = remove_adjascent_residueid_pairs(ns, res_dif);
-    return Neighbors<T>(*this, std::move(ns), false);
+    return Neighbors<AtomAtomPair>(*this, std::move(ns), false);
   }
 
   // FIX: computed distances represent atom-ring center distances.
   Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif=1) {
 
     auto rings = topology.rings_vec; 
-    auto grid = FastNS(mol->getConformer().getPositions(), 6.0);
+    auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
     auto centers = rings.centers_rkdit();
 
     NSResults nbrs = grid.search(centers);

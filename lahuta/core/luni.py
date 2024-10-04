@@ -20,12 +20,16 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Type, Union, overload
 import MDAnalysis as mda
 import numpy as np
 from numpy.typing import NDArray
+from lahuta._types.mdanalysis import UniverseType, AtomGroupType
+
+# from lahuta.lib import LahutaCPP
+from lahuta.lib._lahuta import LahutaCPP
 from scipy.sparse import csc_array, load_npz, save_npz
 from typing_extensions import Self
 
 import time
-from lahuta.core.topology.loaders import GemmiLoader
-from lahuta.lib import cLuni, cAtomType
+from lahuta.core.topology.loaders import GemmiLoader, load_file
+from lahuta.lib import cAtomType
 
 from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
 from lahuta.config.atoms import PROT_ATOM_TYPES
@@ -74,7 +78,8 @@ class Luni:
 
     def __init__(
         self,
-        structure: "str | Path | AtomGroupType",
+        # structure: "str | Path | AtomGroupType",
+        structure: str,
         trajectories: str | list[str] | None = None,
         b_iso_name: str = "tempfactor",
     ) -> None:
@@ -111,60 +116,18 @@ class Luni:
                 )
 
         self._mol: Optional["MolType"] = None
-        # print("before mda")
         self._mda = self._file_loader.to("mda")
-        # print("after mda")
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # self._luni = cLuni(self._file_loader.file_path)
         # self._at = self._luni.get_atom_types()
 
+        self._data = self.read_file(structure)
         self._structure, self._trajectories = structure, trajectories
 
         self.b_iso_name = b_iso_name
         if self.b_iso_name != "tempfactor":
             self.extend_topology(self.b_iso_name, self._mda.universe.atoms.tempfactors)
-
-    @staticmethod
-    def _get_supported_fmts() -> set[str]:
-        return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
-
-    def extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
-        """Add new topology attributes to the Luni.
-
-        Args:
-            attrname (str): The name of the attribute.
-            values (NDArray[Any]): The values of the attribute.
-        """
-        from .topology.topattrs import AtomAttrClassHandler
-
-        topattr_handler = AtomAttrClassHandler()
-        topattr_handler.init_topattr(attrname, attrname)
-        self._mda.universe.add_TopologyAttr(attrname, values)
-
-    def assing_atom_types(self) -> None:
-        # pass
-
-        #     """Assign atom types to the Luni.
-        #
-        #     This method assigns atom types to the Luni. It creates a sparse array of shape (n_atoms, n_atom_types)
-        #     containing the atom types.
-        #
-        #     Ensures that the Luni instance is ready for contact analysis.
-        #     """
-        #     self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
-        #     atom_types = self._file_loader.luni.get_atom_types()
-        #     print("Atom types: ", atom_types)
-        #     for i, at in enumerate(atom_types):
-        #         self.atom_types[i, at] = 1
-
-        # if np.any(self.atom_types.data):
-        #     return
-        tmp_loader = GemmiLoader(self._file_loader.file_path)
-        self._mol = tmp_loader.to_mol()
-        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
-        self.atom_types = atomtype_assigner.assign_atom_types()
-        self._mda = tmp_loader.to_mda()
 
     def compute_neighbors(  # noqa: PLR0913
         self,
@@ -176,30 +139,8 @@ class Luni:
         backend: Literal["mda", "gemmi"] = "mda",
         atom_types: bool = True,
     ) -> NeighborPairs:
-        """Compute the neighbors of each atom in the Luni object.
+        """Compute the neighbors of each atom in the Luni object."""
 
-        This method calculates the neighbors for each atom based on the given radius and residue difference parameters.
-        It returns an object of type `NeighborPairs` where each row in the underlying NumPy array contains the indices
-        of the neighbors for the atom corresponding to that row.
-
-        Ensures that the Luni instance is ready for computations by calling the `ready` method if needed.
-
-        Args:
-            radius (float, optional): The cutoff radius for considering two atoms as neighbors. Default is 5.0.
-            res_dif (int, optional): The minimum difference in residue numbers for two atoms to be \
-            considered neighbors. Default is 1.
-            chain_type (Literal["inter", "intra"], optional): The type of chain to keep. Default is None (keep all).
-            image (Literal["inter", "intra"], optional): The type of image to keep. Default is None (keep all).
-            backend (Literal["mda", "gemmi"], optional): The backend to use for computing neighbors. \
-            Default is "mda".
-            target_spec (Optional[Luni], optional): The target Luni object to compute neighbors with. \
-            Default is None (compute neighbors within the same Luni object).
-            atom_types (bool, optional): Whether to assign atom types before compute neighbors. Default is True.
-
-        Returns:
-            NeighborPairs: An object containing a 2D NumPy array with shape (n_atoms, n_neighbors). \
-            Each row in the array contains the indices of the neighbors for the atom corresponding to that row.
-        """
         if image is not None and backend != "gemmi":
             raise ValueError("Image filtering is only supported with the 'gemmi' backend!")
 
@@ -210,26 +151,8 @@ class Luni:
             union_indices = np.union1d(self.indices, target_spec.indices)
             mda = self._mda.universe.atoms[union_indices]
 
-        # neighbors = MDAnalysisNeighborSearch(mda)
-
-        # neighbors = self._file_loader.luni.find_neighbors(radius)
-        # neighbors = neighbors.remove_adjascent_pairs(res_dif)
-        # print("a")
-        neighbors = self._file_loader.luni.fn_aa(radius, res_dif)
-        # print("b")
-        # print("ff", ff.get_pairs().shape)
-        # print("-> neighbors: ", neighbors.get_pairs().shape)
+        neighbors = self._file_loader.luni.find_neighbors(radius, res_dif)
         pairs, distances = neighbors.get_pairs(), np.array(neighbors.get_distances_sq())
-        # pairs, distances = neighbors.get_pairs(), neighbors.get_distances()
-
-        # print("------>", p.shape, d.shape)
-
-        # pairs, distances = neighbors.compute(
-        #     radius=radius,
-        #     res_dif=res_dif,
-        #     chain_type=chain_type,
-        # )
-        # print("compare with: ", pairs.shape, distances.shape)
 
         if target_spec is not None:
             cross_indices = cross_interaction_indices(pairs, self.indices, target_spec.indices)
@@ -453,25 +376,6 @@ class Luni:
             self._mol = self._file_loader.to(fmt)
         return getattr(self, f"_{fmt}")  # type: ignore
 
-    # @property
-    # def arc(self) -> "ARC":
-    #     """Retrieve the ARC instance used to load the files.
-    #
-    #     Returns:
-    #         ARC: The ARC instance used to load the files.
-    #     """
-    #     assert self._file_loader.arc is not None, "Empty initialization is not currently supported!"
-    #     return self._file_loader.arc
-
-    # @property
-    # def indices(self) -> NDArray[np.int32]:
-    #     """Retrieve the indices of the atoms in the Luni object.
-    #
-    #     Returns:
-    #         NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
-    #     """
-    #     return self.arc.atoms.ids
-
     @property
     def indices(self) -> NDArray[np.int32]:
         """Retrieve the indices of the atoms in the Luni object.
@@ -479,16 +383,7 @@ class Luni:
         Returns:
             NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
         """
-        return self._file_loader.indices
-
-    # @property
-    # def ids(self) -> NDArray[np.int32]:
-    #     """Retrieve the indices of the atoms in the Luni object.
-    #
-    #     Returns:
-    #         NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
-    #     """
-    #     return self.arc.atoms.ids
+        return self._data.indices
 
     @property
     def ids(self) -> NDArray[np.int32]:
@@ -499,15 +394,6 @@ class Luni:
         """
         return self._file_loader.indices
 
-    # @property
-    # def names(self) -> NDArray[np.str_]:
-    #     """Retrieve the names of the atoms in the Luni object.
-    #
-    #     Returns:
-    #         NDArray[np.str_]: A NumPy array containing the names of the atoms in the Luni object.
-    #     """
-    #     return self.arc.atoms.names
-
     @property
     def names(self) -> NDArray[np.str_]:
         """Retrieve the names of the atoms in the Luni object.
@@ -515,16 +401,7 @@ class Luni:
         Returns:
             NDArray[np.str_]: A NumPy array containing the names of the atoms in the Luni object.
         """
-        return self._file_loader.names
-
-    # @property
-    # def elements(self) -> NDArray[np.str_]:
-    #     """Retrieve the elements of the atoms in the Luni object.
-    #
-    #     Returns:
-    #         NDArray[np.str_]: A NumPy array containing the elements of the atoms in the Luni object.
-    #     """
-    #     return self.arc.atoms.elements
+        return self._data.names
 
     @property
     def elements(self) -> NDArray[np.str_]:
@@ -533,16 +410,7 @@ class Luni:
         Returns:
             NDArray[np.str_]: A NumPy array containing the elements of the atoms in the Luni object.
         """
-        return self._file_loader.elements
-
-    # @property
-    # def types(self) -> NDArray[np.str_]:
-    #     """Retrieve the types of the atoms in the Luni object.
-    #
-    #     Returns:
-    #         NDArray[np.str_]: A NumPy array containing the types of the atoms in the Luni object.
-    #     """
-    #     return self.arc.atoms.types
+        return self._data.elements
 
     @property
     def coordinates(self) -> NDArray[np.float32]:
@@ -560,7 +428,7 @@ class Luni:
         Returns:
             NDArray[np.str_]: A NumPy array containing the residue names of the atoms in the Luni object.
         """
-        return self._file_loader.resnames
+        return self._data.resnames
 
     @property
     def resids(self) -> NDArray[np.int32]:
@@ -569,7 +437,7 @@ class Luni:
         Returns:
             NDArray[np.int32]: A NumPy array containing the residue IDs of the atoms in the Luni object.
         """
-        return self._file_loader.resids
+        return self._data.resids
 
     # @property
     # def chainids(self) -> NDArray[np.int32]:
@@ -582,7 +450,7 @@ class Luni:
 
     @property
     def resindices(self):
-        return self._file_loader.resindices
+        return self._data.resindices
 
     # @property
     # def chainlabels(self) -> NDArray[np.str_]:
@@ -609,7 +477,7 @@ class Luni:
         Returns:
             int: The number of atoms in the Luni object.
         """
-        return self._file_loader.n_atoms
+        return self._data.n_atoms
 
     @property
     def n_residues(self) -> int:
@@ -668,3 +536,53 @@ class Luni:
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def read_file(self, file_path: str) -> LahutaCPP | AtomGroupType:
+        """Read the file using the provided loader.
+
+        Args:
+            file_path (str): The path to the file.
+            loader (BaseLoader): The loader to use for reading the file.
+        """
+        return load_file(file_path)
+
+    @staticmethod
+    def _get_supported_fmts() -> set[str]:
+        return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
+
+    def extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
+        """Add new topology attributes to the Luni.
+
+        Args:
+            attrname (str): The name of the attribute.
+            values (NDArray[Any]): The values of the attribute.
+        """
+        from .topology.topattrs import AtomAttrClassHandler
+
+        topattr_handler = AtomAttrClassHandler()
+        topattr_handler.init_topattr(attrname, attrname)
+        self._mda.universe.add_TopologyAttr(attrname, values)
+
+    def assing_atom_types(self) -> None:
+        # pass
+
+        #     """Assign atom types to the Luni.
+        #
+        #     This method assigns atom types to the Luni. It creates a sparse array of shape (n_atoms, n_atom_types)
+        #     containing the atom types.
+        #
+        #     Ensures that the Luni instance is ready for contact analysis.
+        #     """
+        #     self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+        #     atom_types = self._file_loader.luni.get_atom_types()
+        #     print("Atom types: ", atom_types)
+        #     for i, at in enumerate(atom_types):
+        #         self.atom_types[i, at] = 1
+
+        # if np.any(self.atom_types.data):
+        #     return
+        tmp_loader = GemmiLoader(self._file_loader.file_path)
+        self._mol = tmp_loader.to_mol()
+        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
+        self.atom_types = atomtype_assigner.assign_atom_types()
+        self._mda = tmp_loader.to_mda()

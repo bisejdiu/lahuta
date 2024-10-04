@@ -1,6 +1,6 @@
+#include "neighbors.hpp"
 #include "GraphMol/RWMol.h"
 #include "lahuta.hpp"
-#include "neighbors.hpp"
 
 namespace lahuta {
 
@@ -24,10 +24,11 @@ AtomAtomPair::names(const ContextProvider<AtomAtomPair> &ctx) const {
   // FIX: Luni should support a member function: Luni::atom_name(int idx)
   auto atom1 = ctx.molecule().getAtomWithIdx(i);
   auto atom2 = ctx.molecule().getAtomWithIdx(j);
-  auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
-  auto res2 = static_cast<const RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
+  auto res1 =
+      static_cast<const RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
+  auto res2 =
+      static_cast<const RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
   return res1->getName() + " " + res2->getName();
-
 }
 
 std::string
@@ -48,8 +49,99 @@ AtomRingPair::names(const ContextProvider<AtomRingPair> &ctx) const {
   return res1->getResidueName() + " " + atom_ids_str;
 }
 
-template class Neighbors<AtomAtomPair>;
-template class Neighbors<AtomRingPair>;
+// Neighbors class
+template <typename T>
+std::vector<T> Neighbors<T>::intersection(std::vector<T> data,
+                                          std::vector<T> other) {
+  std::vector<T> result;
+  std::set_intersection(data.begin(), data.end(), other.begin(), other.end(),
+                        std::back_inserter(result));
+  return result;
+}
+
+template <typename T>
+std::vector<T> Neighbors<T>::difference(std::vector<T> data,
+                                        std::vector<T> other) {
+  std::vector<T> result;
+  std::set_difference(data.begin(), data.end(), other.begin(), other.end(),
+                      std::back_inserter(result));
+  return result;
+}
+
+template <typename T>
+std::vector<T> Neighbors<T>::union_(std::vector<T> data, std::vector<T> other) {
+  std::vector<T> result;
+  std::set_union(data.begin(), data.end(), other.begin(), other.end(),
+                 std::back_inserter(result));
+  return result;
+}
+
+template <typename T>
+std::vector<T> Neighbors<T>::symmetric_difference(std::vector<T> data,
+                                                  std::vector<T> other) {
+  std::vector<T> result;
+  std::set_symmetric_difference(data.begin(), data.end(), other.begin(),
+                                other.end(), std::back_inserter(result));
+  return result;
+}
+
+template <typename T>
+Neighbors<T> Neighbors<T>::intersection(const Neighbors<T> &other) const {
+  std::vector<T> result = intersection(_data, other._data);
+  return Neighbors<T>(*m_luni, result);
+}
+
+template <typename T>
+Neighbors<T> Neighbors<T>::difference(const Neighbors<T> &other) const {
+  std::vector<T> result = difference(_data, other._data);
+  return Neighbors<T>(*m_luni, result);
+}
+
+template <typename T>
+Neighbors<T>
+Neighbors<T>::symmetric_difference(const Neighbors<T> &other) const {
+  std::vector<T> result = symmetric_difference(_data, other._data);
+  return Neighbors<T>(*m_luni, result);
+}
+
+template <typename T>
+Neighbors<T> Neighbors<T>::union_(const Neighbors<T> &other) const {
+  std::vector<T> result = union_(_data, other._data);
+  return Neighbors<T>(*m_luni, result);
+}
+
+template <typename T>
+Neighbors<T>
+Neighbors<T>::filter(std::function<bool(const T &)> predicate) const {
+  std::vector<T> result;
+  std::copy_if(_data.begin(), _data.end(), std::back_inserter(result),
+               predicate);
+  return Neighbors<T>(*m_luni, result);
+}
+
+template <typename T> Pairs Neighbors<T>::get_pairs() const {
+  std::vector<std::pair<int, int>> result;
+  for (const T &p : _data) {
+    result.push_back({p.i, p.j});
+  }
+  return result;
+}
+
+template <typename T> Distances Neighbors<T>::get_distances() const {
+  std::vector<float> result;
+  for (const T &p : _data) {
+    result.push_back(p.d);
+  }
+  return result;
+}
+
+template <typename T> std::vector<std::string> Neighbors<T>::names() const {
+  std::vector<std::string> result;
+  for (const T &p : _data) {
+    result.push_back(p.names(ctx));
+  }
+  return result;
+}
 
 template <typename T>
 Neighbors<T> Neighbors<T>::type_filter(AtomType type, int partner) {
@@ -80,14 +172,24 @@ Neighbors<T> Neighbors<T>::type_filter(AtomType type, int partner) {
       std::cerr << "Invalid partner: " << partner << std::endl;
     }
   }
-  // FIX: does this cause problems on the python side? 
-  return Neighbors(*this->get_luni(), std::move(filtered), std::move(dists), true);
+  // FIX: does this cause problems on the python side?
+  return Neighbors(*this->get_luni(), std::move(filtered), std::move(dists),
+                   true);
 }
 
-// Required for pybind11 bindings to work
-template Neighbors<AtomAtomPair>
-Neighbors<AtomAtomPair>::type_filter(AtomType type, int partner);
-template Neighbors<AtomRingPair>
-Neighbors<AtomRingPair>::type_filter(AtomType type, int partner);
+
+// void add_neighbor(int i, int j, float d, bool sort) {
+//   // data.push_back({i, j, d});
+//   // if (sort) {
+//   //   std::sort(data.begin(), data.end());
+//   // }
+//   T new_val(i, j, d);
+//   auto it = std::lower_bound(data.begin(), data.end(), new_val);
+//   data.insert(it, new_val);
+// }
+
+// explicit instantiation
+template class Neighbors<AtomAtomPair>;
+template class Neighbors<AtomRingPair>;
 
 } // namespace lahuta

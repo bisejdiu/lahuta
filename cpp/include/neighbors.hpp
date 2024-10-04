@@ -29,7 +29,7 @@ public:
 
   using RefType = const T;
 
-  BasePair(int i, int j, float d, bool sort=true) : d(d) {
+  BasePair(int i, int j, float d, bool sort = true) : d(d) {
     // swap = 1 if i > j and sort is true, else 0
     int swap = sort && (i > j);
     this->i = i * !swap + j * swap;
@@ -89,16 +89,18 @@ public:
 
 class AtomRingPair : public BasePair<AtomRingPairType> {
 public:
-  // FIXME: 
+  // FIXME:
   /*using BasePair::BasePair;*/
-  AtomRingPair(int i, int j, float d, bool sort=false) : BasePair(i, j, d, false) {}
+  AtomRingPair(int i, int j, float d, bool sort = false)
+      : BasePair(i, j, d, false) {}
   /*AtomRingPair(int i, int j, float d) : BasePair(i, j, d, false) {}*/
 
   /*const RDKit::Atom *get_i(RefType *ref) const {*/
   /*  return ref->mol->getAtomWithIdx(i);*/
   /*}*/
 
-  /*const RingData *get_j(RefType *ref) const { return &(ref->ring->rings[j]); }*/
+  /*const RingData *get_j(RefType *ref) const { return &(ref->ring->rings[j]);
+   * }*/
 
   std::string names(const ContextProvider<AtomRingPair> &ctx) const;
 };
@@ -179,9 +181,6 @@ public:
     }
   }
 
-  // FIX: URGENT: 
-  // AtomRingPair won't get initialized robustly because the constructor will sort the pair, 
-  // which will lead to rings being put in the wrong axis.
   Neighbors(const Luni &luni, NSResults &&results, bool is_sorted = false)
       : ctx(luni) {
     if (results.get_pairs().size() != results.get_distances().size()) {
@@ -198,108 +197,42 @@ public:
     }
   }
 
-  // FIXME: here I am making a copy
-  static inline std::vector<T> intersection(std::vector<T> data,
-                                            std::vector<T> other) {
-    std::vector<T> result;
-    // std::sort(data.begin(), data.end());
-    // std::sort(other.begin(), other.end());
+  // FIX: Does the copy-based logic make a significant performance difference?
+  static std::vector<T> intersection(std::vector<T> data, std::vector<T> other);
+  static std::vector<T> difference(std::vector<T> data, std::vector<T> other);
+  static std::vector<T> union_(std::vector<T> data, std::vector<T> other);
+  static std::vector<T> symmetric_difference(std::vector<T> data,
+                                             std::vector<T> other);
 
-    std::set_intersection(data.begin(), data.end(), other.begin(), other.end(),
-                          std::back_inserter(result));
-    return result;
+  Neighbors<T> intersection(const Neighbors<T> &other) const;
+  Neighbors<T> difference(const Neighbors<T> &other) const;
+  Neighbors<T> symmetric_difference(const Neighbors<T> &other) const;
+  Neighbors<T> union_(const Neighbors<T> &other) const;
+
+  Neighbors<T> operator+(const Neighbors<T> &other) const {
+    return union_(other);
   }
-
-  static inline std::vector<T> difference(std::vector<T> data,
-                                          std::vector<T> other) {
-    std::vector<T> result;
-    std::set_difference(data.begin(), data.end(), other.begin(), other.end(),
-                        std::back_inserter(result));
-    return result;
+  Neighbors<T> operator-(const Neighbors<T> &other) const {
+    return difference(other);
   }
-
-  static inline std::vector<T> union_(std::vector<T> data,
-                                      std::vector<T> other) {
-    std::vector<T> result;
-    std::set_union(data.begin(), data.end(), other.begin(), other.end(),
-                   std::back_inserter(result));
-    return result;
+  Neighbors<T> operator^(const Neighbors<T> &other) const {
+    return symmetric_difference(other);
   }
-
-  static inline std::vector<T> symmetric_difference(std::vector<T> data,
-                                                    std::vector<T> other) {
-    std::vector<T> result;
-    std::set_symmetric_difference(data.begin(), data.end(), other.begin(),
-                                  other.end(), std::back_inserter(result));
-    return result;
+  Neighbors<T> operator&(const Neighbors<T> &other) const {
+    return intersection(other);
   }
+  /*Neighbors<T> operator|(const Neighbors<T> &other) const {*/
+  /*  return union_(other);*/
+  /*}*/
 
-  Neighbors<T> intersection(const Neighbors<T> &other) const {
-    std::vector<T> result = intersection(_data, other._data);
-    return Neighbors<T>(*m_luni, result);
-  }
+  Neighbors<T> filter(std::function<bool(const T &)> predicate) const;
+  Neighbors<T> type_filter(AtomType type, int partner);
 
-  Neighbors<T> difference(const Neighbors<T> &other) const {
-    std::vector<T> result = difference(_data, other._data);
-    return Neighbors<T>(*m_luni, result);
-  }
+  // void add_neighbor(int i, int j, float d, bool sort = true);
 
-  Neighbors<T> symmetric_difference(const Neighbors<T> &other) const {
-    std::vector<T> result = symmetric_difference(_data, other._data);
-    return Neighbors<T>(*m_luni, result);
-  }
-
-  Neighbors<T> union_(const Neighbors<T> &other) const {
-    std::vector<T> result = union_(_data, other._data);
-    return Neighbors<T>(*m_luni, result);
-  }
-
-  Neighbors<T> filter(std::function<bool(const T &)> predicate) const {
-    std::vector<T> result;
-    std::copy_if(_data.begin(), _data.end(), std::back_inserter(result),
-                 predicate);
-    return Neighbors<T>(*m_luni, result);
-  }
-
-  // NOTE: type_filter needs to be a supported member
-  Neighbors<T> type_filter(AtomType type, int partner); 
- 
-  // FIXME: Should FastNS be resonsible for defining these methods?
-  /*Neighbors<T> remove_adjascent_residueid_pairs(int res_diff);*/
-
-  // void add_neighbor(int i, int j, float d, bool sort = true) {
-  //   // data.push_back({i, j, d});
-  //   // if (sort) {
-  //   //   std::sort(data.begin(), data.end());
-  //   // }
-  //   T new_val(i, j, d);
-  //   auto it = std::lower_bound(data.begin(), data.end(), new_val);
-  //   data.insert(it, new_val);
-  // }
-
-  std::vector<std::string> names() const {
-    std::vector<std::string> result;
-    for (const T &p : _data) {
-      result.push_back(p.names(ctx));
-    }
-    return result;
-  }
-
-  Pairs get_pairs() const {
-    std::vector<std::pair<int, int>> result;
-    for (const T &p : _data) {
-      result.push_back({p.i, p.j});
-    }
-    return result;
-  }
-
-  Distances get_distances() const {
-    std::vector<float> result;
-    for (const T &p : _data) {
-      result.push_back(p.d);
-    }
-    return result;
-  }
+  std::vector<std::string> names() const;
+  Pairs get_pairs() const;
+  Distances get_distances() const;
 
   size_t size() const { return _data.size(); }
   auto get_luni() const { return m_luni; }

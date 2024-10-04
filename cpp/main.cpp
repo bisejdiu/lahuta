@@ -77,7 +77,8 @@ int main(int argc, char const *argv[]) {
   std::string file_name = argv[1];
 
   Luni luni(file_name);
-  auto neighbors = luni.find_neighbors<AtomAtomPair>(5.0, 1);
+  auto neighbors = luni.find_neighbors(5.0, 1);
+  auto vv = neighbors.type_filter(AtomType::AROMATIC, 0);
   auto mol = &luni.get_molecule();
 
   Pairs p = neighbors.get_pairs();

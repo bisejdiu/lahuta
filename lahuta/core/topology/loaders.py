@@ -19,11 +19,13 @@ Classes:
 """
 
 from abc import ABC, abstractmethod, abstractproperty
-from typing import Any, Iterator, Literal, NamedTuple, Optional, overload
+from typing import Any, Iterator, Literal, NamedTuple, Optional, Protocol, overload
 
 import gemmi
 import MDAnalysis as mda
 import numpy as np
+
+from lahuta.lib._lahuta import LahutaCPP
 import pandas as pd
 from numpy.typing import NDArray
 
@@ -52,6 +54,15 @@ class ConnectionData(NamedTuple):
     partner2: PartnerData
 
 
+# FIX: load_file should take the loader as an argument
+def load_file(file_path: str) -> LahutaCPP | AtomGroupType:
+    # return LahutaCPPLoader(file_path) if file_path.endswith(".luni") else TopologyLoader(file_path)
+    lahuta_supported = {".pdb", ".cif", ".pdb.gz", ".cif.gz"}
+    if file_path.endswith(tuple(lahuta_supported)):
+        return LahutaCPPLoader(file_path).luni
+    return TopologyLoader(file_path).ag
+
+
 class BaseLoader(ABC):
     """Abstract base class providing a blueprint for loading and handling biological structure data.
 
@@ -62,17 +73,6 @@ class BaseLoader(ABC):
     The class takes a file path as an input and reads the biological structure data. It offers
     various properties to access the data, as well as methods to convert the loaded data into
     different output formats. It also provides an iterator to iterate over atoms, residues, and chains.
-
-    Args:
-        file_path (str): The file path from which to load the biological structure data.
-
-    Attributes:
-        file_path (str): The file path from which the biological structure data is loaded.
-        _chains (Optional[Chains]): An instance of Chains class containing chain data.
-        _residues (Optional[Residues]): An instance of Residues class containing residue data.
-        _atoms (Optional[Atoms]): An instance of Atoms class containing atom data.
-        structure: A structure object containing biological structure data, currently initialized to None.
-        arc (Optional[ARC]): An instance of ARC class providing combined access to atoms, residues, and chains data.
     """
 
     def __init__(self, file_path: str):
@@ -92,19 +92,19 @@ class BaseLoader(ABC):
 
     @property
     @abstractmethod
-    def ids(self) -> int:
+    def ids(self) -> NDArray[np.int32]:
         """The number of atoms in the loaded biological structure data."""
         ...
 
     @property
     @abstractmethod
-    def names(self) -> int:
+    def names(self) -> NDArray[np.str_]:
         """The number of atoms in the loaded biological structure data."""
         ...
 
     @property
     @abstractmethod
-    def elements(self) -> int:
+    def elements(self) -> NDArray[np.str_]:
         """The number of atoms in the loaded biological structure data."""
         ...
 
@@ -166,54 +166,48 @@ class BaseLoader(ABC):
 
 
 class LahutaCPPLoader(BaseLoader):
+    """Class for loading biological structure data using the Lahuta C++ library."""
+
     def __init__(self, file_path: str):
         self.file_path = file_path
-        self.luni = cLuni(file_path)
+        self.luni: LahutaCPP = cLuni(file_path)
         print("Done with C++")
 
     @property
     def n_atoms(self) -> int:
-        return self.luni.n_atoms()
+        return self.luni.n_atoms
 
     @property
     def ids(self) -> NDArray[np.int32]:
-        val = self.luni.indices()
-        return np.array(val)
+        return self.luni.indices
 
     @property
     def indices(self) -> NDArray[np.int32]:
-        val = self.luni.indices()
-        return np.array(val)
+        return self.luni.indices
 
     @property
     def names(self) -> NDArray[np.str_]:
-        val = self.luni.names()
-        return np.array(val)
+        return self.luni.names
 
     @property
     def elements(self) -> NDArray[np.str_]:
-        val = self.luni.elements()
-        return np.array(val)
+        return self.luni.elements
 
     @property
     def resnames(self) -> NDArray[np.str_]:
-        val = self.luni.resnames()
-        return np.array(val)
+        return self.luni.resnames
 
     @property
     def resids(self) -> NDArray[np.int32]:
-        val = self.luni.resids()
-        return np.array(val)
+        return self.luni.resids
 
     @property
     def resindices(self) -> NDArray[np.int32]:
-        val = self.luni.resindices()
-        return np.array(val)
+        return self.luni.resindices
 
     @property
     def chainlabels(self) -> NDArray[np.int32]:
-        val = self.luni.chainlabels()
-        return np.array(val)
+        return self.luni.chainlabels
 
     @property
     def coordinates(self) -> NDArray[np.float32]:
