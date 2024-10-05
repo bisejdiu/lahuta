@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, ClassVar, Self, overload
+from typing import Any, ClassVar, Self, overload, TypeAlias
 
 import numpy as np
 from numpy.typing import NDArray
@@ -10,6 +10,9 @@ from numpy.typing import NDArray
 # class StrIter(Protocol):
 #     def __iter__(self) -> Iterator[str]: ...
 # StrIter: TypeAlias = list[str] | NDArray[np.str_]
+
+Labels: TypeAlias = list[str] | NDArray[np.str_]
+Indices: TypeAlias = list[int] | NDArray[np.int32]
 
 # Intermediate Representation
 @dataclass
@@ -52,7 +55,7 @@ class LahutaCPP:
     def get_resnames(self) -> list[str]: ...
     def get_chainlabels(self) -> list[str]: ...
     @staticmethod
-    def factorize(labels: list[str] | NDArray[np.str_]) -> list[int]: ...
+    def factorize(labels: list[str] | NDArray[np.str_]) -> list[int] | NDArray[np.int32]: ...
     @overload
     @staticmethod
     def count_unique(labels: list[str] | NDArray[np.str_]) -> int: ...
@@ -155,3 +158,8 @@ class AtomType:
     def name(self) -> str: ...
     @property
     def value(self) -> str: ...
+
+# fmt: on
+def factorize_residues(
+    resnames: Labels, resids: Indices, chainlabels: Labels
+) -> tuple[list[int], list[str], list[int], list[str]]: ...
