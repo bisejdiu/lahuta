@@ -76,8 +76,6 @@ int main(int argc, char const *argv[]) {
   }
   std::string file_name = argv[1];
 
-  auto rr = IR();
-  Luni ll(rr);
   Luni luni(file_name);
 
   auto neighbors = luni.find_neighbors(5.0, 1);

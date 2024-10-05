@@ -372,7 +372,6 @@ void bind(py::module &_lahuta) {
       .def("get_luni", &Neighbors<AtomRingPair>::get_luni);
 
   py::class_<IR>(_lahuta, "IR")
-      .def(py::init<>())
       .def(
           py::init<std::vector<int>, std::vector<int>, std::vector<std::string>,
                    std::vector<int>, std::vector<std::string>,

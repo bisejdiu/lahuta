@@ -20,7 +20,7 @@ struct IR {
   std::vector<std::string> chainlabels;
   std::vector<std::vector<float>> positions;
 
-  IR() = default;
+  IR() = delete;
   IR(const IR &) = default;
   IR(IR &&) = default;
   IR &operator=(const IR &) = default;
