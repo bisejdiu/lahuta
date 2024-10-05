@@ -1,7 +1,6 @@
 from typing import TypeVar, Callable, Type, Any, Protocol, ClassVar
 
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
-from lahuta.core.topology.arc import Atom
 from lahuta.core.topology.loaders import LahutaCPPLoader, TopologyLoader, Loader
 from lahuta.lib import cLuni, factorize_residues
 from lahuta.lib._lahuta import IR, LahutaCPP
@@ -105,8 +104,9 @@ class MDAnalysisLoader:
 # Factory to get the correct loader
 class LoaderFactory:
     loaders: ClassVar[dict[str, Type[_Loader]]] = {
-        ".cif": GemmiLoader,
-        ".pdb": MDAnalysisLoader,
+        "cif": GemmiLoader,
+        "cif.gz": GemmiLoader,
+        "pdb": MDAnalysisLoader,
     }
     # loaders: ClassVar[dict[str, Callable[[str], Loader]]] = {
     #     ".cif": GemmiLoader.load,

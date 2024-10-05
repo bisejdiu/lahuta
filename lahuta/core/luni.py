@@ -41,6 +41,8 @@ from lahuta.core.neighbors.backends import GemmiNeighborSearch, MDAnalysisNeighb
 from lahuta.core.topology import LahutaCPPLoader, TopologyLoader
 from lahuta.utils.array_utils import cross_interaction_indices
 
+from lahuta.core import loader as L
+
 if TYPE_CHECKING:
     from lahuta._types.mdanalysis import AtomGroupType, TrajectoryType
     from lahuta._types.openbabel import MolType
@@ -99,6 +101,8 @@ class Luni:
                 if file_format:
                     # print("-> to bench")
                     self._data = LahutaCPPLoader(s).luni
+                    self._fd = L.LoaderFactory.load(s, file_format)
+                    print("->", self._fd.to_ir())
                 elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
                     # print("MDA")
                     self._data = TopologyLoader((s)).to("mda")
@@ -118,8 +122,9 @@ class Luni:
 
         self._mol: Optional["MolType"] = None
         # self._mda = self._data.to("mda")
-        self._mda = self.to("mda")
-        self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
+        # self._mda = self.to("mda")
+        self._mda = L.Converter.convert(self._fd, L.MDAnalysisLoader)
+        # self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # self._luni = cLuni(self._file_loader.file_path)
         # self._at = self._luni.get_atom_types()
@@ -153,7 +158,7 @@ class Luni:
             union_indices = np.union1d(self.indices, target_spec.indices)
             mda = self._mda.universe.atoms[union_indices]
 
-        neighbors = self._data.luni.find_neighbors(radius, res_dif)
+        neighbors = self._data.find_neighbors(radius, res_dif)
         pairs, distances = neighbors.get_pairs(), np.array(neighbors.get_distances_sq())
 
         if target_spec is not None:
@@ -583,9 +588,9 @@ class Luni:
 
         # if np.any(self.atom_types.data):
         #     return
-        print("file_name ->", self._data.file_path)
-        is_pdb = self._data.file_path.lower().endswith(".pdb")
-        tmp_loader = GemmiLoader(self._data.file_path, is_pdb)
+        print("file_name ->", self._data.file_name)
+        is_pdb = self._data.file_name.lower().endswith(".pdb")
+        tmp_loader = GemmiLoader(self._data.file_name, is_pdb)
         self._mol = tmp_loader.to_mol()
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         self.atom_types = atomtype_assigner.assign_atom_types()

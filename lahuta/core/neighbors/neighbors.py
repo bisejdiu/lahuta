@@ -201,7 +201,7 @@ class NeighborPairs:
         # cns = cNSResults(self.luni._file_loader.luni, self.pairs, self.distances)
 
         # print("-->", np.unique(self.resnames[:, 0]))  # , np.unique(self.resnames[:, 1]))
-        cns = cNeighbors(self.luni._data.luni, self.pairs, self.distances, True)
+        cns = cNeighbors(self.luni._data, self.pairs, self.distances, True)
         # print("++>", np.unique(self.atoms[cns.get_pairs()].resnames[:, 0]))
         result = cns.type_filter(c_atom_type, partner - 1)
         # print("**>", np.unique(self.atoms[result.get_pairs()].resnames[:, 0]))
