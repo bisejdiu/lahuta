@@ -369,6 +369,8 @@ public:
   Luni filter_luni(const std::vector<int> &atom_indices) const;
   Luni filter() const;
   static std::vector<int> factorize(const std::vector<std::string> &labels);
+  static int count_unique(const std::vector<int>& vec);
+  static int count_unique(const std::vector<std::string>& vec);
 
 private:
   std::vector<int> filtered_indices;

@@ -1,8 +1,15 @@
 from dataclasses import dataclass
-from typing import ClassVar, Protocol, Self, Any, overload, TypedDict
+from typing import Any, ClassVar, Self, overload
 
 import numpy as np
 from numpy.typing import NDArray
+
+# NOTE: it would be nice to simplify the typing by encapsulating the `list`
+# and `NDArray` types in a custom type alias or protocol, but type checkers
+# do not expand these, so the user is left wondering what StrIter is.
+# class StrIter(Protocol):
+#     def __iter__(self) -> Iterator[str]: ...
+# StrIter: TypeAlias = list[str] | NDArray[np.str_]
 
 # Intermediate Representation
 @dataclass
@@ -44,6 +51,14 @@ class LahutaCPP:
     def get_resindices(self) -> list[int]: ...
     def get_resnames(self) -> list[str]: ...
     def get_chainlabels(self) -> list[str]: ...
+    @staticmethod
+    def factorize(labels: list[str] | NDArray[np.str_]) -> list[int]: ...
+    @overload
+    @staticmethod
+    def count_unique(labels: list[str] | NDArray[np.str_]) -> int: ...
+    @overload
+    @staticmethod
+    def count_unique(labels: list[int] | NDArray[np.int32]) -> int: ...
     @property
     def file_name(self) -> str: ...
     @property

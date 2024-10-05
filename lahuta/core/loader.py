@@ -65,21 +65,16 @@ class MDAnalysisLoader:
     @staticmethod
     def from_ir(ir: IR) -> AtomGroupType:
         # Convert IR to MDAnalysisLoader
-        import numpy as np
-        import pandas as pd
         import MDAnalysis as mda
 
-        resindices, resnames, resids, chain_ids, _ = factorize_residues(ir.resnames, ir.resids, ir.chainlabels)
-
-        # print("xys: ", resindices, len(resids))
-        # print("xys: ", len(uniques), len(resids))
+        resindices_, resnames_, resids_, chains_ = factorize_residues(ir.resnames, ir.resids, ir.chainlabels)
 
         uv: UniverseType = mda.Universe.empty(
             n_atoms=len(ir.atom_indices),
-            n_residues=len(resids),
-            n_segments=len(ir.chainlabels),
-            atom_resindex=resindices,
-            residue_segindex=cLuni.factorize(chain_ids),
+            n_residues=len(chains_),
+            n_segments=cLuni.count_unique(ir.chainlabels),
+            atom_resindex=resindices_,
+            residue_segindex=cLuni.factorize(chains_),
             trajectory=True,
         )
 
@@ -88,8 +83,8 @@ class MDAnalysisLoader:
         # uv.add_TopologyAttr("type", self.arc.atoms.types)
         # uv.add_TopologyAttr("elements", ir.atom)
         # uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
-        uv.add_TopologyAttr("resnames", resnames)
-        uv.add_TopologyAttr("resids", resids)
+        uv.add_TopologyAttr("resnames", resnames_)
+        uv.add_TopologyAttr("resids", resids_)
         uv.add_TopologyAttr("chainIDs", ir.chainlabels)
         uv.add_TopologyAttr("ids", ir.atom_indices)
 
@@ -147,6 +142,7 @@ class Converter:
 
 if __name__ == "__main__":
     file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif"
+    file_name = "/Users/bsejdiu/projects/lahuta/cpp/build/mod_1kx2.cif"
 
     # fmt: off
     # 1. Load a file of type .cif

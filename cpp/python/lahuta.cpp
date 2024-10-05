@@ -11,6 +11,7 @@
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "nsgrid.hpp"
+#include "struct_unit.hpp"
 
 namespace py = pybind11;
 using namespace lahuta;
@@ -75,87 +76,17 @@ py::array int_array(const std::vector<int> &data) {
   return result;
 }
 
+py::tuple factorize_residues(const std::vector<std::string> &resnames,
+                             const std::vector<int> &resids,
+                             const std::vector<std::string> &chains) {
 
-struct _Residue {
-    std::string_view resname;
-    int resid;
-    std::string_view chain;
+  auto result = Factorizer::factorize({resnames, resids, chains});
 
-    bool operator==(const _Residue& other) const {
-        return resname == other.resname && resid == other.resid && chain == other.chain;
-    }
-};
-
-namespace std {
-    template <>
-    struct hash<_Residue> {
-        size_t operator()(const _Residue& res) const {
-            size_t h1 = hash<std::string_view>{}(res.resname);
-            size_t h2 = hash<int>{}(res.resid);
-            size_t h3 = hash<std::string_view>{}(res.chain);
-            return h1 ^ (h2 << 1) ^ (h3 << 2); 
-        }
-    };
+  return py::make_tuple(
+      py::array_t<int>(result.indices.size(), result.indices.data()),
+      py::cast(result.resnames), py::cast(result.resids),
+      py::cast(result.chainlabels));
 }
-
-py::tuple factorize_residues(const std::vector<std::string>& resnames,
-                             const std::vector<int>& resids,
-                             const std::vector<std::string>& chains) {
-    size_t N = resnames.size();
-
-    std::vector<int> resindices(N);
-
-    // Map to assign unique IDs to unique Residue combinations
-    std::unordered_map<_Residue, int> residue_to_id;
-    residue_to_id.reserve(N); 
-
-    int current_id = 0;
-    for (size_t i = 0; i < N; ++i) {
-        _Residue res{resnames[i], resids[i], chains[i]};
-
-        auto it = residue_to_id.find(res);
-        if (it == residue_to_id.end()) {
-            // New unique residue combination
-            residue_to_id[res] = current_id;
-            resindices[i] = current_id;
-            ++current_id;
-        } else {
-            // Existing residue combination
-            resindices[i] = it->second;
-        }
-    }
-
-    std::vector<_Residue> uniques(current_id);
-    for (const auto& pair : residue_to_id) {
-        uniques[pair.second] = pair.first;
-    }
-
-    // Split uniques into separate vectors
-    std::vector<std::string_view> unique_resnames(current_id);
-    std::vector<int> unique_resids(current_id);
-    std::vector<std::string_view> unique_chains(current_id);
-
-    for (int i = 0; i < current_id; ++i) {
-        unique_resnames[i] = uniques[i].resname;
-        unique_resids[i] = uniques[i].resid;
-        unique_chains[i] = uniques[i].chain;
-    }
-
-    py::array_t<int> py_resindices(resindices.size(), resindices.data());
-    py::list py_unique_resnames, py_unique_resids, py_unique_chains, py_uniques;
-
-    for (int i = 0; i < current_id; ++i) {
-        py_unique_resnames.append(unique_resnames[i]);
-        py_unique_resids.append(unique_resids[i]);
-        py_unique_chains.append(unique_chains[i]);
-    }
-    for (const auto& res : uniques) {
-        py_uniques.append(py::make_tuple(res.resname, res.resid, res.chain));
-    }
-
-    return py::make_tuple(py_resindices, py_unique_resnames, py_unique_resids, py_unique_chains, py_uniques);
-}
-
 
 void bind(py::module &_lahuta) {
   py::class_<Luni> Luni(_lahuta, "LahutaCPP");
@@ -442,9 +373,10 @@ void bind(py::module &_lahuta) {
 
   py::class_<IR>(_lahuta, "IR")
       .def(py::init<>())
-      .def(py::init<std::vector<int>, std::vector<int>, std::vector<std::string>,
-                    std::vector<int>, std::vector<std::string>,
-           std::vector<std::string>, std::vector<std::vector<float>>>())
+      .def(
+          py::init<std::vector<int>, std::vector<int>, std::vector<std::string>,
+                   std::vector<int>, std::vector<std::string>,
+                   std::vector<std::string>, std::vector<std::vector<float>>>())
       .def_readwrite("atom_indices", &IR::atom_indices)
       .def_readwrite("atomic_numbers", &IR::atomic_numbers)
       .def_readwrite("atom_names", &IR::atom_names)
@@ -454,7 +386,7 @@ void bind(py::module &_lahuta) {
       .def_readwrite("positions", &IR::positions);
 
   Luni.def(py::init<std::string>())
-      .def(py::init<const IR&>())
+      .def(py::init<const IR &>())
       .def_property_readonly(
           "file_name", [](class Luni &luni) { return luni.file_name.c_str(); })
       .def("find_neighbors", &Luni::find_neighbors)
@@ -477,16 +409,15 @@ void bind(py::module &_lahuta) {
       .def_property_readonly("n_atoms",
                              [](class Luni &luni) { return luni.n_atoms(); })
 
-      .def(
-          "get_positions", // need to return list[list[float]]
-          [](class Luni &luni) {
-            std::vector<std::vector<double>> positions;
-            auto coords = luni.get_molecule().getConformer().getPositions();
-            for (const auto &coord : coords) {
-              positions.push_back({coord.x, coord.y, coord.z});
-            }
-            return positions;
-          })
+      .def("get_positions", // need to return list[list[float]]
+           [](class Luni &luni) {
+             std::vector<std::vector<double>> positions;
+             auto coords = luni.get_molecule().getConformer().getPositions();
+             for (const auto &coord : coords) {
+               positions.push_back({coord.x, coord.y, coord.z});
+             }
+             return positions;
+           })
       .def_property_readonly(
           "positions",
           [](class Luni &luni) {
@@ -549,46 +480,10 @@ void bind(py::module &_lahuta) {
                                return string_array(chainlabels);
                              })
 
-      /*.def("names_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto names = luni.names();*/
-      /*       return string_array(names);*/
-      /*     })*/
-      /*.def("symbols_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto symbols = luni.symbols();*/
-      /*       return string_array(symbols);*/
-      /*     })*/
-      /*.def("indices_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto indices = luni.indices();*/
-      /*       return int_array(indices);*/
-      /*     })*/
-      /*.def("elements_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto elements = luni.elements();*/
-      /*       return string_array(elements);*/
-      /*     })*/
-      /*.def("resnames_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto resnames = luni.resnames();*/
-      /*       return string_array(resnames);*/
-      /*     })*/
-      /*.def("resids_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto resids = luni.resids();*/
-      /*       return int_array(resids);*/
-      /*     })*/
-      /*.def("resindices_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto resindices = luni.resindices();*/
-      /*       return int_array(resindices);*/
-      /*     })*/
-      /*.def("chainlabels_npy",*/
-      /*     [](class Luni &luni) {*/
-      /*       auto chainlabels = luni.chainlabels();*/
-      /*       return string_array(chainlabels);*/
-      /*     })*/
+      .def("count_unique",
+           py::overload_cast<const std::vector<int> &>(&Luni::count_unique))
+      .def("count_unique", py::overload_cast<const std::vector<std::string> &>(
+                               &Luni::count_unique))
       .def("factorize", &Luni::factorize)
       .def("get_cutoff", &Luni::get_cutoff);
 
@@ -607,6 +502,6 @@ PYBIND11_MODULE(_lahuta, m) {
 
   xbind_atom_types(m);
   bind(m);
-  m.def("factorize_residues", &factorize_residues, "Factorize residues");
-
+  m.def("factorize_residues", &factorize_residues,
+        "Factorize residue information into unique combinations");
 }

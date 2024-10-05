@@ -370,6 +370,20 @@ std::vector<int> Luni::factorize(const std::vector<std::string>& labels) {
     return ids;
 }
 
+int Luni::count_unique(const std::vector<int>& vec) {
+    std::unordered_set<int> unique_elements(vec.begin(), vec.end());
+    return unique_elements.size();
+}
 
+int Luni::count_unique(const std::vector<std::string>& vec) {
+    std::unordered_set<std::string_view> unique_elements;
+    unique_elements.reserve(vec.size()); 
+
+    for (const auto& str : vec) {
+        unique_elements.insert(std::string_view(str));
+    }
+
+    return unique_elements.size();
+}
 
 } // namespace lahuta
