@@ -1,31 +1,21 @@
 from typing import TypeVar, Callable, Type, Any, Protocol, ClassVar
 
-from lahuta._types.mdanalysis import AtomGroupType
+from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 from lahuta.core.topology.arc import Atom
 from lahuta.core.topology.loaders import LahutaCPPLoader, TopologyLoader, Loader
 from lahuta.lib import cLuni
 from lahuta.lib._lahuta import IR, LahutaCPP
+from lahuta.utils.radii import v_radii_assignment
 
-
-# class IRData(Protocol):
-#     def __init__(self):
-#         self.input: LahutaCPP
-#
-#     # @staticmethod
-#     def to_ir() -> IR: ...
-#
-#     @staticmethod
-#     def from_ir(ir: IR) -> _Loader: ...
+# TODO:
+# 1. Should _loaders store their __name__ or the actual class or implement a get_type method?
+# 2. Write a factory to get the correct loader?
 
 
 class _Loader(Protocol):
     def __init__(self, file_path: str) -> None:
         self.input: Loader
 
-    # @staticmethod
-    # def load(file_path: str) -> Any: ...
-
-    # @staticmethod
     def to_ir(self) -> IR: ...
 
     @staticmethod
@@ -36,10 +26,9 @@ class GemmiLoader:
     def __init__(self, file_path: str) -> None:  # -> LahutaCPP:
         print(f"Loading file: {file_path} using GemmiLoader")
         self.input = cLuni(file_path)
-        # return cLuni(file_path)
 
-    # @staticmethod
     def to_ir(self) -> IR:
+        # Convert GemmiLoader to IR
         return IR(
             self.input.get_indices(),
             self.input.get_atomic_numbers(),
@@ -52,35 +41,68 @@ class GemmiLoader:
 
     @staticmethod
     def from_ir(ir: IR) -> LahutaCPP:
-        # Convert IRType data to GemmiLoader
-        ...
+        # Convert IR to GemmiLoader
+        return cLuni(ir)
 
 
 class MDAnalysisLoader:
-    # @staticmethod
     def __init__(self, file_path: str) -> None:  # -> AtomGroupType:
         print(f"Loading file: {file_path} using MDAnalysisLoader")
         self.input = TopologyLoader(file_path).ag
-        # return TopologyLoader(file_path).ag
 
-    # @staticmethod
     def to_ir(self) -> IR:
-        # Convert MDAnalysisLoader data to IR
-        ...
-        # return IR(
-        #     atom_indices=ag.indices,
-        #     atomic_numbers=ag.atoms.atomic_numbers,
-        #     atom_names=ag.names,
-        #     resids=ag.resids,
-        #     resnames=ag.resnames,
-        #     chainlabels=ag.chainlabels,
-        #     positions=ag.positions,
-        # )
+        # Convert MDAnalysisLoader to IR
+        return IR(
+            atom_indices=self.input.indices,
+            atomic_numbers=self.input.atoms.atomicnums,
+            atom_names=self.input.names,
+            resids=self.input.resids,
+            resnames=self.input.resnames,
+            chainlabels=self.input.chainIDs.astype(str),
+            positions=self.input.positions,
+        )
 
     @staticmethod
     def from_ir(ir: IR) -> AtomGroupType:
-        # Convert IRType data to MDAnalysisLoader
-        ...
+        # Convert IR to MDAnalysisLoader
+        import numpy as np
+        import pandas as pd
+        import MDAnalysis as mda
+
+        chain_ids = pd.factorize(ir.chainlabels)[0]
+
+        struct_arr = np.rec.fromarrays(  # type: ignore
+            [ir.resnames, ir.resids, chain_ids],
+            names=str("resnames, resids, chain_ids"),
+        )
+
+        resindices, uniques = pd.factorize(struct_arr)
+        resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
+
+        uv: UniverseType = mda.Universe.empty(
+            n_atoms=len(ir.atom_indices),
+            n_residues=uniques.size,
+            n_segments=len(ir.chainlabels),
+            atom_resindex=resindices,
+            residue_segindex=chain_ids,
+            trajectory=True,
+        )
+
+        # Add topology attributes
+        uv.add_TopologyAttr("names", ir.atom_names)
+        # uv.add_TopologyAttr("type", self.arc.atoms.types)
+        # uv.add_TopologyAttr("elements", ir.atom)
+        # uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
+        uv.add_TopologyAttr("resnames", resnames)
+        uv.add_TopologyAttr("resids", resids)
+        # uv.add_TopologyAttr("chainIDs", self.arc.chains.auths)
+        # uv.add_TopologyAttr("ids", self.arc.atoms.ids)
+        # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
+
+        # uv.atoms.positions = self.arc.atoms.coordinates
+        # uv.filename = self.file_path
+
+        return uv.atoms
 
 
 # Loaders currently include: AtomGroupType, LahutaCPP
@@ -114,56 +136,41 @@ T = TypeVar("T", bound=_Loader)
 class Converter:
     # converters: ClassVar[dict[tuple[Type[Any], Type[Any]], Callable[[Any], Any]]] = {}
 
-    # @staticmethod
-    # def register_conversion(source: Type[S], target: Type[T], func: Callable[[S], T]) -> None:
-    #     Converter.converters[(source, target)] = func
-
     @staticmethod
-    def convert(obj: _Loader, target_type: Type[T]) -> T:
+    def convert(obj: _Loader, target_type: Type[T]) -> Loader:
         # Convert to intermediate representation
         if hasattr(obj, "to_ir") and hasattr(target_type, "from_ir"):
             ir = obj.to_ir()
-            print(f"Converted to IR: {ir}: {ir.atom_indices}")
+            print(f"Converted to IR: {ir}")
             return target_type.from_ir(ir)
 
         raise ValueError(f"Conversion not supported: {type(obj).__name__} to {target_type.__name__}")
 
-    # @staticmethod
-    # def convert(obj: Loader, target_type: Type[T]) -> T:
-    #     source_type = type(obj)
-    #     func = Converter.converters.get((source_type, target_type))
-    #     if func:
-    #         return func(obj)
-    #     raise ValueError(f"No conversion registered from {source_type.__name__} to {target_type.__name__}")
 
-
-# Register conversions
-# def f2_to_f1(f2: AtomGroupType) -> LahutaCPP:
-#     print("Converting AtomGroupType to LahutaCPP")
-#     return cLuni(f2.file_name)
-#
-#
-# def f1_to_f2(f1: LahutaCPP) -> AtomGroupType:
-#     print("Converting LahutaCPP to AtomGroupType")
-#     return
-#     return TopologyLoader(f1.file_name).ag
-
-
-# Converter.register_conversion(AtomGroupType, LahutaCPP, f2_to_f1)
-# Converter.register_conversion(LahutaCPP, AtomGroupType, f1_to_f2)
-
-# Example Usage
 if __name__ == "__main__":
-    # Load a file of type .ext1
-    # f1_instance = LoaderFactory.load("f1.ext1", ".ext1")
     file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif"
-    f1_instance = LoaderFactory.load(file_name, ".cif")
-    print(f"F1 compute result: {f1_instance.input.names}")
 
-    # Convert LahutaCPP instance to AtomGroupType
-    f1_instance = Converter.convert(f1_instance, MDAnalysisLoader)
-    # print(f"F1 compute result: {f1_instance.input.names}")
+    # fmt: off
+    # 1. Load a file of type .cif
+    loader = LoaderFactory.load(file_name, ".cif")
+    print(f"1.: {loader.input.names.shape}", loader.input)
+    # 2. Convert the loaded file to IR
+    ir_instance = loader.to_ir()
+    print(f"2.: {len(ir_instance.atom_indices)}", ir_instance)
+    # 3. Convert the IR instance to LahutaCPP
+    lahuta_from_ir = loader.from_ir(ir_instance)
+    print(f"3.: {lahuta_from_ir.names.shape}", lahuta_from_ir)
+    # 4. Convert the LahutaCPP instance to AtomGroupType
+    f2_instance = Converter.convert(loader, MDAnalysisLoader)
+    _f2_instance = MDAnalysisLoader.from_ir(ir_instance)
+    print(f"4.: {len(f2_instance.names)}", f2_instance)
+    print(f"4.: {len(_f2_instance.names)}", _f2_instance)
+    # 5. Convert AtomGroupType instance to IR
+    # ir_instance = MDAnalysisLoader(file_name).to_ir()
+    # print(f"5.: {len(ir_instance.atom_indices)}", ir_instance)
+    # ir_instance = loader.to_ir()
+    # 6. Convert IR instance to LahutaCPP
+    lahuta_from_ir = loader.from_ir(ir_instance)
+    print(f"6.: {lahuta_from_ir.names.shape}", lahuta_from_ir)
 
-    # Convert F1Type instance to F2Type
-    # f2_instance = Converter.convert(f1_instance, AtomGroupType)
-    # print(f"F2 compute result: {f2_instance.names}")
+    # FIX: step 5 does not work because the current implementation does not allow for calling to_ir on the object created using to_ir

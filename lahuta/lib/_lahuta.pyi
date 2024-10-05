@@ -7,13 +7,13 @@ from numpy.typing import NDArray
 # Intermediate Representation
 @dataclass
 class IR:
-    atom_indices: list[int]
-    atomic_numbers: list[int]
-    atom_names: list[str]
-    resids: list[int]
-    resnames: list[str]
-    chainlabels: list[str]
-    positions: list[list[float]]
+    atom_indices: list[int] | NDArray[np.int32]
+    atomic_numbers: list[int] | NDArray[np.int32]
+    atom_names: list[str] | NDArray[np.str_]
+    resids: list[int] | NDArray[np.int32]
+    resnames: list[str] | NDArray[np.str_]
+    chainlabels: list[str] | NDArray[np.str_]
+    positions: list[list[float]] | NDArray[np.float32]
 
 class LahutaCPP:
     @overload
