@@ -368,6 +368,7 @@ public:
   bool parse_expression(const std::string &selection);
   Luni filter_luni(const std::vector<int> &atom_indices) const;
   Luni filter() const;
+  static std::vector<int> factorize(const std::vector<std::string> &labels);
 
 private:
   std::vector<int> filtered_indices;

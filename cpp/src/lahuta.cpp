@@ -347,4 +347,29 @@ NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results,
   return NSResults(filtered, dists);
 }
 
+std::vector<int> Luni::factorize(const std::vector<std::string>& labels) {
+    std::vector<int> ids(labels.size());
+
+    // Hash map from labels to ids
+    std::unordered_map<std::string_view, int> label_to_id;
+    label_to_id.reserve(labels.size());
+
+    int current_id = 0;
+    for (size_t i = 0; i < labels.size(); ++i) {
+        std::string_view label = labels[i];
+        auto it = label_to_id.find(label);
+        if (it == label_to_id.end()) {
+            label_to_id[label] = current_id;
+            ids[i] = current_id;
+            ++current_id;
+        } else {
+            ids[i] = it->second;
+        }
+    }
+
+    return ids;
+}
+
+
+
 } // namespace lahuta

@@ -75,6 +75,88 @@ py::array int_array(const std::vector<int> &data) {
   return result;
 }
 
+
+struct _Residue {
+    std::string_view resname;
+    int resid;
+    std::string_view chain;
+
+    bool operator==(const _Residue& other) const {
+        return resname == other.resname && resid == other.resid && chain == other.chain;
+    }
+};
+
+namespace std {
+    template <>
+    struct hash<_Residue> {
+        size_t operator()(const _Residue& res) const {
+            size_t h1 = hash<std::string_view>{}(res.resname);
+            size_t h2 = hash<int>{}(res.resid);
+            size_t h3 = hash<std::string_view>{}(res.chain);
+            return h1 ^ (h2 << 1) ^ (h3 << 2); 
+        }
+    };
+}
+
+py::tuple factorize_residues(const std::vector<std::string>& resnames,
+                             const std::vector<int>& resids,
+                             const std::vector<std::string>& chains) {
+    size_t N = resnames.size();
+
+    std::vector<int> resindices(N);
+
+    // Map to assign unique IDs to unique Residue combinations
+    std::unordered_map<_Residue, int> residue_to_id;
+    residue_to_id.reserve(N); 
+
+    int current_id = 0;
+    for (size_t i = 0; i < N; ++i) {
+        _Residue res{resnames[i], resids[i], chains[i]};
+
+        auto it = residue_to_id.find(res);
+        if (it == residue_to_id.end()) {
+            // New unique residue combination
+            residue_to_id[res] = current_id;
+            resindices[i] = current_id;
+            ++current_id;
+        } else {
+            // Existing residue combination
+            resindices[i] = it->second;
+        }
+    }
+
+    std::vector<_Residue> uniques(current_id);
+    for (const auto& pair : residue_to_id) {
+        uniques[pair.second] = pair.first;
+    }
+
+    // Split uniques into separate vectors
+    std::vector<std::string_view> unique_resnames(current_id);
+    std::vector<int> unique_resids(current_id);
+    std::vector<std::string_view> unique_chains(current_id);
+
+    for (int i = 0; i < current_id; ++i) {
+        unique_resnames[i] = uniques[i].resname;
+        unique_resids[i] = uniques[i].resid;
+        unique_chains[i] = uniques[i].chain;
+    }
+
+    py::array_t<int> py_resindices(resindices.size(), resindices.data());
+    py::list py_unique_resnames, py_unique_resids, py_unique_chains, py_uniques;
+
+    for (int i = 0; i < current_id; ++i) {
+        py_unique_resnames.append(unique_resnames[i]);
+        py_unique_resids.append(unique_resids[i]);
+        py_unique_chains.append(unique_chains[i]);
+    }
+    for (const auto& res : uniques) {
+        py_uniques.append(py::make_tuple(res.resname, res.resid, res.chain));
+    }
+
+    return py::make_tuple(py_resindices, py_unique_resnames, py_unique_resids, py_unique_chains, py_uniques);
+}
+
+
 void bind(py::module &_lahuta) {
   py::class_<Luni> Luni(_lahuta, "LahutaCPP");
 
@@ -507,6 +589,7 @@ void bind(py::module &_lahuta) {
       /*       auto chainlabels = luni.chainlabels();*/
       /*       return string_array(chainlabels);*/
       /*     })*/
+      .def("factorize", &Luni::factorize)
       .def("get_cutoff", &Luni::get_cutoff);
 
   py::class_<RDGeom::Point3D>(_lahuta, "Point3D")
@@ -524,4 +607,6 @@ PYBIND11_MODULE(_lahuta, m) {
 
   xbind_atom_types(m);
   bind(m);
+  m.def("factorize_residues", &factorize_residues, "Factorize residues");
+
 }

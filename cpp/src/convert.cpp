@@ -33,6 +33,7 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
     auto pos = RDGeom::Point3D(atom.pos.x, atom.pos.y, atom.pos.z);
     conf.setAtomPos(atom.idx, pos);
 
+    std::cout << "chain name: " << chain.name << std::endl;
     auto altLoc = (atom.altloc == '\0') ? "" : std::string(1, atom.altloc);
     AtomPDBResidueInfo atomInfo = {atom.name, atom.serial,         altLoc,
                                    res.name,  res.seqid.num.value, chain.name};

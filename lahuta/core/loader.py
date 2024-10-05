@@ -3,7 +3,7 @@ from typing import TypeVar, Callable, Type, Any, Protocol, ClassVar
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 from lahuta.core.topology.arc import Atom
 from lahuta.core.topology.loaders import LahutaCPPLoader, TopologyLoader, Loader
-from lahuta.lib import cLuni
+from lahuta.lib import cLuni, factorize_residues
 from lahuta.lib._lahuta import IR, LahutaCPP
 from lahuta.utils.radii import v_radii_assignment
 
@@ -36,7 +36,7 @@ class GemmiLoader:
             self.input.get_resids(),
             self.input.get_resnames(),
             self.input.get_chainlabels(),
-            self.input.get_positions(),
+            self.input.positions,
         )
 
     @staticmethod
@@ -69,22 +69,17 @@ class MDAnalysisLoader:
         import pandas as pd
         import MDAnalysis as mda
 
-        chain_ids = pd.factorize(ir.chainlabels)[0]
+        resindices, resnames, resids, chain_ids, _ = factorize_residues(ir.resnames, ir.resids, ir.chainlabels)
 
-        struct_arr = np.rec.fromarrays(  # type: ignore
-            [ir.resnames, ir.resids, chain_ids],
-            names=str("resnames, resids, chain_ids"),
-        )
-
-        resindices, uniques = pd.factorize(struct_arr)
-        resnames, resids, chain_ids = uniques["resnames"], uniques["resids"], uniques["chain_ids"]
+        # print("xys: ", resindices, len(resids))
+        # print("xys: ", len(uniques), len(resids))
 
         uv: UniverseType = mda.Universe.empty(
             n_atoms=len(ir.atom_indices),
-            n_residues=uniques.size,
+            n_residues=len(resids),
             n_segments=len(ir.chainlabels),
             atom_resindex=resindices,
-            residue_segindex=chain_ids,
+            residue_segindex=cLuni.factorize(chain_ids),
             trajectory=True,
         )
 
@@ -95,12 +90,15 @@ class MDAnalysisLoader:
         # uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
         uv.add_TopologyAttr("resnames", resnames)
         uv.add_TopologyAttr("resids", resids)
-        # uv.add_TopologyAttr("chainIDs", self.arc.chains.auths)
-        # uv.add_TopologyAttr("ids", self.arc.atoms.ids)
-        # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
+        uv.add_TopologyAttr("chainIDs", ir.chainlabels)
+        uv.add_TopologyAttr("ids", ir.atom_indices)
 
-        # uv.atoms.positions = self.arc.atoms.coordinates
-        # uv.filename = self.file_path
+        # FIX: we need to add tempfactors
+        # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
+        # FIX: we also need to add elements
+        # uv.add_TopologyAttr("elements", ir.atom)
+
+        uv.atoms.positions = ir.positions
 
         return uv.atoms
 
@@ -152,7 +150,9 @@ if __name__ == "__main__":
 
     # fmt: off
     # 1. Load a file of type .cif
+    import numpy as np
     loader = LoaderFactory.load(file_name, ".cif")
+    print("xx: ", np.unique(loader.input.chainlabels))
     print(f"1.: {loader.input.names.shape}", loader.input)
     # 2. Convert the loaded file to IR
     ir_instance = loader.to_ir()

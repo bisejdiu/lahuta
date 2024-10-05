@@ -95,6 +95,9 @@ class AtomGroupType(Protocol):
     def names(self) -> NDArray[np.str_]: ...
 
     @property
+    def atomicnums(self) -> NDArray[np.int32]: ...
+
+    @property
     def ids(self) -> NDArray[np.int32]: ...
 
     @property

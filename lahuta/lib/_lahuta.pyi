@@ -13,7 +13,7 @@ class IR:
     resids: list[int] | NDArray[np.int32]
     resnames: list[str] | NDArray[np.str_]
     chainlabels: list[str] | NDArray[np.str_]
-    positions: list[list[float]] | NDArray[np.float32]
+    positions: NDArray[np.float32]
 
 class LahutaCPP:
     @overload
