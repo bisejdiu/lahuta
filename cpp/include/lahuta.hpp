@@ -189,6 +189,19 @@ private:
   }
 };
 
+// We are creating an intermediate representation of the molecule (IR) that we can use 
+// to create Luni objects from different sources. Other methods can use the IR to
+// create Luni objects from different sources.
+/*struct IR {*/
+/*  std::vector<int> atom_indices;*/
+/*  std::vector<int> atomic_numbers;*/
+/*  std::vector<std::string> atom_names;*/
+/*  std::vector<int> resids;*/
+/*  std::vector<std::string> resnames;*/
+/*  std::vector<std::string> chainlabels;*/
+/*  std::vector<RDGeom::Point3D> positions;*/
+/*};*/
+
 class Luni {
 private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
@@ -198,10 +211,11 @@ private:
   FastNS grid; // FIXME: is this needed?
   Topology topology;
 
-  void process_file(std::string file_name) {
+  void process_file(std::string file_path) {
     RDKit::Conformer *conformer = new RDKit::Conformer();
     auto start = std::chrono::high_resolution_clock::now();
-    st = read_structure_gz(file_name);
+    st = read_structure_gz(file_path);
+    file_name = file_path;
     std::cout << "Read Structure using gemmi: " << to_ms(t() - start).count()
               << "\n";
 
@@ -237,13 +251,19 @@ private:
   }
 
 public:
-  Luni() = default;
+  Luni() = default; // FIX: remove?
   explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
     process_file(file_name);
 
     auto start = std::chrono::high_resolution_clock::now();
     create_topology();
     std::cout << "Create Topology: " << to_ms(t() - start).count() << "\n";
+  }
+
+  // Luni from IR:
+  Luni(const IR &ir) : _cutoff(BONDED_NS_CUTOFF) { 
+    IR_to_RWMol(*mol, ir);
+    create_topology();
   }
 
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
@@ -341,6 +361,7 @@ private:
                       bool log_values = false) const;
 
 public:
+  std::string file_name;
   static std::vector<std::string> tokenize(const std::string &str);
   static std::vector<std::string> tokenize_simple(const std::string &str);
   std::vector<int> parse_and_filter(const std::string &selection) const;

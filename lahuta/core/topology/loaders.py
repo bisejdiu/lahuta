@@ -25,7 +25,7 @@ import gemmi
 import MDAnalysis as mda
 import numpy as np
 
-from lahuta.lib._lahuta import LahutaCPP
+from lahuta.lib._lahuta import IR, LahutaCPP
 import pandas as pd
 from numpy.typing import NDArray
 
@@ -34,7 +34,7 @@ from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 from lahuta._types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment
 
-from .arc import ARC, Atoms, Chains, Residues
+from .arc import ARC, Atom, Atoms, Chains, Residues
 from .obmol import OBMol
 
 
@@ -63,6 +63,73 @@ def load_file(file_path: str) -> LahutaCPP | AtomGroupType:
     return TopologyLoader(file_path).ag
 
 
+# class Loader(Protocol):
+#     def __init__(self):
+#         self.input: LahutaCPP
+#
+#     @staticmethod
+#     def to_ir(input: k
+
+
+class Loader(Protocol):
+    def __init__(self):
+        self.luni: LahutaCPP
+
+    # @staticmethod
+    # def from_ir(ir: IR) -> "Loader": ...
+    #
+    # @staticmethod
+    # def to_ir() -> IR: ...
+
+    @property
+    @abstractmethod
+    def n_atoms(self) -> int:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def indices(self) -> NDArray[np.int32]:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def names(self) -> NDArray[np.str_]:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def elements(self) -> NDArray[np.str_]:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def positions(self) -> NDArray[np.float32]:
+        """The number of atoms in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def resnames(self) -> NDArray[np.str_]:
+        """The residue names in the loaded biological structure data."""
+        ...
+
+    @property
+    @abstractmethod
+    def resids(self) -> NDArray[np.int32]:
+        """The residue IDs in the loaded biological structure data."""
+        ...
+
+
+# Intermediate Representation
+# class IRType:
+#     def __init__(self, data: Any):
+#         self.data = data
+
+
 class BaseLoader(ABC):
     """Abstract base class providing a blueprint for loading and handling biological structure data.
 
@@ -77,6 +144,8 @@ class BaseLoader(ABC):
 
     def __init__(self, file_path: str):
         self.file_path = file_path
+        self._data: LahutaCPP | AtomGroupType
+        self.luni: LahutaCPP
 
     @property
     @abstractmethod

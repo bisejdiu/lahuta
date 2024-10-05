@@ -358,7 +358,23 @@ void bind(py::module &_lahuta) {
            })
       .def("get_luni", &Neighbors<AtomRingPair>::get_luni);
 
+  py::class_<IR>(_lahuta, "IR")
+      .def(py::init<>())
+      .def(py::init<std::vector<int>, std::vector<int>, std::vector<std::string>,
+                    std::vector<int>, std::vector<std::string>,
+           std::vector<std::string>, std::vector<std::vector<float>>>())
+      .def_readwrite("atom_indices", &IR::atom_indices)
+      .def_readwrite("atomic_numbers", &IR::atomic_numbers)
+      .def_readwrite("atom_names", &IR::atom_names)
+      .def_readwrite("resids", &IR::resids)
+      .def_readwrite("resnames", &IR::resnames)
+      .def_readwrite("chainlabels", &IR::chainlabels)
+      .def_readwrite("positions", &IR::positions);
+
   Luni.def(py::init<std::string>())
+      .def(py::init<const IR&>())
+      .def_property_readonly(
+          "file_name", [](class Luni &luni) { return luni.file_name.c_str(); })
       .def("find_neighbors", &Luni::find_neighbors)
       /*.def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)*/
       /*.def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)*/
@@ -376,17 +392,25 @@ void bind(py::module &_lahuta) {
       /*.def("match_smarts_string", &Luni::match_smarts_string)*/
       .def("filter_luni", &Luni::filter_luni)
       /*.def("get_n_atoms", &Luni::n_atoms)*/
-      .def_property_readonly("n_atoms", [](class Luni &luni) {
-        return luni.n_atoms();
-      })
+      .def_property_readonly("n_atoms",
+                             [](class Luni &luni) { return luni.n_atoms(); })
 
       .def(
-          "coordinates",
+          "get_positions", // need to return list[list[float]]
+          [](class Luni &luni) {
+            std::vector<std::vector<double>> positions;
+            auto coords = luni.get_molecule().getConformer().getPositions();
+            for (const auto &coord : coords) {
+              positions.push_back({coord.x, coord.y, coord.z});
+            }
+            return positions;
+          })
+      .def_property_readonly(
+          "positions",
           [](class Luni &luni) {
             return coordinates(
                 luni.get_molecule().getConformer().getPositions());
-          },
-          "Return the coordinates of the molecule as a numpy array")
+          })
 
       .def("get_indices", &Luni::indices)
       .def_property_readonly("indices",
@@ -394,43 +418,49 @@ void bind(py::module &_lahuta) {
                                auto indices = luni.indices();
                                return int_array(indices);
                              })
-      .def("names", &Luni::names)
+      .def("get_atomic_numbers", &Luni::atomic_numbers)
+      .def_property_readonly("atomic_numbers",
+                             [](class Luni &luni) {
+                               auto atomic_numbers = luni.atomic_numbers();
+                               return int_array(atomic_numbers);
+                             })
+      .def("get_names", &Luni::names)
       .def_property_readonly("names",
                              [](class Luni &luni) {
                                auto names = luni.names();
                                return string_array(names);
                              })
-      .def("symbols", &Luni::symbols)
+      .def("get_symbols", &Luni::symbols)
       .def_property_readonly("symbols",
                              [](class Luni &luni) {
                                auto symbols = luni.symbols();
                                return string_array(symbols);
                              })
-      .def("elements", &Luni::elements)
+      .def("get_elements", &Luni::elements)
       .def_property_readonly("elements",
                              [](class Luni &luni) {
                                auto elements = luni.elements();
                                return string_array(elements);
                              })
-      .def("resnames", &Luni::resnames)
+      .def("get_resnames", &Luni::resnames)
       .def_property_readonly("resnames",
                              [](class Luni &luni) {
                                auto resnames = luni.resnames();
                                return string_array(resnames);
                              })
-      .def("resids", &Luni::resids)
+      .def("get_resids", &Luni::resids)
       .def_property_readonly("resids",
                              [](class Luni &luni) {
                                auto resids = luni.resids();
                                return int_array(resids);
                              })
-      .def("resindices", &Luni::resindices)
+      .def("get_resindices", &Luni::resindices)
       .def_property_readonly("resindices",
                              [](class Luni &luni) {
                                auto resindices = luni.resindices();
                                return int_array(resindices);
                              })
-      .def("chainlabels", &Luni::chainlabels)
+      .def("get_chainlabels", &Luni::chainlabels)
       .def_property_readonly("chainlabels",
                              [](class Luni &luni) {
                                auto chainlabels = luni.chainlabels();

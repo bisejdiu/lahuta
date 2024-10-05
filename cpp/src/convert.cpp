@@ -45,6 +45,19 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf,
   }
 }
 
+void IR_to_RWMol(RWMol &mol, const IR &ir) {
+  Conformer *conf = new Conformer();
+  for (size_t i = 0; i < ir.atom_indices.size(); ++i) {
+    RDKit::Atom *atom = new RDKit::Atom(ir.atomic_numbers[i]);
+    atom->setMonomerInfo(new AtomPDBResidueInfo(
+        ir.atom_names[i], -1, "", ir.resnames[i], ir.resids[i], ir.chainlabels[i]));
+    mol.addAtom(atom, true, true);
+    conf->setAtomPos(i, {ir.positions[i][0], ir.positions[i][1], ir.positions[i][2]});
+  }
+  mol.addConformer(conf, true);
+  mol.updatePropertyCache(false);
+}
+
 RWMol filter_atoms(RWMol &mol, std::vector<int> &indices) {
   RWMol new_mol;
 

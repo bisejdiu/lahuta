@@ -23,6 +23,7 @@ from numpy.typing import NDArray
 from lahuta._types.mdanalysis import UniverseType, AtomGroupType
 
 # from lahuta.lib import LahutaCPP
+from lahuta.core.topology.arc import Atom
 from lahuta.lib._lahuta import LahutaCPP
 from scipy.sparse import csc_array, load_npz, save_npz
 from typing_extensions import Self
@@ -84,30 +85,30 @@ class Luni:
         b_iso_name: str = "tempfactor",
     ) -> None:
         fmts: str | set[str] = ""
-        self._file_loader: BaseLoader
+        self._data: LahutaCPP | AtomGroupType
         self._input_structure: str | Path | "AtomGroupType" = structure
         structure = str(structure) if isinstance(structure, Path) else structure
         # print("->", structure, trajectories)
         match (structure, trajectories):
             case (mda.AtomGroup(atoms=s), None):
                 # print("converting from MDA")
-                self._file_loader = TopologyLoader.from_mda(s)  # type: ignore
+                self._data = TopologyLoader.from_mda(s)  # type: ignore
             case (str(s), None):
                 # Check if we can use GemmiLoader.
                 file_format, is_pdb = Luni._check_gemmi_support(s)
                 if file_format:
                     # print("-> to bench")
-                    self._file_loader = LahutaCPPLoader(s)
+                    self._data = LahutaCPPLoader(s).luni
                 elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
                     # print("MDA")
-                    self._file_loader = TopologyLoader((s))
+                    self._data = TopologyLoader((s)).to("mda")
                 else:
                     fmts = self._get_supported_fmts()
                     fmts = ", ".join(fmts)
                     raise ValueError(f"Unsupported format for structure: {s}! \nSupported formats are: {fmts}.")
             case (str(s), str(t)):
                 # If trajectories are provided, use TopologyLoader
-                self._file_loader = TopologyLoader(s, t)
+                self._data = TopologyLoader(s, t).to("mda")
             case _:
                 fmts = self._get_supported_fmts()
                 fmts = ", ".join(fmts)
@@ -116,13 +117,14 @@ class Luni:
                 )
 
         self._mol: Optional["MolType"] = None
-        self._mda = self._file_loader.to("mda")
+        # self._mda = self._data.to("mda")
+        self._mda = self.to("mda")
         self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
 
         # self._luni = cLuni(self._file_loader.file_path)
         # self._at = self._luni.get_atom_types()
 
-        self._data = self.read_file(structure)
+        # self._data = self.read_file(structure)
         self._structure, self._trajectories = structure, trajectories
 
         self.b_iso_name = b_iso_name
@@ -151,7 +153,7 @@ class Luni:
             union_indices = np.union1d(self.indices, target_spec.indices)
             mda = self._mda.universe.atoms[union_indices]
 
-        neighbors = self._file_loader.luni.find_neighbors(radius, res_dif)
+        neighbors = self._data.luni.find_neighbors(radius, res_dif)
         pairs, distances = neighbors.get_pairs(), np.array(neighbors.get_distances_sq())
 
         if target_spec is not None:
@@ -373,7 +375,7 @@ class Luni:
         if fmt == "mol" and self._mol is not None:
             return self._mol
         if fmt == "mol":
-            self._mol = self._file_loader.to(fmt)
+            self._mol = self._data.to(fmt)
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
@@ -392,7 +394,7 @@ class Luni:
         Returns:
             NDArray[np.int32]: A NumPy array containing the indices of the atoms in the Luni object.
         """
-        return self._file_loader.indices
+        return self._data.indices
 
     @property
     def names(self) -> NDArray[np.str_]:
@@ -419,7 +421,7 @@ class Luni:
         Returns:
             NDArray[np.float32]: A NumPy array containing the coordinates of the atoms in the Luni object.
         """
-        return self._file_loader.coordinates
+        return self._data.positions
 
     @property
     def resnames(self) -> NDArray[np.str_]:
@@ -581,7 +583,9 @@ class Luni:
 
         # if np.any(self.atom_types.data):
         #     return
-        tmp_loader = GemmiLoader(self._file_loader.file_path)
+        print("file_name ->", self._data.file_path)
+        is_pdb = self._data.file_path.lower().endswith(".pdb")
+        tmp_loader = GemmiLoader(self._data.file_path, is_pdb)
         self._mol = tmp_loader.to_mol()
         atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
         self.atom_types = atomtype_assigner.assign_atom_types()
