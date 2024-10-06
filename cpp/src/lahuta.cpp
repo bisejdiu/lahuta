@@ -386,4 +386,16 @@ int Luni::count_unique(const std::vector<std::string>& vec) {
     return unique_elements.size();
 }
 
+std::vector<std::string> Luni::find_elements(const std::vector<int>& atomic_numbers) {
+    const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
+    std::vector<std::string> elements;
+    elements.reserve(atomic_numbers.size());
+
+    for (int atomic_number : atomic_numbers) {
+        elements.push_back(tbl->getElementSymbol(atomic_number));
+    }
+
+    return elements;
+}
+
 } // namespace lahuta

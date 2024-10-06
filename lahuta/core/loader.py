@@ -24,7 +24,6 @@ class _Loader(Protocol):
 
 class GemmiLoader:
     def __init__(self, file_path: str) -> None:  # -> LahutaCPP:
-        print(f"Loading file: {file_path} using GemmiLoader")
         self.input = cLuni(file_path)
 
     def to_ir(self) -> IR:
@@ -47,7 +46,6 @@ class GemmiLoader:
 
 class MDAnalysisLoader:
     def __init__(self, file_path: str) -> None:  # -> AtomGroupType:
-        print(f"Loading file: {file_path} using MDAnalysisLoader")
         self.input = TopologyLoader(file_path).ag
 
     def to_ir(self) -> IR:
@@ -79,15 +77,17 @@ class MDAnalysisLoader:
         )
 
         # Add topology attributes
+        elements = cLuni.find_elements(ir.atomic_numbers)
         uv.add_TopologyAttr("names", ir.atom_names)
         # uv.add_TopologyAttr("type", self.arc.atoms.types)
         # uv.add_TopologyAttr("elements", ir.atom)
-        # uv.add_TopologyAttr("vdw_radii", v_radii_assignment(self.arc.atoms.elements))
+        uv.add_TopologyAttr("elements", elements)
         uv.add_TopologyAttr("resnames", unique_residues.resnames)
         uv.add_TopologyAttr("resids", unique_residues.resids)
         uv.add_TopologyAttr("chainIDs", ir.chainlabels)
         uv.add_TopologyAttr("ids", ir.atom_indices)
 
+        uv.add_TopologyAttr("vdw_radii", v_radii_assignment(elements))
         # FIX: we need to add tempfactors
         # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
         # FIX: we also need to add elements
@@ -98,9 +98,6 @@ class MDAnalysisLoader:
         return uv.atoms
 
 
-# Loaders currently include: AtomGroupType, LahutaCPP
-
-
 # Factory to get the correct loader
 class LoaderFactory:
     loaders: ClassVar[dict[str, Type[_Loader]]] = {
@@ -108,10 +105,6 @@ class LoaderFactory:
         "cif.gz": GemmiLoader,
         "pdb": MDAnalysisLoader,
     }
-    # loaders: ClassVar[dict[str, Callable[[str], Loader]]] = {
-    #     ".cif": GemmiLoader.load,
-    #     ".pdb": MDAnalysisLoader.load,
-    # }
 
     @staticmethod
     def load(file_path: str, extension: str) -> _Loader:
@@ -121,15 +114,10 @@ class LoaderFactory:
         raise ValueError(f"Unsupported file extension: {extension}")
 
 
-# Conversion Logic
-# S = TypeVar("S", bound=Loader)
-# T = TypeVar("T", bound=IRData)
 T = TypeVar("T", bound=_Loader)
 
 
 class Converter:
-    # converters: ClassVar[dict[tuple[Type[Any], Type[Any]], Callable[[Any], Any]]] = {}
-
     @staticmethod
     def convert(obj: _Loader, target_type: Type[T]) -> Loader:
         # Convert to intermediate representation

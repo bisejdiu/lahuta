@@ -62,6 +62,10 @@ class LahutaCPP:
     @overload
     @staticmethod
     def count_unique(labels: list[int] | NDArray[np.int32]) -> int: ...
+
+    # FIX: this actually returns a list of strings
+    @staticmethod
+    def find_elements(atomic_numbers: list[int] | NDArray[np.int32]) -> NDArray[np.str_]: ...
     @property
     def file_name(self) -> str: ...
     @property

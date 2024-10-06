@@ -110,7 +110,7 @@ class AtomPlaneContacts:
 
     def __init__(self, ns: NeighborPairs, allow_metal_participation: bool = False) -> None:
         mda = ns.luni.to("mda")
-        rings = ns.luni._data.luni.get_rings()
+        rings = ns.luni._data.get_rings()
 
         from lahuta.lib import cAtomType
 

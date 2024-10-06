@@ -483,6 +483,7 @@ void bind(py::module &_lahuta) {
            py::overload_cast<const std::vector<int> &>(&Luni::count_unique))
       .def("count_unique", py::overload_cast<const std::vector<std::string> &>(
                                &Luni::count_unique))
+      .def("find_elements", &Luni::find_elements)
       .def("factorize", &Luni::factorize)
       .def("get_cutoff", &Luni::get_cutoff);
 

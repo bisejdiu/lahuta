@@ -19,42 +19,31 @@ from typing import TYPE_CHECKING, Any, Literal, Optional, Type, Union, overload
 
 import MDAnalysis as mda
 import numpy as np
-from numpy.typing import NDArray
-from lahuta._types.mdanalysis import UniverseType, AtomGroupType
-
-# from lahuta.lib import LahutaCPP
-from lahuta.core.topology.arc import Atom
-from lahuta.lib._lahuta import LahutaCPP
-from scipy.sparse import csc_array, load_npz, save_npz
 from typing_extensions import Self
 
-import time
-from lahuta.core.topology.loaders import GemmiLoader, load_file
-from lahuta.lib import cAtomType
-
+from lahuta._types.mdanalysis import AtomGroupType
 from lahuta.config.atom_types import BASE_AA_CONVERSION, RESIDUE_SYNONYMS
-from lahuta.config.atoms import PROT_ATOM_TYPES
 from lahuta.config.defaults import GEMMI_SUPPRTED_FORMATS, MDA_SUPPORTED_FORMATS
-from lahuta.core.assigners import AtomTypeAssigner
-from lahuta.core.neighbors import BaseNeighborSearch, NeighborPairs
-from lahuta.core.neighbors.backends import GemmiNeighborSearch, MDAnalysisNeighborSearch
+from lahuta.core import loader as L
+from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topology import LahutaCPPLoader, TopologyLoader
+from lahuta.core.topology.loaders import load_file
+from lahuta.lib._lahuta import LahutaCPP
 from lahuta.utils.array_utils import cross_interaction_indices
 
-from lahuta.core import loader as L
-
+IntArray, StrArray, FloatArray, AnyArray = list[int], list[str], list[float], list[Any]
 if TYPE_CHECKING:
-    from lahuta._types.mdanalysis import AtomGroupType, TrajectoryType
+    from numpy.typing import NDArray
+
+    IntArray = NDArray[np.int32]
+    StrArray = NDArray[np.str_]
+    FloatArray = NDArray[np.float32]
+    AnyArray = NDArray[Any]
+
+    from lahuta._types.mdanalysis import TrajectoryType
     from lahuta._types.openbabel import MolType
-    from lahuta.core.topology import BaseLoader
-    from lahuta.core.topology.arc import ARC
 
 __all__ = ["Luni"]
-
-NeighborBackends: dict[str, Type[BaseNeighborSearch]] = {
-    "mda": MDAnalysisNeighborSearch,
-    "gemmi": GemmiNeighborSearch,
-}
 
 
 class Luni:
@@ -120,16 +109,7 @@ class Luni:
                     f"Invalid input! {structure=} and {trajectories=} are not valid inputs. \nSupported formats are: {fmts}."
                 )
 
-        self._mol: Optional["MolType"] = None
-        # self._mda = self._data.to("mda")
-        # self._mda = self.to("mda")
-        self._mda = L.Converter.convert(self._fd, L.MDAnalysisLoader)
-        # self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
-
-        # self._luni = cLuni(self._file_loader.file_path)
-        # self._at = self._luni.get_atom_types()
-
-        # self._data = self.read_file(structure)
+        self._mda = L.MDAnalysisLoader.from_ir(self._fd.to_ir())
         self._structure, self._trajectories = structure, trajectories
 
         self.b_iso_name = b_iso_name
@@ -151,8 +131,6 @@ class Luni:
         if image is not None and backend != "gemmi":
             raise ValueError("Image filtering is only supported with the 'gemmi' backend!")
 
-        self.assing_atom_types()  # if atom_types else self.unassign_atom_types()
-
         mda = self._mda
         if target_spec is not None:
             union_indices = np.union1d(self.indices, target_spec.indices)
@@ -170,7 +148,6 @@ class Luni:
         ns._ns = neighbors
         return ns
 
-    # alias for compute_neighbors
     neighbors = compute_neighbors
 
     def filter(self, selection: str) -> Self:
@@ -379,12 +356,12 @@ class Luni:
 
         if fmt == "mol" and self._mol is not None:
             return self._mol
-        if fmt == "mol":
-            self._mol = self._data.to(fmt)
+        # if fmt == "mol":
+        #     self._mol = self._data.to(fmt)
         return getattr(self, f"_{fmt}")  # type: ignore
 
     @property
-    def indices(self) -> NDArray[np.int32]:
+    def indices(self) -> IntArray:
         """Retrieve the indices of the atoms in the Luni object.
 
         Returns:
@@ -393,7 +370,7 @@ class Luni:
         return self._data.indices
 
     @property
-    def ids(self) -> NDArray[np.int32]:
+    def ids(self) -> IntArray:
         """Retrieve the indices of the atoms in the Luni object.
 
         Returns:
@@ -402,7 +379,7 @@ class Luni:
         return self._data.indices
 
     @property
-    def names(self) -> NDArray[np.str_]:
+    def names(self) -> StrArray:
         """Retrieve the names of the atoms in the Luni object.
 
         Returns:
@@ -411,7 +388,7 @@ class Luni:
         return self._data.names
 
     @property
-    def elements(self) -> NDArray[np.str_]:
+    def elements(self) -> StrArray:
         """Retrieve the elements of the atoms in the Luni object.
 
         Returns:
@@ -420,7 +397,7 @@ class Luni:
         return self._data.elements
 
     @property
-    def coordinates(self) -> NDArray[np.float32]:
+    def coordinates(self) -> FloatArray:
         """Retrieve the coordinates of the atoms in the Luni object.
 
         Returns:
@@ -429,7 +406,7 @@ class Luni:
         return self._data.positions
 
     @property
-    def resnames(self) -> NDArray[np.str_]:
+    def resnames(self) -> StrArray:
         """Retrieve the residue names of the atoms in the Luni object.
 
         Returns:
@@ -438,7 +415,7 @@ class Luni:
         return self._data.resnames
 
     @property
-    def resids(self) -> NDArray[np.int32]:
+    def resids(self) -> IntArray:
         """Retrieve the residue IDs of the atoms in the Luni object.
 
         Returns:
@@ -557,7 +534,7 @@ class Luni:
     def _get_supported_fmts() -> set[str]:
         return GEMMI_SUPPRTED_FORMATS.union({x.lower() for x in MDA_SUPPORTED_FORMATS})
 
-    def extend_topology(self, attrname: str, values: NDArray[Any]) -> None:
+    def extend_topology(self, attrname: str, values: AnyArray) -> None:
         """Add new topology attributes to the Luni.
 
         Args:
@@ -569,29 +546,3 @@ class Luni:
         topattr_handler = AtomAttrClassHandler()
         topattr_handler.init_topattr(attrname, attrname)
         self._mda.universe.add_TopologyAttr(attrname, values)
-
-    def assing_atom_types(self) -> None:
-        # pass
-
-        #     """Assign atom types to the Luni.
-        #
-        #     This method assigns atom types to the Luni. It creates a sparse array of shape (n_atoms, n_atom_types)
-        #     containing the atom types.
-        #
-        #     Ensures that the Luni instance is ready for contact analysis.
-        #     """
-        #     self.atom_types = csc_array((self._mda.universe.atoms.n_atoms, len(PROT_ATOM_TYPES)), dtype=np.int8)
-        #     atom_types = self._file_loader.luni.get_atom_types()
-        #     print("Atom types: ", atom_types)
-        #     for i, at in enumerate(atom_types):
-        #         self.atom_types[i, at] = 1
-
-        # if np.any(self.atom_types.data):
-        #     return
-        print("file_name ->", self._data.file_name)
-        is_pdb = self._data.file_name.lower().endswith(".pdb")
-        tmp_loader = GemmiLoader(self._data.file_name, is_pdb)
-        self._mol = tmp_loader.to_mol()
-        atomtype_assigner = AtomTypeAssigner(self._mda, self._mol, legacy=False)
-        self.atom_types = atomtype_assigner.assign_atom_types()
-        self._mda = tmp_loader.to_mda()

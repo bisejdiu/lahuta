@@ -371,6 +371,7 @@ public:
   static std::vector<int> factorize(const std::vector<std::string> &labels);
   static int count_unique(const std::vector<int>& vec);
   static int count_unique(const std::vector<std::string>& vec);
+  static std::vector<std::string> find_elements(const std::vector<int>& atomic_numbers);
 
 private:
   std::vector<int> filtered_indices;
