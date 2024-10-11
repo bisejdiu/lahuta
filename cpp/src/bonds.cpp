@@ -1,9 +1,9 @@
-#include <vector>
-#include <rdkit/GraphMol/PeriodicTable.h>
 #include "bonds.hpp"
 #include "bonds/bonds.hpp"
 #include "bonds/table.hpp"
 #include "convert.hpp"
+#include <rdkit/GraphMol/PeriodicTable.h>
+#include <vector>
 
 namespace lahuta {
 
@@ -43,8 +43,19 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
       double pairingThreshold = getPairingThreshold(
           a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
 
+      int is_a_h = a->getAtomicNum() == 1;
+      int is_b_h = b->getAtomicNum() == 1;
+
       if (dist_sq <= pairingThreshold * pairingThreshold) {
-        mol.addBond(a->getIdx(), b->getIdx(), bonded.bond_type); 
+        if (is_a_h ^ is_b_h) {
+          auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
+          // It is possible to use the following bitwise operation to get the
+          // non-hydrogen atom branchless, but it may not lead to a performance
+          // gain.
+          /*RDKit::Atom* non_h_atom = a + ((b - a) & -(is_a_h));*/
+          non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
+        }
+        mol.addBond(a->getIdx(), b->getIdx(), bonded.bond_type);
       }
       continue;
 
@@ -73,7 +84,8 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
       //   if (a->getSymbol() == "Fe" || b->getSymbol() == "Fe") {
       //     std::cout << "Fe bond: " << a->getIdx() << " " << b->getIdx() <<
       //     std::endl;
-      //   mol.addBond(a->getIdx(), b->getIdx(), RDKit::Bond::BondType::DATIVEONE);
+      //   mol.addBond(a->getIdx(), b->getIdx(),
+      //   RDKit::Bond::BondType::DATIVEONE);
       //   }
       // }
 
@@ -88,13 +100,13 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
   }
 
   if (non_predef_atom_indices.empty()) {
-    return {}; 
+    return {};
   }
 
   std::vector<int> index_mapping;
   index_mapping.resize(mol.getNumAtoms(), -1);
   for (size_t i = 0; i < non_predef_atom_indices.size(); ++i) {
-    index_mapping[non_predef_atom_indices[i]] = static_cast<int>(i);
+    index_mapping[non_predef_atom_indices[i]] = i;
   }
 
   auto new_mol = filter_with_conf(mol, non_predef_atom_indices);

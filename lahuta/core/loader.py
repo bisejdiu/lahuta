@@ -87,18 +87,17 @@ class MDAnalysisLoader:
         uv.add_TopologyAttr("chainIDs", ir.chainlabels)
         uv.add_TopologyAttr("ids", ir.atom_indices)
 
+        # Make faster?
         uv.add_TopologyAttr("vdw_radii", v_radii_assignment(elements))
+
         # FIX: we need to add tempfactors
         # uv.add_TopologyAttr("tempfactors", self.arc.atoms.b_isos)
-        # FIX: we also need to add elements
-        # uv.add_TopologyAttr("elements", ir.atom)
 
         uv.atoms.positions = ir.positions
 
         return uv.atoms
 
 
-# Factory to get the correct loader
 class LoaderFactory:
     loaders: ClassVar[dict[str, Type[_Loader]]] = {
         "cif": GemmiLoader,

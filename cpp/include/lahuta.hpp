@@ -26,6 +26,7 @@
 
 // selection parser
 #include "visitor.hpp"
+#include "contacts/contacts.hpp"
 
 #define LAHUTA_VERSION "0.11.0"
 #define t() std::chrono::high_resolution_clock::now()
@@ -50,8 +51,22 @@ public:
 public:
   void assign_atom_types(RDKit::RWMol &mol) {
 
-    std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
+    if (!mol.getRingInfo()->isInitialized()) {
+      RDKit::MolOps::symmetrizeSSSR(mol);
+    }
+    std::vector<AtomType> new_atom_types =
+        AtomTypeAnalyzer::analyzeAtomTypes(mol);
+    std::cout << "New atom types: " << new_atom_types.size() << std::endl;
+    for (size_t i = 0; i < new_atom_types.size(); ++i) {
+      auto atom = mol.getAtomWithIdx(i);
+      auto *info =
+          static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+      std::cout << info->getResidueName() << " " << info->getName() << " "
+                << atom->getIdx() << " "
+                << atom_type_to_string(new_atom_types[i]) << std::endl;
+    }
 
+    std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
     std::vector<int> invalid_indices;
     Rings rings;
 
@@ -112,6 +127,23 @@ public:
     //               << atom_type_to_string(indices[i]) << std::endl;
     //   }
     // }
+    //
+
+    // for indices in the new atom types, overwrite the old atom types
+    for (size_t i = 0; i < new_atom_types.size(); ++i) {
+      if (new_atom_types[i] != AtomType::NONE) {
+        indices[i] = new_atom_types[i];
+      }
+    }
+    /*std::cout << "New atom types: " << indices.size() << std::endl;*/
+    /*for (size_t i = 0; i < indices.size(); ++i) {*/
+    /*  auto atom = mol.getAtomWithIdx(i);*/
+    /*  auto *info =*/
+    /*      static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());*/
+    /*  std::cout << info->getResidueName() << " " << info->getName() << " "*/
+    /*            << atom->getIdx() << " "*/
+    /*            << atom_type_to_string(indices[i]) << std::endl;*/
+    /*}*/
 
     atom_types = std::move(indices);
     rings_vec = std::move(_rings_vec);
@@ -135,6 +167,8 @@ public:
     // }
 
     mol.updatePropertyCache(false);
+    /*clean_bonds(mol, mol.getConformer());*/
+    MolOps::setHybridization(mol);
     cleanup_predef(mol);
 
     if (result.has_unlisted_resnames) {
@@ -189,19 +223,6 @@ private:
   }
 };
 
-// We are creating an intermediate representation of the molecule (IR) that we can use 
-// to create Luni objects from different sources. Other methods can use the IR to
-// create Luni objects from different sources.
-/*struct IR {*/
-/*  std::vector<int> atom_indices;*/
-/*  std::vector<int> atomic_numbers;*/
-/*  std::vector<std::string> atom_names;*/
-/*  std::vector<int> resids;*/
-/*  std::vector<std::string> resnames;*/
-/*  std::vector<std::string> chainlabels;*/
-/*  std::vector<RDGeom::Point3D> positions;*/
-/*};*/
-
 class Luni {
 private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
@@ -248,6 +269,25 @@ private:
     start = std::chrono::high_resolution_clock::now();
     topology.assign_atom_types(*mol);
     std::cout << "Assign Atom Types: " << to_ms(t() - start).count() << "\n";
+
+    for (const auto &atom : mol->atoms()) {
+      /*auto is_conj = isConjugated(*mol, *atom);*/
+      /*std::cout << "Conjugated: " << is_conj << "\n";*/
+      auto info =
+          static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+
+      /*auto no_ih = calculateHydrogensCharge(*mol, *atom, true, true);*/
+      /*calculateHydrogensCharge(*mol, *atom, true, true);*/
+      /*auto h_count = get_h_count(*mol, *atom);*/
+      /*std::cout << info->getName() << " " << */
+      /*  h_count << " ? " <<*/
+      /*  no_ih << " ---- " <<*/
+      /*  no_ih + atom->getNumExplicitHs() << " | " <<*/
+      /*  atom->getNumImplicitHs() << " " <<*/
+      /*  atom->getNumExplicitHs() << " " <<*/
+      /*  atom->getTotalNumHs() << " " << */
+      /*  "\n";*/
+    }
   }
 
 public:
@@ -261,9 +301,19 @@ public:
   }
 
   // Luni from IR:
-  Luni(const IR &ir) : _cutoff(BONDED_NS_CUTOFF) { 
+  Luni(const IR &ir) : _cutoff(BONDED_NS_CUTOFF) {
     IR_to_RWMol(*mol, ir);
     create_topology();
+  }
+
+  //! get the total number of bonded h atoms (explicit + implicit) for all atoms
+  //! in the system
+  std::vector<int> total_hydrogen_count() const {
+    std::vector<int> hydrogen_counts;
+    for (const auto &atom : mol->atoms()) {
+      hydrogen_counts.push_back(atom->getTotalNumHs());
+    }
+    return hydrogen_counts;
   }
 
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
@@ -286,14 +336,16 @@ public:
 
   Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
-    ns = remove_adjascent_residueid_pairs(ns, res_dif);
+    if (res_dif > 0) {
+      ns = remove_adjascent_residueid_pairs(ns, res_dif);
+    }
     return Neighbors<AtomAtomPair>(*this, std::move(ns), false);
   }
 
   // FIX: computed distances represent atom-ring center distances.
-  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif=1) {
+  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif = 1) {
 
-    auto rings = topology.rings_vec; 
+    auto rings = topology.rings_vec;
     auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
     auto centers = rings.centers_rkdit();
 
@@ -369,9 +421,10 @@ public:
   Luni filter_luni(const std::vector<int> &atom_indices) const;
   Luni filter() const;
   static std::vector<int> factorize(const std::vector<std::string> &labels);
-  static int count_unique(const std::vector<int>& vec);
-  static int count_unique(const std::vector<std::string>& vec);
-  static std::vector<std::string> find_elements(const std::vector<int>& atomic_numbers);
+  static int count_unique(const std::vector<int> &vec);
+  static int count_unique(const std::vector<std::string> &vec);
+  static std::vector<std::string>
+  find_elements(const std::vector<int> &atomic_numbers);
 
 private:
   std::vector<int> filtered_indices;

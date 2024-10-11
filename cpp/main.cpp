@@ -3,6 +3,9 @@
 #include <random>
 #include <string>
 
+#include "GraphMol/RWMol.h"
+#include "atom_types.hpp"
+#include "contacts/hydrogen_bonds.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "visitor.hpp"
@@ -68,6 +71,21 @@ std::vector<std::string> selections = {
     /*"resid 1 - 5 or (resid 6 - 10 and resname ALA)",*/
 };
 
+bool is_hbond(bool is_donor, bool is_acceptor) {
+  return is_donor && is_acceptor;
+}
+
+bool is_protein_water_contact(const RDKit::Atom &donor,
+                               const RDKit::Atom &acceptor) {
+  if (is_water(donor) && !is_water(acceptor)) {
+    return true;
+  }
+  if (!is_water(donor) && is_water(acceptor)) {
+    return true;
+  }
+  return false;
+}
+
 int main(int argc, char const *argv[]) {
   auto start_total_time = std::chrono::high_resolution_clock::now();
   if (argc < 2) {
@@ -78,9 +96,62 @@ int main(int argc, char const *argv[]) {
 
   Luni luni(file_name);
 
-  auto neighbors = luni.find_neighbors(5.0, 1);
-  auto vv = neighbors.type_filter(AtomType::AROMATIC, 0);
+  auto neighbors = luni.find_neighbors(6.0, 0);
+  /*auto vv = neighbors.type_filter(AtomType::AROMATIC, 0);*/
   auto mol = &luni.get_molecule();
+
+  // FIX: avoid calling symmetrizeSSSR, which does not scale very well, by
+  // instead using our own ring system
+  if (!mol->getRingInfo()->isInitialized()) {
+    RDKit::MolOps::symmetrizeSSSR(*mol);
+  }
+
+  GeometryOptions opts = GeometryOptions();
+  std::vector<AtomType> atypes = luni.get_atom_types();
+  int i = -1;
+  for (auto &pair : neighbors.get_pairs()) {
+    i++;
+    auto atom1 = mol->getAtomWithIdx(pair.first);
+    auto atom2 = mol->getAtomWithIdx(pair.second);
+
+    auto atom1_type = atypes[pair.first];
+    auto atom2_type = atypes[pair.second];
+
+    RDKit::Atom *don, *acc;
+    if (AtomTypeFlags::has(atom1_type, AtomType::HBOND_ACCEPTOR) &&
+        AtomTypeFlags::has(atom2_type, AtomType::HBOND_DONOR)) {
+      don = atom2;
+      acc = atom1;
+    } else if (AtomTypeFlags::has(atom2_type, AtomType::HBOND_ACCEPTOR) &&
+               AtomTypeFlags::has(atom1_type, AtomType::HBOND_DONOR)) {
+      don = atom1;
+      acc = atom2;
+    } else {
+      continue;
+    }
+
+    double max_dist_sq;
+    if (don->getAtomicNum() == 16 || acc->getAtomicNum() == 16) {
+      max_dist_sq = opts.max_sulfur_dist_sq;
+    } else {
+      max_dist_sq = opts.max_dist_sq;
+    }
+    if (neighbors.get_distances()[i] > max_dist_sq) {
+      continue;
+    }
+
+    if (!opts.include_water && is_water_hbond(*don, *acc)) {
+      continue;
+    }
+
+    auto dist = neighbors.get_distances()[i];
+    if (!check_geometry_constraints(*mol, *don, *acc, opts)) {
+      continue;
+    }
+
+    std::cout << "XXXX Pair: " << atom1->getIdx() << " " << atom2->getIdx()
+              << " " << dist << std::endl;
+  }
 
   Pairs p = neighbors.get_pairs();
   Distances d = neighbors.get_distances();
@@ -88,7 +159,8 @@ int main(int argc, char const *argv[]) {
   std::random_device rd;
   std::mt19937 gen(rd());
   std::uniform_int_distribution<> dis(0, p.size() - 1);
-  std::uniform_real_distribution<float> disf(0.0, 1.0); // random float between 0 and 1
+  std::uniform_real_distribution<float> disf(
+      0.0, 1.0); // random float between 0 and 1
 
   std::cout << "p size: " << p.size() << "\n";
   std::vector<AtomAtomPair> _p2; // store only the first 20 pairs

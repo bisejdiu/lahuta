@@ -69,10 +69,10 @@ double compute_angle(const std::vector<double>& _point) const {
     RDGeom::Point3D vector_point_to_plane = point - center;
 
     RDGeom::Point3D normalized_line_direction = vector_point_to_plane;
-    normalized_line_direction.normalize();  // Ensure the direction vector is unit length
+    normalized_line_direction.normalize(); 
     double dot_product = normalized_line_direction.dotProduct(norm1);
 
-    double raw_angle = std::acos(dot_product);  // Result in radians
+    double raw_angle = std::acos(dot_product);
     double adjusted_angle = std::copysign(raw_angle, dot_product);
     if (adjusted_angle < 0.0) {
       adjusted_angle += M_PI;
@@ -94,9 +94,7 @@ struct RingDataVec {
   }
 
   // RingDataVec(std::vector<RingData> rings) : rings(std::move(rings)) {}
-  // // copy constructor
   RingDataVec(const RingDataVec &other) : rings(other.rings) {}
-  // copy = operator
   RingDataVec &operator=(const RingDataVec &other) {
     if (this != &other) {
       rings = other.rings;

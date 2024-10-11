@@ -185,6 +185,9 @@ inline PossiblyBonded getIntraBondOrder(RDKit::Atom *atom1,
     return PossiblyBonded{atom1_in_table, atom2_in_table,
                           BondType::UNSPECIFIED};
   }
+  if ((atom1->getAtomicNum() == 1) ^ (atom2->getAtomicNum() == 1)) {
+    return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::SINGLE};
+  }
 
   BondType bond_type = process(entryA, infoA->getName(), infoB->getName());
   PossiblyBonded pb{atom1_in_table, atom2_in_table, bond_type};
