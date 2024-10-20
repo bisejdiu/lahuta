@@ -4,7 +4,7 @@
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
 #include "hydrogen_bonds.hpp"
-#include "valence.hpp"
+#include "valence_model.hpp"
 
 namespace lahuta {
 
@@ -17,35 +17,38 @@ struct AtomTypeParams {
 class AtomTypeStrategy {
 public:
   virtual ~AtomTypeStrategy() = default;
-  virtual AtomType identify(const RDKit::RWMol &mol,
-                            const RDKit::Atom &atom) const = 0;
+  virtual AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const = 0;
 };
 
 class HBondAcceptorStrategy : public AtomTypeStrategy {
 public:
-  AtomType identify(const RDKit::RWMol &mol,
-                    const RDKit::Atom &atom) const override {
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrogen_acceptor(mol, atom);
   }
 };
 
 class HBondDonorStrategy : public AtomTypeStrategy {
 public:
-  AtomType identify(const RDKit::RWMol &mol,
-                    const RDKit::Atom &atom) const override {
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrogen_donor(mol, atom);
   }
 };
 
-class CompositeAtomTypeStrategy {
+class WeakHBondDonorStrategy : public AtomTypeStrategy {
+public:
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
+    return add_weak_hydrogen_donor(mol, atom);
+  }
+};
+
+class CompositeStrategy {
 private:
   std::vector<std::unique_ptr<AtomTypeStrategy>> strategies;
 
 public:
   // Add strategy to the composite
   template <typename T> void addStrategy() {
-    static_assert(std::is_base_of<AtomTypeStrategy, T>::value,
-                  "T must derive from AtomTypeStrategy");
+    static_assert(std::is_base_of<AtomTypeStrategy, T>::value, "T must derive from AtomTypeStrategy");
     strategies.push_back(std::make_unique<T>());
   }
 
@@ -59,13 +62,16 @@ public:
   }
 };
 
-class AtomTypeStrategyFactory {
+class Factory {
 public:
-  static CompositeAtomTypeStrategy create() {
-    CompositeAtomTypeStrategy composite;
-    // only two for now
-    composite.addStrategy<HBondAcceptorStrategy>();
+  static CompositeStrategy create() {
+    CompositeStrategy composite;
+
+    // default strategies
     composite.addStrategy<HBondDonorStrategy>();
+    composite.addStrategy<HBondAcceptorStrategy>();
+    composite.addStrategy<WeakHBondDonorStrategy>();
+
     return composite;
   }
 };
@@ -75,10 +81,16 @@ public:
   static std::vector<AtomType> analyzeAtomTypes(const RDKit::RWMol &mol) {
     std::vector<AtomType> atom_types = {mol.getNumAtoms(), AtomType::NONE};
 
-    auto strategy = AtomTypeStrategyFactory::create();
+    auto strategy = Factory::create();
+
+    bool assign_charge = true, assign_h = true;
+    ValenceModel valence_model{assign_charge, assign_h};
+    valence_model.apply(mol);
 
     for (const auto &atom : mol.atoms()) {
-      compute_valence(mol, *atom, true, true);
+      // FIX: double check assign_h default value and how to handle it
+      // FIX: potentially expose options to the user
+      /*molstar_valence_model(mol, *atom, true, true);*/
       atom_types[atom->getIdx()] = strategy.identify(mol, *atom);
     }
     return atom_types;

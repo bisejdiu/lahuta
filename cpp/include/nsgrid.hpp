@@ -12,10 +12,37 @@ using Pairs = std::vector<std::pair<int, int>>;
 using Distances = std::vector<float>;
 
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
-                           std::array<float, 3> &pseudobox, std::vector<double> &lmin, std::vector<double> &lmax);
+                           std::array<float, 3> &pseudobox,
+                           std::vector<double> &lmin,
+                           std::vector<double> &lmax);
 std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
 
 struct NSResults {
+  struct Iterator {
+    using PairIterator = Pairs::const_iterator;
+    using DistanceIterator = Distances::const_iterator;
+
+    Iterator(PairIterator pair_it, DistanceIterator dist_it)
+        : pair_it_(pair_it), dist_it_(dist_it) {}
+
+    std::pair<std::pair<int, int>, float> operator*() const {
+      return {*pair_it_, *dist_it_};
+    }
+
+    Iterator &operator++() {
+      ++pair_it_;
+      ++dist_it_;
+      return *this;
+    }
+
+    bool operator!=(const Iterator &other) const {
+      return pair_it_ != other.pair_it_;
+    }
+
+  private:
+    PairIterator pair_it_;
+    DistanceIterator dist_it_;
+  };
 
   NSResults() = default;
   NSResults(const NSResults &other) = default;
@@ -51,9 +78,12 @@ struct NSResults {
   }
 
   const Pairs &get_pairs() const { return m_pairs; }
-  /*Pairs &get_pairs() { return m_pairs; }*/
   const Distances &get_distances() const { return m_dists; }
+  /*Pairs &get_pairs() { return m_pairs; }*/
   /*Distances &get_distances() { return m_dists; }*/
+
+  Iterator begin() const { return Iterator(m_pairs.begin(), m_dists.begin()); }
+  Iterator end() const { return Iterator(m_pairs.end(), m_dists.end()); }
 
 private:
   Pairs m_pairs;
@@ -66,13 +96,29 @@ public:
   FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff);
 
   NSResults self_search() const;
-  // NSResults search(const std::vector<std::array<float, 3>>& search_coords) const;
-  NSResults search(const RDGeom::POINT3D_VECT& search_coords) const;
+  // NSResults search(const std::vector<std::array<float, 3>>& search_coords)
+  // const;
+  NSResults search(const RDGeom::POINT3D_VECT &search_coords) const;
 
   void update_cutoff(double new_cutoff);
 
   double get_cutoff() const { return cutoff; }
 
+  static inline float dist_sq(const float* __restrict a, const float* __restrict b) {
+        float dx = a[0] - b[0];
+        float dy = a[1] - b[1];
+        float dz = a[2] - b[2];
+        return dx * dx + dy * dy + dz * dz;
+    }
+  static inline double dist_sq(const double* __restrict a, const double* __restrict b) {
+        float dx = a[0] - b[0];
+        float dy = a[1] - b[1];
+        float dz = a[2] - b[2];
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+  inline bool is_within_cutoff(const float *__restrict a,
+                               const float *__restrict b, float cutoff2) const;
 private:
   // std::vector<double> lmax(3, std::numeric_limits<double>::lowest());
   // std::vector<double> lmin(3, std::numeric_limits<double>::max());
@@ -82,7 +128,6 @@ private:
   std::vector<double> lmax = {std::numeric_limits<double>::lowest(),
                               std::numeric_limits<double>::lowest(),
                               std::numeric_limits<double>::lowest()};
-
 
   // FIXME: provide default values for these
   double cutoff;
@@ -106,10 +151,6 @@ private:
 
   inline int _cell_xyz_to_cell_id(int cx, int cy, int cz) const;
 
-  inline float dist_sq(const float *__restrict a,
-                       const float *__restrict b) const;
-  inline bool is_within_cutoff(const float *__restrict a,
-                               const float *__restrict b, float cutoff2) const;
 };
 
 } // namespace lahuta

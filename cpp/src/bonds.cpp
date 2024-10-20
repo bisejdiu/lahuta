@@ -116,6 +116,23 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     int bIx = index_mapping[bond.second];
 
     if (new_mol.getBondBetweenAtoms(aIx, bIx) == nullptr) {
+      /*auto a = new_mol.getAtomWithIdx(aIx);*/
+      /*auto b = new_mol.getAtomWithIdx(bIx);*/
+      /*auto infoA = static_cast<RDKit::AtomPDBResidueInfo *>(a->getMonomerInfo());*/
+      /*auto infoB = static_cast<RDKit::AtomPDBResidueInfo *>(b->getMonomerInfo());*/
+      /*std::cout << "Z bond: " << aIx << " " << bIx << " " << infoA->getName()*/
+      /*          << " " << infoB->getName() << " " << infoA->getResidueName() << " "*/
+      /*          << infoB->getResidueName() << std::endl;*/
+
+
+      /*int is_a_h = a->getAtomicNum() == 1;*/
+      /*int is_b_h = b->getAtomicNum() == 1;*/
+      /**/
+      /*if (is_a_h ^ is_b_h) {*/
+      /*  auto non_h_atom = a->getAtomicNum() == 1 ? b : a;*/
+      /*  non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);*/
+      /*}*/
+
       new_mol.addBond(aIx, bIx, RDKit::Bond::BondType::SINGLE);
     }
   }

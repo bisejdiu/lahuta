@@ -1,90 +1,21 @@
 #include <chrono>
 #include <iostream>
-#include <random>
 #include <string>
 
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
 #include "contacts/hydrogen_bonds.hpp"
+#include "contacts/interactions.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
+#include "nn.hpp"
+#include "nsgrid.hpp"
+#include "rings.hpp"
 #include "visitor.hpp"
 
 using namespace gemmi;
 using namespace RDKit;
 using namespace lahuta;
-
-// Define test selection strings
-std::vector<std::string> selections = {
-    // Test single term with a single value
-    "resid3",
-
-    // Test single term with a range
-    "resid3 -10",
-
-    // Test 'not' operator with a single term
-    "notresid3",
-
-    // Test term with a list of numeric values
-    "resid 3 5 7",
-
-    // Test term with a list of string values
-    "resname ALA GLY",
-
-    // Test 'and' operator with range and term
-    "resid 1 - 50 and resname ASP",
-
-    // Test 'or' operator with range and term
-    "resid 30 - 40 or resname LEU",
-
-    // Test 'not' operator with a term
-    "not resname ASP",
-
-    // Test 'and' and 'not' operators combined
-    "resid10-20andnotresnameLEU",
-    /*"resid 10 - 20 and not resname LEU",*/
-
-    // Test 'or' operator with two ranges
-    "resid 5 - 15 or resid 20 - 25",
-
-    // Test grouping with parentheses
-    "( resid 5 - 10 or resid 20 - 25 ) and resname GLY",
-
-    // Test 'not' operator with grouping
-    "not ( resname ALA or resname LEU )",
-
-    // Test 'and' operator with lists
-    "resid 1 2 3 and resname GLY",
-
-    // Test 'and' and 'not' operators with lists
-    "resid 1 - 100 and not ( resname ASP LEU )",
-
-    // Complex expression with grouping and operators
-    "( resid 10 - 20 and resname GLY ) or ( resid 30 - 40 and resname LEU )",
-
-    "resid -3 - 3 and not resid 0 1 2",
-    // Test parentheses overriding operator precedence
-    // Lahuta parser `and` has higher precedence than `or`
-    // MDAnalysis parser will parse by order of appearance (I think?)
-    /*"resid 1 - 5 or resid 6 - 10 and resname ALA",*/
-    /*"(resid 1 - 5 or resid 6 - 10 ) and resname ALA",*/
-    /*"resid 1 - 5 or (resid 6 - 10 and resname ALA)",*/
-};
-
-bool is_hbond(bool is_donor, bool is_acceptor) {
-  return is_donor && is_acceptor;
-}
-
-bool is_protein_water_contact(const RDKit::Atom &donor,
-                               const RDKit::Atom &acceptor) {
-  if (is_water(donor) && !is_water(acceptor)) {
-    return true;
-  }
-  if (!is_water(donor) && is_water(acceptor)) {
-    return true;
-  }
-  return false;
-}
 
 int main(int argc, char const *argv[]) {
   auto start_total_time = std::chrono::high_resolution_clock::now();
@@ -96,117 +27,160 @@ int main(int argc, char const *argv[]) {
 
   Luni luni(file_name);
 
+  const auto &G = luni.get_features();
+
   auto neighbors = luni.find_neighbors(6.0, 0);
   /*auto vv = neighbors.type_filter(AtomType::AROMATIC, 0);*/
+  /*auto mol = &luni.get_molecule();*/
+
+  std::cout << "START New contact interface" << std::endl;
+
+  Contacts _c_(&luni);
+
   auto mol = &luni.get_molecule();
+  const auto &atom_entities = luni.get_atom_entities();
+  auto atom_neighbors = luni.find_neighbors2(6.0, 10);
+  _c_.add_many(atom_neighbors, atom_entities);
+  /*_c_.sort_interactions();*/
+  /*_c_.print_interactions();*/
+  std::cout << "Hbond: " << _c_.size() << std::endl;
+  std::cout << "hbond is sorted: " << _c_.is_sorted << std::endl;
 
-  // FIX: avoid calling symmetrizeSSSR, which does not scale very well, by
-  // instead using our own ring system
-  if (!mol->getRingInfo()->isInitialized()) {
-    RDKit::MolOps::symmetrizeSSSR(*mol);
-  }
+  Contacts container(&luni);
 
-  GeometryOptions opts = GeometryOptions();
+  container.add_many(atom_neighbors, atom_entities);
+  /*container.sort_interactions();*/
+  /*container.print_interactions();*/
+
+  std::vector<RingData> rings = luni.get_rings().rings;
+  const auto &ring_entities = luni.get_ring_entities();
+  auto ring_neighbors = luni.find_ring_neighbors2(6.0);
+  container.add_many(ring_neighbors, ring_entities, atom_entities);
+
+  std::cout << "Atom and Ring Interactions size: " << container.size() << std::endl;
+  /*container.sort_interactions();*/
+  /*container.print_interactions();*/
+  std::cout << "END Atom and Ring Interactions size: \n" << std::endl;
+
+  Contacts hbond_container(&luni);
+  GeometryOptions _opts = GeometryOptions();
+  NSResults _nb = luni.find_neighbors2(6.0, 0);
+  find_hydrogen_bonds(luni, _opts, _nb, hbond_container);
+  std::cout << "HBond Interactions size: " << hbond_container.size() << std::endl;
+  /*hbond_container.sort_interactions();*/
+  /*hbond_container.print_interactions();*/
+
+  Contacts weak_hbond_container(&luni);
+  find_weak_hydrogen_bonds(luni, _opts, _nb, weak_hbond_container);
+  std::cout << "Weak HBond Interactions size: " << weak_hbond_container.size() << std::endl;
+  /*weak_hbond_container.sort_interactions();*/
+  /*weak_hbond_container.print_interactions();*/
+
+  /*weak_hbond_container.add(Interaction(0, 7, 300.0, InteractionType::WeakHydrogenBond));*/
+  /*weak_hbond_container.sort_interactions();*/
+  /*weak_hbond_container.print_interactions();*/
+
+  /*std::cout << "" << std::endl;*/
+  /*IC i_sect_1 = hbond_container.set_intersection(weak_hbond_container);*/
+  /*i_sect_1.print_interactions();*/
+  /*std::cout << "--> Intersection size: " << i_sect_1.size() << std::endl;*/
+  /*hbond_container.make_generic();*/
+  /*weak_hbond_container.make_generic();*/
+  /*IC i_sect_2 = hbond_container.set_intersection(weak_hbond_container);*/
+  /*i_sect_2.print_interactions();*/
+  /*std::cout << "--> Intersection size: " << i_sect_2.size() << std::endl;*/
+
+  std::cout << "Number of rings: " << rings.size() << std::endl;
+
+  std::cout << "END New contact interface" << std::endl;
+
   std::vector<AtomType> atypes = luni.get_atom_types();
-  int i = -1;
-  for (auto &pair : neighbors.get_pairs()) {
-    i++;
-    auto atom1 = mol->getAtomWithIdx(pair.first);
-    auto atom2 = mol->getAtomWithIdx(pair.second);
 
-    auto atom1_type = atypes[pair.first];
-    auto atom2_type = atypes[pair.second];
+  std::cout << "STARTING ION CONTACT COMPUTATION" << std::endl;
 
-    RDKit::Atom *don, *acc;
-    if (AtomTypeFlags::has(atom1_type, AtomType::HBOND_ACCEPTOR) &&
-        AtomTypeFlags::has(atom2_type, AtomType::HBOND_DONOR)) {
-      don = atom2;
-      acc = atom1;
-    } else if (AtomTypeFlags::has(atom2_type, AtomType::HBOND_ACCEPTOR) &&
-               AtomTypeFlags::has(atom1_type, AtomType::HBOND_DONOR)) {
-      don = atom1;
-      acc = atom2;
-    } else {
-      continue;
-    }
+  std::vector<Feature> group_features = GroupTypeAnalysis::analyze(*mol);
+  Interactions processor(&luni, group_features, InteractionOptions{5.0});
+  auto ionic = processor.find_ionic_interactions();
+  std::cout << "Ionic Interactions size: " << ionic.size() << std::endl;
 
-    double max_dist_sq;
-    if (don->getAtomicNum() == 16 || acc->getAtomicNum() == 16) {
-      max_dist_sq = opts.max_sulfur_dist_sq;
-    } else {
-      max_dist_sq = opts.max_dist_sq;
-    }
-    if (neighbors.get_distances()[i] > max_dist_sq) {
-      continue;
-    }
+  /*(ionic & ionic[0]).print_interactions();*/
 
-    if (!opts.include_water && is_water_hbond(*don, *acc)) {
-      continue;
-    }
+  /*auto r = ionic[2];*/
+  /*std::cout << "ionic &= r: " << (ionic &= r).size() << std::endl;*/
+  /*ionic |= ionic[0];*/
+  /**/
+  /*(ionic |= r).print_interactions();*/
+  /*(ionic |= ionic[0]);*/
 
-    auto dist = neighbors.get_distances()[i];
-    if (!check_geometry_constraints(*mol, *don, *acc, opts)) {
-      continue;
-    }
+  container.add(ionic);
+  container.sort_interactions();
+  container.print_interactions();
 
-    std::cout << "XXXX Pair: " << atom1->getIdx() << " " << atom2->getIdx()
-              << " " << dist << std::endl;
+  std::cout << "New HBond: " << std::endl;
+  auto h2 = processor.find_hbond_interactions();
+  /*h2.sort_interactions();*/
+  /*h2.print_interactions();*/
+  std::cout << "HBond Interactions size: " << h2.size() << std::endl;
+  if (h2 == _c_) {
+    std::cout << "EQUAL:\n";
   }
 
-  Pairs p = neighbors.get_pairs();
-  Distances d = neighbors.get_distances();
+  _c_ += h2;
+  _c_ ^= h2;
+  _c_ |= h2;
+  _c_ &= h2;
+  _c_ -= h2;
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<> dis(0, p.size() - 1);
-  std::uniform_real_distribution<float> disf(
-      0.0, 1.0); // random float between 0 and 1
+  /*std::cout << "All contacts:" << std::endl;*/
+  /*container.print_interactions();*/
 
-  std::cout << "p size: " << p.size() << "\n";
-  std::vector<AtomAtomPair> _p2; // store only the first 20 pairs
-  for (size_t i = 0; i < p.size(); ++i) {
-    if (i < 20) {
-      _p2.push_back(AtomAtomPair(p[i].first, p[i].second, d[i]));
-    }
-  }
-  Neighbors<AtomAtomPair> _n1(neighbors);
-  Neighbors<AtomAtomPair> _n2(luni, _p2);
-  auto ns = _n1.intersection(_n1.get_data(), _n2.get_data());
-  auto _ns_ = _n1.intersection(_n2);
-  std::cout << "ns size: " << ns.size() << "\n";
-  std::cout << "_ns_ size: " << _ns_.size() << "\n";
-
-  auto nn = luni.find_ring_neighbors(6.0);
-  std::cout << "nn size: " << nn.size() << "\n";
+  /*Pairs p = neighbors.get_pairs();*/
+  /*Distances d = neighbors.get_distances();*/
+  /**/
+  /*std::random_device rd;*/
+  /*std::mt19937 gen(rd());*/
+  /*std::uniform_int_distribution<> dis(0, p.size() - 1);*/
+  /*std::uniform_real_distribution<float> disf(0.0, 1.0); // random float between 0 and 1*/
+  /**/
+  /*std::cout << "p size: " << p.size() << "\n";*/
+  /*std::vector<AtomAtomPair> _p2; // store only the first 20 pairs*/
+  /*for (size_t i = 0; i < p.size(); ++i) {*/
+  /*  if (i < 20) {*/
+  /*    _p2.push_back(AtomAtomPair(p[i].first, p[i].second, d[i]));*/
+  /*  }*/
+  /*}*/
+  /*Neighbors<AtomAtomPair> _n1(neighbors);*/
+  /*Neighbors<AtomAtomPair> _n2(luni, _p2);*/
+  /*auto ns = _n1.intersection(_n1.get_data(), _n2.get_data());*/
+  /*auto _ns_ = _n1.intersection(_n2);*/
+  /*std::cout << "ns size: " << ns.size() << "\n";*/
+  /*std::cout << "_ns_ size: " << _ns_.size() << "\n";*/
+  /**/
+  /*auto nn = luni.find_ring_neighbors(6.0);*/
+  /*std::cout << "nn size: " << nn.size() << "\n";*/
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());
     auto second_atom = mol->getAtomWithIdx(bond->getEndAtomIdx());
-    auto *res1 =
-        static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
-    auto *res2 =
-        static_cast<RDKit::AtomPDBResidueInfo *>(second_atom->getMonomerInfo());
+    auto *res1 = static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
+    auto *res2 = static_cast<RDKit::AtomPDBResidueInfo *>(second_atom->getMonomerInfo());
     auto atom1_name = res1->getName();
     auto atom2_name = res2->getName();
-    std::string residue1 =
-        res1->getResidueName() + "-" + std::to_string(res1->getResidueNumber());
-    std::string residue2 =
-        res2->getResidueName() + "-" + std::to_string(res2->getResidueNumber());
+    std::string residue1 = res1->getResidueName() + "-" + std::to_string(res1->getResidueNumber());
+    std::string residue2 = res2->getResidueName() + "-" + std::to_string(res2->getResidueNumber());
 
     auto bond_order = std::to_string(bond->getBondTypeAsDouble());
     if (bond->getIsAromatic()) {
       bond_order = "a";
     }
 
-    std::cout << " " << residue1 << " " << residue2 << " "
-              << bond->getBeginAtomIdx() << " " << bond->getEndAtomIdx() << " "
-              << atom1_name << " " << atom2_name << " " << bond_order
+    std::cout << " " << residue1 << " " << residue2 << " " << bond->getBeginAtomIdx() << " "
+              << bond->getEndAtomIdx() << " " << atom1_name << " " << atom2_name << " " << bond_order
               << std::endl;
   };
 
   int o1{}, o2{}, aromatic{};
-  for (auto bond_it = mol->beginBonds(); bond_it != mol->endBonds();
-       ++bond_it) {
+  for (auto bond_it = mol->beginBonds(); bond_it != mol->endBonds(); ++bond_it) {
     RDKit::Bond *bond = *bond_it;
 
     if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
@@ -218,8 +192,7 @@ int main(int argc, char const *argv[]) {
       aromatic++;
     }
   }
-  std::cout << "1: " << o1 << " 2: " << o2 << " a: " << aromatic
-            << " t: " << o1 + o2 + aromatic << std::endl;
+  std::cout << "1: " << o1 << " 2: " << o2 << " a: " << aromatic << " t: " << o1 + o2 + aromatic << std::endl;
   std::cout << "Nr. Bonds: " << mol->getNumBonds() << std::endl;
 
   auto tot_time = to_ms(t() - start_total_time).count();

@@ -13,12 +13,10 @@ struct RingData {
   RDGeom::Point3D center;
   RDGeom::Point3D norm1;
   RDGeom::Point3D norm2;
-  /*int ring_id = -1; // FIX: is this needed?*/
   int root_atom_id = -1;
 
   RingData() = default;
-  RingData(RDGeom::Point3D center, RDGeom::Point3D norm1, RDGeom::Point3D norm2,
-           std::vector<int> atom_ids)
+  RingData(RDGeom::Point3D center, RDGeom::Point3D norm1, RDGeom::Point3D norm2, std::vector<int> atom_ids)
       : center(center), norm1(norm1), norm2(norm2), atom_ids(atom_ids) {
     /*auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());*/
     /*root_atom_id = *min_atom_id;*/
@@ -33,24 +31,8 @@ struct RingData {
     return *min_atom_id;
   }
 
-  //! Compute the angle between the provided point and the ring 
-  /*double compute_angle(const std::vector<double> &_point) const {*/
-  /*  RDGeom::Point3D point(_point[0], _point[1], _point[2]);*/
-  /*  RDGeom::Point3D vector_point_to_plane = point - center;*/
-  /*  vector_point_to_plane.normalize();*/
-  /**/
-  /*  double dot_product = vector_point_to_plane.dotProduct(norm1);*/
-  /**/
-  /*  double magnitude_vector = vector_point_to_plane.length();*/
-  /*  double cos_theta = dot_product / magnitude_vector;*/
-  /**/
-  /*  cos_theta = std::max(-1.0, std::min(1.0, cos_theta));*/
-  /*  double theta_radians = std::acos(cos_theta);*/
-  /*  return theta_radians * (180.0 / M_PI);*/
-  /*}*/
-
-//! Compute the angle between the provided point and the ring 
-double compute_angle(const std::vector<double>& _point) const {
+  /// Compute the angle between the provided point and the ring
+  double compute_angle(const std::vector<double> &_point) const {
     RDGeom::Point3D point(_point[0], _point[1], _point[2]);
     auto vector_point_to_plane = point - center;
     vector_point_to_plane.normalize();
@@ -60,8 +42,7 @@ double compute_angle(const std::vector<double>& _point) const {
 
     double theta_radians = std::acos(cos_theta); // in radians
     return theta_radians * (180.0 / M_PI);
-}
-
+  }
 
   // Function to compute the angle between the point and the plane
   double compute_angle_(const std::vector<double> _point) const {
@@ -69,7 +50,7 @@ double compute_angle(const std::vector<double>& _point) const {
     RDGeom::Point3D vector_point_to_plane = point - center;
 
     RDGeom::Point3D normalized_line_direction = vector_point_to_plane;
-    normalized_line_direction.normalize(); 
+    normalized_line_direction.normalize();
     double dot_product = normalized_line_direction.dotProduct(norm1);
 
     double raw_angle = std::acos(dot_product);
@@ -143,19 +124,8 @@ struct RingDataVec {
     return root_atom_ids;
   }
 
-  /*std::vector<double> compute_angles(const std::vector<std::vector<double>> &points) const {*/
-  /*  if (points.size() != rings.size()) {*/
-  /*    throw std::runtime_error("Number of points must be the same as the number of rings");*/
-  /*  }*/
-  /*  std::vector<double> angles;*/
-  /*  angles.reserve(rings.size());*/
-  /*  for (size_t i = 0; i < rings.size(); ++i) {*/
-  /*    angles.push_back(rings[i].compute_angle(points[i]));*/
-  /*  }*/
-  /*  return angles;*/
-  /*}*/
-  std::vector<double> compute_angles(const std::vector<int> &ring_indices,
-    const std::vector<std::vector<double>> &points) const {
+  std::vector<double>
+  compute_angles(const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) const {
     std::vector<double> angles;
     angles.reserve(ring_indices.size());
     for (size_t i = 0; i < ring_indices.size(); ++i) {
@@ -170,40 +140,38 @@ struct RingDataVec {
 // certain criteria (e.g. planarity)
 class Rings {
 public:
+  // NOTE: RDKit supports using AtomPDBResidueInfo as a key for a map
+  // But we are separating TRP into TRP5 and TRP6, so we need to use a custom
+  // key
   struct ResId {
     std::string chain;
     int res_num;
     std::string res_name;
 
     bool operator==(const ResId &other) const {
-      return chain == other.chain && res_num == other.res_num &&
-             res_name == other.res_name;
+      return chain == other.chain && res_num == other.res_num && res_name == other.res_name;
     }
   };
 
   struct ResIdHash {
     std::size_t operator()(const ResId &id) const {
-      return std::hash<std::string>()(id.chain) ^
-             (std::hash<int>()(id.res_num) << 1) ^
-             (std::hash<std::string>()(id.res_name) << 2);
+      return std::hash<std::string>()(id.chain) ^ (std::hash<int>()(id.res_num) << 1)
+             ^ (std::hash<std::string>()(id.res_name) << 2);
     }
   };
 
   // FIX: benchmark performance for many ring systems?
   using RingMap = std::unordered_map<ResId, RingData, ResIdHash>;
-  using AtomOrderMap =
-      std::unordered_map<std::string, std::vector<std::string>>;
+  using AtomOrderMap = std::unordered_map<std::string, std::vector<std::string>>;
 
   Rings() { init_atom_order_table(); }
 
   void add_ring_atom(const RDKit::Atom *atom) {
-    auto *info =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     if (!info)
       return;
 
-    ResId res_id{info->getChainId(), info->getResidueNumber(),
-                 info->getResidueName()};
+    ResId res_id{info->getChainId(), info->getResidueNumber(), info->getResidueName()};
     const bool is_trp = info->getResidueName() == "TRP";
     if (is_trp) {
       res_id.res_name = "TRP5";
@@ -221,8 +189,7 @@ public:
       if (!ring_data.atom_ids.empty()) {
         /*ring_data.update_root_atom_id();*/
         order_atoms(res_id.res_name, ring_data.atom_ids, mol);
-        find_center_and_normal(conf, ring_data.atom_ids, ring_data.center,
-                               ring_data.norm1, ring_data.norm2);
+        find_center_and_normal(conf, ring_data.atom_ids, ring_data.center, ring_data.norm1, ring_data.norm2);
       }
     }
   }
@@ -251,8 +218,7 @@ private:
     atom_orders_["TRP6"] = {"CZ2", "CH2", "CZ3", "CE3", "CD2", "CE2"};
   }
 
-  void order_atoms(const std::string &res_name, std::vector<int> &atom_ids,
-                   const RDKit::ROMol &mol) {
+  void order_atoms(const std::string &res_name, std::vector<int> &atom_ids, const RDKit::ROMol &mol) {
     if (atom_orders_.find(res_name) == atom_orders_.end())
       return;
 
@@ -263,8 +229,7 @@ private:
     for (const auto &exptected_name : expected_order) {
       auto it = std::find_if(atom_ids.begin(), atom_ids.end(), [&](int idx) {
         const RDKit::Atom *atom = mol.getAtomWithIdx(idx);
-        auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-            atom->getMonomerInfo());
+        auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
         return info && info->getName() == exptected_name;
       });
       if (it != atom_ids.end()) {
@@ -278,23 +243,19 @@ private:
   }
 
 public:
-  // FIX: is norm2 needed?
-  static void find_center_and_normal(const RDKit::Conformer &conf,
-                                     const std::vector<int> &ring,
-                                     RDGeom::Point3D &center,
-                                     RDGeom::Point3D &norm1,
-                                     RDGeom::Point3D &norm2) {
+  // FIX: remove norm2
+  static void find_center_and_normal(
+      const RDKit::Conformer &conf, const std::vector<int> &ring, RDGeom::Point3D &center,
+      RDGeom::Point3D &norm1, RDGeom::Point3D &norm2) {
 
-    center = std::accumulate(ring.begin(), ring.end(), center,
-                             [&conf](const RDGeom::Point3D &sum, int idx) {
-                               return sum + conf.getAtomPos(idx);
-                             });
+    center = std::accumulate(ring.begin(), ring.end(), center, [&conf](const RDGeom::Point3D &sum, int idx) {
+      return sum + conf.getAtomPos(idx);
+    });
     center /= static_cast<double>(ring.size());
 
     for (size_t i = 0; i < ring.size(); ++i) {
       RDGeom::Point3D v1 = conf.getAtomPos(ring[i]) - center;
-      RDGeom::Point3D v2 =
-          conf.getAtomPos(ring[(i + 1) % ring.size()]) - center;
+      RDGeom::Point3D v2 = conf.getAtomPos(ring[(i + 1) % ring.size()]) - center;
       norm1 += v1.crossProduct(v2);
     }
     norm1 /= static_cast<double>(ring.size());

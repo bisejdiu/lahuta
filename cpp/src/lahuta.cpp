@@ -1,5 +1,6 @@
 #include "lahuta.hpp"
 #include "parser.hpp"
+#include "rings.hpp"
 
 namespace lahuta {
 
@@ -58,73 +59,59 @@ std::vector<std::string> split_word(const std::string &word) {
 } // namespace
 
 const std::vector<std::string> Luni::symbols() const {
-  return atom_attrs<std::string>(
-      [](const RDKit::Atom *atom) { return atom->getSymbol(); });
+  return atom_attrs<std::string>([](const RDKit::Atom *atom) { return atom->getSymbol(); });
 }
 
 const std::vector<std::string> Luni::names() const {
-  return atom_attrs<std::string>(
-      [](const RDKit::Atom *atom) -> const std::string & {
-        auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-            atom->getMonomerInfo());
-        return info->getName();
-      });
+  return atom_attrs<std::string>([](const RDKit::Atom *atom) -> const std::string & {
+    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    return info->getName();
+  });
 }
 
 const std::vector<int> Luni::indices() const {
-  return atom_attrs<int>(
-      [](const RDKit::Atom *atom) { return atom->getIdx(); });
+  return atom_attrs<int>([](const RDKit::Atom *atom) { return atom->getIdx(); });
 }
 
 const std::vector<int> Luni::atomic_numbers() const {
-  return atom_attrs<int>(
-      [](const RDKit::Atom *atom) { return atom->getAtomicNum(); });
+  return atom_attrs<int>([](const RDKit::Atom *atom) { return atom->getAtomicNum(); });
 }
 
 const std::vector<std::string> Luni::elements() const {
   const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
-  return atom_attrs<std::string>([&tbl](const RDKit::Atom *atom) {
-    return tbl->getElementSymbol(atom->getAtomicNum());
-  });
+  return atom_attrs<std::string>(
+      [&tbl](const RDKit::Atom *atom) { return tbl->getElementSymbol(atom->getAtomicNum()); });
 }
 
 const std::vector<std::string> Luni::resnames() const {
-  return atom_attrs<std::string>(
-      [](const RDKit::Atom *atom) -> const std::string & {
-        auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-            atom->getMonomerInfo());
-        return info->getResidueName();
-      });
+  return atom_attrs<std::string>([](const RDKit::Atom *atom) -> const std::string & {
+    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    return info->getResidueName();
+  });
 }
 
 const std::vector<int> Luni::resids() const {
   return atom_attrs<int>([](const RDKit::Atom *atom) -> int {
-    auto *info =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     return info->getResidueNumber();
   });
 }
 
 const std::vector<int> Luni::resindices() const {
   return atom_attrs<int>([](const RDKit::Atom *atom) -> int {
-    auto *info =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     return info->getSegmentNumber();
   });
 }
 
 const std::vector<std::string> Luni::chainlabels() const {
-  return atom_attrs<std::string>(
-      [](const RDKit::Atom *atom) -> const std::string & {
-        auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(
-            atom->getMonomerInfo());
-        return info->getChainId();
-      });
+  return atom_attrs<std::string>([](const RDKit::Atom *atom) -> const std::string & {
+    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+    return info->getChainId();
+  });
 }
 
-template <typename T>
-std::vector<T>
-Luni::atom_attrs(std::function<T(const RDKit::Atom *)> func) const {
+template <typename T> std::vector<T> Luni::atom_attrs(std::function<T(const RDKit::Atom *)> func) const {
   std::vector<T> attrs;
   attrs.reserve(mol->getNumAtoms());
   for (const auto atom : mol->atoms()) {
@@ -144,9 +131,7 @@ Luni::atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const {
   return attributes;
 }
 
-std::vector<RDKit::MatchVectType>
-Luni::match_smarts_string(std::string sm, std::string atype,
-                          bool log_values) const {
+auto Luni::match_smarts_string(std::string sm, std::string atype, bool log_values) const {
 
   if (!mol->getRingInfo()->isInitialized()) {
     RDKit::MolOps::symmetrizeSSSR(*mol);
@@ -218,9 +203,8 @@ std::vector<std::string> Luni::tokenize(const std::string &str) {
     // Dash or negative sign
     if (c == '-') {
       bool is_negative = false;
-      if (tokens.empty() || tokens.back() == "(" || tokens.back() == "and" ||
-          tokens.back() == "or" || tokens.back() == "not" ||
-          tokens.back() == "resid" || tokens.back() == "resname") {
+      if (tokens.empty() || tokens.back() == "(" || tokens.back() == "and" || tokens.back() == "or"
+          || tokens.back() == "not" || tokens.back() == "resid" || tokens.back() == "resname") {
         is_negative = true;
       }
 
@@ -243,8 +227,7 @@ std::vector<std::string> Luni::tokenize(const std::string &str) {
     // Identifiers and operators
     if (std::isalpha(c)) {
       size_t start = i;
-      while (i < str.length() &&
-             (std::isalpha(str[i]) || std::isdigit(str[i]) || str[i] == '-')) {
+      while (i < str.length() && (std::isalpha(str[i]) || std::isdigit(str[i]) || str[i] == '-')) {
         ++i;
       }
       std::string word = str.substr(start, i - start);
@@ -269,8 +252,7 @@ std::vector<std::string> Luni::tokenize(const std::string &str) {
 
     // Handle any other character sequences
     size_t start = i;
-    while (i < str.length() && !std::isspace(str[i]) && str[i] != '(' &&
-           str[i] != ')' && str[i] != '-') {
+    while (i < str.length() && !std::isspace(str[i]) && str[i] != '(' && str[i] != ')' && str[i] != '-') {
       ++i;
     }
     tokens.push_back(str.substr(start, i - start));
@@ -320,18 +302,15 @@ std::vector<int> Luni::parse_and_filter(const std::string &selection) const {
   return filtered_indices;
 }
 
-NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results,
-                                                 int res_diff) {
+NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results, int res_diff) {
   Pairs filtered;
   Distances dists;
   for (size_t i = 0; i < results.get_pairs().size(); ++i) {
     auto *fatom = get_molecule().getAtomWithIdx(results.get_pairs()[i].first);
     auto *satom = get_molecule().getAtomWithIdx(results.get_pairs()[i].second);
 
-    auto *finfo =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
-    auto *sinfo =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
+    auto *finfo = static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
+    auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
 
     if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)
       continue; // skip H atoms (hydrogens)
@@ -347,55 +326,118 @@ NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results,
   return NSResults(filtered, dists);
 }
 
-std::vector<int> Luni::factorize(const std::vector<std::string>& labels) {
-    std::vector<int> ids(labels.size());
+std::vector<int> Luni::factorize(const std::vector<std::string> &labels) {
+  std::vector<int> ids(labels.size());
 
-    // Hash map from labels to ids
-    std::unordered_map<std::string_view, int> label_to_id;
-    label_to_id.reserve(labels.size());
+  // Hash map from labels to ids
+  std::unordered_map<std::string_view, int> label_to_id;
+  label_to_id.reserve(labels.size());
 
-    int current_id = 0;
-    for (size_t i = 0; i < labels.size(); ++i) {
-        std::string_view label = labels[i];
-        auto it = label_to_id.find(label);
-        if (it == label_to_id.end()) {
-            label_to_id[label] = current_id;
-            ids[i] = current_id;
-            ++current_id;
-        } else {
-            ids[i] = it->second;
-        }
+  int current_id = 0;
+  for (size_t i = 0; i < labels.size(); ++i) {
+    std::string_view label = labels[i];
+    auto it = label_to_id.find(label);
+    if (it == label_to_id.end()) {
+      label_to_id[label] = current_id;
+      ids[i] = current_id;
+      ++current_id;
+    } else {
+      ids[i] = it->second;
     }
+  }
 
-    return ids;
+  return ids;
 }
 
-int Luni::count_unique(const std::vector<int>& vec) {
-    std::unordered_set<int> unique_elements(vec.begin(), vec.end());
-    return unique_elements.size();
+int Luni::count_unique(const std::vector<int> &vec) {
+  std::unordered_set<int> unique_elements(vec.begin(), vec.end());
+  return unique_elements.size();
 }
 
-int Luni::count_unique(const std::vector<std::string>& vec) {
-    std::unordered_set<std::string_view> unique_elements;
-    unique_elements.reserve(vec.size()); 
+int Luni::count_unique(const std::vector<std::string> &vec) {
+  std::unordered_set<std::string_view> unique_elements;
+  unique_elements.reserve(vec.size());
 
-    for (const auto& str : vec) {
-        unique_elements.insert(std::string_view(str));
-    }
+  for (const auto &str : vec) {
+    unique_elements.insert(std::string_view(str));
+  }
 
-    return unique_elements.size();
+  return unique_elements.size();
 }
 
-std::vector<std::string> Luni::find_elements(const std::vector<int>& atomic_numbers) {
-    const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
-    std::vector<std::string> elements;
-    elements.reserve(atomic_numbers.size());
+std::vector<std::string> Luni::find_elements(const std::vector<int> &atomic_numbers) {
+  const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
+  std::vector<std::string> elements;
+  elements.reserve(atomic_numbers.size());
 
-    for (int atomic_number : atomic_numbers) {
-        elements.push_back(tbl->getElementSymbol(atomic_number));
+  for (int atomic_number : atomic_numbers) {
+    elements.push_back(tbl->getElementSymbol(atomic_number));
+  }
+
+  return elements;
+}
+
+// Template specializations for getEntity
+template <> const RDKit::Atom &Luni::get_entity<RDKit::Atom>(EntityID id) const {
+  auto index = get_entity_index(id);
+  auto r = mol->getAtomWithIdx(index);
+  return *r;
+}
+
+template <> const RingData &Luni::get_entity<RingData>(EntityID id) const {
+  auto index = get_entity_index(id);
+  return get_rings().rings[index];
+}
+
+template <> const Feature &Luni::get_entity<Feature>(EntityID id) const {
+  auto index = get_entity_index(id);
+  /*std::cout << "Getting feature with index: " << index << std::endl;*/
+  // FIX: check if the index is valid
+  return get_features()[index];
+}
+
+const std::vector<EntityID> &Luni::get_atom_entities() {
+  if (entities.find(EntityType::Atom) == entities.end()) {
+    std::vector<EntityID> atom_entities;
+    auto mol = get_molecule();
+    atom_entities.reserve(mol.getNumAtoms());
+    for (const auto &atom : mol.atoms()) {
+      atom_entities.push_back(make_entity_id(EntityType::Atom, atom->getIdx()));
     }
+    entities[EntityType::Atom] = std::move(atom_entities);
+  }
 
-    return elements;
+  return entities[EntityType::Atom];
+}
+
+const std::vector<EntityID> &Luni::get_ring_entities() {
+  if (entities.find(EntityType::Ring) == entities.end()) {
+    std::vector<EntityID> ring_entities;
+    auto rings = get_rings().rings;
+    ring_entities.reserve(rings.size());
+    for (std::size_t i = 0; i < rings.size(); ++i) {
+      ring_entities.push_back(make_entity_id(EntityType::Ring, i));
+    }
+    entities[EntityType::Ring] = std::move(ring_entities);
+  }
+
+  return entities[EntityType::Ring];
+}
+
+// TODO: Feature keeps an `id` field. 
+// Because of that, it may not be necessary to keep a separate `entities` map.
+const std::vector<EntityID> &Luni::get_group_entities() {
+  if (entities.find(EntityType::Group) == entities.end()) {
+    std::vector<EntityID> group_entities;
+    auto groups = get_features();
+    group_entities.reserve(groups.size());
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+      group_entities.push_back(make_entity_id(EntityType::Group, i));
+    }
+    entities[EntityType::Group] = std::move(group_entities);
+  }
+
+  return entities[EntityType::Group];
 }
 
 } // namespace lahuta

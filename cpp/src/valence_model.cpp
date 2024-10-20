@@ -1,43 +1,27 @@
-#ifndef LAHUTA_VALENCE_HPP
-#define LAHUTA_VALENCE_HPP
-
-#include <GraphMol/Atom.h>
-#include <GraphMol/Bond.h>
-#include <GraphMol/MolOps.h>
-#include <GraphMol/PeriodicTable.h>
-#include <GraphMol/ROMol.h>
-#include <gemmi/elem.hpp>
-
-using HybridizationType = RDKit::Atom::HybridizationType;
+#include "valence_model.hpp"
 
 namespace lahuta {
 
-inline bool has_double_or_aromatic_bond(const RDKit::Atom &atom,
-                                        const RDKit::ROMol &mol) {
+bool ValenceModel::has_double_or_aromatic_bond(const RDKit::Atom &atom, const RDKit::ROMol &mol) const {
   for (const auto &bond : mol.atomBonds(&atom)) {
     auto bond_type = bond->getBondType();
-    if (bond_type == RDKit::Bond::DOUBLE ||
-        bond_type == RDKit::Bond::AROMATIC) {
+    if (bond_type == RDKit::Bond::DOUBLE || bond_type == RDKit::Bond::AROMATIC) {
       return true;
     }
   }
   return false;
 }
 
-inline bool is_excluded_bond(const RDKit::Atom &atom_b,
-                             const RDKit::Atom &atom_c) {
+bool ValenceModel::is_excluded_bond(const RDKit::Atom &atom_b, const RDKit::Atom &atom_c) const {
   unsigned int atomic_num_b = atom_b.getAtomicNum();
   unsigned int atomic_num_c = atom_c.getAtomicNum();
-  // If atom_b is P (15) or S (16) and atom_c is O (8), exclude this bond
   return ((atomic_num_b == 15 || atomic_num_b == 16) && atomic_num_c == 8);
 }
 
-inline bool is_neighbor_conjugated(const RDKit::Atom &atom_b,
-                                   const RDKit::ROMol &mol) {
+bool ValenceModel::is_conjugated_and_not_excluded(const RDKit::Atom &atom_b, const RDKit::ROMol &mol) const {
   for (const auto &bond_b : mol.atomBonds(&atom_b)) {
     auto bond_type = bond_b->getBondType();
-    if (bond_type == RDKit::Bond::DOUBLE ||
-        bond_type == RDKit::Bond::AROMATIC) {
+    if (bond_type == RDKit::Bond::DOUBLE || bond_type == RDKit::Bond::AROMATIC) {
       RDKit::Atom *atom_c = bond_b->getOtherAtom(&atom_b);
       if (!is_excluded_bond(atom_b, *atom_c)) {
         return true;
@@ -47,7 +31,7 @@ inline bool is_neighbor_conjugated(const RDKit::Atom &atom_b,
   return false;
 }
 
-inline bool is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
+bool ValenceModel::is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &atom) const {
   unsigned int atomic_num = atom.getAtomicNum();
   bool is_hetero = (atomic_num == 7 || atomic_num == 8);
 
@@ -59,12 +43,12 @@ inline bool is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
     return true;
   }
 
-  // If atom is N or O, check neighboring atoms
+  // If atom is N or O, process neighboring atoms
   if (is_hetero) {
     auto neighbors = mol.getAtomNeighbors(&atom);
     for (auto nbr = neighbors.first; nbr != neighbors.second; ++nbr) {
       const RDKit::Atom *neighbor = mol.getAtomWithIdx(*nbr);
-      if (is_neighbor_conjugated(*neighbor, mol)) {
+      if (is_conjugated_and_not_excluded(*neighbor, mol)) {
         return true;
       }
     }
@@ -73,8 +57,7 @@ inline bool is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
   return false;
 }
 
-inline int get_element_count(RDKit::ROMol &mol, RDKit::Atom &atom,
-                             int element) {
+int ValenceModel::get_element_count(RDKit::ROMol &mol, RDKit::Atom &atom, int element) const {
   int count = 0;
   for (const auto &bond : mol.atomBonds(&atom)) {
     auto other_atom = bond->getOtherAtom(&atom);
@@ -85,13 +68,11 @@ inline int get_element_count(RDKit::ROMol &mol, RDKit::Atom &atom,
   return count;
 }
 
-inline bool is_bound_to_sulfur_or_metal(const RDKit::ROMol &mol,
-                                        RDKit::Atom *atom) {
+bool ValenceModel::is_bound_to_sulfur_or_metal(const RDKit::ROMol &mol, RDKit::Atom *atom) const {
   for (const auto &bond : mol.atomBonds(atom)) {
     RDKit::Atom *other_atom = bond->getOtherAtom(atom);
     unsigned int other_atomic_num = other_atom->getAtomicNum();
 
-    // Get the element using gemmi
     auto name = other_atom->getSymbol();
     gemmi::El e = gemmi::find_element(name.c_str());
 
@@ -102,20 +83,19 @@ inline bool is_bound_to_sulfur_or_metal(const RDKit::ROMol &mol,
   return false;
 }
 
-inline bool is_amidine_or_guanidine_nitrogen(int degree, int h_count,
-                                             int valence) {
+bool ValenceModel::is_amidine_or_guanidine_nitrogen(int degree, int h_count, int valence) const {
   return (degree - h_count == 1 && valence - h_count == 2);
 }
 
-inline bool has_neighbor_with_double_bonded_oxygen(const RDKit::ROMol &mol, RDKit::Atom *atom) {
+bool ValenceModel::has_neighbor_with_double_bonded_oxygen(const RDKit::ROMol &mol, RDKit::Atom *atom) const {
   for (const auto &bond_a : mol.atomBonds(atom)) {
     RDKit::Atom *other_atom_a = bond_a->getOtherAtom(atom);
 
     for (const auto &bond_b : mol.atomBonds(other_atom_a)) {
       RDKit::Atom *other_atom_b = bond_b->getOtherAtom(other_atom_a);
 
-      if (other_atom_b != atom && other_atom_b->getAtomicNum() == 8 &&
-          bond_b->getBondType() == RDKit::Bond::DOUBLE) {
+      if (other_atom_b != atom && other_atom_b->getAtomicNum() == 8
+          && bond_b->getBondType() == RDKit::Bond::DOUBLE) {
         return true;
       }
     }
@@ -123,7 +103,7 @@ inline bool has_neighbor_with_double_bonded_oxygen(const RDKit::ROMol &mol, RDKi
   return false;
 }
 
-inline HybridizationType assign_geometry(int total_coordination) {
+HybridizationType ValenceModel::assign_geometry(int total_coordination) const {
   switch (total_coordination) {
   case 0:
     return HybridizationType::S;
@@ -140,15 +120,14 @@ inline HybridizationType assign_geometry(int total_coordination) {
   }
 }
 
-inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
-                            bool assign_charge, bool assign_h) {
+void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom) {
 
   const int h_count = atom.getNumExplicitHs();
   const unsigned int atomic_num = atom.getAtomicNum();
   int charge = atom.getFormalCharge();
 
-  const bool assign_charge_flag = (assign_charge && charge == 0);
-  const bool assign_h_flag = (assign_h && h_count == 0);
+  const bool assign_charge_flag = (assign_charge_ && charge == 0);
+  const bool assign_h_flag = (assign_h_ && h_count == 0);
 
   const int degree = atom.getDegree();
   const int valence = atom.getExplicitValence();
@@ -160,7 +139,6 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
   auto geom = HybridizationType::UNSPECIFIED;
 
   switch (atomic_num) {
-  // Hydrogen (H)
   case 1:
     if (assign_charge_flag) {
       atom.setHybridization(HybridizationType::S);
@@ -172,17 +150,17 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
         charge = 0;
       }
     }
+    // FIX: remove parentheses
     { atom.setFormalCharge(charge); }
     break;
 
-  // Carbon (C)
   case 6:
     if (assign_charge_flag) {
-      charge = 0; // Carbon is typically neutral
+      charge = 0; // typically neutral
       atom.setFormalCharge(charge);
     }
     if (assign_h_flag) {
-      // Carbon normally forms 4 bonds. Adjust implicit hydrogens accordingly.
+      // normally forms 4 bonds: adjust implicit hydrogens
       implicit_h = std::max(0, 4 - valence - std::abs(charge));
     }
     {
@@ -190,7 +168,6 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
       int total_bonds = degree + implicit_h + std::max(0, -charge);
       atom.setHybridization(assign_geometry(total_bonds));
     }
-
     break;
 
   case 7:
@@ -220,7 +197,6 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
       implicit_h = std::max(0, 3 - valence + charge);
     }
 
-    // Set geometry based on conjugation and multiple bonding
     if (conjugated && !multi_bond) {
       // Conjugated nitrogen (amide, anilinic N) geometry treated differently
       // Assuming trigonal geometry for simplicity
@@ -233,7 +209,6 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
     atom.setFormalCharge(charge);
     break;
 
-  // Oxygen (O)
   case 8:
     if (assign_charge_flag) {
       if (!assign_h_flag) {
@@ -249,13 +224,11 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
       implicit_h = std::max(0, 2 - valence + charge);
     }
 
-    geom = assign_geometry(degree + implicit_h - charge +
-                           (conjugated && !multi_bond ? 1 : 2));
+    geom = assign_geometry(degree + implicit_h - charge + (conjugated && !multi_bond ? 1 : 2));
     atom.setHybridization(geom);
     atom.setFormalCharge(charge);
     break;
 
-  // Sulfur (S)
   case 16:
     if (assign_charge_flag) {
       if (!assign_h_flag) {
@@ -316,13 +289,9 @@ inline void compute_valence(const RDKit::ROMol &mol, RDKit::Atom &atom,
     }
     break;
   default:
-    std::cerr << "Requested charge, protonation for an unhandled element: "
-              << atomic_num << std::endl;
     break;
   }
   atom.setProp<int>("computed_implicit_h", implicit_h);
 }
 
 } // namespace lahuta
-
-#endif // LAHUTA_VALENCE_HPP

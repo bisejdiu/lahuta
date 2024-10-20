@@ -1,9 +1,7 @@
 #include <algorithm>
-// #include <array>
 #include <rdkit/Geometry/point.h>
-// #include <vector>
+#include <unordered_set>
 
-#include "lahuta.hpp"
 #include "nsgrid.hpp"
 
 namespace lahuta {
@@ -220,7 +218,7 @@ FastNS::_coord_to_cell_xyz(const float *__restrict coord,
   xyz[0] %= ncells[0];
 }
 
-inline int FastNS::_cell_xyz_to_cell_id(int cx, int cy, int cz) const {
+int FastNS::_cell_xyz_to_cell_id(int cx, int cy, int cz) const {
   if (cx < 0 || cx == ncells[0] || cy < 0 || cy == ncells[1] || cz < 0 ||
       cz == ncells[2]) {
     return END;
@@ -228,13 +226,13 @@ inline int FastNS::_cell_xyz_to_cell_id(int cx, int cy, int cz) const {
   return cx + cy * cell_offsets[1] + cz * cell_offsets[2];
 }
 
-inline float FastNS::dist_sq(const float *__restrict a,
-                             const float *__restrict b) const {
-  float dx = a[0] - b[0];
-  float dy = a[1] - b[1];
-  float dz = a[2] - b[2];
-  return dx * dx + dy * dy + dz * dz;
-}
+/*float FastNS::dist_sq(const float *__restrict a,*/
+/*                             const float *__restrict b) {*/
+/*  float dx = a[0] - b[0];*/
+/*  float dy = a[1] - b[1];*/
+/*  float dz = a[2] - b[2];*/
+/*  return dx * dx + dy * dy + dz * dz;*/
+/*}*/
 
 void NSResults::add_neighbors(int i, int j, float d2) {
   m_pairs.emplace_back(i, j);

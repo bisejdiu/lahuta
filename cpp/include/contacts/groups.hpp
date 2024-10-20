@@ -1,0 +1,66 @@
+#ifndef LAHUTA_GROUPS_HPP
+#define LAHUTA_GROUPS_HPP
+
+#include "GraphMol/RWMol.h"
+#include "atom_types.hpp"
+#include "charges.hpp"
+#include "features.hpp"
+
+namespace lahuta {
+
+class GroupTypeBase {
+public:
+  virtual ~GroupTypeBase() = default;
+  virtual std::vector<Feature> identify(const RDKit::RWMol &mol, ResMap &res_map) const = 0;
+};
+
+class PositiveChargeGroup : public GroupTypeBase {
+public:
+  std::vector<Feature> identify(const RDKit::RWMol &mol, ResMap &res_map) const override;
+};
+
+class NegativeChargeGroup : public GroupTypeBase {
+public:
+  std::vector<Feature> identify(const RDKit::RWMol &mol, ResMap &res_map) const override;
+};
+
+class GroupTypeStrategy {
+private:
+  std::vector<std::unique_ptr<GroupTypeBase>> strategies;
+
+public:
+  template <typename T> void add_strategy() {
+    static_assert(std::is_base_of<GroupTypeBase, T>::value, "T must derive from GroupTypeStrategy");
+    strategies.push_back(std::make_unique<T>());
+  }
+
+  std::vector<Feature> identify(const RDKit::RWMol &mol) const;
+
+private:
+  void assign_ids(std::vector<Feature> &features) const;
+  void compute_centers(std::vector<Feature> &features) const;
+};
+
+class GroupTypeFactory {
+public:
+  static GroupTypeStrategy create() {
+    GroupTypeStrategy composite;
+    composite.add_strategy<PositiveChargeGroup>();
+    composite.add_strategy<NegativeChargeGroup>();
+    return composite;
+  }
+};
+
+class GroupTypeAnalysis {
+public:
+  static std::vector<Feature> analyze(const RDKit::RWMol &mol) {
+    auto strategy = GroupTypeFactory::create();
+    return strategy.identify(mol);
+  }
+};
+
+std::vector<const Feature *> get_features(const std::vector<Feature> &features, AtomType type);
+
+} // namespace lahuta
+
+#endif // LAHUTA_GROUPS_HPP

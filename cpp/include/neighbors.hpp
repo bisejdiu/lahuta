@@ -30,17 +30,12 @@ public:
   using RefType = const T;
 
   BasePair(int i, int j, float d, bool sort = true) : d(d) {
-    // swap = 1 if i > j and sort is true, else 0
-    int swap = sort && (i > j);
-    this->i = i * !swap + j * swap;
-    this->j = j * !swap + i * swap;
-
-    /*if (sort) {*/
-    /*  std::tie(this->i, this->j) = std::minmax(i, j);*/
-    /*} else {*/
-    /*  this->i = i;*/
-    /*  this->j = j;*/
-    /*}*/
+    if (sort) {
+      std::tie(this->i, this->j) = std::minmax(i, j);
+    } else {
+      this->i = i;
+      this->j = j;
+    }
   }
 
   bool operator==(const BasePair &other) const {

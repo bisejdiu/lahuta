@@ -1,21 +1,21 @@
 #include "contacts/hydrogen_bonds.hpp"
 #include "contacts/geometry.hpp"
+#include "contacts/utils.hpp"
+#include "lahuta.hpp"
 
 namespace lahuta {
 
 bool is_water(const RDKit::Atom &atom) {
-  auto res_info =
-      static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
+  auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
   if (res_info) {
-    return std::find(WaterResNames.begin(), WaterResNames.end(),
-                     res_info->getResidueName()) != WaterResNames.end();
+    return std::find(WaterResNames.begin(), WaterResNames.end(), res_info->getResidueName())
+           != WaterResNames.end();
   }
   return false;
 }
 
-auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a,
-                            const RDKit::Atom &atom_b) {
+auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
   auto &conf = mol.getConformer();
   auto &pos_a = conf.getAtomPos(atom_a.getIdx());
   auto &pos_b = conf.getAtomPos(atom_b.getIdx());
@@ -38,9 +38,8 @@ auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a,
   return closest_hydrogen;
 }
 
-std::vector<const RDGeom::Point3D *>
-get_neighbor_positions(const RDKit::Atom &atom_a, const RDKit::Conformer &conf,
-                       const RDKit::RWMol &mol, bool ignore_hydrogens) {
+std::vector<const RDGeom::Point3D *> get_neighbor_positions(
+    const RDKit::Atom &atom_a, const RDKit::Conformer &conf, const RDKit::RWMol &mol, bool ignore_hydrogens) {
   std::vector<const RDGeom::Point3D *> neighbor_positions;
   const RDKit::Atom *first_neighbor = nullptr;
 
@@ -65,13 +64,11 @@ get_neighbor_positions(const RDKit::Atom &atom_a, const RDKit::Conformer &conf,
   if (neighbor_positions.size() == 1 && first_neighbor != nullptr) {
     for (const auto &bond : mol.atomBonds(first_neighbor)) {
       auto *next_neighbor = bond->getOtherAtom(first_neighbor);
-      if (next_neighbor == &atom_a ||
-          (ignore_hydrogens && next_neighbor->getAtomicNum() == 1)) {
+      if (next_neighbor == &atom_a || (ignore_hydrogens && next_neighbor->getAtomicNum() == 1)) {
         continue;
       }
 
-      const RDGeom::Point3D &neighbor_pos =
-          conf.getAtomPos(next_neighbor->getIdx());
+      const RDGeom::Point3D &neighbor_pos = conf.getAtomPos(next_neighbor->getIdx());
       neighbor_positions.push_back(&neighbor_pos);
       break;
     }
@@ -80,14 +77,45 @@ get_neighbor_positions(const RDKit::Atom &atom_a, const RDKit::Conformer &conf,
   return neighbor_positions;
 }
 
-bool check_geometry_constraints(const RDKit::RWMol &mol,
-                                const RDKit::Atom &donor,
-                                const RDKit::Atom &acceptor,
-                                const GeometryOptions &opts) {
+bool in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
+  unsigned int atomIdx = atom.getIdx();
+  const RDKit::RingInfo *ringInfo = mol.getRingInfo();
+
+  for (const auto &ring : ringInfo->atomRings()) {
+    if (std::find(ring.begin(), ring.end(), atomIdx) != ring.end()) {
+      // Check if the ring is aromatic
+      bool isAromatic = true;
+      for (unsigned int ringAtomIdx : ring) {
+        if (!mol.getAtomWithIdx(ringAtomIdx)->getIsAromatic()) {
+          isAromatic = false;
+          break;
+        }
+      }
+      if (!isAromatic) {
+        continue;
+      }
+
+      // Check if the ring contains an electronegative element (N or O)
+      for (unsigned int ringAtomIdx : ring) {
+        const RDKit::Atom *ringAtom = mol.getAtomWithIdx(ringAtomIdx);
+        int atomicNum = ringAtom->getAtomicNum();
+        if (atomicNum == 7 || atomicNum == 8) { // N or O
+          // Found an electronegative element in the aromatic ring
+          return true;
+        }
+      }
+    }
+  }
+
+  return false; // No electronegative element (N or O) in the aromatic ring
+}
+
+bool are_geometrically_viable(
+    const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
+    const GeometryOptions &opts) {
 
   // donor angles
-  const auto &[don_angles, don_h_angles] =
-      calculate_angle(mol, donor, acceptor, opts.ignore_hydrogens);
+  const auto &[don_angles, don_h_angles] = calculate_angle(mol, donor, acceptor, opts.ignore_hydrogens);
 
   double ideal_don_angle = get_atom_geometry_angle(donor.getHybridization());
 
@@ -97,11 +125,9 @@ bool check_geometry_constraints(const RDKit::RWMol &mol,
     }
   }
 
-  if (!don_h_angles.empty() &&
-      std::all_of(don_h_angles.begin(), don_h_angles.end(),
-                  [&opts](double h_angle) {
-                    return h_angle >= opts.max_don_angle_dev;
-                  })) {
+  if (!don_h_angles.empty() && std::all_of(don_h_angles.begin(), don_h_angles.end(), [&opts](double h_angle) {
+        return h_angle >= opts.max_don_angle_dev;
+      })) {
     return false;
   }
 
@@ -120,27 +146,26 @@ bool check_geometry_constraints(const RDKit::RWMol &mol,
   }
 
   // acceptor angles
-  const auto &[acc_angles, acc_h_angles] = calculate_angle(
-      mol, acceptor, *donor_atom_for_acc, opts.ignore_hydrogens);
+  const auto &[acc_angles, acc_h_angles] =
+      calculate_angle(mol, acceptor, *donor_atom_for_acc, opts.ignore_hydrogens);
 
   double ideal_acc_angle = get_atom_geometry_angle(acceptor.getHybridization());
 
   // Check acceptor angles (do not limit large acceptor angles)
   for (double acc_angle : acc_angles) {
     if (ideal_acc_angle - acc_angle > opts.max_acc_angle_dev) {
-      return false; 
+      return false;
     }
   }
   for (double acc_h_angle : acc_h_angles) {
     if (ideal_acc_angle - acc_h_angle > opts.max_acc_angle_dev) {
-      return false; 
+      return false;
     }
   }
 
   // out-of-plane angle for sp2 hybridized atoms
   if (acceptor.getHybridization() == RDKit::Atom::HybridizationType::SP2) {
-    double out_of_plane =
-        compute_plane_angle(mol, acceptor, *donor_atom_for_acc);
+    double out_of_plane = compute_plane_angle(mol, acceptor, *donor_atom_for_acc);
     if (out_of_plane > opts.max_acc_out_of_plane_angle) {
       return false;
     }
@@ -167,8 +192,7 @@ AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   return AtomType::NONE;
 }
 
-AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol,
-                               const RDKit::Atom &atom) {
+AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   auto _info = atom.getMonomerInfo();
   auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(_info);
 
@@ -192,9 +216,9 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol,
       // It must have at least one lone pair not conjugated
       unsigned int total_bonds = get_bond_count(mol, atom) + implicit_h;
 
-      if ((hybridization == HybridizationType::SP3 && total_bonds < 4) ||
-          (hybridization == HybridizationType::SP2 && total_bonds < 3) ||
-          (hybridization == HybridizationType::SP && total_bonds < 2)) {
+      if ((hybridization == HybridizationType::SP3 && total_bonds < 4)
+          || (hybridization == HybridizationType::SP2 && total_bonds < 3)
+          || (hybridization == HybridizationType::SP && total_bonds < 2)) {
         return AtomType::HBOND_ACCEPTOR;
       }
     }
@@ -211,6 +235,132 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol,
   }
 
   return AtomType::NONE;
+}
+
+AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
+  int implicit_h = atom.getProp<int>("computed_implicit_h");
+  int total_h = atom.getNumExplicitHs() + implicit_h;
+  auto info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
+  /*std::cout << "Debug: " << atom.getIdx() << " " */
+  /*  << info->getResidueName() << " " << info->getName() << " "*/
+  /*  << implicit_h << " " << total_h << std::endl;*/
+
+  // Check if the atom is carbon
+  if (atom.getAtomicNum() == 6 && total_h > 0) {
+    // Check if the atom is bonded to nitrogen or oxygen, or in an aromatic ring
+    // with N or O
+    if (get_bond_count(mol, atom, 7) > 0 ||        // Bonded to nitrogen
+        get_bond_count(mol, atom, 8) > 0 ||        // Bonded to oxygen
+        in_aromatic_ring_with_N_or_O(mol, atom)) { // Aromatic ring with N or O
+      return AtomType::WEAK_HBOND_DONOR;
+    }
+  }
+
+  return AtomType::NONE;
+}
+
+void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, NSResults &neighbors, Contacts &container) {
+
+  // FIX: avoid calling symmetrizeSSSR, which does not scale very well, by
+  // instead using our own ring system
+  auto mol = luni.get_molecule();
+  if (!mol.getRingInfo()->isInitialized()) {
+    RDKit::MolOps::symmetrizeSSSR(mol);
+  }
+
+  std::vector<AtomType> atypes = luni.get_atom_types();
+  std::vector<EntityID> entities = luni.get_atom_entities();
+
+  for (const auto &[pair, dist] : neighbors) {
+    auto atom1 = mol.getAtomWithIdx(pair.first);
+    auto atom2 = mol.getAtomWithIdx(pair.second);
+
+    auto atom1_type = atypes[pair.first];
+    auto atom2_type = atypes[pair.second];
+
+    RDKit::Atom *don, *acc;
+    if (AtomTypeFlags::has(atom1_type, AtomType::HBOND_ACCEPTOR)
+        && AtomTypeFlags::has(atom2_type, AtomType::HBOND_DONOR)) {
+      don = atom2;
+      acc = atom1;
+    } else if (
+        AtomTypeFlags::has(atom2_type, AtomType::HBOND_ACCEPTOR)
+        && AtomTypeFlags::has(atom1_type, AtomType::HBOND_DONOR)) {
+      don = atom1;
+      acc = atom2;
+    } else {
+      continue;
+    }
+
+    double max_dist_sq;
+    if (don->getAtomicNum() == 16 || acc->getAtomicNum() == 16) {
+      max_dist_sq = opts.max_sulfur_dist_sq;
+    } else {
+      max_dist_sq = opts.max_dist_sq;
+    }
+    if (dist > max_dist_sq) {
+      continue;
+    }
+
+    if (!opts.include_water && is_water_hbond(*don, *acc)) {
+      continue;
+    }
+
+    if (!are_geometrically_viable(mol, *don, *acc, opts)) {
+      continue;
+    }
+
+    container.add(
+        Contact(EntityID(don->getIdx()), EntityID(acc->getIdx()), dist, InteractionType::HydrogenBond));
+  }
+}
+
+void find_weak_hydrogen_bonds(
+    Luni &luni, const GeometryOptions &opts, NSResults &neighbors, Contacts &container) {
+
+  // FIX: avoid calling symmetrizeSSSR, which does not scale very well, by
+  // instead using our own ring system
+  auto mol = luni.get_molecule();
+  if (!mol.getRingInfo()->isInitialized()) {
+    RDKit::MolOps::symmetrizeSSSR(mol);
+  }
+
+  std::vector<AtomType> atypes = luni.get_atom_types();
+  std::vector<EntityID> entities = luni.get_atom_entities();
+
+  for (const auto &[pair, dist] : neighbors) {
+
+    if (dist > opts.max_dist_sq) {
+      continue;
+    }
+
+    auto atom1 = mol.getAtomWithIdx(pair.first);
+    auto atom2 = mol.getAtomWithIdx(pair.second);
+
+    auto atom1_type = atypes[pair.first];
+    auto atom2_type = atypes[pair.second];
+
+    RDKit::Atom *don, *acc;
+    if (AtomTypeFlags::has(atom1_type, AtomType::HBOND_ACCEPTOR)
+        && AtomTypeFlags::has(atom2_type, AtomType::WEAK_HBOND_DONOR)) {
+      don = atom2;
+      acc = atom1;
+    } else if (
+        AtomTypeFlags::has(atom2_type, AtomType::HBOND_ACCEPTOR)
+        && AtomTypeFlags::has(atom1_type, AtomType::WEAK_HBOND_DONOR)) {
+      don = atom1;
+      acc = atom2;
+    } else {
+      continue;
+    }
+
+    if (!are_geometrically_viable(mol, *don, *acc, opts)) {
+      continue;
+    }
+
+    container.add(
+        Contact(EntityID(don->getIdx()), EntityID(acc->getIdx()), dist, InteractionType::WeakHydrogenBond));
+  }
 }
 
 } // namespace lahuta

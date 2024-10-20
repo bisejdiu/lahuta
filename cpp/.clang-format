@@ -1,0 +1,5 @@
+AlignAfterOpenBracket: AlwaysBreak
+AllowAllArgumentsOnNextLine: true
+BreakBeforeBinaryOperators: NonAssignment
+BinPackArguments: false
+ColumnLimit: 110
