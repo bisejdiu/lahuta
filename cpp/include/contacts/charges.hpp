@@ -30,6 +30,128 @@ const std::set<std::string> ProteinBackboneAtoms = {"CA",  "C",   "N",   "O",   
 const std::set<std::string> NegativelyChargedResidues = {"GLU", "ASP"};
 const std::set<std::string> BaseNames = {"DA", "DC", "DT", "DG", "DI", "DU", "DN"};
 
+/*export const NucleicBackboneAtoms = new Set([*/
+/*    'P', 'OP1', 'OP2', 'HOP2', 'HOP3',*/
+/*    'O2\'', 'O3\'', 'O4\'', 'O5\'', 'C1\'', 'C2\'', 'C3\'', 'C4\'', 'C5\'',*/
+/*    'H1\'', 'H2\'', 'H2\'\'', 'HO2\'', 'H3\'', 'H4\'', 'H5\'', 'H5\'\'', 'HO3\'', 'HO5\'',*/
+/*    'O2*', 'O3*', 'O4*', 'O5*', 'C1*', 'C2*', 'C3*', 'C4*', 'C5*'*/
+/*]);*/
+const std::set<std::string> NucleicBackboneAtoms = {
+    "P",  "OP1", "OP2", "HOP2", "HOP3", "O2\'", "O3\'", "O4\'", "O5\'", "C1\'", "C2\'",
+    "C3\'", "C4\'", "C5\'", "H1\'", "H2\'", "H2\'\'", "HO2\'", "H3\'", "H4\'", "H5\'",
+    "H5\'\'", "HO3\'", "HO5\'", "O2*", "O3*", "O4*", "O5*", "C1*", "C2*", "C3*", "C4*",
+    "C5*"};
+
+/*export const AminoAcidNamesL = new Set([*/
+/*    'HIS', 'ARG', 'LYS', 'ILE', 'PHE', 'LEU', 'TRP', 'ALA', 'MET', 'PRO', 'CYS',*/
+/*    'ASN', 'VAL', 'GLY', 'SER', 'GLN', 'TYR', 'ASP', 'GLU', 'THR', 'SEC', 'PYL',*/
+/*    'UNK', // unknown amino acid from CCD*/
+/*    'MSE', 'SEP', 'TPO', 'PTR', 'PCA', 'HYP', // common from CCD*/
+/**/
+/*    // charmm ff*/
+/*    'HSD', 'HSE', 'HSP', 'LSN', 'ASPP', 'GLUP',*/
+/**/
+/*    // amber ff*/
+/*    'HID', 'HIE', 'HIP', 'LYN', 'ASH', 'GLH',*/
+/*]);*/
+
+const std::set<std::string> AminoAcidNamesL = {
+    "HIS", "ARG", "LYS", "ILE", "PHE", "LEU", "TRP", "ALA", "MET", "PRO", "CYS",
+    "ASN", "VAL", "GLY", "SER", "GLN", "TYR", "ASP", "GLU", "THR", "SEC", "PYL",
+    "UNK", // unknown amino acid from CCD
+    "MSE", "SEP", "TPO", "PTR", "PCA", "HYP", // common from CCD
+
+    // charmm ff
+    "HSD", "HSE", "HSP", "LSN", "ASPP", "GLUP",
+
+    // amber ff
+    "HID", "HIE", "HIP", "LYN", "ASH", "GLH",
+};
+
+/*export const AminoAcidNamesD = new Set([*/
+/*    'DAL', // D-ALANINE*/
+/*    'DAR', // D-ARGININE*/
+/*    'DSG', // D-ASPARAGINE*/
+/*    'DAS', // D-ASPARTIC ACID*/
+/*    'DCY', // D-CYSTEINE*/
+/*    'DGL', // D-GLUTAMIC ACID*/
+/*    'DGN', // D-GLUTAMINE*/
+/*    'DHI', // D-HISTIDINE*/
+/*    'DIL', // D-ISOLEUCINE*/
+/*    'DLE', // D-LEUCINE*/
+/*    'DLY', // D-LYSINE*/
+/*    'MED', // D-METHIONINE*/
+/*    'DPN', // D-PHENYLALANINE*/
+/*    'DPR', // D-PROLINE*/
+/*    'DSN', // D-SERINE*/
+/*    'DTH', // D-THREONINE*/
+/*    'DTR', // D-TRYPTOPHAN*/
+/*    'DTY', // D-TYROSINE*/
+/*    'DVA', // D-VALINE*/
+/*    'DNE' // D-NORLEUCINE*/
+/*    // ???  // D-SELENOCYSTEINE*/
+/*]);*/
+const std::set<std::string> AminoAcidNamesD = {
+    "DAL", // D-ALANINE
+    "DAR", // D-ARGININE
+    "DSG", // D-ASPARAGINE
+    "DAS", // D-ASPARTIC ACID
+    "DCY", // D-CYSTEINE
+    "DGL", // D-GLUTAMIC ACID
+    "DGN", // D-GLUTAMINE
+    "DHI", // D-HISTIDINE
+    "DIL", // D-ISOLEUCINE
+    "DLE", // D-LEUCINE
+    "DLY", // D-LYSINE
+    "MED", // D-METHIONINE
+    "DPN", // D-PHENYLALANINE
+    "DPR", // D-PROLINE
+    "DSN", // D-SERINE
+    "DTH", // D-THREONINE
+    "DTR", // D-TRYPTOPHAN
+    "DTY", // D-TYROSINE
+    "DVA", // D-VALINE
+    "DNE"  // D-NORLEUCINE
+    // ???  // D-SELENOCYSTEINE
+};
+
+/*export const AminoAcidNames = SetUtils.unionMany(AminoAcidNamesL, AminoAcidNamesD);*/
+
+const std::set<std::string> AminoAcidNames = {
+    "HIS", "ARG", "LYS", "ILE", "PHE", "LEU", "TRP", "ALA", "MET", "PRO", "CYS",
+    "ASN", "VAL", "GLY", "SER", "GLN", "TYR", "ASP", "GLU", "THR", "SEC", "PYL",
+    "UNK", // unknown amino acid from CCD
+    "MSE", "SEP", "TPO", "PTR", "PCA", "HYP", // common from CCD
+
+    // charmm ff
+    "HSD", "HSE", "HSP", "LSN", "ASPP", "GLUP",
+
+    // amber ff
+    "HID", "HIE", "HIP", "LYN", "ASH", "GLH",
+
+    "DAL", // D-ALANINE
+    "DAR", // D-ARGININE
+    "DSG", // D-ASPARAGINE
+    "DAS", // D-ASPARTIC ACID
+    "DCY", // D-CYSTEINE
+    "DGL", // D-GLUTAMIC ACID
+    "DGN", // D-GLUTAMINE
+    "DHI", // D-HISTIDINE
+    "DIL", // D-ISOLEUCINE
+    "DLE", // D-LEUCINE
+    "DLY", // D-LYSINE
+    "MED", // D-METHIONINE
+    "DPN", // D-PHENYLALANINE
+    "DPR", // D-PROLINE
+    "DSN", // D-SERINE
+    "DTH", // D-THREONINE
+    "DTR", // D-TRYPTOPHAN
+    "DTY", // D-TYROSINE
+    "DVA", // D-VALINE
+    "DNE"  // D-NORLEUCINE
+    // ???  // D-SELENOCYSTEINE
+};
+
 Feature create_feature(AtomType type, FeatureGroup group, const std::vector<const RDKit::Atom *> &members);
 
 auto identify_feature_groups(const RDKit::RWMol &mol);

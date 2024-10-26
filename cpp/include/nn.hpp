@@ -1,7 +1,7 @@
 #ifndef LAHUTA_NN_HPP
 #define LAHUTA_NN_HPP
 
-#include "contacts/charges.hpp"
+#include "contacts/features.hpp"
 #include "nsgrid.hpp"
 #include "rings.hpp"
 #include <cstdint>
@@ -15,6 +15,7 @@ enum class InteractionType {
   None,
   Any,
   Hydrophobic,
+  Halogen,
   HydrogenBond,
   WeakHydrogenBond,
   Ionic,

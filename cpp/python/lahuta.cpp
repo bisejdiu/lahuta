@@ -1,4 +1,4 @@
-#include <pybind11/complex.h>
+#include <pybind11/complex.h> // FIX: is this needed?
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
@@ -7,101 +7,29 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RDKitBase.h>
 
+#include "common.hpp"
+#include "contacts.hpp"
 #include "at.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "nsgrid.hpp"
-#include "struct_unit.hpp"
+/*#include "nn.hpp"*/
 
 namespace py = pybind11;
 using namespace lahuta;
-
-py::array_t<float> coordinates(const RDGeom::POINT3D_VECT &coords) {
-  if (coords.empty() || coords[0].dimension() != 3) {
-    throw std::runtime_error(
-        "Invalid input: expected non-empty vector of 3D coordinates");
-  }
-
-  size_t n_atoms = coords.size();
-  size_t n_dims = coords[0].dimension();
-
-  auto result = py::array_t<float>({n_atoms, n_dims});
-  auto buf = result.request();
-  float *ptr = static_cast<float *>(buf.ptr);
-
-  for (size_t i = 0; i < n_atoms; ++i) {
-    for (size_t j = 0; j < 3; ++j) {
-      ptr[i * 3 + j] = coords[i][j];
-    }
-  }
-
-  return result;
-}
-
-auto point3d_to_pyarray = [](const RDGeom::Point3D &vec) {
-  auto result = py::array_t<float>(3);
-  auto buf = result.request();
-  float *ptr = static_cast<float *>(buf.ptr);
-  ptr[0] = vec.x;
-  ptr[1] = vec.y;
-  ptr[2] = vec.z;
-  return result;
-};
-
-py::array string_array(const std::vector<std::string> &data) {
-  size_t n = data.size();
-  // Create a NumPy array with dtype=object to hold Python strings
-  auto result = py::array_t<PyObject *>(n);
-
-  auto buf = result.request();
-  auto **ptr = static_cast<PyObject **>(buf.ptr);
-
-  for (size_t i = 0; i < n; ++i) {
-    ptr[i] = PyUnicode_FromString(data[i].c_str());
-  }
-
-  return result;
-}
-
-py::array int_array(const std::vector<int> &data) {
-  size_t n = data.size();
-  auto result = py::array_t<int>(n);
-  auto buf = result.request();
-  int *ptr = static_cast<int *>(buf.ptr);
-
-  for (size_t i = 0; i < n; ++i) {
-    ptr[i] = data[i];
-  }
-
-  return result;
-}
-
-py::tuple factorize_residues(const std::vector<std::string> &resnames,
-                             const std::vector<int> &resids,
-                             const std::vector<std::string> &chains) {
-
-  auto result = Factorizer::factorize({resnames, resids, chains});
-
-  return py::make_tuple(
-      py::array_t<int>(result.indices.size(), result.indices.data()),
-      py::cast(result.resnames), py::cast(result.resids),
-      py::cast(result.chainlabels));
-}
 
 void bind(py::module &_lahuta) {
   py::class_<Luni> Luni(_lahuta, "LahutaCPP");
 
   py::class_<RingData>(_lahuta, "RingData")
       .def(py::init<>())
-      .def_readwrite("atom_ids", &RingData::atom_ids)
+      /*.def_readwrite("atom_ids", &RingData::atom_ids)*/
       .def("compute_angle", &RingData::compute_angle)
       /*.def("compute_angle2", &RingData::compute_angle2)*/
       .def_property_readonly(
           "center", [](RingData &rd) { return point3d_to_pyarray(rd.center); })
       .def_property_readonly(
-          "norm1", [](RingData &rd) { return point3d_to_pyarray(rd.norm1); })
-      .def_property_readonly(
-          "norm2", [](RingData &rd) { return point3d_to_pyarray(rd.norm2); });
+          "norm1", [](RingData &rd) { return point3d_to_pyarray(rd.norm); });
 
   py::class_<RingDataVec>(_lahuta, "RingDataVec")
       .def(py::init<>())
@@ -146,7 +74,7 @@ void bind(py::module &_lahuta) {
 
                                return result;
                              })
-      .def_property_readonly("norm1",
+      .def_property_readonly("norm",
                              [](RingDataVec &rdv) {
                                ssize_t n = rdv.rings.size();
                                ssize_t dim = 3;
@@ -155,28 +83,13 @@ void bind(py::module &_lahuta) {
                                double *ptr = static_cast<double *>(buf.ptr);
 
                                for (size_t i = 0; i < n; ++i) {
-                                 ptr[i * dim] = rdv.rings[i].norm1.x;
-                                 ptr[i * dim + 1] = rdv.rings[i].norm1.y;
-                                 ptr[i * dim + 2] = rdv.rings[i].norm1.z;
+                                 ptr[i * dim] = rdv.rings[i].norm.x;
+                                 ptr[i * dim + 1] = rdv.rings[i].norm.y;
+                                 ptr[i * dim + 2] = rdv.rings[i].norm.z;
                                }
 
                                return result;
-                             })
-      .def_property_readonly("norm2", [](RingDataVec &rdv) {
-        ssize_t n = rdv.rings.size();
-        ssize_t dim = 3;
-        auto result = py::array_t<double>({n, dim});
-        auto buf = result.request();
-        double *ptr = static_cast<double *>(buf.ptr);
-
-        for (size_t i = 0; i < n; ++i) {
-          ptr[i * dim] = rdv.rings[i].norm2.x;
-          ptr[i * dim + 1] = rdv.rings[i].norm2.y;
-          ptr[i * dim + 2] = rdv.rings[i].norm2.z;
-        }
-
-        return result;
-      });
+                             });
 
   // py::enum_<ContactType>(_lahuta, "ContactType")
   //     .value("AtomAtom", ContactType::AtomAtom)
@@ -485,6 +398,11 @@ void bind(py::module &_lahuta) {
                                &Luni::count_unique))
       .def("find_elements", &Luni::find_elements)
       .def("factorize", &Luni::factorize)
+      
+      .def("test_find_neighbors", &Luni::test_find_neighbors)
+      .def("assign_molstar_atom_types", &Luni::assign_molstar_atom_types)
+      .def("assign_arpeggio_atom_types", &Luni::assign_arpeggio_atom_types)
+
       .def("get_cutoff", &Luni::get_cutoff);
 
   py::class_<RDGeom::Point3D>(_lahuta, "Point3D")
@@ -500,8 +418,8 @@ PYBIND11_MODULE(_lahuta, m) {
   py::class_<RDKit::RWMol> lahutaRWMol(m, "RWMol");
   py::class_<RDKit::Conformer> lahutaConformer(m, "Conformer");
 
-  xbind_atom_types(m);
+  bind_atom_types(m);
+  bind_contacts(m);
   bind(m);
-  m.def("factorize_residues", &factorize_residues,
-        "Factorize residue information into unique combinations");
+  bind_common(m);
 }

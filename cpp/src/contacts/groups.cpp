@@ -13,7 +13,6 @@ std::vector<Feature> NegativeChargeGroup::identify(const RDKit::RWMol &mol, ResM
 
 std::vector<Feature> GroupTypeStrategy::identify(const RDKit::RWMol &mol) const {
 
-  // FIX: use the same approach as for Ring processing
   std::unordered_map<std::string, std::vector<const RDKit::Atom *>> residue_atoms;
   for (const auto *atom : mol.atoms()) {
     auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
@@ -30,6 +29,7 @@ std::vector<Feature> GroupTypeStrategy::identify(const RDKit::RWMol &mol) const 
     auto features = strategy->identify(mol, residue_atoms);
     group_features.insert(group_features.end(), features.begin(), features.end());
   }
+  // NOTE: `group_features` is not sorted as we get it from the strategies. If we do not sort `members` somehow, the currently assign ids just lock-in the order of the features as it already is.
   assign_ids(group_features);
   compute_centers(group_features);
   return group_features;

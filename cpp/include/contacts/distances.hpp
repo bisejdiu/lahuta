@@ -12,7 +12,8 @@
 
 namespace lahuta {
 
-struct AtomData {
+// check a similar definition in contacts/contacts.hpp
+struct _AtomData_ {
   const RDKit::Atom *atom;
   point_t position; // atom position
   size_t feature_id;
@@ -26,7 +27,7 @@ class KDTreeSearch {
   };
 
 public:
-  KDTreeSearch(const std::vector<AtomData> &all_atoms) {
+  KDTreeSearch(const std::vector<_AtomData_> &all_atoms) {
     for (const auto &atom_data : all_atoms) {
       positions_.push_back(atom_data.position);
       atom_data_.push_back(atom_data);
@@ -63,7 +64,7 @@ public:
 
 private:
   std::vector<point_t> positions_;
-  std::vector<AtomData> atom_data_;
+  std::vector<_AtomData_> atom_data_;
   std::unique_ptr<KDTree> tree_;
 };
 
@@ -125,12 +126,46 @@ private:
   const std::vector<const Feature *> &features_type_b_;
 };
 
+class SimplePairFeatures {
+public:
+  SimplePairFeatures(const std::vector<Feature> &group_features) : group_features_(group_features) {}
+
+  void process_features(AtomType type1, AtomType type2) {
+    features_a = get_features(group_features_, type1);
+    features_b = get_features(group_features_, type2);
+  }
+
+  Contacts find_interactions(InteractionType interaction_type, double distance_threshold) {
+    auto handler = create_handler(interaction_type);
+    compute_interactions(distance_threshold, *handler);
+    return handler->release();
+  }
+
+private:
+  void compute_interactions(double distance_threshold, InteractionBase &handler) {
+    BruteForceSearch brute_force_finder(features_a, features_b);
+    brute_force_finder.find_interactions(distance_threshold, handler);
+  }
+
+  static std::unique_ptr<InteractionBase> create_handler(InteractionType type) {
+    switch (type) {
+      case InteractionType::Ionic:
+        return std::make_unique<IonicInteraction>();
+      default:
+        throw std::invalid_argument("Unsupported interaction type");
+    }
+  }
+
+  const std::vector<Feature> &group_features_;
+  std::vector<const Feature *> features_a;
+  std::vector<const Feature *> features_b;
+};
+
 class PairFeatures {
 public:
   static const size_t MAX_DISTANCE_THRESHOLD = 1;
 
-  PairFeatures(const std::vector<Feature> &group_features)
-      : group_features_(group_features), num_type_a_atoms_(0), num_type_b_atoms_(0) {}
+  PairFeatures(const std::vector<Feature> &group_features) : group_features_(group_features) {}
 
   void process_features(AtomType type1, AtomType type2) {
     auto feature_a = get_features(group_features_, type1);
@@ -152,6 +187,7 @@ public:
 
   bool should_brute_force(
       const std::vector<const Feature *> &features_a, const std::vector<const Feature *> &features_b) {
+    /*return false;*/
     size_t num_distance_computations = features_a.size() * features_b.size();
     return num_distance_computations <= MAX_DISTANCE_THRESHOLD;
   }
@@ -173,11 +209,6 @@ private:
     for (const RDKit::Atom *atom : feature->members) {
       auto position = get_atom_position(atom);
       all_atoms_.push_back({atom, position, feature_id, is_type_a});
-      if (is_type_a) {
-        num_type_a_atoms_++;
-      } else {
-        num_type_b_atoms_++;
-      }
     }
   }
 
@@ -193,10 +224,10 @@ private:
 
   static std::unique_ptr<InteractionBase> create_handler(InteractionType type) {
     switch (type) {
-    case InteractionType::Ionic:
-      return std::make_unique<IonicInteraction>();
-    default:
-      throw std::invalid_argument("Unsupported interaction type");
+      case InteractionType::Ionic:
+        return std::make_unique<IonicInteraction>();
+      default:
+        throw std::invalid_argument("Unsupported interaction type");
     }
   }
 
@@ -207,10 +238,8 @@ private:
   }
 
   const std::vector<Feature> &group_features_;
-  std::vector<AtomData> all_atoms_;
+  std::vector<_AtomData_> all_atoms_;
   std::vector<const Feature *> feature_map_;
-  size_t num_type_a_atoms_;
-  size_t num_type_b_atoms_;
   std::vector<const Feature *> features_type_a_;
   std::vector<const Feature *> features_type_b_;
 };

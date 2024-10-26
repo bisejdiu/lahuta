@@ -3,13 +3,12 @@
 
 namespace lahuta {
 
-std::pair<std::vector<double>, std::vector<double>>
-calculate_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a,
-                const RDKit::Atom &atom_b, bool ignore_hydrogens) {
+std::pair<std::vector<double>, std::vector<double>> calculate_angle(
+    const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, bool ignore_hydrogens) {
   std::vector<double> angles;
   std::vector<double> angles_h;
 
-  auto &conf = mol.getConformer();
+  const auto &conf = mol.getConformer();
 
   auto &atom_a_pos = conf.getAtomPos(atom_a.getIdx());
   auto &atom_b_pos = conf.getAtomPos(atom_b.getIdx());
@@ -36,11 +35,9 @@ calculate_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a,
   return std::make_pair(angles, angles_h);
 }
 
-
-double compute_plane_angle(const RDGeom::Point3D &atom_a_pos,
-                           const RDGeom::Point3D &neighbor1_pos,
-                           const RDGeom::Point3D &neighbor2_pos,
-                           const RDGeom::Point3D &atom_b_pos) {
+double compute_plane_angle(
+    const RDGeom::Point3D &atom_a_pos, const RDGeom::Point3D &neighbor1_pos,
+    const RDGeom::Point3D &neighbor2_pos, const RDGeom::Point3D &atom_b_pos) {
 
   auto ab_vec = atom_b_pos - atom_a_pos;
 
@@ -57,8 +54,7 @@ double compute_plane_angle(const RDGeom::Point3D &atom_a_pos,
   return std::abs((M_PI / 2) - angle);
 }
 
-double compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a,
-                           const RDKit::Atom &atom_b) {
+double compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
 
   const RDKit::Conformer &conf = mol.getConformer();
   auto &atom_a_pos = conf.getAtomPos(atom_a.getIdx());
@@ -72,8 +68,7 @@ double compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a,
   }
 
   // Compute the angle using the positions
-  return compute_plane_angle(atom_a_pos, *neighbor_positions[0],
-                             *neighbor_positions[1], atom_b_pos);
+  return compute_plane_angle(atom_a_pos, *neighbor_positions[0], *neighbor_positions[1], atom_b_pos);
 }
 
 } // namespace lahuta

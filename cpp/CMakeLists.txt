@@ -59,6 +59,8 @@ add_subdirectory(external/kdtree)
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
             src/contacts/geometry.cpp src/nn.cpp src/contacts/charges.cpp 
+            src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
+            src/contacts/contacts.cpp src/contacts/metals.cpp src/contacts/features.cpp
             src/contacts/interactions.cpp src/valence_model.cpp src/contacts/groups.cpp
             src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
 )
@@ -109,7 +111,7 @@ if (USE_PYTHON)
   find_package(pybind11 2.6 CONFIG REQUIRED)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-  pybind11_add_module(lahuta_py python/lahuta.cpp python/at.cpp)
+  pybind11_add_module(lahuta_py python/at.cpp python/common.cpp python/contacts.cpp python/lahuta.cpp)
 
   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
     target_sources(lahuta_py PRIVATE 

@@ -4,4 +4,4 @@
 
 namespace py = pybind11;
 
-void xbind_atom_types(py::module &m);
+void bind_atom_types(py::module &m);

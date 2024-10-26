@@ -1,7 +1,6 @@
 #ifndef LAHUTA_BBONDS_HPP
 #define LAHUTA_BBONDS_HPP
 
-#include <iterator>
 #include <string>
 #include <string_view>
 
@@ -13,10 +12,9 @@
 #include "GraphMol/Atom.h"
 #include "GraphMol/MonomerInfo.h"
 
-namespace lahuta {
+using BondType = RDKit::Bond::BondType;
 
-// using namespace RDKit;
-typedef RDKit::Bond::BondType BondType;
+namespace lahuta {
 
 // Function pointer type for bond rules
 using HandlerFunc = BondType (*)(std::string_view s2, std::string_view s3);

@@ -2,10 +2,13 @@
 #include <iostream>
 #include <string>
 
+#include "Geometry/point.h"
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
+#include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrogen_bonds.hpp"
 #include "contacts/interactions.hpp"
+#include "contacts/utils.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "nn.hpp"
@@ -13,9 +16,204 @@
 #include "rings.hpp"
 #include "visitor.hpp"
 
-using namespace gemmi;
-using namespace RDKit;
 using namespace lahuta;
+
+// TODO: 1. Remove calls to symmetrizeSSSR
+//       2. Simplify atom typing and calls to different contact comutation logics
+
+void log_ring_info(RDKit::RWMol *mol, const RingData &ring) {
+  auto first_atom_index = ring.atom_ids().front();
+  const auto *first_atom = mol->getAtomWithIdx(first_atom_index);
+  const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
+  std::cout << "Added Ring with: " << res_info->getResidueName() << " " << ring.atoms.size() << " atoms"
+            << std::endl;
+
+  auto atom_ids_copy = ring.atom_ids();
+  std::sort(atom_ids_copy.begin(), atom_ids_copy.end());
+
+  std::string atom_ids;
+  for (const auto &atom_id : atom_ids_copy) {
+    atom_ids += std::to_string(atom_id) + " ";
+  }
+  std::cout << "Atoms: " << atom_ids << std::endl;
+}
+
+bool is_same_residue(const RDKit::RWMol &mol, const RingData &ring_a, const RingData &ring_b) {
+  auto atom_a = ring_a.atoms[0];
+  auto atom_b = ring_b.atoms[0];
+  auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a->getMonomerInfo());
+  auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b->getMonomerInfo());
+  return info_a->getResidueNumber() == info_b->getResidueNumber();
+}
+
+bool is_same_residue(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
+  auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());
+  auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b.getMonomerInfo());
+  return info_a->getResidueNumber() == info_b->getResidueNumber();
+}
+
+bool is_cation_pi(const AtomType &f1, const AtomType &f2) {
+  return (AtomTypeFlags::has(f1, AtomType::AROMATIC) && AtomTypeFlags::has(f2, AtomType::POS_IONISABLE))
+         || (AtomTypeFlags::has(f1, AtomType::POS_IONISABLE) && AtomTypeFlags::has(f2, AtomType::AROMATIC));
+}
+
+double calculate_distance_sq(RDGeom::Point3D a, RDGeom::Point3D b) {
+  double dx = a.x - b.x;
+  double dy = a.y - b.y;
+  double dz = a.z - b.z;
+  return dx * dx + dy * dy + dz * dz;
+}
+
+// Project a vector onto a plane defined by a normal vector
+RDGeom::Point3D project_on_plane(const RDGeom::Point3D &vector, const RDGeom::Point3D &plane_normal) {
+  // subtract component along the normal
+  double scalar_projection = vector.dotProduct(plane_normal);
+  RDGeom::Point3D projected_vec = vector - (plane_normal * scalar_projection);
+  return projected_vec;
+}
+
+double compute_in_plane_offset(
+    const RDGeom::Point3D &pos_a, const RDGeom::Point3D &pos_b, const RDGeom::Point3D &normal) {
+  RDGeom::Point3D vec_ab = pos_a - pos_b;
+  RDGeom::Point3D projected_vec = project_on_plane(vec_ab, normal);
+  double in_plane_offset = projected_vec.length();
+  return in_plane_offset;
+}
+
+constexpr double angleDevMax = deg_to_rad(30.0);  // 30 degrees in radians
+constexpr double deg180InRad = deg_to_rad(180.0); // π radians
+constexpr double deg90InRad = deg_to_rad(90.0);   // π/2 radians
+constexpr double pistacking_dist_max = 5.5;       // Maximum distance for π-stacking interactions
+constexpr double offset_max = 2.1;                // Maximum offset for π-stacking interactions
+
+void ionic(const Luni *luni, GeometryOptions opts, Contacts &container) {
+
+  const auto &conf = luni->get_molecule().getConformer();
+
+  const FeatureVec features_a = get_features(luni, AtomType::POS_IONISABLE);
+  const FeatureVec features_b = get_features(luni, AtomType::NEG_IONISABLE);
+
+  if (features_a.features.empty() || features_b.features.empty()) {
+    return;
+  }
+
+  double max_dist = 5.0;
+  FastNS grid(features_a.positions(), max_dist);
+  auto atom_pairs = grid.search(features_b.positions());
+
+  std::set<std::pair<size_t, size_t>> contacts;
+  for (const auto &[pair, dist] : atom_pairs) {
+    auto [feature_b_ix, feature_a_ix] = pair;
+    auto feature_a = features_a[feature_a_ix];
+    auto feature_b = features_b[feature_b_ix];
+
+    auto feature_pair = std::pair{std::minmax(feature_b.get_id(), feature_a.get_id())};
+    if (contacts.find(feature_pair) == contacts.end()) {
+      contacts.insert(feature_pair);
+
+      EntityID entity1 = make_entity_id(lahuta::EntityType::Group, feature_a.get_id());
+      EntityID entity2 = make_entity_id(lahuta::EntityType::Group, feature_b.get_id());
+
+      container.add(Contact(entity1, entity2, dist, InteractionType::Ionic));
+    }
+  }
+}
+
+void pistacking(const Luni *luni, GeometryOptions opts, Contacts &container) {
+
+  const auto &mol = luni->get_molecule();
+  const auto rings = luni->get_rings();
+
+  double dist_max = 6.0;
+  auto grid = FastNS(rings.centers(), dist_max);
+  auto nbrs = grid.self_search();
+
+  for (const auto &[pair, dist] : nbrs) {
+    auto [ring_index_a, ring_index_b] = pair;
+    const auto &ring_a = rings[ring_index_a];
+    const auto &ring_b = rings[ring_index_b];
+
+    if (is_same_residue(mol, ring_a, ring_b)) {
+      continue;
+    }
+
+    auto dot_product = ring_a.norm.dotProduct(ring_b.norm);
+    auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
+    if (angle > deg180InRad / 2.0) { // angle > 90 degrees
+      angle = deg180InRad - angle;
+    }
+
+    double offset_a = compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.norm);
+    double offset_b = compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.norm);
+
+    double offset = std::min(offset_a, offset_b);
+
+    if (offset <= offset_max) {
+      if (angle <= angleDevMax) {
+        std::cout << "Found PiStacking: Parallel" << std::endl;
+      } else if (std::abs(angle - deg90InRad) <= angleDevMax) {
+        std::cout << "Found PiStacking: T-Shaped" << std::endl;
+      }
+    }
+  }
+}
+
+void cationpi(const Luni *luni, GeometryOptions opts, Contacts container) {
+
+  const auto &mol = luni->get_molecule();
+  const auto rings = luni->get_rings();
+
+  auto features = get_features(luni, AtomType::POS_IONISABLE);
+  if (features.features.empty()) {
+    return;
+  }
+
+  double cationpi_max_dist = 6.0;
+  auto grid = FastNS(rings.centers(), cationpi_max_dist);
+  auto nbrs = grid.search(features.positions());
+
+  for (const auto &[pair, _] : nbrs) {
+    auto [feature_index, ring_index] = pair;
+    const auto &ring = rings.rings[ring_index];
+    const auto &feature = features[feature_index];
+
+    /*auto first_ring_atom = mol.getAtomWithIdx(ring.atom_ids.front());*/
+    auto first_ring_atom = ring.atoms.front();
+
+    if (is_same_residue(mol, *first_ring_atom, *feature.members.front())) {
+      continue;
+    }
+    auto offset = compute_in_plane_offset(feature.center, ring.center, ring.norm);
+
+    if (offset <= 2.2) {
+      std::cout << "--> Found CationPI" << std::endl;
+    }
+  }
+}
+
+void metalic(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
+
+  double metal_distmax_ = 3.0;
+  AtomDataVec metals = get_atom_data(luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);
+  AtomDataVec metal_binders = get_atom_data(luni, AtomType::IonicTypePartner | AtomType::DativeBondPartner);
+
+  auto m_grid = FastNS(metal_binders.positions(), metal_distmax_);
+  auto m_nbrs = m_grid.search(metals.positions());
+
+  for (const auto &[pair, dist] : m_nbrs) {
+    auto [metal_index, metal_binding_index] = pair;
+    const auto &metal = metals.data[metal_index];
+    const auto &metal_binding = metal_binders.data[metal_binding_index];
+
+    // NOTE: `is_metal_coordination` also checks for transition metal - transition metal coordination, but our
+    // approach does not capture this interaction. I think it is fine to ignore this case.
+    if (!is_metal_coordination(metal.type, metal_binding.type)
+        && !is_metal_coordination(metal_binding.type, metal.type)) {
+      continue;
+    }
+    std::cout << "Fond Metal Coordination" << std::endl;
+  }
+}
 
 int main(int argc, char const *argv[]) {
   auto start_total_time = std::chrono::high_resolution_clock::now();
@@ -26,138 +224,64 @@ int main(int argc, char const *argv[]) {
   std::string file_name = argv[1];
 
   Luni luni(file_name);
+  auto mol = &luni.get_molecule();
 
-  const auto &G = luni.get_features();
+  luni.assign_molstar_atom_types();
 
-  auto neighbors = luni.find_neighbors(6.0, 0);
-  /*auto vv = neighbors.type_filter(AtomType::AROMATIC, 0);*/
-  /*auto mol = &luni.get_molecule();*/
+  std::cout << "Number of Atoms: " << mol->getNumAtoms() << std::endl;
+  const auto &RINGS = luni.get_rings();
+  for (const auto &ring : RINGS.rings) {
+    std::cout << "NUMBER OF ATOMS: " << ring.atoms.size() << std::endl;
+    log_ring_info(mol, ring);
+    std::string ring_ids_str;
+    for (const auto &id : ring.atom_ids()) {
+      ring_ids_str += std::to_string(id) + " ";
+    }
+    std::cout << "Ring Atom IDs: " << ring_ids_str << std::endl;
+    std::cout << "NUMBER OF ATOMS: " << ring.atoms.size() << std::endl;
+    std::cout << std::endl;
+  }
+
+  /////////////////////////////////////////////////
+  std::cout << "> NEW Metal Coordination<" << std::endl;
+  /////////////////////////////////////////////////
+
+  Contacts mc(&luni);
+  GeometryOptions op3;
+  metalic(&luni, op3, mc);
+
+  /////////////////////////////////////////////////
+  std::cout << " NEW: Pi-Stacking<  " << std::endl;
+  /////////////////////////////////////////////////
+
+  Contacts cc(&luni);
+  GeometryOptions op;
+  pistacking(&luni, op, cc);
+
+  /////////////////////////////////////////////////
+  std::cout << " NEW: CationPi<  " << std::endl;
+  /////////////////////////////////////////////////
+
+  Contacts cpc(&luni);
+  GeometryOptions op2;
+  cationpi(&luni, op2, cpc);
+
+  /////////////////////////////////////////////////
+  /////////////////////////////////////////////////
 
   std::cout << "START New contact interface" << std::endl;
 
-  Contacts _c_(&luni);
+  Contacts _0(&luni);
+  GeometryOptions _opts_;
+  ionic(&luni, _opts_, _0);
 
-  auto mol = &luni.get_molecule();
-  const auto &atom_entities = luni.get_atom_entities();
-  auto atom_neighbors = luni.find_neighbors2(6.0, 10);
-  _c_.add_many(atom_neighbors, atom_entities);
-  /*_c_.sort_interactions();*/
-  /*_c_.print_interactions();*/
-  std::cout << "Hbond: " << _c_.size() << std::endl;
-  std::cout << "hbond is sorted: " << _c_.is_sorted << std::endl;
-
-  Contacts container(&luni);
-
-  container.add_many(atom_neighbors, atom_entities);
-  /*container.sort_interactions();*/
-  /*container.print_interactions();*/
-
-  std::vector<RingData> rings = luni.get_rings().rings;
-  const auto &ring_entities = luni.get_ring_entities();
-  auto ring_neighbors = luni.find_ring_neighbors2(6.0);
-  container.add_many(ring_neighbors, ring_entities, atom_entities);
-
-  std::cout << "Atom and Ring Interactions size: " << container.size() << std::endl;
-  /*container.sort_interactions();*/
-  /*container.print_interactions();*/
-  std::cout << "END Atom and Ring Interactions size: \n" << std::endl;
-
-  Contacts hbond_container(&luni);
-  GeometryOptions _opts = GeometryOptions();
-  NSResults _nb = luni.find_neighbors2(6.0, 0);
-  find_hydrogen_bonds(luni, _opts, _nb, hbond_container);
-  std::cout << "HBond Interactions size: " << hbond_container.size() << std::endl;
-  /*hbond_container.sort_interactions();*/
-  /*hbond_container.print_interactions();*/
-
-  Contacts weak_hbond_container(&luni);
-  find_weak_hydrogen_bonds(luni, _opts, _nb, weak_hbond_container);
-  std::cout << "Weak HBond Interactions size: " << weak_hbond_container.size() << std::endl;
-  /*weak_hbond_container.sort_interactions();*/
-  /*weak_hbond_container.print_interactions();*/
-
-  /*weak_hbond_container.add(Interaction(0, 7, 300.0, InteractionType::WeakHydrogenBond));*/
-  /*weak_hbond_container.sort_interactions();*/
-  /*weak_hbond_container.print_interactions();*/
-
-  /*std::cout << "" << std::endl;*/
-  /*IC i_sect_1 = hbond_container.set_intersection(weak_hbond_container);*/
-  /*i_sect_1.print_interactions();*/
-  /*std::cout << "--> Intersection size: " << i_sect_1.size() << std::endl;*/
-  /*hbond_container.make_generic();*/
-  /*weak_hbond_container.make_generic();*/
-  /*IC i_sect_2 = hbond_container.set_intersection(weak_hbond_container);*/
-  /*i_sect_2.print_interactions();*/
-  /*std::cout << "--> Intersection size: " << i_sect_2.size() << std::endl;*/
-
-  std::cout << "Number of rings: " << rings.size() << std::endl;
-
-  std::cout << "END New contact interface" << std::endl;
-
-  std::vector<AtomType> atypes = luni.get_atom_types();
-
-  std::cout << "STARTING ION CONTACT COMPUTATION" << std::endl;
-
-  std::vector<Feature> group_features = GroupTypeAnalysis::analyze(*mol);
-  Interactions processor(&luni, group_features, InteractionOptions{5.0});
-  auto ionic = processor.find_ionic_interactions();
-  std::cout << "Ionic Interactions size: " << ionic.size() << std::endl;
-
-  /*(ionic & ionic[0]).print_interactions();*/
-
-  /*auto r = ionic[2];*/
-  /*std::cout << "ionic &= r: " << (ionic &= r).size() << std::endl;*/
-  /*ionic |= ionic[0];*/
-  /**/
-  /*(ionic |= r).print_interactions();*/
-  /*(ionic |= ionic[0]);*/
-
-  container.add(ionic);
-  container.sort_interactions();
-  container.print_interactions();
-
-  std::cout << "New HBond: " << std::endl;
-  auto h2 = processor.find_hbond_interactions();
-  /*h2.sort_interactions();*/
-  /*h2.print_interactions();*/
-  std::cout << "HBond Interactions size: " << h2.size() << std::endl;
-  if (h2 == _c_) {
-    std::cout << "EQUAL:\n";
-  }
-
-  _c_ += h2;
-  _c_ ^= h2;
-  _c_ |= h2;
-  _c_ &= h2;
-  _c_ -= h2;
-
-  /*std::cout << "All contacts:" << std::endl;*/
-  /*container.print_interactions();*/
-
-  /*Pairs p = neighbors.get_pairs();*/
-  /*Distances d = neighbors.get_distances();*/
-  /**/
-  /*std::random_device rd;*/
-  /*std::mt19937 gen(rd());*/
-  /*std::uniform_int_distribution<> dis(0, p.size() - 1);*/
-  /*std::uniform_real_distribution<float> disf(0.0, 1.0); // random float between 0 and 1*/
-  /**/
-  /*std::cout << "p size: " << p.size() << "\n";*/
-  /*std::vector<AtomAtomPair> _p2; // store only the first 20 pairs*/
-  /*for (size_t i = 0; i < p.size(); ++i) {*/
-  /*  if (i < 20) {*/
-  /*    _p2.push_back(AtomAtomPair(p[i].first, p[i].second, d[i]));*/
-  /*  }*/
-  /*}*/
-  /*Neighbors<AtomAtomPair> _n1(neighbors);*/
-  /*Neighbors<AtomAtomPair> _n2(luni, _p2);*/
-  /*auto ns = _n1.intersection(_n1.get_data(), _n2.get_data());*/
-  /*auto _ns_ = _n1.intersection(_n2);*/
-  /*std::cout << "ns size: " << ns.size() << "\n";*/
-  /*std::cout << "_ns_ size: " << _ns_.size() << "\n";*/
-  /**/
-  /*auto nn = luni.find_ring_neighbors(6.0);*/
-  /*std::cout << "nn size: " << nn.size() << "\n";*/
+  // old interactions interface
+  InteractionOptions opts{5.0};
+  Interactions interactions(&luni, opts);
+  auto _1 = interactions.find_hbond_interactions();
+  auto _2 = interactions.find_weak_hbond_interactions();
+  auto _3 = interactions.find_hydrophobic_interactions();
+  auto _4 = interactions.find_halogen_interactions();
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());

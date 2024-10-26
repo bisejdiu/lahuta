@@ -19,6 +19,8 @@ std::pair<std::vector<double>, std::vector<double>> calculate_angle(
     const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b,
     bool ignore_hydrogens = true);
 
+// Function to calculate the angle out of the plane defined by two bonded
+// neighbors of atom_a
 double compute_plane_angle(
     const RDGeom::Point3D &atom_a_pos, const RDGeom::Point3D &neighbor1_pos,
     const RDGeom::Point3D &neighbor2_pos, const RDGeom::Point3D &atom_b_pos);

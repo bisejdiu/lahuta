@@ -91,12 +91,12 @@ void Contacts::print_interactions() const {
     }
     if (type == EntityType::Ring) {
       const RingData &ring = luni->get_entity<RingData>(interaction.entity1);
-      auto atom_ids = ring.atom_ids;
+      auto atom_ids = ring.atom_ids();
       for (const auto &atom_id : atom_ids) {
         e1_atoms += std::to_string(atom_id) + " ";
       }
       const RingData &ring2 = luni->get_entity<RingData>(interaction.entity2);
-      auto atom_ids2 = ring2.atom_ids;
+      auto atom_ids2 = ring2.atom_ids();
       for (const auto &atom_id : atom_ids2) {
         e2_atoms += std::to_string(atom_id) + " ";
       }

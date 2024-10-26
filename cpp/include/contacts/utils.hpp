@@ -1,10 +1,13 @@
 #ifndef LAHUTA_CONTACT_UTILS_HPP
 #define LAHUTA_CONTACT_UTILS_HPP
 
+#include "GraphMol/MonomerInfo.h"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
 
 namespace lahuta {
+
+constexpr double deg_to_rad(double degrees) { return degrees * (M_PI / 180.0); }
 
 /// Returns the atoms bonded to the given atom with the specified atomic number.
 inline std::vector<const RDKit::Atom *>
@@ -51,6 +54,13 @@ inline int get_h_count(RDKit::ROMol &mol, RDKit::Atom &atom) {
     }
   }
   return hCount;
+}
+
+inline bool are_residueids_close(
+    const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, int threshold) {
+  auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());
+  auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b.getMonomerInfo());
+  return std::abs(info_a->getResidueNumber() - info_b->getResidueNumber()) <= threshold;
 }
 
 } // namespace lahuta

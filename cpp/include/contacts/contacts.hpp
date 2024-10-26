@@ -1,54 +1,87 @@
 #ifndef LAHUTA_CONTACTS_HPP
 #define LAHUTA_CONTACTS_HPP
 
+#include "Geometry/point.h"
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
+#include "contacts/halogen_bonds.hpp"
+#include "contacts/hydrophobic.hpp"
+#include "contacts/metals.hpp"
 #include "hydrogen_bonds.hpp"
 #include "valence_model.hpp"
 
 namespace lahuta {
 
-struct AtomTypeParams {
-  AtomType atom_type;
-  std::string name;
-  std::vector<AtomType> components;
-};
-
-class AtomTypeStrategy {
+class AtomTypeBase {
 public:
-  virtual ~AtomTypeStrategy() = default;
+  virtual ~AtomTypeBase() = default;
   virtual AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const = 0;
 };
 
-class HBondAcceptorStrategy : public AtomTypeStrategy {
+class HBondAcceptorAtom : public AtomTypeBase {
 public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrogen_acceptor(mol, atom);
   }
 };
 
-class HBondDonorStrategy : public AtomTypeStrategy {
+class HBondDonorAtom : public AtomTypeBase {
 public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrogen_donor(mol, atom);
   }
 };
 
-class WeakHBondDonorStrategy : public AtomTypeStrategy {
+class WeakHBondDonorAtom : public AtomTypeBase {
 public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_weak_hydrogen_donor(mol, atom);
   }
 };
 
-class CompositeStrategy {
+class HydrophobicAtom : public AtomTypeBase {
+public:
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
+    return add_hydrophobic_atom(mol, atom);
+  }
+};
+
+class HalogenDonorAtom : public AtomTypeBase {
+public:
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
+    return add_halogen_donor(mol, atom);
+  }
+};
+
+class HalogenAcceptorAtom : public AtomTypeBase {
+public:
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
+    return add_halogen_acceptor(mol, atom);
+  }
+};
+
+class MetalAtom : public AtomTypeBase {
+public:
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
+    return add_metal(mol, atom);
+  }
+};
+
+class MetalBindingAtom : public AtomTypeBase {
+public:
+  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
+    return add_metal_binding(mol, atom);
+  }
+};
+
+class AtomTypeStrategy {
 private:
-  std::vector<std::unique_ptr<AtomTypeStrategy>> strategies;
+  std::vector<std::unique_ptr<AtomTypeBase>> strategies;
 
 public:
   // Add strategy to the composite
-  template <typename T> void addStrategy() {
-    static_assert(std::is_base_of<AtomTypeStrategy, T>::value, "T must derive from AtomTypeStrategy");
+  template <typename T> void add_strategy() {
+    static_assert(std::is_base_of<AtomTypeBase, T>::value, "T must derive from AtomTypeStrategy");
     strategies.push_back(std::make_unique<T>());
   }
 
@@ -62,26 +95,31 @@ public:
   }
 };
 
-class Factory {
+class AtomTypeFactory {
 public:
-  static CompositeStrategy create() {
-    CompositeStrategy composite;
+  static AtomTypeStrategy create() {
+    AtomTypeStrategy composite;
 
     // default strategies
-    composite.addStrategy<HBondDonorStrategy>();
-    composite.addStrategy<HBondAcceptorStrategy>();
-    composite.addStrategy<WeakHBondDonorStrategy>();
+    composite.add_strategy<HBondDonorAtom>();
+    composite.add_strategy<HBondAcceptorAtom>();
+    composite.add_strategy<WeakHBondDonorAtom>();
+    composite.add_strategy<HydrophobicAtom>();
+    composite.add_strategy<HalogenDonorAtom>();
+    composite.add_strategy<HalogenAcceptorAtom>();
+    composite.add_strategy<MetalAtom>();
+    composite.add_strategy<MetalBindingAtom>();
 
     return composite;
   }
 };
 
-class AtomTypeAnalyzer {
+class AtomTypeAnalysis {
 public:
-  static std::vector<AtomType> analyzeAtomTypes(const RDKit::RWMol &mol) {
+  static std::vector<AtomType> analyze(const RDKit::RWMol &mol) {
     std::vector<AtomType> atom_types = {mol.getNumAtoms(), AtomType::NONE};
 
-    auto strategy = Factory::create();
+    auto strategy = AtomTypeFactory::create();
 
     bool assign_charge = true, assign_h = true;
     ValenceModel valence_model{assign_charge, assign_h};
@@ -90,12 +128,56 @@ public:
     for (const auto &atom : mol.atoms()) {
       // FIX: double check assign_h default value and how to handle it
       // FIX: potentially expose options to the user
-      /*molstar_valence_model(mol, *atom, true, true);*/
       atom_types[atom->getIdx()] = strategy.identify(mol, *atom);
     }
     return atom_types;
   }
 };
+
+struct AtomData {
+  AtomType type;
+  const RDKit::Atom *atom;
+  const RDGeom::Point3D *pos;
+  size_t idx;
+
+  AtomData(AtomType type, const RDKit::Atom *atom, const RDGeom::Point3D *pos, size_t idx)
+      : type(type), atom(atom), pos(pos), idx(idx) {}
+};
+
+struct AtomDataVec {
+  std::vector<const AtomData> data;
+
+  RDGeom::POINT3D_VECT positions() const {
+    RDGeom::POINT3D_VECT pos;
+    pos.reserve(data.size());
+    for (const auto& atom_data : data) {
+      pos.push_back(*atom_data.pos);
+    }
+    return pos;
+  }
+
+  std::vector<size_t> atom_ids() const {
+    std::vector<size_t> ids;
+    ids.reserve(data.size());
+    for (const auto& atom_data : data) {
+      ids.push_back(atom_data.idx);
+    }
+    return ids;
+  }
+
+  const std::vector<const RDKit::Atom*> atoms() const {
+    std::vector<const RDKit::Atom*> atoms_vec;
+    atoms_vec.reserve(data.size());
+    for (const auto& atom_data : data) {
+      atoms_vec.push_back(atom_data.atom);
+    }
+    return atoms_vec;
+  }
+};
+
+using FeatureTypeCheckFunc = std::function<bool(const AtomType &, const AtomType &)>;
+const AtomDataVec get_atom_data(const Luni* luni, AtomType type, FeatureTypeCheckFunc check_func = AtomTypeFlags::has_any);
+std::vector<const RDKit::Atom *> get_atom_types(const Luni *luni, AtomType type);
 
 } // namespace lahuta
 

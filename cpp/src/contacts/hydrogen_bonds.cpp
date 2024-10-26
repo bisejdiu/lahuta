@@ -259,41 +259,37 @@ AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &ato
   return AtomType::NONE;
 }
 
-void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, NSResults &neighbors, Contacts &container) {
+void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container) {
 
-  // FIX: avoid calling symmetrizeSSSR, which does not scale very well, by
-  // instead using our own ring system
-  auto mol = luni.get_molecule();
-  if (!mol.getRingInfo()->isInitialized()) {
-    RDKit::MolOps::symmetrizeSSSR(mol);
-  }
+  const auto &mol = luni.get_molecule();
 
-  std::vector<AtomType> atypes = luni.get_atom_types();
-  std::vector<EntityID> entities = luni.get_atom_entities();
+  const AtomDataVec donor_atoms = get_atom_data(&luni, AtomType::HBOND_DONOR);
+  const AtomDataVec acceptor_atoms = get_atom_data(&luni, AtomType::HBOND_ACCEPTOR);
 
-  for (const auto &[pair, dist] : neighbors) {
-    auto atom1 = mol.getAtomWithIdx(pair.first);
-    auto atom2 = mol.getAtomWithIdx(pair.second);
+  auto max_dist = std::max(opts.max_dist_sq, opts.max_sulfur_dist_sq);
 
-    auto atom1_type = atypes[pair.first];
-    auto atom2_type = atypes[pair.second];
+  auto grid = FastNS(acceptor_atoms.positions(), std::sqrt(max_dist) + 0.1); // + small buffer
+  auto nbrs = grid.search(donor_atoms.positions());
 
-    RDKit::Atom *don, *acc;
-    if (AtomTypeFlags::has(atom1_type, AtomType::HBOND_ACCEPTOR)
-        && AtomTypeFlags::has(atom2_type, AtomType::HBOND_DONOR)) {
-      don = atom2;
-      acc = atom1;
-    } else if (
-        AtomTypeFlags::has(atom2_type, AtomType::HBOND_ACCEPTOR)
-        && AtomTypeFlags::has(atom1_type, AtomType::HBOND_DONOR)) {
-      don = atom1;
-      acc = atom2;
-    } else {
+  for (const auto &[pair, dist] : nbrs) {
+    auto [donor_index, acceptor_index] = pair;
+    const auto &donor = donor_atoms.data[donor_index];
+    const auto &acceptor = acceptor_atoms.data[acceptor_index];
+
+    // NOTE: not really needed if we also check for same residue
+    if (donor.atom->getIdx() == acceptor.atom->getIdx()) {
       continue;
     }
 
+    // FIX: improve this (it only checks residue numbers)
+    if (are_residueids_close(mol, *donor.atom, *acceptor.atom, 1)) {
+      continue;
+    }
+
+    // TODO: Potential optimization by searching only around S atoms.
+    // Would likely complicate the code with minor performance gains
     double max_dist_sq;
-    if (don->getAtomicNum() == 16 || acc->getAtomicNum() == 16) {
+    if (donor.atom->getAtomicNum() == 16 || acceptor.atom->getAtomicNum() == 16) {
       max_dist_sq = opts.max_sulfur_dist_sq;
     } else {
       max_dist_sq = opts.max_dist_sq;
@@ -302,16 +298,19 @@ void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, NSResults &nei
       continue;
     }
 
-    if (!opts.include_water && is_water_hbond(*don, *acc)) {
+    if (!opts.include_water && is_water_hbond(*donor.atom, *acceptor.atom)) {
       continue;
     }
 
-    if (!are_geometrically_viable(mol, *don, *acc, opts)) {
+    if (!are_geometrically_viable(mol, *donor.atom, *acceptor.atom, opts)) {
       continue;
     }
 
-    container.add(
-        Contact(EntityID(don->getIdx()), EntityID(acc->getIdx()), dist, InteractionType::HydrogenBond));
+    container.add(Contact(
+        EntityID(donor.atom->getIdx()),
+        EntityID(acceptor.atom->getIdx()),
+        dist,
+        InteractionType::HydrogenBond));
   }
 }
 
@@ -360,6 +359,45 @@ void find_weak_hydrogen_bonds(
 
     container.add(
         Contact(EntityID(don->getIdx()), EntityID(acc->getIdx()), dist, InteractionType::WeakHydrogenBond));
+  }
+}
+
+void find_weak_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container) {
+
+  const auto &mol = luni.get_molecule();
+
+  const auto weak_donor_atoms = get_atom_data(&luni, AtomType::WEAK_HBOND_DONOR);
+  const auto acceptor_atoms = get_atom_data(&luni, AtomType::HBOND_ACCEPTOR);
+
+  auto grid = FastNS(acceptor_atoms.positions(), std::sqrt(opts.max_dist_sq));
+  auto nbrs = grid.search(weak_donor_atoms.positions());
+
+  for (const auto &[pair, dist] : nbrs) {
+    auto [donor_index, acceptor_index] = pair;
+    const auto &donor = weak_donor_atoms.data[donor_index];
+    const auto &acceptor = acceptor_atoms.data[acceptor_index];
+
+    if (donor.atom->getIdx() == acceptor.atom->getIdx()) {
+      continue;
+    }
+
+    if (are_residueids_close(mol, *donor.atom, *acceptor.atom, 1)) {
+      continue;
+    }
+
+    if (!opts.include_water && is_water_hbond(*donor.atom, *acceptor.atom)) {
+      continue;
+    }
+
+    if (!are_geometrically_viable(mol, *donor.atom, *acceptor.atom, opts)) {
+      continue;
+    }
+
+    container.add(Contact(
+        EntityID(donor.atom->getIdx()),
+        EntityID(acceptor.atom->getIdx()),
+        dist,
+        InteractionType::WeakHydrogenBond));
   }
 }
 

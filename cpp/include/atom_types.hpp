@@ -9,27 +9,97 @@
 #include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 
 #include "bonds/token-gperf-generated.hpp"
+#include "bonds/token.h"
 
 namespace lahuta {
 
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
 
 enum class AtomType : uint32_t {
-  NONE = 0x0,                // 0
-  HBOND_ACCEPTOR = 0x1,      // 1
-  HBOND_DONOR = 0x2,         // 2
-  WEAK_HBOND_ACCEPTOR = 0x4, // 4
-  WEAK_HBOND_DONOR = 0x8,    // 8
-  POS_IONISABLE = 0x10,      // 16
-  NEG_IONISABLE = 0x20,      // 32
-  CARBONYL_OXYGEN = 0x40,    // 64
-  CARBONYL_CARBON = 0x80,    // 128
-  AROMATIC = 0x100,          // 256
-  HYDROPHOBIC = 0x200,       // 512
-  XBOND_ACCEPTOR = 0x400,    // 1024
-  XBOND_DONOR = 0x800,       // 2048
-  INVALID = 0x1000,          // 4096
+  NONE = 0x0,                 // 0
+  HBOND_ACCEPTOR = 0x1,       // 1
+  HBOND_DONOR = 0x2,          // 2
+  WEAK_HBOND_ACCEPTOR = 0x4,  // 4
+  WEAK_HBOND_DONOR = 0x8,     // 8
+  POS_IONISABLE = 0x10,       // 16
+  NEG_IONISABLE = 0x20,       // 32
+  CARBONYL_OXYGEN = 0x40,     // 64
+  CARBONYL_CARBON = 0x80,     // 128
+  AROMATIC = 0x100,           // 256
+  HYDROPHOBIC = 0x200,        // 512
+  XBOND_ACCEPTOR = 0x400,     // 1024
+  XBOND_DONOR = 0x800,        // 2048
+  IonicTypePartner = 0x1000,  // 4096
+  DativeBondPartner = 0x2000, // 8192
+  TransitionMetal = 0x4000,   // 16384
+  IonicTypeMetal = 0x8000,    // 32768
+  INVALID = 0x10000,          // 65536
 };
+
+namespace detail {
+template <AtomType First, AtomType Second> constexpr bool check_order() {
+  return static_cast<std::underlying_type_t<AtomType>>(First)
+         < static_cast<std::underlying_type_t<AtomType>>(Second);
+}
+
+constexpr bool validate_enum_order() {
+  // Check that each enum value is less than the next one
+  return check_order<AtomType::NONE, AtomType::HBOND_ACCEPTOR>()
+         && check_order<AtomType::HBOND_ACCEPTOR, AtomType::HBOND_DONOR>()
+         && check_order<AtomType::HBOND_DONOR, AtomType::WEAK_HBOND_ACCEPTOR>()
+         && check_order<AtomType::WEAK_HBOND_ACCEPTOR, AtomType::WEAK_HBOND_DONOR>()
+         && check_order<AtomType::WEAK_HBOND_DONOR, AtomType::POS_IONISABLE>()
+         && check_order<AtomType::POS_IONISABLE, AtomType::NEG_IONISABLE>()
+         && check_order<AtomType::NEG_IONISABLE, AtomType::CARBONYL_OXYGEN>()
+         && check_order<AtomType::CARBONYL_OXYGEN, AtomType::CARBONYL_CARBON>()
+         && check_order<AtomType::CARBONYL_CARBON, AtomType::AROMATIC>()
+         && check_order<AtomType::AROMATIC, AtomType::HYDROPHOBIC>()
+         && check_order<AtomType::HYDROPHOBIC, AtomType::XBOND_ACCEPTOR>()
+         && check_order<AtomType::XBOND_ACCEPTOR, AtomType::XBOND_DONOR>()
+         && check_order<AtomType::XBOND_DONOR, AtomType::IonicTypePartner>()
+         && check_order<AtomType::IonicTypePartner, AtomType::DativeBondPartner>()
+         && check_order<AtomType::DativeBondPartner, AtomType::TransitionMetal>()
+         && check_order<AtomType::TransitionMetal, AtomType::IonicTypeMetal>()
+         && check_order<AtomType::IonicTypeMetal, AtomType::INVALID>();
+}
+} // namespace detail
+
+// enum values must be in ascending order
+static_assert(detail::validate_enum_order(), "AtomType enum values must be in ascending order");
+
+namespace detail {
+constexpr bool is_power_of_two(uint32_t x) { return x == 0 || (x & (x - 1)) == 0; }
+
+constexpr bool validate_power_of_two() {
+  return is_power_of_two(static_cast<uint32_t>(AtomType::NONE))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::HBOND_ACCEPTOR))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::HBOND_DONOR))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::WEAK_HBOND_ACCEPTOR))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::WEAK_HBOND_DONOR))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::POS_IONISABLE))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::NEG_IONISABLE))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::CARBONYL_OXYGEN))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::CARBONYL_CARBON))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::AROMATIC))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::HYDROPHOBIC))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::XBOND_ACCEPTOR))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::XBOND_DONOR))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::IonicTypePartner))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::DativeBondPartner))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::TransitionMetal))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::IonicTypeMetal))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::INVALID));
+}
+} // namespace detail
+
+// enum values must be powers of two
+static_assert(
+    detail::validate_power_of_two(), "AtomType enum values must be powers of 2 (except NONE which can be 0)");
+
+/// Convert an unsigned integer to an AtomType
+constexpr AtomType operator""_at(unsigned long long int value) {
+  return static_cast<AtomType>(static_cast<uint32_t>(value));
+}
 
 inline AtomType string_to_atom_type(const std::string &flag_name) {
   static const std::unordered_map<std::string, AtomType> stringToEnum = {
@@ -46,6 +116,10 @@ inline AtomType string_to_atom_type(const std::string &flag_name) {
       {"HYDROPHOBIC", AtomType::HYDROPHOBIC},
       {"XBOND_ACCEPTOR", AtomType::XBOND_ACCEPTOR},
       {"XBOND_DONOR", AtomType::XBOND_DONOR},
+      {"IONIC_TYPE_PARTNER", AtomType::IonicTypePartner},
+      {"DATIVE_PARTNER", AtomType::DativeBondPartner},
+      {"TRANSITION_METAL", AtomType::TransitionMetal},
+      {"IONIC_TYPE_METAL", AtomType::IonicTypeMetal},
       {"INVALID", AtomType::INVALID}};
 
   auto it = stringToEnum.find(flag_name);
@@ -55,43 +129,42 @@ inline AtomType string_to_atom_type(const std::string &flag_name) {
   throw std::invalid_argument("Invalid AtomType flag name: " + flag_name);
 }
 
-inline AtomType operator|(AtomType lhs, AtomType rhs) {
+constexpr AtomType operator|(AtomType lhs, AtomType rhs) {
   return static_cast<AtomType>(static_cast<uint32_t>(lhs) | static_cast<uint32_t>(rhs));
 }
 
-inline AtomType &operator|=(AtomType &lhs, AtomType rhs) {
+constexpr AtomType &operator|=(AtomType &lhs, AtomType rhs) {
   lhs = lhs | rhs;
   return lhs;
 }
 
-inline AtomType operator&(AtomType lhs, AtomType rhs) {
+constexpr AtomType operator&(AtomType lhs, AtomType rhs) {
   return static_cast<AtomType>(static_cast<uint32_t>(lhs) & static_cast<uint32_t>(rhs));
 }
 
-inline AtomType &operator&=(AtomType &lhs, AtomType rhs) {
+constexpr AtomType &operator&=(AtomType &lhs, AtomType rhs) {
   lhs = lhs & rhs;
   return lhs;
 }
 
-inline AtomType operator^(AtomType lhs, AtomType rhs) {
+constexpr AtomType operator^(AtomType lhs, AtomType rhs) {
   return static_cast<AtomType>(static_cast<uint32_t>(lhs) ^ static_cast<uint32_t>(rhs));
 }
 
-inline AtomType &operator^=(AtomType &lhs, AtomType rhs) {
+constexpr AtomType &operator^=(AtomType &lhs, AtomType rhs) {
   lhs = lhs ^ rhs;
   return lhs;
 }
 
-inline AtomType operator~(AtomType flag) { return static_cast<AtomType>(~static_cast<uint32_t>(flag)); }
+constexpr AtomType operator~(AtomType flag) { return static_cast<AtomType>(~static_cast<uint32_t>(flag)); }
 
+// FIX: make consistent (naming, order, etc.)
 namespace AtomTypeFlags {
 inline bool has(AtomType flags, AtomType flag) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) != 0;
 }
-
-inline bool has_enum_as_string(AtomType flags, std::string flag_name) {
-  return has(flags, string_to_atom_type(flag_name));
-}
+inline bool has_any(AtomType flags, AtomType flag) { return (flags & flag) != AtomType::NONE; }
+inline bool has_all(AtomType flags, AtomType flag) { return (flags & flag) == flag; }
 
 inline AtomType remove(AtomType flags, AtomType flag) { return flags & ~flag; }
 
@@ -108,6 +181,10 @@ inline bool none(AtomType flags, AtomType toCheck) {
 }
 
 inline bool empty(AtomType flags) { return flags == AtomType::NONE; }
+
+inline bool has_enum_as_string(AtomType flags, std::string flag_name) {
+  return has(flags, string_to_atom_type(flag_name));
+}
 
 inline std::vector<AtomType> print_flags(AtomType flags) {
   std::vector<AtomType> result;
@@ -155,6 +232,12 @@ inline std::string atom_type_to_string(AtomType type) {
     result += "XBOND_ACCEPTOR ";
   if (has(type, AtomType::XBOND_DONOR))
     result += "XBOND_DONOR ";
+  if (has(type, AtomType::IonicTypePartner))
+    result += "IONIC_TYPE_PARTNER ";
+  if (has(type, AtomType::DativeBondPartner))
+    result += "DATIVE_PARTNER ";
+  if (has(type, AtomType::TransitionMetal))
+    result += "TRANSITION_METAL ";
   if (has(type, AtomType::INVALID))
     result += "UNKNOWN ";
 
@@ -187,256 +270,212 @@ inline auto encode_atom_name = [](const std::string &name) {
   return encode_uint(name[0], name[1], name[2]);
 };
 
-// FIX: This function does not need to check for non-standard residue; instead
-// the caller should take over that responsibility.
+// clang-format off
+constexpr resTokenType operator"" _rt(char c) {
+  if (c >= 'a' && c <= 'z') {
+    c -= 32;
+  }
+  switch (c) {
+    case 'G': return resTokenType::GLY;
+    case 'A': return resTokenType::ALA;
+    case 'V': return resTokenType::VAL;
+    case 'L': return resTokenType::LEU;
+    case 'I': return resTokenType::ILE;
+    case 'S': return resTokenType::SER;
+    case 'T': return resTokenType::THR;
+    case 'C': return resTokenType::CYS;
+    case 'M': return resTokenType::MET;
+    case 'P': return resTokenType::PRO;
+    case 'F': return resTokenType::PHE;
+    case 'Y': return resTokenType::TYR;
+    case 'W': return resTokenType::TRP;
+    case 'H': return resTokenType::HIS;
+    case 'E': return resTokenType::GLU;
+    case 'D': return resTokenType::ASP;
+    case 'N': return resTokenType::ASN;
+    case 'Q': return resTokenType::GLN;
+    case 'K': return resTokenType::LYS;
+    case 'R': return resTokenType::ARG;
+    default: throw "Invalid amino acid code";
+  }
+}
+
+constexpr bool is_residue(resTokenType entry, const char* values) {
+  while (*values) {
+    if (entry == operator"" _rt(*values)) {
+      return true;
+    }
+    ++values;
+  }
+  return false;
+}
+/*inline bool is_residue(std::string resname, const char* values) {*/
+/*  resTokenType entry = res_name_table(resname.c_str(), resname.length());*/
+/*  while (*values) {*/
+/*    if (entry == operator"" _rt(*values)) {*/
+/*      return true;*/
+/*    }*/
+/*    ++values;*/
+/*  }*/
+/*  return false;*/
+/*}*/
+
+// clang-format on
+
 static AtomType get_atom_type(RDKit::Atom *at) {
-  // if (at->getAtomicNum() == 1) {
-  //   return AtomType::HYDROGEN;
-  // }
 
   auto *info = static_cast<RDKit::AtomPDBResidueInfo *>(at->getMonomerInfo());
+  auto resname = info->getResidueName();
 
-  // FIX: move check to the caller?
-  auto entry = lahuta::res_name_table(info->getResidueName().c_str(), info->getResidueName().length());
+  resTokenType entry = lahuta::res_name_table(resname.c_str(), resname.length());
 
-  // only standard amino acids handled
+  // only standard amino acids
   if (static_cast<int>(entry) >= 20) {
     return AtomType::INVALID;
   }
 
-  std::string name = info->getName();
-
-  switch (encode_atom_name(name)) {
-  case encode_uint('N'):
-    if (info->getResidueName() == "PRO") {
-      return AtomType::NONE;
-    }
-  case encode_uint('O'):
-    return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::CARBONYL_OXYGEN;
-  case encode_uint('C'):
-    return AtomType::CARBONYL_CARBON;
-  case encode_uint('C', 'B'):
-    return AtomType::HYDROPHOBIC;
-  case encode_uint('C', 'D'):
-    if (info->getResidueName() == "LYS") {
-      return AtomType::HYDROPHOBIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'D', '1'): {
-    if (info->getResidueName() == "TRP") {
-      return AtomType::AROMATIC;
-    }
-    auto val = AtomType::HYDROPHOBIC;
-    if (info->getResidueName() == "LEU" || info->getResidueName() == "ILE") {
-      return val;
-    }
-    if (info->getResidueName() == "TYR" || info->getResidueName() == "PHE") {
-      val |= AtomType::AROMATIC;
-      return val;
-    }
-    return AtomType::NONE;
+  switch (encode_atom_name(info->getName())) {
+    case encode_uint('N'):
+      return entry == 'P'_rt ? 0_at : 2_at;
+    case encode_uint('O'):
+      return 1093_at;
+    case encode_uint('C'):
+      return 128_at;
+    case encode_uint('C', 'A'):
+      return 8_at;
+    case encode_uint('C', 'B'):
+      return is_residue(entry, "STY") ? 8_at : 520_at;
+    case encode_uint('C', 'D'):
+      return is_residue(entry, "K") ? 520_at : is_residue(entry, "RP") ? 8_at : 0_at;
+    case encode_uint('C', 'D', '1'):
+      return is_residue(entry, "W")    ? 256_at
+             : is_residue(entry, "LI") ? 520_at
+             : is_residue(entry, "YF") ? 776_at
+                                       : 0_at;
+    case encode_uint('C', 'D', '2'):
+      return is_residue(entry, "L")    ? 520_at
+             : is_residue(entry, "YF") ? 776_at
+             : is_residue(entry, "W")  ? 768_at
+             : is_residue(entry, "H")  ? 1303_at
+                                       : 0_at;
+    case encode_uint('C', 'E', '1'):
+      return is_residue(entry, "H") ? 1303_at : is_residue(entry, "FY") ? 776_at : 0_at;
+    case encode_uint('C', 'E', '2'):
+      return is_residue(entry, "W") ? 256_at : is_residue(entry, "FY") ? 776_at : 0_at;
+    case encode_uint('C', 'E', '3'):
+      return is_residue(entry, "W") ? 768_at : 0_at;
+    case encode_uint('C', 'E'):
+      return (entry == 'M'_rt) ? 520_at : (entry == 'K'_rt) ? 8_at : 0_at;
+    case encode_uint('C', 'G'):
+      return is_residue(entry, "RQELKMP") ? 520_at
+             : is_residue(entry, "F")     ? 776_at
+             : is_residue(entry, "WY")    ? 768_at
+             : is_residue(entry, "H")     ? 272_at
+                                          : 0_at;
+    case encode_uint('C', 'G', '1'):
+      return is_residue(entry, "IV") ? 520_at : 0_at;
+    case encode_uint('C', 'G', '2'):
+      return is_residue(entry, "IVT") ? 520_at : 0_at;
+    case encode_uint('C', 'H', '2'):
+      return is_residue(entry, "W") ? 776_at : 0_at;
+    case encode_uint('C', 'Z'):
+      return is_residue(entry, "R")   ? 16_at
+             : is_residue(entry, "F") ? 776_at
+             : is_residue(entry, "Y") ? 256_at
+                                      : 0_at;
+    case encode_uint('C', 'Z', '2'):
+      return is_residue(entry, "W") ? 776_at : 0_at;
+    case encode_uint('C', 'Z', '3'):
+      return is_residue(entry, "W") ? 776_at : 0_at;
+    case encode_uint('N', 'D', '1'):
+      return is_residue(entry, "H") ? 1303_at : 0_at;
+    case encode_uint('N', 'D', '2'):
+      return is_residue(entry, "N") ? 1033_at : 0_at;
+    case encode_uint('N', 'E', '1'):
+      return is_residue(entry, "W") ? 258_at : 0_at;
+    case encode_uint('N', 'E', '2'):
+      return is_residue(entry, "Q") ? 1031_at : is_residue(entry, "H") ? 1303_at : 0_at;
+    case encode_uint('N', 'E'):
+      return is_residue(entry, "R") ? 18_at : 0_at;
+    case encode_uint('N', 'H', '1'):
+    case encode_uint('N', 'H', '2'):
+      return is_residue(entry, "R") ? 20_at : 0_at;
+    case encode_uint('N', 'Z'):
+      return is_residue(entry, "K") ? 18_at : 0_at;
+    case encode_uint('O', 'D', '1'):
+      return is_residue(entry, "N") ? 1031_at : is_residue(entry, "D") ? 1061_at : 0_at;
+    case encode_uint('O', 'D', '2'):
+      return is_residue(entry, "D") ? 1061_at : 0_at;
+    case encode_uint('O', 'E', '1'):
+      return is_residue(entry, "Q") ? 1031_at : is_residue(entry, "E") ? 1060_at : 0_at;
+    case encode_uint('O', 'E', '2'):
+      return is_residue(entry, "E") ? 1061_at : 0_at;
+    case encode_uint('O', 'G', '1'):
+      return is_residue(entry, "T") ? 1031_at : 0_at;
+    case encode_uint('O', 'G'):
+      return is_residue(entry, "S") ? 1031_at : 0_at;
+    case encode_uint('O', 'H'):
+      return is_residue(entry, "Y") ? 1031_at : 0_at;
+    case encode_uint('S', 'D'):
+      return is_residue(entry, "M") ? 1541_at : 0_at;
+    case encode_uint('S', 'G'):
+      return is_residue(entry, "C") ? 1031_at : 0_at;
+    case encode_uint('O', 'X', 'T'):
+      return 1029_at;
+    default:
+      return 0_at;
   }
-  case encode_uint('C', 'D', '2'):
-    if (info->getResidueName() == "LEU") {
-      return AtomType::HYDROPHOBIC;
-    }
-    if (info->getResidueName() == "TYR" || info->getResidueName() == "PHE") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "TRP") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "HIS") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::POS_IONISABLE
-             | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'E', '1'):
-    if (info->getResidueName() == "HIS") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::POS_IONISABLE
-             | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "PHE" || info->getResidueName() == "TYR") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'E', '2'):
-    if (info->getResidueName() == "PHE" || info->getResidueName() == "TYR") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "TRP") {
+}
+
+inline AtomType get_predef_aromatics(RDKit::Atom *at) {
+  auto *info = static_cast<RDKit::AtomPDBResidueInfo *>(at->getMonomerInfo());
+  resTokenType entry = res_name_table(info->getResidueName().c_str(), info->getResidueName().length());
+
+  // Only consider standard residues
+  if (static_cast<int>(entry) >= 20) {
+    return AtomType::INVALID;
+  }
+
+  switch (entry) {
+    case resTokenType::PHE:
+    case resTokenType::TYR:
+    case resTokenType::TRP:
+    case resTokenType::HIS:
+      break;
+    default:
+      return AtomType::NONE;
+  }
+
+  const std::string atom_name = info->getName();
+  switch (encode_atom_name(atom_name)) {
+
+    case encode_uint('C', 'D', '1'):
+    case encode_uint('C', 'E', '2'):
+      return !is_residue(entry, "H") ? AtomType::AROMATIC : AtomType::NONE;
+
+    case encode_uint('C', 'D', '2'):
+    case encode_uint('C', 'G'):
       return AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'E', '3'):
-    if (info->getResidueName() == "TRP") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'E'):
-    if (info->getResidueName() == "MET") {
-      return AtomType::HYDROPHOBIC;
-    }
-    /*if (info->getResidueName() == "LYS") {*/
-    /*  return AtomType::WEAK_HBOND_DONOR;*/
-    /*}*/
-    return AtomType::NONE;
-  case encode_uint('C', 'G'):
-    if (info->getResidueName() == "ARG" || info->getResidueName() == "GLN" || info->getResidueName() == "GLU"
-        || info->getResidueName() == "LEU" || info->getResidueName() == "LYS"
-        || info->getResidueName() == "MET") {
-      return AtomType::HYDROPHOBIC;
-    }
-    if (info->getResidueName() == "PRO") {
-      return AtomType::HYDROPHOBIC;
-    }
-    if (info->getResidueName() == "PHE") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "TRP" || info->getResidueName() == "TYR") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "HIS") {
-      return AtomType::POS_IONISABLE | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'G', '1'):
-    if (info->getResidueName() == "ILE" || info->getResidueName() == "VAL") {
-      return AtomType::HYDROPHOBIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'G', '2'):
-    if (info->getResidueName() == "ILE" || info->getResidueName() == "VAL"
-        || info->getResidueName() == "THR") {
-      return AtomType::HYDROPHOBIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'H', '2'):
-    if (info->getResidueName() == "TRP") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'Z'):
-    if (info->getResidueName() == "ARG") {
-      return AtomType::POS_IONISABLE;
-    }
-    if (info->getResidueName() == "PHE") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    if (info->getResidueName() == "TYR") {
-      return AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'Z', '2'):
-    if (info->getResidueName() == "TRP") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('C', 'Z', '3'):
-    if (info->getResidueName() == "TRP") {
-      return AtomType::HYDROPHOBIC | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'D', '1'):
-    if (info->getResidueName() == "HIS") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::POS_IONISABLE
-             | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'D', '2'):
-    if (info->getResidueName() == "ASN") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'E', '1'):
-    if (info->getResidueName() == "TRP") {
-      return AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'E', '2'):
-    if (info->getResidueName() == "GLN") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    if (info->getResidueName() == "HIS") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::POS_IONISABLE
-             | AtomType::AROMATIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'E'):
-    if (info->getResidueName() == "ARG") {
-      return AtomType::POS_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'H', '1'):
-    if (info->getResidueName() == "ARG") {
-      return AtomType::POS_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'H', '2'):
-    if (info->getResidueName() == "ARG") {
-      return AtomType::POS_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('N', 'Z'):
-    if (info->getResidueName() == "LYS") {
-      return AtomType::POS_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'D', '1'):
-    if (info->getResidueName() == "ASN") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    if (info->getResidueName() == "ASP") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::NEG_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'D', '2'):
-    if (info->getResidueName() == "ASP") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::NEG_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'E', '1'):
-    if (info->getResidueName() == "GLN") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    if (info->getResidueName() == "GLU") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::NEG_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'E', '2'):
-    if (info->getResidueName() == "GLU") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::NEG_IONISABLE;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'G', '1'):
-    if (info->getResidueName() == "THR") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'G'):
-    if (info->getResidueName() == "SER") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'H'):
-    if (info->getResidueName() == "TYR") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    return AtomType::NONE;
-  case encode_uint('S', 'D'):
-    if (info->getResidueName() == "MET") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR | AtomType::HYDROPHOBIC;
-    }
-    return AtomType::NONE;
-  case encode_uint('S', 'G'):
-    if (info->getResidueName() == "CYS") {
-      return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-    }
-    return AtomType::NONE;
-  case encode_uint('O', 'X', 'T'):
-    return AtomType::XBOND_ACCEPTOR | AtomType::WEAK_HBOND_ACCEPTOR;
-  default:
-    return AtomType::NONE;
+
+    case encode_uint('C', 'E', '1'):
+      return !is_residue(entry, "W") ? AtomType::AROMATIC : AtomType::NONE;
+
+    case encode_uint('C', 'E', '3'):
+    case encode_uint('C', 'Z', '2'):
+    case encode_uint('C', 'Z', '3'):
+    case encode_uint('C', 'H', '2'):
+    case encode_uint('N', 'E', '1'):
+      return is_residue(entry, "W") ? AtomType::AROMATIC : AtomType::NONE;
+
+    case encode_uint('C', 'Z'):
+      return is_residue(entry, "FY") ? AtomType::AROMATIC : AtomType::NONE;
+
+    case encode_uint('N', 'D', '1'):
+    case encode_uint('N', 'E', '2'):
+      return is_residue(entry, "H") ? AtomType::AROMATIC : AtomType::NONE;
+
+    default:
+      return AtomType::NONE;
   }
 }
 

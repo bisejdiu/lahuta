@@ -11,6 +11,7 @@
 #include "atom_types.hpp"
 #include "nn.hpp"
 #include "nsgrid.hpp"
+#include "utils.hpp"
 #include "valence_model.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/MonomerInfo.h>
@@ -34,8 +35,6 @@ const std::array<std::string, 11> WaterResNames = {
     "SOL", "WAT", "HOH", "H2O", "W", "DOD", "D3O", "TIP", "TIP3", "TIP4", "SPC"};
 
 const std::vector<std::string> HistidineResNames = {"HIS", "HID", "HIE", "HIP"};
-
-inline double deg_to_rad(double degrees) { return degrees * (M_PI / 180.0); }
 
 bool is_water(const RDKit::Atom &atom);
 
@@ -93,18 +92,18 @@ struct GeometryOptions {
   void set_max_sulfur_dist(double max_sulfur_dist) { max_sulfur_dist_sq = max_sulfur_dist * max_sulfur_dist; }
 };
 
-inline double get_atom_geometry_angle(HybridizationType hybridization) {
+constexpr double get_atom_geometry_angle(HybridizationType hybridization) {
   switch (hybridization) {
-  case HybridizationType::SP:
-    return deg_to_rad(180.0);
-  case HybridizationType::SP2:
-    return deg_to_rad(120.0);
-  case HybridizationType::SP3:
-    return deg_to_rad(109.4721);
-  case HybridizationType::SP3D2:
-    return deg_to_rad(90.0);
-  default:
-    return deg_to_rad(120.0);
+    case HybridizationType::SP:
+      return deg_to_rad(180.0);
+    case HybridizationType::SP2:
+      return deg_to_rad(120.0);
+    case HybridizationType::SP3:
+      return deg_to_rad(109.4721);
+    case HybridizationType::SP3D2:
+      return deg_to_rad(90.0);
+    default:
+      return deg_to_rad(120.0);
   }
 }
 
@@ -120,17 +119,15 @@ bool are_geometrically_viable(
     const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
     const GeometryOptions &opts);
 
-AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
-AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
-
-// atom is in an aromatic ring with an electronegative element (N or O)
+/// atom is in an aromatic ring with an electronegative element (N or O)
 bool in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
+AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
+AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, NSResults &neighbors, Contacts &container);
-
-void find_weak_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, NSResults &neighbors, Contacts &container);
+void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container);
+void find_weak_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container);
 
 } // namespace lahuta
 

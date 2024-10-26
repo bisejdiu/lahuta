@@ -33,13 +33,21 @@ public:
   Contacts release() { return std::move(contacts); }
 };
 
+inline double compute_dist_sq(const RDGeom::Point3D &p1, const RDGeom::Point3D &p2) {
+  double p1_c[3] = {p1.x, p1.y, p1.z};
+  double p2_c[3] = {p2.x, p2.y, p2.z};
+  return FastNS::dist_sq(p1_c, p2_c);
+}
+
 class IonicInteraction : public InteractionBase {
 public:
   void handle(const Feature &feature1, const Feature &feature2) override {
     EntityID entity1 = make_entity_id(EntityType::Group, feature1.get_id());
     EntityID entity2 = make_entity_id(EntityType::Group, feature2.get_id());
 
-    auto center_dist_sq = FastNS::dist_sq(feature1.center, feature2.center);
+    /*auto center_dist_sq = FastNS::dist_sq(feature1.center, feature2.center);*/
+    /*auto center_dist_sq = (feature1.center - feature2.center).lengthSq();*/
+    auto center_dist_sq = compute_dist_sq(feature1.center, feature2.center);
     add_interaction(Contact(entity1, entity2, center_dist_sq, InteractionType::Ionic));
   }
 };
@@ -52,16 +60,25 @@ class Interactions {
 public:
   // TODO: InteractionOptions should have default values, and each of the finder functions
   // should take another custom options struct
-  Interactions(Luni *luni, const std::vector<Feature> &group_features, InteractionOptions opts)
-      : luni_(luni), group_features_(group_features), opts_(opts) {}
+  /*Interactions(Luni *luni, const std::vector<Feature> *group_features, InteractionOptions opts)*/
+  /*    : luni_(luni), group_features_(group_features), opts_(opts) {}*/
+
+  Interactions(Luni *luni, InteractionOptions opts) : luni_(luni), opts_(opts) {}
+  /*Interactions(Luni *luni, InteractionOptions opts); */
+  /*Interactions(Luni *luni, InteractionOptions opts) : luni_(luni), opts_(opts) {*/
+  /*  group_features_ = luni_->get_features();*/
+  /*}*/
 
   [[nodiscard]] Contacts find_ionic_interactions();
   [[nodiscard]] Contacts find_hbond_interactions();
+  [[nodiscard]] Contacts find_weak_hbond_interactions();
+  [[nodiscard]] Contacts find_hydrophobic_interactions();
+  [[nodiscard]] Contacts find_halogen_interactions();
 
 private:
   Luni *luni_;
-  const std::vector<Feature> &group_features_;
-  InteractionOptions opts_;
+  /*const std::vector<Feature> *group_features_;*/
+  InteractionOptions opts_{5.0};
 };
 
 } // namespace lahuta

@@ -35,7 +35,7 @@ std::string
 AtomRingPair::names(const ContextProvider<AtomRingPair> &ctx) const {
   std::vector<int> atom_ids;
   auto ring = ctx.rings().rings[i];
-  for (const auto &atom : ring.atom_ids) {
+  for (const auto &atom : ring.atom_ids()) {
     atom_ids.push_back(atom);
   }
   std::string atom_ids_str;
@@ -44,7 +44,7 @@ AtomRingPair::names(const ContextProvider<AtomRingPair> &ctx) const {
   }
 
   auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(
-      ctx.molecule().getAtomWithIdx(ring.atom_ids[0])->getMonomerInfo());
+      ctx.molecule().getAtomWithIdx(ring.atom_ids()[0])->getMonomerInfo());
 
   return res1->getResidueName() + " " + atom_ids_str;
 }

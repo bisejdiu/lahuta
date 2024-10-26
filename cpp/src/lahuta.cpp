@@ -164,7 +164,9 @@ Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {
   Luni new_luni;
   new_luni.mol = std::make_shared<RDKit::RWMol>(new_mol);
   new_luni.bonded_nps = bonded_nps.filter(atom_indices);
-  new_luni.topology.assign_atom_types(new_mol);
+  /*new_luni.topology.assign_atom_types(new_mol);*/
+  new_luni.topology.assign_arpeggio_atom_types(new_mol);
+  /*new_luni.topology.assign_molstar_atom_types(new_mol);*/
 
   return new_luni;
 }
@@ -302,9 +304,11 @@ std::vector<int> Luni::parse_and_filter(const std::string &selection) const {
   return filtered_indices;
 }
 
+// FIX: include MD protein residue names when filtering
 NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results, int res_diff) {
   Pairs filtered;
   Distances dists;
+  // FIX: use the new iterator interface NSResults supports
   for (size_t i = 0; i < results.get_pairs().size(); ++i) {
     auto *fatom = get_molecule().getAtomWithIdx(results.get_pairs()[i].first);
     auto *satom = get_molecule().getAtomWithIdx(results.get_pairs()[i].second);
@@ -313,12 +317,16 @@ NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results, int res_dif
     auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
 
     if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)
-      continue; // skip H atoms (hydrogens)
+      continue;
 
     auto f_resid = finfo->getResidueNumber();
     auto s_resid = sinfo->getResidueNumber();
 
-    if (std::abs(f_resid - s_resid) > res_diff) {
+    // FIX: not fast
+    auto is_either_nonprotein = (PolymerNames.find(finfo->getResidueName()) == PolymerNames.end())
+                                || (PolymerNames.find(sinfo->getResidueName()) == PolymerNames.end());
+
+    if (std::abs(f_resid - s_resid) > res_diff || is_either_nonprotein) {
       filtered.push_back(results.get_pairs()[i]);
       dists.push_back(results.get_distances()[i]);
     }

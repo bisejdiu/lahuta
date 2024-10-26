@@ -92,7 +92,7 @@ private:
 
 class FastNS {
 public:
-  FastNS() = default;
+  FastNS() = default; // FIX: Why is this needed?
   FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff);
 
   NSResults self_search() const;
