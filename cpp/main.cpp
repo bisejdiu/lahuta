@@ -72,8 +72,8 @@ RDGeom::Point3D project_on_plane(const RDGeom::Point3D &vector, const RDGeom::Po
   return projected_vec;
 }
 
-double compute_in_plane_offset(
-    const RDGeom::Point3D &pos_a, const RDGeom::Point3D &pos_b, const RDGeom::Point3D &normal) {
+double compute_in_plane_offset(const RDGeom::Point3D &pos_a, const RDGeom::Point3D &pos_b,
+                               const RDGeom::Point3D &normal) {
   RDGeom::Point3D vec_ab = pos_a - pos_b;
   RDGeom::Point3D projected_vec = project_on_plane(vec_ab, normal);
   double in_plane_offset = projected_vec.length();
@@ -123,6 +123,47 @@ void pistacking(const Luni *luni, GeometryOptions opts, Contacts &container) {
 
   const auto &mol = luni->get_molecule();
   const auto rings = luni->get_rings();
+  /*const auto rings = luni->new_get_rings();*/
+
+  double dist_max = 6.0;
+  auto grid = FastNS(rings.centers(), dist_max);
+  auto nbrs = grid.self_search();
+
+  for (const auto &[pair, dist] : nbrs) {
+    auto [ring_index_a, ring_index_b] = pair;
+    const auto &ring_a = rings[ring_index_a];
+    const auto &ring_b = rings[ring_index_b];
+
+    if (is_same_residue(mol, ring_a, ring_b)) {
+      continue;
+    }
+
+    auto dot_product = ring_a.norm.dotProduct(ring_b.norm);
+    auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
+    if (angle > deg180InRad / 2.0) { // angle > 90 degrees
+      angle = deg180InRad - angle;
+    }
+
+    double offset_a = compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.norm);
+    double offset_b = compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.norm);
+
+    double offset = std::min(offset_a, offset_b);
+
+    if (offset <= offset_max) {
+      if (angle <= angleDevMax) {
+        std::cout << "Found PiStacking: Parallel" << std::endl;
+      } else if (std::abs(angle - deg90InRad) <= angleDevMax) {
+        std::cout << "Found PiStacking: T-Shaped" << std::endl;
+      }
+    }
+  }
+}
+
+void new_pistacking(const Luni *luni, GeometryOptions opts, Contacts &container) {
+
+  const auto &mol = luni->get_molecule();
+  const auto rings = luni->get_rings();
+  /*const auto rings = luni->new_get_rings();*/
 
   double dist_max = 6.0;
   auto grid = FastNS(rings.centers(), dist_max);
@@ -226,21 +267,8 @@ int main(int argc, char const *argv[]) {
   Luni luni(file_name);
   auto mol = &luni.get_molecule();
 
-  luni.assign_molstar_atom_types();
-
-  std::cout << "Number of Atoms: " << mol->getNumAtoms() << std::endl;
-  const auto &RINGS = luni.get_rings();
-  for (const auto &ring : RINGS.rings) {
-    std::cout << "NUMBER OF ATOMS: " << ring.atoms.size() << std::endl;
-    log_ring_info(mol, ring);
-    std::string ring_ids_str;
-    for (const auto &id : ring.atom_ids()) {
-      ring_ids_str += std::to_string(id) + " ";
-    }
-    std::cout << "Ring Atom IDs: " << ring_ids_str << std::endl;
-    std::cout << "NUMBER OF ATOMS: " << ring.atoms.size() << std::endl;
-    std::cout << std::endl;
-  }
+  auto arom = get_features(&luni, AtomType::AROMATIC);
+  std::cout << "yy. Aromatic Rings: " << arom.features.size() << std::endl;
 
   /////////////////////////////////////////////////
   std::cout << "> NEW Metal Coordination<" << std::endl;
@@ -256,7 +284,8 @@ int main(int argc, char const *argv[]) {
 
   Contacts cc(&luni);
   GeometryOptions op;
-  pistacking(&luni, op, cc);
+  /*pistacking(&luni, op, cc);*/
+  new_pistacking(&luni, op, cc);
 
   /////////////////////////////////////////////////
   std::cout << " NEW: CationPi<  " << std::endl;
@@ -274,6 +303,8 @@ int main(int argc, char const *argv[]) {
   Contacts _0(&luni);
   GeometryOptions _opts_;
   ionic(&luni, _opts_, _0);
+  _0.sort_interactions();
+  _0.print_interactions();
 
   // old interactions interface
   InteractionOptions opts{5.0};

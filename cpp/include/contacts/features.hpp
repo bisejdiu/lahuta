@@ -36,12 +36,6 @@ struct Feature {
   Feature(AtomType type, FeatureGroup group, std::vector<const RDKit::Atom *> members, RDGeom::Point3D center)
       : type(type), group(group), members(std::move(members)), center(center) {}
 
-private:
-  Feature(
-      AtomType type, FeatureGroup group, std::vector<const RDKit::Atom *> members, RDGeom::Point3D center,
-      int id)
-      : type(type), group(group), members(std::move(members)), center(center), id(id) {}
-
 public:
   // only GroupTypeStrategy can set the id
   friend class GroupTypeStrategy;
@@ -52,7 +46,11 @@ private:
 };
 
 struct FeatureVec {
-  std::vector<Feature> features;
+
+  void add_feature(Feature feature) { features.push_back(feature); }
+  void merge(const FeatureVec &other) {
+    features.insert(features.end(), other.features.begin(), other.features.end());
+  }
 
   Feature &operator[](size_t index) { return features[index]; }
 
@@ -77,9 +75,7 @@ struct FeatureVec {
   }
 
   RDGeom::POINT3D_VECT positions() const {
-    if (features.empty()) {
-      return {};
-    }
+    if (features.empty()) return {};
     RDGeom::POINT3D_VECT pos_vec;
     const auto &conf = features.front().members.front()->getOwningMol().getConformer();
     for (const auto &feature : features) {
@@ -87,7 +83,11 @@ struct FeatureVec {
     }
     return pos_vec;
   }
+
+  std::vector<Feature> features;
 };
+
+Feature create_feature(AtomType type, FeatureGroup group, const std::vector<const RDKit::Atom *> &members);
 
 /*using FeatureGroupCheckFunc = std::function<bool(const AtomType &, const FeatureGroup &)>;*/
 FeatureVec

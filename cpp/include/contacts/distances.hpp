@@ -128,7 +128,7 @@ private:
 
 class SimplePairFeatures {
 public:
-  SimplePairFeatures(const std::vector<Feature> &group_features) : group_features_(group_features) {}
+  SimplePairFeatures(const FeatureVec &group_features) : group_features_(group_features.features) {}
 
   void process_features(AtomType type1, AtomType type2) {
     features_a = get_features(group_features_, type1);

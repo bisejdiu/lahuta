@@ -10,13 +10,10 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/BondIterators.h>
 
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/iterator_range.hpp>
-#include <boost/range/join.hpp>
-
+#include "GraphMol/Rings.h"
 #include "bond_order.hpp"
 #include "bonds.hpp"
+#include "contacts/features.hpp"
 #include "contacts/interactions.hpp"
 #include "convert.hpp"
 #include "neighbors.hpp"
@@ -112,88 +109,29 @@ public:
     atom_types = std::move(indices);
     rings_vec = std::move(_rings_vec);
   }
-  void assign_molstar_atom_types(RDKit::RWMol &mol) {
 
-    // FIX: this will degrade performance
-    if (!mol.getRingInfo()->isInitialized()) {
-      RDKit::MolOps::symmetrizeSSSR(mol);
-    }
+  void assign_molstar_typing(RDKit::RWMol &mol) {
+    // initializes RingInfo and populates it
+    FeatureVec features = GroupTypeAnalysis::analyze(mol);
     std::vector<AtomType> new_atom_types = AtomTypeAnalysis::analyze(mol);
 
-    Rings rings;
-    std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
-    std::vector<int> invalid_types;
+    // populate rings_vec
+    RingDataVec rings;
+    for (const auto &ring : mol.getRingInfo()->atomRings()) {
+      RDGeom::Point3D center, norm;
+      Rings::compute_center(&mol, ring, center);
+      Rings::compute_normal(&mol, ring, center, norm);
 
-    // First pass: populate `indices` and track invalid & non-hydrogen atoms.
-    for (auto atom : mol.atoms()) {
-      // NOTE: works only with standard residues
-      AtomType atom_type = get_predef_aromatics(atom);
-      indices[atom->getIdx()] = atom_type;
-
-      if (atom_type == AtomType::INVALID && atom->getAtomicNum() != 1) {
-        invalid_types.push_back(atom->getIdx());
+      std::vector<const RDKit::Atom *> atoms;
+      for (const int &atom_idx : ring) {
+        atoms.push_back(mol.getAtomWithIdx(atom_idx));
       }
 
-      if (AtomTypeFlags::has(atom_type, AtomType::AROMATIC)) {
-        rings.add_ring_atom(atom);
-      }
-    }
-    rings.process_rings(mol);
-    RingDataVec _rings_vec = rings.get_rings_vector();
-
-    // Handle invalid indices using a new RDKit object.
-    if (!invalid_types.empty()) {
-      auto new_mol = filter_with_bonds(mol, invalid_types);
-      if (!new_mol.getRingInfo()->isInitialized()) {
-        RDKit::MolOps::symmetrizeSSSR(new_mol);
-      }
-
-      auto vec = match_atom_types(new_mol);
-
-      for (size_t i = 0; i < invalid_types.size(); ++i) {
-        indices[invalid_types[i]] = vec[i];
-      }
-
-      // valide all atoms in the ring are aromatic
-      auto new_mol_rings = new_mol.getRingInfo()->atomRings();
-      for (auto &ring : new_mol_rings) {
-        bool is_aromatic = true;
-        for (const int &atom_idx : ring) {
-          if (new_mol.getAtomWithIdx(atom_idx)->getIsAromatic()) {
-            is_aromatic = false;
-            break;
-          }
-        }
-        if (!is_aromatic) {
-          continue;
-        }
-
-        RDGeom::Point3D center, norm;
-        Rings::compute_center(&new_mol, ring, center);
-        Rings::compute_normal(&new_mol, ring, center, norm);
-        /*Rings::find_normal_from_triangle(new_mol.getConformer(), ring, norm1);*/
-        std::vector<int> mapped_ring;
-        std::vector<const RDKit::Atom *> atoms;
-        for (const int &atom_idx : ring) {
-          auto mappped_idx = invalid_types[atom_idx];
-          mapped_ring.push_back(mappped_idx);
-          atoms.push_back(mol.getAtomWithIdx(mappped_idx));
-        }
-
-        /*RingData ring_data{center, norm, mapped_ring};*/
-        RingData ring_data{center, norm, atoms};
-        _rings_vec.rings.push_back(ring_data);
-      }
+      rings.rings.emplace_back(center, norm, atoms);
     }
 
-    // for indices in the new atom types, overwrite the old atom types
-    for (size_t i = 0; i < new_atom_types.size(); ++i) {
-      if (new_atom_types[i] != AtomType::NONE) {
-        indices[i] = new_atom_types[i];
-      }
-    }
-    atom_types = std::move(indices);
-    rings_vec = std::move(_rings_vec);
+    atom_types = std::move(new_atom_types);
+    rings_vec = std::move(rings);
   }
 
   static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {
@@ -221,6 +159,25 @@ public:
       clean_bonds(result.mol, result.mol.getConformer());
       perceive_bond_orders_obabel(result.mol);
       cleanup(result.mol);
+
+      /*if (!result.mol.getRingInfo()->isInitialized()) {*/
+      /*  std::cout << "Symmetrize SSSR\n";*/
+      /*  RDKit::MolOps::symmetrizeSSSR(result.mol);*/
+      /*}*/
+      /*auto new_mol_rings = result.mol.getRingInfo()->atomRings();*/
+      /*std::cout << "OB+RDKit HEME : \n";*/
+      /*for (const auto &ring : new_mol_rings) {*/
+      /*  std::cout << "";*/
+      /*  for (const int &atom_idx : ring) {*/
+      /*    std::cout << atom_idx << " ";*/
+      /*  }*/
+      /*  std::cout << "\n";*/
+      /*  std::cout << " ";*/
+      /*  for (const int &atom_idx : ring) {*/
+      /*    std::cout << result.mol.getAtomWithIdx(atom_idx)->getIsAromatic() << " ";*/
+      /*  }*/
+      /*  std::cout << "\n";*/
+      /*}*/
 
       merge_bonds(mol, result.mol, result.atom_indices);
     }
@@ -289,7 +246,8 @@ private:
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
   Topology topology;
-  std::vector<Feature> features;
+  /*std::vector<Feature> features;*/
+  FeatureVec features;
 
   void process_file(std::string file_path) {
     RDKit::Conformer *conformer = new RDKit::Conformer();
@@ -322,30 +280,30 @@ private:
     Topology::compute_bonds(*mol, bonded_nps);
     std::cout << "Compute Bonds: " << to_ms(t() - start).count() << "\n";
 
-    if (!mol->getRingInfo()->isInitialized()) {
-      RDKit::MolOps::symmetrizeSSSR(*mol);
-    }
+    /*if (!mol->getRingInfo()->isInitialized()) {*/
+    /*  RDKit::MolOps::symmetrizeSSSR(*mol);*/
+    /*}*/
     // print all rings
-    std::cout << "x--> Rings: " << mol->getRingInfo()->numRings() << "\n";
-    for (const auto &ring : mol->getRingInfo()->atomRings()) {
-      std::cout << "x--> Ring: ";
-      auto first = ring.front();
-      auto first_atom = mol->getAtomWithIdx(first);
-      auto info = static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
-      std::cout << info->getResidueName() << " " << info->getResidueNumber() << " ";
-
-      for (const auto &atom_idx : ring) {
-        auto atom = mol->getAtomWithIdx(atom_idx);
-        std::cout << atom->getIdx() << " ";
-      }
-      std::cout << "\n";
-    }
+    /*std::cout << "x--> Rings: " << mol->getRingInfo()->numRings() << "\n";*/
+    /*for (const auto &ring : mol->getRingInfo()->atomRings()) {*/
+    /*  std::cout << "x--> Ring: ";*/
+    /*  auto first = ring.front();*/
+    /*  auto first_atom = mol->getAtomWithIdx(first);*/
+    /*  auto info = static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());*/
+    /*  std::cout << info->getResidueName() << " " << info->getResidueNumber() << " ";*/
+    /**/
+    /*  for (const auto &atom_idx : ring) {*/
+    /*    auto atom = mol->getAtomWithIdx(atom_idx);*/
+    /*    std::cout << atom->getIdx() << " ";*/
+    /*  }*/
+    /*  std::cout << "\n";*/
+    /*}*/
 
     start = std::chrono::high_resolution_clock::now();
     /*topology.assign_atom_types(*mol);*/
 
-    /*topology.assign_molstar_atom_types(*mol);*/
-    topology.assign_arpeggio_atom_types(*mol);
+    topology.assign_molstar_typing(*mol);
+    /*topology.assign_arpeggio_atom_types(*mol);*/
 
     std::cout << "Assign Atom Types: " << to_ms(t() - start).count() << "\n";
 
@@ -378,7 +336,7 @@ public:
     std::cout << "Create Topology: " << to_ms(t() - start).count() << "\n";
     features = std::move(GroupTypeAnalysis::analyze(*mol));
     std::cout << "Analyze Group Types: " << to_ms(t() - start).count() << "\n";
-    std::cout << "Features: " << get_features().size() << "\n";
+    std::cout << "Features: " << get_features().features.size() << "\n";
     /*features = GroupTypeAnalyzer::*/
   }
 
@@ -411,6 +369,23 @@ public:
 
   const std::vector<AtomType> &get_atom_types() const { return topology.atom_types; }
   const RingDataVec &get_rings() const { return topology.rings_vec; }
+
+  /*const RingDataVec new_get_rings() const {*/
+  /*  RingDataVec rings;*/
+  /*  for (const auto &ring : mol->getRingInfo()->atomRings()) {*/
+  /*    RDGeom::Point3D center, norm;*/
+  /*    Rings::compute_center(mol.get(), ring, center);*/
+  /*    Rings::compute_normal(mol.get(), ring, center, norm);*/
+  /**/
+  /*    std::vector<const RDKit::Atom *> atoms;*/
+  /*    for (const int &atom_idx : ring) {*/
+  /*      atoms.push_back(mol->getAtomWithIdx(atom_idx));*/
+  /*    }*/
+  /**/
+  /*    rings.rings.emplace_back(center, norm, atoms);*/
+  /*  }*/
+  /*  return rings;*/
+  /*};*/
 
   Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
@@ -529,7 +504,8 @@ public:
   static int count_unique(const std::vector<std::string> &vec);
   static std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers);
 
-  const std::vector<Feature> &get_features() const { return features; }
+  /*const std::vector<Feature> &get_features() const { return features; }*/
+  const FeatureVec &get_features() const { return features; }
 
   template <typename T> const T &get_entity(EntityID id) const;
   const std::vector<EntityID> &get_atom_entities();
@@ -547,7 +523,7 @@ public:
     /*auto ring_neighbors = find_ring_neighbors2(6.0);*/
     /*c.add_many(ring_neighbors, ring_entities, atom_entities);*/
 
-    std::vector<Feature> group_features = GroupTypeAnalysis::analyze(*mol);
+    FeatureVec group_features = GroupTypeAnalysis::analyze(*mol);
     Interactions processor(this, InteractionOptions{5.0});
     auto ionic = processor.find_ionic_interactions();
     auto hbonds = processor.find_hbond_interactions();
@@ -557,7 +533,8 @@ public:
     return c;
   }
 
-  void assign_molstar_atom_types() { topology.assign_molstar_atom_types(*mol); }
+  /*void assign_molstar_atom_types() { topology.assign_molstar_atom_types(*mol); }*/
+  void assign_molstar_atom_types() { topology.assign_molstar_typing(*mol); }
   void assign_arpeggio_atom_types() { topology.assign_arpeggio_atom_types(*mol); }
 
 private:

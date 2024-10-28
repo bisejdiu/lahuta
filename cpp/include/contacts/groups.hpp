@@ -3,25 +3,30 @@
 
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
-#include "charges.hpp"
 #include "features.hpp"
+#include "residues.hpp"
 
 namespace lahuta {
 
 class GroupTypeBase {
 public:
   virtual ~GroupTypeBase() = default;
-  virtual std::vector<Feature> identify(const RDKit::RWMol &mol, ResMap &res_map) const = 0;
+  virtual FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const = 0;
 };
 
 class PositiveChargeGroup : public GroupTypeBase {
 public:
-  std::vector<Feature> identify(const RDKit::RWMol &mol, ResMap &res_map) const override;
+  FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const override;
 };
 
 class NegativeChargeGroup : public GroupTypeBase {
 public:
-  std::vector<Feature> identify(const RDKit::RWMol &mol, ResMap &res_map) const override;
+  FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const override;
+};
+
+class AromaticRingGroup : public GroupTypeBase {
+public:
+  FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const override;
 };
 
 class GroupTypeStrategy {
@@ -34,7 +39,7 @@ public:
     strategies.push_back(std::make_unique<T>());
   }
 
-  std::vector<Feature> identify(const RDKit::RWMol &mol) const;
+  FeatureVec identify(const RDKit::RWMol &mol) const;
 
 private:
   void assign_ids(std::vector<Feature> &features) const;
@@ -47,13 +52,14 @@ public:
     GroupTypeStrategy composite;
     composite.add_strategy<PositiveChargeGroup>();
     composite.add_strategy<NegativeChargeGroup>();
+    composite.add_strategy<AromaticRingGroup>();
     return composite;
   }
 };
 
 class GroupTypeAnalysis {
 public:
-  static std::vector<Feature> analyze(const RDKit::RWMol &mol) {
+  static FeatureVec analyze(const RDKit::RWMol &mol) {
     auto strategy = GroupTypeFactory::create();
     return strategy.identify(mol);
   }

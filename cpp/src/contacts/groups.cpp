@@ -1,38 +1,40 @@
 #include "contacts/groups.hpp"
+#include "contacts/aromaticity.hpp"
 #include "contacts/charges.hpp"
+#include "contacts/features.hpp"
 
 namespace lahuta {
 
-std::vector<Feature> PositiveChargeGroup::identify(const RDKit::RWMol &mol, ResMap &res_map) const {
-  return add_positive_charges(mol, res_map);
+FeatureVec PositiveChargeGroup::identify(const RDKit::RWMol &mol, Residues &residues) const {
+  return add_positive_charges(mol, residues);
 };
 
-std::vector<Feature> NegativeChargeGroup::identify(const RDKit::RWMol &mol, ResMap &res_map) const {
-  return add_negative_charges(mol, res_map);
+FeatureVec NegativeChargeGroup::identify(const RDKit::RWMol &mol, Residues &residues) const {
+  return add_negative_charges(mol, residues);
 };
 
-std::vector<Feature> GroupTypeStrategy::identify(const RDKit::RWMol &mol) const {
-
-  std::unordered_map<std::string, std::vector<const RDKit::Atom *>> residue_atoms;
-  for (const auto *atom : mol.atoms()) {
-    auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    if (res_info) {
-      // Create a unique residue identifier
-      std::string residue_id = res_info->getResidueName() + "_" + res_info->getChainId() + "_"
-                               + std::to_string(res_info->getResidueNumber()) + res_info->getInsertionCode();
-      residue_atoms[residue_id].push_back(atom);
-    }
+FeatureVec AromaticRingGroup::identify(const RDKit::RWMol &mol, Residues &residues) const {
+  if (mol.getRingInfo()->isInitialized()) {
+    mol.getRingInfo()->reset();
   }
+  mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
+  return add_aromatic_rings(mol, residues);
+};
 
-  std::vector<Feature> group_features;
+FeatureVec GroupTypeStrategy::identify(const RDKit::RWMol &mol) const {
+  auto residues = Residues(mol);
+
+  std::vector<Feature> group_features; // all features from all strategies
   for (const auto &strategy : strategies) {
-    auto features = strategy->identify(mol, residue_atoms);
-    group_features.insert(group_features.end(), features.begin(), features.end());
+    auto features = strategy->identify(mol, residues); // features from one strategy
+    group_features.insert(group_features.end(), features.features.begin(), features.features.end());
   }
-  // NOTE: `group_features` is not sorted as we get it from the strategies. If we do not sort `members` somehow, the currently assign ids just lock-in the order of the features as it already is.
+  // NOTE: `group_features` is not sorted as we get it from the strategies. If we do not sort `members`
+  // somehow, the currently assign ids just lock-in the order of the features as it already is.
   assign_ids(group_features);
   compute_centers(group_features);
-  return group_features;
+
+  return {group_features};
 }
 
 void GroupTypeStrategy::assign_ids(std::vector<Feature> &features) const {

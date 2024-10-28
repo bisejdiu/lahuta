@@ -13,10 +13,19 @@ namespace lahuta {
 /*  return filtered_features;*/
 /*}*/
 
+Feature create_feature(AtomType type, FeatureGroup group, const std::vector<const RDKit::Atom *> &members) {
+  Feature feature;
+  feature.type = type;
+  feature.group = group;
+  feature.members = members;
+  return feature;
+}
+
+
 FeatureVec get_features(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) {
-  const std::vector<Feature> &features = luni->get_features();
+  auto &features = luni->get_features();
   FeatureVec feature_vec;
-  for (const auto &feature : features) {
+  for (const auto &feature : features.features) {
     if (check_func(feature.type, type)) {
       // confirm members is defined:
       if (feature.members.empty()) {
@@ -25,8 +34,9 @@ FeatureVec get_features(const Luni *luni, AtomType type, FeatureTypeCheckFunc ch
       if (feature.members.front() == nullptr) {
         throw std::runtime_error("Feature members are not defined");
       }
-      feature_vec.features.emplace_back(Feature
-          {feature.type, feature.group, feature.members, feature.center, feature.id});
+      feature_vec.features.emplace_back(
+          Feature{feature.type, feature.group, feature.members, feature.center});
+      feature_vec.features.back().id = feature.id;
     }
   }
 

@@ -1,17 +1,11 @@
 #include "contacts/charges.hpp"
+#include "contacts/features.hpp"
 #include "contacts/heuristics.hpp"
 #include "contacts/utils.hpp"
+#include "residues.hpp"
 #include <unordered_map>
 
 namespace lahuta {
-
-Feature create_feature(AtomType type, FeatureGroup group, const std::vector<const RDKit::Atom *> &members) {
-  Feature feature;
-  feature.type = type;
-  feature.group = group;
-  feature.members = members;
-  return feature;
-}
 
 auto identify_feature_groups(const RDKit::RWMol &mol) {
   std::unordered_map<const RDKit::Atom *, FeatureGroup> identified_atoms;
@@ -57,24 +51,20 @@ auto identify_negative_feature_groups(const RDKit::RWMol &mol) {
   return identified_atoms;
 }
 
-std::vector<Feature> add_positive_charges(const RDKit::RWMol &mol, ResMap &res_map) {
+FeatureVec add_positive_charges(const RDKit::RWMol &mol, Residues &residues) {
 
-  std::vector<Feature> features;
-  /*IncrementalVector features;*/
+  FeatureVec features;
   std::optional<std::unordered_map<const RDKit::Atom *, FeatureGroup>> groups;
   std::unordered_set<const RDKit::Atom *> added_atoms;
 
-  for (const auto &residue_pair : res_map) {
-    auto &atoms_in_residue = residue_pair.second;
-    auto *res_info =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(atoms_in_residue.front()->getMonomerInfo());
-    std::string res_name = res_info->getResidueName();
+  for (const auto &residue : residues) {
+    /*std::string res_name = residue.res_name;*/
 
     // Handle positively charged residues (ARG, HIS, LYS)
-    if (PositivelyChargedResidues.count(res_name)) {
+    if (PositivelyChargedResidues.count(residue.name)) {
       auto feature = create_feature(AtomType::POS_IONISABLE, FeatureGroup::None, {});
 
-      for (const auto *atom : atoms_in_residue) {
+      for (const auto *atom : residue.atoms) {
         auto *atom_res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
         std::string atom_name = atom_res_info->getName();
 
@@ -85,27 +75,27 @@ std::vector<Feature> add_positive_charges(const RDKit::RWMol &mol, ResMap &res_m
       }
 
       if (!feature.members.empty()) {
-        features.push_back(feature);
+        features.add_feature(feature);
       }
-    } else if (PolymerNames.count(res_name) == 0) {
+    } else if (PolymerNames.count(residue.name) == 0) {
       // Handle non-polymer residues
       if (!groups.has_value()) {
         groups = identify_feature_groups(mol);
       }
-      for (const auto *atom : atoms_in_residue) {
+      for (const auto *atom : residue.atoms) {
         auto it = groups->find(atom);
         if (it != groups->end()) {
           auto nitrogens = bonded_atoms(mol, atom, 7);
           if (!nitrogens.empty()) {
             auto feature = create_feature(AtomType::POS_IONISABLE, it->second, nitrogens);
-            features.push_back(feature);
+            features.add_feature(feature);
             added_atoms.insert(nitrogens.begin(), nitrogens.end());
           }
         } else {
           // Add remaining positively charged atoms not already added
           if (atom->getFormalCharge() > 0 && added_atoms.count(atom) == 0) {
             auto feature = create_feature(AtomType::POS_IONISABLE, FeatureGroup::None, {atom});
-            features.push_back(feature);
+            features.add_feature(feature);
             added_atoms.insert(atom);
           }
         }
@@ -116,26 +106,21 @@ std::vector<Feature> add_positive_charges(const RDKit::RWMol &mol, ResMap &res_m
   return std::move(features);
 }
 
-std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_map) {
+FeatureVec add_negative_charges(const RDKit::RWMol &mol, Residues &residues) {
 
   std::optional<std::unordered_map<const RDKit::Atom *, FeatureGroup>> groups;
-  std::vector<Feature> features;
+  FeatureVec features;
   /*IncrementalVector features;*/
   std::unordered_set<const RDKit::Atom *> added_atoms;
 
-  for (const auto &residue_pair : res_map) {
-    const std::vector<const RDKit::Atom *> &atoms_in_residue = residue_pair.second;
-    auto *res_info =
-        static_cast<const RDKit::AtomPDBResidueInfo *>(atoms_in_residue.front()->getMonomerInfo());
-    std::string res_name = res_info->getResidueName();
-
-    if (NegativelyChargedResidues.count(res_name)) {
+  for (const auto &residue : residues) {
+    if (NegativelyChargedResidues.count(residue.name)) {
       // Handle negatively charged residues (GLU, ASP)
       Feature feature;
       feature.type = AtomType::NEG_IONISABLE;
       feature.group = FeatureGroup::None;
 
-      for (const auto *atom : atoms_in_residue) {
+      for (const auto *atom : residue.atoms) {
         auto *atom_res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
         std::string atom_name = atom_res_info->getName();
 
@@ -146,32 +131,33 @@ std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_m
       }
 
       if (!feature.members.empty()) {
-        features.push_back(feature);
+        features.add_feature(feature);
       }
-    } else if (BaseNames.count(res_name)) {
+    } else if (BaseNames.count(residue.name)) {
       // Handle nucleic acid bases (DNA/RNA)
-      for (const auto *atom : atoms_in_residue) {
+      for (const auto *atom : residue.atoms) {
         if (is_phosphate(mol, *atom)) {
           auto oxygens = bonded_atoms(mol, atom, 8);
           if (!oxygens.empty()) {
             auto feature = create_feature(AtomType::NEG_IONISABLE, FeatureGroup::Phosphate, oxygens);
-            features.push_back(feature);
+            features.add_feature(feature);
             added_atoms.insert(oxygens.begin(), oxygens.end());
           }
         }
       }
-    } else if (PolymerNames.count(res_name) == 0) {
+    } else if (PolymerNames.count(residue.name) == 0) {
       // Handle non-polymer residues
       if (!groups.has_value()) {
         groups = identify_negative_feature_groups(mol);
       }
-      for (const auto *atom : atoms_in_residue) {
+      for (const auto *atom : residue.atoms) {
         auto it = groups->find(atom);
         if (it != groups->end()) {
           auto oxygens = bonded_atoms(mol, atom, 8);
           if (!oxygens.empty()) {
             auto feature = create_feature(AtomType::NEG_IONISABLE, it->second, oxygens);
-            features.push_back(feature);
+            /*features.push_back(feature);*/
+            features.add_feature(feature);
             added_atoms.insert(oxygens.begin(), oxygens.end());
           }
         } else {
@@ -181,7 +167,7 @@ std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_m
 
           if (atom->getAtomicNum() == 7 && ProteinBackboneAtoms.count(atom_name) == 0) {
             auto feature = create_feature(AtomType::NEG_IONISABLE, FeatureGroup::None, {atom});
-            features.push_back(feature);
+            features.add_feature(feature);
             added_atoms.insert(atom);
           }
         }
@@ -189,7 +175,7 @@ std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_m
         // Add remaining negatively charged atoms not already added
         if (atom->getFormalCharge() < 0 && added_atoms.count(atom) == 0) {
           auto feature = create_feature(AtomType::NEG_IONISABLE, FeatureGroup::None, {atom});
-          features.push_back(feature);
+          features.add_feature(feature);
           added_atoms.insert(atom);
         }
       }

@@ -10,7 +10,8 @@ namespace lahuta {
 
 // TODO: 1. Store atom pointers instead of atom indices
 //       2. Store the ring type (aromatic, aliphatic, etc.)
-//       3. Store the `id` similar to Feature struct and remove the `root_atom_id`
+//       3. Store the `id` similar to Feature struct and remove the
+//       `root_atom_id`
 
 enum class RingGroup { NONE, AROMATIC, ALIPHATIC };
 enum class RingType { None };
@@ -27,12 +28,12 @@ private:
 
 public:
   RingData() = default;
-  /*RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<int> atom_ids_)*/
+  /*RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<int>
+   * atom_ids_)*/
   /*    : center(center_), norm(norm_), atom_ids(atom_ids_) {}*/
 
   explicit RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<const RDKit::Atom *> atoms_)
-      : center(center_), norm(norm_), atoms(atoms_) {
-  }
+      : center(center_), norm(norm_), atoms(atoms_) {}
 
   std::vector<int> atom_ids() const {
     std::vector<int> ids;
@@ -45,8 +46,8 @@ public:
 
   // FIX: Delete
   int get_root_atom_id() const {
-  /*  auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());*/
-  /*  return *min_atom_id;*/
+    /*  auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());*/
+    /*  return *min_atom_id;*/
     return root_atom_id;
   }
 
@@ -166,8 +167,7 @@ public:
 
   void add_ring_atom(const RDKit::Atom *atom) {
     auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    if (!info)
-      return;
+    if (!info) return;
 
     ResId res_id{info->getChainId(), info->getResidueNumber(), info->getResidueName()};
     const bool is_trp = info->getResidueName() == "TRP";
@@ -192,7 +192,8 @@ public:
 
         compute_center(&mol, atom_ids, ring_data.center);
         compute_normal(&mol, atom_ids, ring_data.center, ring_data.norm);
-        /*find_normal_from_triangle(conf, ring_data.atom_ids, ring_data.norm1);*/
+        /*find_normal_from_triangle(conf, ring_data.atom_ids,
+         * ring_data.norm1);*/
       }
     }
   }
@@ -222,8 +223,7 @@ private:
   }
 
   void order_atoms(const std::string &res_name, RingData &ring, const RDKit::ROMol &mol) {
-    if (atom_orders_.find(res_name) == atom_orders_.end())
-      return;
+    if (atom_orders_.find(res_name) == atom_orders_.end()) return;
 
     const auto atom_ids = ring.atom_ids();
     const auto &expected_order = atom_orders_[res_name];

@@ -387,16 +387,16 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     }
   }
 
-  if (needs_kekulization) {
-    for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-      RDKit::Bond *bond = *bondIt;
-      if (bond->getIsAromatic()) {
-        bond->getBeginAtom()->setIsAromatic(true);
-        bond->getEndAtom()->setIsAromatic(true);
-      }
-    }
-    bool ok = OBKekulize(&mol);
-  }
+  /*if (needs_kekulization) {*/
+  /*  for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {*/
+  /*    RDKit::Bond *bond = *bondIt;*/
+  /*    if (bond->getIsAromatic()) {*/
+  /*      bond->getBeginAtom()->setIsAromatic(true);*/
+  /*      bond->getEndAtom()->setIsAromatic(true);*/
+  /*    }*/
+  /*  }*/
+  /*  bool ok = OBKekulize(&mol);*/
+  /*}*/
 
   mol.updatePropertyCache(false);
 }

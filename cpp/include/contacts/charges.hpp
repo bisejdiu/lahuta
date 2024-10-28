@@ -10,6 +10,7 @@
 
 #include "atom_types.hpp"
 #include "features.hpp"
+#include "residues.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
 
@@ -152,13 +153,13 @@ const std::set<std::string> AminoAcidNames = {
     // ???  // D-SELENOCYSTEINE
 };
 
-Feature create_feature(AtomType type, FeatureGroup group, const std::vector<const RDKit::Atom *> &members);
-
 auto identify_feature_groups(const RDKit::RWMol &mol);
 auto identify_negative_feature_groups(const RDKit::RWMol &mol);
 
-[[nodiscard]] std::vector<Feature> add_positive_charges(const RDKit::RWMol &mol, ResMap &res_map);
-[[nodiscard]] std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_map);
+/*[[nodiscard]] std::vector<Feature> add_positive_charges(const RDKit::RWMol &mol, ResMap &res_map);*/
+/*[[nodiscard]] std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_map);*/
+[[nodiscard]] FeatureVec add_positive_charges(const RDKit::RWMol &mol, Residues &residues);
+[[nodiscard]] FeatureVec add_negative_charges(const RDKit::RWMol &mol, Residues &residues);
 
 } // namespace lahuta
 
