@@ -26,6 +26,15 @@ void bind(py::module &_lahuta) {
       /*.def_readwrite("atom_ids", &RingData::atom_ids)*/
       .def("compute_angle", &RingData::compute_angle)
       /*.def("compute_angle2", &RingData::compute_angle2)*/
+      /*.def("get_atom_ids", [](RingData &rd) { return rd.atom_ids(); })*/
+      .def("atom_ids", [](RingData &rd) {
+        std::vector<int> ids;
+        ids.reserve(rd.atoms.size());
+        for (const auto *atom : rd.atoms) {
+          ids.push_back(atom->getIdx());
+        }
+        return ids;
+      })
       .def_property_readonly(
           "center", [](RingData &rd) { return point3d_to_pyarray(rd.center); })
       .def_property_readonly(

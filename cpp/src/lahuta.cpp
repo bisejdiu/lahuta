@@ -147,9 +147,9 @@ auto Luni::match_smarts_string(std::string sm, std::string atype, bool log_value
 NSResults Luni::find_neighbors_opt(double cutoff) {
 
   if (cutoff == _cutoff) {
-    return bonded_nps;
+    return neighbors;
   } else if (cutoff < _cutoff) {
-    return bonded_nps.filter(cutoff);
+    return neighbors.filter(cutoff);
   }
 
   grid.update_cutoff(cutoff);
@@ -164,9 +164,9 @@ Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {
 
   Luni new_luni;
   new_luni.mol = std::make_shared<RDKit::RWMol>(new_mol);
-  new_luni.bonded_nps = bonded_nps.filter(atom_indices);
+  new_luni.neighbors = neighbors.filter(atom_indices);
   /*new_luni.topology.assign_atom_types(new_mol);*/
-  new_luni.topology.assign_arpeggio_atom_types(new_mol);
+  new_luni.topology.assign_arpeggio_atom_types();
   /*new_luni.topology.assign_molstar_atom_types(new_mol);*/
 
   return new_luni;

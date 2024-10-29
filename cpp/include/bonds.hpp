@@ -1,5 +1,6 @@
-// #ifndef LAHUTA_BONDS_HPP
-// #define LAHUTA_BONDS_HPP
+#ifndef LAHUTA_BONDS_HPP
+#define LAHUTA_BONDS_HPP
+
 #include <vector>
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include <rdkit/GraphMol/RWMol.h>
@@ -53,4 +54,4 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results);
 
 } // namespace lahuta
 
-// #endif // LAHUTA_BONDS_HPP
+#endif // LAHUTA_BONDS_HPP

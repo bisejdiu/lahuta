@@ -1,5 +1,5 @@
-#ifndef ATOM_TYPES_HPP
-#define ATOM_TYPES_HPP
+#ifndef LAHUTA_ATOM_TYPES_HPP
+#define LAHUTA_ATOM_TYPES_HPP
 
 #include <cstdint>
 #include <rdkit/GraphMol/MolOps.h>
@@ -463,76 +463,37 @@ inline AtomType get_predef_aromatics(RDKit::Atom *at) {
 }
 
 constexpr std::pair<const char *, AtomType> AtomTypeSMARTS[] = {
-    /*{"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]"*/
-    /* "=!@*)]),$([nH0;+0])]",*/
-    /* AtomType::HBOND_ACCEPTOR},*/
-    /*{"[$([nH]:@c(=O))]", AtomType::HBOND_ACCEPTOR},*/
-    /*{"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::HBOND_ACCEPTOR},*/
-    /*{"[$([N;H2;v3;$(N-C(=O))])]", AtomType::HBOND_ACCEPTOR},*/
-    /**/
-    /*{"[N!H0v3,N!H0+v4,OH+0,SH+0,nH+0]", AtomType::HBOND_DONOR},*/
-    /*{"[$([O;H0;$(O=C([OH])-*)])]", AtomType::HBOND_DONOR},*/
-    /*{"[$(n:a:[nH])]", AtomType::HBOND_DONOR},*/
-    /*{"[$([O;H0;$(O=C-[NH2])])]", AtomType::HBOND_DONOR},*/
+    {"[$([nH]:@c(=O))]", 1029_at},
+    {"[$([N;H2;v3;$(N-C(=O))])]", 1029_at},
+    {"[$([n;H1;v3;!$([nH]cccc)])]", 1029_at},
+    {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*"
+     "=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]",
+     1029_at},
 
-    // FIX: These seem to be very similar to weak hbond acceptor?
-    // {"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]=!@*)]),$([nH0;+0])]",
-    // AtomType::XBOND_ACCEPTOR},
-    // {"[$([nH]:@c(=O))]", AtomType::XBOND_ACCEPTOR},
-    // {"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::XBOND_ACCEPTOR},
-    // {"[$([N;H2;v3;$(N-C(=O))])]", AtomType::XBOND_ACCEPTOR},
-    // {"[Xx]", AtomType::XBOND_ACCEPTOR},
-    // {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::XBOND_DONOR},
+    {"[$(n:a:[nH])]", 2_at},
+    {"[$([O;H0;$(O=C-[NH2])])]", 2_at},
+    {"[$([O;H0;$(O=C([OH])-*)])]", 2_at},
+    {"[N!H0v3,N!H0+v4,OH+0,SH+0,nH+0]", 2_at},
 
-    /*{"[#8,#9,$([#16;H0,H1;v2,v1]),$([N;v3;!$(N-*=!@[O,N,P,S]);!$(N-!@a);!$([NH]"*/
-    /* "=!@*)]),$([nH0;+0])]",*/
-    /* AtomType::WEAK_HBOND_ACCEPTOR},*/
-    /*{"[$([nH]:@c(=O))]", AtomType::WEAK_HBOND_ACCEPTOR},*/
-    /*{"[$([n;H1;v3;!$([nH]cccc)])]", AtomType::WEAK_HBOND_ACCEPTOR},*/
-    /*{"[$([N;H2;v3;$(N-C(=O))])]", AtomType::WEAK_HBOND_ACCEPTOR},*/
-    /*{"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", AtomType::WEAK_HBOND_ACCEPTOR},*/
-    /*// {"[#6!H0]", AtomType::WEAK_HBOND_DONOR},*/
-    /**/
-    /*{"[$([N;H2&+0][C;!$(C=*)]),$([N;H1&+0]([C;!$(C=*)])[C;!$(C=*)]),$([N;H0&+0]"*/
-    /* "([C;!$(C=*)])([C;!$(C=*)])[C;!$(C=*)]);!$(N[a])]",*/
-    /* AtomType::POS_IONISABLE},*/
-    /*{"[n;R1]1[c;R1][n;R1][c;R1][c;R1]1", AtomType::POS_IONISABLE},*/
-    /*{"NC(=N)", AtomType::POS_IONISABLE},*/
-    /*{"[#7;+;!$([N+]-[O-])]", AtomType::POS_IONISABLE},*/
-    /*{"[$([*+1,*+2,*+3]);!$([N+]-[O-])]", AtomType::POS_IONISABLE},*/
-    /*{"[Li,Be,Na,Mg,Al,K,Ca,Sc,Ti,V,Cr,Mn,Fe,Co,Ni,Cu,Zn,Ga,Rb,Sr,Y,Zr,Nb,Mo,Tc,"*/
-    /* "Ru,Rh,Pd,Ag,Cd,In,Sn,Cs,Ba,La,Ce,Pr,Nd,Pm,Sm,Eu,Gd,Tb,Dy,Ho,Er,Tm,Yb,Lu,"*/
-    /* "Hf,Ta,W,Re,Os,Ir,Pt,Au,Hg,Tl,Pb,Bi,Po,Fr,Ra,Ac,Th,Pa,U,Np,Pu,Am,Cm,Bk,"*/
-    /* "Cf]",*/
-    /* AtomType::POS_IONISABLE},*/
-    /**/
-    /*{"[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]", AtomType::NEG_IONISABLE},*/
-    /*{"[*-1,*-2]", AtomType::NEG_IONISABLE},*/
-    /**/
-    /*{"[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]", AtomType::HYDROPHOBIC},*/
-    /**/
-    /*{"[$([OH0]=[CX3,c]);!$([OH0]=[CX3,c]-[OH,O-])]", AtomType::CARBONYL_OXYGEN},*/
-    /*{"[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]", AtomType::CARBONYL_CARBON},*/
+    {"[Cl,Br,I;X1;$([Cl,Br,I]-[#6])]", 10_at},
 
-    {"[a;r4,!R1&r3]1:[a;r4,!R1&r3]:[a;r4,!R1&r3]:[a;r4,!R1&r3]:1", AtomType::AROMATIC},
-    {"[a;r5,!R1&r4,!R1&r3]1:[a;r5,!R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:[a;r5,!"
-     "R1&r4,!R1&r3]:[a;r5,!R1&r4,!R1&r3]:1",
-     AtomType::AROMATIC},
-    {"[a;r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!"
-     "R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;r6,!R1&r5,!R1&r4,!R1&r3]:[a;"
-     "r6,!R1&r5,!R1&r4,!R1&r3]:1",
-     AtomType::AROMATIC},
-    {"[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:["
-     "a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;"
-     "r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r7,"
-     "!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1",
-     AtomType::AROMATIC},
-    {"[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]1:[a;r8,!R1&r7,!R1&r6,!R1&r5,!"
-     "R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&"
-     "r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,"
-     "!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!"
-     "R1&r3]:[a;r8,!R1&r7,!R1&r6,!R1&r5,!R1&r4,!R1&r3]:1",
-     AtomType::AROMATIC},
+    {"[$([N;H2&+0][C;!$(C=*)]),$([N;H1&+0]([C;!$(C=*)])[C;!$(C=*)]),$([N;H0&+0]"
+     "([C;!$(C=*)])([C;!$(C=*)])[C;!$(C=*)]);!$(N[a])]",
+     16_at},
+    {"NC(=N)", 16_at},
+    {"[#7;+;!$([N+]-[O-])]", 16_at},
+    {"[$([*+1,*+2,*+3]);!$([N+]-[O-])]", 16_at},
+
+    {"[*-1,*-2]", 32_at},
+    {"[$([OH,O-]-[C,S,N,P,Cl,Br,I]=O),$(O=[C,S,N,P,Cl,Br,I]-[OH,O-])]", 32_at},
+
+    {"[$([OH0]=[CX3,c]);!$([OH0]=[CX3,c]-[OH,O-])]", 64_at},
+    {"[$([CX3,c]=[OH0]);!$([CX3,c](=[OH0])-[OH,O-])]", 128_at},
+    {"[#6+0!$(*~[#7,#8,F]),SH0+0v2,s+0,Cl+0,Br+0,I+0]", 512_at},
+
+    // Require RingInfo initialization
+    /*{"[n;R1]1[c;R1][n;R1][c;R1][c;R1]1", 16_at}, */
+    /*{"[Xx]", 1_at},*/
 };
 
 inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
@@ -552,22 +513,13 @@ inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
     const auto &[smarts, atom_type] = AtomTypeSMARTS[i];
     RDKit::ROMol *pattern = patterns[i];
 
-    SubStrMatches matchList;
-    RDKit::SubstructMatch(mol, *pattern, matchList);
+    SubStrMatches match_list;
+    RDKit::SubstructMatch(mol, *pattern, match_list);
 
-    for (const auto &match : matchList) {
+    for (const auto &match : match_list) {
       for (const auto &pair : match) {
         types[pair.second] |= atom_type;
       }
-      // auto *atom = mol.getAtomWithIdx(match[0].second);
-      // if (atom->getAtomicNum() == 26) {
-      //   auto *info =
-      //   static_cast<RDKit::AtomPDBResidueInfo*>(atom->getMonomerInfo());
-      //   std::cout << "-> Fe: " << info->getResidueName() << " "
-      //             << info->getName() << " " << atom_type_to_string(atom_type)
-      //             << std::endl;
-      // }
-      // types[match[0].second] |= atom_type;
     }
   }
 

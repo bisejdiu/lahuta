@@ -1,8 +1,10 @@
-#include <rdkit/GraphMol/AtomIterators.h> 
-#include <rdkit/GraphMol/BondIterators.h> 
+#include <rdkit/GraphMol/AtomIterators.h>
+#include <rdkit/GraphMol/BondIterators.h>
 
-#include "ob/clean_mol.hpp"
 #include "bonds/table.hpp"
+#include "ob/clean_mol.hpp"
+
+namespace lahuta {
 
 // NOTE: Performance is dependent on bond removal (which is the most expensive
 // operation). RDKit provides a batch removal utility, but it is not used here,
@@ -13,14 +15,13 @@ void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf) {
 
   for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
     auto atom = *atomIt;
-    while (ob_explicit_valence(mol, atom) > max_bonds[atom->getAtomicNum()] ||
-           smallest_bond_angle(mol, conf, atom) < 45.0) {
+    while (ob_explicit_valence(mol, atom) > max_bonds[atom->getAtomicNum()]
+           || smallest_bond_angle(mol, conf, atom) < 45.0) {
 
       maxbond = nullptr;
 
       // Loop through bonds to find the initial maxbond
-      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
-           ++bondIt.first) {
+      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
         bond = mol[*bondIt.first];
         maxbond = bond;
         break;
@@ -33,8 +34,7 @@ void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf) {
       // Delete bonds between hydrogens when over max valence
       if (atom->getAtomicNum() == 1) { // Hydrogen
         changed = false;
-        for (auto bondIt = mol.getAtomBonds(atom);
-             bondIt.first != bondIt.second; ++bondIt.first) {
+        for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
           bond = mol[*bondIt.first];
           // Neighboring Hydrogen
           if (bond->getOtherAtom(atom)->getAtomicNum() == 1) {
@@ -50,8 +50,7 @@ void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf) {
 
       auto maxlength = bond_length_sq(conf, maxbond);
       int i = 0;
-      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
-           ++bondIt.first) {
+      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
         if (i == 0) {
           i++;
           continue;
@@ -68,3 +67,5 @@ void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf) {
     }
   }
 }
+
+} // namespace lahuta

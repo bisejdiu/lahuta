@@ -81,6 +81,8 @@ int main(int argc, char const *argv[]) {
   Luni luni(file_name);
   auto mol = &luni.get_molecule();
 
+  luni.assign_molstar_atom_types();
+
   const auto hydrophobic_atoms = get_atom_data(&luni, AtomType::HYDROPHOBIC);
   std::cout << "Hydrophobic Atoms: " << hydrophobic_atoms.data.size() << std::endl;
 
@@ -103,20 +105,38 @@ int main(int argc, char const *argv[]) {
 
   InteractionOptions opts{5.0};
   Interactions interactions(&luni, opts);
+  std::cout << "HBOND: \n";
   auto _1 = interactions.find_hbond_interactions();
+  _1.sort_interactions();
+  _1.print_interactions();
+  std::cout << "WEAK HBOND: \n";
   auto _2 = interactions.find_weak_hbond_interactions();
+  _2.sort_interactions();
+  _2.print_interactions();
+  std::cout << "HYDROPHOBIC: \n";
   auto _3 = interactions.find_hydrophobic_interactions();
+  _3.sort_interactions();
+  _3.print_interactions();
+  std::cout << "HALOGEN: \n";
   auto _4 = interactions.find_halogen_interactions();
+  _4.sort_interactions();
+  _4.print_interactions();
+  std::cout << "IONIC: \n";
   auto _5 = interactions.find_ionic_interactions();
-  /*_5.sort_interactions();*/
-  /*_5.print_interactions();*/
+  _5.sort_interactions();
+  _5.print_interactions();
+  std::cout << "METALIC: \n";
   auto _6 = interactions.find_metalic_interactions();
+  _6.sort_interactions();
+  _6.print_interactions();
+  std::cout << "CATIONPI: \n";
   auto _7 = interactions.find_cationpi_interactions();
-  /*_7.sort_interactions();*/
-  /*_7.print_interactions();*/
+  _7.sort_interactions();
+  _7.print_interactions();
+  std::cout << "PISTACKING: \n";
   auto _8 = interactions.find_pistacking_interactions();
-  /*_8.sort_interactions();*/
-  /*_8.print_interactions();*/
+  _8.sort_interactions();
+  _8.print_interactions();
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());

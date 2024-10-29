@@ -10,27 +10,23 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/BondIterators.h>
 
-#include "GraphMol/Rings.h"
 #include "aromatics.hpp"
-#include "bond_order.hpp"
-#include "bonds.hpp"
 #include "contacts/features.hpp"
 #include "contacts/interactions.hpp"
 #include "convert.hpp"
 #include "neighbors.hpp"
 #include "nsgrid.hpp"
-#include "ob/clean_mol.hpp"
 #include "ob/kekulize.h"
 #include "rings.hpp"
 
 // selection parser
 #include "visitor.hpp"
-
 // contacts
-#include "contacts/contacts.hpp"
 #include "contacts/groups.hpp"
 
 #include "nn.hpp"
+
+#include "topology.hpp"
 
 #define LAHUTA_VERSION "0.14.0"
 #define t() std::chrono::high_resolution_clock::now()
@@ -40,320 +36,52 @@ namespace lahuta {
 
 static float BONDED_NS_CUTOFF = 4.5;
 
-class Topology {
-public:
-  std::vector<AtomType> atom_types;
-  RingDataVec rings_vec;
-  const RDKit::RWMol *mol;
-  const Residues *residues;
-
-  Topology(const RDKit::RWMol &mol) : mol(&mol) {}
-  Topology() = default;
-  ~Topology() { delete residues;}
-
-public:
-  void build_residues(const RDKit::RWMol &mol) {
-    residues = new Residues(mol);
-  }
-
-  void assign_arpeggio_atom_types(RDKit::RWMol &mol) {
-
-    std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
-    std::vector<int> invalid_indices;
-    Rings rings;
-
-    // First pass: populate `indices` and track invalid & non-hydrogen atoms.
-    for (auto atom : mol.atoms()) {
-      // NOTE: `get_atom_type` expects standard residues
-      AtomType atom_type = get_atom_type(atom);
-      indices[atom->getIdx()] = atom_type;
-      if (atom_type == AtomType::INVALID && atom->getAtomicNum() != 1) {
-        invalid_indices.push_back(atom->getIdx());
-      }
-
-      if (AtomTypeFlags::has(atom_type, AtomType::AROMATIC)) {
-        rings.add_ring_atom(atom);
-      }
-    }
-    rings.process_rings(mol);
-    RingDataVec _rings_vec = rings.get_rings_vector();
-
-    // process invalid indices using a new RDKit object.
-    if (!invalid_indices.empty()) {
-      auto new_mol = filter_with_bonds(mol, invalid_indices);
-      if (!new_mol.getRingInfo()->isInitialized()) {
-        RDKit::MolOps::symmetrizeSSSR(new_mol);
-      }
-
-      auto vec = match_atom_types(new_mol);
-
-      for (size_t i = 0; i < invalid_indices.size(); ++i) {
-        indices[invalid_indices[i]] = vec[i];
-      }
-
-      auto new_mol_rings = new_mol.getRingInfo()->atomRings();
-      for (auto &ring : new_mol_rings) {
-        RDGeom::Point3D center, norm;
-        Rings::compute_center(&new_mol, ring, center);
-        Rings::compute_normal(&new_mol, ring, center, norm);
-        std::vector<int> mapped_ring;
-        std::vector<const RDKit::Atom *> atoms;
-        for (const int &atom_idx : ring) {
-          auto mappped_idx = invalid_indices[atom_idx];
-          mapped_ring.push_back(mappped_idx);
-          atoms.push_back(mol.getAtomWithIdx(mappped_idx));
-        }
-
-        /*RingData ring_data{center, norm, mapped_ring};*/
-        RingData ring_data{center, norm, atoms};
-        _rings_vec.rings.push_back(ring_data);
-      }
-    }
-
-    atom_types = std::move(indices);
-    rings_vec = std::move(_rings_vec);
-  }
-
-  void assign_molstar_typing() {
-
-    // FIX: to be replaced by the entitytype manager
-    std::vector<AtomType> new_atom_types = AtomTypeAnalysis::analyze(*mol);
-    FeatureVec features = GroupTypeAnalysis::analyze(*mol, *residues);
-
-    // populate rings_vec
-    RingDataVec rings;
-    size_t idx = 0;
-    for (const auto &ring : mol->getRingInfo()->atomRings()) {
-      RDGeom::Point3D center, norm;
-      Rings::compute_center(mol, ring, center);
-      Rings::compute_normal(mol, ring, center, norm);
-
-      std::vector<const RDKit::Atom *> atoms;
-      for (const int &atom_idx : ring) {
-        atoms.push_back(mol->getAtomWithIdx(atom_idx));
-      }
-
-      rings.rings.emplace_back(center, norm, atoms, idx++);
-    }
-
-    atom_types = std::move(new_atom_types);
-    rings_vec = std::move(rings);
-  }
-
-  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {
-    auto result = assign_bonds(mol, neighborResults);
-
-    // FIX: Refactor!
-
-    // for (gemmi::Connection &conn : st.connections) {
-    //   // Iterate over all models
-    //   gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
-    //   gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
-    //
-    //   if (mol.getBondBetweenAtoms(a1->serial-1, a2->serial-1) == nullptr) {
-    //     mol.addBond((unsigned int)a1->serial-1, (unsigned int)a2->serial-1,
-    //                 RDKit::Bond::BondType::SINGLE);
-    //   }
-    // }
-
-    mol.updatePropertyCache(false);
-    /*clean_bonds(mol, mol.getConformer());*/
-    MolOps::setHybridization(mol);
-    cleanup_predef(mol);
-
-    if (result.has_unlisted_resnames) {
-      clean_bonds(result.mol, result.mol.getConformer());
-      perceive_bond_orders_obabel(result.mol);
-      cleanup(result.mol);
-
-      /*if (!result.mol.getRingInfo()->isInitialized()) {*/
-      /*  std::cout << "Symmetrize SSSR\n";*/
-      /*  RDKit::MolOps::symmetrizeSSSR(result.mol);*/
-      /*}*/
-      /*auto new_mol_rings = result.mol.getRingInfo()->atomRings();*/
-      /*std::cout << "OB+RDKit HEME : \n";*/
-      /*for (const auto &ring : new_mol_rings) {*/
-      /*  std::cout << "";*/
-      /*  for (const int &atom_idx : ring) {*/
-      /*    std::cout << atom_idx << " ";*/
-      /*  }*/
-      /*  std::cout << "\n";*/
-      /*  std::cout << " ";*/
-      /*  for (const int &atom_idx : ring) {*/
-      /*    std::cout << result.mol.getAtomWithIdx(atom_idx)->getIsAromatic() << " ";*/
-      /*  }*/
-      /*  std::cout << "\n";*/
-      /*}*/
-
-      merge_bonds(mol, result.mol, result.atom_indices);
-    }
-  }
-
-private:
-  static void cleanup_predef(RWMol &mol) {
-    ROMol::VERTEX_ITER atBegin, atEnd;
-    boost::tie(atBegin, atEnd) = mol.getVertices();
-    while (atBegin != atEnd) {
-      RDKit::Atom *atom = mol[*atBegin];
-      atom->calcExplicitValence(false);
-
-      // correct four-valent neutral N -> N+
-      // This was github #1029
-      if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 && atom->getExplicitValence() == 4) {
-        atom->setFormalCharge(1);
-      }
-      ++atBegin;
-    }
-  }
-
-  static void cleanup(RDKit::RWMol &mol) {
-    cleanup_predef(mol);
-
-    // FIXME: provide the mechanism as an option?
-    // MolOps::fastFindRings(mol);
-    // MolOps::findSSSR(mol);
-    bool include_dative_bonds = true;
-    MolOps::symmetrizeSSSR(mol, include_dative_bonds);
-    MolOps::setAromaticity(mol);
-  }
-
-  static void
-  merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol, const std::vector<int> &indexMap) {
-    for (auto bondIt = sourceMol.beginBonds(); bondIt != sourceMol.endBonds(); ++bondIt) {
-      const RDKit::Bond *bond = *bondIt;
-      int bIdx = indexMap[bond->getBeginAtomIdx()];
-      int eIdx = indexMap[bond->getEndAtomIdx()];
-      if (targetMol.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
-
-        // FIX: todo: instead of doing this check, we should iterate once over
-        // all atoms and set the number of explicit hydrogens based on the
-        // number of explicitly bonded hydrogens
-        auto a = targetMol.getAtomWithIdx(bIdx);
-        auto b = targetMol.getAtomWithIdx(eIdx);
-        int is_a_h = a->getAtomicNum() == 1;
-        int is_b_h = b->getAtomicNum() == 1;
-
-        if (is_a_h ^ is_b_h) {
-          auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
-          non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
-        }
-        targetMol.addBond(bIdx, eIdx, bond->getBondType());
-      }
-    }
-  }
-};
 
 class Luni {
   // FIX: move down
 private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   Structure st;
-  NSResults bonded_nps;
+  NSResults neighbors;
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
   Topology topology = Topology(*mol);
-  /*std::vector<Feature> features;*/
   FeatureVec features;
 
-  void process_file(std::string file_path) {
+  void process_file(std::string file_path_) {
+    file_name = file_path_;
+
+    st = read_structure_gz(file_path_);
+
     RDKit::Conformer *conformer = new RDKit::Conformer();
-    auto start = std::chrono::high_resolution_clock::now();
-    st = read_structure_gz(file_path);
-    file_name = file_path;
-    std::cout << "Read Structure using gemmi: " << to_ms(t() - start).count() << "\n";
-
-    start = std::chrono::high_resolution_clock::now();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
-    std::cout << "Convert gemmi to RDKit: " << to_ms(t() - start).count() << "\n";
-
-    start = std::chrono::high_resolution_clock::now();
     mol->updatePropertyCache(false);
-    std::cout << "Update Property Cache: " << to_ms(t() - start).count() << "\n";
-
-    start = std::chrono::high_resolution_clock::now();
     mol->addConformer(conformer, true);
-    std::cout << "Add Conformer: " << to_ms(t() - start).count() << "\n";
   }
 
   void create_topology() {
 
-    auto start = std::chrono::high_resolution_clock::now();
-    const auto &conf = get_conformer();
-    grid = FastNS(conf.getPositions(), _cutoff);
-    bonded_nps = grid.self_search();
-    std::cout << "Self Search: " << to_ms(t() - start).count() << "\n";
+    grid = FastNS(get_conformer().getPositions(), _cutoff);
+    neighbors = grid.self_search();
 
-    start = std::chrono::high_resolution_clock::now();
-    Topology::compute_bonds(*mol, bonded_nps);
-    std::cout << "Compute Bonds: " << to_ms(t() - start).count() << "\n";
-
-
+    Topology::compute_bonds(*mol, neighbors);
 
     topology.build_residues(*mol);
     initialize_and_populate_ringinfo(*mol, *topology.residues);
 
-
-    /*if (!mol->getRingInfo()->isInitialized()) {*/
-    /*  RDKit::MolOps::symmetrizeSSSR(*mol);*/
-    /*}*/
-    // print all rings
-    /*std::cout << "x--> Rings: " << mol->getRingInfo()->numRings() << "\n";*/
-    /*for (const auto &ring : mol->getRingInfo()->atomRings()) {*/
-    /*  std::cout << "x--> Ring: ";*/
-    /*  auto first = ring.front();*/
-    /*  auto first_atom = mol->getAtomWithIdx(first);*/
-    /*  auto info = static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());*/
-    /*  std::cout << info->getResidueName() << " " << info->getResidueNumber() << " ";*/
-    /**/
-    /*  for (const auto &atom_idx : ring) {*/
-    /*    auto atom = mol->getAtomWithIdx(atom_idx);*/
-    /*    std::cout << atom->getIdx() << " ";*/
-    /*  }*/
-    /*  std::cout << "\n";*/
-    /*}*/
-
-    start = std::chrono::high_resolution_clock::now();
-    /*topology.assign_atom_types(*mol);*/
-
-    topology.assign_molstar_typing();
-    /*topology.assign_arpeggio_atom_types(*mol);*/
-
-    std::cout << "Assign Atom Types: " << to_ms(t() - start).count() << "\n";
-
-    for (const auto &atom : mol->atoms()) {
-      /*auto is_conj = isConjugated(*mol, *atom);*/
-      /*std::cout << "Conjugated: " << is_conj << "\n";*/
-      auto info = static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-
-      /*auto no_ih = calculateHydrogensCharge(*mol, *atom, true, true);*/
-      /*calculateHydrogensCharge(*mol, *atom, true, true);*/
-      /*auto h_count = get_h_count(*mol, *atom);*/
-      /*std::cout << info->getName() << " " << */
-      /*  h_count << " ? " <<*/
-      /*  no_ih << " ---- " <<*/
-      /*  no_ih + atom->getNumExplicitHs() << " | " <<*/
-      /*  atom->getNumImplicitHs() << " " <<*/
-      /*  atom->getNumExplicitHs() << " " <<*/
-      /*  atom->getTotalNumHs() << " " << */
-      /*  "\n";*/
-    }
+    /*topology.assign_molstar_typing();*/
+    topology.assign_arpeggio_atom_types();
   }
 
 public:
   Luni() = default; // FIX: remove?
   explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
     process_file(file_name);
-
-    auto start = std::chrono::high_resolution_clock::now();
     create_topology();
 
     // FIX: double call to Residues(*mol)
-    std::cout << "Create Topology: " << to_ms(t() - start).count() << "\n";
     Residues residues(*mol);
     features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
-    std::cout << "Analyze Group Types: " << to_ms(t() - start).count() << "\n";
-    std::cout << "Features: " << get_features().features.size() << "\n";
-    /*features = GroupTypeAnalyzer::*/
   }
 
   // Luni from IR:
@@ -551,7 +279,7 @@ public:
 
   /*void assign_molstar_atom_types() { topology.assign_molstar_atom_types(*mol); }*/
   void assign_molstar_atom_types() { topology.assign_molstar_typing(); }
-  void assign_arpeggio_atom_types() { topology.assign_arpeggio_atom_types(*mol); }
+  void assign_arpeggio_atom_types() { topology.assign_arpeggio_atom_types(); }
 
 private:
   std::vector<int> filtered_indices;

@@ -55,6 +55,7 @@ void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::ve
   auto mapped_bonds = map_rings(aromatic_rings.bonds, indices);
 
   add_rings_to_mol(mol, mapped_rings);
+  // FIX: add planarity test
 }
 
 void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &residues) {

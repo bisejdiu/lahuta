@@ -1,5 +1,10 @@
+#ifndef LAHUTA_CLEAN_MOL_HPP
+#define LAHUTA_CLEAN_MOL_HPP
+
 #include <rdkit/GraphMol/Atom.h>
 #include <rdkit/GraphMol/RWMol.h>
+
+namespace lahuta {
 
 inline unsigned int ob_explicit_valence(const RDKit::RWMol &mol,
                                              const RDKit::Atom *atom) {
@@ -70,3 +75,7 @@ inline double smallest_bond_angle(const RDKit::RWMol &mol,
 }
 
 void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf);
+
+} // namespace lahuta
+
+#endif // LAHUTA_CLEAN_MOL_HPP 
