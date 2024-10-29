@@ -20,6 +20,9 @@ enum class InteractionType {
   WeakHydrogenBond,
   Ionic,
   MetalCoordination,
+  CationPi,
+  PiStackingP,
+  PiStackingT,
 };
 
 enum class EntityType : uint8_t {
@@ -266,6 +269,8 @@ public:
 private:
   Contacts(const Luni *luni, std::vector<Contact> interactions) : luni(luni), interactions(interactions) {}
   Contacts(const Luni *luni, Contact interaction) : luni(luni) { interactions.push_back(interaction); }
+
+  std::string get_entity_atoms(const EntityID &entity) const;
 
 private:
   const Luni *luni;

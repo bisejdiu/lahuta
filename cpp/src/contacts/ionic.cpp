@@ -28,8 +28,8 @@ void find_ionic(const Luni &luni, GeometryOptions opts, Contacts &container) {
     if (contacts.find(feature_pair) == contacts.end()) {
       contacts.insert(feature_pair);
 
-      EntityID entity1 = make_entity_id(lahuta::EntityType::Group, feature_a.get_id());
-      EntityID entity2 = make_entity_id(lahuta::EntityType::Group, feature_b.get_id());
+      EntityID entity1 = make_entity_id(EntityType::Group, feature_a.get_id());
+      EntityID entity2 = make_entity_id(EntityType::Group, feature_b.get_id());
 
       container.add(Contact(entity1, entity2, dist, InteractionType::Ionic));
     }

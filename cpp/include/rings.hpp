@@ -19,6 +19,8 @@ struct RingData {
   RDGeom::Point3D center;
   RDGeom::Point3D norm;
 
+  size_t get_id() const { return id; }
+
 private:
   size_t id;
 
@@ -30,6 +32,9 @@ public:
 
   explicit RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<const RDKit::Atom *> atoms_)
       : center(center_), norm(norm_), atoms(atoms_) {}
+
+  explicit RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<const RDKit::Atom *> atoms_, size_t id_)
+      : center(center_), norm(norm_), atoms(atoms_), id(id_) {}
 
   std::vector<int> atom_ids() const {
     std::vector<int> ids;

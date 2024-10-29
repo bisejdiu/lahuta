@@ -1,9 +1,11 @@
 #include "contacts/interactions.hpp"
+#include "contacts/cationpi.hpp"
 #include "contacts/distances.hpp"
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrophobic.hpp"
 #include "contacts/ionic.hpp"
 #include "contacts/metalic.hpp"
+#include "contacts/pistacking.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {
@@ -55,6 +57,20 @@ Contacts Interactions::find_metalic_interactions() {
   Contacts contacts(luni_);
   GeometryOptions _opts_;
   find_metalic(luni_, _opts_, contacts);
+  return contacts;
+}
+
+Contacts Interactions::find_cationpi_interactions() {
+  Contacts contacts(luni_);
+  GeometryOptions _opts_;
+  find_cationpi(luni_, _opts_, contacts);
+  return contacts;
+}
+
+Contacts Interactions::find_pistacking_interactions() {
+  Contacts contacts(luni_);
+  GeometryOptions _opts_;
+  find_pistacking(luni_, _opts_, contacts);
   return contacts;
 }
 

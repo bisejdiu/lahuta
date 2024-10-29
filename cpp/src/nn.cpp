@@ -64,49 +64,53 @@ void Contacts::visit_entity(const Luni &luni, EntityID entity, Func1 func1, Func
 }
 
 void Contacts::print_interactions() const {
-
   for (const auto &interaction : interactions) {
 
-    visit_entity(*luni, interaction.entity1);
-    visit_entity(*luni, interaction.entity2);
+    // Get entity information as a formatted string
+    std::string entity1_atoms = get_entity_atoms(interaction.entity1);
+    std::string entity2_atoms = get_entity_atoms(interaction.entity2);
 
-    auto type = get_entity_type(interaction.entity1);
-    std::string e1_atoms = "";
-    std::string e2_atoms = "";
-    if (type == EntityType::Group) {
-      const Feature &group = luni->get_entity<Feature>(interaction.entity1);
-      for (const auto *atom : group.members) {
-        e1_atoms += std::to_string(atom->getIdx()) + " ";
-      }
-      const Feature &group2 = luni->get_entity<Feature>(interaction.entity2);
-      for (const auto *atom : group2.members) {
-        e2_atoms += std::to_string(atom->getIdx()) + " ";
-      }
-    }
-    if (type == EntityType::Atom) {
-      const RDKit::Atom &atom = luni->get_entity<RDKit::Atom>(interaction.entity1);
-      e1_atoms = std::to_string(atom.getIdx());
-      const RDKit::Atom &atom2 = luni->get_entity<RDKit::Atom>(interaction.entity2);
-      e2_atoms = std::to_string(atom2.getIdx());
-    }
-    if (type == EntityType::Ring) {
-      const RingData &ring = luni->get_entity<RingData>(interaction.entity1);
-      auto atom_ids = ring.atom_ids();
-      for (const auto &atom_id : atom_ids) {
-        e1_atoms += std::to_string(atom_id) + " ";
-      }
-      const RingData &ring2 = luni->get_entity<RingData>(interaction.entity2);
-      auto atom_ids2 = ring2.atom_ids();
-      for (const auto &atom_id : atom_ids2) {
-        e2_atoms += std::to_string(atom_id) + " ";
-      }
-    }
-    std::cout << "Interaction between entity " << entity_type_to_string(get_entity_type(interaction.entity1))
-              << " (" << get_entity_index(interaction.entity1) << ") and entity "
+    // Print formatted interaction details
+    std::cout << "Interaction between entity "
+              << entity_type_to_string(get_entity_type(interaction.entity1)) << " ("
+              << get_entity_index(interaction.entity1) << ") and entity "
               << entity_type_to_string(get_entity_type(interaction.entity2)) << " ("
-              << get_entity_index(interaction.entity2) << ") with distance " << interaction.distance
-              << " --- " << e1_atoms << " --- " << e2_atoms << "\n";
+              << get_entity_index(interaction.entity2) << ") with distance "
+              << interaction.distance << " --- " << entity1_atoms << " --- " << entity2_atoms << "\n";
   }
 }
+
+std::string Contacts::get_entity_atoms(const EntityID &entity) const {
+  std::string atoms_info;
+
+  switch (get_entity_type(entity)) {
+    case EntityType::Group: {
+      const Feature &group = luni->get_entity<Feature>(entity);
+      for (const auto *atom : group.members) {
+        atoms_info += std::to_string(atom->getIdx()) + " ";
+      }
+      break;
+    }
+    case EntityType::Atom: {
+      const RDKit::Atom &atom = luni->get_entity<RDKit::Atom>(entity);
+      atoms_info = std::to_string(atom.getIdx());
+      break;
+    }
+    case EntityType::Ring: {
+      const RingData &ring = luni->get_entity<RingData>(entity);
+      for (const auto &atom_id : ring.atom_ids()) {
+        atoms_info += std::to_string(atom_id) + " ";
+      }
+      break;
+    }
+    default:
+      throw std::runtime_error("Unsupported entity type in get_entity_atoms");
+  }
+
+  return atoms_info;
+}
+
+
+
 
 } // namespace lahuta

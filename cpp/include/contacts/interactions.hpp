@@ -59,6 +59,8 @@ public:
   [[nodiscard]] Contacts find_halogen_interactions();
   [[nodiscard]] Contacts find_ionic_interactions();
   [[nodiscard]] Contacts find_metalic_interactions();
+  [[nodiscard]] Contacts find_cationpi_interactions();
+  [[nodiscard]] Contacts find_pistacking_interactions();
 
 private:
   Luni *luni_;

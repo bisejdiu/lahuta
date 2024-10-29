@@ -122,6 +122,7 @@ public:
 
     // populate rings_vec
     RingDataVec rings;
+    size_t idx = 0;
     for (const auto &ring : mol->getRingInfo()->atomRings()) {
       RDGeom::Point3D center, norm;
       Rings::compute_center(mol, ring, center);
@@ -132,7 +133,7 @@ public:
         atoms.push_back(mol->getAtomWithIdx(atom_idx));
       }
 
-      rings.rings.emplace_back(center, norm, atoms);
+      rings.rings.emplace_back(center, norm, atoms, idx++);
     }
 
     atom_types = std::move(new_atom_types);
