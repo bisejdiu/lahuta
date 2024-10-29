@@ -7,22 +7,6 @@ namespace lahuta {
 
 class Luni;
 
-inline void log_feature_atoms(const std::string &feature_type, const Feature &feature) {
-  std::cout << "i. " << feature_type << " Charge Feature Atoms:" << std::endl;
-  std::cout << "Number of atoms: " << feature.members.size() << std::endl;
-  for (const auto *atom : feature.members) {
-    unsigned int atom_index = atom->getIdx();
-    auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    std::string atom_name = res_info->getName();
-    std::string residue_name = res_info->getResidueName();
-    std::string chain_id = res_info->getChainId();
-    auto residue_number = res_info->getResidueNumber();
-
-    std::cout << "i.  Atom Index: " << atom_index << ", Atom Name: " << atom_name
-              << ", Residue: " << residue_name << " " << chain_id << residue_number << std::endl;
-  }
-}
-
 class InteractionBase {
   Contacts contacts;
 
@@ -69,11 +53,12 @@ public:
   /*  group_features_ = luni_->get_features();*/
   /*}*/
 
-  [[nodiscard]] Contacts find_ionic_interactions();
   [[nodiscard]] Contacts find_hbond_interactions();
   [[nodiscard]] Contacts find_weak_hbond_interactions();
   [[nodiscard]] Contacts find_hydrophobic_interactions();
   [[nodiscard]] Contacts find_halogen_interactions();
+  [[nodiscard]] Contacts find_ionic_interactions();
+  [[nodiscard]] Contacts find_metalic_interactions();
 
 private:
   Luni *luni_;

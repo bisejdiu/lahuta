@@ -51,7 +51,7 @@ auto identify_negative_feature_groups(const RDKit::RWMol &mol) {
   return identified_atoms;
 }
 
-FeatureVec add_positive_charges(const RDKit::RWMol &mol, Residues &residues) {
+FeatureVec add_positive_charges(const RDKit::RWMol &mol, const Residues &residues) {
 
   FeatureVec features;
   std::optional<std::unordered_map<const RDKit::Atom *, FeatureGroup>> groups;
@@ -106,7 +106,7 @@ FeatureVec add_positive_charges(const RDKit::RWMol &mol, Residues &residues) {
   return std::move(features);
 }
 
-FeatureVec add_negative_charges(const RDKit::RWMol &mol, Residues &residues) {
+FeatureVec add_negative_charges(const RDKit::RWMol &mol, const Residues &residues) {
 
   std::optional<std::unordered_map<const RDKit::Atom *, FeatureGroup>> groups;
   FeatureVec features;

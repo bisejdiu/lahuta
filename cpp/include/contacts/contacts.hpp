@@ -140,12 +140,28 @@ struct AtomData {
   const RDGeom::Point3D *pos;
   size_t idx;
 
+  /*AtomData() = default;*/
   AtomData(AtomType type, const RDKit::Atom *atom, const RDGeom::Point3D *pos, size_t idx)
       : type(type), atom(atom), pos(pos), idx(idx) {}
+  /*AtomData(const AtomData &other) = default;*/
+  /*AtomData(AtomData &&other) = default;*/
+  /*AtomData &operator=(const AtomData &other) = default;*/
+  /*AtomData &operator=(AtomData &&other) = default;*/
+
 };
 
 struct AtomDataVec {
   std::vector<const AtomData> data;
+
+  /*void add_data(const AtomData &atom_data) { data.push_back(atom_data); }*/
+  /*void add_data(AtomType type, const RDKit::Atom *atom, const RDGeom::Point3D *pos, size_t idx) {*/
+  /*  data.push_back(AtomData(type, atom, pos, idx));*/
+  /*}*/
+  void add_data(const RDKit::RWMol &mol, const RDKit::Atom *atom, AtomType type) {
+    data.push_back(AtomData(type, atom, &mol.getConformer().getAtomPos(atom->getIdx()), atom->getIdx()));
+  }
+
+
 
   RDGeom::POINT3D_VECT positions() const {
     RDGeom::POINT3D_VECT pos;

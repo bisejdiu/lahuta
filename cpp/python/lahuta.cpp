@@ -35,7 +35,7 @@ void bind(py::module &_lahuta) {
       .def(py::init<>())
       .def_readwrite("rings", &RingDataVec::rings)
       .def("compute_angles", &RingDataVec::compute_angles)
-      .def("root_atom_ids", &RingDataVec::root_atom_ids)
+      /*.def("root_atom_ids", &RingDataVec::root_atom_ids)*/
       /*.def("compute_angles",*/
       /*     [](RingDataVec &rdv, const std::vector<std::vector<double>>
          &points) {*/

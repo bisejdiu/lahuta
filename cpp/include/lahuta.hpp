@@ -11,6 +11,7 @@
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include "GraphMol/Rings.h"
+#include "aromatics.hpp"
 #include "bond_order.hpp"
 #include "bonds.hpp"
 #include "contacts/features.hpp"
@@ -43,15 +44,18 @@ class Topology {
 public:
   std::vector<AtomType> atom_types;
   RingDataVec rings_vec;
+  const RDKit::RWMol *mol;
+  const Residues *residues;
 
+  Topology(const RDKit::RWMol &mol) : mol(&mol) {}
   Topology() = default;
-  Topology(const Topology &other) = default;
-  Topology(Topology &&other) = default;
-  Topology &operator=(const Topology &other) = default;
-  Topology &operator=(Topology &&other) = default;
-  ~Topology() = default;
+  ~Topology() { delete residues;}
 
 public:
+  void build_residues(const RDKit::RWMol &mol) {
+    residues = new Residues(mol);
+  }
+
   void assign_arpeggio_atom_types(RDKit::RWMol &mol) {
 
     std::vector<AtomType> indices(mol.getNumAtoms(), AtomType::NONE);
@@ -110,21 +114,22 @@ public:
     rings_vec = std::move(_rings_vec);
   }
 
-  void assign_molstar_typing(RDKit::RWMol &mol) {
-    // initializes RingInfo and populates it
-    FeatureVec features = GroupTypeAnalysis::analyze(mol);
-    std::vector<AtomType> new_atom_types = AtomTypeAnalysis::analyze(mol);
+  void assign_molstar_typing() {
+
+    // FIX: to be replaced by the entitytype manager
+    std::vector<AtomType> new_atom_types = AtomTypeAnalysis::analyze(*mol);
+    FeatureVec features = GroupTypeAnalysis::analyze(*mol, *residues);
 
     // populate rings_vec
     RingDataVec rings;
-    for (const auto &ring : mol.getRingInfo()->atomRings()) {
+    for (const auto &ring : mol->getRingInfo()->atomRings()) {
       RDGeom::Point3D center, norm;
-      Rings::compute_center(&mol, ring, center);
-      Rings::compute_normal(&mol, ring, center, norm);
+      Rings::compute_center(mol, ring, center);
+      Rings::compute_normal(mol, ring, center, norm);
 
       std::vector<const RDKit::Atom *> atoms;
       for (const int &atom_idx : ring) {
-        atoms.push_back(mol.getAtomWithIdx(atom_idx));
+        atoms.push_back(mol->getAtomWithIdx(atom_idx));
       }
 
       rings.rings.emplace_back(center, norm, atoms);
@@ -245,7 +250,7 @@ private:
   NSResults bonded_nps;
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
-  Topology topology;
+  Topology topology = Topology(*mol);
   /*std::vector<Feature> features;*/
   FeatureVec features;
 
@@ -270,6 +275,7 @@ private:
   }
 
   void create_topology() {
+
     auto start = std::chrono::high_resolution_clock::now();
     const auto &conf = get_conformer();
     grid = FastNS(conf.getPositions(), _cutoff);
@@ -279,6 +285,12 @@ private:
     start = std::chrono::high_resolution_clock::now();
     Topology::compute_bonds(*mol, bonded_nps);
     std::cout << "Compute Bonds: " << to_ms(t() - start).count() << "\n";
+
+
+
+    topology.build_residues(*mol);
+    initialize_and_populate_ringinfo(*mol, *topology.residues);
+
 
     /*if (!mol->getRingInfo()->isInitialized()) {*/
     /*  RDKit::MolOps::symmetrizeSSSR(*mol);*/
@@ -302,7 +314,7 @@ private:
     start = std::chrono::high_resolution_clock::now();
     /*topology.assign_atom_types(*mol);*/
 
-    topology.assign_molstar_typing(*mol);
+    topology.assign_molstar_typing();
     /*topology.assign_arpeggio_atom_types(*mol);*/
 
     std::cout << "Assign Atom Types: " << to_ms(t() - start).count() << "\n";
@@ -333,8 +345,11 @@ public:
 
     auto start = std::chrono::high_resolution_clock::now();
     create_topology();
+
+    // FIX: double call to Residues(*mol)
     std::cout << "Create Topology: " << to_ms(t() - start).count() << "\n";
-    features = std::move(GroupTypeAnalysis::analyze(*mol));
+    Residues residues(*mol);
+    features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
     std::cout << "Analyze Group Types: " << to_ms(t() - start).count() << "\n";
     std::cout << "Features: " << get_features().features.size() << "\n";
     /*features = GroupTypeAnalyzer::*/
@@ -523,7 +538,7 @@ public:
     /*auto ring_neighbors = find_ring_neighbors2(6.0);*/
     /*c.add_many(ring_neighbors, ring_entities, atom_entities);*/
 
-    FeatureVec group_features = GroupTypeAnalysis::analyze(*mol);
+    FeatureVec group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
     Interactions processor(this, InteractionOptions{5.0});
     auto ionic = processor.find_ionic_interactions();
     auto hbonds = processor.find_hbond_interactions();
@@ -534,7 +549,7 @@ public:
   }
 
   /*void assign_molstar_atom_types() { topology.assign_molstar_atom_types(*mol); }*/
-  void assign_molstar_atom_types() { topology.assign_molstar_typing(*mol); }
+  void assign_molstar_atom_types() { topology.assign_molstar_typing(); }
   void assign_arpeggio_atom_types() { topology.assign_arpeggio_atom_types(*mol); }
 
 private:

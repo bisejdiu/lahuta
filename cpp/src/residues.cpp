@@ -143,7 +143,7 @@ std::vector<int> get_unknown_residues<std::vector<int>>(
   return unknown_indices;
 }
 
-std::vector<std::vector<int>> find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues) {
+std::vector<std::vector<int>> tbl_find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues) {
   return get_aromatic_rings<std::vector<int>>(residues, [&mol](const Residue &residue, int ring_size) {
     std::vector<int> atom_ids;
     for (const auto &atom : FastRingFinder::find_ring_in_residue(mol, residue, ring_size)) {

@@ -68,7 +68,7 @@ template <>
 std::vector<int> get_unknown_residues<std::vector<int>>(
     const Residues &residues, const std::set<std::string> &KnownResiduesSet);
 
-std::vector<std::vector<int>> find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues);
+std::vector<std::vector<int>> tbl_find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues);
 
 } // namespace residue_props
 

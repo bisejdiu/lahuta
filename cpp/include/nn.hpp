@@ -19,6 +19,7 @@ enum class InteractionType {
   HydrogenBond,
   WeakHydrogenBond,
   Ionic,
+  MetalCoordination,
 };
 
 enum class EntityType : uint8_t {

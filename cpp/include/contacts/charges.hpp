@@ -158,8 +158,8 @@ auto identify_negative_feature_groups(const RDKit::RWMol &mol);
 
 /*[[nodiscard]] std::vector<Feature> add_positive_charges(const RDKit::RWMol &mol, ResMap &res_map);*/
 /*[[nodiscard]] std::vector<Feature> add_negative_charges(const RDKit::RWMol &mol, ResMap &res_map);*/
-[[nodiscard]] FeatureVec add_positive_charges(const RDKit::RWMol &mol, Residues &residues);
-[[nodiscard]] FeatureVec add_negative_charges(const RDKit::RWMol &mol, Residues &residues);
+[[nodiscard]] FeatureVec add_positive_charges(const RDKit::RWMol &mol, const Residues &residues);
+[[nodiscard]] FeatureVec add_negative_charges(const RDKit::RWMol &mol, const Residues &residues);
 
 } // namespace lahuta
 

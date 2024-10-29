@@ -3,6 +3,8 @@
 
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
+#include "contacts/aromaticity.hpp"
+#include "contacts/charges.hpp"
 #include "features.hpp"
 #include "residues.hpp"
 
@@ -11,22 +13,28 @@ namespace lahuta {
 class GroupTypeBase {
 public:
   virtual ~GroupTypeBase() = default;
-  virtual FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const = 0;
+  virtual FeatureVec identify(const RDKit::RWMol &mol, const Residues &residues) const = 0;
 };
 
 class PositiveChargeGroup : public GroupTypeBase {
 public:
-  FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const override;
+  FeatureVec identify(const RDKit::RWMol &mol, const Residues &residues) const override {
+    return add_positive_charges(mol, residues);
+  }
 };
 
 class NegativeChargeGroup : public GroupTypeBase {
 public:
-  FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const override;
+  FeatureVec identify(const RDKit::RWMol &mol, const Residues &residues) const override {
+    return add_negative_charges(mol, residues);
+  };
 };
 
 class AromaticRingGroup : public GroupTypeBase {
 public:
-  FeatureVec identify(const RDKit::RWMol &mol, Residues &residues) const override;
+  FeatureVec identify(const RDKit::RWMol &mol, const Residues &residues) const override {
+    return add_aromatic_rings(mol, residues);
+  };
 };
 
 class GroupTypeStrategy {
@@ -39,7 +47,7 @@ public:
     strategies.push_back(std::make_unique<T>());
   }
 
-  FeatureVec identify(const RDKit::RWMol &mol) const;
+  FeatureVec identify(const RDKit::RWMol &mol, const Residues &residues) const;
 
 private:
   void assign_ids(std::vector<Feature> &features) const;
@@ -59,9 +67,9 @@ public:
 
 class GroupTypeAnalysis {
 public:
-  static FeatureVec analyze(const RDKit::RWMol &mol) {
+  static FeatureVec analyze(const RDKit::RWMol &mol, const Residues &residues) {
     auto strategy = GroupTypeFactory::create();
-    return strategy.identify(mol);
+    return strategy.identify(mol, residues);
   }
 };
 

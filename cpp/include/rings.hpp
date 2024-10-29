@@ -8,10 +8,7 @@
 
 namespace lahuta {
 
-// TODO: 1. Store atom pointers instead of atom indices
-//       2. Store the ring type (aromatic, aliphatic, etc.)
-//       3. Store the `id` similar to Feature struct and remove the
-//       `root_atom_id`
+// TODO: 1. Store the ring type (aromatic, aliphatic, etc.)
 
 enum class RingGroup { NONE, AROMATIC, ALIPHATIC };
 enum class RingType { None };
@@ -21,7 +18,6 @@ struct RingData {
   std::vector<const RDKit::Atom *> atoms;
   RDGeom::Point3D center;
   RDGeom::Point3D norm;
-  int root_atom_id = -1;
 
 private:
   size_t id;
@@ -42,13 +38,6 @@ public:
       ids.push_back(atom->getIdx());
     }
     return ids;
-  }
-
-  // FIX: Delete
-  int get_root_atom_id() const {
-    /*  auto min_atom_id = std::min_element(atom_ids.begin(), atom_ids.end());*/
-    /*  return *min_atom_id;*/
-    return root_atom_id;
   }
 
   /// Compute the angle between the provided point and the ring
@@ -121,13 +110,13 @@ struct RingDataVec {
     return normals;
   }
 
-  std::vector<int> root_atom_ids() const {
-    std::vector<int> root_atom_ids;
-    for (const auto &ring : rings) {
-      root_atom_ids.push_back(ring.get_root_atom_id());
-    }
-    return root_atom_ids;
-  }
+  /*std::vector<int> root_atom_ids() const {*/
+  /*  std::vector<int> root_atom_ids;*/
+  /*  for (const auto &ring : rings) {*/
+  /*    root_atom_ids.push_back(ring.get_root_atom_id());*/
+  /*  }*/
+  /*  return root_atom_ids;*/
+  /*}*/
 
   std::vector<double>
   compute_angles(const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) const {
@@ -157,6 +146,9 @@ struct ResIdHash {
   }
 };
 
+
+// FIX: this is now only *really* needed by the unrefactored arpeggio atom-typing code. 
+// Once that is refactored, we should remove this class. 
 class Rings {
 public:
   // FIX: benchmark performance for many ring systems?

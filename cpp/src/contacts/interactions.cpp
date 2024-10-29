@@ -2,25 +2,16 @@
 #include "contacts/distances.hpp"
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrophobic.hpp"
+#include "contacts/ionic.hpp"
+#include "contacts/metalic.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {
 
+// FIX: Luni is sometimes passed as a pointer, sometimes as a reference (should be consistent)
 // FIX: these should functions should optionally take a custom function-specific options struct
 // FIX: atom neighbors are being computed per interaction type
 // FIX: names: hydrophobic bonds are not really bonds, they are interactions or contacts
-Contacts Interactions::find_ionic_interactions() {
-  // FIX: Ionic contacts with 2ORG gives 229 contacts. which is likely wrong
-
-  SimplePairFeatures finder(luni_->get_features());
-  finder.process_features(AtomType::POS_IONISABLE, AtomType::NEG_IONISABLE);
-
-  std::cout << "Distance cutoff: " << opts_.distance_cutoff << std::endl;
-  Contacts interaction_contact = finder.find_interactions(InteractionType::Ionic, opts_.distance_cutoff);
-  interaction_contact.set_luni(luni_);
-  /*interaction_contact.print_interactions();*/
-  return interaction_contact;
-}
 
 Contacts Interactions::find_hbond_interactions() {
   Contacts container(luni_);
@@ -48,6 +39,23 @@ Contacts Interactions::find_halogen_interactions() {
   GeometryOptions _opts = GeometryOptions();
   find_halogen_bonds(*luni_, _opts, container);
   return container;
+}
+
+Contacts Interactions::find_ionic_interactions() {
+  // FIX: Since we have to pass Luni to the finder, we can just have it return the contacts
+  // directly, making it unnecessary for us to instantiate a Contacts object (which also takes a
+  // Luni object)
+  Contacts contacts(luni_);
+  GeometryOptions _opts_;
+  find_ionic(*luni_, _opts_, contacts);
+  return contacts;
+}
+
+Contacts Interactions::find_metalic_interactions() {
+  Contacts contacts(luni_);
+  GeometryOptions _opts_;
+  find_metalic(luni_, _opts_, contacts);
+  return contacts;
 }
 
 } // namespace lahuta

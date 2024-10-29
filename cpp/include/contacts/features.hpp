@@ -8,6 +8,20 @@ namespace lahuta {
 class Luni;
 using FeatureTypeCheckFunc = std::function<bool(const AtomType &, const AtomType &)>;
 
+enum class GroupType {
+  None = 0,
+  QuaternaryAmine = 1,
+  TertiaryAmine = 2,
+  Sulfonium = 3,
+  SulfonicAcid = 4,
+  Sulfate = 5,
+  Phosphate = 6,
+  Halocarbon = 7,
+  Guanidine = 8,
+  Acetamidine = 9,
+  Carboxylate = 10
+};
+
 enum class FeatureGroup {
   None = 0,
   QuaternaryAmine = 1,
@@ -83,6 +97,10 @@ struct FeatureVec {
     }
     return pos_vec;
   }
+
+  // iterator support:
+  std::vector<Feature>::iterator begin() { return features.begin(); }
+  std::vector<Feature>::iterator end() { return features.end(); }
 
   std::vector<Feature> features;
 };

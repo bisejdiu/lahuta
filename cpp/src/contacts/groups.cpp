@@ -1,36 +1,18 @@
 #include "contacts/groups.hpp"
-#include "contacts/aromaticity.hpp"
-#include "contacts/charges.hpp"
 #include "contacts/features.hpp"
 
 namespace lahuta {
 
-FeatureVec PositiveChargeGroup::identify(const RDKit::RWMol &mol, Residues &residues) const {
-  return add_positive_charges(mol, residues);
-};
-
-FeatureVec NegativeChargeGroup::identify(const RDKit::RWMol &mol, Residues &residues) const {
-  return add_negative_charges(mol, residues);
-};
-
-FeatureVec AromaticRingGroup::identify(const RDKit::RWMol &mol, Residues &residues) const {
-  if (mol.getRingInfo()->isInitialized()) {
-    mol.getRingInfo()->reset();
-  }
-  mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
-  return add_aromatic_rings(mol, residues);
-};
-
-FeatureVec GroupTypeStrategy::identify(const RDKit::RWMol &mol) const {
-  auto residues = Residues(mol);
+FeatureVec GroupTypeStrategy::identify(const RDKit::RWMol &mol, const Residues &residues) const {
 
   std::vector<Feature> group_features; // all features from all strategies
   for (const auto &strategy : strategies) {
     auto features = strategy->identify(mol, residues); // features from one strategy
     group_features.insert(group_features.end(), features.features.begin(), features.features.end());
   }
-  // NOTE: `group_features` is not sorted as we get it from the strategies. If we do not sort `members`
-  // somehow, the currently assign ids just lock-in the order of the features as it already is.
+  // NOTE: `group_features` is not sorted as we get it from the strategies.
+  // If we do not sort `members` somehow, the currently assign ids just lock-in
+  // the order of the features as it already is.
   assign_ids(group_features);
   compute_centers(group_features);
 
