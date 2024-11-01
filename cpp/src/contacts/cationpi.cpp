@@ -1,6 +1,7 @@
+#include "contacts/cationpi.hpp"
+#include "contacts/search.hpp"
 #include "lahuta.hpp"
 #include "nn.hpp"
-#include "contacts/cationpi.hpp"
 
 namespace lahuta {
 
@@ -31,13 +32,16 @@ void find_cationpi(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
   const auto rings = luni->get_rings();
 
   auto features = get_features(luni, AtomType::POS_IONISABLE);
-  if (features.features.empty()) {
+
+  // FIX: early return does not provide important performance gain.
+  // We should just let it run, if we can be sure no errors will occur.
+  if (features.get_data().empty()) {
     return;
   }
 
   double cationpi_max_dist = 6.0;
-  auto grid = FastNS(rings.centers(), cationpi_max_dist);
-  auto nbrs = grid.search(features.positions());
+  EntityNeighborSearch ens(mol.getConformer());
+  auto nbrs = ens.search(features, rings, cationpi_max_dist);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [feature_index, ring_index] = pair;
@@ -53,15 +57,13 @@ void find_cationpi(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
 
     auto offset = compute_in_plane_offset(feature.center, ring.center, ring.norm);
 
+    // FIX: Are we sure we won't get multiple contacts for the same feature?
     if (offset <= 2.2) {
-      EntityID entity1 = make_entity_id(EntityType::Group, feature.get_id());
-      EntityID entity2 = make_entity_id(EntityType::Ring, ring.get_id());
-
       contacts.add(Contact(
-        entity1,
-        entity2,
-        dist,
-        InteractionType::Ionic));
+          make_entity_id(EntityType::Group, feature.get_id()),
+          make_entity_id(EntityType::Ring, ring.get_id()),
+          dist,
+          InteractionType::CationPi));
     }
   }
 }

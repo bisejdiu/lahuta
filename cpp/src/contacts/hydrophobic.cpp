@@ -1,4 +1,5 @@
 #include "contacts/hydrophobic.hpp"
+#include "contacts/search.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {
@@ -33,20 +34,16 @@ void find_hydrophobic_bonds(Luni &luni, const GeometryOptions &opts, Contacts &c
 
   auto max_dist_sq = 4.0 * 4.0;
   const auto &mol = luni.get_molecule();
+  const auto &conf = luni.get_conformer();
   const auto hydrophobic_atoms = get_atom_data(&luni, AtomType::HYDROPHOBIC);
 
-  auto grid = FastNS(hydrophobic_atoms.positions(), std::sqrt(max_dist_sq));
-  auto nbrs = grid.self_search();
+  EntityNeighborSearch ens(mol.getConformer());
+  auto results = ens.search(hydrophobic_atoms, std::sqrt(max_dist_sq));
 
-  for (const auto &[pair, dist] : nbrs) {
+  for (const auto &[pair, dist] : results) {
     auto [atom1_index, atom2_index] = pair;
-    const auto &atom1_data = hydrophobic_atoms.data[atom1_index];
-    const auto &atom2_data = hydrophobic_atoms.data[atom2_index];
-
-    // FIX: if `self_search` indeed handles self-pairs, this check is redundant
-    if (atom1_data.atom->getIdx() == atom2_data.atom->getIdx()) {
-      continue;
-    }
+    const auto &atom1_data = hydrophobic_atoms.get_data()[atom1_index];
+    const auto &atom2_data = hydrophobic_atoms.get_data()[atom2_index];
 
     if (are_residueids_close(mol, *atom1_data.atom, *atom2_data.atom, 0)) {
       continue;
@@ -58,8 +55,8 @@ void find_hydrophobic_bonds(Luni &luni, const GeometryOptions &opts, Contacts &c
     }
 
     container.add(Contact(
-        EntityID(atom1_data.atom->getIdx()),
-        EntityID(atom2_data.atom->getIdx()),
+        static_cast<EntityID>(atom1_data.atom->getIdx()),
+        static_cast<EntityID>(atom2_data.atom->getIdx()),
         dist,
         InteractionType::Hydrophobic));
   }

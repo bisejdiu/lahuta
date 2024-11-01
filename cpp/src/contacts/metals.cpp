@@ -104,14 +104,4 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   return AtomType::NONE;
 }
 
-bool is_metal_coordination(AtomType f1, AtomType f2) {
-  if (AtomTypeFlags::has(f1, AtomType::TransitionMetal)) {
-    return AtomTypeFlags::has(f2, AtomType::DativeBondPartner)
-           || AtomTypeFlags::has(f2, AtomType::TransitionMetal);
-  } else if (AtomTypeFlags::has(f1, AtomType::IonicTypeMetal)) {
-    return AtomTypeFlags::has(f2, AtomType::IonicTypePartner);
-  }
-  return false;
-}
-
 } // namespace lahuta

@@ -79,6 +79,12 @@ public:
 struct RingDataVec {
   std::vector<RingData> rings;
 
+  const std::vector<RingData> &get_data() const { return rings; }
+
+  RingData &operator[](size_t index) { return rings[index]; }
+  const RingData &operator[](size_t index) const { return rings[index]; }
+  int size() const { return rings.size(); }
+
   RingDataVec() = default;
   RingDataVec(RingDataVec &&other) noexcept : rings(std::move(other.rings)) {}
   RingDataVec &operator=(RingDataVec &&other) noexcept {
@@ -96,9 +102,6 @@ struct RingDataVec {
     return *this;
   }
 
-  RingData &operator[](size_t index) { return rings[index]; }
-  const RingData &operator[](size_t index) const { return rings[index]; }
-
   const RDGeom::POINT3D_VECT centers() const {
     RDGeom::POINT3D_VECT centers;
     for (const auto &ring : rings) {
@@ -106,6 +109,8 @@ struct RingDataVec {
     }
     return centers;
   }
+
+  const RDGeom::POINT3D_VECT positions() const { return centers(); }
 
   std::vector<std::vector<double>> norm1() const {
     std::vector<std::vector<double>> normals;

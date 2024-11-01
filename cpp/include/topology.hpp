@@ -41,14 +41,37 @@ public:
     if (!unk_indices.empty()) {
       std::sort(unk_indices.begin(), unk_indices.end());
       auto new_mol = filter_with_bonds(*mol, unk_indices);
-      auto vec = match_atom_types(new_mol);
-
-      for (size_t i = 0; i < unk_indices.size(); ++i) {
-        atom_types[unk_indices[i]] = vec[i];
+      if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
+        auto vec = match_atom_types(new_mol);
+        for (size_t i = 0; i < unk_indices.size(); ++i) {
+          atom_types[unk_indices[i]] = vec[i];
+        }
       }
     }
 
     rings_vec = create_ringdatavec();
+  }
+
+  bool should_initialize_ringinfo(int mol_size) const {
+    constexpr int small_threshold = 20'000;
+    constexpr int medium_threshold = 50'000;
+    constexpr int large_threshold = 100'000;
+
+    if (mol_size < small_threshold) {
+      return true;
+    } else if (mol_size < medium_threshold) {
+      std::cerr << "WARNING: Filtered molecule size (" << mol_size
+                << ") is large. Performance may be affected." << std::endl;
+      return true;
+    } else if (mol_size < large_threshold) {
+      std::cerr << "WARNING: Filtered molecule size (" << mol_size
+                << ") is very large. Performance may be severely affected." << std::endl;
+      return true;
+    } else {
+      std::cerr << "WARNING: Filtered molecule size (" << mol_size
+                << ") is too large. Ring perception will be skipped!" << std::endl;
+      return false;
+    }
   }
 
   RingDataVec create_ringdatavec() {

@@ -30,8 +30,6 @@ AtomType add_metal(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
 AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-bool is_metal_coordination(AtomType f1, AtomType f2);
-
 } // namespace lahuta
 
 #endif // LAHUTA_METALS_HPP

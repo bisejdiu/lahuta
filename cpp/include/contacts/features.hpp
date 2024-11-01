@@ -45,6 +45,7 @@ struct Feature {
   RDGeom::Point3D center;
 
   int get_id() const { return id; }
+  size_t get_idx() const { return id; }
 
   Feature() = default;
   Feature(AtomType type, FeatureGroup group, std::vector<const RDKit::Atom *> members, RDGeom::Point3D center)
@@ -61,14 +62,17 @@ private:
 
 struct FeatureVec {
 
+  FeatureVec() = default;
+  FeatureVec(std::vector<Feature> features) : features(std::move(features)) {}
+  const std::vector<Feature> &get_data() const { return features; }
   void add_feature(Feature feature) { features.push_back(feature); }
   void merge(const FeatureVec &other) {
     features.insert(features.end(), other.features.begin(), other.features.end());
   }
 
   Feature &operator[](size_t index) { return features[index]; }
-
   const Feature &operator[](size_t index) const { return features[index]; }
+  int size() const { return features.size(); }
 
   const RDGeom::POINT3D_VECT *centers() const {
     auto *center_vec = new RDGeom::POINT3D_VECT();
@@ -102,6 +106,7 @@ struct FeatureVec {
   std::vector<Feature>::iterator begin() { return features.begin(); }
   std::vector<Feature>::iterator end() { return features.end(); }
 
+private:
   std::vector<Feature> features;
 };
 

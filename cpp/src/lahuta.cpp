@@ -439,8 +439,8 @@ const std::vector<EntityID> &Luni::get_group_entities() {
   if (entities.find(EntityType::Group) == entities.end()) {
     std::vector<EntityID> group_entities;
     auto groups = get_features();
-    group_entities.reserve(groups.features.size());
-    for (std::size_t i = 0; i < groups.features.size(); ++i) {
+    group_entities.reserve(groups.get_data().size());
+    for (std::size_t i = 0; i < groups.get_data().size(); ++i) {
       group_entities.push_back(make_entity_id(EntityType::Group, i));
     }
     entities[EntityType::Group] = std::move(group_entities);

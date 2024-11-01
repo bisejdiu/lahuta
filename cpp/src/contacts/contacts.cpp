@@ -27,8 +27,9 @@ get_atom_data(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) 
   for (const auto *atom : mol.atoms()) {
     /*if (AtomTypeFlags::has_any(atom_types[atom->getIdx()], type)) {*/
     if (check_func(atom_types[atom->getIdx()], type)) {
-      atom_data_vec.data.emplace_back(
-          atom_types[atom->getIdx()], atom, &conf.getAtomPos(atom->getIdx()), atom->getIdx());
+      /*atom_data_vec.data.emplace_back(*/
+      /*    atom_types[atom->getIdx()], atom, &conf.getAtomPos(atom->getIdx()), atom->getIdx());*/
+      atom_data_vec.add_data(mol, atom, atom_types[atom->getIdx()]);
     }
   }
   return atom_data_vec;

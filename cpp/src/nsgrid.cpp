@@ -24,7 +24,7 @@ constexpr std::array<std::array<int, kDIMENSIONS>, 13> neighborCells = {
      {-1, 1, 1},
      {0, 0, 1}}};
 
-FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, double cutoff)
+FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, double cutoff, bool check) 
     : cutoff(cutoff) {
 
   std::array<float, kDIMENSIONS> pbox = {0.0f, 0.0f, 0.0f};
@@ -35,14 +35,13 @@ FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, double cutoff)
 
   transform_coordinates(_coords, pbox, _lmin, _lmax);
 
-  // if (pbox[0] <= 0.0f || pbox[1] <= 0.0f || pbox[2] <= 0.0f) {
-  //   throw std::runtime_error(
-  //       "Failed creating valid box from input coordinates");
-  // }
-
   if (pbox[0] < cutoff || pbox[1] < cutoff || pbox[2] < cutoff) {
-    throw std::runtime_error(
-        "Cutoff is larger than the smallest box dimension");
+    if (check) {
+      throw std::runtime_error("Cutoff is larger than the smallest box dimension");
+    } else {
+      valid = false;
+      return;
+    }
   }
 
   std::vector<float> flat_coords = flatten_coordinates(_coords);
@@ -61,6 +60,9 @@ void FastNS::build_grid() {
 }
 
 NSResults FastNS::self_search() const {
+  if (!valid) {
+    throw std::runtime_error("Invalid grid");
+  }
   NSResults results;
   results.reserve_space(coords_bbox.size() / 3);
 
@@ -88,8 +90,7 @@ NSResults FastNS::self_search() const {
             int oz = cz + offset[2];
 
             int cj = _cell_xyz_to_cell_id(ox, oy, oz);
-            if (cj == END)
-              continue;
+            if (cj == END) continue;
 
             j = head_id[cj];
             while (j != END) {
@@ -110,6 +111,9 @@ NSResults FastNS::self_search() const {
 }
 
 NSResults FastNS::search(const RDGeom::POINT3D_VECT &search_coords) const {
+  if (!valid) {
+    throw std::runtime_error("Invalid grid");
+  }
   NSResults results;
   results.reserve_space(search_coords.size());
 
@@ -127,9 +131,10 @@ NSResults FastNS::search(const RDGeom::POINT3D_VECT &search_coords) const {
   }
 
   for (size_t i = 0; i < search_coords.size(); ++i) {
-    std::array<float, 3> tmpcoord = {static_cast<float>(scoords[i].x),
-                                     static_cast<float>(scoords[i].y),
-                                     static_cast<float>(scoords[i].z)};
+    std::array<float, 3> tmpcoord = {
+        static_cast<float>(scoords[i].x),
+        static_cast<float>(scoords[i].y),
+        static_cast<float>(scoords[i].z)};
 
     std::array<int, 3> cellcoord;
     _coord_to_cell_xyz(tmpcoord.data(), cellcoord);
@@ -176,8 +181,7 @@ void FastNS::prepare_box() {
   double min_cellsize = cutoff + 0.001;
 
   for (int i = 0; i < 3; ++i) {
-    ncells[i] = std::min(static_cast<int>(std::floor(box[i] / min_cellsize)),
-                         MAX_GRID_DIM);
+    ncells[i] = std::min(static_cast<int>(std::floor(box[i] / min_cellsize)), MAX_GRID_DIM);
   }
 
   cellsize[0] = box[0] / ncells[0];
@@ -207,8 +211,7 @@ inline int FastNS::_coord_to_cell_id(const float *__restrict coord) const {
 }
 
 inline void
-FastNS::_coord_to_cell_xyz(const float *__restrict coord,
-                           std::array<int, kDIMENSIONS> &xyz) const {
+FastNS::_coord_to_cell_xyz(const float *__restrict coord, std::array<int, kDIMENSIONS> &xyz) const {
   xyz[2] = static_cast<int>(coord[2] / cellsize[2]); // % ncells[2];
   xyz[1] = static_cast<int>(coord[1] / cellsize[1]); // % ncells[1];
   xyz[0] = static_cast<int>(coord[0] / cellsize[0]); // % ncells[0];
@@ -219,8 +222,7 @@ FastNS::_coord_to_cell_xyz(const float *__restrict coord,
 }
 
 int FastNS::_cell_xyz_to_cell_id(int cx, int cy, int cz) const {
-  if (cx < 0 || cx == ncells[0] || cy < 0 || cy == ncells[1] || cz < 0 ||
-      cz == ncells[2]) {
+  if (cx < 0 || cx == ncells[0] || cy < 0 || cy == ncells[1] || cz < 0 || cz == ncells[2]) {
     return END;
   }
   return cx + cy * cell_offsets[1] + cz * cell_offsets[2];
@@ -235,7 +237,8 @@ int FastNS::_cell_xyz_to_cell_id(int cx, int cy, int cz) const {
 /*}*/
 
 void NSResults::add_neighbors(int i, int j, float d2) {
-  m_pairs.emplace_back(i, j);
+  /*m_pairs.emplace_back(i, j);*/
+  m_pairs.push_back({i, j});
   m_dists.push_back(d2);
 }
 
@@ -260,18 +263,17 @@ NSResults NSResults::filter(const std::vector<int> &atom_indices) const {
   filtered.reserve_space(m_pairs.size());
   std::unordered_set<int> atom_indices_set(atom_indices.begin(), atom_indices.end());
   for (size_t i = 0; i < m_pairs.size(); ++i) {
-    if (atom_indices_set.find(m_pairs[i].first) != atom_indices_set.end() ||
-        atom_indices_set.find(m_pairs[i].second) != atom_indices_set.end()) {
+    if (atom_indices_set.find(m_pairs[i].first) != atom_indices_set.end()
+        || atom_indices_set.find(m_pairs[i].second) != atom_indices_set.end()) {
       filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second, m_dists[i]);
     }
   }
   return filtered;
 }
 
-void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
-                           std::array<float, kDIMENSIONS> &pseudobox,
-                           std::vector<double> &lmin,
-                           std::vector<double> &lmax) {
+void transform_coordinates(
+    std::vector<RDGeom::Point3D> &coords, std::array<float, kDIMENSIONS> &pseudobox,
+    std::vector<double> &lmin, std::vector<double> &lmax) {
 
   for (const auto &coord : coords) {
     for (int i = 0; i < 3; ++i) {
@@ -297,9 +299,9 @@ std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords) {
   std::vector<float> flat_coords;
   flat_coords.reserve(coords.size() * 3);
   for (const auto &coord : coords) {
-    flat_coords.insert(flat_coords.end(), {static_cast<float>(coord.x),
-                                           static_cast<float>(coord.y),
-                                           static_cast<float>(coord.z)});
+    flat_coords.insert(
+        flat_coords.end(),
+        {static_cast<float>(coord.x), static_cast<float>(coord.y), static_cast<float>(coord.z)});
   }
   return flat_coords;
 }

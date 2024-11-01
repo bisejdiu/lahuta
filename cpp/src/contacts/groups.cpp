@@ -8,7 +8,7 @@ FeatureVec GroupTypeStrategy::identify(const RDKit::RWMol &mol, const Residues &
   std::vector<Feature> group_features; // all features from all strategies
   for (const auto &strategy : strategies) {
     auto features = strategy->identify(mol, residues); // features from one strategy
-    group_features.insert(group_features.end(), features.features.begin(), features.features.end());
+    group_features.insert(group_features.end(), features.get_data().begin(), features.get_data().end());
   }
   // NOTE: `group_features` is not sorted as we get it from the strategies.
   // If we do not sort `members` somehow, the currently assign ids just lock-in

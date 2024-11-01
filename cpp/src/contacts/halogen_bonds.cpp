@@ -1,5 +1,6 @@
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/geometry.hpp"
+#include "contacts/search.hpp"
 #include "contacts/utils.hpp"
 #include "lahuta.hpp"
 
@@ -51,8 +52,8 @@ void find_halogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &conta
 
   double max_dist_sq = 4.0 * 4.0;
 
-  auto grid = FastNS(acceptor_atoms.positions(), std::sqrt(max_dist_sq));
-  auto nbrs = grid.search(donor_atoms.positions());
+  EntityNeighborSearch ens(mol.getConformer());
+  auto nbrs = ens.search(donor_atoms, acceptor_atoms, std::sqrt(max_dist_sq));
 
   // Halogen bond options (currently using default parameters)
   HalogenBondsOptions opts_h = get_options(HalogenBondsParams{});
@@ -60,8 +61,8 @@ void find_halogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &conta
   for (const auto &[pair, dist] : nbrs) {
 
     auto [donor_index, acceptor_index] = pair;
-    const auto &donor = donor_atoms.data[donor_index];
-    const auto &acceptor = acceptor_atoms.data[acceptor_index];
+    const auto &donor = donor_atoms.get_data()[donor_index];
+    const auto &acceptor = acceptor_atoms.get_data()[acceptor_index];
 
     // TODO: put this into a `validate_geometry` function
     auto [halogen_angles, _] = calculate_angle(mol, *donor.atom, *acceptor.atom, true);
@@ -88,7 +89,10 @@ void find_halogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &conta
     }
 
     container.add(Contact(
-        EntityID(donor.atom->getIdx()), EntityID(acceptor.atom->getIdx()), dist, InteractionType::Halogen));
+        static_cast<EntityID>(donor.atom->getIdx()),
+        static_cast<EntityID>(acceptor.atom->getIdx()),
+        dist,
+        InteractionType::Halogen));
   }
 }
 

@@ -67,6 +67,10 @@ struct NSResults {
     }
   }
 
+  void add(int i, int j, float d) {
+    m_pairs.push_back({i, j});
+    m_dists.push_back(d);
+  }
   void add_neighbors(int i, int j, float d2);
   void reserve_space(size_t input_size);
   size_t size() const { return m_pairs.size(); }
@@ -92,12 +96,19 @@ private:
 
 class FastNS {
 public:
+    /*static std::optional<FastNS> create(const std::vector<RDGeom::Point3D>& coords, double cutoff) {*/
+  static FastNS create(const std::vector<RDGeom::Point3D>& coords, double cutoff) {
+        FastNS ns(coords, cutoff, false);
+        return ns;
+    }
+
+    bool is_valid() const { return valid; }
+
+public:
   FastNS() = default; // FIX: Why is this needed?
-  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff);
+  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, bool check = true);
 
   NSResults self_search() const;
-  // NSResults search(const std::vector<std::array<float, 3>>& search_coords)
-  // const;
   NSResults search(const RDGeom::POINT3D_VECT &search_coords) const;
 
   void update_cutoff(double new_cutoff);
@@ -111,9 +122,9 @@ public:
         return dx * dx + dy * dy + dz * dz;
     }
   static inline double dist_sq(const double* __restrict a, const double* __restrict b) {
-        float dx = a[0] - b[0];
-        float dy = a[1] - b[1];
-        float dz = a[2] - b[2];
+        double dx = a[0] - b[0];
+        double dy = a[1] - b[1];
+        double dz = a[2] - b[2];
         return dx * dx + dy * dy + dz * dz;
     }
 
@@ -130,6 +141,7 @@ private:
                               std::numeric_limits<double>::lowest()};
 
   // FIXME: provide default values for these
+  bool valid = true;
   double cutoff;
   std::array<float, kDIMENSIONS> box;
   std::array<int, kDIMENSIONS> ncells;

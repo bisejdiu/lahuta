@@ -22,10 +22,11 @@ Feature create_feature(AtomType type, FeatureGroup group, const std::vector<cons
 }
 
 
+// FIX: Possibly refactor to avoid making a copy of the features 
 FeatureVec get_features(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) {
   auto &features = luni->get_features();
   FeatureVec feature_vec;
-  for (const auto &feature : features.features) {
+  for (const auto &feature : features.get_data()) {
     if (check_func(feature.type, type)) {
       // confirm members is defined:
       if (feature.members.empty()) {
@@ -34,9 +35,11 @@ FeatureVec get_features(const Luni *luni, AtomType type, FeatureTypeCheckFunc ch
       if (feature.members.front() == nullptr) {
         throw std::runtime_error("Feature members are not defined");
       }
-      feature_vec.features.emplace_back(
-          Feature{feature.type, feature.group, feature.members, feature.center});
-      feature_vec.features.back().id = feature.id;
+      /*feature_vec.features.emplace_back(*/
+      /*    Feature{feature.type, feature.group, feature.members, feature.center});*/
+      /*feature_vec.features.back().id = feature.id;*/
+      // FIX: double check the id assignment is correct
+      feature_vec.add_feature(feature);
     }
   }
 

@@ -1,12 +1,10 @@
 #include "contacts/interactions.hpp"
 #include "contacts/cationpi.hpp"
-#include "contacts/distances.hpp"
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrophobic.hpp"
 #include "contacts/ionic.hpp"
 #include "contacts/metalic.hpp"
 #include "contacts/pistacking.hpp"
-#include "lahuta.hpp"
 
 namespace lahuta {
 

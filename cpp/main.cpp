@@ -84,22 +84,24 @@ int main(int argc, char const *argv[]) {
   luni.assign_molstar_atom_types();
 
   const auto hydrophobic_atoms = get_atom_data(&luni, AtomType::HYDROPHOBIC);
-  std::cout << "Hydrophobic Atoms: " << hydrophobic_atoms.data.size() << std::endl;
+  std::cout << "Hydrophobic Atoms: " << hydrophobic_atoms.get_data().size() << std::endl;
 
 
   Residues residues(*mol);
   EntityTypeManagerBuilder builder(*mol, residues);
   auto manager = builder.build();
 
+
+  // should return const types
   AtomDataVec hp_res = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
-  std::cout << "NEW Hydrophobic Atoms: " << hp_res.data.size() << std::endl;
+  std::cout << "NEW Hydrophobic Atoms: " << hp_res.get_data().size() << std::endl;
   AtomDataVec hp_res_ = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
-  std::cout << "NEW Hydrophobic Atoms: " << hp_res_.data.size() << std::endl;
+  std::cout << "NEW Hydrophobic Atoms: " << hp_res_.get_data().size() << std::endl;
 
   FeatureVec arom_res = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
-  std::cout << "AROM: " << arom_res.features.size() << std::endl;
+  std::cout << "AROM: " << arom_res.get_data().size() << std::endl;
   FeatureVec arom_res_ = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
-  std::cout << "AROM: " << arom_res_.features.size() << std::endl;
+  std::cout << "AROM: " << arom_res_.get_data().size() << std::endl;
 
   std::cout << "START New contact interface" << std::endl;
 
@@ -114,7 +116,11 @@ int main(int argc, char const *argv[]) {
   _2.sort_interactions();
   _2.print_interactions();
   std::cout << "HYDROPHOBIC: \n";
+  auto start = std::chrono::high_resolution_clock::now();
   auto _3 = interactions.find_hydrophobic_interactions();
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  std::cout << "Hydrophobic Time: " << duration.count() << " us" << std::endl;
   _3.sort_interactions();
   _3.print_interactions();
   std::cout << "HALOGEN: \n";

@@ -73,12 +73,12 @@ public:
   BruteForceSearch(
       const std::vector<const Feature *> &features_type_a,
       const std::vector<const Feature *> &features_type_b)
-      : features_type_a_(features_type_a), features_type_b_(features_type_b) {}
+      : features_a(features_type_a), features_b(features_type_b) {}
 
   void find_interactions(double distance_threshold, InteractionBase &handler) {
     double dist_sq = distance_threshold * distance_threshold;
-    for (const auto *feature_a : features_type_a_) {
-      for (const auto *feature_b : features_type_b_) {
+    for (const auto *feature_a : features_a) {
+      for (const auto *feature_b : features_b) {
         if (are_features_within_dist_sq(*feature_a, *feature_b, dist_sq)) {
           handler.handle(*feature_a, *feature_b);
         }
@@ -122,8 +122,8 @@ private:
   }
 
 private:
-  const std::vector<const Feature *> &features_type_a_;
-  const std::vector<const Feature *> &features_type_b_;
+  const std::vector<const Feature *> &features_a;
+  const std::vector<const Feature *> &features_b;
 };
 
 class SimplePairFeatures {

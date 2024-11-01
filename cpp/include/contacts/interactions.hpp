@@ -29,8 +29,6 @@ public:
     EntityID entity1 = make_entity_id(EntityType::Group, feature1.get_id());
     EntityID entity2 = make_entity_id(EntityType::Group, feature2.get_id());
 
-    /*auto center_dist_sq = FastNS::dist_sq(feature1.center, feature2.center);*/
-    /*auto center_dist_sq = (feature1.center - feature2.center).lengthSq();*/
     auto center_dist_sq = compute_dist_sq(feature1.center, feature2.center);
     add_interaction(Contact(entity1, entity2, center_dist_sq, InteractionType::Ionic));
   }
@@ -42,16 +40,7 @@ struct InteractionOptions {
 
 class Interactions {
 public:
-  // TODO: InteractionOptions should have default values, and each of the finder functions
-  // should take another custom options struct
-  /*Interactions(Luni *luni, const std::vector<Feature> *group_features, InteractionOptions opts)*/
-  /*    : luni_(luni), group_features_(group_features), opts_(opts) {}*/
-
   Interactions(Luni *luni, InteractionOptions opts) : luni_(luni), opts_(opts) {}
-  /*Interactions(Luni *luni, InteractionOptions opts); */
-  /*Interactions(Luni *luni, InteractionOptions opts) : luni_(luni), opts_(opts) {*/
-  /*  group_features_ = luni_->get_features();*/
-  /*}*/
 
   [[nodiscard]] Contacts find_hbond_interactions();
   [[nodiscard]] Contacts find_weak_hbond_interactions();

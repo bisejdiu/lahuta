@@ -192,7 +192,7 @@ public:
   }
 
   // FIX: The visit_entity functions represent a proof of concept for calling 
-  // functions and passing the correct type of object to the function.
+  // functions and passing the correct type of object
   void visit_entity(const Luni &luni, EntityID entity) const;
 
   template <typename Func1, typename Func2>
@@ -210,7 +210,6 @@ public:
   }
 
   // Make all interactions generic (i.e. remove type information)
-  // Leads to loss of information.
   void make_generic();
 
   /// union of two Contacts
