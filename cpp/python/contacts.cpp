@@ -139,7 +139,7 @@ void bind_contacts(py::module &m) {
 
       .def(
           /*py::init<Luni *, const std::vector<Feature> *, InteractionOptions>(),*/
-          py::init<Luni *, InteractionOptions>(),
+          py::init<Luni &, InteractionOptions>(),
           py::arg("luni"),
           py::arg("opts"))
       .def("find_ionic_interactions", &Interactions::find_ionic_interactions)

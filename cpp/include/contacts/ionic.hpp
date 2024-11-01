@@ -2,13 +2,16 @@
 #define LAHUTA_IONIC_HPP
 
 #include "nn.hpp"
-#include "contacts/hydrogen_bonds.hpp"
 
 namespace lahuta {
 
 class Luni;
 
-void find_ionic(const Luni &luni, GeometryOptions opts, Contacts &container);
+inline struct IonicParams {
+  constexpr static double distance_max = 5.0;
+} ionic_params;
+
+Contacts find_ionic(const Luni &luni, IonicParams opts = ionic_params);
 
 } // namespace lahuta
 

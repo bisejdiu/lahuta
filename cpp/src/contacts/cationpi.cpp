@@ -27,21 +27,22 @@ double compute_in_plane_offset(
   return in_plane_offset;
 }
 
-void find_cationpi(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
-  const auto &mol = luni->get_molecule();
-  const auto rings = luni->get_rings();
+Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
 
-  auto features = get_features(luni, AtomType::POS_IONISABLE);
+  Contacts contacts(&luni);
+  const auto &mol = luni.get_molecule();
+  const auto rings = luni.get_rings();
+
+  auto features = get_features(&luni, AtomType::POS_IONISABLE);
 
   // FIX: early return does not provide important performance gain.
   // We should just let it run, if we can be sure no errors will occur.
   if (features.get_data().empty()) {
-    return;
+    return contacts;
   }
 
-  double cationpi_max_dist = 6.0;
   EntityNeighborSearch ens(mol.getConformer());
-  auto nbrs = ens.search(features, rings, cationpi_max_dist);
+  auto nbrs = ens.search(features, rings, opts.distance_max);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [feature_index, ring_index] = pair;
@@ -51,14 +52,12 @@ void find_cationpi(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
     auto first_ring_atom = ring.atoms.front();
 
     // FIX: does this make sense here?
-    if (is_same_residue(mol, *first_ring_atom, *feature.members.front())) {
-      continue;
-    }
+    if (is_same_residue(mol, *first_ring_atom, *feature.members.front())) continue;
 
     auto offset = compute_in_plane_offset(feature.center, ring.center, ring.norm);
 
     // FIX: Are we sure we won't get multiple contacts for the same feature?
-    if (offset <= 2.2) {
+    if (offset <= opts.offset_max) {
       contacts.add(Contact(
           make_entity_id(EntityType::Group, feature.get_id()),
           make_entity_id(EntityType::Ring, ring.get_id()),
@@ -66,6 +65,8 @@ void find_cationpi(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
           InteractionType::CationPi));
     }
   }
+
+  return contacts;
 }
 
 } // namespace lahuta

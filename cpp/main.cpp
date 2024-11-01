@@ -8,16 +8,13 @@
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrogen_bonds.hpp"
 #include "contacts/interactions.hpp"
-#include "contacts/utils.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "nn.hpp"
-#include "nsgrid.hpp"
 #include "rings.hpp"
 #include "visitor.hpp"
 
 #include "types.hpp"
-/*#include "t.hpp"*/
 
 using namespace lahuta;
 
@@ -106,7 +103,7 @@ int main(int argc, char const *argv[]) {
   std::cout << "START New contact interface" << std::endl;
 
   InteractionOptions opts{5.0};
-  Interactions interactions(&luni, opts);
+  Interactions interactions(luni, opts);
   std::cout << "HBOND: \n";
   auto _1 = interactions.find_hbond_interactions();
   _1.sort_interactions();

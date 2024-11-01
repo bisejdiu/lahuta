@@ -13,10 +13,11 @@ bool is_same_residue(const RDKit::RWMol &mol, const RingData &ring_a, const Ring
   return info_a->getResidueNumber() == info_b->getResidueNumber();
 }
 
-void find_pistacking(const Luni *luni, GeometryOptions opts, Contacts &contacts) {
+Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
 
-  const auto &mol = luni->get_molecule();
-  const auto rings = luni->get_rings();
+  Contacts contacts(&luni);
+  const auto &mol = luni.get_molecule();
+  const auto rings = luni.get_rings();
 
   double dist_max = 6.0;
   EntityNeighborSearch ens(mol.getConformer());
@@ -27,9 +28,7 @@ void find_pistacking(const Luni *luni, GeometryOptions opts, Contacts &contacts)
     const auto &ring_a = rings[ring_index_a];
     const auto &ring_b = rings[ring_index_b];
 
-    if (is_same_residue(mol, ring_a, ring_b)) { // e.g. TRP
-      continue;
-    }
+    if (is_same_residue(mol, ring_a, ring_b)) continue; // e.g., trp
 
     auto dot_product = ring_a.norm.dotProduct(ring_b.norm);
     auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
@@ -38,19 +37,18 @@ void find_pistacking(const Luni *luni, GeometryOptions opts, Contacts &contacts)
     double offset_a = compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.norm);
     double offset_b = compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.norm);
 
-    double offset = std::min(offset_a, offset_b);
-
-    if (offset <= offset_max) {
+    if (std::min(offset_a, offset_b) <= opts.offset_max) {
       EntityID entity1 = make_entity_id(EntityType::Ring, ring_a.get_id());
       EntityID entity2 = make_entity_id(EntityType::Ring, ring_b.get_id());
-      if (angle <= AngleDevMax) {
-        std::cout << "Found PiStacking: Parallel" << std::endl;
-        contacts.add(Contact(entity1, entity2, dist, InteractionType::PiStackingP));
-      } else if (std::abs(angle - M_PI / 2) <= AngleDevMax) {
-        std::cout << "Found PiStacking: T-Shaped" << std::endl;
-        contacts.add(Contact(entity1, entity2, dist, InteractionType::PiStackingT));
-      }
+
+      (angle <= opts.angle_dev_max)
+          ? contacts.add(Contact(entity1, entity2, dist, InteractionType::PiStackingP))
+      : (std::abs(angle - M_PI / 2) <= opts.angle_dev_max)
+          ? contacts.add(Contact(entity1, entity2, dist, InteractionType::PiStackingT))
+          : void();
     }
   }
+
+  return contacts;
 }
 } // namespace lahuta

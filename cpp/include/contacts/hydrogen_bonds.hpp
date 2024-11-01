@@ -10,7 +10,6 @@
 
 #include "atom_types.hpp"
 #include "nn.hpp"
-#include "nsgrid.hpp"
 #include "utils.hpp"
 #include "valence_model.hpp"
 #include <GraphMol/Atom.h>
@@ -19,16 +18,56 @@
 
 using HybridizationType = RDKit::Atom::HybridizationType;
 
-constexpr float MAX_DIST_SQ = 12.25;
-constexpr float MAX_SULFUR_DIST_SQ = 16.81;
-constexpr float MAX_ACC_ANGLE_DEV = 45.0;
-constexpr float MAX_DON_ANGLE_DEV = 45.0;
-constexpr float MAX_DON_OUT_OF_PLANE_ANGLE = 45.0;
-constexpr float MAX_ACC_OUT_OF_PLANE_ANGLE = 90.0;
-
 namespace lahuta {
 
 class Luni;
+
+constexpr double MAX_DIST = 3.5;
+constexpr double MAX_SULFUR_DIST = 4.1;
+constexpr double MAX_ACC_ANGLE_DEV = M_PI / 4.0;          // 45 degrees
+constexpr double MAX_DON_ANGLE_DEV = M_PI / 4.0;          // 45 degrees
+constexpr double MAX_DON_OUT_OF_PLANE_ANGLE = M_PI / 4.0; // 45 degrees
+constexpr double MAX_ACC_OUT_OF_PLANE_ANGLE = M_PI / 2.0; // 90 degrees
+
+inline struct GeometryOptions {
+  /// Ignore hydrogens in geometry calculations
+  bool ignore_hydrogens = false;
+  /// Include backbone-to-backbone hydrogen bonds
+  bool include_backbone = true;
+  /// Include water-to-water hydrogen bonds
+  bool include_water = true;
+
+  /// Maximum distance for sulfur atoms
+  double max_sulfur_dist = MAX_SULFUR_DIST;
+  /// Maximum distance for hydrogen bonds
+  double max_dist = MAX_DIST;
+
+  /// Maximum deviation from ideal acceptor angle
+  double max_acc_angle_dev = MAX_ACC_ANGLE_DEV;
+  /// Maximum deviation from ideal donor angle
+  double max_don_angle_dev = MAX_DON_ANGLE_DEV;
+  /// Maximum out-of-plane deviation for acceptor
+  double max_acc_out_of_plane_angle = MAX_ACC_OUT_OF_PLANE_ANGLE;
+  /// Maximum out-of-plane deviation for donor
+  double max_don_out_of_plane_angle = MAX_DON_OUT_OF_PLANE_ANGLE;
+
+} hydrogen_bond_opts;
+
+constexpr double get_atom_geometry_angle(HybridizationType hybridization) {
+  switch (hybridization) {
+    case HybridizationType::SP: // 180 degrees
+      return M_PI;
+    case HybridizationType::SP2: // 120 degrees
+      return M_PI * 2.0 / 3.0;
+    case HybridizationType::SP3:
+      return deg_to_rad(109.4721);
+    case HybridizationType::SP3D2: // 90 degrees
+      return M_PI / 2.0;
+
+    default:
+      return M_PI * 2.0 / 3.0;
+  }
+}
 
 // Residue names that represent water molecules
 const std::array<std::string, 11> WaterResNames = {
@@ -47,64 +86,13 @@ inline bool is_histidine_nitrogen(const RDKit::Atom &atom, const RDKit::RWMol &m
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
   // FIX: This requires the initialization of ringInfo
+  // NOTE: should be fixed now. 
   auto ri = mol.getRingInfo();
   bool is_in_ring = ri->numAtomRings(atom.getIdx()) > 0;
   if (res_info && res_info->getResidueName() == "HIS" && atom.getAtomicNum() == 7 && is_in_ring) {
     return true;
   }
   return false;
-}
-
-struct GeometryOptions {
-  // Ignore hydrogens in geometry calculations
-  bool ignore_hydrogens;
-  // Include backbone-to-backbone hydrogen bonds
-  bool include_backbone;
-  // Maximum deviation from ideal acceptor angle
-  double max_acc_angle_dev;
-  // Maximum deviation from ideal donor angle
-  double max_don_angle_dev;
-  // Maximum out-of-plane deviation for acceptor
-  double max_acc_out_of_plane_angle;
-  // Maximum out-of-plane deviation for donor
-  double max_don_out_of_plane_angle;
-  // Include water-to-water hydrogen bonds
-  bool include_water;
-  // Maximum distance for sulfur atoms
-  double max_sulfur_dist_sq;
-  // Maximum distance for hydrogen bonds
-  double max_dist_sq;
-
-  GeometryOptions(
-      bool _ignore_hydrogens = false, bool _include_backbone = true,
-      double _max_acc_angle_dev = deg_to_rad(MAX_ACC_ANGLE_DEV),
-      double _max_don_angle_dev = deg_to_rad(MAX_DON_ANGLE_DEV),
-      double _max_acc_out_of_plane_angle = deg_to_rad(MAX_ACC_OUT_OF_PLANE_ANGLE),
-      double _max_don_out_of_plane_angle = deg_to_rad(MAX_DON_OUT_OF_PLANE_ANGLE), bool _include_water = true,
-      double _max_sulfur_dist_sq = MAX_SULFUR_DIST_SQ, double _max_dist_sq = MAX_DIST_SQ)
-      : ignore_hydrogens(_ignore_hydrogens), include_backbone(_include_backbone),
-        max_acc_angle_dev(_max_acc_angle_dev), max_don_angle_dev(_max_don_angle_dev),
-        max_acc_out_of_plane_angle(_max_acc_out_of_plane_angle),
-        max_don_out_of_plane_angle(_max_don_out_of_plane_angle), include_water(_include_water),
-        max_sulfur_dist_sq(_max_sulfur_dist_sq), max_dist_sq(_max_dist_sq) {}
-
-  void set_max_dist(double max_dist) { max_dist_sq = max_dist * max_dist; }
-  void set_max_sulfur_dist(double max_sulfur_dist) { max_sulfur_dist_sq = max_sulfur_dist * max_sulfur_dist; }
-};
-
-constexpr double get_atom_geometry_angle(HybridizationType hybridization) {
-  switch (hybridization) {
-    case HybridizationType::SP:
-      return deg_to_rad(180.0);
-    case HybridizationType::SP2:
-      return deg_to_rad(120.0);
-    case HybridizationType::SP3:
-      return deg_to_rad(109.4721);
-    case HybridizationType::SP3D2:
-      return deg_to_rad(90.0);
-    default:
-      return deg_to_rad(120.0);
-  }
 }
 
 std::vector<const RDGeom::Point3D *> get_neighbor_positions(
@@ -126,8 +114,8 @@ AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-void find_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container);
-void find_weak_hydrogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container);
+Contacts find_hydrogen_bonds(const Luni &luni, const GeometryOptions &opts = hydrogen_bond_opts);
+Contacts find_weak_hydrogen_bonds(const Luni &luni, const GeometryOptions &opts = hydrogen_bond_opts);
 
 } // namespace lahuta
 

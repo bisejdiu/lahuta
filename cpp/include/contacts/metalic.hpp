@@ -2,12 +2,15 @@
 #define LAHUTA_METALIC_HPP
 
 #include "nn.hpp"
-#include "contacts/hydrogen_bonds.hpp"
 namespace lahuta {
 
 bool is_metalic(AtomType at1, AtomType at2);
 
-void find_metalic(const Luni *luni, GeometryOptions opts, Contacts &contacts);
+inline struct MetalicParams {
+  constexpr static double distance_max = 3.0;
+} metalic_params;
+
+Contacts find_metalic(const Luni &luni, MetalicParams opts = metalic_params);
 
 } // namespace lahuta
 

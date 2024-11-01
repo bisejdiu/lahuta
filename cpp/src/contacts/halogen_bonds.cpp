@@ -1,18 +1,9 @@
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/geometry.hpp"
 #include "contacts/search.hpp"
-#include "contacts/utils.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {
-
-const double OptimalHalogenAngle = M_PI;           // 180 degrees in radians
-const double OptimalAcceptorAngle = 2.09439510239; // 120 degrees in radians
-
-// Convert options (HalogenBondsProps) to HalogenBondsOptions
-HalogenBondsOptions get_options(const HalogenBondsParams &params) {
-  return {deg_to_rad(params.angleMax)}; //
-}
 
 AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   if (hal_bond_elements.count(atom.getAtomicNum())) {
@@ -42,21 +33,17 @@ AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) 
   return AtomType::NONE;
 }
 
-void find_halogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container) {
+Contacts find_halogen_bonds(const Luni &luni, HalogenParams opts) {
   // NOTE: we do not check for same residue here
 
+  Contacts contacts(&luni);
   const auto &mol = luni.get_molecule();
 
   const auto donor_atoms = get_atom_data(&luni, AtomType::XBOND_DONOR);
   const auto acceptor_atoms = get_atom_data(&luni, AtomType::XBOND_ACCEPTOR);
 
-  double max_dist_sq = 4.0 * 4.0;
-
   EntityNeighborSearch ens(mol.getConformer());
-  auto nbrs = ens.search(donor_atoms, acceptor_atoms, std::sqrt(max_dist_sq));
-
-  // Halogen bond options (currently using default parameters)
-  HalogenBondsOptions opts_h = get_options(HalogenBondsParams{});
+  auto nbrs = ens.search(donor_atoms, acceptor_atoms, opts.distance_max);
 
   for (const auto &[pair, dist] : nbrs) {
 
@@ -69,31 +56,28 @@ void find_halogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &conta
     if (halogen_angles.size() != 1) {
       continue;
     }
-    if (OptimalHalogenAngle - halogen_angles[0] > opts_h.angleMax) {
-      continue;
-    }
+    if (opts.optimal_angle - halogen_angles[0] > opts.angle_max) continue;
 
     auto [acceptor_angles, __] = calculate_angle(mol, *acceptor.atom, *donor.atom, true);
-    if (acceptor_angles.empty()) {
-      continue;
-    }
+    if (acceptor_angles.empty()) continue;
+
     bool exit_outer_flag = false;
     for (double acceptor_angle : acceptor_angles) {
-      if (OptimalAcceptorAngle - acceptor_angle > opts_h.angleMax) {
+      if (opts.optimal_acceptor_angle - acceptor_angle > opts.angle_max) {
         exit_outer_flag = true;
         continue;
       }
     }
-    if (exit_outer_flag) {
-      continue;
-    }
+    if (exit_outer_flag) continue;
 
-    container.add(Contact(
+    contacts.add(Contact(
         static_cast<EntityID>(donor.atom->getIdx()),
         static_cast<EntityID>(acceptor.atom->getIdx()),
         dist,
         InteractionType::Halogen));
   }
+
+  return contacts;
 }
 
 } // namespace lahuta

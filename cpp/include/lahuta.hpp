@@ -268,7 +268,7 @@ public:
     /*c.add_many(ring_neighbors, ring_entities, atom_entities);*/
 
     FeatureVec group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
-    Interactions processor(this, InteractionOptions{5.0});
+    Interactions processor(*this, InteractionOptions{5.0});
     auto ionic = processor.find_ionic_interactions();
     auto hbonds = processor.find_hbond_interactions();
     c.add(ionic);

@@ -2,12 +2,18 @@
 #define LAHUTA_HALOGEN_BONDS_HPP
 
 #include "atom_types.hpp"
-#include "contacts/hydrogen_bonds.hpp"
 #include "nn.hpp"
 
 namespace lahuta {
 
 class Luni;
+
+inline struct HalogenParams {
+  constexpr static double distance_max = 4.0;
+  constexpr static double angle_max = M_PI / 6.0;                    // 30 degrees
+  constexpr static double optimal_angle = M_PI;                      // 180 degrees
+  constexpr static double optimal_acceptor_angle = M_PI * 2.0 / 3.0; // 120 degrees
+} halogen_params;
 
 inline std::unordered_set<int> hal_bond_elements = {17, 35, 53};
 inline std::unordered_set<int> X = {7, 8, 16};
@@ -23,16 +29,7 @@ AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
  */
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-void find_halogen_bonds(Luni &luni, const GeometryOptions &opts, Contacts &container);
-
-struct HalogenBondsParams {
-  double distanceMax = 4.0; // Maximum distance for halogen bonds
-  double angleMax = 30.0;   // Maximum angle for halogen bonds
-};
-
-struct HalogenBondsOptions {
-  double angleMax; // in radians
-};
+Contacts find_halogen_bonds(const Luni &luni, HalogenParams opts = halogen_params);
 
 } // namespace lahuta
 

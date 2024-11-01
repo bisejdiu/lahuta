@@ -40,7 +40,7 @@ struct InteractionOptions {
 
 class Interactions {
 public:
-  Interactions(Luni *luni, InteractionOptions opts) : luni_(luni), opts_(opts) {}
+  Interactions(const Luni &luni, InteractionOptions opts) : luni_(luni), opts_(opts) {}
 
   [[nodiscard]] Contacts find_hbond_interactions();
   [[nodiscard]] Contacts find_weak_hbond_interactions();
@@ -52,7 +52,7 @@ public:
   [[nodiscard]] Contacts find_pistacking_interactions();
 
 private:
-  Luni *luni_;
+  const Luni &luni_;
   /*const std::vector<Feature> *group_features_;*/
   InteractionOptions opts_{5.0};
 };

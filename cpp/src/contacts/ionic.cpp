@@ -4,20 +4,18 @@
 
 namespace lahuta {
 
-void find_ionic(const Luni &luni, GeometryOptions opts, Contacts &container) {
+Contacts find_ionic(const Luni &luni, IonicParams opts) {
 
+  Contacts contacts(&luni);
   const auto &conf = luni.get_molecule().getConformer();
 
   const FeatureVec positives = get_features(&luni, AtomType::POS_IONISABLE);
   const FeatureVec negatives = get_features(&luni, AtomType::NEG_IONISABLE);
 
-  if (positives.get_data().empty() || negatives.get_data().empty()) {
-    return;
-  }
+  if (positives.get_data().empty() || negatives.get_data().empty()) return contacts;
 
-  double max_dist = 5.0;
   EntityNeighborSearch ens(conf);
-  auto results = ens.search(positives, negatives, max_dist);
+  auto results = ens.search(positives, negatives, opts.distance_max);
 
   for (const auto &[pair, dist] : results) {
     auto [positive_idx, negative_idx] = pair;
@@ -27,8 +25,10 @@ void find_ionic(const Luni &luni, GeometryOptions opts, Contacts &container) {
     EntityID entity1 = make_entity_id(EntityType::Group, negative.get_id());
     EntityID entity2 = make_entity_id(EntityType::Group, positive.get_id());
 
-    container.add(Contact(entity1, entity2, dist, InteractionType::Ionic));
+    contacts.add(Contact(entity1, entity2, dist, InteractionType::Ionic));
   }
+
+  return contacts;
 }
 
 } // namespace lahuta
