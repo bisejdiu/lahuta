@@ -3,18 +3,34 @@
 
 #include <array>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace lahuta {
-
 namespace definitions {
+// clang-format off
 
-// Residue names that represent water molecules
-inline const std::array<std::string, 11> WaterResidueNames = {
-    "HOH", "W", "SOL", "TIP3", "SPC", "H2O", "TIP4", "TIP", "DOD", "D3O", "WAT"};
+inline const std::array<std::string, 11>
+WaterResidues = {
+  "HOH", "W", "SOL", "TIP3",
+  "SPC", "H2O", "TIP4", "TIP",
+  "DOD", "D3O", "WAT"
+};
 
-inline const std::vector<std::string> HistidineResNames = {"HIS", "HID", "HIE", "HIP"};
+inline const std::vector<std::string> 
+HistidineResidues = {
+  "HIS", "HID", "HIE", "HIP"
+};
 
+inline const std::unordered_map<std::string, std::vector<int>> 
+AromaticResidues = {
+  {"PHE", {6}},
+  {"TYR", {6}},
+  {"HIS", {5}},
+  {"TRP", {5, 6}}
+};
+
+// clang-format on
 } // namespace definitions
 } // namespace lahuta
 

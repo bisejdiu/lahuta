@@ -127,7 +127,6 @@ public:
 
     for (const auto &atom : mol.atoms()) {
       // FIX: double check assign_h default value and how to handle it
-      // FIX: potentially expose options to the user
       atom_types[atom->getIdx()] = strategy.identify(mol, *atom);
     }
     return atom_types;
@@ -150,12 +149,12 @@ struct AtomData {
   /*AtomData(AtomData &&other) = default;*/
   /*AtomData &operator=(const AtomData &other) = default;*/
   /*AtomData &operator=(AtomData &&other) = default;*/
-
 };
 
 struct AtomDataVec {
 private:
   std::vector<AtomData> data;
+
 public:
   AtomDataVec() = default;
   /*AtomDataVec(const std::vector<AtomData> &data_) : data(data_) {}*/
@@ -177,7 +176,7 @@ public:
   RDGeom::POINT3D_VECT positions() const {
     RDGeom::POINT3D_VECT pos;
     pos.reserve(data.size());
-    for (const auto& atom_data : data) {
+    for (const auto &atom_data : data) {
       pos.push_back(*atom_data.pos);
     }
     return pos;
@@ -186,16 +185,16 @@ public:
   std::vector<size_t> atom_ids() const {
     std::vector<size_t> ids;
     ids.reserve(data.size());
-    for (const auto& atom_data : data) {
+    for (const auto &atom_data : data) {
       ids.push_back(atom_data.idx);
     }
     return ids;
   }
 
-  const std::vector<const RDKit::Atom*> atoms() const {
-    std::vector<const RDKit::Atom*> atoms_vec;
+  const std::vector<const RDKit::Atom *> atoms() const {
+    std::vector<const RDKit::Atom *> atoms_vec;
     atoms_vec.reserve(data.size());
-    for (const auto& atom_data : data) {
+    for (const auto &atom_data : data) {
       atoms_vec.push_back(atom_data.atom);
     }
     return atoms_vec;
@@ -203,7 +202,8 @@ public:
 };
 
 using FeatureTypeCheckFunc = std::function<bool(const AtomType &, const AtomType &)>;
-const AtomDataVec get_atom_data(const Luni* luni, AtomType type, FeatureTypeCheckFunc check_func = AtomTypeFlags::has_any);
+const AtomDataVec
+get_atom_data(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func = AtomTypeFlags::has_any);
 std::vector<const RDKit::Atom *> get_atom_types(const Luni *luni, AtomType type);
 
 } // namespace lahuta

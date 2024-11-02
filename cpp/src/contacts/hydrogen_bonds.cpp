@@ -11,7 +11,7 @@ namespace lahuta {
 bool is_water(const RDKit::Atom &atom) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
-  return common::contains(definitions::WaterResidueNames, res_info->getResidueName());
+  return common::contains(definitions::WaterResidues, res_info->getResidueName());
 }
 
 auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
@@ -71,31 +71,19 @@ std::vector<const RDGeom::Point3D *> get_neighbor_positions(
   return neighbor_positions;
 }
 
-bool _in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  unsigned int atomIdx = atom.getIdx();
-  const RDKit::RingInfo *ringInfo = mol.getRingInfo();
+bool old_in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
+  const auto &atom_rings = mol.getRingInfo()->atomRings();
 
-  for (const auto &ring : ringInfo->atomRings()) {
-    if (std::find(ring.begin(), ring.end(), atomIdx) != ring.end()) {
-      // Check if the ring is aromatic
-      bool is_aromatic = true;
-      for (unsigned int ringAtomIdx : ring) {
-        if (!mol.getAtomWithIdx(ringAtomIdx)->getIsAromatic()) {
-          is_aromatic = false;
-          break;
-        }
-      }
-      if (!is_aromatic) continue;
+  for (const auto &ring : atom_rings) {
 
-      // Check if the ring contains an electronegative element (N or O)
-      for (unsigned int ringAtomIdx : ring) {
-        const RDKit::Atom *ringAtom = mol.getAtomWithIdx(ringAtomIdx);
-        int atomicNum = ringAtom->getAtomicNum();
-        if (atomicNum == 7 || atomicNum == 8) { // N or O
-          // electronegative element (N or O) in the aromatic ring
-          return true;
-        }
-      }
+    if (!common::is_ring_aromatic(mol, ring)) continue; // 5ms
+    if (!common::contains(ring, atom.getIdx())) continue;
+
+    // Check if the ring contains an electronegative element (N or O)
+    for (unsigned int ring_atom_idx : ring) {
+      auto *ring_atom = mol.getAtomWithIdx(ring_atom_idx);
+      int atomic_num = ring_atom->getAtomicNum();
+      if (atomic_num == 7 || atomic_num == 8) return true;
     }
   }
 
@@ -104,16 +92,18 @@ bool _in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &a
 
 bool in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 
-  for (const auto &ring : mol.getRingInfo()->atomRings()) {
+  if (!atom.getIsAromatic()) return false;
 
-    if (!common::is_ring_aromatic(mol, ring)) continue;
-    if (!common::contains(ring, atom.getIdx())) continue;
+  const auto &rings = mol.getRingInfo()->atomRings();
+  const auto &ring_indices = mol.getRingInfo()->atomMembers(atom.getIdx());
+
+  for (const auto &ring_idx : ring_indices) {
+    const auto &ring_atoms = rings[ring_idx];
 
     // Check if the ring contains an electronegative element (N or O)
-    for (unsigned int atom_idx : ring) {
+    for (unsigned int atom_idx : ring_atoms) {
       auto *ring_atom = mol.getAtomWithIdx(atom_idx);
       int atomic_number = ring_atom->getAtomicNum();
-      // electronegative element (N or O) in the aromatic ring
       if (atomic_number == 7 || atomic_number == 8) return true;
     }
   }

@@ -1,5 +1,6 @@
 #include "residues.hpp"
 #include "GraphMol/MonomerInfo.h"
+#include "definitions.hpp"
 #include "find_rings.hpp"
 
 namespace lahuta {
@@ -61,16 +62,7 @@ template <typename ResultType>
 std::vector<ResultType> get_aromatic_rings(const Residues &residues, RingProcFunc<ResultType> func) {
   std::vector<ResultType> ring_list;
 
-  // clang-format off
-    const std::unordered_map<std::string, std::vector<int>> residue_ring_sizes = {
-        {"PHE", {6}},
-        {"TYR", {6}},
-        {"HIS", {5}},
-        {"TRP", {5, 6}}
-    };
-  // clang-format on
-
-  for (const auto &item : residue_ring_sizes) {
+  for (const auto &item : definitions::AromaticResidues) {
     const std::string &res_name = item.first;
     const std::vector<int> &ring_sizes = item.second;
 

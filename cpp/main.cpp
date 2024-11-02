@@ -18,7 +18,10 @@
 
 using namespace lahuta;
 
-// TODO: 1. Remove calls to symmetrizeSSSR (DONE!, confirm before removing)
+// TODO:     1. Make AtomData, Feature, and RingData similar
+//           2. combine `get_feature` and `get_atom_data` into one function
+//           3. Move definitions to the definition namespace
+
 
 void log_ring_info(RDKit::RWMol *mol, const RingData &ring) {
   auto first_atom_index = ring.atom_ids().front();

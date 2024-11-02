@@ -8,7 +8,9 @@
 #ifndef LAHUTA_HYDROGEN_BONDS_HPP
 #define LAHUTA_HYDROGEN_BONDS_HPP
 
+#include "../common.hpp"
 #include "atom_types.hpp"
+#include "definitions.hpp"
 #include "nn.hpp"
 #include "utils.hpp"
 #include "valence_model.hpp"
@@ -75,26 +77,27 @@ inline bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b)
   return is_water(atom_a) && is_water(atom_b);
 }
 
-// FIX: Add support for other histidine resname variants
+/// test if atom is a nitrogen in a histidine residue 
 inline bool is_histidine_nitrogen(const RDKit::Atom &atom, const RDKit::RWMol &mol) {
-  auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
-  auto ri = mol.getRingInfo();
-  bool is_in_ring = ri->numAtomRings(atom.getIdx()) > 0;
-  if (res_info && res_info->getResidueName() == "HIS" && atom.getAtomicNum() == 7 && is_in_ring) {
-    return true;
-  }
-  return false;
+  bool is_in_ring = mol.getRingInfo()->numAtomRings(atom.getIdx()) > 0;
+  if (!is_in_ring) return false;
+
+  auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
+  if (!res_info) return false;
+
+  if (!common::contains(definitions::HistidineResidues, res_info->getResidueName())) return false;
+  return atom.getAtomicNum() == 7;
 }
 
 std::vector<const RDGeom::Point3D *> get_neighbor_positions(
     const RDKit::Atom &atom_a, const RDKit::Conformer &conf, const RDKit::RWMol &mol,
     bool ignore_hydrogens = true);
 
-// Find the closest hydrogen atom bonded to atom_a with respect to atom_b
+/// Find the closest hydrogen atom bonded to atom_a with respect to atom_b
 auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b);
 
-// Validate geometry for hydrogen bonds
+/// Validate geometry for hydrogen bonds
 bool are_geometrically_viable(
     const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
     const HBondParameters &opts);

@@ -95,10 +95,21 @@ public:
   void assign_molstar_typing() {
 
     // FIX: to be replaced by the entitytype manager
+    auto start1 = std::chrono::high_resolution_clock::now();
     std::vector<AtomType> atom_types_ = AtomTypeAnalysis::analyze(*mol);
+    auto end1 = std::chrono::high_resolution_clock::now();
+    // time in ms
+    std::cout << "Atom typing: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count()
+              << "ms" << std::endl;
 
     atom_types = std::move(atom_types_);
+    auto start2 = std::chrono::high_resolution_clock::now();
     rings_vec = create_ringdatavec();
+    auto end2 = std::chrono::high_resolution_clock::now();
+    std::cout << "Ring perception: "
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count()
+              << "ms" << std::endl;
   }
 
   static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {

@@ -69,8 +69,8 @@ private:
     topology.build_residues(*mol);
     initialize_and_populate_ringinfo(*mol, *topology.residues);
 
-    /*topology.assign_molstar_typing();*/
-    topology.assign_arpeggio_atom_types();
+    topology.assign_molstar_typing();
+    /*topology.assign_arpeggio_atom_types();*/
   }
 
 public:
