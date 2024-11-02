@@ -9,13 +9,8 @@
 
 namespace lahuta {
 
-// TODO: 1. Collect Options into one single interface
-//       2. Implement early returns after entity retrieval
-//
-
 // BIG TODO: 1. Make AtomData, Feature, and RingData similar
 //           2. combine `get_feature` and `get_atom_data` into one function
-//           3.
 
 // FIX: these should functions should optionally take a custom function-specific options struct
 // FIX: names: hydrophobic bonds are not really bonds, they are interactions or contacts

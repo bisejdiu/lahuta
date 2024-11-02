@@ -41,8 +41,7 @@ template <typename EV1, typename EV2> // entity vector
 class BruteForce {
 public:
   BruteForce(const RDKit::Conformer &conf_, const EV1 &ev1_, const EV2 &ev2_)
-      : conf(conf_), ev1(ev1_), ev2(ev2_) {
-  }
+      : conf(conf_), ev1(ev1_), ev2(ev2_) {}
   BruteForce(const RDKit::Conformer &conf_, const EV1 &ev_)
       : conf(conf_), ev1(ev_), ev2(ev_), is_self_search(true) {}
 
@@ -105,6 +104,10 @@ struct SearchStrategy {
   static constexpr bool prefer_grid(const EV1 &ev1, const EV2 &ev2, double) {
     return ev1.get_data().size() * ev2.get_data().size() > 1000;
   }
+
+  static constexpr bool size_is_valid(const EV1 &ev1, const EV2 &ev2) {
+    return ev1.get_data().size() > 0 && ev2.get_data().size() > 0;
+  }
 };
 
 template <typename EV1, typename EV2> //
@@ -139,8 +142,9 @@ class EntityNeighborSearch {
 public:
   explicit EntityNeighborSearch(const RDKit::Conformer &conf_) : conf(conf_) {}
 
-  template <typename EV1, typename EV2> //
+  template <typename EV1, typename EV2>
   NSResults search(const EV1 &ev1, const EV2 &ev2, double radius) {
+    if (!SearchStrategy<EV1, EV2>::size_is_valid(ev1, ev2)) return NSResults();
     SearchImpl<EV1, EV2> impl(conf);
     return SearchStrategy<EV1, EV2>::prefer_grid(ev1, ev2, radius) //
                ? impl.grid(ev1, ev2, radius)
@@ -148,6 +152,7 @@ public:
   }
 
   template <typename EV> NSResults search(const EV &ev, double radius) {
+    if (!SearchStrategy<EV, EV>::size_is_valid(ev, ev)) return NSResults();
     SearchImpl<EV, EV> impl(conf);
     return SearchStrategy<EV, EV>::prefer_grid(ev, ev, radius) //
                ? impl.grid(ev, radius)

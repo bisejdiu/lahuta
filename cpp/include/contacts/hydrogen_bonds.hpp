@@ -29,7 +29,7 @@ constexpr double MAX_DON_ANGLE_DEV = M_PI / 4.0;          // 45 degrees
 constexpr double MAX_DON_OUT_OF_PLANE_ANGLE = M_PI / 4.0; // 45 degrees
 constexpr double MAX_ACC_OUT_OF_PLANE_ANGLE = M_PI / 2.0; // 90 degrees
 
-inline struct GeometryOptions {
+inline struct HBondParameters {
   /// Ignore hydrogens in geometry calculations
   bool ignore_hydrogens = false;
   /// Include backbone-to-backbone hydrogen bonds
@@ -69,12 +69,6 @@ constexpr double get_atom_geometry_angle(HybridizationType hybridization) {
   }
 }
 
-// Residue names that represent water molecules
-const std::array<std::string, 11> WaterResNames = {
-    "SOL", "WAT", "HOH", "H2O", "W", "DOD", "D3O", "TIP", "TIP3", "TIP4", "SPC"};
-
-const std::vector<std::string> HistidineResNames = {"HIS", "HID", "HIE", "HIP"};
-
 bool is_water(const RDKit::Atom &atom);
 
 inline bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
@@ -85,8 +79,6 @@ inline bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b)
 inline bool is_histidine_nitrogen(const RDKit::Atom &atom, const RDKit::RWMol &mol) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
-  // FIX: This requires the initialization of ringInfo
-  // NOTE: should be fixed now. 
   auto ri = mol.getRingInfo();
   bool is_in_ring = ri->numAtomRings(atom.getIdx()) > 0;
   if (res_info && res_info->getResidueName() == "HIS" && atom.getAtomicNum() == 7 && is_in_ring) {
@@ -105,7 +97,7 @@ auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, 
 // Validate geometry for hydrogen bonds
 bool are_geometrically_viable(
     const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
-    const GeometryOptions &opts);
+    const HBondParameters &opts);
 
 /// atom is in an aromatic ring with an electronegative element (N or O)
 bool in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &atom);
@@ -114,8 +106,8 @@ AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-Contacts find_hydrogen_bonds(const Luni &luni, const GeometryOptions &opts = hydrogen_bond_opts);
-Contacts find_weak_hydrogen_bonds(const Luni &luni, const GeometryOptions &opts = hydrogen_bond_opts);
+Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts = hydrogen_bond_opts);
+Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts = hydrogen_bond_opts);
 
 } // namespace lahuta
 

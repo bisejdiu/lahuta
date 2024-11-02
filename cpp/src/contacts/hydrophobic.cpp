@@ -5,48 +5,37 @@
 namespace lahuta {
 
 AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  const int atomic_num = atom.getAtomicNum();
-  bool flag = false;
+  const int atomic_number = atom.getAtomicNum();
 
-  if (atomic_num == 6) {
-    flag = true;
+  if (atomic_number == 9) return AtomType::HYDROPHOBIC;
+  if (atomic_number != 6) return AtomType::NONE;
 
-    for (const auto &bond : mol.atomBonds(&atom)) {
-      const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
-      int neighbor_atomic_num = neighbor->getAtomicNum();
+  for (const auto &bond : mol.atomBonds(&atom)) {
+    const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
+    int neighbor_atomic_num = neighbor->getAtomicNum();
 
-      if (neighbor_atomic_num != 6 && neighbor_atomic_num != 1) {
-        flag = false;
-        break;
-      }
+    if (neighbor_atomic_num != 6 && neighbor_atomic_num != 1) {
+      return AtomType::NONE;
     }
-  } else if (atomic_num == 9) { // Fluorine atom
-    flag = true;
   }
 
-  if (flag) {
-    return AtomType::HYDROPHOBIC;
-  }
-  return AtomType::NONE;
+  return AtomType::HYDROPHOBIC;
 }
 
 Contacts find_hydrophobic_bonds(const Luni &luni, HydrophobicParams opts) {
 
   Contacts contacts(&luni);
-  const auto &mol = luni.get_molecule();
-  const auto &conf = luni.get_conformer();
   const auto hydrophobic_atoms = get_atom_data(&luni, AtomType::HYDROPHOBIC);
 
-  EntityNeighborSearch ens(mol.getConformer());
-  auto results = ens.search(hydrophobic_atoms, opts.distance_max);
+  EntityNeighborSearch ens(luni.get_conformer());
+  NSResults results = ens.search(hydrophobic_atoms, opts.distance_max);
 
   for (const auto &[pair, dist] : results) {
     auto [atom1_index, atom2_index] = pair;
     const auto &atom1_data = hydrophobic_atoms.get_data()[atom1_index];
     const auto &atom2_data = hydrophobic_atoms.get_data()[atom2_index];
 
-    if (are_residueids_close(mol, *atom1_data.atom, *atom2_data.atom, 0)) continue;
-    // No hydrophobic interaction if both are fluorine
+    if (are_residueids_close(luni.get_molecule(), *atom1_data.atom, *atom2_data.atom, 0)) continue;
     if (atom1_data.atom->getAtomicNum() == 9 && atom2_data.atom->getAtomicNum() == 9) continue;
 
     contacts.add(Contact(

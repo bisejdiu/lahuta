@@ -1,6 +1,7 @@
 #include "aromatics.hpp"
 #include "GraphMol/MolOps.h"
 #include "GraphMol/Rings.h"
+#include "common.hpp"
 #include "contacts/charges.hpp"
 #include "convert.hpp"
 
@@ -18,9 +19,7 @@ AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
   RDKit::VECT_INT_VECT rings, bonds;
   RDKit::MolOps::symmetrizeSSSR(mol, true);
   for (const auto &ring : mol.getRingInfo()->atomRings()) {
-    if (std::all_of(ring.begin(), ring.end(), [&mol](int idx) {
-          return mol.getAtomWithIdx(idx)->getIsAromatic();
-        })) {
+    if (common::is_ring_aromatic(mol, ring)) {
       rings.push_back(ring);
     }
   }

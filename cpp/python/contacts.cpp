@@ -138,7 +138,6 @@ void bind_contacts(py::module &m) {
   py::class_<Interactions>(m, "Interactions")
 
       .def(
-          /*py::init<Luni *, const std::vector<Feature> *, InteractionOptions>(),*/
           py::init<Luni &, InteractionOptions>(),
           py::arg("luni"),
           py::arg("opts"))

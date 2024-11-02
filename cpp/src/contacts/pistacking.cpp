@@ -1,17 +1,9 @@
 #include "contacts/pistacking.hpp"
-#include "contacts/cationpi.hpp"
+#include "contacts/common.hpp"
 #include "contacts/search.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {
-
-bool is_same_residue(const RDKit::RWMol &mol, const RingData &ring_a, const RingData &ring_b) {
-  auto atom_a = ring_a.atoms[0];
-  auto atom_b = ring_b.atoms[0];
-  auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a->getMonomerInfo());
-  auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b->getMonomerInfo());
-  return info_a->getResidueNumber() == info_b->getResidueNumber();
-}
 
 Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
 
@@ -28,11 +20,11 @@ Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
     const auto &ring_a = rings[ring_index_a];
     const auto &ring_b = rings[ring_index_b];
 
-    if (is_same_residue(mol, ring_a, ring_b)) continue; // e.g., trp
+    if (is_same_residue(mol, *ring_a.atoms.front(), *ring_b.atoms.front())) continue; // e.g., trp
 
     auto dot_product = ring_a.norm.dotProduct(ring_b.norm);
     auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
-    if (angle > M_PI / 2) angle = M_PI - angle;
+    if (angle > M_PI / 2) angle = M_PI - angle; // obtuse -> acute
 
     double offset_a = compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.norm);
     double offset_b = compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.norm);
@@ -51,4 +43,5 @@ Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
 
   return contacts;
 }
+
 } // namespace lahuta

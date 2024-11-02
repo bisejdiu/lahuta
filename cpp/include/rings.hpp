@@ -1,7 +1,6 @@
 #ifndef LAHUTA_RINGS_HPP
 #define LAHUTA_RINGS_HPP
 
-#include "GraphMol/MonomerInfo.h"
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RWMol.h>
 #include <vector>
@@ -14,7 +13,6 @@ enum class RingGroup { NONE, AROMATIC, ALIPHATIC };
 enum class RingType { None };
 
 struct RingData {
-  /*std::vector<int> atom_ids;*/
   std::vector<const RDKit::Atom *> atoms;
   RDGeom::Point3D center;
   RDGeom::Point3D norm;
@@ -26,14 +24,11 @@ private:
 
 public:
   RingData() = default;
-  /*RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<int>
-   * atom_ids_)*/
-  /*    : center(center_), norm(norm_), atom_ids(atom_ids_) {}*/
-
   explicit RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<const RDKit::Atom *> atoms_)
       : center(center_), norm(norm_), atoms(atoms_) {}
 
-  explicit RingData(RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<const RDKit::Atom *> atoms_, size_t id_)
+  explicit RingData(
+      RDGeom::Point3D center_, RDGeom::Point3D norm_, std::vector<const RDKit::Atom *> atoms_, size_t id_)
       : center(center_), norm(norm_), atoms(atoms_), id(id_) {}
 
   std::vector<int> atom_ids() const {

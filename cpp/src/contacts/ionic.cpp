@@ -7,14 +7,11 @@ namespace lahuta {
 Contacts find_ionic(const Luni &luni, IonicParams opts) {
 
   Contacts contacts(&luni);
-  const auto &conf = luni.get_molecule().getConformer();
 
   const FeatureVec positives = get_features(&luni, AtomType::POS_IONISABLE);
   const FeatureVec negatives = get_features(&luni, AtomType::NEG_IONISABLE);
 
-  if (positives.get_data().empty() || negatives.get_data().empty()) return contacts;
-
-  EntityNeighborSearch ens(conf);
+  EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(positives, negatives, opts.distance_max);
 
   for (const auto &[pair, dist] : results) {

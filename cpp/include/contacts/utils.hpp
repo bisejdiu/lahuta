@@ -56,10 +56,26 @@ inline int get_h_count(RDKit::ROMol &mol, RDKit::Atom &atom) {
   return hCount;
 }
 
+inline bool is_same_residue(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
+  auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());
+  auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b.getMonomerInfo());
+
+  if (!info_a || !info_b) return false;
+
+  return info_a->getResidueNumber() == info_b->getResidueNumber()
+         && info_a->getResidueName() == info_b->getResidueName()
+         && info_a->getChainId() == info_b->getChainId();
+}
+
+// FIX: need a is_protein check
 inline bool are_residueids_close(
     const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, int threshold) {
   auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());
   auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b.getMonomerInfo());
+
+  if (!info_a || !info_b) return false;
+  if (info_a->getChainId() != info_b->getChainId()) return false;
+
   return std::abs(info_a->getResidueNumber() - info_b->getResidueNumber()) <= threshold;
 }
 
