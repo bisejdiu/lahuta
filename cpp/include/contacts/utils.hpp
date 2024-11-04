@@ -67,7 +67,7 @@ inline bool is_same_residue(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, 
          && info_a->getChainId() == info_b->getChainId();
 }
 
-// FIX: need a is_protein check
+// FIX: need an is_protein check
 inline bool are_residueids_close(
     const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, int threshold) {
   auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());

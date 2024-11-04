@@ -1,10 +1,11 @@
 /*
-    This code adapts functionality from the Mol* (mol-star) molecular visualization package, originally in
-   TypeScript, for use in C++ with RDKit in the Lahuta project.
+    This code adapts functionality from the Mol* (mol-star) molecular visualization package,
+    originally in TypeScript, for use in C++ with RDKit in the Lahuta project.
 
-    Mol* is licensed under the MIT License (https://github.com/molstar/molstar), while this adaptation is
-   released under the GNU General Public License (GPL).
+    Mol* is licensed under the MIT License (https://github.com/molstar/molstar),
+    while this adaptation is released under the GNU General Public License (GPL).
 */
+
 #ifndef LAHUTA_GEOMETRY_HPP
 #define LAHUTA_GEOMETRY_HPP
 

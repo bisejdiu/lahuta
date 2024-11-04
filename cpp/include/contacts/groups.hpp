@@ -2,7 +2,6 @@
 #define LAHUTA_GROUPS_HPP
 
 #include "GraphMol/RWMol.h"
-#include "atom_types.hpp"
 #include "contacts/aromaticity.hpp"
 #include "contacts/charges.hpp"
 #include "residues.hpp"

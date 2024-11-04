@@ -2,7 +2,6 @@
 #define LAHUTA_AROMATICITY_HPP
 
 #include "GraphMol/RWMol.h"
-#include "contacts/features.hpp"
 #include "ob/kekulize.h"
 #include "residues.hpp"
 #include "entities.hpp"

@@ -1,6 +1,7 @@
 #include "entities.hpp"
 #include "atom_types.hpp"
 #include "lahuta.hpp"
+#include "rings.hpp"
 
 namespace lahuta {
 
@@ -69,7 +70,8 @@ double RingEntityCollection::compute_angle(const RingEntity &rd, const std::vect
   return theta_radians * (180.0 / M_PI);
 }
 
-const AtomEntityCollection AtomEntityCollection::filter(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) {
+const AtomEntityCollection
+AtomEntityCollection::filter(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) {
   const std::vector<AtomType> &atom_types = luni->get_atom_types();
   const auto &mol = luni->get_molecule();
 
@@ -82,7 +84,8 @@ const AtomEntityCollection AtomEntityCollection::filter(const Luni *luni, AtomTy
   return std::move(atom_data_vec);
 }
 
-const GroupEntityCollection GroupEntityCollection::filter(const Luni* luni, AtomType type, FeatureTypeCheckFunc check_func) {
+const GroupEntityCollection
+GroupEntityCollection::filter(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) {
   const GroupEntityCollection &features = luni->get_features();
   GroupEntityCollection feature_vec;
   for (const auto &feature : features.get_data()) {
@@ -93,7 +96,6 @@ const GroupEntityCollection GroupEntityCollection::filter(const Luni* luni, Atom
 
   return feature_vec;
 }
-
 
 RingEntityCollection get_rings(const Luni *luni) { return luni->get_rings(); }
 

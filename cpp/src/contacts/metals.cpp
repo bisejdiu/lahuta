@@ -1,5 +1,6 @@
 #include "contacts/metals.hpp"
 #include "contacts/charges.hpp"
+#include "definitions.hpp"
 
 namespace lahuta {
 
@@ -24,15 +25,15 @@ AtomType add_metal(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 }
 
 bool is_protein_sidechain(const std::string &atomname) {
-  return ProteinBackboneAtoms.find(atomname) == ProteinBackboneAtoms.end();
+  return definitions::ProteinBackboneAtoms.find(atomname) == definitions::ProteinBackboneAtoms.end();
 }
 
 bool is_protein_backbone(const std::string &atomname) {
-  return ProteinBackboneAtoms.find(atomname) != ProteinBackboneAtoms.end();
+  return definitions::ProteinBackboneAtoms.find(atomname) != definitions::ProteinBackboneAtoms.end();
 }
 
 bool is_nucleic_backbone(const std::string &atomname) {
-  return NucleicBackboneAtoms.find(atomname) != NucleicBackboneAtoms.end();
+  return definitions::NucleicBackboneAtoms.find(atomname) != definitions::NucleicBackboneAtoms.end();
 }
 
 bool is_halogen(int atomic_num) {
@@ -57,7 +58,7 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   bool dative = false, ionic = false;
 
   bool is_standard_aminoacid = AminoAcidNames.find(resname) != AminoAcidNames.end();
-  bool is_standard_base = BaseNames.find(resname) != BaseNames.end();
+  bool is_standard_base = definitions::BaseNames.find(resname) != definitions::BaseNames.end();
 
   if (!is_standard_aminoacid && !is_standard_base) {
     if (is_halogen(atomic_num) || atomic_num == 8 || atomic_num == 16) {

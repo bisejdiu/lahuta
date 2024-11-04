@@ -1,7 +1,6 @@
 #include "lahuta.hpp"
-#include "contacts/charges.hpp"
+#include "definitions.hpp"
 #include "parser.hpp"
-#include "rings.hpp"
 
 namespace lahuta {
 
@@ -317,15 +316,15 @@ NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results, int res_dif
     auto *finfo = static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
     auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
 
-    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1)
-      continue;
+    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1) continue;
+
+    // FIX: not fast
+    auto is_either_nonprotein =
+        (definitions::PolymerNames.find(finfo->getResidueName()) == definitions::PolymerNames.end())
+        || (definitions::PolymerNames.find(sinfo->getResidueName()) == definitions::PolymerNames.end());
 
     auto f_resid = finfo->getResidueNumber();
     auto s_resid = sinfo->getResidueNumber();
-
-    // FIX: not fast
-    auto is_either_nonprotein = (PolymerNames.find(finfo->getResidueName()) == PolymerNames.end())
-                                || (PolymerNames.find(sinfo->getResidueName()) == PolymerNames.end());
 
     if (std::abs(f_resid - s_resid) > res_diff || is_either_nonprotein) {
       filtered.push_back(results.get_pairs()[i]);
@@ -386,7 +385,6 @@ std::vector<std::string> Luni::find_elements(const std::vector<int> &atomic_numb
   return elements;
 }
 
-// Template specializations for getEntity
 template <> const RDKit::Atom &Luni::get_entity<RDKit::Atom>(EntityID id) const {
   auto index = get_entity_index(id);
   auto r = mol->getAtomWithIdx(index);
@@ -433,7 +431,7 @@ const std::vector<EntityID> &Luni::get_ring_entities() {
   return entities[EntityType::Ring];
 }
 
-// TODO: Feature keeps an `id` field. 
+// TODO: Feature keeps an `id` field.
 // Because of that, it may not be necessary to keep a separate `entities` map.
 const std::vector<EntityID> &Luni::get_group_entities() {
   if (entities.find(EntityType::Group) == entities.end()) {

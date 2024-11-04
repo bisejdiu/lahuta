@@ -1,12 +1,15 @@
 #ifndef LAHUTA_HALOGEN_BONDS_HPP
 #define LAHUTA_HALOGEN_BONDS_HPP
 
-#include "atom_types.hpp"
 #include "nn.hpp"
 
 namespace lahuta {
 
 class Luni;
+
+inline std::unordered_set<int> HalogenDonors = {17, 35, 53};
+inline std::unordered_set<int> HalogenAcceptors = {7, 8, 16};
+inline std::unordered_set<int> HalogenBinders = {6, 7, 15, 16};
 
 inline struct HalogenParams {
   constexpr static double distance_max = 4.0;
@@ -14,10 +17,6 @@ inline struct HalogenParams {
   constexpr static double optimal_angle = M_PI;                      // 180 degrees
   constexpr static double optimal_acceptor_angle = M_PI * 2.0 / 3.0; // 120 degrees
 } halogen_params;
-
-inline std::unordered_set<int> HalogenDonors = {17, 35, 53};
-inline std::unordered_set<int> HalogenAcceptors = {7, 8, 16};
-inline std::unordered_set<int> HalogenBinders = {6, 7, 15, 16};
 
 /**
  * Halogen bond donors (X-C, with X one of Cl, Br, I or At) not F!

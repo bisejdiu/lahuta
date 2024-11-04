@@ -11,22 +11,16 @@
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include "aromatics.hpp"
-#include "contacts/features.hpp"
 #include "contacts/interactions.hpp"
 #include "convert.hpp"
 #include "neighbors.hpp"
 #include "nsgrid.hpp"
 #include "ob/kekulize.h"
-#include "rings.hpp"
 
-// selection parser
-#include "visitor.hpp"
-// contacts
-#include "contacts/groups.hpp"
-
-#include "nn.hpp"
-
+#include "visitor.hpp" // selection parser (bad file name)
 #include "topology.hpp"
+#include "contacts/groups.hpp"
+#include "nn.hpp"
 
 #define LAHUTA_VERSION "0.15.0"
 #define t() std::chrono::high_resolution_clock::now()

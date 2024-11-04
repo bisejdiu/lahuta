@@ -78,13 +78,11 @@ private:
   std::vector<std::unique_ptr<AtomTypeBase>> strategies;
 
 public:
-  // Add strategy to the composite
   template <typename T> void add_strategy() {
     static_assert(std::is_base_of<AtomTypeBase, T>::value, "T must derive from AtomTypeStrategy");
     strategies.push_back(std::make_unique<T>());
   }
 
-  // Apply strategies and combine results
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const {
     AtomType result = AtomType::NONE;
     for (const auto &strategy : strategies) {
@@ -99,7 +97,6 @@ public:
   static AtomTypeStrategy create() {
     AtomTypeStrategy composite;
 
-    // default strategies
     composite.add_strategy<HBondDonorAtom>();
     composite.add_strategy<HBondAcceptorAtom>();
     composite.add_strategy<WeakHBondDonorAtom>();

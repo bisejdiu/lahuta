@@ -4,12 +4,11 @@
 #include "atom_types.hpp"
 #include "bond_order.hpp"
 #include "bonds.hpp"
+#include "contacts/atoms.hpp"
 #include "contacts/charges.hpp"
-#include "contacts/contacts.hpp"
 #include "convert.hpp"
 #include "ob/clean_mol.hpp"
 #include "residues.hpp"
-#include "rings.hpp"
 #include <rdkit/GraphMol/BondIterators.h>
 
 namespace lahuta {
@@ -101,16 +100,16 @@ public:
     auto end1 = std::chrono::high_resolution_clock::now();
     // time in ms
     std::cout << "Atom typing: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count()
-              << "ms" << std::endl;
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count() << "ms"
+              << std::endl;
 
     atom_types = std::move(atom_types_);
     auto start2 = std::chrono::high_resolution_clock::now();
     rings_vec = create_ringdatavec();
     auto end2 = std::chrono::high_resolution_clock::now();
     std::cout << "Ring perception: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count()
-              << "ms" << std::endl;
+              << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count() << "ms"
+              << std::endl;
   }
 
   static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {

@@ -1,7 +1,6 @@
 #ifndef LAHUTA_DISTANCES_HPP
 #define LAHUTA_DISTANCES_HPP
 
-#include "contacts/groups.hpp"
 #include "contacts/interactions.hpp"
 #include "kdtree/KDTree.hpp"
 #include <GraphMol/Atom.h>
@@ -40,13 +39,11 @@ public:
     std::set<std::pair<size_t, size_t>> interactions;
     for (size_t i = 0; i < atom_data_.size(); ++i) {
       const auto &atom_data = atom_data_[i];
-      if (!atom_data.is_type_a)
-        continue;
+      if (!atom_data.is_type_a) continue;
 
       indexArr neighbors = tree_->neighborhood_indices(atom_data.position, distance_threshold);
       for (size_t idx : neighbors) {
-        if (idx == i)
-          continue;
+        if (idx == i) continue;
 
         const auto &neighbor_atom = atom_data_[idx];
         if (!neighbor_atom.is_type_a) {
