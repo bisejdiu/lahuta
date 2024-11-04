@@ -28,7 +28,7 @@
 
 #include "topology.hpp"
 
-#define LAHUTA_VERSION "0.14.0"
+#define LAHUTA_VERSION "0.15.0"
 #define t() std::chrono::high_resolution_clock::now()
 #define to_ms(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
 
@@ -46,7 +46,7 @@ private:
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
   Topology topology = Topology(*mol);
-  FeatureVec features;
+  GroupEntityCollection features;
 
   void process_file(std::string file_path_) {
     file_name = file_path_;
@@ -69,8 +69,8 @@ private:
     topology.build_residues(*mol);
     initialize_and_populate_ringinfo(*mol, *topology.residues);
 
-    topology.assign_molstar_typing();
-    /*topology.assign_arpeggio_atom_types();*/
+    /*topology.assign_molstar_typing();*/
+    topology.assign_arpeggio_atom_types();
   }
 
 public:
@@ -112,7 +112,7 @@ public:
   const double get_cutoff() const { return _cutoff; }
 
   const std::vector<AtomType> &get_atom_types() const { return topology.atom_types; }
-  const RingDataVec &get_rings() const { return topology.rings_vec; }
+  const RingEntityCollection &get_rings() const { return topology.rings_vec; }
 
   /*const RingDataVec new_get_rings() const {*/
   /*  RingDataVec rings;*/
@@ -152,7 +152,7 @@ public:
     auto rings = topology.rings_vec;
     // FIX: keep an instance of the grid in the class
     auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
-    auto centers = rings.centers();
+    auto centers = rings.positions();
 
     NSResults nbrs = grid.search(centers);
     if (res_dif > 0) {
@@ -168,7 +168,7 @@ public:
     auto rings = topology.rings_vec;
     // FIX: keep an instance of the grid in the class
     auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
-    auto centers = rings.centers();
+    auto centers = rings.positions();
 
     NSResults nbrs = grid.search(centers);
     // log the first 10 pairs of neighbors if that many exist
@@ -249,7 +249,7 @@ public:
   static std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers);
 
   /*const std::vector<Feature> &get_features() const { return features; }*/
-  const FeatureVec &get_features() const { return features; }
+  const GroupEntityCollection &get_features() const { return features; }
 
   template <typename T> const T &get_entity(EntityID id) const;
   const std::vector<EntityID> &get_atom_entities();
@@ -267,7 +267,7 @@ public:
     /*auto ring_neighbors = find_ring_neighbors2(6.0);*/
     /*c.add_many(ring_neighbors, ring_entities, atom_entities);*/
 
-    FeatureVec group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
+    GroupEntityCollection group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
     Interactions processor(*this, InteractionOptions{5.0});
     auto ionic = processor.find_ionic_interactions();
     auto hbonds = processor.find_hbond_interactions();

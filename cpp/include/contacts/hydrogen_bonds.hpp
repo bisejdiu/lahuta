@@ -77,7 +77,7 @@ inline bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b)
   return is_water(atom_a) && is_water(atom_b);
 }
 
-/// test if atom is a nitrogen in a histidine residue 
+/// test if atom is a nitrogen in a histidine residue
 inline bool is_histidine_nitrogen(const RDKit::Atom &atom, const RDKit::RWMol &mol) {
 
   bool is_in_ring = mol.getRingInfo()->numAtomRings(atom.getIdx()) > 0;

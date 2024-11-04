@@ -1,8 +1,8 @@
 #include "contacts/cationpi.hpp"
-#include "contacts/common.hpp"
 #include "contacts/search.hpp"
 #include "lahuta.hpp"
 #include "nn.hpp"
+#include "contacts/geometry.hpp"
 
 namespace lahuta {
 
@@ -11,21 +11,22 @@ Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
   Contacts contacts(&luni);
 
   const auto rings = luni.get_rings();
-  const auto features = get_features(&luni, AtomType::POS_IONISABLE);
+  const auto features = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
 
   EntityNeighborSearch ens(luni.get_conformer());
   auto nbrs = ens.search(features, rings, opts.distance_max);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [feature_index, ring_index] = pair;
-    const auto &ring = rings.rings[ring_index];
+    const auto &ring = rings.data[ring_index];
     const auto &feature = features[feature_index];
 
     auto first_ring_atom = ring.atoms.front();
 
-    if (is_same_residue(luni.get_molecule(), *first_ring_atom, *feature.members.front())) continue;
+    if (is_same_residue(luni.get_molecule(), *first_ring_atom, *feature.atoms.front())) continue;
 
-    auto offset = compute_in_plane_offset(feature.center, ring.center, ring.norm);
+    auto offset = geometry::compute_in_plane_offset(feature.center, ring.center, ring.norm);
+
     if (offset <= opts.offset_max) {
       contacts.add(Contact(
           make_entity_id(EntityType::Group, feature.get_id()),

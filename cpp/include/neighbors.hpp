@@ -8,7 +8,7 @@
 
 #include "atom_types.hpp"
 #include "nsgrid.hpp"
-#include "rings.hpp"
+#include "entities.hpp"
 
 namespace lahuta {
 
@@ -18,7 +18,7 @@ template <typename T> class ContextProvider;
 
 struct AtomRingPairType {
   const RDKit::RWMol *mol;
-  const RingDataVec *ring;
+  const RingEntityCollection *ring;
 };
 
 template <typename T> class BasePair {
@@ -120,7 +120,7 @@ public:
   ContextProvider(const Luni &mainCtx);
 
   const RDKit::RWMol &molecule() const;
-  const RingDataVec &rings() const;
+  const RingEntityCollection &rings() const;
 
   const Luni *get_luni() const { return luni; }
 

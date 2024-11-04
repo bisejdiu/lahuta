@@ -12,7 +12,7 @@ const RDKit::RWMol &ContextProvider<AtomRingPair>::molecule() const {
   return luni->get_molecule();
 }
 
-const RingDataVec &ContextProvider<AtomRingPair>::rings() const {
+const RingEntityCollection &ContextProvider<AtomRingPair>::rings() const {
   return luni->get_rings();
 }
 
@@ -34,17 +34,16 @@ AtomAtomPair::names(const ContextProvider<AtomAtomPair> &ctx) const {
 std::string
 AtomRingPair::names(const ContextProvider<AtomRingPair> &ctx) const {
   std::vector<int> atom_ids;
-  auto ring = ctx.rings().rings[i];
-  for (const auto &atom : ring.atom_ids()) {
-    atom_ids.push_back(atom);
+  auto ring = ctx.rings().get_data()[i];
+  for (const auto &atom : ring.atoms) {
+    atom_ids.push_back(atom->getIdx());
   }
   std::string atom_ids_str;
   for (const auto &id : atom_ids) {
     atom_ids_str += std::to_string(id) + " ";
   }
 
-  auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(
-      ctx.molecule().getAtomWithIdx(ring.atom_ids()[0])->getMonomerInfo());
+  auto res1 = static_cast<const RDKit::AtomPDBResidueInfo *>(ring.atoms.front()->getMonomerInfo());
 
   return res1->getResidueName() + " " + atom_ids_str;
 }

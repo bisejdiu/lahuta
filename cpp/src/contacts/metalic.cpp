@@ -12,10 +12,12 @@ bool is_metalic(AtomType at1, AtomType at2) {
 }
 
 Contacts find_metalic(const Luni &luni, MetalicParams opts) {
+  using AEC = AtomEntityCollection;
 
   Contacts contacts(&luni);
-  const auto metals = get_atom_data(&luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);
-  const auto metal_binders = get_atom_data(&luni, AtomType::IonicTypePartner | AtomType::DativeBondPartner);
+  AtomEntityCollection metals, metal_binders;
+  metals = AEC::filter(&luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);
+  metal_binders = AEC::filter(&luni, AtomType::IonicTypePartner | AtomType::DativeBondPartner);
 
   EntityNeighborSearch ens(luni.get_molecule().getConformer());
   auto m_nbrs = ens.search(metals, metal_binders, opts.distance_max);

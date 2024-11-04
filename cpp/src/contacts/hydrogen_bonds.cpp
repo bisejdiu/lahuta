@@ -116,7 +116,8 @@ bool are_geometrically_viable(
     const HBondParameters &opts) {
 
   // donor angles
-  const auto &[don_angles, don_h_angles] = calculate_angle(mol, donor, acceptor, opts.ignore_hydrogens);
+  const auto &[don_angles, don_h_angles] =
+      geometry::calculate_angle(mol, donor, acceptor, opts.ignore_hydrogens);
 
   double ideal_don_angle = get_atom_geometry_angle(donor.getHybridization());
 
@@ -134,7 +135,7 @@ bool are_geometrically_viable(
 
   // out-of-plane angle for sp2 hybridized atoms
   if (donor.getHybridization() == HybridizationType::SP2) {
-    double out_of_plane = compute_plane_angle(mol, donor, acceptor);
+    double out_of_plane = geometry::compute_plane_angle(mol, donor, acceptor);
     if (out_of_plane > opts.max_don_out_of_plane_angle) {
       return false;
     }
@@ -148,7 +149,7 @@ bool are_geometrically_viable(
 
   // acceptor angles
   const auto &[acc_angles, acc_h_angles] =
-      calculate_angle(mol, acceptor, *donor_atom_for_acc, opts.ignore_hydrogens);
+      geometry::calculate_angle(mol, acceptor, *donor_atom_for_acc, opts.ignore_hydrogens);
 
   double ideal_acc_angle = get_atom_geometry_angle(acceptor.getHybridization());
 
@@ -166,7 +167,7 @@ bool are_geometrically_viable(
 
   // out-of-plane angle for sp2 hybridized atoms
   if (acceptor.getHybridization() == RDKit::Atom::HybridizationType::SP2) {
-    double out_of_plane = compute_plane_angle(mol, acceptor, *donor_atom_for_acc);
+    double out_of_plane = geometry::compute_plane_angle(mol, acceptor, *donor_atom_for_acc);
     if (out_of_plane > opts.max_acc_out_of_plane_angle) {
       return false;
     }
@@ -247,31 +248,30 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
   const auto &mol = luni.get_molecule();
 
-  const AtomDataVec donors = get_atom_data(&luni, AtomType::HBOND_DONOR);
-  const AtomDataVec acceptors = get_atom_data(&luni, AtomType::HBOND_ACCEPTOR);
+  const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
+  const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
 
   EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
-    const auto &donor = donors.get_data()[donor_index];
-    const auto &acceptor = acceptors.get_data()[acceptor_index];
+    const auto &donor = donors.get_data()[donor_index].atoms.front();
+    const auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
 
     // FIX: improve this (it only checks residue numbers)
-    if (are_residueids_close(mol, *donor.atom, *acceptor.atom, 1)) continue;
+    if (are_residueids_close(mol, *donor, *acceptor, 1)) continue;
 
-    double max_dist = (donor.atom->getAtomicNum() == 16 || acceptor.atom->getAtomicNum() == 16)
-                          ? opts.max_sulfur_dist
-                          : opts.max_dist;
+    double max_dist = (donor->getAtomicNum() == 16 || acceptor->getAtomicNum() == 16) ? opts.max_sulfur_dist
+                                                                                      : opts.max_dist;
     if (dist > max_dist * max_dist) continue;
 
-    if (!opts.include_water && is_water_hbond(*donor.atom, *acceptor.atom)) continue;
-    if (!are_geometrically_viable(mol, *donor.atom, *acceptor.atom, opts)) continue;
+    if (!opts.include_water && is_water_hbond(*donor, *acceptor)) continue;
+    if (!are_geometrically_viable(mol, *donor, *acceptor, opts)) continue;
 
     contacts.add(Contact(
-        static_cast<EntityID>(donor.atom->getIdx()),
-        static_cast<EntityID>(acceptor.atom->getIdx()),
+        static_cast<EntityID>(donor->getIdx()),
+        static_cast<EntityID>(acceptor->getIdx()),
         dist,
         InteractionType::HydrogenBond));
   }
@@ -284,8 +284,8 @@ Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts)
   Contacts contacts(&luni);
   const auto &mol = luni.get_molecule();
 
-  const auto weak_donor_atoms = get_atom_data(&luni, AtomType::WEAK_HBOND_DONOR);
-  const auto acceptor_atoms = get_atom_data(&luni, AtomType::HBOND_ACCEPTOR);
+  const auto weak_donor_atoms = AtomEntityCollection::filter(&luni, AtomType::WEAK_HBOND_DONOR);
+  const auto acceptor_atoms = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
 
   EntityNeighborSearch ens(mol.getConformer());
   auto nbrs = ens.search(weak_donor_atoms, acceptor_atoms, opts.max_dist);

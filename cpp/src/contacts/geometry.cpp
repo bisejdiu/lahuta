@@ -2,9 +2,11 @@
 #include "contacts/hydrogen_bonds.hpp"
 
 namespace lahuta {
+namespace geometry {
 
 std::pair<std::vector<double>, std::vector<double>> calculate_angle(
     const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, bool ignore_hydrogens) {
+
   std::vector<double> angles;
   std::vector<double> angles_h;
 
@@ -44,13 +46,13 @@ double compute_plane_angle(
   auto neighbor_vec1 = neighbor1_pos - atom_a_pos;
   auto neighbor_vec2 = neighbor2_pos - atom_a_pos;
 
-  // get plane normal
+  // plane normal
   auto plane_normal = neighbor_vec1.crossProduct(neighbor_vec2);
 
   // angle between plane's normal vector and ab_vec
   double angle = plane_normal.angleTo(ab_vec);
 
-  // Return the deviation from 90 degrees
+  // returning the deviation from 90 degrees
   return std::abs((M_PI / 2) - angle);
 }
 
@@ -71,4 +73,5 @@ double compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, c
   return compute_plane_angle(atom_a_pos, *neighbor_positions[0], *neighbor_positions[1], atom_b_pos);
 }
 
+} // namespace geometry
 } // namespace lahuta

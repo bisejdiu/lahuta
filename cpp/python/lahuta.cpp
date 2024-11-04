@@ -21,13 +21,15 @@ using namespace lahuta;
 void bind(py::module &_lahuta) {
   py::class_<Luni> Luni(_lahuta, "LahutaCPP");
 
-  py::class_<RingData>(_lahuta, "RingData")
-      .def(py::init<>())
+  py::class_<RingEntity>(_lahuta, "RingData")
+      /*.def(py::init<>())*/
+      /*.def(py::init<RDGeom::Point3D, RDGeom::Point3D, std::vector<const RDKit::Atom *>>())*/
+      .def(py::init<RDGeom::Point3D, RDGeom::Point3D, std::vector<const RDKit::Atom *>, size_t>())
       /*.def_readwrite("atom_ids", &RingData::atom_ids)*/
-      .def("compute_angle", &RingData::compute_angle)
+      /*.def("compute_angle", &RingData::compute_angle)*/
       /*.def("compute_angle2", &RingData::compute_angle2)*/
       /*.def("get_atom_ids", [](RingData &rd) { return rd.atom_ids(); })*/
-      .def("atom_ids", [](RingData &rd) {
+      .def("atom_ids", [](RingEntity &rd) {
         std::vector<int> ids;
         ids.reserve(rd.atoms.size());
         for (const auto *atom : rd.atoms) {
@@ -36,14 +38,16 @@ void bind(py::module &_lahuta) {
         return ids;
       })
       .def_property_readonly(
-          "center", [](RingData &rd) { return point3d_to_pyarray(rd.center); })
+          "center", [](RingEntity &rd) { return point3d_to_pyarray(rd.center); })
       .def_property_readonly(
-          "norm1", [](RingData &rd) { return point3d_to_pyarray(rd.norm); });
+          "norm1", [](RingEntity &rd) { return point3d_to_pyarray(rd.norm); });
 
-  py::class_<RingDataVec>(_lahuta, "RingDataVec")
+  py::class_<RingEntityCollection>(_lahuta, "RingDataVec")
       .def(py::init<>())
-      .def_readwrite("rings", &RingDataVec::rings)
-      .def("compute_angles", &RingDataVec::compute_angles)
+      /*.def_readwrite("rings", &RingDataVec::rings)*/
+
+      .def_property_readonly("rings", [](RingEntityCollection &rdv) { return rdv.get_data(); })
+      .def("compute_angles", &RingEntityCollection::compute_angles)
       /*.def("root_atom_ids", &RingDataVec::root_atom_ids)*/
       /*.def("compute_angles",*/
       /*     [](RingDataVec &rdv, const std::vector<std::vector<double>>
@@ -68,33 +72,33 @@ void bind(py::module &_lahuta) {
       //   return result;
       // })
       .def_property_readonly("centers",
-                             [](RingDataVec &rdv) {
-                               ssize_t n = rdv.rings.size();
+                             [](RingEntityCollection &rdv) {
+                               ssize_t n = rdv.data.size();
                                ssize_t dim = 3;
                                auto result = py::array_t<double>({n, dim});
                                auto buf = result.request();
                                double *ptr = static_cast<double *>(buf.ptr);
 
                                for (size_t i = 0; i < n; ++i) {
-                                 ptr[i * dim] = rdv.rings[i].center.x;
-                                 ptr[i * dim + 1] = rdv.rings[i].center.y;
-                                 ptr[i * dim + 2] = rdv.rings[i].center.z;
+                                 ptr[i * dim] = rdv.data[i].center.x;
+                                 ptr[i * dim + 1] = rdv.data[i].center.y;
+                                 ptr[i * dim + 2] = rdv.data[i].center.z;
                                }
 
                                return result;
                              })
       .def_property_readonly("norm",
-                             [](RingDataVec &rdv) {
-                               ssize_t n = rdv.rings.size();
+                             [](RingEntityCollection &rdv) {
+                               ssize_t n = rdv.data.size();
                                ssize_t dim = 3;
                                auto result = py::array_t<double>({n, dim});
                                auto buf = result.request();
                                double *ptr = static_cast<double *>(buf.ptr);
 
                                for (size_t i = 0; i < n; ++i) {
-                                 ptr[i * dim] = rdv.rings[i].norm.x;
-                                 ptr[i * dim + 1] = rdv.rings[i].norm.y;
-                                 ptr[i * dim + 2] = rdv.rings[i].norm.z;
+                                 ptr[i * dim] = rdv.data[i].norm.x;
+                                 ptr[i * dim + 1] = rdv.data[i].norm.y;
+                                 ptr[i * dim + 2] = rdv.data[i].norm.z;
                                }
 
                                return result;

@@ -62,7 +62,9 @@ add_library(lahuta_cpp STATIC
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
-            src/contacts/contacts.cpp src/contacts/metals.cpp src/contacts/features.cpp
+            # src/contacts/contacts.cpp 
+            src/entities.cpp
+            src/contacts/metals.cpp 
             src/contacts/interactions.cpp src/valence_model.cpp src/contacts/groups.cpp
             src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
 )

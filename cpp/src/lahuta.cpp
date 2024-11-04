@@ -393,12 +393,12 @@ template <> const RDKit::Atom &Luni::get_entity<RDKit::Atom>(EntityID id) const 
   return *r;
 }
 
-template <> const RingData &Luni::get_entity<RingData>(EntityID id) const {
+template <> const RingEntity &Luni::get_entity<RingEntity>(EntityID id) const {
   auto index = get_entity_index(id);
-  return get_rings().rings[index];
+  return get_rings().get_data()[index];
 }
 
-template <> const Feature &Luni::get_entity<Feature>(EntityID id) const {
+template <> const GroupEntity &Luni::get_entity<GroupEntity>(EntityID id) const {
   auto index = get_entity_index(id);
   /*std::cout << "Getting feature with index: " << index << std::endl;*/
   // FIX: check if the index is valid
@@ -422,7 +422,7 @@ const std::vector<EntityID> &Luni::get_atom_entities() {
 const std::vector<EntityID> &Luni::get_ring_entities() {
   if (entities.find(EntityType::Ring) == entities.end()) {
     std::vector<EntityID> ring_entities;
-    auto rings = get_rings().rings;
+    auto rings = get_rings().get_data();
     ring_entities.reserve(rings.size());
     for (std::size_t i = 0; i < rings.size(); ++i) {
       ring_entities.push_back(make_entity_id(EntityType::Ring, i));

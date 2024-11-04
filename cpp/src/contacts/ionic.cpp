@@ -7,9 +7,8 @@ namespace lahuta {
 Contacts find_ionic(const Luni &luni, IonicParams opts) {
 
   Contacts contacts(&luni);
-
-  const FeatureVec positives = get_features(&luni, AtomType::POS_IONISABLE);
-  const FeatureVec negatives = get_features(&luni, AtomType::NEG_IONISABLE);
+  const auto positives = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
+  const auto negatives = GroupEntityCollection::filter(&luni, AtomType::NEG_IONISABLE);
 
   EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(positives, negatives, opts.distance_max);

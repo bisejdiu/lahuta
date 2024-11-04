@@ -11,7 +11,7 @@ class InteractionBase {
   Contacts contacts;
 
 public:
-  virtual void handle(const Feature &feature1, const Feature &feature2) = 0;
+  virtual void handle(const GroupEntity &feature1, const GroupEntity &feature2) = 0;
   virtual ~InteractionBase() = default;
   void add_interaction(const Contact &interaction) { contacts.add(interaction); }
   Contacts release() { return std::move(contacts); }
@@ -23,16 +23,16 @@ inline double compute_dist_sq(const RDGeom::Point3D &p1, const RDGeom::Point3D &
   return FastNS::dist_sq(p1_c, p2_c);
 }
 
-class IonicInteraction : public InteractionBase {
-public:
-  void handle(const Feature &feature1, const Feature &feature2) override {
-    EntityID entity1 = make_entity_id(EntityType::Group, feature1.get_id());
-    EntityID entity2 = make_entity_id(EntityType::Group, feature2.get_id());
-
-    auto center_dist_sq = compute_dist_sq(feature1.center, feature2.center);
-    add_interaction(Contact(entity1, entity2, center_dist_sq, InteractionType::Ionic));
-  }
-};
+/*class IonicInteraction : public InteractionBase {*/
+/*public:*/
+/*  void handle(const Feature &feature1, const Feature &feature2) override {*/
+/*    EntityID entity1 = make_entity_id(EntityType::Group, feature1.get_id());*/
+/*    EntityID entity2 = make_entity_id(EntityType::Group, feature2.get_id());*/
+/**/
+/*    auto center_dist_sq = compute_dist_sq(feature1.center, feature2.center);*/
+/*    add_interaction(Contact(entity1, entity2, center_dist_sq, InteractionType::Ionic));*/
+/*  }*/
+/*};*/
 
 struct InteractionOptions {
   float distance_cutoff;

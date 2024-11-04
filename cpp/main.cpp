@@ -2,7 +2,6 @@
 #include <iostream>
 #include <string>
 
-#include "Geometry/point.h"
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
 #include "contacts/halogen_bonds.hpp"
@@ -11,39 +10,45 @@
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "nn.hpp"
-#include "rings.hpp"
 #include "visitor.hpp"
 
+#include "entities.hpp"
 #include "types.hpp"
+#include "entity.hpp"
 
 using namespace lahuta;
 
-// TODO:     1. Make AtomData, Feature, and RingData similar
-//           2. combine `get_feature` and `get_atom_data` into one function
-//           3. Move definitions to the definition namespace
+// TODO:
+//       2. move contacts.hpp to a file with a better name
+//       3. Decide where to move InteractionType definition. 
 
+// TODO: 1. Store the ring type (aromatic, aliphatic, etc.)
 
-void log_ring_info(RDKit::RWMol *mol, const RingData &ring) {
-  auto first_atom_index = ring.atom_ids().front();
-  const auto *first_atom = mol->getAtomWithIdx(first_atom_index);
+void log_ring_info(RDKit::RWMol *mol, const RingEntity &ring) {
+  /*auto first_atom_index = ring.atom_ids().front();*/
+  /*const auto *first_atom = mol->getAtomWithIdx(first_atom_index);*/
+  const auto *first_atom = ring.atoms.front();
   const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
   std::cout << "Added Ring with: " << res_info->getResidueName() << " " << ring.atoms.size() << " atoms"
             << std::endl;
 
-  auto atom_ids_copy = ring.atom_ids();
-  std::sort(atom_ids_copy.begin(), atom_ids_copy.end());
-
-  std::string atom_ids;
-  for (const auto &atom_id : atom_ids_copy) {
-    atom_ids += std::to_string(atom_id) + " ";
+  std::vector<int> atom_ids;
+  for (const auto *atom : ring.atoms) {
+    atom_ids.push_back(atom->getIdx());
   }
-  std::cout << "Atoms: " << atom_ids << std::endl;
+  std::sort(atom_ids.begin(), atom_ids.end());
+
+  std::string atom_ids_str;
+  for (const auto &atom_id : atom_ids) {
+    atom_ids_str += std::to_string(atom_id) + " ";
+  }
+  std::cout << "Atoms: " << atom_ids_str << std::endl;
 }
 
-void log_feature_atoms(const std::string &feature_type, const Feature &feature) {
+void log_feature_atoms(const std::string &feature_type, const GroupEntity &feature) {
   std::cout << "i. " << feature_type << " Charge Feature Atoms:" << std::endl;
-  std::cout << "Number of atoms: " << feature.members.size() << std::endl;
-  for (const auto *atom : feature.members) {
+  std::cout << "Number of atoms: " << feature.atoms.size() << std::endl;
+  for (const auto *atom : feature.atoms) {
     unsigned int atom_index = atom->getIdx();
     auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     std::string atom_name = res_info->getName();
@@ -55,20 +60,6 @@ void log_feature_atoms(const std::string &feature_type, const Feature &feature) 
               << ", Residue: " << residue_name << " " << chain_id << residue_number << std::endl;
   }
 }
-
-/*bool is_cation_pi(const AtomType &f1, const AtomType &f2) {*/
-/*  return (AtomTypeFlags::has(f1, AtomType::AROMATIC) && AtomTypeFlags::has(f2, AtomType::POS_IONISABLE))*/
-/*         || (AtomTypeFlags::has(f1, AtomType::POS_IONISABLE) && AtomTypeFlags::has(f2, AtomType::AROMATIC));*/
-/*}*/
-
-double calculate_distance_sq(RDGeom::Point3D a, RDGeom::Point3D b) {
-  double dx = a.x - b.x;
-  double dy = a.y - b.y;
-  double dz = a.z - b.z;
-  return dx * dx + dy * dy + dz * dz;
-}
-
-
 
 int main(int argc, char const *argv[]) {
   auto start_total_time = std::chrono::high_resolution_clock::now();
@@ -83,24 +74,22 @@ int main(int argc, char const *argv[]) {
 
   luni.assign_molstar_atom_types();
 
-  const auto hydrophobic_atoms = get_atom_data(&luni, AtomType::HYDROPHOBIC);
+  const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
   std::cout << "Hydrophobic Atoms: " << hydrophobic_atoms.get_data().size() << std::endl;
-
 
   Residues residues(*mol);
   EntityTypeManagerBuilder builder(*mol, residues);
   auto manager = builder.build();
 
-
   // should return const types
-  AtomDataVec hp_res = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
+  AtomEntityCollection hp_res = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
   std::cout << "NEW Hydrophobic Atoms: " << hp_res.get_data().size() << std::endl;
-  AtomDataVec hp_res_ = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
+  AtomEntityCollection hp_res_ = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
   std::cout << "NEW Hydrophobic Atoms: " << hp_res_.get_data().size() << std::endl;
 
-  FeatureVec arom_res = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
+  GroupEntityCollection arom_res = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
   std::cout << "AROM: " << arom_res.get_data().size() << std::endl;
-  FeatureVec arom_res_ = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
+  GroupEntityCollection arom_res_ = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
   std::cout << "AROM: " << arom_res_.get_data().size() << std::endl;
 
   std::cout << "START New contact interface" << std::endl;
@@ -109,8 +98,11 @@ int main(int argc, char const *argv[]) {
   Interactions interactions(luni, opts);
   std::cout << "HBOND: \n";
   auto _1 = interactions.find_hbond_interactions();
+  std::cout << "a\n";
   _1.sort_interactions();
+  std::cout << "b\n";
   _1.print_interactions();
+  std::cout << "c\n";
   std::cout << "WEAK HBOND: \n";
   auto _2 = interactions.find_weak_hbond_interactions();
   _2.sort_interactions();

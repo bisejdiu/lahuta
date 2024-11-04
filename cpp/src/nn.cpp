@@ -25,12 +25,12 @@ void Contacts::visit_entity(const Luni &_luni, EntityID entity) const {
     break;
   }
   case EntityType::Ring: {
-    const RingData &ring = _luni.get_entity<RingData>(entity);
+    const RingEntity &ring = _luni.get_entity<RingEntity>(entity);
     visitor.visit(ring);
     break;
   }
   case EntityType::Group: {
-    const Feature &group = _luni.get_entity<Feature>(entity);
+    const GroupEntity &group = _luni.get_entity<GroupEntity>(entity);
     visitor.visit(group);
     break;
   }
@@ -51,7 +51,7 @@ void Contacts::visit_entity(const Luni &luni, EntityID entity, Func1 func1, Func
     break;
   }
   case EntityType::Ring: {
-    const RingData &ring = luni.get_entity<RingData>(entity);
+    const RingEntity &ring = luni.get_entity<RingEntity>(entity);
     func2(ring);
     break;
   }
@@ -85,8 +85,8 @@ std::string Contacts::get_entity_atoms(const EntityID &entity) const {
 
   switch (get_entity_type(entity)) {
     case EntityType::Group: {
-      const Feature &group = luni->get_entity<Feature>(entity);
-      for (const auto *atom : group.members) {
+      const GroupEntity &group = luni->get_entity<GroupEntity>(entity);
+      for (const auto *atom : group.atoms) {
         atoms_info += std::to_string(atom->getIdx()) + " ";
       }
       break;
@@ -97,9 +97,9 @@ std::string Contacts::get_entity_atoms(const EntityID &entity) const {
       break;
     }
     case EntityType::Ring: {
-      const RingData &ring = luni->get_entity<RingData>(entity);
-      for (const auto &atom_id : ring.atom_ids()) {
-        atoms_info += std::to_string(atom_id) + " ";
+      const RingEntity &ring = luni->get_entity<RingEntity>(entity);
+      for (const auto &atom : ring.atoms) {
+        atoms_info += std::to_string(atom->getIdx()) + " ";
       }
       break;
     }

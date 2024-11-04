@@ -5,6 +5,7 @@
 #include "contacts/features.hpp"
 #include "ob/kekulize.h"
 #include "residues.hpp"
+#include "entities.hpp"
 
 namespace lahuta {
 
@@ -12,7 +13,7 @@ namespace lahuta {
 std::vector<const RDKit::Atom *> get_atoms(const RDKit::RWMol &mol, const std::vector<int> &indices);
 
 /// add aromatic rings
-FeatureVec add_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues);
+GroupEntityCollection add_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues);
 
 } // namespace lahuta
 

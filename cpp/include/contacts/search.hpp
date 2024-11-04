@@ -3,10 +3,8 @@
 
 #include "Geometry/point.h"
 #include "GraphMol/Conformer.h"
-#include "contacts/contacts.hpp"
-#include "contacts/features.hpp"
+#include "entities.hpp"
 #include "nsgrid.hpp"
-#include "rings.hpp"
 #include <vector>
 
 namespace lahuta {
@@ -23,19 +21,42 @@ namespace lahuta {
 /*  return f.atoms;*/
 /*}*/
 
-inline std::vector<const RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const AtomData &a) {
-  return {a.pos};
+/*template <typename T>*/
+/*auto get_center_ptr(const T& entity) -> decltype(entity.get_center(), (const RDGeom::Point3D*)nullptr) {*/
+/*  if constexpr (std::is_pointer_v<decltype(entity.get_center())>) {*/
+/*    return entity.get_center();*/
+/*  } else {*/
+/*    return &entity.get_center();*/
+/*  }*/
+/*}*/
+/**/
+/*template <typename T>*/
+/*std::vector<const RDGeom::Point3D*> get_pos(const RDKit::Conformer& conf, const T& entity) {*/
+/*  return { get_center_ptr(entity) };*/
+/*}*/
+
+/*template <typename T>*/
+/*auto get_pos(const RDKit::Conformer& conf, const T& entity) -> std::vector<const RDGeom::Point3D*> {*/
+/*  return { &entity.get_center() };*/
+/*}*/
+
+inline auto get_pos(const RDKit::Conformer& conf, const Entity& entity) -> std::vector<const RDGeom::Point3D*> {
+  return { &entity.get_center() };
 }
 
-inline std::vector<const RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const Feature &f) {
-  auto pos = new RDGeom::Point3D(f.center);
-  return {pos};
-}
-
-inline std::vector<RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const RingData &f) {
-  auto pos = new RDGeom::Point3D(f.center);
-  return {pos};
-}
+/*inline std::vector<const RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const AtomData &a) {*/
+/*  return {&a.get_center()};*/
+/*}*/
+/**/
+/*inline std::vector<const RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const Feature &f) {*/
+/*  auto pos = new RDGeom::Point3D(f.center);*/
+/*  return {pos};*/
+/*}*/
+/**/
+/*inline std::vector<RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const RingData &f) {*/
+/*  auto pos = new RDGeom::Point3D(f.center);*/
+/*  return {pos};*/
+/*}*/
 
 template <typename EV1, typename EV2> // entity vector
 class BruteForce {

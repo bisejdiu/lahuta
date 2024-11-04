@@ -17,7 +17,7 @@ namespace lahuta {
 class Topology {
 public:
   std::vector<AtomType> atom_types;
-  RingDataVec rings_vec;
+  RingEntityCollection rings_vec;
   const RDKit::RWMol *mol;
   const Residues *residues;
 
@@ -74,20 +74,21 @@ public:
     }
   }
 
-  RingDataVec create_ringdatavec() {
-    RingDataVec rings;
+  RingEntityCollection create_ringdatavec() {
+    RingEntityCollection rings;
     size_t id = 0;
     for (const auto &ring : mol->getRingInfo()->atomRings()) {
-      RDGeom::Point3D center, norm;
-      RingProps::compute_center(mol, ring, center);
-      RingProps::compute_normal(mol, ring, center, norm);
+      /*RDGeom::Point3D center, norm;*/
+      /*RingProps::compute_center(mol, ring, center);*/
+      /*RingProps::compute_normal(mol, ring, center, norm);*/
+      /**/
+      /*std::vector<const RDKit::Atom *> atoms;*/
+      /*for (const int &atom_idx : ring) {*/
+      /*  atoms.push_back(mol->getAtomWithIdx(atom_idx));*/
+      /*}*/
 
-      std::vector<const RDKit::Atom *> atoms;
-      for (const int &atom_idx : ring) {
-        atoms.push_back(mol->getAtomWithIdx(atom_idx));
-      }
-
-      rings.rings.emplace_back(center, norm, atoms, id++);
+      /*rings.rings.emplace_back(std::move(center), norm, atoms, id++);*/
+      rings.add_data(*mol, ring, id++);
     }
     return rings;
   }
