@@ -1,41 +1,44 @@
 #include <rdkit/GraphMol/AtomIterators.h>
 #include <rdkit/GraphMol/BondIterators.h>
 
-#include "bonds/table.hpp"
 #include "ob/clean_mol.hpp"
 
 namespace lahuta {
 
+namespace {
+constexpr std::array<int, 118 + 1> max_bonds{
+    0, 1, 0, 1, 2, 4, 4, 4, 2, 1, 0, 1, 2, 6, 6, 6, 6, 1, 0, 1, 2, 6, 6, 6, 6, 8, 6, 6, 6, 6,
+    6, 3, 4, 3, 2, 1, 0, 1, 2, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 4, 3, 2, 1, 0, 1, 2, 2, 6, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 4, 3, 2, 1, 0, 1, 2, 6,
+    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+};
+} // namespace
+
 // NOTE: Performance is dependent on bond removal (which is the most expensive
-// operation). RDKit provides a batch removal utility, but it is not used here,
-// since the function is not a noticeable bottleneck of the application.
+// operation). RDKit provides a batch removal utility, which I'm not using.
 void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf) {
   RDKit::Bond *maxbond, *bond;
   bool changed;
 
-  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
-    auto atom = *atomIt;
-    while (ob_explicit_valence(mol, atom) > max_bonds[atom->getAtomicNum()]
-           || smallest_bond_angle(mol, conf, atom) < 45.0) {
+  for (const auto &atom : mol.atoms()) {
+    auto max_bond = max_bonds[atom->getAtomicNum()];
+    while (ob_explicit_valence(mol, atom) > max_bond || smallest_bond_angle(mol, conf, atom) < 45.0) {
 
       maxbond = nullptr;
 
-      // Loop through bonds to find the initial maxbond
-      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
-        bond = mol[*bondIt.first];
+      // Find first bond
+      for (const auto &bond : mol.atomBonds(atom)) {
         maxbond = bond;
         break;
       }
 
-      if (maxbond == nullptr) {
-        break; // No bonds to process
-      }
+      // No bonds to process
+      if (maxbond == nullptr) break;
 
       // Delete bonds between hydrogens when over max valence
       if (atom->getAtomicNum() == 1) { // Hydrogen
         changed = false;
-        for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
-          bond = mol[*bondIt.first];
+        for (const auto &bond : mol.atomBonds(atom)) {
           // Neighboring Hydrogen
           if (bond->getOtherAtom(atom)->getAtomicNum() == 1) {
             mol.removeBond(bond->getBeginAtomIdx(), bond->getEndAtomIdx());
@@ -43,23 +46,20 @@ void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf) {
             break;
           }
         }
-        if (changed) {
-          continue; // Reevaluate
-        }
+        if (changed) continue;
       }
 
-      auto maxlength = bond_length_sq(conf, maxbond);
+      auto max_length = bond_length_sq(conf, maxbond);
       int i = 0;
-      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
+      for (const auto &bond : mol.atomBonds(atom)) {
         if (i == 0) {
           i++;
           continue;
         }
-        bond = mol[*bondIt.first];
         auto length = bond_length_sq(conf, bond);
-        if (length > maxlength) {
+        if (length > max_length) {
           maxbond = bond;
-          maxlength = length;
+          max_length = length;
         }
       }
 

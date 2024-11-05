@@ -4,6 +4,7 @@
 #include "common.hpp"
 #include "contacts/charges.hpp"
 #include "convert.hpp"
+#include "definitions.hpp"
 
 namespace lahuta {
 
@@ -58,6 +59,7 @@ void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::ve
 }
 
 void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &residues) {
+  using namespace residue_props;
 
   if (mol.getRingInfo()->isInitialized()) {
     mol.getRingInfo()->reset();
@@ -68,7 +70,7 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   add_rings_to_mol(mol, rings);
 
   // compute rings for unknown residues
-  auto unk_indices = residue_props::get_unknown_residues<std::vector<int>>(residues, AminoAcidNames);
+  auto unk_indices = get_unknown_residues<std::vector<int>>(residues, definitions::is_protein_extended);
   if (!unk_indices.empty()) {
     std::sort(unk_indices.begin(), unk_indices.end());
     apply_sssr_and_planarity_aromaticity(mol, unk_indices);

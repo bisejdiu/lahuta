@@ -5,18 +5,18 @@
 #include <array>
 #include <string_view>
 
-// clang-format off
-typedef RDKit::Bond::BondType BondType;
+using BondType = RDKit::Bond::BondType;
 
 namespace lahuta {
 namespace rules {
 
 struct Rule {
-    std::string_view s2;
-    std::string_view s3;
-    BondType result;
+  std::string_view s2;
+  std::string_view s3;
+  BondType result;
 };
 
+// clang-format off
 constexpr std::array<Rule, 1> default_aa_rules = {{
     {"C", "O", BondType::DOUBLE},
 }};

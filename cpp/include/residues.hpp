@@ -57,6 +57,7 @@ template <typename ResultType>
 std::vector<ResultType>
 get_aromatic_rings(const Residues &residues, RingProcFunc<ResultType> func = identity);
 
+// FIX: should define these in the header file to avoid potential linker issues
 template <typename ReturnType>
 ReturnType get_unknown_residues(const Residues &residues, const std::set<std::string> &KnownResiduesSet);
 
@@ -68,10 +69,21 @@ template <>
 std::vector<int> get_unknown_residues<std::vector<int>>(
     const Residues &residues, const std::set<std::string> &KnownResiduesSet);
 
+using ResTesterFunc = std::function<bool(const std::string &)>;
+template <typename ReturnType>
+ReturnType get_unknown_residues(const Residues &residues, const ResTesterFunc &PredefResidues);
+
+template <>
+std::vector<Residue>
+get_unknown_residues<std::vector<Residue>>(const Residues &residues, const ResTesterFunc &PredefResidues);
+
+template <>
+std::vector<int>
+get_unknown_residues<std::vector<int>>(const Residues &residues, const ResTesterFunc &PredefResidues);
+
 std::vector<std::vector<int>> tbl_find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues);
 
 } // namespace residue_props
-
 } // namespace lahuta
 
 #endif // LAHUTA_RESIDUES_HPP

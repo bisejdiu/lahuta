@@ -319,9 +319,11 @@ NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results, int res_dif
     if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1) continue;
 
     // FIX: not fast
-    auto is_either_nonprotein =
-        (definitions::PolymerNames.find(finfo->getResidueName()) == definitions::PolymerNames.end())
-        || (definitions::PolymerNames.find(sinfo->getResidueName()) == definitions::PolymerNames.end());
+    /*auto is_either_nonprotein =*/
+    /*    (definitions::PolymerNames.find(finfo->getResidueName()) == definitions::PolymerNames.end())*/
+    /*    || (definitions::PolymerNames.find(sinfo->getResidueName()) == definitions::PolymerNames.end());*/
+    auto is_either_nonprotein = !definitions::is_polymer(finfo->getResidueName())
+                                || !definitions::is_polymer(sinfo->getResidueName());
 
     auto f_resid = finfo->getResidueNumber();
     auto s_resid = sinfo->getResidueNumber();

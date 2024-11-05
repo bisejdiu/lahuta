@@ -23,7 +23,7 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf, boo
   ign_h = false; // FIX: ign_h=true is broken
   ITER_GEMMI_ATOMS(st, model, chain, res, atom) {
 
-    if (ign_h && atom.element == Element("H")) {
+    if (ign_h && atom.element == Element("H")) { // FIX: use `is_hydrogen` (elem.hpp) instead
       continue;
     }
 

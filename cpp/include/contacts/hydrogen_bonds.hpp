@@ -71,6 +71,9 @@ constexpr double get_atom_geometry_angle(HybridizationType hybridization) {
   }
 }
 
+inline const std::array<std::string, 11> WaterResidues = {
+    "HOH", "W", "SOL", "TIP3", "SPC", "H2O", "TIP4", "TIP", "DOD", "D3O", "WAT"};
+
 bool is_water(const RDKit::Atom &atom);
 
 inline bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
@@ -86,7 +89,7 @@ inline bool is_histidine_nitrogen(const RDKit::Atom &atom, const RDKit::RWMol &m
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
 
-  if (!common::contains(definitions::HistidineResidues, res_info->getResidueName())) return false;
+  if (!definitions::is_histidine(res_info->getResidueName())) return false;
   return atom.getAtomicNum() == 7;
 }
 

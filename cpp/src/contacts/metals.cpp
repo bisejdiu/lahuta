@@ -1,6 +1,4 @@
 #include "contacts/metals.hpp"
-#include "contacts/charges.hpp"
-#include "definitions.hpp"
 
 namespace lahuta {
 
@@ -57,8 +55,8 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 
   bool dative = false, ionic = false;
 
-  bool is_standard_aminoacid = AminoAcidNames.find(resname) != AminoAcidNames.end();
-  bool is_standard_base = definitions::BaseNames.find(resname) != definitions::BaseNames.end();
+  bool is_standard_aminoacid = definitions::is_protein_extended(resname);
+  bool is_standard_base = definitions::is_base(resname);
 
   if (!is_standard_aminoacid && !is_standard_base) {
     if (is_halogen(atomic_num) || atomic_num == 8 || atomic_num == 16) {
@@ -69,12 +67,7 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   } else if (is_standard_aminoacid) {
     // Main chain oxygen atom or oxygen, nitrogen, and sulfur from specific amino acids
     if (atomic_num == 8) {
-      /*if (is_residue(resname, "DESTYNQ") && is_protein_sidechain(atomname)) {*/
-      /*  dative = true, ionic = true;*/
-      /*}*/
-      if ((resname == "ASP" || resname == "GLU" || resname == "SER" || resname == "THR" || resname == "TYR"
-           || resname == "ASN" || resname == "GLN")
-          && is_protein_sidechain(atomname)) {
+      if (is_O_metal_binding(resname) && is_protein_sidechain(atomname)) {
         dative = true, ionic = true;
       } else if (is_protein_backbone(atomname)) {
         dative = true, ionic = true;

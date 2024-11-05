@@ -60,8 +60,8 @@ GroupEntityCollection add_positive_charges(const RDKit::RWMol &mol, const Residu
   for (const auto &residue : residues) {
 
     // Handle positively charged residues (ARG, HIS, LYS)
-    if (definitions::PositivelyChargedResidues.count(residue.name)) {
-
+    /*if (definitions::PositivelyChargedResidues.count(residue.name)) {*/
+    if (definitions::is_positive_charge(residue.name)) {
       std::vector<const RDKit::Atom *> members;
       for (const auto *atom : residue.atoms) {
         auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
@@ -76,7 +76,7 @@ GroupEntityCollection add_positive_charges(const RDKit::RWMol &mol, const Residu
       if (!members.empty()) {
         features.add_data(AtomType::POS_IONISABLE, FeatureGroup::None, members);
       }
-    } else if (definitions::PolymerNames.count(residue.name) == 0) {
+    } else if (!definitions::is_polymer(residue.name)) {
       // Handle non-polymer residues
       if (!groups.has_value()) {
         groups = identify_positive_charge_groups(mol);
@@ -111,7 +111,8 @@ GroupEntityCollection add_negative_charges(const RDKit::RWMol &mol, const Residu
 
   GroupEntityCollection features;
   for (const auto &residue : residues) {
-    if (definitions::NegativelyChargedResidues.count(residue.name)) {
+    /*if (definitions::NegativelyChargedResidues.count(residue.name)) {*/
+    if (definitions::is_negative_charge(residue.name)) {
 
       // Handle negatively charged residues (GLU, ASP)
       std::vector<const RDKit::Atom *> members;
@@ -127,7 +128,8 @@ GroupEntityCollection add_negative_charges(const RDKit::RWMol &mol, const Residu
 
       if (members.empty()) continue;
       features.add_data(AtomType::NEG_IONISABLE, FeatureGroup::None, members);
-    } else if (definitions::BaseNames.count(residue.name)) {
+    /*} else if (definitions::BaseNames.count(residue.name)) {*/
+    } else if (definitions::is_base(residue.name)) {
       // Handle nucleic acid bases (DNA/RNA)
       for (const auto *atom : residue.atoms) {
         if (is_phosphate(mol, *atom)) {
@@ -138,7 +140,7 @@ GroupEntityCollection add_negative_charges(const RDKit::RWMol &mol, const Residu
           added_atoms.insert(oxygens.begin(), oxygens.end());
         }
       }
-    } else if (definitions::PolymerNames.count(residue.name) == 0) {
+    } else if (!definitions::is_polymer(residue.name)) {
       // Handle non-polymer residues
       if (!groups.has_value()) {
         groups = identify_negative_charge_groups(mol);

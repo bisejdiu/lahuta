@@ -1,8 +1,5 @@
-#ifndef _TOKEN_H_
-#define _TOKEN_H_
-
 /* C++ code produced by gperf version 3.1 */
-/* Command-line: gperf token.gperf  */
+/* Command-line: gperf -L C++ token.gperf  */
 /* Computed positions: -k'1-2,$' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
@@ -338,22 +335,22 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 67 "token.gperf"
+#line 66 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str18,    resTokenType::HSD},
       {-1,static_cast<resTokenType>(0)},
-#line 70 "token.gperf"
+#line 69 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str20,    resTokenType::HID},
 #line 121 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str21,   resTokenType::TIP3},
-#line 55 "token.gperf"
+#line 54 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str22,    resTokenType::DIL},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 52 "token.gperf"
+#line 51 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str25,    resTokenType::DGL},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 49 "token.gperf"
+#line 48 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str28,    resTokenType::DSG},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -361,17 +358,17 @@ resNameKeyword::look_up (const char *str, size_t len)
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str31,      resTokenType::G},
 #line 95 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str32,     resTokenType::DG},
-#line 74 "token.gperf"
+#line 73 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str33,    resTokenType::ASH},
       {-1,static_cast<resTokenType>(0)},
 #line 120 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str35,    resTokenType::TIP},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 69 "token.gperf"
+#line 68 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str38,    resTokenType::HSP},
       {-1,static_cast<resTokenType>(0)},
-#line 72 "token.gperf"
+#line 71 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str40,    resTokenType::HIP},
 #line 87 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str41,      resTokenType::C},
@@ -380,17 +377,17 @@ resNameKeyword::look_up (const char *str, size_t len)
 #line 115 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str43,    resTokenType::HOH},
       {-1,static_cast<resTokenType>(0)},
-#line 83 "token.gperf"
+#line 85 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str45,    resTokenType::HYP},
       {-1,static_cast<resTokenType>(0)},
-#line 85 "token.gperf"
+#line 79 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str47,    resTokenType::PYL},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
 #line 86 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str51,      resTokenType::A},
-#line 47 "token.gperf"
+#line 46 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str52,    resTokenType::DAL},
 #line 118 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str53,    resTokenType::DOD},
@@ -402,7 +399,7 @@ resNameKeyword::look_up (const char *str, size_t len)
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str57,    resTokenType::VAL},
 #line 41 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str58,    resTokenType::ASP},
-#line 75 "token.gperf"
+#line 74 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str59,   resTokenType::ASPP},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -412,11 +409,11 @@ resNameKeyword::look_up (const char *str, size_t len)
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str63,    resTokenType::HOA},
 #line 97 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str64,     resTokenType::DI},
-#line 65 "token.gperf"
+#line 64 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str65,    resTokenType::DVA},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 46 "token.gperf"
+#line 84 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str68,    resTokenType::PCA},
 #line 93 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str69,     resTokenType::DA},
@@ -424,22 +421,22 @@ resNameKeyword::look_up (const char *str, size_t len)
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str70,    resTokenType::TPN},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 76 "token.gperf"
+#line 75 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str73,    resTokenType::GLH},
       {-1,static_cast<resTokenType>(0)},
-#line 77 "token.gperf"
+#line 76 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str75,    resTokenType::LSN},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 61 "token.gperf"
+#line 60 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str78,    resTokenType::DSN},
       {-1,static_cast<resTokenType>(0)},
-#line 59 "token.gperf"
+#line 58 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str80,    resTokenType::DPN},
       {-1,static_cast<resTokenType>(0)},
-#line 78 "token.gperf"
+#line 77 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str82,    resTokenType::LYN},
-#line 53 "token.gperf"
+#line 52 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str83,    resTokenType::DGN},
       {-1,static_cast<resTokenType>(0)},
 #line 103 "token.gperf"
@@ -460,11 +457,11 @@ resNameKeyword::look_up (const char *str, size_t len)
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str95,    resTokenType::APN},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 68 "token.gperf"
+#line 67 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str98,    resTokenType::HSE},
-#line 73 "token.gperf"
+#line 72 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str99,   resTokenType::GLUP},
-#line 71 "token.gperf"
+#line 70 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str100,    resTokenType::HIE},
 #line 91 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str101,      resTokenType::I},
@@ -473,17 +470,17 @@ resNameKeyword::look_up (const char *str, size_t len)
 #line 27 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str103,    resTokenType::ALA},
       {-1,static_cast<resTokenType>(0)},
-#line 80 "token.gperf"
+#line 82 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str105,    resTokenType::TPO},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 62 "token.gperf"
+#line 61 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str108,    resTokenType::DTH},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 54 "token.gperf"
+#line 53 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str113,    resTokenType::DHI},
       {-1,static_cast<resTokenType>(0)},
 #line 39 "token.gperf"
@@ -502,7 +499,7 @@ resNameKeyword::look_up (const char *str, size_t len)
 #line 116 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str123,    resTokenType::H2O},
       {-1,static_cast<resTokenType>(0)},
-#line 60 "token.gperf"
+#line 59 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str125,    resTokenType::DPR},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -524,11 +521,11 @@ resNameKeyword::look_up (const char *str, size_t len)
 #line 38 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str138,    resTokenType::TRP},
       {-1,static_cast<resTokenType>(0)},
-#line 51 "token.gperf"
+#line 50 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str140,    resTokenType::DCY},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 82 "token.gperf"
+#line 80 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str143,    resTokenType::MSE},
       {-1,static_cast<resTokenType>(0)},
 #line 113 "token.gperf"
@@ -538,14 +535,14 @@ resNameKeyword::look_up (const char *str, size_t len)
 #line 45 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str148,    resTokenType::ARG},
       {-1,static_cast<resTokenType>(0)},
-#line 50 "token.gperf"
+#line 49 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str150,    resTokenType::DAS},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 56 "token.gperf"
+#line 55 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str153,    resTokenType::DLE},
       {-1,static_cast<resTokenType>(0)},
-#line 48 "token.gperf"
+#line 47 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str155,    resTokenType::DAR},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -574,10 +571,10 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
 #line 99 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str177,     resTokenType::DN},
-#line 58 "token.gperf"
+#line 57 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str178,    resTokenType::MED},
       {-1,static_cast<resTokenType>(0)},
-#line 57 "token.gperf"
+#line 56 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str180,    resTokenType::DLY},
 #line 90 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str181,      resTokenType::U},
@@ -607,7 +604,7 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 66 "token.gperf"
+#line 65 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str203,    resTokenType::DNE},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -618,7 +615,7 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 63 "token.gperf"
+#line 62 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str213,    resTokenType::DTR},
       {-1,static_cast<resTokenType>(0)},
 #line 29 "token.gperf"
@@ -628,7 +625,7 @@ resNameKeyword::look_up (const char *str, size_t len)
 #line 106 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str218,    resTokenType::NH2},
       {-1,static_cast<resTokenType>(0)},
-#line 64 "token.gperf"
+#line 63 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str220,    resTokenType::DTY},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -643,7 +640,7 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 84 "token.gperf"
+#line 83 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str233,    resTokenType::PTR},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -655,7 +652,7 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 81 "token.gperf"
+#line 78 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str243,    resTokenType::SEC},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -666,7 +663,7 @@ resNameKeyword::look_up (const char *str, size_t len)
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
-#line 79 "token.gperf"
+#line 81 "token.gperf"
       {(int)(size_t)&((struct stringpool_t *)0)->stringpool_str253,    resTokenType::SEP},
       {-1,static_cast<resTokenType>(0)},
       {-1,static_cast<resTokenType>(0)},
@@ -774,8 +771,8 @@ resNameKeyword::look_up (const char *str, size_t len)
 
 }
 
-// #ifndef LOOKUP_IDENTIFIER_DEFINED
-// #define LOOKUP_IDENTIFIER_DEFINED
+#ifndef LOOKUP_IDENTIFIER_DEFINED
+#define LOOKUP_IDENTIFIER_DEFINED
 
 inline resTokenType res_name_table(const char* res_name, std::size_t size) noexcept {
   const keywordEntry *entry = resNameKeyword::look_up(res_name, size);
@@ -786,5 +783,4 @@ inline resTokenType res_name_table(const char* res_name, std::size_t size) noexc
   }
 }
 }
-// #endif
 #endif

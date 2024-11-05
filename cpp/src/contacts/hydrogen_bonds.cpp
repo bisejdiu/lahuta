@@ -3,7 +3,6 @@
 #include "contacts/geometry.hpp"
 #include "contacts/search.hpp"
 #include "contacts/utils.hpp"
-#include "definitions.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {
@@ -11,7 +10,7 @@ namespace lahuta {
 bool is_water(const RDKit::Atom &atom) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
-  return common::contains(definitions::WaterResidues, res_info->getResidueName());
+  return common::contains(WaterResidues, res_info->getResidueName());
 }
 
 auto *closest_hydrogen_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {

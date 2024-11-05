@@ -6,18 +6,15 @@
 
 namespace lahuta {
 
-inline unsigned int ob_explicit_valence(const RDKit::RWMol &mol,
-                                             const RDKit::Atom *atom) {
+inline unsigned int ob_explicit_valence(const RDKit::RWMol &mol, const RDKit::Atom *atom) {
   unsigned int valence = 0;
-  for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second;
-      ++bondIt.first) {
-      valence++;
+  for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
+    valence++;
   }
   return valence;
 }
 
-inline double bond_length_sq(const RDKit::Conformer &conf,
-                             const RDKit::Bond *bond) {
+inline double bond_length_sq(const RDKit::Conformer &conf, const RDKit::Bond *bond) {
   auto a1Pos = conf.getAtomPos(bond->getBeginAtomIdx());
   auto a2Pos = conf.getAtomPos(bond->getEndAtomIdx());
 
@@ -28,9 +25,8 @@ inline double bond_length_sq(const RDKit::Conformer &conf,
   return d2x * d2x + d2y * d2y + d2z * d2z;
 };
 
-inline double compute_angle(const RDKit::Conformer &conf,
-                            const RDKit::Atom *atom1, const RDKit::Atom *atom2,
-                            RDKit::Atom *atom3) {
+inline double compute_angle(
+    const RDKit::Conformer &conf, const RDKit::Atom *atom1, const RDKit::Atom *atom2, RDKit::Atom *atom3) {
 
   RDGeom::Point3D v1, v2;
   RDGeom::Point3D p1 = conf.getAtomPos(atom1->getIdx());
@@ -49,18 +45,15 @@ inline double compute_angle(const RDKit::Conformer &conf,
   return angle;
 }
 
-inline double smallest_bond_angle(const RDKit::RWMol &mol,
-                                  const RDKit::Conformer &conf,
-                                  const RDKit::Atom *atom) {
+inline double
+smallest_bond_angle(const RDKit::RWMol &mol, const RDKit::Conformer &conf, const RDKit::Atom *atom) {
   double min_degrees = 360.0;
 
   for (auto it = mol.getAtomBonds(atom); it.first != it.second; ++it.first) {
     auto bond1 = mol[*it.first];
     auto atom1 = bond1->getOtherAtom(atom);
-    for (auto it2 = mol.getAtomBonds(atom); it2.first != it2.second;
-         ++it2.first) {
-      if (it.first == it2.first)
-        continue;
+    for (auto it2 = mol.getAtomBonds(atom); it2.first != it2.second; ++it2.first) {
+      if (it.first == it2.first) continue;
       auto bond2 = mol[*it2.first];
       auto atom2 = bond2->getOtherAtom(atom);
 
@@ -78,4 +71,4 @@ void clean_bonds(RDKit::RWMol &mol, RDKit::Conformer &conf);
 
 } // namespace lahuta
 
-#endif // LAHUTA_CLEAN_MOL_HPP 
+#endif // LAHUTA_CLEAN_MOL_HPP

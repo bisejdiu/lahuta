@@ -1,5 +1,5 @@
 #include "bonds.hpp"
-#include "bonds/bonds.hpp"
+#include "bonds/lookup.hpp"
 #include "bonds/table.hpp"
 #include "convert.hpp"
 #include <rdkit/GraphMol/PeriodicTable.h>
@@ -10,9 +10,6 @@ namespace lahuta {
 // FIX: see if this fixes the issue with the periodic table
 static const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
 
-// NOTE: this funciton performs two distinct tasks: (1) assign bond orders using
-// a table lookup and (2) use smart pattern matching to assign bond orders
-// NOTE: simplify by perhaps returning a struct
 BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
   std::vector<int> non_predef_atom_indices;
@@ -27,35 +24,31 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
   }
 
   for (auto i = 0; i < results.get_pairs().size(); i++) {
-    auto res = results.get_pairs()[i];
+    const auto &[index_1, index_2] = results.get_pairs()[i];
     auto dist_sq = results.get_distances()[i];
-    auto *a = mol.getAtomWithIdx(res.first);
-    auto *b = mol.getAtomWithIdx(res.second);
 
-    auto bonded = getIntraBondOrder(a, b);
+    auto *atom_1 = mol.getAtomWithIdx(index_1);
+    auto *atom_2 = mol.getAtomWithIdx(index_2);
+
+    auto bonded = getIntraBondOrder(atom_1, atom_2);
 
     if (bonded) { // true only if both atoms are in the table
 
-      double thresholdB = getElementThreshold(b->getAtomicNum());
-      double thresholdA = getElementThreshold(a->getAtomicNum());
+      double pairing_threshold = get_pair_threshold(atom_1->getAtomicNum(), atom_2->getAtomicNum());
 
-      // FIX: Get the square directly
-      double pairingThreshold = getPairingThreshold(
-          a->getAtomicNum(), b->getAtomicNum(), thresholdA, thresholdB);
+      int is_a_h = atom_1->getAtomicNum() == 1;
+      int is_b_h = atom_2->getAtomicNum() == 1;
 
-      int is_a_h = a->getAtomicNum() == 1;
-      int is_b_h = b->getAtomicNum() == 1;
-
-      if (dist_sq <= pairingThreshold * pairingThreshold) {
+      if (dist_sq <= pairing_threshold * pairing_threshold) {
         if (is_a_h ^ is_b_h) {
-          auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
+          auto non_h_atom = atom_1->getAtomicNum() == 1 ? atom_2 : atom_1;
           // It is possible to use the following bitwise operation to get the
           // non-hydrogen atom branchless, but it may not lead to a performance
           // gain.
           /*RDKit::Atom* non_h_atom = a + ((b - a) & -(is_a_h));*/
           non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
         }
-        mol.addBond(a->getIdx(), b->getIdx(), bonded.bond_type);
+        mol.addBond(atom_1->getIdx(), atom_2->getIdx(), bonded.bond_type);
       }
       continue;
 
@@ -64,18 +57,18 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
       // NOTE: I am adding bonds regardless of checking the nature of the atoms.
       // This results in metalic bonds being added and likely bonds to different
       // ions, etc.
-      if (!seen[a->getIdx()]) {
-        non_predef_atom_indices.push_back(a->getIdx());
-        seen[a->getIdx()] = true;
+      if (!seen[atom_1->getIdx()]) {
+        non_predef_atom_indices.push_back(atom_1->getIdx());
+        seen[atom_1->getIdx()] = true;
       }
 
-      if (!seen[b->getIdx()]) {
-        non_predef_atom_indices.push_back(b->getIdx());
-        seen[b->getIdx()] = true;
+      if (!seen[atom_2->getIdx()]) {
+        non_predef_atom_indices.push_back(atom_2->getIdx());
+        seen[atom_2->getIdx()] = true;
       }
 
-      if (is_bonded_obmol(a, b, dist_sq, 0.45, rcov)) {
-        bonds.emplace_back(a->getIdx(), b->getIdx());
+      if (is_bonded_obmol(atom_1, atom_2, dist_sq, 0.45, rcov)) {
+        bonds.emplace_back(atom_1->getIdx(), atom_2->getIdx());
       }
       continue;
     } else {
@@ -123,7 +116,6 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
       /*std::cout << "Z bond: " << aIx << " " << bIx << " " << infoA->getName()*/
       /*          << " " << infoB->getName() << " " << infoA->getResidueName() << " "*/
       /*          << infoB->getResidueName() << std::endl;*/
-
 
       /*int is_a_h = a->getAtomicNum() == 1;*/
       /*int is_b_h = b->getAtomicNum() == 1;*/

@@ -109,6 +109,9 @@ get_aromatic_rings<std::vector<const RDKit::Atom *>>(
 template <typename ReturnType>
 ReturnType get_unknown_residues(const Residues &residues, const std::set<std::string> &KnownResiduesSet);
 
+template <typename ReturnType>
+ReturnType get_unknown_residues(const Residues &residues, const ResTesterFunc &PredefResidues);
+
 template <>
 std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
     const Residues &residues, const std::set<std::string> &KnownResiduesSet) {
@@ -124,10 +127,36 @@ std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
 }
 
 template <>
+std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
+    const Residues &residues, const ResTesterFunc &PredefResidues) { 
+  std::vector<Residue> unknown_residues;
+  std::copy_if(
+      residues.begin(),
+      residues.end(),
+      std::back_inserter(unknown_residues),
+      [&PredefResidues](const Residue &residue) {
+        return !PredefResidues(residue.name);
+      });
+  return unknown_residues;
+}
+
+template <>
 std::vector<int> get_unknown_residues<std::vector<int>>(
     const Residues &residues, const std::set<std::string> &KnownResiduesSet) {
   std::vector<int> unknown_indices;
   for (const auto &residue : get_unknown_residues<std::vector<Residue>>(residues, KnownResiduesSet)) {
+    for (const auto &atom : residue.atoms) {
+      unknown_indices.push_back(atom->getIdx());
+    }
+  }
+  return unknown_indices;
+}
+
+template <>
+std::vector<int> get_unknown_residues<std::vector<int>>(
+    const Residues &residues, const ResTesterFunc &PredefResidues) {
+  std::vector<int> unknown_indices;
+  for (const auto &residue : get_unknown_residues<std::vector<Residue>>(residues, PredefResidues)) {
     for (const auto &atom : residue.atoms) {
       unknown_indices.push_back(atom->getIdx());
     }

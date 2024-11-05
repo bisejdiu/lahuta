@@ -1,230 +1,102 @@
-#pragma once
+#ifndef LAHUTA_BOND_TABLE_HPP
+#define LAHUTA_BOND_TABLE_HPP
 
-#include <cmath>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include <array>
+#include <gemmi/elem.hpp>
 
-#define NUMELEMENTS 118
-
-constexpr std::array<int, NUMELEMENTS + 1> max_bonds{
-    0, 1, 0, 1, 2, 4, 4, 4, 2, 1, 0, 1, 2, 6, 6, 6, 6, 1, 0, 1, 2, 6, 6, 6,
-    6, 8, 6, 6, 6, 6, 6, 3, 4, 3, 2, 1, 0, 1, 2, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-    6, 3, 4, 3, 2, 1, 0, 1, 2, 2, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-    6, 6, 6, 6, 6, 6, 6, 6, 6, 3, 4, 3, 2, 1, 0, 1, 2, 6, 6, 6, 6, 6, 6, 6,
-    6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-};
-
-inline std::unordered_map<std::string, int> __ElementIndex = {
-    {"H", 0},    {"h", 0},    {"D", 0},    {"d", 0},    {"T", 0},
-    {"t", 0},    {"He", 2},   {"HE", 2},   {"he", 2},   {"Li", 3},
-    {"LI", 3},   {"li", 3},   {"Be", 4},   {"BE", 4},   {"be", 4},
-    {"B", 5},    {"b", 5},    {"C", 6},    {"c", 6},    {"N", 7},
-    {"n", 7},    {"O", 8},    {"o", 8},    {"F", 9},    {"f", 9},
-    {"Ne", 10},  {"NE", 10},  {"ne", 10},  {"Na", 11},  {"NA", 11},
-    {"na", 11},  {"Mg", 12},  {"MG", 12},  {"mg", 12},  {"Al", 13},
-    {"AL", 13},  {"al", 13},  {"Si", 14},  {"SI", 14},  {"si", 14},
-    {"P", 15},   {"p", 15},   {"S", 16},   {"s", 16},   {"Cl", 17},
-    {"CL", 17},  {"cl", 17},  {"Ar", 18},  {"AR", 18},  {"ar", 18},
-    {"K", 19},   {"k", 19},   {"Ca", 20},  {"CA", 20},  {"ca", 20},
-    {"Sc", 21},  {"SC", 21},  {"sc", 21},  {"Ti", 22},  {"TI", 22},
-    {"ti", 22},  {"V", 23},   {"v", 23},   {"Cr", 24},  {"CR", 24},
-    {"cr", 24},  {"Mn", 25},  {"MN", 25},  {"mn", 25},  {"Fe", 26},
-    {"FE", 26},  {"fe", 26},  {"Co", 27},  {"CO", 27},  {"co", 27},
-    {"Ni", 28},  {"NI", 28},  {"ni", 28},  {"Cu", 29},  {"CU", 29},
-    {"cu", 29},  {"Zn", 30},  {"ZN", 30},  {"zn", 30},  {"Ga", 31},
-    {"GA", 31},  {"ga", 31},  {"Ge", 32},  {"GE", 32},  {"ge", 32},
-    {"As", 33},  {"AS", 33},  {"as", 33},  {"Se", 34},  {"SE", 34},
-    {"se", 34},  {"Br", 35},  {"BR", 35},  {"br", 35},  {"Kr", 36},
-    {"KR", 36},  {"kr", 36},  {"Rb", 37},  {"RB", 37},  {"rb", 37},
-    {"Sr", 38},  {"SR", 38},  {"sr", 38},  {"Y", 39},   {"y", 39},
-    {"Zr", 40},  {"ZR", 40},  {"zr", 40},  {"Nb", 41},  {"NB", 41},
-    {"nb", 41},  {"Mo", 42},  {"MO", 42},  {"mo", 42},  {"Tc", 43},
-    {"TC", 43},  {"tc", 43},  {"Ru", 44},  {"RU", 44},  {"ru", 44},
-    {"Rh", 45},  {"RH", 45},  {"rh", 45},  {"Pd", 46},  {"PD", 46},
-    {"pd", 46},  {"Ag", 47},  {"AG", 47},  {"ag", 47},  {"Cd", 48},
-    {"CD", 48},  {"cd", 48},  {"In", 49},  {"IN", 49},  {"in", 49},
-    {"Sn", 50},  {"SN", 50},  {"sn", 50},  {"Sb", 51},  {"SB", 51},
-    {"sb", 51},  {"Te", 52},  {"TE", 52},  {"te", 52},  {"I", 53},
-    {"i", 53},   {"Xe", 54},  {"XE", 54},  {"xe", 54},  {"Cs", 55},
-    {"CS", 55},  {"cs", 55},  {"Ba", 56},  {"BA", 56},  {"ba", 56},
-    {"La", 57},  {"LA", 57},  {"la", 57},  {"Ce", 58},  {"CE", 58},
-    {"ce", 58},  {"Pr", 59},  {"PR", 59},  {"pr", 59},  {"Nd", 60},
-    {"ND", 60},  {"nd", 60},  {"Pm", 61},  {"PM", 61},  {"pm", 61},
-    {"Sm", 62},  {"SM", 62},  {"sm", 62},  {"Eu", 63},  {"EU", 63},
-    {"eu", 63},  {"Gd", 64},  {"GD", 64},  {"gd", 64},  {"Tb", 65},
-    {"TB", 65},  {"tb", 65},  {"Dy", 66},  {"DY", 66},  {"dy", 66},
-    {"Ho", 67},  {"HO", 67},  {"ho", 67},  {"Er", 68},  {"ER", 68},
-    {"er", 68},  {"Tm", 69},  {"TM", 69},  {"tm", 69},  {"Yb", 70},
-    {"YB", 70},  {"yb", 70},  {"Lu", 71},  {"LU", 71},  {"lu", 71},
-    {"Hf", 72},  {"HF", 72},  {"hf", 72},  {"Ta", 73},  {"TA", 73},
-    {"ta", 73},  {"W", 74},   {"w", 74},   {"Re", 75},  {"RE", 75},
-    {"re", 75},  {"Os", 76},  {"OS", 76},  {"os", 76},  {"Ir", 77},
-    {"IR", 77},  {"ir", 77},  {"Pt", 78},  {"PT", 78},  {"pt", 78},
-    {"Au", 79},  {"AU", 79},  {"au", 79},  {"Hg", 80},  {"HG", 80},
-    {"hg", 80},  {"Tl", 81},  {"TL", 81},  {"tl", 81},  {"Pb", 82},
-    {"PB", 82},  {"pb", 82},  {"Bi", 83},  {"BI", 83},  {"bi", 83},
-    {"Po", 84},  {"PO", 84},  {"po", 84},  {"At", 85},  {"AT", 85},
-    {"at", 85},  {"Rn", 86},  {"RN", 86},  {"rn", 86},  {"Fr", 87},
-    {"FR", 87},  {"fr", 87},  {"Ra", 88},  {"RA", 88},  {"ra", 88},
-    {"Ac", 89},  {"AC", 89},  {"ac", 89},  {"Th", 90},  {"TH", 90},
-    {"th", 90},  {"Pa", 91},  {"PA", 91},  {"pa", 91},  {"U", 92},
-    {"u", 92},   {"Np", 93},  {"NP", 93},  {"np", 93},  {"Pu", 94},
-    {"PU", 94},  {"pu", 94},  {"Am", 95},  {"AM", 95},  {"am", 95},
-    {"Cm", 96},  {"CM", 96},  {"cm", 96},  {"Bk", 97},  {"BK", 97},
-    {"bk", 97},  {"Cf", 98},  {"CF", 98},  {"cf", 98},  {"Es", 99},
-    {"ES", 99},  {"es", 99},  {"Fm", 100}, {"FM", 100}, {"fm", 100},
-    {"Md", 101}, {"MD", 101}, {"md", 101}, {"No", 102}, {"NO", 102},
-    {"no", 102}, {"Lr", 103}, {"LR", 103}, {"lr", 103}, {"Rf", 104},
-    {"RF", 104}, {"rf", 104}, {"Db", 105}, {"DB", 105}, {"db", 105},
-    {"Sg", 106}, {"SG", 106}, {"sg", 106}, {"Bh", 107}, {"BH", 107},
-    {"bh", 107}, {"Hs", 108}, {"HS", 108}, {"hs", 108}, {"Mt", 109},
-    {"MT", 109}, {"mt", 109}};
-
-inline std::unordered_map<int, double> __ElementBondThresholds = {
-    {0, 1.42},  {1, 1.42},  {3, 2.7},   {4, 2.7},   {6, 1.75},  {7, 1.6},
-    {8, 1.52},  {11, 2.7},  {12, 2.7},  {13, 2.7},  {14, 1.9},  {15, 2.0},
-    {16, 1.9},  {17, 1.8},  {19, 2.7},  {20, 2.7},  {21, 2.7},  {22, 2.7},
-    {23, 2.7},  {24, 2.7},  {25, 2.7},  {26, 2.7},  {27, 2.7},  {28, 2.7},
-    {29, 2.7},  {30, 2.7},  {31, 2.7},  {33, 2.68}, {37, 2.7},  {38, 2.7},
-    {39, 2.7},  {40, 2.7},  {41, 2.7},  {42, 2.7},  {43, 2.7},  {44, 2.7},
-    {45, 2.7},  {46, 2.7},  {47, 2.7},  {48, 2.7},  {49, 2.7},  {50, 2.7},
-    {55, 2.7},  {56, 2.7},  {57, 2.7},  {58, 2.7},  {59, 2.7},  {60, 2.7},
-    {61, 2.7},  {62, 2.7},  {63, 2.7},  {64, 2.7},  {65, 2.7},  {66, 2.7},
-    {67, 2.7},  {68, 2.7},  {69, 2.7},  {70, 2.7},  {71, 2.7},  {72, 2.7},
-    {73, 2.7},  {74, 2.7},  {75, 2.7},  {76, 2.7},  {77, 2.7},  {78, 2.7},
-    {79, 2.7},  {80, 2.7},  {81, 2.7},  {82, 2.7},  {83, 2.7},  {87, 2.7},
-    {88, 2.7},  {89, 2.7},  {90, 2.7},  {91, 2.7},  {92, 2.7},  {93, 2.7},
-    {94, 2.7},  {95, 2.7},  {96, 2.7},  {97, 2.7},  {98, 2.7},  {99, 2.7},
-    {100, 2.7}, {101, 2.7}, {102, 2.7}, {103, 2.7}, {104, 2.7}, {105, 2.7},
-    {106, 2.7}, {107, 2.7}, {108, 2.7}, {109, 2.88}};
-
-inline std::unordered_map<int, double> __ElementPairThresholds = {
-    {0, 0.8},     {20, 1.31},   {27, 1.2},    {35, 1.15},   {44, 1.1},
-    {54, 1},      {60, 1.84},   {72, 1.88},   {84, 1.75},   {85, 1.56},
-    {86, 1.76},   {98, 1.6},    {99, 1.68},   {100, 1.63},  {112, 1.6},
-    {113, 1.59},  {114, 1.36},  {129, 1.45},  {135, 1.47},  {144, 1.6},
-    {152, 1.45},  {170, 1.4},   {180, 1.55},  {202, 2.4},   {222, 2.24},
-    {224, 1.91},  {225, 1.98},  {243, 2.02},  {269, 2},     {293, 1.9},
-    {316, 1.8},   {420, 2.37},  {480, 2.3},   {512, 2.3},   {544, 2.3},
-    {612, 2.1},   {629, 1.54},  {665, 1},     {813, 2.6},   {854, 2.27},
-    {894, 1.93},  {896, 2.1},   {937, 2.05},  {938, 2.06},  {981, 1.62},
-    {1258, 2.68}, {1309, 2.33}, {1484, 1},    {1763, 2.14}, {1823, 2.48},
-    {1882, 2.1},  {1944, 1.72}, {2380, 2.34}, {3367, 2.44}, {3733, 2.11},
-    {3819, 2.6},  {3821, 2.36}, {4736, 2.75}, {5724, 2.73}, {5959, 2.63},
-    {6519, 2.84}, {6750, 2.87}, {8991, 2.81}};
-
-const double __DefaultBondingRadius = 2.001;
-
-// FIX: not being used
-inline std::vector<std::string> metals = {
-    "LI", "NA", "K",  "RB", "CS", "FR", "BE", "MG", "CA", "SR", "BA", "RA",
-    "AL", "GA", "IN", "SN", "TL", "PB", "BI", "SC", "TI", "V",  "CR", "MN",
-    "FE", "CO", "NI", "CU", "ZN", "Y",  "ZR", "NB", "MO", "TC", "RU", "RH",
-    "PD", "AG", "CD", "LA", "HF", "TA", "W",  "RE", "OS", "IR", "PT", "AU",
-    "HG", "AC", "RF", "DB", "SG", "BH", "HS", "MT", "CE", "PR", "ND", "PM",
-    "SM", "EU", "GD", "TB", "DY", "HO", "ER", "TM", "YB", "LU", "TH", "PA",
-    "U",  "NP", "PU", "AM", "CM", "BK", "CF", "ES", "FM", "MD", "NO", "LR"};
-
-inline std::unordered_set<int> MetalsSet() {
-  std::unordered_set<int> set;
-  for (const auto &m : metals) {
-    set.insert(__ElementIndex[m]);
-  }
-  return set;
-}
-
-inline int getElementIdx(const std::string &e) {
-  auto it = __ElementIndex.find(e);
-  return (it != __ElementIndex.end()) ? it->second : -1;
-}
-
-inline double getElementThreshold(int i) {
-  if (i < 0)
-    return __DefaultBondingRadius;
-  auto it = __ElementBondThresholds.find(i);
-  return (it != __ElementBondThresholds.end()) ? it->second
-                                               : __DefaultBondingRadius;
-}
-
-// https://stackoverflow.com/a/8625010/8040171
-// faster implementation possible, but unnecessary here
-constexpr std::size_t isqrt_impl(std::size_t sq, std::size_t dlt,
-                                 std::size_t value) {
-  return sq <= value ? isqrt_impl(sq + dlt, dlt + 2, value) : (dlt >> 1) - 1;
-}
-constexpr std::size_t isqrt(std::size_t value) {
-  return isqrt_impl(1, 3, value);
-}
+namespace lahuta {
 
 constexpr int MAX_ELEMENTS = 120;
+constexpr const double dbr = 2.001f; // default bond radius
 
-// Helper function to reverse Cantor pairing
-constexpr std::pair<int, int> reverseCantor(int k) {
-  int w = static_cast<int>(isqrt(8 * k + 1) - 1) / 2;
-  int t = (w * (w + 1)) / 2;
-  int j = k - t;
-  int i = w - j;
-  return {i, j};
+namespace types {
+using AtomicNumber = int;
 }
 
-// Constexpr function to create the precomputed table
-constexpr auto createPairThresholds() {
-  std::array<std::array<double, MAX_ELEMENTS>, MAX_ELEMENTS> thresholds{-1};
+inline float bond_radius(gemmi::El el) {
+  using El = gemmi::El;
+  static constexpr float bond_tbl[] = {
+      /*X*/ 1.42f, /*H*/ 1.42f, /*He*/ dbr,
+      /*Li*/ 2.7f, /*Be*/ 2.7f, /*B*/ dbr,    /*C*/ 1.75f, /*N*/ 1.6f,   /*O*/ 1.52f,
+      /*F*/ dbr,   /*Ne*/ dbr,
+      /*Na*/ 2.7f, /*Mg*/ 2.7f, /*Al*/ 2.7f,  /*Si*/ 1.9f, /*P*/ 2.0f,   /*S*/ 1.9f,
+      /*Cl*/ 1.8f, /*Ar*/ dbr,
+      /*K*/ 2.7f,  /*Ca*/ 2.7f, /*Sc*/ 2.7f,  /*Ti*/ 2.7f, /*V*/ 2.7f,   /*Cr*/ 2.7f,
+      /*Mn*/ 2.7f, /*Fe*/ 2.7f, /*Co*/ 2.7f,  /*Ni*/ 2.7f, /*Cu*/ 2.7f,  /*Zn*/ 2.7f,
+      /*Ga*/ 2.7f, /*Ge*/ dbr,  /*As*/ 2.68f, /*Se*/ dbr,  /*Br*/ dbr,   /*Kr*/ dbr,
+      /*Rb*/ 2.7f, /*Sr*/ 2.7f, /*Y*/ 2.7f,   /*Zr*/ 2.7f, /*Nb*/ 2.7f,  /*Mo*/ 2.7f,
+      /*Tc*/ 2.7f, /*Ru*/ 2.7f, /*Rh*/ 2.7f,  /*Pd*/ 2.7f, /*Ag*/ 2.7f,  /*Cd*/ 2.7f,
+      /*In*/ 2.7f, /*Sn*/ 2.7f, /*Sb*/ dbr,   /*Te*/ dbr,  /*I*/ dbr,    /*Xe*/ dbr,
+      /*Cs*/ 2.7f, /*Ba*/ 2.7f, /*La*/ 2.7f,  /*Ce*/ 2.7f, /*Pr*/ 2.7f,  /*Nd*/ 2.7f,
+      /*Pm*/ 2.7f, /*Sm*/ 2.7f, /*Eu*/ 2.7f,  /*Gd*/ 2.7f, /*Tb*/ 2.7f,  /*Dy*/ 2.7f,
+      /*Ho*/ 2.7f, /*Er*/ 2.7f, /*Tm*/ 2.7f,  /*Yb*/ 2.7f, /*Lu*/ 2.7f,  /*Hf*/ 2.7f,
+      /*Ta*/ 2.7f, /*W*/ 2.7f,  /*Re*/ 2.7f,  /*Os*/ 2.7f, /*Ir*/ 2.7f,  /*Pt*/ 2.7f,
+      /*Au*/ 2.7f, /*Hg*/ 2.7f, /*Tl*/ 2.7f,  /*Pb*/ 2.7f, /*Bi*/ 2.7f,  /*Po*/ dbr,
+      /*At*/ dbr,  /*Rn*/ dbr,
+      /*Fr*/ 2.7f, /*Ra*/ 2.7f, /*Ac*/ 2.7f,  /*Th*/ 2.7f, /*Pa*/ 2.7f,  /*U*/ 2.7f,
+      /*Np*/ 2.7f, /*Pu*/ 2.7f, /*Am*/ 2.7f,  /*Cm*/ 2.7f, /*Bk*/ 2.7f,  /*Cf*/ 2.7f,
+      /*Es*/ 2.7f, /*Fm*/ 2.7f, /*Md*/ 2.7f,  /*No*/ 2.7f, /*Lr*/ 2.7f,  /*Rf*/ 2.7f,
+      /*Db*/ 2.7f, /*Sg*/ 2.7f, /*Bh*/ 2.7f,  /*Hs*/ 2.7f, /*Mt*/ 2.88f, /*Ds*/ dbr,
+      /*Rg*/ dbr,  /*Cn*/ dbr,  /*Nh*/ dbr,   /*Fl*/ dbr,  /*Mc*/ dbr,   /*Lv*/ dbr,
+      /*Ts*/ dbr,  /*Og*/ dbr,
+      /*D*/ 1.42f, /*END*/ 0.0f};
 
-  constexpr std::array<std::pair<int, double>, 63> knownPairs{
-      {{0, 0.8},     {20, 1.31},   {27, 1.2},    {35, 1.15},   {44, 1.1},
-       {54, 1},      {60, 1.84},   {72, 1.88},   {84, 1.75},   {85, 1.56},
-       {86, 1.76},   {98, 1.6},    {99, 1.68},   {100, 1.63},  {112, 1.6},
-       {113, 1.59},  {114, 1.36},  {129, 1.45},  {135, 1.47},  {144, 1.6},
-       {152, 1.45},  {170, 1.4},   {180, 1.55},  {202, 2.4},   {222, 2.24},
-       {224, 1.91},  {225, 1.98},  {243, 2.02},  {269, 2},     {293, 1.9},
-       {316, 1.8},   {420, 2.37},  {480, 2.3},   {512, 2.3},   {544, 2.3},
-       {612, 2.1},   {629, 1.54},  {665, 1},     {813, 2.6},   {854, 2.27},
-       {894, 1.93},  {896, 2.1},   {937, 2.05},  {938, 2.06},  {981, 1.62},
-       {1258, 2.68}, {1309, 2.33}, {1484, 1},    {1763, 2.14}, {1823, 2.48},
-       {1882, 2.1},  {1944, 1.72}, {2380, 2.34}, {3367, 2.44}, {3733, 2.11},
-       {3819, 2.6},  {3821, 2.36}, {4736, 2.75}, {5724, 2.73}, {5959, 2.63},
-       {6519, 2.84}, {6750, 2.87}, {8991, 2.81}}};
+  static_assert(bond_tbl[static_cast<int>(El::D)] == 1.42f, "Error in bond radius for Deuterium");
+  static_assert(sizeof(bond_tbl) / sizeof(bond_tbl[0]) == static_cast<int>(El::END) + 1, "Size mismatch");
+  return bond_tbl[static_cast<int>(el)];
+}
 
-  for (const auto &[key, value] : knownPairs) {
-    auto [i, j] = reverseCantor(key);
+inline constexpr std::array<std::array<double, MAX_ELEMENTS>, MAX_ELEMENTS> PairThresholds = []() {
+  constexpr std::array<std::tuple<int, int, double>, 63> pair_values{
+      {{1, 1, 0.8},    {1, 5, 1.31},   {1, 6, 1.2},   {1, 7, 1.15},   {1, 8, 1.1},    {1, 9, 1.0},
+       {5, 5, 1.84},   {5, 6, 1.88},   {6, 6, 1.75},  {5, 7, 1.56},   {4, 8, 1.76},   {6, 7, 1.6},
+       {5, 8, 1.68},   {4, 9, 1.63},   {7, 7, 1.6},   {6, 8, 1.59},   {5, 9, 1.36},   {6, 9, 1.45},
+       {1, 15, 1.47},  {8, 8, 1.6},    {1, 16, 1.45}, {1, 17, 1.4},   {9, 9, 1.55},   {7, 12, 2.4},
+       {8, 12, 2.24},  {6, 14, 1.91},  {5, 15, 1.98}, {9, 12, 2.02},  {6, 16, 2.0},   {6, 17, 1.9},
+       {8, 16, 1.8},   {14, 14, 2.37}, {15, 15, 2.3}, {15, 16, 2.3},  {16, 16, 2.3},  {17, 17, 2.1},
+       {1, 34, 1.54},  {1, 35, 1.0},   {6, 33, 2.6},  {6, 34, 2.27},  {8, 33, 1.93},  {6, 35, 2.1},
+       {8, 34, 2.05},  {7, 35, 2.06},  {8, 35, 1.62}, {16, 33, 2.68}, {16, 34, 2.33}, {1, 53, 1.0},
+       {6, 52, 2.14},  {6, 53, 2.48},  {8, 52, 2.1},  {8, 53, 1.72},  {34, 34, 2.34}, {35, 46, 2.44},
+       {7, 78, 2.11},  {8, 78, 2.6},   {6, 80, 2.36}, {16, 80, 2.75}, {53, 53, 2.73}, {35, 73, 2.63},
+       {35, 78, 2.84}, {35, 80, 2.87}, {53, 80, 2.81}}};
+
+  std::array<std::array<double, MAX_ELEMENTS>, MAX_ELEMENTS> thresholds{};
+  for (const auto &[i, j, value] : pair_values) {
     thresholds[i][j] = value;
-    thresholds[j][i] = value; // Ensure symmetry
+  }
+
+  // mirror values across the diagonal
+  for (int i = 1; i < MAX_ELEMENTS; ++i) {
+    for (int j = i + 1; j < MAX_ELEMENTS; ++j) {
+      thresholds[j][i] = thresholds[i][j];
+    }
   }
 
   return thresholds;
+}();
+
+/// retrieve the bond radius for an element
+inline double get_bond_radius(types::AtomicNumber i) {
+  gemmi::El e = static_cast<gemmi::El>(i);
+  if (e < gemmi::El::H || e >= gemmi::El::END) return dbr;
+  return bond_radius(e);
 }
 
-inline constexpr auto precomputedPairThresholds = createPairThresholds();
-
-// Function to get the element pair threshold using the precomputed table
-inline constexpr double getElementPairThreshold(int i, int j) {
-  if (i < 0 || j < 0 || i >= MAX_ELEMENTS || j >= MAX_ELEMENTS)
-    return -1;
-  return precomputedPairThresholds[i][j];
+/// retrieve the precomputed pair threshold for two elements
+inline constexpr double get_element_pair_threshold(types::AtomicNumber i, types::AtomicNumber j) {
+  // RDKit stores atomic numbers as unsigned integers (std::uint8_t)
+  if (i >= MAX_ELEMENTS || j >= MAX_ELEMENTS) return 0.0;
+  return PairThresholds[i][j];
 }
 
-// inline double getElementPairThreshold(int i, int j) {
-//   if (i < 0 || j < 0)
-//     return -1;
-//   int key =
-//       (i < j) ? (i + j) * (i + j + 1) / 2 + j : (i + j) * (i + j + 1) / 2 +
-//       i;
-//   auto it = __ElementPairThresholds.find(key);
-//   return (it != __ElementPairThresholds.end()) ? it->second : -1;
-// }
+/// retrieve the pair threshold for two elements
+inline double get_pair_threshold(types::AtomicNumber a, types::AtomicNumber b) {
+  double threshold_ab = get_element_pair_threshold(a, b);
+  if (threshold_ab > 0.0) return threshold_ab;
 
-inline bool isHydrogen(int i) {
-  static int H_ID = getElementIdx("H");
-  return i == H_ID;
+  return (get_bond_radius(a) + get_bond_radius(b)) / 1.95;
 }
 
-inline double getPairingThreshold(int elementIndexA, int elementIndexB,
-                                  double thresholdA, double thresholdB) {
-  double thresholdAB = getElementPairThreshold(elementIndexA, elementIndexB);
-  return thresholdAB > 0     ? thresholdAB
-         : elementIndexB < 0 ? thresholdA
-                             : (thresholdA + thresholdB) / 1.95;
-}
+} // namespace lahuta
+
+#endif // LAHUTA_BOND_TABLE_HPP

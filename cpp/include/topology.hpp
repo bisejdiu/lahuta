@@ -7,6 +7,7 @@
 #include "contacts/atoms.hpp"
 #include "contacts/charges.hpp"
 #include "convert.hpp"
+#include "definitions.hpp"
 #include "ob/clean_mol.hpp"
 #include "residues.hpp"
 #include <rdkit/GraphMol/BondIterators.h>
@@ -29,6 +30,8 @@ public:
 
   void assign_arpeggio_atom_types() {
 
+    using namespace residue_props;
+
     atom_types.resize(mol->getNumAtoms(), AtomType::NONE);
 
     for (auto atom : mol->atoms()) {
@@ -36,7 +39,7 @@ public:
       atom_types[atom->getIdx()] = atom_type;
     }
 
-    auto unk_indices = residue_props::get_unknown_residues<std::vector<int>>(*residues, AminoAcidNames);
+    auto unk_indices = get_unknown_residues<std::vector<int>>(*residues, definitions::is_protein_extended);
     if (!unk_indices.empty()) {
       std::sort(unk_indices.begin(), unk_indices.end());
       auto new_mol = filter_with_bonds(*mol, unk_indices);

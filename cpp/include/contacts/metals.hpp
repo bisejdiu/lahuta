@@ -3,8 +3,20 @@
 
 #include "GraphMol/RWMol.h"
 #include "atom_types.hpp"
+#include "definitions.hpp"
 
 namespace lahuta {
+
+constexpr const std::array<resTokenType, 7> OMetalBinders = {
+    resTokenType::ASP,
+    resTokenType::GLU,
+    resTokenType::SER,
+    resTokenType::THR,
+    resTokenType::TYR,
+    resTokenType::ASN,
+    resTokenType::GLN};
+
+const auto is_O_metal_binding = definitions::make_tester(OMetalBinders);
 
 // clang-format off
 inline std::vector<int> IonicTypeMetals = {

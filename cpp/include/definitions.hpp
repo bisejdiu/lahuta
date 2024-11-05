@@ -1,47 +1,101 @@
 #ifndef LAHUTA_DEFINITIONS_HPP
 #define LAHUTA_DEFINITIONS_HPP
 
+#include "bonds/token.h"
 #include <array>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+namespace std {
+template <> struct hash<lahuta::resTokenType> {
+  size_t operator()(const lahuta::resTokenType e) const noexcept { return static_cast<size_t>(e); }
+};
+} // namespace std
+
 namespace lahuta {
 namespace definitions {
+
+template <size_t N>
+inline std::function<bool(const std::string &)> //
+make_tester(const std::array<resTokenType, N> &values) {
+  return [values](const std::string &res_name) {
+    auto entry = lahuta::res_name_table(res_name.c_str(), res_name.length());
+    return std::find(values.begin(), values.end(), entry) != values.end();
+  };
+}
+
+inline std::function<bool(const std::string &)>
+make_tester(resTokenType range_start, resTokenType range_end) {
+  return [range_start, range_end](const std::string &res_name) {
+    auto entry = lahuta::res_name_table(res_name.c_str(), res_name.length());
+    return entry >= range_start && entry <= range_end;
+  };
+}
+
+template <size_t N>
+inline std::function<bool(const std::string &)>
+make_tester(const std::array<std::pair<resTokenType, resTokenType>, N> &ranges) {
+  return [ranges](const std::string &res_name) {
+    auto entry = lahuta::res_name_table(res_name.c_str(), res_name.length());
+    for (const auto &[start, end] : ranges) {
+      if (entry >= start && entry <= end) {
+        return true;
+      }
+    }
+    return false;
+  };
+}
+
 // clang-format off
-
-inline const std::array<std::string, 11>
-WaterResidues = {
-  "HOH", "W", "SOL", "TIP3",
-  "SPC", "H2O", "TIP4", "TIP",
-  "DOD", "D3O", "WAT"
+constexpr const std::array<resTokenType, 3> PositiveChargedResidues = {
+    resTokenType::ARG, resTokenType::HIS, resTokenType::LYS
 };
 
-inline const std::vector<std::string> 
-HistidineResidues = {
-  "HIS", "HID", "HIE", "HIP"
+constexpr const std::array<resTokenType, 2> NegativeChargedResidues = {
+    resTokenType::GLU, resTokenType::ASP
 };
 
-inline const std::unordered_map<std::string, std::vector<int>> 
-AromaticResidues = {
+constexpr const std::array<std::pair<resTokenType, resTokenType>, 2> HistidineResidues = {
+    std::make_pair(resTokenType::HIS, resTokenType::HIS),
+    std::make_pair(resTokenType::HSD, resTokenType::HIP)
+};
+
+constexpr const std::pair<resTokenType, resTokenType> StandardAminoAcids = {
+    resTokenType::GLY, resTokenType::HYP
+};
+
+constexpr const std::pair<resTokenType, resTokenType> PolymerResiduesRange = {
+    resTokenType::GLY, resTokenType::GPN
+};
+
+constexpr const std::pair<resTokenType, resTokenType> BaseResiduesRange = {
+    resTokenType::GLY, resTokenType::GPN
+};
+
+constexpr const std::array<resTokenType, 28> _AromaticResidues_ = {
+    resTokenType::PHE, resTokenType::TYR, // phenylalanine, tyrosine
+    resTokenType::HIS, resTokenType::TRP, // histidine, tryptophan
+    resTokenType::DHI, resTokenType::DPN, // d-histidine, d-phenylalanine
+    resTokenType::DTR, resTokenType::DTY, // d-tryptophan, d-tyrosine
+    resTokenType::HSD, resTokenType::HSE, // histidine delta, epsilon
+    resTokenType::HSP, resTokenType::HID, // histidine protonated, delta
+    resTokenType::HIE, resTokenType::HIP, // histidine epsilon, protonated
+    resTokenType::PTR, resTokenType::A,   // phosphotyrosine, adenine
+    resTokenType::G,   resTokenType::C,   // guanine, cytosine
+    resTokenType::U,   resTokenType::I,   // uracil, inosine
+    resTokenType::N,   resTokenType::DA,  // nucleotide, deoxyadenosine
+    resTokenType::DC,  resTokenType::DG,  // deoxycytidine, deoxyguanosine
+    resTokenType::DT,  resTokenType::DI,  // deoxythymidine, deoxyinosine
+    resTokenType::DU,  resTokenType::DN   // deoxyuridine, deoxynucleotide
+};
+
+inline const std::unordered_map<std::string, std::vector<int>> AromaticResidues = {
   {"PHE", {6}},
   {"TYR", {6}},
   {"HIS", {5}},
   {"TRP", {5, 6}}
-};
-
-const std::unordered_set<std::string> PositivelyChargedResidues = {"ARG", "HIS", "LYS"};
-const std::unordered_set<std::string> NegativelyChargedResidues = {"GLU", "ASP"};
-
-const std::unordered_set<std::string> PolymerNames = {
-  "HIS", "ARG", "LYS", "ILE", "PHE", "LEU", "TRP",
-  "ALA", "MET", "PRO", "CYS", "ASN", "VAL", "GLY",
-  "SER", "GLN", "TYR", "ASP", "GLU", "THR"
-};
-
-const std::unordered_set<std::string> BaseNames = {
-  "DA", "DC", "DT", "DG", "DI", "DU", "DN"
 };
 
 const std::unordered_set<std::string> ProteinBackboneAtoms = {
@@ -58,7 +112,19 @@ const std::unordered_set<std::string> NucleicBackboneAtoms = {
   "O3*", "O4*", "O5*", "C1*", "C2*", "C3*", "C4*", "C5*"
 };
 
-// clang-format on
+using ResTesterFunc = std::function<bool(const std::string &)>;
+const auto is_water = make_tester(resTokenType::SOL, resTokenType::SPC);
+const auto is_histidine = make_tester(HistidineResidues);
+const auto is_positive_charge = make_tester(PositiveChargedResidues);
+const auto is_negative_charge = make_tester(NegativeChargedResidues);
+const auto is_standard_protein = make_tester(resTokenType::GLY, resTokenType::ARG);
+const auto is_protein_extended = make_tester(StandardAminoAcids.first, StandardAminoAcids.second);
+const auto is_rna = make_tester(resTokenType::A, resTokenType::N);
+const auto is_dna = make_tester(resTokenType::DA, resTokenType::DN);
+const auto is_nucleic = make_tester(resTokenType::A, resTokenType::DN);
+const auto is_polymer = make_tester(PolymerResiduesRange.first, PolymerResiduesRange.second);
+const auto is_base = make_tester(BaseResiduesRange.first, BaseResiduesRange.second);
+
 } // namespace definitions
 } // namespace lahuta
 

@@ -43,7 +43,6 @@ ASN,    resTokenType::ASN
 GLN,    resTokenType::GLN
 LYS,    resTokenType::LYS
 ARG,    resTokenType::ARG
-PCA,    resTokenType::PCA
 DAL,    resTokenType::DAL
 DAR,    resTokenType::DAR
 DSG,    resTokenType::DSG
@@ -76,13 +75,14 @@ ASPP,   resTokenType::ASPP
 GLH,    resTokenType::GLH
 LSN,    resTokenType::LSN
 LYN,    resTokenType::LYN
+SEC,    resTokenType::SEC
+PYL,    resTokenType::PYL
+MSE,    resTokenType::MSE
 SEP,    resTokenType::SEP
 TPO,    resTokenType::TPO
-SEC,    resTokenType::SEC
-MSE,    resTokenType::MSE
-HYP,    resTokenType::HYP
 PTR,    resTokenType::PTR
-PYL,    resTokenType::PYL
+PCA,    resTokenType::PCA
+HYP,    resTokenType::HYP
 A,      resTokenType::A
 C,      resTokenType::C
 G,      resTokenType::G
