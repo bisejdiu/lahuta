@@ -54,7 +54,6 @@ endif()
 
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
-add_subdirectory(external/kdtree)
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
@@ -69,7 +68,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit kdtree)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit)
  
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include # our own headers

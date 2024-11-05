@@ -172,6 +172,18 @@ public:
                : impl.brute_force(ev1, ev2, radius);
   }
 
+  template <typename EV> NSResults search(const EV &ev, double radius, int i) {
+    SearchImpl<EV, EV> impl(conf);
+    if (i == 0) {
+      return impl.brute_force(ev, radius);
+    } else {
+      return impl.grid(ev, radius);
+    }
+    if (!SearchStrategy<EV, EV>::size_is_valid(ev, ev)) return NSResults();
+    return SearchStrategy<EV, EV>::prefer_grid(ev, ev, radius) //
+               ? impl.grid(ev, radius)
+               : impl.brute_force(ev, radius);
+  }
   template <typename EV> NSResults search(const EV &ev, double radius) {
     if (!SearchStrategy<EV, EV>::size_is_valid(ev, ev)) return NSResults();
     SearchImpl<EV, EV> impl(conf);

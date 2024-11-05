@@ -159,8 +159,11 @@ struct EntityCollection {
     const std::vector<size_t> atom_ids() const;
     const std::vector<const RDKit::Atom *> atoms() const;
 
-    typename std::vector<EntityType>::iterator begin() { return data.begin(); }
-    typename std::vector<EntityType>::iterator end() { return data.end(); }
+    typename std::vector<EntityType>::const_iterator begin() const { return data.begin(); }
+    typename std::vector<EntityType>::const_iterator end() const { return data.end(); }
+    typename std::vector<EntityType>::const_iterator cbegin() const { return data.cbegin(); }
+    typename std::vector<EntityType>::const_iterator cend() const { return data.cend(); }
+
 
     std::vector<EntityType> data;
 };

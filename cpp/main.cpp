@@ -13,20 +13,12 @@
 #include "visitor.hpp"
 
 #include "entities.hpp"
-#include "types.hpp"
 #include "entity.hpp"
+/*#include "types.hpp"*/
 
 using namespace lahuta;
 
-// TODO:
-//       2. move contacts.hpp to a file with a better name
-//       3. Decide where to move InteractionType definition. 
-
-// TODO: 1. Store the ring type (aromatic, aliphatic, etc.)
-
 void log_ring_info(RDKit::RWMol *mol, const RingEntity &ring) {
-  /*auto first_atom_index = ring.atom_ids().front();*/
-  /*const auto *first_atom = mol->getAtomWithIdx(first_atom_index);*/
   const auto *first_atom = ring.atoms.front();
   const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
   std::cout << "Added Ring with: " << res_info->getResidueName() << " " << ring.atoms.size() << " atoms"
@@ -77,22 +69,19 @@ int main(int argc, char const *argv[]) {
   const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
   std::cout << "Hydrophobic Atoms: " << hydrophobic_atoms.get_data().size() << std::endl;
 
-  Residues residues(*mol);
-  EntityTypeManagerBuilder builder(*mol, residues);
-  auto manager = builder.build();
+  /*Residues residues(*mol);*/
+  /*EntityTypeManagerBuilder builder(*mol, residues);*/
+  /*auto manager = builder.build();*/
 
-  // should return const types
-  AtomEntityCollection hp_res = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
-  std::cout << "NEW Hydrophobic Atoms: " << hp_res.get_data().size() << std::endl;
-  AtomEntityCollection hp_res_ = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);
-  std::cout << "NEW Hydrophobic Atoms: " << hp_res_.get_data().size() << std::endl;
-
-  GroupEntityCollection arom_res = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
-  std::cout << "AROM: " << arom_res.get_data().size() << std::endl;
-  GroupEntityCollection arom_res_ = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);
-  std::cout << "AROM: " << arom_res_.get_data().size() << std::endl;
-
-  std::cout << "START New contact interface" << std::endl;
+  /*AtomEntityCollection hp_res = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);*/
+  /*std::cout << "NEW Hydrophobic Atoms: " << hp_res.get_data().size() << std::endl;*/
+  /*AtomEntityCollection hp_res_ = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);*/
+  /*std::cout << "NEW Hydrophobic Atoms: " << hp_res_.get_data().size() << std::endl;*/
+  /**/
+  /*GroupEntityCollection arom_res = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);*/
+  /*std::cout << "AROM: " << arom_res.get_data().size() << std::endl;*/
+  /*GroupEntityCollection arom_res_ = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);*/
+  /*std::cout << "AROM: " << arom_res_.get_data().size() << std::endl;*/
 
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
