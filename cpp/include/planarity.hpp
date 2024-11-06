@@ -68,6 +68,8 @@ inline bool is_planar_angle(const RDKit::RWMol &mol, const std::vector<int> &rin
 
 #if LAHUTA_USE_EIGEN == 1
 
+// Adapted from:
+// https://github.com/molstar/molstar/blob/master/src/mol-model/structure/structure/unit/rings.ts#L100
 inline bool is_planar_eigen(const RDKit::RWMol &mol, const std::vector<int> &ring_atom_ids) {
 
   static const double AromaticRingPlanarityThreshold = 0.05;

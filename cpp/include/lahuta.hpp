@@ -108,23 +108,6 @@ public:
   const std::vector<AtomType> &get_atom_types() const { return topology.atom_types; }
   const RingEntityCollection &get_rings() const { return topology.rings_vec; }
 
-  /*const RingDataVec new_get_rings() const {*/
-  /*  RingDataVec rings;*/
-  /*  for (const auto &ring : mol->getRingInfo()->atomRings()) {*/
-  /*    RDGeom::Point3D center, norm;*/
-  /*    Rings::compute_center(mol.get(), ring, center);*/
-  /*    Rings::compute_normal(mol.get(), ring, center, norm);*/
-  /**/
-  /*    std::vector<const RDKit::Atom *> atoms;*/
-  /*    for (const int &atom_idx : ring) {*/
-  /*      atoms.push_back(mol->getAtomWithIdx(atom_idx));*/
-  /*    }*/
-  /**/
-  /*    rings.rings.emplace_back(center, norm, atoms);*/
-  /*  }*/
-  /*  return rings;*/
-  /*};*/
-
   Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
     if (res_dif > 0) {
