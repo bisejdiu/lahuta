@@ -16,6 +16,7 @@ option(USE_PYTHON "Build Python bindings" ON)
 # option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
 option(STANDALONE_PYTHON_MODULE "Avoid linking Python module to liblahuta_cpp DLL" ON)
+option(USE_EIGEN3 "Do not use Eigen3" ON)
 
 if (DEFINED Python_EXECUTABLE)
   set(USE_PYTHON ON CACHE BOOL "Build Python bindings" FORCE)
@@ -48,9 +49,10 @@ if(NOT DEFINED BOOST_ROOT)
   if(DEFINED ENV{CONDA_PREFIX})
     set(BOOST_ROOT $ENV{CONDA_PREFIX})
     else()
-     message(FATAL_ERROR "BOOST_ROOT is not defined. Please set it to the RDKit installation directory.")
+     message(FATAL_ERROR "BOOST_ROOT is not defined. Please set it to the path where Boost is installed.")
     endif()
 endif()
+
 
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
@@ -69,33 +71,34 @@ add_library(lahuta_cpp STATIC
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit)
- 
+
+find_package(Eigen3 QUIET)
+if(USE_EIGEN3)
+  if(NOT EIGEN3_FOUND)
+    add_subdirectory(external/Eigen)
+    add_definitions(-DLAHUTA_USE_EIGEN=1)
+  endif()
+endif()
+
 target_include_directories(lahuta_cpp PUBLIC
-  ${CMAKE_SOURCE_DIR}/include # our own headers
+  ${CMAKE_SOURCE_DIR}/include # our headers
   ${CMAKE_SOURCE_DIR}/external # for external headers
   ${CMAKE_SOURCE_DIR}/external/gemmi/include # for gemmi headers
 )
 
+if(TARGET Eigen3::Eigen)
+  message(STATUS "Eigen3 found.")
+  target_link_libraries(lahuta_cpp PUBLIC Eigen3::Eigen)
+  set(LAHUTA_HAS_EIGEN ON)
+endif()
+
 add_executable(lex main.cpp)
+
+if (LAHUTA_HAS_EIGEN)
+    target_link_libraries(lex PRIVATE Eigen3::Eigen)
+endif()
+
 target_link_libraries(lex PUBLIC lahuta_cpp) 
-
-# install(TARGETS lahuta_cpp)
-# install(TARGETS lahuta_cpp EXPORT lahuta_cpp
-#         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-#         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-#
-# install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-#
-# install(EXPORT lahuta_cpp
-#         FILE lahuta_cpp-config.cmake
-#         NAMESPACE lahuta_cpp::
-#         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/lahuta_cpp)
-#
-# export(TARGETS lahuta_cpp NAMESPACE lahuta_cpp:: FILE lahuta_cpp-config.cmake)
-
-
 
 ### Python bindings ###
 if (USE_PYTHON)

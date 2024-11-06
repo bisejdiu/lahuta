@@ -87,11 +87,8 @@ int main(int argc, char const *argv[]) {
   Interactions interactions(luni, opts);
   std::cout << "HBOND: \n";
   auto _1 = interactions.find_hbond_interactions();
-  std::cout << "a\n";
   _1.sort_interactions();
-  std::cout << "b\n";
   _1.print_interactions();
-  std::cout << "c\n";
   std::cout << "WEAK HBOND: \n";
   auto _2 = interactions.find_weak_hbond_interactions();
   _2.sort_interactions();

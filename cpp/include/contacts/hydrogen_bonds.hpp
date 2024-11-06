@@ -8,7 +8,6 @@
 #ifndef LAHUTA_HYDROGEN_BONDS_HPP
 #define LAHUTA_HYDROGEN_BONDS_HPP
 
-#include "../common.hpp"
 #include "atom_types.hpp"
 #include "definitions.hpp"
 #include "nn.hpp"

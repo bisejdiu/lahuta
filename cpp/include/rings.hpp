@@ -22,19 +22,25 @@ public:
   static void compute_normal(
       const RDKit::RWMol *mol, const std::vector<int> &ring_atom_ids, const RDGeom::Point3D &center,
       RDGeom::Point3D &norm) {
+
     if (ring_atom_ids.size() < 3) {
       throw std::invalid_argument("Ring must contain at least 3 atoms to compute a normal.");
     }
 
     const RDKit::Conformer &conf = mol->getConformer();
 
+    norm = RDGeom::Point3D{0.0, 0.0, 0.0};
     for (size_t i = 0; i < ring_atom_ids.size(); ++i) {
       RDGeom::Point3D v1 = conf.getAtomPos(ring_atom_ids[i]) - center;
       RDGeom::Point3D v2 = conf.getAtomPos(ring_atom_ids[(i + 1) % ring_atom_ids.size()]) - center;
-      norm += v1.crossProduct(v2);
+
+      // we'll just crash if the cross product is zero. You have bigger problems if that happens.
+      auto new_norm = v1.crossProduct(v2);
+      new_norm.normalize();
+
+      norm += new_norm;
     }
     norm /= static_cast<double>(ring_atom_ids.size());
-    norm.normalize();
   }
 
   static void

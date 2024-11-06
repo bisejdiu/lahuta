@@ -18,6 +18,11 @@ inline bool is_ring_aromatic(const RDKit::RWMol &mol, const RDKit::INT_VECT &rin
   });
 }
 
+inline bool has_any_aromatic_atom(const RDKit::RWMol &mol, const RDKit::INT_VECT &ring) {
+  return std::any_of(ring.begin(), ring.end(), [&mol](int idx) {
+    return mol.getAtomWithIdx(idx)->getIsAromatic();
+  });
+}
 
 } // namespace common
 } // namespace lahuta

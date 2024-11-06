@@ -2,9 +2,11 @@
 #include "GraphMol/MolOps.h"
 #include "GraphMol/Rings.h"
 #include "common.hpp"
-#include "contacts/charges.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
+#include "planarity.hpp"
+#include <Numerics/Matrix.h>
+#include <stdexcept>
 
 namespace lahuta {
 
@@ -17,13 +19,24 @@ void add_rings_to_mol(const RDKit::RWMol &mol, const RDKit::VECT_INT_VECT &rings
 }
 
 AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
+  /*const double AromaticRingPlanarityThreshold = 0.05;*/
   RDKit::VECT_INT_VECT rings, bonds;
   RDKit::MolOps::symmetrizeSSSR(mol, true);
-  for (const auto &ring : mol.getRingInfo()->atomRings()) {
+  for (const std::vector<int> &ring : mol.getRingInfo()->atomRings()) {
     if (common::is_ring_aromatic(mol, ring)) {
+      std::cout << "This ring is aromatic" << std::endl;
       rings.push_back(ring);
     }
+    // Planarity test:
+    if (ring.size() < 5) continue;
+    // no planarity-based aromaticity if any aromatic flags are present
+    if (common::has_any_aromatic_atom(mol, ring)) continue;
+
+    if (!is_planar(mol, ring)) continue;
+
+    std::cout << "Ring with " << ring.size() << " and magnitude: " << std::endl;
   }
+
   RingUtils::convertToBonds(rings, bonds, mol);
   return {rings, bonds};
 }
@@ -56,6 +69,8 @@ void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::ve
 
   add_rings_to_mol(mol, mapped_rings);
   // FIX: add planarity test
+
+  // for planarity test we: skip rings sizes < 5:
 }
 
 void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &residues) {

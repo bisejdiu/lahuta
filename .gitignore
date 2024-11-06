@@ -10,6 +10,9 @@ cachedir/
 tests/data/*.pdb
 tests/data/*.cif
 
+# other
+cpp/external/Eigen/eigen
+
 # IDEs and editors
 .vscode
 
