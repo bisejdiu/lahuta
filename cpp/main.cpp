@@ -3,7 +3,6 @@
 #include <string>
 
 #include "GraphMol/RWMol.h"
-#include "atom_types.hpp"
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrogen_bonds.hpp"
 #include "contacts/interactions.hpp"
@@ -14,7 +13,6 @@
 
 #include "entities.hpp"
 #include "entity.hpp"
-/*#include "types.hpp"*/
 
 using namespace lahuta;
 
@@ -66,59 +64,42 @@ int main(int argc, char const *argv[]) {
 
   luni.assign_molstar_atom_types();
 
-  const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
-  std::cout << "Hydrophobic Atoms: " << hydrophobic_atoms.get_data().size() << std::endl;
-
-  /*Residues residues(*mol);*/
-  /*EntityTypeManagerBuilder builder(*mol, residues);*/
-  /*auto manager = builder.build();*/
-
-  /*AtomEntityCollection hp_res = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);*/
-  /*std::cout << "NEW Hydrophobic Atoms: " << hp_res.get_data().size() << std::endl;*/
-  /*AtomEntityCollection hp_res_ = manager->get_entity_type<lahuta::EntityType::Atom>(AtomType::HYDROPHOBIC);*/
-  /*std::cout << "NEW Hydrophobic Atoms: " << hp_res_.get_data().size() << std::endl;*/
-  /**/
-  /*GroupEntityCollection arom_res = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);*/
-  /*std::cout << "AROM: " << arom_res.get_data().size() << std::endl;*/
-  /*GroupEntityCollection arom_res_ = manager->get_entity_type<lahuta::EntityType::Group>(AtomType::AROMATIC);*/
-  /*std::cout << "AROM: " << arom_res_.get_data().size() << std::endl;*/
-
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
   std::cout << "HBOND: \n";
-  auto _1 = interactions.find_hbond_interactions();
+  auto _1 = interactions.hbond();
   _1.sort_interactions();
   _1.print_interactions();
   std::cout << "WEAK HBOND: \n";
-  auto _2 = interactions.find_weak_hbond_interactions();
+  auto _2 = interactions.weak_hbond();
   _2.sort_interactions();
   _2.print_interactions();
   std::cout << "HYDROPHOBIC: \n";
   auto start = std::chrono::high_resolution_clock::now();
-  auto _3 = interactions.find_hydrophobic_interactions();
+  auto _3 = interactions.hydrophobic();
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
   std::cout << "Hydrophobic Time: " << duration.count() << " us" << std::endl;
   _3.sort_interactions();
   _3.print_interactions();
   std::cout << "HALOGEN: \n";
-  auto _4 = interactions.find_halogen_interactions();
+  auto _4 = interactions.halogen();
   _4.sort_interactions();
   _4.print_interactions();
   std::cout << "IONIC: \n";
-  auto _5 = interactions.find_ionic_interactions();
+  auto _5 = interactions.ionic();
   _5.sort_interactions();
   _5.print_interactions();
   std::cout << "METALIC: \n";
-  auto _6 = interactions.find_metalic_interactions();
+  auto _6 = interactions.metalic();
   _6.sort_interactions();
   _6.print_interactions();
   std::cout << "CATIONPI: \n";
-  auto _7 = interactions.find_cationpi_interactions();
+  auto _7 = interactions.cationpi();
   _7.sort_interactions();
   _7.print_interactions();
   std::cout << "PISTACKING: \n";
-  auto _8 = interactions.find_pistacking_interactions();
+  auto _8 = interactions.pistacking();
   _8.sort_interactions();
   _8.print_interactions();
 

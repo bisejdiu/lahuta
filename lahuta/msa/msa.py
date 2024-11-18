@@ -12,6 +12,7 @@ Example:
     seq_id = seq_ids[0]
 
 """
+
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Literal, Optional, Type, TypeVar
 
@@ -94,7 +95,7 @@ class MSAParser:
         if isinstance(seq, str):
             seq = Seq(seq)
         arr = MSAParser._to_framebuffer(seq)
-        return np.nonzero(arr != 45)[0]
+        return np.nonzero(arr != 45)[0]  # 45 is the ASCII code for '-'
 
     @staticmethod
     def _to_framebuffer(seq: Seq) -> NDArray[np.ubyte]:

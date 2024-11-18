@@ -42,14 +42,14 @@ class Interactions {
 public:
   Interactions(const Luni &luni, InteractionOptions opts) : luni_(luni), opts_(opts) {}
 
-  [[nodiscard]] Contacts find_hbond_interactions();
-  [[nodiscard]] Contacts find_weak_hbond_interactions();
-  [[nodiscard]] Contacts find_hydrophobic_interactions();
-  [[nodiscard]] Contacts find_halogen_interactions();
-  [[nodiscard]] Contacts find_ionic_interactions();
-  [[nodiscard]] Contacts find_metalic_interactions();
-  [[nodiscard]] Contacts find_cationpi_interactions();
-  [[nodiscard]] Contacts find_pistacking_interactions();
+  [[nodiscard]] Contacts hbond();
+  [[nodiscard]] Contacts weak_hbond();
+  [[nodiscard]] Contacts hydrophobic();
+  [[nodiscard]] Contacts halogen();
+  [[nodiscard]] Contacts ionic();
+  [[nodiscard]] Contacts metalic();
+  [[nodiscard]] Contacts cationpi();
+  [[nodiscard]] Contacts pistacking();
 
 private:
   const Luni &luni_;

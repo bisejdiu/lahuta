@@ -246,8 +246,8 @@ public:
 
     GroupEntityCollection group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
     Interactions processor(*this, InteractionOptions{5.0});
-    auto ionic = processor.find_ionic_interactions();
-    auto hbonds = processor.find_hbond_interactions();
+    auto ionic = processor.ionic();
+    auto hbonds = processor.hbond();
     c.add(ionic);
     c.add(hbonds);
 

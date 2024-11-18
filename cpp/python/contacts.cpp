@@ -105,21 +105,37 @@ void bind_contacts(py::module &m) {
       .def("__eq__", &Contacts::operator==, py::is_operator())
       .def("__ne__", &Contacts::operator!=, py::is_operator())
       .def(
-          "__and__", [](Contacts &self, Contacts &other) { return self & other; }, py::is_operator())
+          "__and__",
+          [](Contacts &self, Contacts &other) { return self & other; },
+          py::is_operator())
       .def(
-          "__or__", [](Contacts &self, Contacts &other) { return self | other; }, py::is_operator())
+          "__or__",
+          [](Contacts &self, Contacts &other) { return self | other; },
+          py::is_operator())
       .def(
-          "__sub__", [](Contacts &self, Contacts &other) { return self - other; }, py::is_operator())
+          "__sub__",
+          [](Contacts &self, Contacts &other) { return self - other; },
+          py::is_operator())
       .def(
-          "__xor__", [](Contacts &self, Contacts &other) { return self ^ other; }, py::is_operator())
+          "__xor__",
+          [](Contacts &self, Contacts &other) { return self ^ other; },
+          py::is_operator())
       .def(
-          "__iand__", [](Contacts &self, Contacts &other) { return self &= other; }, py::is_operator())
+          "__iand__",
+          [](Contacts &self, Contacts &other) { return self &= other; },
+          py::is_operator())
       .def(
-          "__ior__", [](Contacts &self, Contacts &other) { return self |= other; }, py::is_operator())
+          "__ior__",
+          [](Contacts &self, Contacts &other) { return self |= other; },
+          py::is_operator())
       .def(
-          "__isub__", [](Contacts &self, Contacts &other) { return self -= other; }, py::is_operator())
+          "__isub__",
+          [](Contacts &self, Contacts &other) { return self -= other; },
+          py::is_operator())
       .def(
-          "__ixor__", [](Contacts &self, Contacts &other) { return self ^= other; }, py::is_operator())
+          "__ixor__",
+          [](Contacts &self, Contacts &other) { return self ^= other; },
+          py::is_operator())
 
       // Indexing support
       .def(
@@ -137,11 +153,13 @@ void bind_contacts(py::module &m) {
 
   py::class_<Interactions>(m, "Interactions")
 
-      .def(
-          py::init<Luni &, InteractionOptions>(),
-          py::arg("luni"),
-          py::arg("opts"))
-      .def("find_ionic_interactions", &Interactions::find_ionic_interactions)
-      .def("find_hbond_interactions", &Interactions::find_hbond_interactions)
-      .def("find_weak_hbond_interactions", &Interactions::find_weak_hbond_interactions);
+      .def(py::init<Luni &, InteractionOptions>(), py::arg("luni"), py::arg("opts"))
+      .def("hbond", &Interactions::hbond)
+      .def("weak_hbond", &Interactions::weak_hbond)
+      .def("hydrophobic", &Interactions::hydrophobic)
+      .def("halogen", &Interactions::halogen)
+      .def("ionic", &Interactions::ionic)
+      .def("metalic", &Interactions::metalic)
+      .def("cationpi", &Interactions::cationpi)
+      .def("pistacking", &Interactions::pistacking);
 }

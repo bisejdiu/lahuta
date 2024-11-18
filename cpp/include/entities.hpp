@@ -30,11 +30,9 @@ enum class FeatureGroup {
 struct Entity {
   using GetCenterFn = const RDGeom::Point3D& (*)(const void*);
   using GetIdFn = size_t (*)(const void*);
-  /*using GetData = const void* (*)(const void*);*/
 
   GetCenterFn get_center_fn;
   GetIdFn get_id_fn;
-  /*GetData get_data_fn;*/
   const void* obj;
 
   template <typename T>
@@ -45,9 +43,6 @@ struct Entity {
       get_id_fn([](const void* obj) -> size_t {
         return static_cast<const T*>(obj)->get_id();
       }),
-      /*get_data_fn([](const void* obj) -> const void* {*/
-      /*  return static_cast<const T*>(obj)->get_data();*/
-      /*}),*/
       obj(&t)
   {}
 
@@ -58,10 +53,6 @@ struct Entity {
   size_t get_id() const {
     return get_id_fn(obj);
   }
-
-  /*const void* get_data() const {*/
-  /*  return get_data_fn(obj);*/
-  /*}*/
 };
 
 struct AtomEntity {
