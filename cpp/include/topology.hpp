@@ -5,12 +5,12 @@
 #include "bond_order.hpp"
 #include "bonds.hpp"
 #include "contacts/atoms.hpp"
-#include "contacts/charges.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
 #include "ob/clean_mol.hpp"
 #include "residues.hpp"
 #include <rdkit/GraphMol/BondIterators.h>
+#include <memory>
 
 namespace lahuta {
 
@@ -18,15 +18,14 @@ class Topology {
 public:
   std::vector<AtomType> atom_types;
   RingEntityCollection rings_vec;
-  const RDKit::RWMol *mol;
-  const Residues *residues;
+  const std::shared_ptr<RDKit::RWMol> mol = nullptr;
+  std::shared_ptr<Residues> residues = nullptr;
 
-  Topology(const RDKit::RWMol &mol) : mol(&mol) {}
+  Topology(const RDKit::RWMol &mol) : mol(std::make_shared<RDKit::RWMol>(mol)) {}
   Topology() = default;
-  ~Topology() { delete residues; }
 
 public:
-  void build_residues(const RDKit::RWMol &mol) { residues = new Residues(mol); }
+  void build_residues(const RDKit::RWMol &mol) { residues = std::make_shared<Residues>(mol); }
 
   void assign_arpeggio_atom_types() {
 
@@ -54,7 +53,7 @@ public:
     rings_vec = create_ringdatavec();
   }
 
-  bool should_initialize_ringinfo(int mol_size) const {
+  static bool should_initialize_ringinfo(int mol_size) {
     constexpr int small_threshold = 20'000;
     constexpr int medium_threshold = 50'000;
     constexpr int large_threshold = 100'000;
@@ -98,21 +97,20 @@ public:
   void assign_molstar_typing() {
 
     // FIX: to be replaced by the entitytype manager
-    auto start1 = std::chrono::high_resolution_clock::now();
+    /*auto start1 = std::chrono::high_resolution_clock::now();*/
     std::vector<AtomType> atom_types_ = AtomTypeAnalysis::analyze(*mol);
-    auto end1 = std::chrono::high_resolution_clock::now();
-    // time in ms
-    std::cout << "Atom typing: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count() << "ms"
-              << std::endl;
+    /*auto end1 = std::chrono::high_resolution_clock::now();*/
+    /*std::cout << "Atom typing: "*/
+    /*          << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count() << "ms"*/
+    /*          << std::endl;*/
 
     atom_types = std::move(atom_types_);
-    auto start2 = std::chrono::high_resolution_clock::now();
+    /*auto start2 = std::chrono::high_resolution_clock::now();*/
     rings_vec = create_ringdatavec();
-    auto end2 = std::chrono::high_resolution_clock::now();
-    std::cout << "Ring perception: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count() << "ms"
-              << std::endl;
+    /*auto end2 = std::chrono::high_resolution_clock::now();*/
+    /*std::cout << "Ring perception: "*/
+    /*          << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count() << "ms"*/
+    /*          << std::endl;*/
   }
 
   static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {

@@ -25,6 +25,8 @@ void GroupTypeStrategy::assign_ids(std::vector<GroupEntity> &features) const {
 }
 
 void GroupTypeStrategy::compute_centers(std::vector<GroupEntity> &features) const {
+  if (features.empty() || features.front().atoms.empty()) return;
+
   auto &conf = features.front().atoms.front()->getOwningMol().getConformer();
   for (auto &feature : features) {
     RDGeom::Point3D center_ = {0.0, 0.0, 0.0};

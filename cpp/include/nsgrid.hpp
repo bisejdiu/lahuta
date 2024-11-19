@@ -163,6 +163,13 @@ private:
 
   inline int _cell_xyz_to_cell_id(int cx, int cy, int cz) const;
 
+
+
+  void compute_pdb_box(std::vector<RDGeom::Point3D> &coords,
+                        float cutoff,
+                        std::array<float, kDIMENSIONS> &pbox,
+                        std::vector<double> &lmin,
+                        std::vector<double> &lmax, int max_attempts = 5);
 };
 
 } // namespace lahuta

@@ -4,6 +4,8 @@
 
 #include "nsgrid.hpp"
 
+// TODO: This is very old code and should be refactored
+
 namespace lahuta {
 
 static const int END = -1;
@@ -33,15 +35,11 @@ FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, double cutoff, bool c
   std::vector<double> _lmin(3, std::numeric_limits<double>::max());
   std::vector<double> _lmax(3, std::numeric_limits<double>::lowest());
 
-  transform_coordinates(_coords, pbox, _lmin, _lmax);
-
-  if (pbox[0] < cutoff || pbox[1] < cutoff || pbox[2] < cutoff) {
-    if (check) {
-      throw std::runtime_error("Cutoff is larger than the smallest box dimension");
-    } else {
-      valid = false;
-      return;
-    }
+  // FIX: this change will disable brute force search implementation
+  try {
+      FastNS::compute_pdb_box(_coords, cutoff, pbox, lmin, lmax);
+  } catch (const std::runtime_error &e) {
+    std::cerr << e.what() << std::endl;
   }
 
   std::vector<float> flat_coords = flatten_coordinates(_coords);
@@ -272,26 +270,63 @@ NSResults NSResults::filter(const std::vector<int> &atom_indices) const {
 }
 
 void transform_coordinates(
-    std::vector<RDGeom::Point3D> &coords, std::array<float, kDIMENSIONS> &pseudobox,
-    std::vector<double> &lmin, std::vector<double> &lmax) {
+    std::vector<RDGeom::Point3D> &coords,
+    std::array<float, kDIMENSIONS> &pseudobox,
+    std::vector<double> &lmin,
+    std::vector<double> &lmax,
+    float scale_factor) {
+
+  // Initialize lmin and lmax
+  std::fill(lmin.begin(), lmin.end(), std::numeric_limits<double>::max());
+  std::fill(lmax.begin(), lmax.end(), std::numeric_limits<double>::lowest());
 
   for (const auto &coord : coords) {
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < kDIMENSIONS; ++i) {
       lmax[i] = std::max(lmax[i], coord[i]);
       lmin[i] = std::min(lmin[i], coord[i]);
     }
   }
 
-  // pseudobox
-  for (int i = 0; i < 3; ++i) {
-    pseudobox[i] = 1.1f * (lmax[i] - lmin[i]);
+  // Calculate pseudobox dimensions
+  for (int i = 0; i < kDIMENSIONS; ++i) {
+    pseudobox[i] = scale_factor * static_cast<float>(lmax[i] - lmin[i]);
   }
 
-  // shift coordinates
+  // Shift coordinates
   for (auto &coord : coords) {
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < kDIMENSIONS; ++i) {
       coord[i] -= lmin[i];
     }
+  }
+}
+
+void FastNS::compute_pdb_box(std::vector<RDGeom::Point3D> &coords,
+                     float cutoff,
+                     std::array<float, kDIMENSIONS> &pbox,
+                     std::vector<double> &lmin,
+                     std::vector<double> &lmax, int max_attempts) {
+  float scale_factor = 1.1f;
+
+  int attempts = 0;
+  bool valid = false;
+
+  while (attempts < max_attempts) {
+    transform_coordinates(coords, pbox, lmin, lmax, scale_factor);
+
+    // Check if pseudobox dimensions satisfy the cutoff
+    if (pbox[0] >= cutoff && pbox[1] >= cutoff && pbox[2] >= cutoff) {
+      valid = true;
+      break;
+    }
+
+    scale_factor += 1.0f;
+    ++attempts;
+  }
+
+  if (!valid) {
+    throw std::runtime_error(
+        "Failed to compute a valid PDB box within the allowed attempts. "
+        "Usually this means that the cutoff is larger than the smallest box dimension.");
   }
 }
 

@@ -11,11 +11,13 @@ namespace lahuta {
 class GroupTypeBase {
 public:
   virtual ~GroupTypeBase() = default;
+  virtual std::string name() const = 0;
   virtual GroupEntityCollection identify(const RDKit::RWMol &mol, const Residues &residues) const = 0;
 };
 
 class PositiveChargeGroup : public GroupTypeBase {
 public:
+  std::string name() const override { return "PositiveChargeGroup"; }
   GroupEntityCollection identify(const RDKit::RWMol &mol, const Residues &residues) const override {
     return add_positive_charges(mol, residues);
   }
@@ -23,6 +25,7 @@ public:
 
 class NegativeChargeGroup : public GroupTypeBase {
 public:
+  std::string name() const override { return "NegativeChargeGroup"; }
   GroupEntityCollection identify(const RDKit::RWMol &mol, const Residues &residues) const override {
     return add_negative_charges(mol, residues);
   };
@@ -30,6 +33,7 @@ public:
 
 class AromaticRingGroup : public GroupTypeBase {
 public:
+  std::string name() const override { return "AromaticRingGroup"; }
   GroupEntityCollection identify(const RDKit::RWMol &mol, const Residues &residues) const override {
     return add_aromatic_rings(mol, residues);
   };
