@@ -5,6 +5,7 @@
 #include "convert.hpp"
 #include "definitions.hpp"
 #include "planarity.hpp"
+#include "spdlog/spdlog.h"
 
 namespace lahuta {
 
@@ -88,11 +89,11 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   std::vector<std::string> unique_unk_res_names;
   std::sort(unk_res_names.begin(), unk_res_names.end());
   std::unique_copy(unk_res_names.begin(), unk_res_names.end(), std::back_inserter(unique_unk_res_names));
-  /*std::cout << "Unique unknown residue names: ";*/
-  /*for (const auto &name : unique_unk_res_names) {*/
-  /*  std::cout << name << " ";*/
-  /*}*/
-  /*std::cout << "\n";*/
+
+  for (const auto &name : unique_unk_res_names) {
+    spdlog::debug("unk residue: {}, {}", name, std::count(unk_res_names.begin(), unk_res_names.end(), name));
+  }
+
 
   auto unk_indices = get_unknown_residues<std::vector<int>>(residues, definitions::is_predefined);
   if (!unk_indices.empty()) {

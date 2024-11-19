@@ -19,6 +19,7 @@
 
 #include "contacts/groups.hpp"
 #include "nn.hpp"
+#include "spdlog/spdlog.h"
 #include "topology.hpp"
 #include "visitor.hpp" // selection parser (bad file name)
 
@@ -71,6 +72,7 @@ private:
 public:
   Luni() = default; // FIX: remove?
   explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
+    spdlog::info("Processing file: {}", file_name);
     process_file(file_name);
 
     try {
