@@ -17,7 +17,8 @@ constexpr const std::array<resTokenType, 28> PredefinedResidues {
     resTokenType::MET, resTokenType::PHE, resTokenType::PRO, resTokenType::SER,
     resTokenType::THR, resTokenType::TRP, resTokenType::TYR, resTokenType::VAL,
     resTokenType::A, resTokenType::G, resTokenType::C, resTokenType::U,
-    resTokenType::DA, resTokenType::DC, resTokenType::DG, resTokenType::DT
+    resTokenType::DA, resTokenType::DC, resTokenType::DG, resTokenType::DT,
+    /*resTokenType::HOH*/
 };
 
 namespace rules {

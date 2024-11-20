@@ -14,7 +14,7 @@ fi
 executable=$1
 data_dir=$2
 output_file="OUT"
-expected_results="$data_dir/results_arom.txt"
+expected_results="$data_dir/results_arom_updated.txt"
 
 trap "rm -f $output_file" EXIT
 

@@ -37,7 +37,8 @@ private:
   NSResults neighbors;
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
-  Topology topology = Topology(*mol);
+  /*Topology topology = Topology(*mol);*/
+  Topology topology;
   GroupEntityCollection features;
 
   void process_file(std::string file_path_) {
@@ -48,6 +49,8 @@ private:
     gemmiStructureToRDKit(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
+
+    topology = Topology(mol);
   }
 
   void create_topology() {
@@ -57,6 +60,7 @@ private:
 
       neighbors = grid.self_search();
       Topology::compute_bonds(*mol, neighbors);
+
       topology.build_residues(*mol);
 
       initialize_and_populate_ringinfo(*mol, *topology.residues);
@@ -64,8 +68,8 @@ private:
       topology.assign_molstar_typing();
       /*topology.assign_arpeggio_atom_types();*/
 
-    } catch (...) {
-      throw std::runtime_error("Failed to create topology");
+    } catch (const std::runtime_error &e) {
+      throw std::runtime_error("Error creating topology: " + std::string(e.what()));
     }
   }
 

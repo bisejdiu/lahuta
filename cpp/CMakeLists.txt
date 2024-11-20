@@ -97,13 +97,23 @@ endif()
 # add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
 # add_link_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
 
-add_executable(lex_parallel main.cpp)
+function(add_lahuta_executable target main_file)
+    add_executable(${target} ${main_file})
 
-if (LAHUTA_HAS_EIGEN)
-    target_link_libraries(lex_parallel PRIVATE Eigen3::Eigen)
-endif()
+    if (LAHUTA_HAS_EIGEN)
+        target_link_libraries(${target} PRIVATE Eigen3::Eigen)
+    endif()
 
-target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
+    target_link_libraries(${target} PUBLIC lahuta_cpp)
+endfunction()
+
+# add_executable(lex_parallel main.cpp)
+# if (LAHUTA_HAS_EIGEN)
+#     target_link_libraries(lex_parallel PRIVATE Eigen3::Eigen)
+# endif()
+# target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
+add_lahuta_executable(lex main.cpp)
+add_lahuta_executable(lex_parallel main_threads.cpp)
 
 ### Python bindings ###
 if (USE_PYTHON)

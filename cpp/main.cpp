@@ -1,107 +1,67 @@
-#include <chrono>
-#include <iostream>
-#include <string>
-
-#include "GraphMol/RWMol.h"
-#include "contacts/halogen_bonds.hpp"
-#include "contacts/hydrogen_bonds.hpp"
 #include "contacts/interactions.hpp"
+#include "file_system.hpp"
 #include "lahuta.hpp"
-#include "neighbors.hpp"
-#include "nn.hpp"
-#include "visitor.hpp"
 
-#include "entities.hpp"
-#include "entity.hpp"
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
 
 using namespace lahuta;
 
-void log_ring_info(RDKit::RWMol *mol, const RingEntity &ring) {
-  const auto *first_atom = ring.atoms.front();
-  const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
-  std::cout << "Added Ring with: " << res_info->getResidueName() << " " << ring.atoms.size() << " atoms"
-            << std::endl;
-
-  std::vector<int> atom_ids;
-  for (const auto *atom : ring.atoms) {
-    atom_ids.push_back(atom->getIdx());
-  }
-  std::sort(atom_ids.begin(), atom_ids.end());
-
-  std::string atom_ids_str;
-  for (const auto &atom_id : atom_ids) {
-    atom_ids_str += std::to_string(atom_id) + " ";
-  }
-  std::cout << "Atoms: " << atom_ids_str << std::endl;
-}
-
-void log_feature_atoms(const std::string &feature_type, const GroupEntity &feature) {
-  std::cout << "i. " << feature_type << " Charge Feature Atoms:" << std::endl;
-  std::cout << "Number of atoms: " << feature.atoms.size() << std::endl;
-  for (const auto *atom : feature.atoms) {
-    unsigned int atom_index = atom->getIdx();
-    auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    std::string atom_name = res_info->getName();
-    std::string residue_name = res_info->getResidueName();
-    std::string chain_id = res_info->getChainId();
-    auto residue_number = res_info->getResidueNumber();
-
-    std::cout << "i.  Atom Index: " << atom_index << ", Atom Name: " << atom_name
-              << ", Residue: " << residue_name << " " << chain_id << residue_number << std::endl;
+void set_logger_pattern(spdlog::level::level_enum level) {
+  if (level == spdlog::level::debug) {
+    spdlog::set_pattern("[%T] [%^%l%$] [thread %t] %v");
+  } else {
+    spdlog::set_pattern("[%^%l%$] %v");
   }
 }
 
 int main(int argc, char const *argv[]) {
-  auto start_total_time = std::chrono::high_resolution_clock::now();
   if (argc < 2) {
     std::cerr << "Usage: " << argv[0] << " <cif file>" << std::endl;
     return 1;
   }
-  std::string file_name = argv[1];
 
+  auto start = std::chrono::high_resolution_clock::now();
+  std::string file_name = argv[1];
   Luni luni(file_name);
   auto mol = &luni.get_molecule();
 
-  luni.assign_molstar_atom_types();
+  if (!luni.success) {
+    std::cerr << "Failed to process file: " << file_name << std::endl;
+    return 1;
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  std::cout << "Time: " << duration.count() << " ms" << std::endl;
 
+  /*luni.assign_molstar_atom_types();*/
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
-  std::cout << "HBOND: \n";
   auto _1 = interactions.hbond();
   _1.sort_interactions();
   _1.print_interactions();
-  std::cout << "WEAK HBOND: \n";
+  std::cout << "Weak HBonds" << std::endl;
   auto _2 = interactions.weak_hbond();
   _2.sort_interactions();
   _2.print_interactions();
-  std::cout << "HYDROPHOBIC: \n";
-  auto start = std::chrono::high_resolution_clock::now();
-  auto _3 = interactions.hydrophobic();
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-  std::cout << "Hydrophobic Time: " << duration.count() << " us" << std::endl;
-  _3.sort_interactions();
-  _3.print_interactions();
-  std::cout << "HALOGEN: \n";
-  auto _4 = interactions.halogen();
-  _4.sort_interactions();
-  _4.print_interactions();
-  std::cout << "IONIC: \n";
-  auto _5 = interactions.ionic();
-  _5.sort_interactions();
-  _5.print_interactions();
-  std::cout << "METALIC: \n";
-  auto _6 = interactions.metalic();
-  _6.sort_interactions();
-  _6.print_interactions();
-  std::cout << "CATIONPI: \n";
-  auto _7 = interactions.cationpi();
-  _7.sort_interactions();
-  _7.print_interactions();
-  std::cout << "PISTACKING: \n";
-  auto _8 = interactions.pistacking();
-  _8.sort_interactions();
-  _8.print_interactions();
+  /*auto _3 = interactions.hydrophobic();*/
+  /*_3.sort_interactions();*/
+  /*_3.print_interactions();*/
+  /*auto _4 = interactions.halogen();*/
+  /*_4.sort_interactions();*/
+  /*_4.print_interactions();*/
+  /*auto _5 = interactions.ionic();*/
+  /*_5.sort_interactions();*/
+  /*_5.print_interactions();*/
+  /*auto _6 = interactions.metalic();*/
+  /*_6.sort_interactions();*/
+  /*_6.print_interactions();*/
+  /*auto _7 = interactions.cationpi();*/
+  /*_7.sort_interactions();*/
+  /*_7.print_interactions();*/
+  /*auto _8 = interactions.pistacking();*/
+  /*_8.sort_interactions();*/
+  /*_8.print_interactions();*/
 
   auto log_bond_info = [&](const RDKit::Bond *bond) {
     auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());
@@ -138,9 +98,6 @@ int main(int argc, char const *argv[]) {
   }
   std::cout << "1: " << o1 << " 2: " << o2 << " a: " << aromatic << " t: " << o1 + o2 + aromatic << std::endl;
   std::cout << "Nr. Bonds: " << mol->getNumBonds() << std::endl;
-
-  auto tot_time = to_ms(t() - start_total_time).count();
-  std::cout << "Total Time: " << tot_time << "ms" << std::endl;
 
   return 0;
 }

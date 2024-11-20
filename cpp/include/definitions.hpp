@@ -92,6 +92,7 @@ constexpr const std::array<resTokenType, 28> _AromaticResidues_ = {
     resTokenType::DU,  resTokenType::DN   // deoxyuridine, deoxynucleotide
 };
 
+// FIX: this changes the ring ids in the Entity system
 inline const std::unordered_map<std::string, std::vector<int>> AromaticResidues = {
   {"PHE", {6}},
   {"TYR", {6}},
