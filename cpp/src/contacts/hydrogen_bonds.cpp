@@ -246,12 +246,16 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
 
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
   const auto &mol = luni.get_molecule();
+  std::cout << "Number of atoms: " << mol.getNumAtoms() << std::endl;
 
   const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
+  std::cout << "Number of donors: " << donors.size() << std::endl;
   const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
+  std::cout << "Number of acceptors: " << acceptors.size() << std::endl;
 
   EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
+  std::cout << "Number of results: " << results.size() << std::endl;
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;

@@ -14,7 +14,7 @@ using Distances = std::vector<float>;
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, 3> &pseudobox,
                            std::vector<double> &lmin,
-                           std::vector<double> &lmax);
+                           std::vector<double> &lmax, float scale_factor = 1.1f);
 std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
 
 struct NSResults {
@@ -96,17 +96,16 @@ private:
 
 class FastNS {
 public:
-    /*static std::optional<FastNS> create(const std::vector<RDGeom::Point3D>& coords, double cutoff) {*/
   static FastNS create(const std::vector<RDGeom::Point3D>& coords, double cutoff) {
-        FastNS ns(coords, cutoff, false);
-        return ns;
-    }
+    return FastNS(coords, cutoff, false);
+  }
 
-    bool is_valid() const { return valid; }
+  bool is_valid() const { return valid; }
 
 public:
   FastNS() = default; // FIX: Why is this needed?
-  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, bool check = true);
+  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, int max_attempts = 5);
+  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, bool throw_on_failure);
 
   NSResults self_search() const;
   NSResults search(const RDGeom::POINT3D_VECT &search_coords) const;
