@@ -5,6 +5,7 @@
 #include "convert.hpp"
 #include "definitions.hpp"
 #include "planarity.hpp"
+#include "spdlog/common.h"
 #include "spdlog/spdlog.h"
 
 namespace lahuta {
@@ -79,21 +80,22 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   auto rings = residue_props::tbl_find_aromatic_rings(mol, residues);
   add_rings_to_mol(mol, rings);
 
-  // compute rings for unknown residues
-  auto unk_res = get_unknown_residues<std::vector<Residue>>(residues, definitions::is_predefined);
-  std::vector<std::string> unk_res_names;
-  unk_res_names.reserve(unk_res.size());
-  for (const auto &res : unk_res) {
-    unk_res_names.push_back(res.name);
-  }
-  std::vector<std::string> unique_unk_res_names;
-  std::sort(unk_res_names.begin(), unk_res_names.end());
-  std::unique_copy(unk_res_names.begin(), unk_res_names.end(), std::back_inserter(unique_unk_res_names));
+  if (spdlog::should_log(spdlog::level::debug)) {
+    // compute rings for unknown residues
+    auto unk_res = get_unknown_residues<std::vector<Residue>>(residues, definitions::is_predefined);
+    std::vector<std::string> unk_res_names;
+    unk_res_names.reserve(unk_res.size());
+    for (const auto &res : unk_res) {
+      unk_res_names.push_back(res.name);
+    }
+    std::vector<std::string> unique_unk_res_names;
+    std::sort(unk_res_names.begin(), unk_res_names.end());
+    std::unique_copy(unk_res_names.begin(), unk_res_names.end(), std::back_inserter(unique_unk_res_names));
 
-  for (const auto &name : unique_unk_res_names) {
-    spdlog::debug("unk residue: {}, {}", name, std::count(unk_res_names.begin(), unk_res_names.end(), name));
+    for (const auto &name : unique_unk_res_names) {
+      spdlog::info("unk residue: {}, {}", name, std::count(unk_res_names.begin(), unk_res_names.end(), name));
+    }
   }
-
 
   auto unk_indices = get_unknown_residues<std::vector<int>>(residues, definitions::is_predefined);
   if (!unk_indices.empty()) {

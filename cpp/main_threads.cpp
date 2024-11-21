@@ -44,42 +44,9 @@ std::vector<std::string> get_file_paths(const std::string &file_name) {
   return file_paths;
 }
 
-int _main(int argc, char const *argv[]) {
-  auto logger = spdlog::stdout_color_mt("console");
-
-  spdlog::level::level_enum log_level = spdlog::level::info;
-  spdlog::set_level(log_level);
-  set_logger_pattern(log_level);
-
-  try {
-    std::string file_name = argv[1];
-    /*std::string file_name = "/Users/bsejdiu/projects/lahuta/cpp/build/F1000.txt";*/
-    std::vector<std::string> file_paths = get_file_paths(file_name);
-
-    int num_threads = std::thread::hardware_concurrency();
-    if (num_threads == 0) num_threads = 1;
-    ctpl::thread_pool pool(num_threads);
-
-    for (const auto &file_name : file_paths) {
-      pool.push([file_name](int id) {
-        try {
-          Luni luni(file_name);
-        } catch (const std::exception &e) {
-          spdlog::error("Error processing file {}: {}", file_name, e.what());
-        }
-      });
-    }
-
-  } catch (const std::exception &e) {
-    spdlog::critical("Error: {}", e.what());
-  }
-  return 0;
-}
-
 int main(int argc, char const *argv[]) {
 
   auto logger = spdlog::stdout_color_mt("console");
-
   spdlog::level::level_enum log_level = spdlog::level::info;
   spdlog::set_level(log_level);
   set_logger_pattern(log_level);
@@ -92,7 +59,6 @@ int main(int argc, char const *argv[]) {
 
     int num_threads = std::thread::hardware_concurrency();
     if (num_threads == 0) num_threads = 1;
-    std::cout << "num_threads: " << num_threads << std::endl;
     ctpl::thread_pool pool(num_threads);
 
     std::vector<std::future<void>> futures;
@@ -100,7 +66,6 @@ int main(int argc, char const *argv[]) {
       futures.emplace_back(pool.push([file_name](int id) {
         try {
           Luni luni(file_name);
-          /*Luni* luni = new Luni(file_name);*/
         } catch (const std::exception &e) {
           spdlog::error("Error processing file {}: {}", file_name, e.what());
         }
@@ -114,7 +79,7 @@ int main(int argc, char const *argv[]) {
   } catch (const std::exception &e) {
     spdlog::critical("Error: {}", e.what());
   }
-  std::_Exit(EXIT_SUCCESS);
+  return 0;
 }
 
 int file_based_main() {

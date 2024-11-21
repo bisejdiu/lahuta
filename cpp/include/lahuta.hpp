@@ -32,9 +32,9 @@ static float BONDED_NS_CUTOFF = 4.5;
 class Luni {
   // FIX: move down
 private:
-  std::unique_ptr<RDKit::RWMol> mol = std::make_unique<RDKit::RWMol>();
-  /*Structure st;*/
-  NSResults neighbors;
+  std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
+  std::shared_ptr<NSResults> neighbors;
+
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
   Topology topology;
@@ -56,16 +56,14 @@ private:
 
     try {
       grid = FastNS(get_conformer().getPositions(), _cutoff);
+      neighbors = std::make_shared<NSResults>(grid.self_search());
 
-      neighbors = grid.self_search();
-      Topology::compute_bonds(*mol, neighbors);
+      Topology::compute_bonds(*mol, *neighbors);
 
       topology.build_residues(*mol);
-
       initialize_and_populate_ringinfo(*mol, *topology.residues);
 
       topology.assign_molstar_typing();
-
       /*topology.assign_arpeggio_atom_types();*/
 
     } catch (const std::runtime_error &e) {
@@ -88,7 +86,6 @@ public:
     }
 
     // FIX: double call to Residues(*mol)
-
     Residues residues(*mol);
     features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
   }

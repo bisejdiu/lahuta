@@ -56,7 +56,6 @@ struct NSResults {
   NSResults(Pairs &pairs, std::vector<float> &dists)
       : m_pairs(pairs), m_dists(dists) {}
 
-  // NSResults results = {{1, 2}, {3, 4}, {5, 6}}, {0.1f, 0.2f, 0.3f}};
   explicit NSResults(std::initializer_list<std::pair<int, int>> pairs,
                      std::initializer_list<float> dists)
       : m_pairs(pairs.begin(), pairs.end()),
@@ -66,6 +65,7 @@ struct NSResults {
           "Number of pairs must match number of distances");
     }
   }
+  ~NSResults() {}
 
   void add(int i, int j, float d) {
     m_pairs.push_back({i, j});

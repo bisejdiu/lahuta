@@ -2,18 +2,7 @@
 #include "file_system.hpp"
 #include "lahuta.hpp"
 
-#include "spdlog/common.h"
-#include "spdlog/spdlog.h"
-
 using namespace lahuta;
-
-void set_logger_pattern(spdlog::level::level_enum level) {
-  if (level == spdlog::level::debug) {
-    spdlog::set_pattern("[%T] [%^%l%$] [thread %t] %v");
-  } else {
-    spdlog::set_pattern("[%^%l%$] %v");
-  }
-}
 
 int main(int argc, char const *argv[]) {
   /*if (argc < 2) {*/
@@ -36,6 +25,7 @@ int main(int argc, char const *argv[]) {
   std::cout << "Time: " << duration.count() << " ms" << std::endl;
 
   /*luni.assign_molstar_atom_types();*/
+
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
   
@@ -57,11 +47,11 @@ int main(int argc, char const *argv[]) {
   _3.print_interactions();
   std::cout << "size: Hydrophobic: " << _3.size() << std::endl;
 
-  /*std::cout << "Halogen" << std::endl;*/
-  /*auto _4 = interactions.halogen();*/
-  /*_4.sort_interactions();*/
-  /*_4.print_interactions();*/
-  /*std::cout << "Halogen: " << _4.size() << std::endl;*/
+  std::cout << "Halogen" << std::endl;
+  auto _4 = interactions.halogen();
+  _4.sort_interactions();
+  _4.print_interactions();
+  std::cout << "Halogen: " << _4.size() << std::endl;
 
   std::cout << "Ionic" << std::endl;
   auto _5 = interactions.ionic();

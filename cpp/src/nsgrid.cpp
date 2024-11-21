@@ -109,6 +109,7 @@ void FastNS::build_grid() {
   pack_grid();
 }
 
+
 NSResults FastNS::self_search() const {
   if (!valid) {
     throw std::runtime_error("Invalid grid");
@@ -287,9 +288,8 @@ int FastNS::_cell_xyz_to_cell_id(int cx, int cy, int cz) const {
 /*}*/
 
 void NSResults::add_neighbors(int i, int j, float d2) {
-  /*m_pairs.emplace_back(i, j);*/
-  m_pairs.push_back({i, j});
-  m_dists.push_back(d2);
+  m_pairs.emplace_back(i, j);
+  m_dists.emplace_back(d2);
 }
 
 void NSResults::reserve_space(size_t input_size) {
