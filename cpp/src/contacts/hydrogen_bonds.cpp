@@ -7,6 +7,15 @@
 
 namespace lahuta {
 
+namespace common {
+
+struct PairHash {
+  std::size_t operator()(const std::pair<int, int> &p) const {
+    return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+  }
+};
+} // namespace common
+
 bool is_water(const RDKit::Atom &atom) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
@@ -246,16 +255,14 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
 
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
   const auto &mol = luni.get_molecule();
-  std::cout << "Number of atoms: " << mol.getNumAtoms() << std::endl;
 
   const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
-  std::cout << "Number of donors: " << donors.size() << std::endl;
   const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
-  std::cout << "Number of acceptors: " << acceptors.size() << std::endl;
 
   EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
-  std::cout << "Number of results: " << results.size() << std::endl;
+
+  std::unordered_set<std::pair<int, int>, common::PairHash> seen;
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
@@ -263,7 +270,7 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
     const auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
 
     // FIX: improve this (it only checks residue numbers)
-    if (are_residueids_close(mol, *donor, *acceptor, 1)) continue;
+    if (are_residueids_close(mol, *donor, *acceptor, 0)) continue;
 
     double max_dist = (donor->getAtomicNum() == 16 || acceptor->getAtomicNum() == 16) ? opts.max_sulfur_dist
                                                                                       : opts.max_dist;
@@ -271,6 +278,8 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
 
     if (!opts.include_water && is_water_hbond(*donor, *acceptor)) continue;
     if (!are_geometrically_viable(mol, *donor, *acceptor, opts)) continue;
+
+    if (is_duplicate({donor->getIdx(), acceptor->getIdx()}, seen)) continue;
 
     contacts.add(Contact(
         static_cast<EntityID>(donor->getIdx()),

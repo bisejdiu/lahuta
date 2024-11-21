@@ -9,7 +9,6 @@
 #include "definitions.hpp"
 #include "ob/clean_mol.hpp"
 #include "residues.hpp"
-#include <memory>
 #include <rdkit/GraphMol/BondIterators.h>
 
 namespace lahuta {
@@ -18,15 +17,15 @@ class Topology {
 public:
   std::vector<AtomType> atom_types;
   RingEntityCollection rings_vec;
-  std::shared_ptr<RDKit::RWMol> mol = nullptr;
-  std::shared_ptr<Residues> residues = nullptr;
+  RDKit::RWMol *mol = nullptr;
+  Residues *residues = nullptr;
 
-  /*Topology(const RDKit::RWMol &mol) : mol(std::make_shared<RDKit::RWMol>(mol)) {}*/
-  Topology(std::shared_ptr<RDKit::RWMol> mol) : mol(std::move(mol)) {}
+  Topology(RDKit::RWMol *mol) : mol(mol) {}
   Topology() = default;
+  ~Topology() { delete residues; }
 
 public:
-  void build_residues(const RDKit::RWMol &mol) { residues = std::make_shared<Residues>(mol); }
+  void build_residues(const RDKit::RWMol &mol) { residues = new Residues(mol); }
 
   void assign_arpeggio_atom_types() {
 

@@ -32,25 +32,24 @@ static float BONDED_NS_CUTOFF = 4.5;
 class Luni {
   // FIX: move down
 private:
-  std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  Structure st;
+  std::unique_ptr<RDKit::RWMol> mol = std::make_unique<RDKit::RWMol>();
+  /*Structure st;*/
   NSResults neighbors;
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
-  /*Topology topology = Topology(*mol);*/
   Topology topology;
   GroupEntityCollection features;
 
   void process_file(std::string file_path_) {
     file_name = file_path_;
-    st = read_structure_gz(file_path_);
+    auto st = read_structure_gz(file_path_);
 
     RDKit::Conformer *conformer = new RDKit::Conformer();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
 
-    topology = Topology(mol);
+    topology = Topology(mol.get());
   }
 
   void create_topology() {
@@ -66,6 +65,7 @@ private:
       initialize_and_populate_ringinfo(*mol, *topology.residues);
 
       topology.assign_molstar_typing();
+
       /*topology.assign_arpeggio_atom_types();*/
 
     } catch (const std::runtime_error &e) {
@@ -88,6 +88,7 @@ public:
     }
 
     // FIX: double call to Residues(*mol)
+
     Residues residues(*mol);
     features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
   }

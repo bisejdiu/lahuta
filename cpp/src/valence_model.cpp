@@ -1,4 +1,5 @@
 #include "valence_model.hpp"
+#include "contacts/utils.hpp"
 
 namespace lahuta {
 
@@ -105,18 +106,18 @@ bool ValenceModel::has_neighbor_with_double_bonded_oxygen(const RDKit::ROMol &mo
 
 HybridizationType ValenceModel::assign_geometry(int total_coordination) const {
   switch (total_coordination) {
-  case 0:
-    return HybridizationType::S;
-  case 1:
-    return HybridizationType::S;
-  case 2:
-    return HybridizationType::SP;
-  case 3:
-    return HybridizationType::SP2;
-  case 4:
-    return HybridizationType::SP3;
-  default:
-    return HybridizationType::UNSPECIFIED;
+    case 0:
+      return HybridizationType::S;
+    case 1:
+      return HybridizationType::S;
+    case 2:
+      return HybridizationType::SP;
+    case 3:
+      return HybridizationType::SP2;
+    case 4:
+      return HybridizationType::SP3;
+    default:
+      return HybridizationType::UNSPECIFIED;
   }
 }
 
@@ -126,8 +127,8 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
   const unsigned int atomic_num = atom.getAtomicNum();
   int charge = atom.getFormalCharge();
 
-  const bool assign_charge_flag = (assign_charge_ && charge == 0);
-  const bool assign_h_flag = (assign_h_ && h_count == 0);
+  const bool assign_charge_flag = charge == 0;
+  const bool assign_h_flag = h_count == 0;
 
   const int degree = atom.getDegree();
   const int valence = atom.getExplicitValence();
@@ -139,157 +140,157 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
   auto geom = HybridizationType::UNSPECIFIED;
 
   switch (atomic_num) {
-  case 1:
-    if (assign_charge_flag) {
-      atom.setHybridization(HybridizationType::S);
-      if (degree == 0) {
-        // Hydrogen with no bonds has a positive charge
-        charge = 1;
-      } else if (degree == 1) {
-        // Hydrogen with one bond is neutral
-        charge = 0;
-      }
-    }
-    // FIX: remove parentheses
-    { atom.setFormalCharge(charge); }
-    break;
-
-  case 6:
-    if (assign_charge_flag) {
-      charge = 0; // typically neutral
-      atom.setFormalCharge(charge);
-    }
-    if (assign_h_flag) {
-      // normally forms 4 bonds: adjust implicit hydrogens
-      implicit_h = std::max(0, 4 - valence - std::abs(charge));
-    }
-    {
-      // Carbocation is planar, carbanion is tetrahedral
-      int total_bonds = degree + implicit_h + std::max(0, -charge);
-      atom.setHybridization(assign_geometry(total_bonds));
-    }
-    break;
-
-  case 7:
-    if (assign_charge_flag) {
-      if (!assign_h_flag) {
-        // Trust input H-count and calculate charge
-        charge = valence - 3;
-      } else if (conjugated && valence < 4) {
-        // Conjugated nitrogen typically neutral unless special cases
-        if (is_amidine_or_guanidine_nitrogen(degree, h_count, valence)) {
-          charge = 1; // Example: Amidine or guanidine N
-        } else {
-          charge = 0; // Default to neutral
-        }
-      } else {
-        // Check for special cases like sulfonamide N or metals
-        if (is_bound_to_sulfur_or_metal(mol, &atom)) {
-          charge = 0; // Nitrogen bound to sulfur or metal is neutral
-        } else {
-          charge = 1; // Otherwise assume positive charge
-        }
-      }
-    }
-
-    if (assign_h_flag) {
-      // NH4+ -> 4, 1' amide -> 2, nitro N/N+ depiction -> 0
-      implicit_h = std::max(0, 3 - valence + charge);
-    }
-
-    if (conjugated && !multi_bond) {
-      // Conjugated nitrogen (amide, anilinic N) geometry treated differently
-      // Assuming trigonal geometry for simplicity
-      geom = assign_geometry(degree + implicit_h - charge);
-    } else {
-      // Normal nitrogen geometry (pyridine, amine, nitrile)
-      geom = assign_geometry(degree + implicit_h + 1 - charge);
-    }
-    atom.setHybridization(geom);
-    atom.setFormalCharge(charge);
-    break;
-
-  case 8:
-    if (assign_charge_flag) {
-      if (!assign_h_flag) {
-        charge = valence - 2;
-      }
-
-      if (valence == 1 && has_neighbor_with_double_bonded_oxygen(mol, &atom)) {
-        charge = -1;
-      }
-    }
-
-    if (assign_h_flag) {
-      implicit_h = std::max(0, 2 - valence + charge);
-    }
-
-    geom = assign_geometry(degree + implicit_h - charge + (conjugated && !multi_bond ? 1 : 2));
-    atom.setHybridization(geom);
-    atom.setFormalCharge(charge);
-    break;
-
-  case 16:
-    if (assign_charge_flag) {
-      if (!assign_h_flag) {
-        if (valence <= 3 && atom.getTotalNumHs() == 0) {
-          charge = valence - 2; // Deprotonated thiol
-        } else {
+    case 1:
+      if (assign_charge_flag) {
+        atom.setHybridization(HybridizationType::S);
+        if (degree == 0) {
+          // Hydrogen with no bonds has a positive charge
+          charge = 1;
+        } else if (degree == 1) {
+          // Hydrogen with one bond is neutral
           charge = 0;
         }
+      }
+      // FIX: remove parentheses
+      { atom.setFormalCharge(charge); }
+      break;
+
+    case 6:
+      if (assign_charge_flag) {
+        charge = 0; // typically neutral
         atom.setFormalCharge(charge);
       }
-    }
-    if (assign_h_flag) {
-      if (valence < 2) {
+      if (assign_h_flag) {
+        // normally forms 4 bonds: adjust implicit hydrogens
+        implicit_h = std::max(0, 4 - valence - std::abs(charge));
+      }
+      {
+        // Carbocation is planar, carbanion is tetrahedral
+        int total_bonds = degree + implicit_h + std::max(0, -charge);
+        atom.setHybridization(assign_geometry(total_bonds));
+      }
+      break;
+
+    case 7:
+      if (assign_charge_flag) {
+        if (!assign_h_flag) {
+          // Trust input H-count and calculate charge
+          charge = valence - 3;
+        } else if (conjugated && valence < 4) {
+          // Conjugated nitrogen typically neutral unless special cases
+          if (is_amidine_or_guanidine_nitrogen(degree, h_count, valence)) {
+            charge = 1; // Example: Amidine or guanidine N
+          } else {
+            charge = 0; // Default to neutral
+          }
+        } else {
+          // Check for special cases like sulfonamide N or metals
+          if (is_bound_to_sulfur_or_metal(mol, &atom)) {
+            charge = 0; // Nitrogen bound to sulfur or metal is neutral
+          } else {
+            charge = 1; // Otherwise assume positive charge
+          }
+        }
+      }
+
+      if (assign_h_flag) {
+        // NH4+ -> 4, 1' amide -> 2, nitro N/N+ depiction -> 0
+        implicit_h = std::max(0, 3 - valence + charge);
+      }
+
+      if (conjugated && !multi_bond) {
+        // Conjugated nitrogen (amide, anilinic N) geometry treated differently
+        // Assuming trigonal geometry for simplicity
+        geom = assign_geometry(degree + implicit_h - charge);
+      } else {
+        // Normal nitrogen geometry (pyridine, amine, nitrile)
+        geom = assign_geometry(degree + implicit_h + 1 - charge);
+      }
+      atom.setHybridization(geom);
+      atom.setFormalCharge(charge);
+      break;
+
+    case 8:
+      if (assign_charge_flag) {
+        if (!assign_h_flag) {
+          charge = valence - 2;
+        }
+
+        if (valence == 1 && has_neighbor_with_double_bonded_oxygen(mol, &atom)) {
+          charge = -1;
+        }
+      }
+
+      if (assign_h_flag) {
         implicit_h = std::max(0, 2 - valence + charge);
       }
-    }
-    if (valence <= 3) {
-      // Thiol, thiolate, tioether -> tetrahedral
-      geom = assign_geometry(degree + implicit_h - charge + 2);
-      atom.setHybridization(geom);
-    }
 
-    break;
+      geom = assign_geometry(degree + implicit_h - charge + (conjugated && !multi_bond ? 1 : 2));
+      atom.setHybridization(static_cast<HybridizationType>(geom));
+      atom.setFormalCharge(charge);
+      break;
 
-  // Halogens
-  case 9:  // Fluorine (F)
-  case 17: // Chlorine (Cl)
-  case 35: // Bromine (Br)
-  case 53: // Iodine (I)
-  case 85: // Astatine (At)
-    // Never implicitly protonate halides
-    if (assign_charge_flag) {
-      atom.setFormalCharge(valence - 1);
-    }
-    break;
+    case 16:
+      if (assign_charge_flag) {
+        if (!assign_h_flag) {
+          if (valence <= 3 && atom.getTotalNumHs() == 0) {
+            charge = valence - 2; // Deprotonated thiol
+          } else {
+            charge = 0;
+          }
+          atom.setFormalCharge(charge);
+        }
+      }
+      if (assign_h_flag) {
+        if (valence < 2) {
+          implicit_h = std::max(0, 2 - valence + charge);
+        }
+      }
+      if (valence <= 3) {
+        // Thiol, thiolate, tioether -> tetrahedral
+        geom = assign_geometry(degree + implicit_h - charge + 2);
+        atom.setHybridization(geom);
+      }
 
-  // Alkali metals
-  case 3:  // Lithium (Li)
-  case 11: // Sodium (Na)
-  case 19: // Potassium (K)
-  case 37: // Rubidium (Rb)
-  case 55: // Cesium (Cs)
-  case 87: // Francium (Fr)
-    if (assign_charge_flag) {
-      atom.setFormalCharge(1 - valence);
-    }
-    break;
+      break;
 
-  // Alkaline earth metals
-  case 4:  // Beryllium (Be)
-  case 12: // Magnesium (Mg)
-  case 20: // Calcium (Ca)
-  case 38: // Strontium (Sr)
-  case 56: // Barium (Ba)
-  case 88: // Radium (Ra)
-    if (assign_charge_flag) {
-      atom.setFormalCharge(2 - valence);
-    }
-    break;
-  default:
-    break;
+    // Halogens
+    case 9:  // Fluorine (F)
+    case 17: // Chlorine (Cl)
+    case 35: // Bromine (Br)
+    case 53: // Iodine (I)
+    case 85: // Astatine (At)
+      // Never implicitly protonate halides
+      if (assign_charge_flag) {
+        atom.setFormalCharge(valence - 1);
+      }
+      break;
+
+    // Alkali metals
+    case 3:  // Lithium (Li)
+    case 11: // Sodium (Na)
+    case 19: // Potassium (K)
+    case 37: // Rubidium (Rb)
+    case 55: // Cesium (Cs)
+    case 87: // Francium (Fr)
+      if (assign_charge_flag) {
+        atom.setFormalCharge(1 - valence);
+      }
+      break;
+
+    // Alkaline earth metals
+    case 4:  // Beryllium (Be)
+    case 12: // Magnesium (Mg)
+    case 20: // Calcium (Ca)
+    case 38: // Strontium (Sr)
+    case 56: // Barium (Ba)
+    case 88: // Radium (Ra)
+      if (assign_charge_flag) {
+        atom.setFormalCharge(2 - valence);
+      }
+      break;
+    default:
+      break;
   }
   atom.setProp<int>("computed_implicit_h", implicit_h);
 }

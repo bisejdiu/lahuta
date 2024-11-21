@@ -123,7 +123,7 @@ private:
 template <typename EV1, typename EV2> //
 struct SearchStrategy {
   static constexpr bool prefer_grid(const EV1 &ev1, const EV2 &ev2, double) {
-    return ev1.get_data().size() * ev2.get_data().size() > 1000;
+    return ev1.get_data().size() * ev2.get_data().size() > 500;
   }
 
   static constexpr bool size_is_valid(const EV1 &ev1, const EV2 &ev2) {

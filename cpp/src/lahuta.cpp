@@ -162,11 +162,10 @@ Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {
   new_mol.updatePropertyCache(false);
 
   Luni new_luni;
-  new_luni.mol = std::make_shared<RDKit::RWMol>(new_mol);
+  new_luni.mol = std::make_unique<RDKit::RWMol>(new_mol);
   new_luni.neighbors = neighbors.filter(atom_indices);
   /*new_luni.topology.assign_atom_types(new_mol);*/
   new_luni.topology.assign_arpeggio_atom_types();
-  /*new_luni.topology.assign_molstar_atom_types(new_mol);*/
 
   return new_luni;
 }

@@ -43,7 +43,6 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
       if (dist_sq <= pair_thr * pair_thr) {
         if (atom_1.is_hydrogen ^ atom_2.is_hydrogen) {
-        /*if (bonded.is_bond_to_h) {*/
           auto non_h_atom = atom_1.is_hydrogen ? atom_2.atom : atom_1.atom;
           // branchless
           // RDKit::Atom* non_h_atom = a + ((b - a) & -(is_a_h));
@@ -68,13 +67,19 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
         bonds.emplace_back(atom_1.atom->getIdx(), atom_2.atom->getIdx());
       }
     } else {
+      // if we are here then we have a predef atom and a non-predef atom
+
       gemmi::El e1 = gemmi::find_element(atom_1.atom->getSymbol().c_str());
       gemmi::El e2 = gemmi::find_element(atom_2.atom->getSymbol().c_str());
       if (gemmi::is_metal(e1) || gemmi::is_metal(e2)) continue;
 
       double pair_thr = get_pair_threshold(atom_1.atom->getAtomicNum(), atom_2.atom->getAtomicNum());
       if (dist_sq <= pair_thr * pair_thr) {
-        /*mol.addBond(atom_1.atom->getIdx(), atom_2.atom->getIdx(), RDKit::Bond::BondType::SINGLE);*/
+        if (atom_1.is_hydrogen ^ atom_2.is_hydrogen) {
+          auto non_h_atom = atom_1.is_hydrogen ? atom_2.atom : atom_1.atom;
+          non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
+        }
+        mol.addBond(atom_1.atom->getIdx(), atom_2.atom->getIdx(), RDKit::Bond::BondType::SINGLE);
       }
     }
   }
@@ -101,4 +106,3 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 };
 
 } // namespace lahuta
-
