@@ -61,19 +61,36 @@ int main(int argc, char const *argv[]) {
     if (num_threads == 0) num_threads = 1;
     ctpl::thread_pool pool(num_threads);
 
-    std::vector<std::future<void>> futures;
+    InteractionOptions opts{5.0};
+
+    std::vector<std::future<Contacts>> futures;
     for (const auto &file_name : file_paths) {
-      futures.emplace_back(pool.push([file_name](int id) {
+      futures.emplace_back(pool.push([file_name, opts](int id) -> Contacts {
         try {
           Luni luni(file_name);
+          Interactions interactions(luni, opts);
+
+          Contacts _1 = interactions.hbond();
+          _1.sort_interactions();
+
+          return _1;
         } catch (const std::exception &e) {
           spdlog::error("Error processing file {}: {}", file_name, e.what());
         }
+
+        return Contacts();
       }));
     }
 
     for (auto &fut : futures) {
-      fut.get();
+      auto r = fut.get();
+      auto l = r.get_luni();
+      if (l == nullptr) {
+        spdlog::error("Luni is nullptr");
+        continue;
+      }
+      spdlog::info("Luni: {}", l->get_molecule().getNumAtoms());
+      spdlog::info("size: {}", r.size());
     }
 
   } catch (const std::exception &e) {
