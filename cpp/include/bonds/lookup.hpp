@@ -11,6 +11,7 @@
 
 #include "GraphMol/Atom.h"
 #include "GraphMol/MonomerInfo.h"
+#include "common.hpp"
 
 namespace lahuta {
 
@@ -121,23 +122,17 @@ struct PossiblyBonded {
   bool atom1_is_predef = false;
   bool atom2_is_predef = false;
   BondType bond_type = BondType::UNSPECIFIED;
+  bool is_bond_to_h = false;
 
-  PossiblyBonded(bool a1, bool a2, BondType bt) : atom1_is_predef(a1), atom2_is_predef(a2), bond_type(bt) {}
+  PossiblyBonded(bool a1, bool a2, BondType bt, bool is_h = false) : atom1_is_predef(a1), atom2_is_predef(a2), bond_type(bt), is_bond_to_h(is_h) {}
 
   explicit operator bool() const { return bond_type != BondType::UNSPECIFIED; }
 };
 
-inline auto is_same_conformer(const std::string &alt_loc_a, const std::string &alt_loc_b) {
-  return alt_loc_a.empty() || alt_loc_b.empty() || alt_loc_a == alt_loc_b;
-};
+inline PossiblyBonded getIntraBondOrder(AtomInfo a1, AtomInfo a2) {
 
-inline PossiblyBonded getIntraBondOrder(const RDKit::Atom *atom1, const RDKit::Atom *atom2) {
-
-  const auto *info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom1->getMonomerInfo());
-  const auto *info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom2->getMonomerInfo());
-
-  auto res_a = res_name_table(info_a->getResidueName().c_str(), info_a->getResidueName().length());
-  auto res_b = res_name_table(info_b->getResidueName().c_str(), info_b->getResidueName().length());
+  auto res_a = res_name_table(a1.info->getResidueName().c_str(), a1.info->getResidueName().length());
+  auto res_b = res_name_table(a2.info->getResidueName().c_str(), a2.info->getResidueName().length());
 
   bool atom1_in_table = res_a != resTokenType::UNKNOWN;
   bool atom2_in_table = res_b != resTokenType::UNKNOWN;
@@ -146,18 +141,16 @@ inline PossiblyBonded getIntraBondOrder(const RDKit::Atom *atom1, const RDKit::A
     return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::UNSPECIFIED};
   }
 
-  if (!is_same_conformer(info_a->getAltLoc(), info_b->getAltLoc())) {
-    return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::UNSPECIFIED};
+  // at this point both atoms are in the table
+  if (a1.is_hydrogen ^ a2.is_hydrogen) {
+    return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::SINGLE, true};
   }
 
-  if ((atom1->getAtomicNum() == 1) ^ (atom2->getAtomicNum() == 1)) {
-    return PossiblyBonded{atom1_in_table, atom2_in_table, BondType::SINGLE};
-  }
-
-  BondType bond_type = process(res_a, info_a->getName(), info_b->getName());
+  BondType bond_type = process(res_a, a1.info->getName(), a2.info->getName());
   return {atom1_in_table, atom2_in_table, bond_type};
 }
 
 } // namespace lahuta
 
 #endif // LAHUTA_BBONDS_HPP
+

@@ -98,7 +98,7 @@ SubStrMatches performSubstructMatch(RDKit::ROMol &mol, RDKit::ROMol &pattern,
 
 inline void RDKitSmartsMatch(RDKit::ROMol &mol, SubstructMatchParameters &params) {
   // Precompute patterns statically
-  static std::array<RDKit::ROMol *, std::size(smartsList)> patterns = [] {
+  std::array<RDKit::ROMol *, std::size(smartsList)> patterns = [] {
     std::array<RDKit::ROMol *, std::size(smartsList)> temp{};
     for (size_t i = 0; i < std::size(smartsList); ++i) {
       temp[i] = RDKit::SmartsToMol(smartsList[i].first);

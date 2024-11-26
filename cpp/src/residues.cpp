@@ -26,7 +26,7 @@ std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)>
 }
 
 void Residues::build_residues(const RDKit::RWMol &mol) {
-  std::map<std::tuple<std::string, int, std::string>, Residue> residue_map;
+  std::map<std::tuple<std::string, int, std::string, std::string>, Residue> residue_map;
 
   for (const auto &atom : mol.atoms()) {
     if (atom->getAtomicNum() == 1) continue;
@@ -36,12 +36,23 @@ void Residues::build_residues(const RDKit::RWMol &mol) {
     std::string chain_id = info->getChainId();
     int res_num = info->getResidueNumber();
     std::string res_name = info->getResidueName();
+    std::string alt_loc = info->getAltLoc();
 
-    auto key = std::make_tuple(chain_id, res_num, res_name);
+    auto key = std::make_tuple(chain_id, res_num, res_name, alt_loc);
+
+  /*  auto it = residue_map.find(key);*/
+  /*  if (it == residue_map.end()) {*/
+  /*    Residue residue(chain_id, res_num, res_name, alt_loc);*/
+  /*    residue.atoms.push_back(atom);*/
+  /*    residue_map[key] = std::move(residue);*/
+  /*  } else {*/
+  /*    it->second.atoms.push_back(atom);*/
+  /*  }*/
+  /*}*/
 
     Residue &residue = residue_map[key];
     if (residue.atoms.empty()) {
-      residue = Residue(chain_id, res_num, res_name);
+      residue = Residue(chain_id, res_num, res_name, alt_loc);
     }
     residue.atoms.push_back(atom);
   }
@@ -61,7 +72,7 @@ namespace residue_props {
 template <typename ResultType>
 std::vector<ResultType> get_aromatic_rings(const Residues &residues, RingProcFunc<ResultType> func) {
   std::vector<ResultType> ring_list;
-
+  // FIX: we should be iterating over the residues in the molecule and checking if they are aromatic, instead of the other way around
   for (const auto &item : definitions::AromaticResidues) {
     const std::string &res_name = item.first;
     const std::vector<int> &ring_sizes = item.second;
@@ -71,7 +82,12 @@ std::vector<ResultType> get_aromatic_rings(const Residues &residues, RingProcFun
       const std::vector<const Residue *> &res_list = residues_it->second;
       for (const Residue *residue : res_list) {
         for (int ring_size : ring_sizes) {
+
+          if (residue->atoms.size() < static_cast<size_t>(ring_size)) continue;
           ResultType processed_data = func(*residue, ring_size);
+
+          if (processed_data.size() != ring_size) continue;
+
           ring_list.push_back(std::move(processed_data));
         }
       }
@@ -127,16 +143,14 @@ std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
 }
 
 template <>
-std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
-    const Residues &residues, const ResTesterFunc &PredefResidues) { 
+std::vector<Residue>
+get_unknown_residues<std::vector<Residue>>(const Residues &residues, const ResTesterFunc &PredefResidues) {
   std::vector<Residue> unknown_residues;
   std::copy_if(
       residues.begin(),
       residues.end(),
       std::back_inserter(unknown_residues),
-      [&PredefResidues](const Residue &residue) {
-        return !PredefResidues(residue.name);
-      });
+      [&PredefResidues](const Residue &residue) { return !PredefResidues(residue.name); });
   return unknown_residues;
 }
 
@@ -153,8 +167,8 @@ std::vector<int> get_unknown_residues<std::vector<int>>(
 }
 
 template <>
-std::vector<int> get_unknown_residues<std::vector<int>>(
-    const Residues &residues, const ResTesterFunc &PredefResidues) {
+std::vector<int>
+get_unknown_residues<std::vector<int>>(const Residues &residues, const ResTesterFunc &PredefResidues) {
   std::vector<int> unknown_indices;
   for (const auto &residue : get_unknown_residues<std::vector<Residue>>(residues, PredefResidues)) {
     for (const auto &atom : residue.atoms) {

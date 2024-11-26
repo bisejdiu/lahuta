@@ -15,6 +15,8 @@ Contacts find_metalic(const Luni &luni, MetalicParams opts) {
   using AEC = AtomEntityCollection;
 
   Contacts contacts(&luni);
+  const auto &mol = luni.get_molecule();
+
   AtomEntityCollection metals, metal_binders;
   metals = AEC::filter(&luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);
   metal_binders = AEC::filter(&luni, AtomType::IonicTypePartner | AtomType::DativeBondPartner);
@@ -28,6 +30,9 @@ Contacts find_metalic(const Luni &luni, MetalicParams opts) {
     const auto &metal_binding = metal_binders.get_data()[metal_binding_index];
 
     if (!is_metalic(metal.type, metal_binding.type) && !is_metalic(metal_binding.type, metal.type)) continue;
+
+    auto bond = mol.getBondBetweenAtoms(metal.atom->getIdx(), metal_binding.atom->getIdx());
+    if (bond) continue;
 
     contacts.add(Contact(
         static_cast<EntityID>(metal.atom->getIdx()),

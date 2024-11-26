@@ -1,5 +1,4 @@
 #include "convert.hpp"
-#include "rings.hpp"
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <unordered_map>
 
@@ -21,7 +20,17 @@ namespace lahuta {
 void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf, bool ign_h) {
 
   ign_h = false; // FIX: ign_h=true is broken
+  bool is_first_model = true;
+  std::string curr_model = "";
   ITER_GEMMI_ATOMS(st, model, chain, res, atom) {
+
+    // temporarily only processing the first model
+    if (is_first_model) {
+      is_first_model = false;
+      curr_model = model.name; 
+    } else if (curr_model != model.name) {
+      break;
+    }
 
     if (ign_h && atom.element == Element("H")) { // FIX: use `is_hydrogen` (elem.hpp) instead
       continue;

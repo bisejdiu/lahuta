@@ -10,11 +10,12 @@ struct Residue {
   std::string chain_id;
   int number;
   std::string name;
+  std::string alt_loc;
   std::vector<const RDKit::Atom *> atoms;
 
   Residue() = default;
-  Residue(const std::string &chain, int num, const std::string &name)
-      : chain_id(chain), number(num), name(name) {}
+  Residue(const std::string &chain, int num, const std::string &name, const std::string &alt)
+      : chain_id(chain), number(num), name(name), alt_loc(alt) {}
 };
 
 class Residues {

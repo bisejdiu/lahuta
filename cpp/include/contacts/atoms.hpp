@@ -117,12 +117,10 @@ public:
 
     auto strategy = AtomTypeFactory::create();
 
-    bool assign_charge = true, assign_h = true;
-    ValenceModel valence_model{assign_charge, assign_h};
+    ValenceModel valence_model;
     valence_model.apply(mol);
 
     for (const auto &atom : mol.atoms()) {
-      // FIX: double check assign_h default value and how to handle it
       atom_types[atom->getIdx()] = strategy.identify(mol, *atom);
     }
     return atom_types;

@@ -1,6 +1,7 @@
 #ifndef LAHUTA_DEFINITIONS_HPP
 #define LAHUTA_DEFINITIONS_HPP
 
+#include "bonds/rules.hpp"
 #include "bonds/token.h"
 #include <array>
 #include <string>
@@ -91,11 +92,37 @@ constexpr const std::array<resTokenType, 28> _AromaticResidues_ = {
     resTokenType::DU,  resTokenType::DN   // deoxyuridine, deoxynucleotide
 };
 
+// FIX: this changes the ring ids in the Entity system
 inline const std::unordered_map<std::string, std::vector<int>> AromaticResidues = {
   {"PHE", {6}},
   {"TYR", {6}},
   {"HIS", {5}},
-  {"TRP", {5, 6}}
+  {"TRP", {5, 6}},
+  {"A", {5, 6}},
+  {"G", {6}},
+  {"C", {6}},
+  {"U", {6}},
+
+  {"DA", {6}},
+  {"DC", {6}},
+  {"DG", {6}},
+  {"DT", {6}},
+  {"N", {6}},
+  {"I", {6}},
+  {"DN", {6}},
+  {"DU", {6}},
+  {"DI", {6}},
+  {"DTR", {5, 6}},
+  {"DTY", {5, 6}},
+  {"DHI", {5}},
+  {"DPN", {5}},
+  {"HSD", {5}},
+  {"HSE", {5}},
+  {"HSP", {5}},
+  {"HID", {5}},
+  {"HIE", {5}},
+  {"HIP", {5}},
+  {"PTR", {6}}
 };
 
 const std::unordered_set<std::string> ProteinBackboneAtoms = {
@@ -124,6 +151,9 @@ const auto is_dna = make_tester(resTokenType::DA, resTokenType::DN);
 const auto is_nucleic = make_tester(resTokenType::A, resTokenType::DN);
 const auto is_polymer = make_tester(PolymerResiduesRange.first, PolymerResiduesRange.second);
 const auto is_base = make_tester(BaseResiduesRange.first, BaseResiduesRange.second);
+
+const auto is_aromatic = make_tester(_AromaticResidues_);
+const auto is_predefined = make_tester(PredefinedResidues);
 
 } // namespace definitions
 } // namespace lahuta

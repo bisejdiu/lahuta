@@ -17,61 +17,73 @@
 #include "nsgrid.hpp"
 #include "ob/kekulize.h"
 
-#include "visitor.hpp" // selection parser (bad file name)
-#include "topology.hpp"
 #include "contacts/groups.hpp"
 #include "nn.hpp"
+#include "spdlog/spdlog.h"
+#include "topology.hpp"
+#include "visitor.hpp" // selection parser (bad file name)
 
 #define LAHUTA_VERSION "0.15.0"
-#define t() std::chrono::high_resolution_clock::now()
-#define to_ms(d) std::chrono::duration_cast<std::chrono::milliseconds>(d)
 
 namespace lahuta {
 
 static float BONDED_NS_CUTOFF = 4.5;
 
-
 class Luni {
   // FIX: move down
 private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  Structure st;
-  NSResults neighbors;
+  std::shared_ptr<NSResults> neighbors;
+
   double _cutoff;
   FastNS grid; // FIXME: is this needed?
-  Topology topology = Topology(*mol);
+  Topology topology;
   GroupEntityCollection features;
 
   void process_file(std::string file_path_) {
     file_name = file_path_;
-
-    st = read_structure_gz(file_path_);
+    auto st = read_structure_gz(file_path_);
 
     RDKit::Conformer *conformer = new RDKit::Conformer();
     gemmiStructureToRDKit(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
+
+    topology = Topology(mol.get());
   }
 
   void create_topology() {
 
-    grid = FastNS(get_conformer().getPositions(), _cutoff);
-    neighbors = grid.self_search();
+    try {
+      grid = FastNS(get_conformer().getPositions(), _cutoff);
+      neighbors = std::make_shared<NSResults>(grid.self_search());
 
-    Topology::compute_bonds(*mol, neighbors);
+      Topology::compute_bonds(*mol, *neighbors);
 
-    topology.build_residues(*mol);
-    initialize_and_populate_ringinfo(*mol, *topology.residues);
+      topology.build_residues(*mol);
+      initialize_and_populate_ringinfo(*mol, *topology.residues);
 
-    /*topology.assign_molstar_typing();*/
-    topology.assign_arpeggio_atom_types();
+      topology.assign_molstar_typing();
+      /*topology.assign_arpeggio_atom_types();*/
+
+    } catch (const std::runtime_error &e) {
+      throw std::runtime_error("Error creating topology: " + std::string(e.what()));
+    }
   }
 
 public:
   Luni() = default; // FIX: remove?
   explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
+    spdlog::info("Processing file: {}", file_name);
     process_file(file_name);
-    create_topology();
+
+    try {
+      create_topology();
+    } catch (const std::runtime_error &e) {
+      std::cerr << "Critical error: " << e.what() << "\n";
+      success = false;
+      return;
+    }
 
     // FIX: double call to Residues(*mol)
     Residues residues(*mol);
@@ -213,6 +225,7 @@ private:
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
 
 public:
+  bool success{true};
   std::string file_name;
   static std::vector<std::string> tokenize(const std::string &str);
   static std::vector<std::string> tokenize_simple(const std::string &str);

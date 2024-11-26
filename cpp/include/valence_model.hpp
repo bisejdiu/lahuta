@@ -33,9 +33,6 @@ namespace lahuta {
  */
 class ValenceModel {
 public:
-  ValenceModel(bool assign_charge = true, bool assign_h = true)
-      : assign_charge_(assign_charge), assign_h_(assign_h) {}
-
   void apply(const RDKit::RWMol &mol) {
     for (auto &atom : mol.atoms()) {
       molstar_valence_model(mol, *atom);

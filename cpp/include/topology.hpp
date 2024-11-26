@@ -5,7 +5,6 @@
 #include "bond_order.hpp"
 #include "bonds.hpp"
 #include "contacts/atoms.hpp"
-#include "contacts/charges.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
 #include "ob/clean_mol.hpp"
@@ -18,10 +17,10 @@ class Topology {
 public:
   std::vector<AtomType> atom_types;
   RingEntityCollection rings_vec;
-  const RDKit::RWMol *mol;
-  const Residues *residues;
+  RDKit::RWMol *mol = nullptr;
+  Residues *residues = nullptr;
 
-  Topology(const RDKit::RWMol &mol) : mol(&mol) {}
+  Topology(RDKit::RWMol *mol) : mol(mol) {}
   Topology() = default;
   ~Topology() { delete residues; }
 
@@ -54,7 +53,7 @@ public:
     rings_vec = create_ringdatavec();
   }
 
-  bool should_initialize_ringinfo(int mol_size) const {
+  static bool should_initialize_ringinfo(int mol_size) {
     constexpr int small_threshold = 20'000;
     constexpr int medium_threshold = 50'000;
     constexpr int large_threshold = 100'000;
@@ -98,25 +97,14 @@ public:
   void assign_molstar_typing() {
 
     // FIX: to be replaced by the entitytype manager
-    auto start1 = std::chrono::high_resolution_clock::now();
     std::vector<AtomType> atom_types_ = AtomTypeAnalysis::analyze(*mol);
-    auto end1 = std::chrono::high_resolution_clock::now();
-    // time in ms
-    std::cout << "Atom typing: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start1).count() << "ms"
-              << std::endl;
 
     atom_types = std::move(atom_types_);
-    auto start2 = std::chrono::high_resolution_clock::now();
     rings_vec = create_ringdatavec();
-    auto end2 = std::chrono::high_resolution_clock::now();
-    std::cout << "Ring perception: "
-              << std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start2).count() << "ms"
-              << std::endl;
   }
 
-  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighborResults) {
-    auto result = assign_bonds(mol, neighborResults);
+  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighbors) {
+    BondAssignmentResult result = assign_bonds(mol, neighbors);
 
     // FIX: Refactor!
 
@@ -173,19 +161,18 @@ private:
     MolOps::setAromaticity(mol);
   }
 
-  static void
-  merge_bonds(RDKit::RWMol &targetMol, RDKit::RWMol &sourceMol, const std::vector<int> &indexMap) {
-    for (auto bondIt = sourceMol.beginBonds(); bondIt != sourceMol.endBonds(); ++bondIt) {
+  static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
+    for (auto bondIt = source.beginBonds(); bondIt != source.endBonds(); ++bondIt) {
       const RDKit::Bond *bond = *bondIt;
-      int bIdx = indexMap[bond->getBeginAtomIdx()];
-      int eIdx = indexMap[bond->getEndAtomIdx()];
-      if (targetMol.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
+      int bIdx = index_map[bond->getBeginAtomIdx()];
+      int eIdx = index_map[bond->getEndAtomIdx()];
+      if (target.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
 
         // FIX: todo: instead of doing this check, we should iterate once over
         // all atoms and set the number of explicit hydrogens based on the
         // number of explicitly bonded hydrogens
-        auto a = targetMol.getAtomWithIdx(bIdx);
-        auto b = targetMol.getAtomWithIdx(eIdx);
+        auto a = target.getAtomWithIdx(bIdx);
+        auto b = target.getAtomWithIdx(eIdx);
         int is_a_h = a->getAtomicNum() == 1;
         int is_b_h = b->getAtomicNum() == 1;
 
@@ -193,7 +180,7 @@ private:
           auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
           non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
         }
-        targetMol.addBond(bIdx, eIdx, bond->getBondType());
+        target.addBond(bIdx, eIdx, bond->getBondType());
       }
     }
   }

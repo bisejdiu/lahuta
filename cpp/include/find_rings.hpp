@@ -120,6 +120,9 @@ public:
   static std::vector<const RDKit::Atom *>
   find_ring_in_residue(const RDKit::RWMol &mol, const Residue &residue, size_t ring_size) {
 
+    if (ring_size < RingConfig::MIN_RING_SIZE || ring_size > RingConfig::MAX_RING_SIZE) return {};
+    if (residue.atoms.size() > RingConfig::MAX_ATOMS) return {};
+
     // Build atom index mapping
     std::unordered_map<const RDKit::Atom *, AtomIndex> atom_indices;
     size_t index = 0;

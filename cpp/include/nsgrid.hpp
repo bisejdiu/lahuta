@@ -14,7 +14,7 @@ using Distances = std::vector<float>;
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, 3> &pseudobox,
                            std::vector<double> &lmin,
-                           std::vector<double> &lmax);
+                           std::vector<double> &lmax, float scale_factor = 1.1f);
 std::vector<float> flatten_coordinates(std::vector<RDGeom::Point3D> &coords);
 
 struct NSResults {
@@ -56,7 +56,6 @@ struct NSResults {
   NSResults(Pairs &pairs, std::vector<float> &dists)
       : m_pairs(pairs), m_dists(dists) {}
 
-  // NSResults results = {{1, 2}, {3, 4}, {5, 6}}, {0.1f, 0.2f, 0.3f}};
   explicit NSResults(std::initializer_list<std::pair<int, int>> pairs,
                      std::initializer_list<float> dists)
       : m_pairs(pairs.begin(), pairs.end()),
@@ -66,6 +65,7 @@ struct NSResults {
           "Number of pairs must match number of distances");
     }
   }
+  ~NSResults() {}
 
   void add(int i, int j, float d) {
     m_pairs.push_back({i, j});
@@ -96,17 +96,16 @@ private:
 
 class FastNS {
 public:
-    /*static std::optional<FastNS> create(const std::vector<RDGeom::Point3D>& coords, double cutoff) {*/
   static FastNS create(const std::vector<RDGeom::Point3D>& coords, double cutoff) {
-        FastNS ns(coords, cutoff, false);
-        return ns;
-    }
+    return FastNS(coords, cutoff, false);
+  }
 
-    bool is_valid() const { return valid; }
+  bool is_valid() const { return valid; }
 
 public:
   FastNS() = default; // FIX: Why is this needed?
-  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, bool check = true);
+  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, int max_attempts = 5);
+  FastNS(const RDGeom::POINT3D_VECT &coords, double cutoff, bool throw_on_failure);
 
   NSResults self_search() const;
   NSResults search(const RDGeom::POINT3D_VECT &search_coords) const;
@@ -163,6 +162,13 @@ private:
 
   inline int _cell_xyz_to_cell_id(int cx, int cy, int cz) const;
 
+
+
+  void compute_pdb_box(std::vector<RDGeom::Point3D> &coords,
+                        float cutoff,
+                        std::array<float, kDIMENSIONS> &pbox,
+                        std::vector<double> &lmin,
+                        std::vector<double> &lmax, int max_attempts = 5);
 };
 
 } // namespace lahuta

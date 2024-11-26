@@ -27,6 +27,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
+# set(SANITIZER "thread")
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
@@ -92,13 +94,26 @@ if(TARGET Eigen3::Eigen)
   set(LAHUTA_HAS_EIGEN ON)
 endif()
 
-add_executable(lex main.cpp)
+# add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
+# add_link_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
 
-if (LAHUTA_HAS_EIGEN)
-    target_link_libraries(lex PRIVATE Eigen3::Eigen)
-endif()
+function(add_lahuta_executable target main_file)
+    add_executable(${target} ${main_file})
 
-target_link_libraries(lex PUBLIC lahuta_cpp) 
+    if (LAHUTA_HAS_EIGEN)
+        target_link_libraries(${target} PRIVATE Eigen3::Eigen)
+    endif()
+
+    target_link_libraries(${target} PUBLIC lahuta_cpp)
+endfunction()
+
+# add_executable(lex_parallel main.cpp)
+# if (LAHUTA_HAS_EIGEN)
+#     target_link_libraries(lex_parallel PRIVATE Eigen3::Eigen)
+# endif()
+# target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
+add_lahuta_executable(lex main.cpp)
+add_lahuta_executable(lex_parallel main_threads.cpp)
 
 ### Python bindings ###
 if (USE_PYTHON)
