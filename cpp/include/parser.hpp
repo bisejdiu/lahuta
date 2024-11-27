@@ -25,7 +25,7 @@ public:
 private:
   std::vector<std::string> tokens;
   size_t current;
-  OperatorHandler operator_handler;
+  Operators operator_handler;
 
   std::string peek() {
     if (current < tokens.size()) {
