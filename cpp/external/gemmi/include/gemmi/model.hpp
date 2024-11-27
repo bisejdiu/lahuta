@@ -108,7 +108,7 @@ inline bool is_same_conformer(char altloc1, char altloc2) {
 /// Represents atom site in macromolecular structure (~100 bytes).
 struct Atom {
   static const char* what() { return "Atom"; }
-  unsigned int idx = 0;  // index in the input file (@bisejdiu)
+  unsigned int idx = 0;  // (@bisejdiu): store atom indices
   std::string name;
   char altloc = '\0'; // 0 if not set
   signed char charge = 0;  // [-8, +8]
@@ -175,6 +175,7 @@ struct Residue : public ResidueId {
   using OptionalNum = SeqId::OptionalNum;
   static const char* what() { return "Residue"; }
 
+  unsigned int idx = 0;  // (@bisejdiu): store residue indices
   std::string subchain;   // mmCIF _atom_site.label_asym_id
   std::string entity_id;  // mmCIF _atom_site.label_entity_id
   OptionalNum label_seq;  // mmCIF _atom_site.label_seq_id

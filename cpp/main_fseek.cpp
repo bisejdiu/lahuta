@@ -80,7 +80,7 @@ write_aligned_pdb(const std::string &filename, const SeqData &sd, const Transfor
   std::ostringstream result;
   result << "MODEL\n";
 
-  if (transform == nullptr) transform = new Transform3D();
+  if (!transform) transform = new Transform3D();
   for (size_t tpos = 0; tpos < sd.SeqAA.size(); ++tpos) {
     float tx = sd.CaData[tpos];
     float ty = sd.CaData[sd.SeqAA.size() + tpos];
@@ -92,7 +92,7 @@ write_aligned_pdb(const std::string &filename, const SeqData &sd, const Transfor
     result << std::setw(6) << std::left << "ATOM"
            << std::setw(5) << std::right << tpos + 1 << ' '
            << std::setw(4) << std::right << "CA"
-           << ' ' << std::setw(3) << std::left << expand_protein_one_letter(sd.SeqAA[tpos]) << ' '
+           << ' ' << std::setw(3) << std::left << gemmi::expand_protein_one_letter(sd.SeqAA[tpos]) << ' '
            << 'A' << std::setw(4) << std::right << tpos + 1 << "    "
            << std::fixed << std::setprecision(3)
            << std::setw(8) << x
@@ -130,8 +130,9 @@ int main(int argc, char const *argv[]) {
   std::cout << "Targets: " << targets.size() << std::endl;
 
   SeqFilter seq_filter(queries, targets, pf_ops); // TODO: make pf_opts optional?
-  SeqAlignerBuilder builder(ops);
   seq_filter.build_index();
+
+  SeqAlignerBuilder builder(ops);
 
   int query_count = 0;
   std::unique_ptr<SeqAligner> aligner = builder.build(queries, targets);

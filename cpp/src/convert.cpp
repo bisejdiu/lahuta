@@ -17,7 +17,7 @@ namespace lahuta {
 
 // FIX: We should build the Topology from here
 // FIX: Converters should in fact be loaders
-void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf, bool ign_h) {
+void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ign_h) {
 
   ign_h = false; // FIX: ign_h=true is broken
   bool is_first_model = true;
@@ -46,8 +46,10 @@ void gemmiStructureToRDKit(RWMol &mol, const Structure &st, Conformer &conf, boo
     conf.setAtomPos(atom.idx, pos);
 
     auto altLoc = (atom.altloc == '\0') ? "" : std::string(1, atom.altloc);
+    // FIX: num is OptionalNum (not guaranteed to have a value)
     AtomPDBResidueInfo atomInfo = {atom.name, atom.serial, altLoc, res.name, res.seqid.num.value, chain.name};
 
+    atomInfo.setResidueIndex(res.idx);
     atomInfo.setIsHeteroAtom(res.het_flag == 'H');
     atomInfo.setMonomerType(AtomMonomerInfo::PDBRESIDUE);
 

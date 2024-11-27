@@ -98,6 +98,9 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
     return static_cast<AtomMonomerInfo *>(new AtomPDBResidueInfo(*this));
   }
 
+  unsigned int getResidueIndex() const { return d_residueIndex; }
+  void setResidueIndex(unsigned int idx) { d_residueIndex = idx; }
+
  private:
   // the fields here are from the PDB definition
   // (http://www.wwpdb.org/documentation/format33/sect9.html#ATOM) [9 Aug, 2013]
@@ -115,6 +118,8 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   bool df_heteroAtom = false;  // is this from a HETATM record?
   unsigned int d_secondaryStructure = 0;
   unsigned int d_segmentNumber = 0;
+
+  unsigned int d_residueIndex = 0;
 };
 };  // namespace RDKit
 //! allows AtomPDBResidueInfo objects to be dumped to streams

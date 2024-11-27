@@ -42,10 +42,10 @@ private:
 
   void process_file(std::string file_path_) {
     file_name = file_path_;
-    auto st = read_structure_gz(file_path_);
+    auto st = gemmi::read_structure_gz(file_path_);
 
     RDKit::Conformer *conformer = new RDKit::Conformer();
-    gemmiStructureToRDKit(*mol, st, *conformer, false);
+    create_RDKit_repr(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
 
