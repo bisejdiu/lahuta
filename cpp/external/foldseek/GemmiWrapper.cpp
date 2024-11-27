@@ -1,0 +1,258 @@
+//
+// Created by Martin Steinegger on 6/7/21.
+//
+#include "GemmiWrapper.h"
+#include "gemmi/mmread.hpp"
+#include <iostream>
+#ifdef HAVE_ZLIB
+#include "gz.hpp"
+#endif
+#include "gemmi/input.hpp"
+#include "gemmi/cif.hpp"
+
+#include <algorithm>
+
+GemmiWrapper::GemmiWrapper(){
+    threeAA2oneAA = {{"ALA",'A'},  {"ARG",'R'},  {"ASN",'N'}, {"ASP",'D'},
+                     {"CYS",'C'},  {"GLN",'Q'},  {"GLU",'E'}, {"GLY",'G'},
+                     {"HIS",'H'},  {"ILE",'I'},  {"LEU",'L'}, {"LYS",'K'},
+                     {"MET",'M'},  {"PHE",'F'},  {"PRO",'P'}, {"SER",'S'},
+                     {"THR",'T'},  {"TRP",'W'},  {"TYR",'Y'}, {"VAL",'V'},
+                     // modified res
+                     {"MSE",'M'}, {"MLY",'K'}, {"FME",'M'}, {"HYP",'P'},
+                     {"TPO",'T'}, {"CSO",'C'}, {"SEP",'S'}, {"M3L",'K'},
+                     {"HSK",'H'}, {"SAC",'S'}, {"PCA",'E'}, {"DAL",'A'},
+                     {"CME",'C'}, {"CSD",'C'}, {"OCS",'C'}, {"DPR",'P'},
+                     {"B3K",'K'}, {"ALY",'K'}, {"YCM",'C'}, {"MLZ",'K'},
+                     {"4BF",'Y'}, {"KCX",'K'}, {"B3E",'E'}, {"B3D",'D'},
+                     {"HZP",'P'}, {"CSX",'C'}, {"BAL",'A'}, {"HIC",'H'},
+                     {"DBZ",'A'}, {"DCY",'C'}, {"DVA",'V'}, {"NLE",'L'},
+                     {"SMC",'C'}, {"AGM",'R'}, {"B3A",'A'}, {"DAS",'D'},
+                     {"DLY",'K'}, {"DSN",'S'}, {"DTH",'T'}, {"GL3",'G'},
+                     {"HY3",'P'}, {"LLP",'K'}, {"MGN",'Q'}, {"MHS",'H'},
+                     {"TRQ",'W'}, {"B3Y",'Y'}, {"PHI",'F'}, {"PTR",'Y'},
+                     {"TYS",'Y'}, {"IAS",'D'}, {"GPL",'K'}, {"KYN",'W'},
+                     {"CSD",'C'}, {"SEC",'C'},
+                     // unknown
+                     {"UNK",'X'}};
+    fixupBuffer = NULL;
+}
+
+std::unordered_map<std::string, int> getEntityTaxIDMapping(gemmi::cif::Document& doc) {
+    std::unordered_map<std::string, int> entity_to_taxid;
+    static const std::vector<std::pair<std::string, std::string>> loops_with_taxids = {
+        { "_entity_src_nat.", "?pdbx_ncbi_taxonomy_id"},
+        { "_entity_src_gen.", "?pdbx_gene_src_ncbi_taxonomy_id"},
+        { "_pdbx_entity_src_syn.", "?ncbi_taxonomy_id"}
+    };
+    for (gemmi::cif::Block& block : doc.blocks) {
+        for (auto&& [loop, taxid] : loops_with_taxids) {
+            for (auto row : block.find(loop, {"entity_id", taxid})) {
+                if (row.has2(1) == false) {
+                    continue;
+                }
+                std::string entity_id = gemmi::cif::as_string(row[0]);
+                if (entity_to_taxid.find(entity_id) != entity_to_taxid.end()) {
+                    continue;
+                }
+                const char* endptr = NULL;
+                int taxId = gemmi::no_sign_atoi(row[1].c_str(), &endptr);
+                if (endptr != NULL && *endptr == '\0') {
+                    entity_to_taxid.emplace(entity_id, taxId);
+                }
+            }
+        }
+    }
+    return entity_to_taxid;
+}
+
+GemmiWrapper::Format mapFormat(gemmi::CoorFormat format) {
+    switch (format) {
+        case gemmi::CoorFormat::Pdb:
+            return GemmiWrapper::Format::Pdb;
+        case gemmi::CoorFormat::Mmcif:
+            return GemmiWrapper::Format::Mmcif;
+        case gemmi::CoorFormat::Mmjson:
+            return GemmiWrapper::Format::Mmjson;
+        case gemmi::CoorFormat::ChemComp:
+            return GemmiWrapper::Format::ChemComp;
+        default:
+            return GemmiWrapper::Format::Unknown;
+    }
+}
+
+bool GemmiWrapper::load(const std::string& filename, Format format) {
+    gemmi::BasicInput infile(filename);
+    if (format == Format::Detect) {
+        format = mapFormat(gemmi::coor_format_from_ext(infile.basepath()));
+    }
+    gemmi::Structure st;
+    std::unordered_map<std::string, int> entity_to_tax_id;
+    switch (format) {
+        case Format::Mmcif: {
+            gemmi::CharArray mem = read_into_buffer(infile);
+            char* data = mem.data();
+            size_t dataSize = mem.size();
+
+            // hack to fix broken _citation.title in AF3
+            const char target0[] = "Accurate structure prediction of biomolecular interactions with AlphaFold 3\n";
+            size_t target0Len = sizeof(target0) - 1;
+            const char target1[] = "_citation.title";
+            size_t target1Len = sizeof(target1) - 1;
+            char* it = std::search(data, data + dataSize, target0, target0 + target0Len);
+            if (it != data + dataSize) {
+                while (it > data && *(it - 1) != '\n') {
+                    it--;
+                }
+                if (strncmp(it, target1, target1Len) == 0) {
+                    it[0] = '#';
+                    it[1] = ' ';
+                }
+            }
+
+            gemmi::cif::Document doc = gemmi::cif::read_memory(mem.data(), mem.size(), infile.path().c_str());
+            entity_to_tax_id = getEntityTaxIDMapping(doc);
+            st = gemmi::make_structure_from_doc(std::move(doc), false);
+            break;
+        }
+        case Format::Mmjson: {
+            gemmi::cif::Document doc = gemmi::cif::read_mmjson(infile);
+            entity_to_tax_id = getEntityTaxIDMapping(doc);
+            st = gemmi::make_structure_from_doc(std::move(doc), false);
+            break;
+        }
+        case Format::ChemComp: {
+            gemmi::cif::Document doc = gemmi::cif::read(infile);
+            entity_to_tax_id = getEntityTaxIDMapping(doc);
+            st = gemmi::make_structure_from_chemcomp_doc(doc);
+            break;
+        }
+        default:
+            st = gemmi::read_pdb(infile);
+    }
+    updateStructure((void*) &st, filename, entity_to_tax_id);
+
+    return true;
+}
+
+// https://stackoverflow.com/questions/1448467/initializing-a-c-stdistringstream-from-an-in-memory-buffer/1449527
+struct OneShotReadBuf : public std::streambuf
+{
+    OneShotReadBuf(char* s, std::size_t n)
+    {
+        setg(s, s, s + n);
+    }
+};
+
+void GemmiWrapper::updateStructure(void * void_st, const std::string& filename, std::unordered_map<std::string, int>& entity_to_tax_id) {
+    gemmi::Structure * st = (gemmi::Structure *) void_st;
+
+    title.clear();
+    chain.clear();
+    names.clear();
+    chainNames.clear();
+    modelIndices.clear();
+    modelCount = 0;
+    ca.clear();
+    ca_bfactor.clear();
+    c.clear();
+    cb.clear();
+    n.clear();
+    ami.clear();
+    taxIds.clear();
+    title.append(st->get_info("_struct.title"));
+    size_t currPos = 0;
+    for (gemmi::Model& model : st->models){
+        modelCount++;
+        for (gemmi::Chain& ch : model.chains) {
+            size_t chainStartPos = currPos;
+            size_t pos = filename.find_last_of("\\/");
+            std::string name = (std::string::npos == pos)
+                               ? filename
+                               : filename.substr(pos+1, filename.length());
+            //name.push_back('_');
+            chainNames.push_back(ch.name);
+            char* rest;
+            errno = 0;
+            unsigned int modelNumber = strtoul(model.name.c_str(), &rest, 10);
+            if ((rest != model.name.c_str() && *rest != '\0') || errno == ERANGE) {
+                modelIndices.push_back(modelCount);
+            }else{
+                modelIndices.push_back(modelNumber);
+            }
+
+            names.push_back(name);
+            int taxId = -1;
+            for (gemmi::Residue &res : ch.first_conformer()) {
+                if (taxId == -1) {
+                    auto it = entity_to_tax_id.find(res.entity_id);
+                    if (it != entity_to_tax_id.end()) {
+                        taxId = it->second;
+                    }
+                }
+                bool isHetAtomInList = res.het_flag == 'H' && threeAA2oneAA.find(res.name) != threeAA2oneAA.end();
+                if (isHetAtomInList == false && res.het_flag != 'A')
+                    continue;
+                if (isHetAtomInList) {
+                    bool notPolymer = res.entity_type != gemmi::EntityType::Polymer;
+                    if (notPolymer == true) {
+                        continue;
+                    }
+                    bool hasCA = false;
+                    for (gemmi::Atom &atom : res.atoms) {
+                        if (atom.name == "CA") {
+                            hasCA = true;
+                            break;
+                        }
+                    }
+                    if (hasCA == false) {
+                        continue;
+                    }
+                }
+                Alphabet3Di::Vec3 ca_atom = {NAN, NAN, NAN};
+                Alphabet3Di::Vec3 cb_atom = {NAN, NAN, NAN};
+                Alphabet3Di::Vec3 n_atom  = {NAN, NAN, NAN};
+                Alphabet3Di::Vec3 c_atom  = {NAN, NAN, NAN};
+                float ca_atom_bfactor;
+                bool hasCA = false;
+                for (gemmi::Atom &atom : res.atoms) {
+                    if (atom.name == "CA") {
+                        ca_atom.x = atom.pos.x;
+                        ca_atom.y = atom.pos.y;
+                        ca_atom.z = atom.pos.z;
+                        ca_atom_bfactor = atom.b_iso;
+                        hasCA = true;
+                    } else if (atom.name == "CB") {
+                        cb_atom.x = atom.pos.x;
+                        cb_atom.y = atom.pos.y;
+                        cb_atom.z = atom.pos.z;
+                    } else if (atom.name == "N") {
+                        n_atom.x = atom.pos.x;
+                        n_atom.y = atom.pos.y;
+                        n_atom.z = atom.pos.z;
+                    } else if (atom.name == "C") {
+                        c_atom.x = atom.pos.x;
+                        c_atom.y = atom.pos.y;
+                        c_atom.z = atom.pos.z;
+                    }
+                }
+                if(hasCA == false){
+                    continue;
+                }
+                ca_bfactor.push_back(ca_atom_bfactor);
+                ca.push_back(ca_atom);
+                cb.push_back(cb_atom);
+                n.push_back(n_atom);
+                c.push_back(c_atom);
+                currPos++;
+                if (threeAA2oneAA.find(res.name) == threeAA2oneAA.end()) {
+                    ami.push_back('X');
+                } else {
+                    ami.push_back(threeAA2oneAA[res.name]);
+                }
+            }
+            taxIds.push_back(taxId == -1 ? 0 : taxId);
+            chain.push_back(std::make_pair(chainStartPos, currPos));
+        }
+    }
+}

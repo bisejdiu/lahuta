@@ -58,6 +58,8 @@ endif()
 
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
+add_subdirectory(external/foldseek)
+add_dependencies(foldseek gemmi_cpp)
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
@@ -72,7 +74,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek)
 
 find_package(Eigen3 QUIET)
 if(USE_EIGEN3)
@@ -85,7 +87,14 @@ endif()
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include # our headers
   ${CMAKE_SOURCE_DIR}/external # for external headers
+  ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include # for gemmi headers
+)
+
+add_library(lahuta_shared_headers INTERFACE)
+target_include_directories(lahuta_shared_headers INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/fseek
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
 )
 
 if(TARGET Eigen3::Eigen)
@@ -114,6 +123,7 @@ endfunction()
 # target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
 add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
+add_lahuta_executable(lex_fseek main_fseek.cpp)
 
 ### Python bindings ###
 if (USE_PYTHON)
