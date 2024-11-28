@@ -86,7 +86,7 @@ bool GemmiWrapper::load(const std::string& filename, Format format) {
     if (format == Format::Detect) {
         format = mapFormat(gemmi::coor_format_from_ext(infile.basepath()));
     }
-    gemmi::Structure st;
+    // gemmi::Structure st;
     std::unordered_map<std::string, int> entity_to_tax_id;
     switch (format) {
         case Format::Mmcif: {

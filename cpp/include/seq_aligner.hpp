@@ -2,11 +2,12 @@
 #define LAHUTA_SEQ_ALIGNER_HPP
 
 #include "align.hpp"
-#include "extract.hpp"
 #include "fseek/ops.hpp"
+#include "seq.hpp"
 #include <StructureSmithWaterman.h>
 #include <SubstitutionMatrix.h>
 #include <TMaligner.h>
+#include <array>
 
 namespace lahuta {
 
@@ -23,12 +24,48 @@ struct MatrixContainer {
 };
 
 struct AlignmentResult {
+  // FIX: why do we need both Matcher::result_t and a vector of Matcher::result_t?
   std::vector<Matcher::result_t> alignmentResult;
   std::string resultBuffer;
   TMaligner::TMscoreResult tmres;
   Matcher::result_t res;
   std::unique_ptr<AlignmentScores> scores;
   bool success{false};
+  std::unique_ptr<SeqData> query;
+  std::unique_ptr<SeqData> target;
+
+  std::string query_alignment() const {
+    return alignment_from_cigar(query->SeqAA.c_str(), res.qStartPos, SeqType::Query);
+  }
+
+  std::string target_alignment() const {
+    return alignment_from_cigar(target->SeqAA.c_str(), res.dbStartPos, SeqType::Target);
+  }
+
+private:
+  enum class SeqType { Query = 0, Target = 1 };
+
+  // constexpr not possible with std::function<bool(char)>
+  constexpr static std::array<bool (*)(char), 2> behaviors = {{
+      [](char symbol) { return symbol == 'M' || symbol == 'I'; }, // SeqType::Query
+      [](char symbol) { return symbol == 'M' || symbol == 'D'; }, // SeqType::Target
+  }};
+
+  std::string alignment_from_cigar(const char *seq, unsigned int offset, SeqType type) const {
+    const auto &advance_seq_pos = behaviors[static_cast<size_t>(type)];
+    std::string out{};
+    unsigned int seq_pos{0};
+    /*std::string backtrace = Matcher::uncompressAlignment(res.backtrace);*/
+    for (const auto &symbol : res.backtrace) {
+      if (advance_seq_pos(symbol)) {
+        out.push_back(seq[offset + seq_pos]);
+        seq_pos++;
+      } else {
+        out.push_back('-');
+      }
+    }
+    return out;
+  }
 };
 
 class AlignmentScores {
@@ -136,7 +173,6 @@ public:
     }
 
     std::pair<double, double> mu_lambda = evaluer.predictMuLambda(q3->numSequence, q3->L);
-    std::cout << "mu: " << mu_lambda.first << " lambda: " << mu_lambda.second << std::endl;
 
     init_sw(*M.sw, *q3, *qa);
     q3->reverse();
@@ -203,7 +239,11 @@ public:
     }
 
     std::cout << "Result: " << result_buffer << std::endl;
-    return {alignment_result, result_buffer, tmres, res, std::make_unique<AlignmentScores>(Q, T, res), true};
+    AlignmentResult ro =
+        {alignment_result, result_buffer, tmres, res, std::make_unique<AlignmentScores>(Q, T, res), true};
+    ro.query = std::make_unique<SeqData>(Q);
+    ro.target = std::make_unique<SeqData>(T);
+    return ro;
   }
 
 private:

@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include "gemmi/model.hpp"
 #include "structureto3di.h"
 
 class GemmiWrapper {
@@ -49,6 +50,8 @@ public:
 
     char* fixupBuffer;
     size_t fixupBufferSize;
+
+    gemmi::Structure st;
 
 private:
     std::unordered_map<std::string,char> threeAA2oneAA;
