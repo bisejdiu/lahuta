@@ -27,33 +27,29 @@ public:
     int dbOrfStartPos;
     int dbOrfEndPos;
     std::string backtrace;
-    result_t(unsigned int dbkey, int score, float qcov, float dbcov,
-             float seqId, double eval, unsigned int alnLength, int qStartPos,
-             int qEndPos, unsigned int qLen, int dbStartPos, int dbEndPos,
-             unsigned int dbLen, int queryOrfStartPos, int queryOrfEndPos,
-             int dbOrfStartPos, int dbOrfEndPos, std::string backtrace)
-        : dbKey(dbkey), score(score), qcov(qcov), dbcov(dbcov), seqId(seqId),
-          eval(eval), alnLength(alnLength), qStartPos(qStartPos),
-          qEndPos(qEndPos), qLen(qLen), dbStartPos(dbStartPos),
+    result_t(
+        unsigned int dbkey, int score, float qcov, float dbcov, float seqId, double eval,
+        unsigned int alnLength, int qStartPos, int qEndPos, unsigned int qLen, int dbStartPos, int dbEndPos,
+        unsigned int dbLen, int queryOrfStartPos, int queryOrfEndPos, int dbOrfStartPos, int dbOrfEndPos,
+        std::string backtrace)
+        : dbKey(dbkey), score(score), qcov(qcov), dbcov(dbcov), seqId(seqId), eval(eval),
+          alnLength(alnLength), qStartPos(qStartPos), qEndPos(qEndPos), qLen(qLen), dbStartPos(dbStartPos),
           dbEndPos(dbEndPos), dbLen(dbLen), queryOrfStartPos(queryOrfStartPos),
-          queryOrfEndPos(queryOrfEndPos), dbOrfStartPos(dbOrfStartPos),
-          dbOrfEndPos(dbOrfEndPos), backtrace(backtrace){};
-
-    result_t(unsigned int dbkey, int score, float qcov, float dbcov,
-             float seqId, double eval, unsigned int alnLength, int qStartPos,
-             int qEndPos, unsigned int qLen, int dbStartPos, int dbEndPos,
-             unsigned int dbLen, std::string backtrace)
-        : dbKey(dbkey), score(score), qcov(qcov), dbcov(dbcov), seqId(seqId),
-          eval(eval), alnLength(alnLength), qStartPos(qStartPos),
-          qEndPos(qEndPos), qLen(qLen), dbStartPos(dbStartPos),
-          dbEndPos(dbEndPos), dbLen(dbLen), queryOrfStartPos(-1),
-          queryOrfEndPos(-1), dbOrfStartPos(-1), dbOrfEndPos(-1),
+          queryOrfEndPos(queryOrfEndPos), dbOrfStartPos(dbOrfStartPos), dbOrfEndPos(dbOrfEndPos),
           backtrace(backtrace){};
+
+    result_t(
+        unsigned int dbkey, int score, float qcov, float dbcov, float seqId, double eval,
+        unsigned int alnLength, int qStartPos, int qEndPos, unsigned int qLen, int dbStartPos, int dbEndPos,
+        unsigned int dbLen, std::string backtrace)
+        : dbKey(dbkey), score(score), qcov(qcov), dbcov(dbcov), seqId(seqId), eval(eval),
+          alnLength(alnLength), qStartPos(qStartPos), qEndPos(qEndPos), qLen(qLen), dbStartPos(dbStartPos),
+          dbEndPos(dbEndPos), dbLen(dbLen), queryOrfStartPos(-1), queryOrfEndPos(-1), dbOrfStartPos(-1),
+          dbOrfEndPos(-1), backtrace(backtrace){};
 
     result_t(){};
 
-    static void swapResult(result_t &res, EvalueComputation &evaluer,
-                           bool hasBacktrace) {
+    static void swapResult(result_t &res, EvalueComputation &evaluer, bool hasBacktrace) {
       double rawScore = evaluer.computeRawScoreFromBitScore(res.score);
       res.eval = evaluer.computeEvalue(rawScore, res.dbLen);
 
@@ -77,8 +73,7 @@ public:
       }
     }
 
-    static void protein2nucl(std::string &backtrace,
-                             std::string &newBacktrace) {
+    static void protein2nucl(std::string &backtrace, std::string &newBacktrace) {
       char buffer[256];
       for (size_t pos = 0; pos < backtrace.size(); pos++) {
         int cnt = 0;
@@ -90,11 +85,11 @@ public:
         }
         bool update = false;
         switch (backtrace[pos]) {
-        case 'M':
-        case 'D':
-        case 'I':
-          update = true;
-          break;
+          case 'M':
+          case 'D':
+          case 'I':
+            update = true;
+            break;
         }
         if (update) {
           char *buffNext = Itoa::i32toa_sse2(cnt * 3, buffer);
@@ -149,20 +144,50 @@ public:
     bt.reserve(cbt.size());
     size_t count = 0;
     for (size_t i = 0; i < cbt.size(); ++i) {
-        char c = cbt[i];
-        if (c >= '0' && c <= '9') {
-            count = count * 10 + c - '0';
-        } else {
-            bt.append(count == 0 ? 1 : count, c);
-            count = 0;
-        }
+      char c = cbt[i];
+      if (c >= '0' && c <= '9') {
+        count = count * 10 + c - '0';
+      } else {
+        bt.append(count == 0 ? 1 : count, c);
+        count = 0;
+      }
     }
     return bt;
-}
+  }
 
-  static size_t resultToBuffer(char *buff1, const Matcher::result_t &result,
-                               bool addBacktrace, bool compress = true,
-                               bool addOrfPosition = false) {
+  static std::string result_to_string(const Matcher::result_t &r, bool compress_backtrace = true) {
+    std::ostringstream oss;
+
+    oss << r.dbKey << '\t';
+    oss << std::fixed << std::setprecision(3) << r.score << '\t';
+    oss << r.seqId << '\t';
+
+    oss << std::scientific << std::uppercase << std::setprecision(3) << r.eval << '\t';
+
+    oss << r.qStartPos << '\t' << r.qEndPos << '\t' << r.qLen << '\t';
+    oss << r.dbStartPos << '\t' << r.dbEndPos << '\t' << r.dbLen;
+
+    oss << '\t';
+    const std::string &backtrace_str = compress_backtrace ? compressAlignment(r.backtrace) : r.backtrace;
+    oss << backtrace_str;
+
+    oss << '\n';
+
+    return oss.str();
+  }
+
+  static std::string
+  results_to_string(const std::vector<Matcher::result_t> &vr, bool compress_backtrace = true) {
+    std::ostringstream oss;
+    for (const auto &r : vr) {
+      oss << result_to_string(r, compress_backtrace);
+    }
+    return oss.str();
+  }
+
+  static size_t resultToBuffer(
+      char *buff1, const Matcher::result_t &result, bool addBacktrace, bool compress = true,
+      bool addOrfPosition = false) {
     char *basePos = buff1;
     char *tmpBuff = Itoa::u32toa_sse2((uint32_t)result.dbKey, buff1);
     *(tmpBuff - 1) = '\t';
@@ -198,13 +223,11 @@ public:
       if (compress) {
         *(tmpBuff - 1) = '\t';
         std::string compressedCigar = compressAlignment(result.backtrace);
-        tmpBuff =
-            strncpy(tmpBuff, compressedCigar.c_str(), compressedCigar.length());
+        tmpBuff = strncpy(tmpBuff, compressedCigar.c_str(), compressedCigar.length());
         tmpBuff += compressedCigar.length() + 1;
       } else {
         *(tmpBuff - 1) = '\t';
-        tmpBuff = strncpy(tmpBuff, result.backtrace.c_str(),
-                          result.backtrace.length());
+        tmpBuff = strncpy(tmpBuff, result.backtrace.c_str(), result.backtrace.length());
         tmpBuff += result.backtrace.length() + 1;
       }
     }
@@ -214,9 +237,9 @@ public:
   }
 };
 
-static bool alignmentCheckCriteria(Matcher::result_t &res, bool isIdentity,
-                          double evalThr, double seqIdThr, int alnLenThr,
-                          int covMode, float covThr) {
+static bool alignmentCheckCriteria(
+    Matcher::result_t &res, bool isIdentity, double evalThr, double seqIdThr, int alnLenThr, int covMode,
+    float covThr) {
   const bool evalOk = (res.eval <= evalThr);    // -e
   const bool seqIdOK = (res.seqId >= seqIdThr); // --min-seq-id
   const bool covOK = Util::hasCoverage(covThr, covMode, res.qcov, res.dbcov);

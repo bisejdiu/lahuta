@@ -1,8 +1,10 @@
 #ifndef LAHUTA_SEQ_ALIGNER_HPP
 #define LAHUTA_SEQ_ALIGNER_HPP
 
+#include "CalcProbTP.h"
 #include "align.hpp"
 #include "fseek/ops.hpp"
+#include "matcher.hpp"
 #include "seq.hpp"
 #include <StructureSmithWaterman.h>
 #include <SubstitutionMatrix.h>
@@ -23,23 +25,32 @@ struct MatrixContainer {
   std::vector<int8_t> tinySubMat3Di;
 };
 
+struct Scores {
+  double rmsd;
+  double tmscore;
+  double avgLddtScore;
+  double prob;
+};
+
+
 struct AlignmentResult {
   // FIX: why do we need both Matcher::result_t and a vector of Matcher::result_t?
-  std::vector<Matcher::result_t> alignmentResult;
-  std::string resultBuffer;
+  std::vector<Matcher::result_t> ar;
+  Scores scores;
+  /*std::string resultBuffer;*/
   TMaligner::TMscoreResult tmres;
-  Matcher::result_t res;
-  std::unique_ptr<AlignmentScores> scores;
+  /*Matcher::result_t res;*/
+  /*std::shared_ptr<AlignmentScores> scores;*/
   bool success{false};
   std::unique_ptr<SeqData> query;
   std::unique_ptr<SeqData> target;
 
   std::string query_alignment() const {
-    return alignment_from_cigar(query->SeqAA.c_str(), res.qStartPos, SeqType::Query);
+    return alignment_from_cigar(query->SeqAA.c_str(), ar[0].qStartPos, SeqType::Query);
   }
 
   std::string target_alignment() const {
-    return alignment_from_cigar(target->SeqAA.c_str(), res.dbStartPos, SeqType::Target);
+    return alignment_from_cigar(target->SeqAA.c_str(), ar[0].dbStartPos, SeqType::Target);
   }
 
 private:
@@ -56,7 +67,7 @@ private:
     std::string out{};
     unsigned int seq_pos{0};
     /*std::string backtrace = Matcher::uncompressAlignment(res.backtrace);*/
-    for (const auto &symbol : res.backtrace) {
+    for (const auto &symbol : ar[0].backtrace) {
       if (advance_seq_pos(symbol)) {
         out.push_back(seq[offset + seq_pos]);
         seq_pos++;
@@ -147,16 +158,10 @@ public:
 
     if (!is_initialized) throw std::runtime_error("SeqAligner is not initialized");
 
-    std::vector<Matcher::result_t> alignment_result;
-
-    // FIX: not really needed
-    std::string backtrace;
-    char buffer[1024 + 32768];
-    std::string result_buffer;
-
-    // FIX: not really needed
+    Scores scores;
     TMaligner::TMscoreResult tmres;
     LDDTCalculator::LDDTScoreResult lddtres;
+    std::vector<Matcher::result_t> result;
 
     // FIX: can be computed only when query or target changes
     std::unique_ptr<Sequence> q3 = Q.map_3di(*M.subMat3Di, ops);
@@ -182,7 +187,7 @@ public:
     if (!Util::canBeCovered(ops.covThr, ops.covMode, Q.Seq3Di.size(), T.SeqAA.size())) return {};
 
     Matcher::result_t res;
-
+    std::string backtrace;
     bool success = align_structure(*ta, *t3, q3->L, res, mu_lambda, backtrace);
     if (!success) return {};
 
@@ -193,54 +198,50 @@ public:
 
       if (need_tmaligner) {
         tmres = compute_tm(T, res);
+        std::cout << "TMscore: " << tmres.tmscore << std::endl;
+        std::cout << "RMSD: " << tmres.rmsd << std::endl;
 
         if (tmres.tmscore < ops.tmScoreThr) {
           std::cout << "TMscore is lower than threshold" << std::endl;
           return {};
         }
+
+        scores.tmscore = tmres.tmscore;
+        scores.rmsd = tmres.rmsd;
       }
       if (need_lddt) {
         lddtres = compute_lddt(res, T);
+        std::cout << "lddtres: " << lddtres.avgLddtScore << std::endl;
 
         if (lddtres.avgLddtScore < ops.lddtThr) {
           std::cout << "LDDT score is lower than threshold" << std::endl;
           return {};
         }
         res.dbcov = lddtres.avgLddtScore;
+        scores.avgLddtScore = lddtres.avgLddtScore;
       }
       if (ops.sortByStructureBits && need_tmaligner && need_lddt) {
         res.score = res.score * sqrt(lddtres.avgLddtScore * tmres.tmscore);
       }
     }
 
-    alignment_result.emplace_back(res);
+    result.push_back(res);
     for (int alt_ali = ops.altAlignment; alt_ali > 0; --alt_ali) {
       Matcher::result_t alt_res;
 
       bool success = alt_align_structure(*ta, *t3, q3->L, res, alt_res, mu_lambda, backtrace);
       if (!success) break;
 
-      alignment_result.push_back(alt_res);
-      res = alt_res;
+      if (!alignment_criteria_valid(alt_res)) break;
+      if (alt_res.backtrace == result.back().backtrace) break; // in-lieu of convergence check
+      result.push_back(alt_res);
     }
 
-    if (alignment_result.size() > 1) {
-      if (ops.sortByStructureBits) {
-        std::sort(alignment_result.begin(), alignment_result.end(), foldseek::compareHitsByStructureBits);
-      } else {
-        std::sort(alignment_result.begin(), alignment_result.end(), Matcher::compareHits);
-      }
-    }
+    auto sorter = ops.sortByStructureBits ? foldseek::compareHitsByStructureBits : Matcher::compareHits;
+    std::sort(result.begin(), result.end(), sorter);
 
-    for (size_t result = 0; result < alignment_result.size(); result++) {
-      auto resutl = alignment_result[result];
-      size_t len = Matcher::resultToBuffer(buffer, alignment_result[result], ops.addBacktrace);
-      result_buffer.append(buffer, len);
-    }
-
-    std::cout << "Result: " << result_buffer << std::endl;
-    AlignmentResult ro =
-        {alignment_result, result_buffer, tmres, res, std::make_unique<AlignmentScores>(Q, T, res), true};
+    scores.prob = CalcProbTP::calculate(result.front().score);
+    AlignmentResult ro = {result, scores, tmres, true};
     ro.query = std::make_unique<SeqData>(Q);
     ro.target = std::make_unique<SeqData>(T);
     return ro;

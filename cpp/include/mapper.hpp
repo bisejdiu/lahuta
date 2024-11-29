@@ -6,8 +6,9 @@
 #include <string>
 #include <vector>
 
-#include "extract.hpp"
+#include "matcher.hpp"
 #include "ob/bitvec.h"
+#include "seq.hpp"
 
 namespace lahuta {
 
@@ -74,6 +75,8 @@ public:
   void print() {
     std::cout << "MQ: " << query.mol->getNumAtoms() << " " << query_indices.size() << "\n";
     std::cout << "MT: " << target.mol->getNumAtoms() << " " << target_indices.size() << "\n";
+    std::cout << target_indices[21] << " " << target_indices[22] << " " << target_indices[23] << "\n";
+    std::cout << query_indices[31] << " " << query_indices[32] << " " << query_indices[33] << "\n";
   }
 
   std::optional<unsigned int> get_query_index(unsigned int i) const {
@@ -93,6 +96,8 @@ public:
   };
 
 public:
+  /*private:*/
+  /*OBBitVec AtomMapTable;*/
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   SeqData query;
   SeqData target;

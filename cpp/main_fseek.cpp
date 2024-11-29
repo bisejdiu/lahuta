@@ -30,6 +30,7 @@ int main(int argc, char const *argv[]) {
 
   SeqAlignerBuilder builder(ops);
 
+  ops.altAlignment = 10;
   int query_count = 0;
   std::unique_ptr<SeqAligner> aligner = builder.build(queries, targets);
 
@@ -43,34 +44,27 @@ int main(int argc, char const *argv[]) {
       auto AR = aligner->align(query, target, ops);
       if (!AR.success) continue;
 
-
-      std::cout << "----------------------------------------" << std::endl;
-      Mapper mapper(query, target, AR.res);
+      Mapper mapper(query, target, AR.ar.front());
       mapper.map();
       mapper.print();
-      std::cout << "----------------------------------------" << std::endl;
 
-      std::cout << "Q data: " << AR.res.qStartPos << " " << AR.res.qEndPos << " " << AR.res.qLen << std::endl;
-      std::cout << "T data: " << AR.res.dbStartPos << " " << AR.res.dbEndPos << " " << AR.res.dbLen << std::endl;
+      auto Scores = std::make_shared<AlignmentScores>(query, target, AR.ar[0]);
+
+      std::cout << "New result: \n" << Matcher::results_to_string(AR.ar) << std::endl;
+      std::cout << "Q data: " << AR.ar[0].qStartPos << " " << AR.ar[0].qEndPos << std::endl;
+      std::cout << "T data: " << AR.ar[0].dbStartPos << " " << AR.ar[0].dbEndPos << std::endl;
 
       std::cout << "Q Alignment: " << AR.query_alignment() << std::endl;
       std::cout << "T Alignment: " << AR.target_alignment() << std::endl;
 
-      auto non_d_indices = get_non_deletion_indices(AR.res.backtrace); // query
-      auto non_i_indices = get_non_insertion_indices(AR.res.backtrace); // target
-
-      auto lddt_result = AR.scores->get_lddt_score();
-      auto alig_result = AR.scores->get_alignment_score();
-      auto prob = CalcProbTP::calculate(AR.res.score);
-
-      std::cout << "----------------------------------------" << std::endl;
-      std::cout << "RMSD: " << alig_result.rmsd << std::endl;
-      std::cout << "LDDT: " << lddt_result.avgLddtScore << std::endl;
-      std::cout << "TMscore: " << alig_result.tmscore << std::endl;
-      std::cout << "QTMscore: " << AR.scores->get_query_score().tmscore << std::endl;
-      std::cout << "TTMscore: " << AR.scores->get_target_score().tmscore << std::endl;
-      std::cout << "Prob: " << prob << std::endl;
-      std::cout << "----------------------------------------" << std::endl;
+      std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+      std::cout << "RMSD: " << AR.scores.rmsd << std::endl;
+      std::cout << "LDDT: " << AR.scores.avgLddtScore << std::endl;
+      std::cout << "TMscore: " << AR.scores.tmscore << std::endl;
+      std::cout << "QTMscore: " << Scores->get_query_score().tmscore << std::endl;
+      std::cout << "TTMscore: " << Scores->get_target_score().tmscore << std::endl;
+      std::cout << "Prob: " << AR.scores.prob << std::endl;
+      std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
     }
   }
   return 0;
