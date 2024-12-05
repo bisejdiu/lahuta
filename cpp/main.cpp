@@ -14,12 +14,26 @@ int main(int argc, char const *argv[]) {
   std::string file_name = argv[1];
   /*std::string file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif";*/
   Luni luni(file_name);
-  auto mol = &luni.get_molecule();
 
   if (!luni.success) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
     return 1;
   }
+  auto mol = &luni.get_molecule();
+  std::cout << "Molecule: " << mol->getNumAtoms() << std::endl;
+
+  // for (const auto &atom: mol->atoms()) {
+  //   auto res_info = static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+  //   std::cout << "RDKit atom: "
+  //             << " " << atom->getIdx()
+  //             << " " << res_info->getName()
+  //             << " " << res_info->getResidueNumber()
+  //             << " " << res_info->getResidueName()
+  //             << " " << res_info->getResidueIndex();
+  //   std::cout << std::endl;
+  // }
+
+
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Time: " << duration.count() << " ms" << std::endl;

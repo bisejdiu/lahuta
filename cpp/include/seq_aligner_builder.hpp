@@ -24,6 +24,7 @@ public:
         init_tiny_matrix(*M.subMat3Di)};
 
     auto seq_aligner = std::unique_ptr<SeqAligner>(new SeqAligner(ops, M, T.total_length));
+    /*auto seq_aligner = std::unique_ptr<SeqAligner>(ops, M, T.total_length);*/
     seq_aligner->initialize(Q.max_length, T.max_length);
 
     return seq_aligner;

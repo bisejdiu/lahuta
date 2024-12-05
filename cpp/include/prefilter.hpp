@@ -18,6 +18,8 @@ namespace lahuta {
 enum class SeqType { AminoAcid, Nucleotide, HMM };
 
 struct PrefilterOptions {
+  bool use_prefilter{true};
+
   BaseMatrix *kmerSubMat;
   BaseMatrix *ungappedSubMat;
   ScoreMatrix _2merSubMatrix;
@@ -64,6 +66,7 @@ public:
     auto dbSize = dbTo - dbFrom;
     sequenceOffsets = new size_t[dbSize];
     sequenceOffsets[0] = 0;
+    std::cout << "DbInfo: " << dbFrom << " " << dbTo << " " << effectiveKmerSize << " " << seqData.size() << "\n";
     for (size_t id = dbFrom; id < dbTo; id++) {
       const int seqLen = seqData[id].Seq3Di.size();
       aaDbSize += seqLen;
@@ -263,6 +266,7 @@ inline void fill_database(
   //    Debug(Debug::INFO) << "Index table: init... from "<< dbFrom << " to "<< dbTo << "\n";
 
   ctpl::thread_pool pool(std::thread::hardware_concurrency());
+  std::cout << "Index table size: " << info->tableSize << "\n";
   indexTable->initMemory(info->tableSize, pool);
   indexTable->init(pool);
 
@@ -391,6 +395,7 @@ public:
   }
 
   void build_index(std::optional<int> from = std::nullopt, std::optional<int> to = std::nullopt) {
+    std::cout << "Building index table\n";
     indexTable = build_index(from.value_or(0), to.value_or(targets.size()));
     matcher = create_query_matcher();
   }
@@ -407,13 +412,12 @@ public:
     std::pair<hit_t *, size_t> prefilter_result = matcher->matchQuery(&seq, target_seq_id, false);
 
     Hits hits;
-    const auto query_length = static_cast<float>(Q.size());
     for (size_t i = 0; i < prefilter_result.second; i++) {
       hit_t *res = prefilter_result.first + i;
 
       // COV_MODE_BIDIRECTIONAL:0, COV_MODE_QUERY:2, COV_MODE_LENGTH_SHORTER:5
       if (ops.covThr > 0.0 && (ops.covMode == 0 || ops.covMode == 2 || ops.covMode == 5)) {
-        if (!Util::canBeCovered(ops.covThr, ops.covMode, query_length, targets[res->seqId].size())) continue;
+        if (!Util::canBeCovered(ops.covThr, ops.covMode, Q.size(), targets[res->seqId].size())) continue;
       }
 
       hits.push_back(res->seqId);

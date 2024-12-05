@@ -5,6 +5,7 @@
 #include "gemmi/model.hpp"
 #include "seq.hpp"
 
+#include "ctpl/ctpl_stl.h"
 #include <cassert>
 #include <iostream>
 #include <matcher.hpp>
@@ -26,12 +27,11 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
     return seqDataList;
   }
 
-  std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-
-  RDKit::Conformer *conformer = new RDKit::Conformer();
-  create_RDKit_repr(*mol.get(), readStructure.st, *conformer, false);
-  mol->updatePropertyCache(false);
-  mol->addConformer(conformer, true);
+  // std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
+  // RDKit::Conformer *conformer = new RDKit::Conformer();
+  // create_RDKit_repr(*mol, readStructure.st, *conformer, false);
+  // mol->updatePropertyCache(false);
+  // mol->addConformer(conformer, true);
 
   for (size_t ch = 0; ch < readStructure.chain.size(); ch++) {
     size_t chainStart = readStructure.chain[ch].first;
@@ -41,7 +41,7 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
     SeqData seqData;
 
     if (chainLen <= 3) {
-      std::cout << "Skipping chain " << readStructure.names[ch] << " reason: TOO SHORT\n";
+      /*std::cout << "Skipping chain " << readStructure.names[ch] << " reason: TOO SHORT\n";*/
       continue;
     }
     bool allX = true;
@@ -53,7 +53,8 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
       }
     }
     if (allX) {
-      std::cout << "Skipping chain " << readStructure.names[ch] << " reason: NON-PROTEINS NOT SUPPORTED\n";
+      /*std::cout << "Skipping chain " << readStructure.names[ch] << " reason: NON-PROTEINS NOT
+       * SUPPORTED\n";*/
       continue;
     }
 
@@ -87,7 +88,8 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
 
     seqData.Seq3Di = alphabet3di;
     seqData.SeqAA = alphabetAA;
-    seqData.file_name = file_name;
+    seqData.file_name =
+        file_name.rfind('/') != std::string::npos ? file_name.substr(file_name.rfind('/') + 1) : file_name;
     seqData.chain_name = readStructure.chainNames[ch];
 
     if (seqData.Seq3Di.size() != seqData.SeqAA.size()) {
@@ -95,11 +97,11 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
       continue;
     }
 
-    seqData.mol = mol;
+    /*seqData.st = readStructure.st;*/
+    /*seqData.mol = mol;*/
     seqDataList.add_data(seqData);
     seqDataList.total_length += seqData.SeqAA.size();
     if (seqData.SeqAA.size() > seqDataList.max_length) seqDataList.max_length = seqData.SeqAA.size();
-
   }
 
   if (!seqDataList.get_data().empty()) seqDataList.success = true;
@@ -112,11 +114,38 @@ inline SeqCollection extract_all(FoldSeekOps &ops, const std::vector<std::string
 
   SeqCollection results;
   for (auto &file_name : file_names) {
-    auto reas = process_file(ops, mat, file_name);
+    SeqCollection reas = process_file(ops, mat, file_name);
     for (auto &seqData : reas) {
-      results.add_data(seqData);
       results.total_length += seqData.SeqAA.size();
       if (seqData.SeqAA.size() > results.max_length) results.max_length = seqData.SeqAA.size();
+      results.add_data(std::move(seqData));
+    }
+  }
+
+  if (!results.get_data().empty()) results.success = true;
+
+  return results;
+}
+
+inline SeqCollection extract_all_parallel(FoldSeekOps &ops, const std::vector<std::string> &file_names) {
+  SubstitutionMatrix mat(SubMatrix3Di, 2.0, ops.scoreBias);
+
+  SeqCollection results;
+  int num_threads = std::thread::hardware_concurrency();
+  ctpl::thread_pool pool(num_threads);
+  std::vector<std::future<SeqCollection>> futures;
+
+  for (auto &file_name : file_names) {
+    futures.emplace_back(
+        pool.push([file_name, &ops, &mat](int id) { return process_file(ops, mat, file_name); }));
+  }
+
+  for (auto &f : futures) {
+    auto reas = f.get();
+    for (auto &seqData : reas) {
+      results.total_length += seqData.SeqAA.size();
+      if (seqData.SeqAA.size() > results.max_length) results.max_length = seqData.SeqAA.size();
+      results.add_data(std::move(seqData));
     }
   }
 

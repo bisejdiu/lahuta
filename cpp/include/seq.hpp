@@ -42,11 +42,11 @@ struct SeqData {
   std::string chain_name;    // Chain name
 
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
+  gemmi::Structure st;
 };
 
 struct SeqCollection {
   void add_data(const SeqData entity) { data.push_back(entity); }
-
   const std::vector<SeqData> &get_data() const { return data; }
   std::vector<SeqData> &get_data() { return data; }
 

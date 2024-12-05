@@ -2,7 +2,7 @@
 #define LAHUTA_SEQ_ALIGNER_HPP
 
 #include "CalcProbTP.h"
-#include "align.hpp"
+#include "fseek/align.hpp"
 #include "fseek/ops.hpp"
 #include "matcher.hpp"
 #include "seq.hpp"
@@ -32,7 +32,6 @@ struct Scores {
   double prob;
 };
 
-
 struct AlignmentResult {
   // FIX: why do we need both Matcher::result_t and a vector of Matcher::result_t?
   std::vector<Matcher::result_t> ar;
@@ -42,17 +41,17 @@ struct AlignmentResult {
   /*Matcher::result_t res;*/
   /*std::shared_ptr<AlignmentScores> scores;*/
   bool success{false};
-  std::unique_ptr<SeqData> query;
-  std::unique_ptr<SeqData> target;
-
-  std::string query_alignment() const {
-    return alignment_from_cigar(query->SeqAA.c_str(), ar[0].qStartPos, SeqType::Query);
-  }
-
-  std::string target_alignment() const {
-    return alignment_from_cigar(target->SeqAA.c_str(), ar[0].dbStartPos, SeqType::Target);
-  }
-
+  /*std::shared_ptr<SeqData> query;*/
+  /*std::shared_ptr<SeqData> target;*/
+  /**/
+  /*std::string query_alignment() const {*/
+  /*  return alignment_from_cigar(query->SeqAA.c_str(), ar[0].qStartPos, SeqType::Query);*/
+  /*}*/
+  /**/
+  /*std::string target_alignment() const {*/
+  /*  return alignment_from_cigar(target->SeqAA.c_str(), ar[0].dbStartPos, SeqType::Target);*/
+  /*}*/
+  /**/
 private:
   enum class SeqType { Query = 0, Target = 1 };
 
@@ -154,7 +153,10 @@ public:
     is_initialized = true;
   }
 
-  AlignmentResult align(SeqData &Q, SeqData &T, FoldSeekOps &ops) {
+  void set_needs_tmaligner(bool value) { need_tmaligner = value; }
+  void set_needs_lddt(bool value) { need_lddt = value; }
+
+  AlignmentResult align(SeqData &Q, SeqData &T) {
 
     if (!is_initialized) throw std::runtime_error("SeqAligner is not initialized");
 
@@ -198,8 +200,8 @@ public:
 
       if (need_tmaligner) {
         tmres = compute_tm(T, res);
-        std::cout << "TMscore: " << tmres.tmscore << std::endl;
-        std::cout << "RMSD: " << tmres.rmsd << std::endl;
+        /*std::cout << "TMscore: " << tmres.tmscore << std::endl;*/
+        /*std::cout << "RMSD: " << tmres.rmsd << std::endl;*/
 
         if (tmres.tmscore < ops.tmScoreThr) {
           std::cout << "TMscore is lower than threshold" << std::endl;
@@ -211,7 +213,7 @@ public:
       }
       if (need_lddt) {
         lddtres = compute_lddt(res, T);
-        std::cout << "lddtres: " << lddtres.avgLddtScore << std::endl;
+        /*std::cout << "lddtres: " << lddtres.avgLddtScore << std::endl;*/
 
         if (lddtres.avgLddtScore < ops.lddtThr) {
           std::cout << "LDDT score is lower than threshold" << std::endl;
@@ -241,29 +243,16 @@ public:
     std::sort(result.begin(), result.end(), sorter);
 
     scores.prob = CalcProbTP::calculate(result.front().score);
-    AlignmentResult ro = {result, scores, tmres, true};
-    ro.query = std::make_unique<SeqData>(Q);
-    ro.target = std::make_unique<SeqData>(T);
+    AlignmentResult ro = {result, scores, tmres, result.size() > 0};
+    /*ro.query = std::make_unique<SeqData>(Q);*/
+    /*ro.target = std::make_unique<SeqData>(T);*/
     return ro;
   }
 
 private:
   /// target_length is the combined length of all sequences in the target collection
-  SeqAligner(FoldSeekOps &ops_, MatrixContainer &c, int target_length)
-      : ops(ops_), M(std::move(c)), evaluer(target_length, M.subMat3Di.get()) {}
-
-  FoldSeekOps &ops;
-  MatrixContainer M;
-
-  std::unique_ptr<TMaligner> tmaligner;
-  std::unique_ptr<LDDTCalculator> lddt_calculator;
-  EvalueNeuralNet evaluer;
-
-  bool need_tmaligner = ops.sortByStructureBits;
-  bool need_lddt = ops.sortByStructureBits ? true : ops.lddtThr > 0;
-  bool is_initialized = false;
-
-  friend class SeqAlignerBuilder;
+  SeqAligner(FoldSeekOps &ops_, MatrixContainer &m, int target_length)
+      : ops(ops_), M(std::move(m)), evaluer(target_length, M.subMat3Di.get()) {}
 
   void init_sw(StructureSmithWaterman &sw, Sequence &s3, Sequence &sa) {
     sw.ssw_init(&sa, &s3, M.tinySubMatAA.data(), M.tinySubMat3Di.data(), M.subMatAA.get());
@@ -333,6 +322,19 @@ private:
         res.backtrace,
         norm_mode);
   }
+
+  FoldSeekOps &ops;
+  MatrixContainer M;
+
+  std::unique_ptr<TMaligner> tmaligner;
+  std::unique_ptr<LDDTCalculator> lddt_calculator;
+  EvalueNeuralNet evaluer;
+
+  bool need_tmaligner = ops.sortByStructureBits;
+  bool need_lddt = ops.sortByStructureBits ? true : ops.lddtThr > 0;
+  bool is_initialized = false;
+
+  friend class SeqAlignerBuilder;
 };
 
 } // namespace lahuta

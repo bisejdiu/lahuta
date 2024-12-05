@@ -7,60 +7,9 @@
 #include <vector>
 
 #include "matcher.hpp"
-#include "ob/bitvec.h"
 #include "seq.hpp"
 
 namespace lahuta {
-
-inline std::vector<size_t> get_non_deletion_indices(const std::string &cigar) {
-  std::vector<size_t> indices;
-  size_t current_pos = 0;
-  size_t count = 0;
-
-  for (size_t i = 0; i < cigar.size(); ++i) {
-    char c = cigar[i];
-    if (c >= '0' && c <= '9') {
-      count = count * 10 + c - '0';
-    } else {
-      if (c != 'D') {
-        size_t repeats = (count == 0) ? 1 : count;
-        for (size_t j = 0; j < repeats; ++j) {
-          indices.push_back(current_pos + j);
-        }
-        current_pos += repeats;
-      } else {
-        current_pos += (count == 0 ? 1 : count);
-      }
-      count = 0;
-    }
-  }
-  return indices;
-}
-
-inline std::vector<size_t> get_non_insertion_indices(const std::string &cigar) {
-  std::vector<size_t> indices;
-  size_t current_pos = 0;
-  size_t count = 0;
-
-  for (size_t i = 0; i < cigar.size(); ++i) {
-    char c = cigar[i];
-    if (c >= '0' && c <= '9') {
-      count = count * 10 + c - '0';
-    } else {
-      if (c != 'I') {
-        size_t repeats = (count == 0) ? 1 : count;
-        for (size_t j = 0; j < repeats; ++j) {
-          indices.push_back(current_pos + j);
-        }
-        current_pos += repeats;
-      } else {
-        current_pos += (count == 0 ? 1 : count);
-      }
-      count = 0;
-    }
-  }
-  return indices;
-}
 
 class Mapper {
 public:
@@ -68,8 +17,8 @@ public:
       : query(query_), target(target_), res(res_) {}
 
   void map() {
-    query_indices = get_non_deletion_indices(res.backtrace);
-    target_indices = get_non_insertion_indices(res.backtrace);
+    query_indices = get_indices('D');
+    target_indices = get_indices('I');
   }
 
   void print() {
@@ -95,9 +44,20 @@ public:
     return target_indices[t_idx];
   };
 
+private:
+  std::vector<size_t> get_indices(const char exclude) const {
+    std::vector<size_t> indices;
+    for (size_t i = 0; i < res.backtrace.size(); ++i) {
+      char c = res.backtrace[i];
+      if (c != exclude) {
+        indices.push_back(i);
+      }
+    }
+    return indices;
+  }
+
+
 public:
-  /*private:*/
-  /*OBBitVec AtomMapTable;*/
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   SeqData query;
   SeqData target;

@@ -32,6 +32,13 @@ set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
+
+# set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -flto")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -flto -ffast-math")
+# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# find_library(JEMALLOC_LIB jemalloc REQUIRED)
+
 include(CheckIncludeFile)
 
 if (DEFINED ENV{CXXFLAGS})
@@ -121,9 +128,37 @@ endfunction()
 #     target_link_libraries(lex_parallel PRIVATE Eigen3::Eigen)
 # endif()
 # target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
+
 add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
 add_lahuta_executable(lex_fseek main_fseek.cpp)
+add_lahuta_executable(lex_fut main_future.cpp)
+
+# file(WRITE ${CMAKE_BINARY_DIR}/debug.entitlements
+# [=[<?xml version="1.0" encoding="UTF-8"?>
+# <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+# <plist version="1.0">
+# <dict>
+#     <key>com.apple.security.get-task-allow</key>
+#     <true/>
+# </dict>
+# </plist>]=])
+#
+# add_custom_command(
+#     TARGET lex_parallel
+#     POST_BUILD
+#     COMMAND codesign --force --sign - --entitlements ${CMAKE_BINARY_DIR}/debug.entitlements $<TARGET_FILE:lex_parallel>
+#     COMMENT "Signing binary with debug entitlements"
+# )
+# add_custom_command(
+#     TARGET lex_fut
+#     POST_BUILD
+#     COMMAND codesign --force --sign - --entitlements ${CMAKE_BINARY_DIR}/debug.entitlements $<TARGET_FILE:lex_fut>
+#     COMMENT "Signing binary with debug entitlements"
+# )
+
+# target_link_libraries(lex_parallel PRIVATE ${JEMALLOC_LIB})
+
 
 ### Python bindings ###
 if (USE_PYTHON)
