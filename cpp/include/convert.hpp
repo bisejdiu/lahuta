@@ -40,6 +40,7 @@ struct IR {
 void IR_to_RWMol(RDKit::RWMol &mol, const IR &ir);
 void create_RDKit_repr(RDKit::RWMol &mol, const gemmi::Structure &st,
                            RDKit::Conformer &conf, bool ign_h = false);
+std::shared_ptr<RDKit::RWMol> create_RDKit(const gemmi::Structure &st);
 
 RDKit::RWMol filter_atoms(RDKit::RWMol &mol, std::vector<int> &indices);
 RDKit::RWMol filter_with_conf(RDKit::RWMol &mol, std::vector<int> &indices);

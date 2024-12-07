@@ -58,6 +58,15 @@ void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ig
   }
 }
 
+std::shared_ptr<RDKit::RWMol> create_RDKit(const Structure &st) {
+  auto mol = std::make_shared<RDKit::RWMol>();
+  RDKit::Conformer *conformer = new RDKit::Conformer();
+  create_RDKit_repr(*mol, st, *conformer, false);
+  mol->updatePropertyCache(false);
+  mol->addConformer(conformer, true);
+  return mol;
+}
+
 void IR_to_RWMol(RWMol &mol, const IR &ir) {
   Conformer *conf = new Conformer();
   for (size_t i = 0; i < ir.atom_indices.size(); ++i) {

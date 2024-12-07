@@ -97,7 +97,7 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
       continue;
     }
 
-    /*seqData.st = readStructure.st;*/
+    seqData.st = readStructure.st;
     /*seqData.mol = mol;*/
     seqDataList.add_data(seqData);
     seqDataList.total_length += seqData.SeqAA.size();

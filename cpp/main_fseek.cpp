@@ -78,8 +78,8 @@ int main(int argc, char const *argv[]) {
       auto AR = aligner->align(query, target);
       if (!AR.success) continue;
 
-      Mapper mapper(query, target, AR.ar.front());
-      mapper.map();
+      Mapper mapper(query, target); // , AR.ar.front());
+      mapper.map(AR.ar.front());
       mapper.print();
 
       // FIX: building from mol changes it and crashes on the 2nd iteration bc bonds have been added

@@ -44,14 +44,14 @@ struct AlignmentResult {
   /*std::shared_ptr<SeqData> query;*/
   /*std::shared_ptr<SeqData> target;*/
   /**/
-  /*std::string query_alignment() const {*/
-  /*  return alignment_from_cigar(query->SeqAA.c_str(), ar[0].qStartPos, SeqType::Query);*/
-  /*}*/
-  /**/
-  /*std::string target_alignment() const {*/
-  /*  return alignment_from_cigar(target->SeqAA.c_str(), ar[0].dbStartPos, SeqType::Target);*/
-  /*}*/
-  /**/
+  std::string query_alignment(const SeqData &query) const {
+    return alignment_from_cigar(query.SeqAA.c_str(), ar[0].qStartPos, SeqType::Query);
+  }
+
+  std::string target_alignment(const SeqData &target) const {
+    return alignment_from_cigar(target.SeqAA.c_str(), ar[0].dbStartPos, SeqType::Target);
+  }
+
 private:
   enum class SeqType { Query = 0, Target = 1 };
 

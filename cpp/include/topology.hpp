@@ -18,14 +18,16 @@ public:
   std::vector<AtomType> atom_types;
   RingEntityCollection rings_vec;
   RDKit::RWMol *mol = nullptr;
-  Residues *residues = nullptr;
+  /*Residues *residues = nullptr;*/
+  std::unique_ptr<Residues> residues;
 
   Topology(RDKit::RWMol *mol) : mol(mol) {}
   Topology() = default;
-  ~Topology() { delete residues; }
+  /*~Topology() { delete residues; }*/
 
 public:
-  void build_residues(const RDKit::RWMol &mol) { residues = new Residues(mol); }
+  /*void build_residues(const RDKit::RWMol &mol) { residues = new Residues(mol); }*/
+  void build_residues(const RDKit::RWMol &mol) { residues = std::make_unique<Residues>(mol); };
 
   void assign_arpeggio_atom_types() {
 

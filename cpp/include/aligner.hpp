@@ -16,17 +16,17 @@ namespace lahuta {
 
 namespace alignment_computers {
 static void print_alignment(const SeqData &query, const SeqData &target, const AlignmentResult &AR) {
-  std::cout << "Result: \n" << Matcher::results_to_string(AR.ar) << "\n";
-  /*<< "Q Alignment: " << AR.query_alignment() << "\n"*/
-  /*<< "T Alignment: " << AR.target_alignment() << "\n";*/
+  std::cout << "Result: \n" << Matcher::results_to_string(AR.ar) << "\n"
+  << "Q Alignment: " << AR.query_alignment(query) << "\n"
+  << "T Alignment: " << AR.target_alignment(target) << "\n";
 }
 
 static void print_result(SeqData &query, SeqData &target, AlignmentResult &ar) {
-  /*std::cout << "Result: " << Matcher::results_to_string(ar.ar) << "\n"*/
-  /*          << "Q data: " << ar.ar.front().qStartPos << " " << ar.ar.front().qEndPos << "\n"*/
-  /*          << "T data: " << ar.ar.front().dbStartPos << " " << ar.ar.front().dbEndPos << "\n"*/
-  /*          << "Q Alignment: " << ar.query_alignment() << "\n"*/
-  /*          << "T Alignment: " << ar.target_alignment() << "\n";*/
+  std::cout << "Result: " << Matcher::results_to_string(ar.ar) << "\n"
+            << "Q data: " << ar.ar.front().qStartPos << " " << ar.ar.front().qEndPos << "\n"
+            << "T data: " << ar.ar.front().dbStartPos << " " << ar.ar.front().dbEndPos << "\n"
+            << "Q Alignment: " << ar.query_alignment(query) << "\n"
+            << "T Alignment: " << ar.target_alignment(target) << "\n";
 
   auto scores = std::make_shared<AlignmentScores>(query, target, ar.ar[0]);
   std::cout << "RMSD: " << ar.scores.rmsd << "\n"
@@ -122,7 +122,8 @@ private:
 
       if (pf_ops_.use_prefilter) {
         Hits hits = seq_filter->filter(query);
-        process_input_parallel(query, hits);
+        /*process_input_parallel(query, hits);*/
+        process_input(query, hits);
       } else {
         process_input(query, *targets);
       }

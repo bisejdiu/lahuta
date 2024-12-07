@@ -7,15 +7,6 @@
 
 namespace lahuta {
 
-namespace common {
-
-struct PairHash {
-  std::size_t operator()(const std::pair<int, int> &p) const {
-    return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
-  }
-};
-} // namespace common
-
 bool is_water(const RDKit::Atom &atom) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
@@ -279,6 +270,7 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
     if (!opts.include_water && is_water_hbond(*donor, *acceptor)) continue;
     if (!are_geometrically_viable(mol, *donor, *acceptor, opts)) continue;
 
+    if (donor->getIdx() == acceptor->getIdx() || dist < 2.0) continue;
     if (is_duplicate({donor->getIdx(), acceptor->getIdx()}, seen)) continue;
 
     contacts.add(Contact(

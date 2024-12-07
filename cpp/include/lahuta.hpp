@@ -110,6 +110,10 @@ public:
     l.topology = Topology(l.mol.get());
 
     l.create_topology();
+
+    Residues residues(*l.mol);
+    l.features = std::move(GroupTypeAnalysis::analyze(*l.mol, residues));
+
     return l;
   }
 
@@ -137,6 +141,8 @@ public:
 
   RDKit::RWMol &get_molecule() { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
+
+  const Topology &get_topology() { return topology; };
 
   const double get_cutoff() const { return _cutoff; }
 

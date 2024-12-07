@@ -32,6 +32,12 @@ template <typename Container, typename T> bool contains(const Container &contain
   return std::find(std::begin(container), std::end(container), value) != std::end(container);
 }
 
+struct PairHash {
+  std::size_t operator()(const std::pair<int, int> &p) const {
+    return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
+  }
+};
+
 inline bool is_ring_aromatic(const RDKit::RWMol &mol, const RDKit::INT_VECT &ring) {
   return std::all_of(ring.begin(), ring.end(), [&mol](int idx) {
     return mol.getAtomWithIdx(idx)->getIsAromatic();
