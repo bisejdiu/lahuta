@@ -37,6 +37,7 @@ int main(int argc, char const *argv[]) {
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Time: " << duration.count() << " ms" << std::endl;
+  return 0;
 
   /*luni.assign_molstar_atom_types();*/
 

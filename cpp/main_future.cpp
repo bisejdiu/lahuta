@@ -1,5 +1,4 @@
 #include "GraphMol/RWMol.h"
-#include "definitions.hpp"
 #include "lahuta.hpp"
 #include "mapper.hpp"
 #include "processor.hpp"
@@ -7,10 +6,15 @@
 #include "seq.hpp"
 #include "seq_aligner.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
-#include "common.hpp"
-#include <stdexcept>
 
 using namespace lahuta;
+
+/*void print_processor(SeqData &query, SeqData &target, AlignmentResult &ar) {*/
+/*  std::cout << "Result: \n"*/
+/*            << Matcher::results_to_string(ar.ar) << "\n"*/
+/*            << "Q Alignment: " << ar.query_alignment() << "\n"*/
+/*            << "T Alignment: " << ar.target_alignment() << "\n";*/
+/*}*/
 
 void mapping_processor(SeqData &query, SeqData &target, AlignmentResult &ar) {
 
@@ -25,57 +29,91 @@ void mapping_processor(SeqData &query, SeqData &target, AlignmentResult &ar) {
   /*mapper.map();*/
 
   std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
-            << target.file_name << "_" << target.chain_name << " : " 
-            << Matcher::results_to_string(ar.ar) << std::endl;
+            << target.file_name << "_" << target.chain_name << " : " << Matcher::results_to_string(ar.ar)
+            << std::endl;
+
+  // spdlog::warn("Mapping: {}_{} : {}_{} : {}", query.file_name, query.chain_name, target.file_name,
+  // target.chain_name,
+  //              Matcher::results_to_string(ar.ar));
+
   /*mapper.print();*/
   /*alignment_computers::print_result(query, target, ar);*/
 }
 
-void print_atoms(const RDKit::RWMol &mol, std::vector<int> atom_ids) {
-  for (const auto atom_id: atom_ids) {
-    auto atom = mol.getAtomWithIdx(atom_id);
-    auto ri = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    std::cout << "Atom: " << atom_id << " " << ri->getResidueName()  //
-              << "-" << ri->getResidueNumber() << "-" << ri->getName()  // 
-              << " :: " << ri->getResidueIndex() << "\n";
-  }
+void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
+
+  if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return;
+  if (ar.ar[0].eval > 1) return;
+
+  alignment_computers::print_result(query, target, ar);
+
+  auto luni = Luni::build(query.st);
+  auto mol = luni.get_molecule();
+  std::cout << "Molecule: " << query.file_name << " " << mol.getNumAtoms() << std::endl;
+
+  InteractionOptions opts{5.0};
+  Interactions interactions(luni, opts);
+
+  std::cout << "Ionic" << std::endl;
+  auto _5 = interactions.ionic();
+  _5.sort_interactions();
+  _5.print_interactions();
+
+  std::cout << "CationPi" << std::endl;
+  auto _7 = interactions.cationpi();
+  _7.sort_interactions();
+  _7.print_interactions();
+
+  std::cout << "PiStacking" << std::endl;
+  auto _8 = interactions.pistacking();
+  _8.sort_interactions();
+  _8.print_interactions();
+
+  auto luni_t = Luni::build(target.st);
+  auto mol_t = luni_t.get_molecule();
+  std::cout << "Molecule: " << target.file_name << " " << mol_t.getNumAtoms() << std::endl;
+
+  InteractionOptions opts_t{5.0};
+  Interactions interactions_t(luni_t, opts_t);
+
+  std::cout << "Ionic" << std::endl;
+  auto _5_t = interactions_t.ionic();
+  _5_t.sort_interactions();
+  _5_t.print_interactions();
+
+  std::cout << "CationPi" << std::endl;
+  auto _7_t = interactions_t.cationpi();
+  _7_t.sort_interactions();
+  _7_t.print_interactions();
+
+  std::cout << "PiStacking" << std::endl;
+  auto _8_t = interactions_t.pistacking();
+  _8_t.sort_interactions();
+  _8_t.print_interactions();
+
+  save_file("/Users/bsejdiu/projects/lahuta/cpp/build/aligned_q.pdb", query, ar);
+  save_file("/Users/bsejdiu/projects/lahuta/cpp/build/aligned_t.pdb", target, ar);
 }
 
 std::vector<int> get_residue_numbers(const Residues &residues, const SeqData &sd) {
   std::vector<int> res_nums;
   /*res_nums.reserve(mol.getNumAtoms() / 10);*/
-  for (const auto &residue: residues) {
+  for (const auto &residue : residues) {
     if (residue.chain_id != sd.chain_name) continue;
     res_nums.push_back(residue.number);
   }
   return res_nums;
 }
 
-void find_and_log_residue(const Luni &luni, const LuniMapper &luni_mapper, int atom_id) {
-
-  auto &mol = luni.get_molecule();
-  auto atom = mol.getAtomWithIdx(atom_id);
-  auto ri = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-  auto r_ix = ri->getResidueIndex();
-  auto r_id = ri->getResidueNumber();
-
-  auto mapped_resid = luni_mapper.get_mapped_resid(atom_id);
-  if (mapped_resid) {
-    std::cout << "Residue index: "
-              << r_id << " " << r_ix << " -> "
-              << *mapped_resid << " "
-              << ri->getName() << "-" << ri->getResidueName()
-              << "-" << ri->getResidueNumber() <<  std::endl;
-  }
-}
-
 void mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
+
+  using Mapping = TopologyMapper::MappingType;
 
   if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return;
   if (ar.ar[0].eval > 1) return;
 
   std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
-            << target.file_name << "_" << target.chain_name << " : " 
+            << target.file_name << "_" << target.chain_name << " : "              //
             << Matcher::results_to_string(ar.ar) << std::endl;
 
   alignment_computers::print_result(query, target, ar);
@@ -85,32 +123,30 @@ void mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
   // 0. Choose the alignment result
   Matcher::result_t res = ar.ar.front();
 
-  // 1. Initialize the mapper
-  LuniMapper luni_mapper_q(query,  LuniMapper::MappingType::Query);
-  LuniMapper luni_mapper_t(target, LuniMapper::MappingType::Target);
-
-  luni_mapper_q.map(res);
-  luni_mapper_t.map(res);
+  auto mapper = LahutaMapper(query, target);
+  mapper.map(res);
 
   // 2. Map indices
-  // 795 797 798  --- 786 787
-  find_and_log_residue(luni_mapper_q.get_luni(), luni_mapper_q, 795);
-  find_and_log_residue(luni_mapper_q.get_luni(), luni_mapper_q, 797);
-  find_and_log_residue(luni_mapper_q.get_luni(), luni_mapper_q, 798);
-  find_and_log_residue(luni_mapper_q.get_luni(), luni_mapper_q, 786);
-  find_and_log_residue(luni_mapper_q.get_luni(), luni_mapper_q, 787);
+  InteractionOptions opts{5.0};
 
-  // 530 532 533  --- 521 522
-  find_and_log_residue(luni_mapper_t.get_luni(), luni_mapper_t, 530);
-  find_and_log_residue(luni_mapper_t.get_luni(), luni_mapper_t, 532);
-  find_and_log_residue(luni_mapper_t.get_luni(), luni_mapper_t, 533);
-  find_and_log_residue(luni_mapper_t.get_luni(), luni_mapper_t, 521);
-  find_and_log_residue(luni_mapper_t.get_luni(), luni_mapper_t, 522);
+  Interactions ic_q(mapper.get_luni(Mapping::Query), opts);
+  Interactions ic_t(mapper.get_luni(Mapping::Target), opts);
+
+  std::cout << "Q Ionic" << std::endl;
+  auto _5 = ic_q.ionic();
+  _5.sort_interactions();
+  _5.print_interactions();
+
+  std::cout << "T Ionic" << std::endl;
+  Contacts _5_t = ic_t.ionic();
+  _5_t.sort_interactions();
+  _5_t.print_interactions();
+
+  std::cout << "mapping check" << std::endl;
+  /*nm.evaluate(_5, Mapper::MappingType::Query, _5_t, Mapper::MappingType::Target);*/
+  mapper.evaluate(ic_q.hbond(), Mapping::Query, ic_t.hbond(), Mapping::Target);
+  std::cout << "end" << std::endl;
 }
-
-// TODO: 1. Implement file-streaming for very large number of files.
-//       2. Write a map processor that actually maps interactions.
-//       3. Avoid re-computing Luni
 
 struct LahutaOptions {
   bool use_prefilter = false;
@@ -137,9 +173,9 @@ int main() {
     };
 
     LahutaProcessor::FileList query_files_t = {
-      "/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",
-      "/Users/bsejdiu/progs/foldseek/build/src/test/4nc3.cif",
-      "/Users/bsejdiu/progs/foldseek/build/src/test/8w8b.cif",
+        "/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",
+        "/Users/bsejdiu/progs/foldseek/build/src/test/4nc3.cif",
+        "/Users/bsejdiu/progs/foldseek/build/src/test/8w8b.cif",
     };
 
     LahutaProcessor::FileList target_files = {
@@ -150,8 +186,8 @@ int main() {
     };
 
     LahutaProcessor::FileList target_files_t = {
-      "/Users/bsejdiu/progs/foldseek/build/src/test2/4ami.cif",
-      "/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",
+        "/Users/bsejdiu/progs/foldseek/build/src/test2/4ami.cif",
+        "/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",
     };
 
     LahutaProcessor::ProcessingConfig config{
@@ -170,13 +206,13 @@ int main() {
 
     std::unique_ptr<LahutaAligner> aligner = std::make_unique<LahutaAligner>(ops, pf_ops);
     aligner->set_computer(mapping_processor_w);
+    /*aligner->set_computer(mapping_processor);*/
 
     LahutaProcessor processor(config); // , ops, pf_ops);
     processor.set_runner(std::move(aligner));
     /*processor.process_files(query_files);*/
     processor.process_files(query_files, target_files);
     /*processor.process_files({"/Users/bsejdiu/projects/lahuta/cpp/build/4ami.cif"}, pdb_targets);*/
-
 
     /*processor.process_files(query_files, pdb_targets);*/
     /*processor.process_files(query_files_t, target_files_t);*/

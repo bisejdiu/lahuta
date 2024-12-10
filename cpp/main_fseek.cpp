@@ -1,9 +1,5 @@
-#include "CalcProbTP.h"
-#include "fseek/align.hpp"
 #include "fseek/ops.hpp"
-
 #include "lahuta.hpp"
-#include "mapper.hpp"
 #include "prefilter.hpp"
 #include "seq_aligner_builder.hpp"
 
@@ -78,15 +74,10 @@ int main(int argc, char const *argv[]) {
       auto AR = aligner->align(query, target);
       if (!AR.success) continue;
 
-      Mapper mapper(query, target); // , AR.ar.front());
-      mapper.map(AR.ar.front());
-      mapper.print();
-
       // FIX: building from mol changes it and crashes on the 2nd iteration bc bonds have been added
       /*Luni luni = Luni::from_RDKit(query.mol);*/
       Luni luni = Luni::build(query.st);
       /*Luni luni(query.file_name);*/
-      std::cout << "Helo from Luni: " << luni.get_molecule().getNumAtoms() << std::endl;
 
       std::cout << "New result: \n" << Matcher::results_to_string(AR.ar) << std::endl;
       std::cout << "Q data: " << AR.ar.front().qStartPos << " " << AR.ar.front().qEndPos << std::endl;

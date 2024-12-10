@@ -1,7 +1,6 @@
 #ifndef LAHUTA_ALIGNER_HPP
 #define LAHUTA_ALIGNER_HPP
 
-/*#include "processor.hpp"*/
 #include "fseek/ops.hpp"
 #include "fseek/utils.hpp"
 #include "prefilter.hpp"
@@ -122,8 +121,8 @@ private:
 
       if (pf_ops_.use_prefilter) {
         Hits hits = seq_filter->filter(query);
-        /*process_input_parallel(query, hits);*/
-        process_input(query, hits);
+        process_input_parallel(query, hits);
+        /*process_input(query, hits);*/
       } else {
         process_input(query, *targets);
       }
