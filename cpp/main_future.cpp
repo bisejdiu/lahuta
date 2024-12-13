@@ -1,3 +1,4 @@
+#include "Geometry/point.h"
 #include "GraphMol/RWMol.h"
 #include "lahuta.hpp"
 #include "mapper.hpp"
@@ -95,14 +96,30 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
   save_file("/Users/bsejdiu/projects/lahuta/cpp/build/aligned_t.pdb", target, ar);
 }
 
-std::vector<int> get_residue_numbers(const Residues &residues, const SeqData &sd) {
-  std::vector<int> res_nums;
-  /*res_nums.reserve(mol.getNumAtoms() / 10);*/
-  for (const auto &residue : residues) {
-    if (residue.chain_id != sd.chain_name) continue;
-    res_nums.push_back(residue.number);
-  }
-  return res_nums;
+Contacts compute_contacts(const Luni &luni, const InteractionOptions &opts) {
+  Interactions interactions(luni, opts);
+  auto ionic = interactions.ionic();
+  auto cationpi = interactions.cationpi();
+  auto pistacking = interactions.pistacking();
+  auto hbond = interactions.hbond();
+  auto weak_hbond = interactions.weak_hbond();
+  auto hydrophobic = interactions.hydrophobic();
+  auto halogen = interactions.halogen();
+  auto metalic = interactions.metalic();
+
+  Contacts contacts;
+  contacts.add(ionic);
+  contacts.add(cationpi);
+  contacts.add(pistacking);
+  contacts.add(hbond);
+  contacts.add(weak_hbond);
+  contacts.add(hydrophobic);
+  contacts.add(halogen);
+  contacts.add(metalic);
+
+  contacts.sort_interactions();
+  std::cout << "Total Contacts: " << contacts.size() << std::endl;
+  return contacts;
 }
 
 void mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
@@ -132,20 +149,49 @@ void mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
   Interactions ic_q(mapper.get_luni(Mapping::Query), opts);
   Interactions ic_t(mapper.get_luni(Mapping::Target), opts);
 
-  std::cout << "Q Ionic" << std::endl;
-  auto _5 = ic_q.ionic();
-  _5.sort_interactions();
-  _5.print_interactions();
+  // std::cout << "Q Ionic" << std::endl;
+  // auto _5 = ic_q.ionic();
+  // _5.sort_interactions();
+  // _5.print_interactions();
 
-  std::cout << "T Ionic" << std::endl;
-  Contacts _5_t = ic_t.ionic();
-  _5_t.sort_interactions();
-  _5_t.print_interactions();
+  // std::cout << "T Ionic" << std::endl;
+  // Contacts _5_t = ic_t.ionic();
+  // _5_t.sort_interactions();
+  // _5_t.print_interactions();
+
+  // Contact v = _5_t.interactions[0];
+  /*std::cout << "v: " << v.*/
 
   std::cout << "mapping check" << std::endl;
   /*nm.evaluate(_5, Mapper::MappingType::Query, _5_t, Mapper::MappingType::Target);*/
-  mapper.evaluate(ic_q.hbond(), Mapping::Query, ic_t.hbond(), Mapping::Target);
-  std::cout << "end" << std::endl;
+  /*mapper.evaluate(ic_q.hbond(), Mapping::Query, ic_t.hbond(), Mapping::Target);*/
+
+  /*auto contacts_q = compute_contacts(mapper.get_luni(Mapping::Query), opts);*/
+  /*auto contacts_t = compute_contacts(mapper.get_luni(Mapping::Target), opts);*/
+
+  auto contacts_q = ic_q.compute_contacts();
+  auto contacts_t = ic_t.compute_contacts();
+
+  auto count = mapper.evaluate(contacts_q, Mapping::Query, contacts_t, Mapping::Target);
+  std::cout << "end: " << count << std::endl;
+}
+
+std::optional<Matcher::result_t> mapping_processor_w2(SeqData &query, SeqData &target, AlignmentResult &ar) {
+
+  if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return std::nullopt;
+  if (ar.ar[0].eval > 1) return std::nullopt;
+
+  std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
+            << target.file_name << "_" << target.chain_name << " : "              //
+            << Matcher::results_to_string(ar.ar) << std::endl;
+
+  alignment_computers::print_result(query, target, ar);
+
+  if (ar.ar.empty()) return std::nullopt;
+
+  Matcher::result_t res = ar.ar.front();
+
+  return res;
 }
 
 struct LahutaOptions {
@@ -190,6 +236,12 @@ int main() {
         "/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",
     };
 
+    LahutaProcessor::FileList qf = {
+        "/Users/bsejdiu/tmp/tests/hemoglobin/2dn1_both_assemblies_renamed.cif",
+        "/Users/bsejdiu/tmp/tests/hemoglobin/2dn2.cif"};
+
+    LahutaProcessor::FileList tf = {"/Users/bsejdiu/tmp/tests/hemoglobin/2dn2.cif"};
+
     LahutaProcessor::ProcessingConfig config{
         .query_chunk_size = 10,
         .target_chunk_size = 20000,
@@ -202,16 +254,20 @@ int main() {
     // FIX: test with using alternative alignments
     FoldSeekOps ops;
     PrefilterOptions pf_ops;
-    pf_ops.use_prefilter = true;
+    pf_ops.use_prefilter = false;
 
     std::unique_ptr<LahutaAligner> aligner = std::make_unique<LahutaAligner>(ops, pf_ops);
     aligner->set_computer(mapping_processor_w);
+    /*aligner->set_computer(mapping_processor_w2);*/
     /*aligner->set_computer(mapping_processor);*/
 
     LahutaProcessor processor(config); // , ops, pf_ops);
     processor.set_runner(std::move(aligner));
     /*processor.process_files(query_files);*/
+
     processor.process_files(query_files, target_files);
+    /*processor.process_files(qf);*/
+
     /*processor.process_files({"/Users/bsejdiu/projects/lahuta/cpp/build/4ami.cif"}, pdb_targets);*/
 
     /*processor.process_files(query_files, pdb_targets);*/

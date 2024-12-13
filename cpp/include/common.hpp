@@ -14,8 +14,8 @@ struct AtomInfo {
   AtomInfo(RDKit::Atom *atom, const RDKit::AtomPDBResidueInfo *info, bool is_hydrogen)
       : atom(atom), info(info), is_hydrogen(is_hydrogen) {}
 
-  AtomInfo(RDKit::RWMol &mol, int idx)
-      : atom(mol.getAtomWithIdx(idx)),
+  AtomInfo(const RDKit::RWMol &mol, int idx)
+      : atom(const_cast<RDKit::Atom*>(mol.getAtomWithIdx(idx))),
         info(static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo())),
         is_hydrogen(atom->getAtomicNum() == 1) {}
 };

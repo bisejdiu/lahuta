@@ -67,7 +67,7 @@ void bind_contacts(py::module &m) {
       .def("sort_interactions", &Contacts::sort_interactions)
       .def("sort_if_not_sorted", &Contacts::sort_if_not_sorted)
       .def_static("prepare_input", &Contacts::prepare_input, py::arg("lhs"), py::arg("rhs"))
-      .def("add", py::overload_cast<Contacts &>(&Contacts::add), py::arg("contacts"))
+      .def("add", py::overload_cast<const Contacts &>(&Contacts::add), py::arg("contacts"))
       .def("add", py::overload_cast<const Contact &>(&Contacts::add), py::arg("interaction"))
       .def(
           "add",
@@ -76,7 +76,7 @@ void bind_contacts(py::module &m) {
           py::arg("e2"),
           py::arg("d"),
           py::arg("t"))
-      .def("add", py::overload_cast<std::vector<Contact> &>(&Contacts::add), py::arg("interactions"))
+      .def("add", py::overload_cast<const std::vector<Contact> &>(&Contacts::add), py::arg("interactions"))
       .def(
           "add_many",
           (void(Contacts::*)(

@@ -131,11 +131,13 @@ private:
 };
 
 struct EquivalencyConfig {
-  bool contact_type = false;
-  bool number_of_atoms = false;
-  bool atom_name = false;
-  bool element = false;
-  bool resname = false;
+  bool contact_resolution = false; // Same resolution
+  bool contact_type = true;        // Same interaction type (takes precedence over hbond_type)
+  bool hbond_type = false;         // Same hydrogen bond type
+  bool number_of_atoms = false;    // Same number of atoms
+  bool atom_name = false;          // Same atom name
+  bool element = false;            // Same element
+  bool resname = false;            // Same residue name
 };
 
 class TopologicalEquivalency {
@@ -160,7 +162,8 @@ public:
   bool evaluate(const std::vector<const RDKit::Atom *> a1, const std::vector<const RDKit::Atom *> a2) const {
     if (a1.empty() || a2.empty()) return false;
     if (cfg.number_of_atoms && (a1.size() != a2.size())) return false;
-    if (!cfg.number_of_atoms) return evaluate(a1.front(), a2.front()); // FIX: check the mappable atom
+    if (!cfg.number_of_atoms)
+      return evaluate(a1.front(), a2.front()); // FIX: not first, but get the mappable atom
 
     for (auto ix = 0; ix < a1.size(); ix++) {
       if (!evaluate(a1[ix], a2[ix])) return false;
@@ -253,46 +256,72 @@ public:
     return pair1 && pair2;
   }
 
-  void evaluate(const Contacts &c1, Mapping m1, const Contacts &c2, Mapping m2) const {
+  int evaluate(const Contacts &c1, Mapping m1, const Contacts &c2, Mapping m2) {
     if (m1 == m2) throw std::runtime_error("Mapping not sensible between same object type");
     if (!te) throw std::runtime_error("No alignment result has been mapped.");
 
-    // TODO: Optimize! This is O(n^2). Interactions can be sorted, so we may be able to do better. The
-    // should_consider checks help, but they only mitigate the issue. We can also avoid some overhead with
-    // returning tuples by defining temporary vectors and using them to store atoms, but this, too, is not an
-    // ideal solution. Ideally, we should be able to tell when we have exceeded the equivalence point in the
-    // alignment and stop checking.
+    // TODO: Optimize! This is O(n^2). Interactions can be sorted, so we may be able to do better.
+    // `should_consider` checks reduce the number of calls, but they only mitigate the issue. We can also
+    // avoid some overhead with returning tuples by defining temporary vectors and using them to store atoms,
+    // but this, too, is not an ideal solution. Ideally, we should be able to tell when we have exceeded the
+    // equivalence point in the alignment and stop checking beyond that point.
+
+    int count = 0;
     for (const auto &i : c1.interactions) {
       auto [c1_e1, c1_e2] = get_entity_atoms(i, m1);
       if (!te->should_consider(c1_e1, m1) || !te->should_consider(c1_e2, m1)) continue;
       for (const auto &j : c2.interactions) {
+        if (cfg.contact_resolution && !is_same_resolution(i, j)) continue;
+
         auto [c2_e1, c2_e2] = get_entity_atoms(j, m2);
         if (!te->should_consider(c2_e1, m2) || !te->should_consider(c2_e2, m2)) continue;
 
-        if (cfg.contact_type && i.type != j.type) continue;
-        auto pair1 = te->evaluate(c1_e1, c2_e1);
-        auto pair2 = te->evaluate(c1_e2, c2_e2);
+        if (handle_contact_type(i, j)) continue;
+
+        bool pair1 = te->evaluate(c1_e1, c2_e1);
+        bool pair2 = te->evaluate(c1_e2, c2_e2);
 
         if (pair1 && pair2) {
           log_contact(qm, i);
           log_contact(tm, j);
           std::cout << std::endl;
+          count++;
           break;
         }
       }
     }
+
+    return count;
+  }
+
+  bool is_same_resolution(const Contact &c1, const Contact &c2) const {
+    if (get_entity_type(c1.entity1) != get_entity_type(c2.entity1)) return false;
+    if (get_entity_type(c1.entity2) != get_entity_type(c2.entity2)) return false;
+    return true;
+  }
+
+  bool handle_contact_type(const Contact &i, const Contact &j) {
+    static auto is_hbond_type = [](const InteractionType type) {
+      return type == InteractionType::HydrogenBond || type == InteractionType::WeakHydrogenBond;
+    };
+
+    if (cfg.hbond_type && is_hbond_type(i.type) && is_hbond_type(j.type)) return i.type != j.type;
+    if (!cfg.hbond_type && is_hbond_type(i.type) && is_hbond_type(j.type)) return false;
+    if (cfg.contact_type) return i.type != j.type;
+
+    return false;
   }
 
   void log_contact(const TopologyMapper &lm, const Contact c) const noexcept {
     std::string e1_atoms = stringify_atom_ids(lm.get_entity_atoms(c.entity1));
     std::string e2_atoms = stringify_atom_ids(lm.get_entity_atoms(c.entity2));
 
-    std::cout << "Interaction between entity "                                              //
+    std::cout << "Mapped Interaction between entity "                                       //
               << entity_type_to_string(get_entity_type(c.entity1)) << " ("                  //
               << get_entity_index(c.entity1) << ") and entity "                             //
               << entity_type_to_string(get_entity_type(c.entity2)) << " ("                  //
               << get_entity_index(c.entity2) << ") with distance " << c.distance << " --- " //
-              << e1_atoms << " --- " << e2_atoms << "\n";
+              << e1_atoms << " --- " << e2_atoms << " " << interaction_type_to_string(c.type) << "\n";
   }
 
   std::string stringify_atom_ids(const std::vector<const RDKit::Atom *> &atoms) const {

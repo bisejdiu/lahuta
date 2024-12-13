@@ -244,8 +244,11 @@ AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &ato
 
 Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
 
+  const double distFactor = 1.2;
+  const constexpr double MAX_LINE_OF_SIGHT_DISTANCE = 3.0;
+
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
-  const auto &mol = luni.get_molecule();
+  auto &mol = luni.get_molecule();
 
   const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
   const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
@@ -257,8 +260,51 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
-    const auto &donor = donors.get_data()[donor_index].atoms.front();
-    const auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
+    auto &donor = donors.get_data()[donor_index].atoms.front();
+    auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
+
+    // check the line of sight
+    const double distMax = distFactor * MAX_LINE_OF_SIGHT_DISTANCE;
+    auto donor_com = donors.get_data()[donor_index].center;
+    auto acceptor_com = acceptors.get_data()[acceptor_index].center;
+
+    RDGeom::Point3D midpoint = (*donor_com + *acceptor_com) / 2;
+
+    FastNS grid = FastNS(luni.get_conformer().getPositions(), distMax, true);
+    auto ns = grid.search({midpoint});
+
+    // bool line_of_sight_blocked = false;
+    // for (const auto &[pair, dist] : ns) {
+    //   auto &[_, j] = pair;
+
+    //   const RDKit::Atom *atom = mol.getAtomWithIdx(j);
+
+    //   if (atom->getAtomicNum() == 1) continue;
+
+    //   auto vdw = gemmi::vdw_radius(gemmi::El(static_cast<unsigned char>(atom->getAtomicNum())));
+    //   if (vdw * vdw * distFactor * distFactor <= dist) continue;
+
+    //   AtomInfo atom_1(mol, donor->getIdx());
+    //   AtomInfo atom_2(mol, acceptor->getIdx());
+    //   AtomInfo atom_3(mol, atom->getIdx());
+    //   if (!is_same_conformer(atom_1, atom_2) || !is_same_conformer(atom_1, atom_3)) {
+    //     continue;
+    //   }
+
+    //   AtomEntity v = donors.get_data()[donor_index];
+    //   AtomEntity w = acceptors.get_data()[acceptor_index];
+
+    //   if (v.has_atom(atom) || w.has_atom(atom)) continue;
+
+    //   auto atom_pos = luni.get_conformer().getAtomPos(atom->getIdx());
+    //   if ((compute_dist_sq(*v.center, atom_pos) < 1.0) || (compute_dist_sq(*w.center, atom_pos) < 1.0)) {
+    //     continue;
+    //   }
+
+    //   line_of_sight_blocked = true;
+    // }
+
+    // if (line_of_sight_blocked) continue;
 
     // FIX: improve this (it only checks residue numbers)
     if (are_residueids_close(mol, *donor, *acceptor, 0)) continue;

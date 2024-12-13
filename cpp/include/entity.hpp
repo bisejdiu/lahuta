@@ -36,6 +36,10 @@ inline EntityType get_entity_type(EntityID id) { return static_cast<EntityType>(
 /// Extract the EntityIndex from an EntityID
 inline uint64_t get_entity_index(EntityID id) { return id & ENTITY_INDEX_MASK; }
 
+inline bool is_same_type(EntityID id1, EntityID id2) {
+  return get_entity_type(id1) == get_entity_type(id2);
+}
+
 /// Compare two EntityTypes by priority
 inline bool is_higher_priority(EntityType type1, EntityType type2) {
   return static_cast<uint8_t>(type1) < static_cast<uint8_t>(type2);
