@@ -53,6 +53,7 @@ void _transform_coordinates(
 FastNS::FastNS(const std::vector<RDGeom::Point3D> &coords, double cutoff, int max_attempts) : cutoff(cutoff) {
 
   std::array<float, kDIMENSIONS> pbox = {0.0f, 0.0f, 0.0f};
+  // NOTE: copy to avoid modifying the input vector (is this necessary?)
   std::vector<RDGeom::Point3D> _coords(coords);
 
   std::vector<double> _lmin(3, std::numeric_limits<double>::max());

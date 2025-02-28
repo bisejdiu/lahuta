@@ -220,6 +220,7 @@ Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
                                const PdbReadOptions& options) {
   int line_num = 0;
   unsigned int atom_num = 0;
+  unsigned int residue_idx = 0;
   auto wrong = [&line_num](const std::string& msg) {
     fail("Problem in line " + std::to_string(line_num) + ": " + msg);
   };
@@ -283,6 +284,7 @@ Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
           if (after_ter)
             resi->entity_type = resi->is_water() ? EntityType::Water
                                                  : EntityType::NonPolymer;
+          resi->idx = residue_idx++;
         } else {
           resi = &chain->residues[it->second];
         }

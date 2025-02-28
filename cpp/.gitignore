@@ -33,6 +33,12 @@
 
 # build directory
 build/
+cmake-build-debug
+
+# config files
+*.DS_Store
+*.swp
+*.idea
 
 # format
 .cache/

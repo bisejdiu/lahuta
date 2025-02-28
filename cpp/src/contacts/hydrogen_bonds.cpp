@@ -7,15 +7,7 @@
 
 namespace lahuta {
 
-namespace common {
-
-struct PairHash {
-  std::size_t operator()(const std::pair<int, int> &p) const {
-    return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
-  }
-};
-} // namespace common
-
+// FIX: use the new syntax to check for waters
 bool is_water(const RDKit::Atom &atom) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
@@ -253,8 +245,11 @@ AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &ato
 
 Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
 
+  const double distFactor = 1.2;
+  const constexpr double MAX_LINE_OF_SIGHT_DISTANCE = 3.0;
+
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
-  const auto &mol = luni.get_molecule();
+  auto &mol = luni.get_molecule();
 
   const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
   const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
@@ -262,12 +257,57 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
   EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
 
+  std::cout << "results: " << results.size() << std::endl;
   std::unordered_set<std::pair<int, int>, common::PairHash> seen;
+
+  const double distMax = distFactor * MAX_LINE_OF_SIGHT_DISTANCE;
+  FastNS grid = FastNS(luni.get_conformer().getPositions(), distMax, true);
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
-    const auto &donor = donors.get_data()[donor_index].atoms.front();
-    const auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
+    auto &donor = donors.get_data()[donor_index].atoms.front();
+    auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
+
+    // check the line of sight
+    auto donor_com = donors.get_data()[donor_index].center;
+    auto acceptor_com = acceptors.get_data()[acceptor_index].center;
+
+    RDGeom::Point3D midpoint = (*donor_com + *acceptor_com) / 2;
+
+    auto ns = grid.search({midpoint});
+
+    // bool line_of_sight_blocked = false;
+    // for (const auto &[pair, dist] : ns) {
+    //   auto &[_, j] = pair;
+
+    //   const RDKit::Atom *atom = mol.getAtomWithIdx(j);
+
+    //   if (atom->getAtomicNum() == 1) continue;
+
+    //   auto vdw = gemmi::vdw_radius(gemmi::El(static_cast<unsigned char>(atom->getAtomicNum())));
+    //   if (vdw * vdw * distFactor * distFactor <= dist) continue;
+
+    //   AtomInfo atom_1(mol, donor->getIdx());
+    //   AtomInfo atom_2(mol, acceptor->getIdx());
+    //   AtomInfo atom_3(mol, atom->getIdx());
+    //   if (!is_same_conformer(atom_1, atom_2) || !is_same_conformer(atom_1, atom_3)) {
+    //     continue;
+    //   }
+
+    //   AtomEntity v = donors.get_data()[donor_index];
+    //   AtomEntity w = acceptors.get_data()[acceptor_index];
+
+    //   if (v.has_atom(atom) || w.has_atom(atom)) continue;
+
+    //   auto atom_pos = luni.get_conformer().getAtomPos(atom->getIdx());
+    //   if ((compute_dist_sq(*v.center, atom_pos) < 1.0) || (compute_dist_sq(*w.center, atom_pos) < 1.0)) {
+    //     continue;
+    //   }
+
+    //   line_of_sight_blocked = true;
+    // }
+
+    // if (line_of_sight_blocked) continue;
 
     // FIX: improve this (it only checks residue numbers)
     if (are_residueids_close(mol, *donor, *acceptor, 0)) continue;
@@ -279,6 +319,7 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
     if (!opts.include_water && is_water_hbond(*donor, *acceptor)) continue;
     if (!are_geometrically_viable(mol, *donor, *acceptor, opts)) continue;
 
+    if (donor->getIdx() == acceptor->getIdx() || dist < 2.0) continue;
     if (is_duplicate({donor->getIdx(), acceptor->getIdx()}, seen)) continue;
 
     contacts.add(Contact(

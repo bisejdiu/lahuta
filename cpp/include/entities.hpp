@@ -64,6 +64,7 @@ struct AtomEntity {
   size_t get_id() const { return id; }
   const RDGeom::Point3D& get_center() const { return *center; }
   const RDKit::Atom *get_data() const { return atom; }
+  bool has_atom(const RDKit::Atom *atom_) const { return std::find(atoms.begin(), atoms.end(), atom_) != atoms.end(); }
 
 
   explicit AtomEntity(
@@ -91,6 +92,7 @@ struct RingEntity {
   size_t get_id() const { return id; }
   const RDGeom::Point3D& get_center() const { return center; }
   std::vector<const RDKit::Atom *> get_data() const { return atoms; }
+  bool has_atom(const RDKit::Atom *atom) const { return std::find(atoms.begin(), atoms.end(), atom) != atoms.end(); }
 
 public:
   explicit RingEntity(
@@ -114,7 +116,7 @@ struct GroupEntity {
   size_t get_id() const { return id; }
   const RDGeom::Point3D& get_center() const { return center; }
   std::vector<const RDKit::Atom *> get_data() const { return atoms; }
-
+  bool has_atom(const RDKit::Atom *atom) const { return std::find(atoms.begin(), atoms.end(), atom) != atoms.end(); }
 
   void set_id(size_t id_) { id = id_; }
 

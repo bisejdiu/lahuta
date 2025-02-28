@@ -76,7 +76,8 @@ void Contacts::print_interactions() const {
               << get_entity_index(interaction.entity1) << ") and entity "
               << entity_type_to_string(get_entity_type(interaction.entity2)) << " ("
               << get_entity_index(interaction.entity2) << ") with distance "
-              << interaction.distance << " --- " << entity1_atoms << " --- " << entity2_atoms << "\n";
+              << interaction.distance << " --- " << entity1_atoms << " --- " << entity2_atoms << " "
+              << interaction_type_to_string(interaction.type) << "\n";
   }
 }
 

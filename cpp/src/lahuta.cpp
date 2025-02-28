@@ -387,6 +387,7 @@ std::vector<std::string> Luni::find_elements(const std::vector<int> &atomic_numb
   return elements;
 }
 
+// FIX: not a good idea to define the template here
 template <> const RDKit::Atom &Luni::get_entity<RDKit::Atom>(EntityID id) const {
   auto index = get_entity_index(id);
   auto r = mol->getAtomWithIdx(index);

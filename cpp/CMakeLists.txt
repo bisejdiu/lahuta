@@ -29,9 +29,16 @@ set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
 # set(SANITIZER "thread")
 
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
+#if(NOT CMAKE_BUILD_TYPE)
+#    set(CMAKE_BUILD_TYPE Release)
+#endif()
+
+# set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -flto")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -flto -ffast-math")
+# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+# find_library(JEMALLOC_LIB jemalloc REQUIRED)
+
 include(CheckIncludeFile)
 
 if (DEFINED ENV{CXXFLAGS})
@@ -40,12 +47,21 @@ endif()
 
 # If CMAKE_BUILD_TYPE is not set, and CXXFLAGS is not set in the environment,
 # set it to Release. This is to avoid the default Debug build type.
-if (NOT CMAKE_BUILD_TYPE AND NOT USING_ENV_CXXFLAGS)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING
-      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
+#if (NOT CMAKE_BUILD_TYPE AND NOT USING_ENV_CXXFLAGS)
+#  set(CMAKE_BUILD_TYPE Release CACHE STRING
+#      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+#      FORCE)
+#endif()
+#message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
+find_package(Boost REQUIRED COMPONENTS iostreams)
+
+if(Boost_FOUND)
+  message(STATUS "Boost found at ${Boost_INCLUDE_DIRS}")
+else()
+  message(FATAL_ERROR "Boost not found!")
 endif()
-message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+
 
 if(NOT DEFINED BOOST_ROOT)
   if(DEFINED ENV{CONDA_PREFIX})
@@ -58,6 +74,8 @@ endif()
 
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
+add_subdirectory(external/foldseek)
+add_dependencies(foldseek gemmi_cpp)
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
@@ -72,7 +90,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek)
 
 find_package(Eigen3 QUIET)
 if(USE_EIGEN3)
@@ -85,7 +103,14 @@ endif()
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include # our headers
   ${CMAKE_SOURCE_DIR}/external # for external headers
+  ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include # for gemmi headers
+)
+
+add_library(lahuta_shared_headers INTERFACE)
+target_include_directories(lahuta_shared_headers INTERFACE
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/fseek
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
 )
 
 if(TARGET Eigen3::Eigen)
@@ -112,8 +137,37 @@ endfunction()
 #     target_link_libraries(lex_parallel PRIVATE Eigen3::Eigen)
 # endif()
 # target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
+
 add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
+add_lahuta_executable(lex_fseek main_fseek.cpp)
+add_lahuta_executable(lex_fut main_future.cpp)
+
+# file(WRITE ${CMAKE_BINARY_DIR}/debug.entitlements
+# [=[<?xml version="1.0" encoding="UTF-8"?>
+# <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+# <plist version="1.0">
+# <dict>
+#     <key>com.apple.security.get-task-allow</key>
+#     <true/>
+# </dict>
+# </plist>]=])
+#
+# add_custom_command(
+#     TARGET lex_parallel
+#     POST_BUILD
+#     COMMAND codesign --force --sign - --entitlements ${CMAKE_BINARY_DIR}/debug.entitlements $<TARGET_FILE:lex_parallel>
+#     COMMENT "Signing binary with debug entitlements"
+# )
+# add_custom_command(
+#     TARGET lex_fut
+#     POST_BUILD
+#     COMMAND codesign --force --sign - --entitlements ${CMAKE_BINARY_DIR}/debug.entitlements $<TARGET_FILE:lex_fut>
+#     COMMENT "Signing binary with debug entitlements"
+# )
+
+# target_link_libraries(lex_parallel PRIVATE ${JEMALLOC_LIB})
+
 
 ### Python bindings ###
 if (USE_PYTHON)
@@ -190,14 +244,19 @@ if (USE_PYTHON)
       # different from the actual install path. Best guess:
       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
     else()
-      file(RELATIVE_PATH rpath_rel
-           "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+      file(RELATIVE_PATH rpath_rel "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
     endif()
-    set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
+    # set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
+    set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "@loader_path" BUILD_WITH_INSTALL_RPATH TRUE)
   endif()
   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
+  install(FILES "${CMAKE_BINARY_DIR}/external/foldseek/libfoldseek.dylib" DESTINATION "${Python_SITEARCH}" COMPONENT py)
   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
-    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs"
-            DESTINATION "${Python_SITEARCH}" COMPONENT py)
+    install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs" DESTINATION "${Python_SITEARCH}" COMPONENT py)
   endif()
 endif()
+
+add_custom_command(TARGET lahuta_py POST_BUILD
+  COMMAND install_name_tool -add_rpath "@loader_path" $<TARGET_FILE:lahuta_py>
+  COMMENT "Adding @loader_path rpath to _lahuta module"
+)

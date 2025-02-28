@@ -42,10 +42,10 @@ private:
 
   void process_file(std::string file_path_) {
     file_name = file_path_;
-    auto st = read_structure_gz(file_path_);
+    auto st = gemmi::read_structure_gz(file_path_);
 
     RDKit::Conformer *conformer = new RDKit::Conformer();
-    gemmiStructureToRDKit(*mol, st, *conformer, false);
+    create_RDKit_repr(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
 
@@ -55,7 +55,7 @@ private:
   void create_topology() {
 
     try {
-      grid = FastNS(get_conformer().getPositions(), _cutoff);
+      grid = FastNS(get_conformer().getPositions(), _cutoff, true);
       neighbors = std::make_shared<NSResults>(grid.self_search());
 
       Topology::compute_bonds(*mol, *neighbors);
@@ -72,7 +72,7 @@ private:
   }
 
 public:
-  Luni() = default; // FIX: remove?
+  Luni() : _cutoff(BONDED_NS_CUTOFF) {}
   explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
     spdlog::info("Processing file: {}", file_name);
     process_file(file_name);
@@ -88,6 +88,33 @@ public:
     // FIX: double call to Residues(*mol)
     Residues residues(*mol);
     features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
+  }
+
+  static Luni build(std::shared_ptr<RDKit::RWMol> mol) {
+    Luni l;
+
+    l.mol = mol;
+    l.topology = Topology(l.mol.get());
+
+    l.create_topology();
+    return l;
+  }
+
+  static Luni build(const gemmi::Structure &st) {
+    Luni l;
+
+    RDKit::Conformer *conformer = new RDKit::Conformer();
+    create_RDKit_repr(*l.mol, st, *conformer, false);
+    l.mol->updatePropertyCache(false);
+    l.mol->addConformer(conformer, true);
+    l.topology = Topology(l.mol.get());
+
+    l.create_topology();
+
+    Residues residues(*l.mol);
+    l.features = std::move(GroupTypeAnalysis::analyze(*l.mol, residues));
+
+    return l;
   }
 
   // Luni from IR:
@@ -114,6 +141,8 @@ public:
 
   RDKit::RWMol &get_molecule() { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
+
+  const Topology &get_topology() { return topology; };
 
   const double get_cutoff() const { return _cutoff; }
 

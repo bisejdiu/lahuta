@@ -2,8 +2,8 @@
 #define LAHUTA_NN_HPP
 
 #include "entities.hpp"
-#include "nsgrid.hpp"
 #include "entity.hpp"
+#include "nsgrid.hpp"
 #include <vector>
 
 namespace lahuta {
@@ -21,6 +21,33 @@ enum class InteractionType {
   PiStackingP,
   PiStackingT,
 };
+
+inline std::string interaction_type_to_string(InteractionType type) {
+  switch (type) {
+    case InteractionType::None:
+      return "None";
+    case InteractionType::Any:
+      return "Any";
+    case InteractionType::Hydrophobic:
+      return "Hydrophobic";
+    case InteractionType::Halogen:
+      return "Halogen";
+    case InteractionType::HydrogenBond:
+      return "HydrogenBond";
+    case InteractionType::WeakHydrogenBond:
+      return "WeakHydrogenBond";
+    case InteractionType::Ionic:
+      return "Ionic";
+    case InteractionType::MetalCoordination:
+      return "MetalCoordination";
+    case InteractionType::CationPi:
+      return "CationPi";
+    case InteractionType::PiStackingP:
+      return "PiStackingP";
+    case InteractionType::PiStackingT:
+      return "PiStackingT";
+  }
+}
 
 struct Contact {
   EntityID entity1;
@@ -111,7 +138,7 @@ public:
     rhs.sort_if_not_sorted();
   }
 
-  void add(Contacts &ic) { add(ic.interactions); }
+  void add(const Contacts &ic) { add(ic.interactions); }
 
   void add(const Contact &interaction) {
     interactions.push_back(interaction);
@@ -120,7 +147,7 @@ public:
 
   void add(EntityID e1, EntityID e2, float d, InteractionType t) { add(Contact(e1, e2, d, t)); }
 
-  void add(std::vector<Contact> &interactions) {
+  void add(const std::vector<Contact> &interactions) {
     this->interactions.insert(this->interactions.end(), interactions.begin(), interactions.end());
     is_sorted = false;
   }

@@ -14,9 +14,9 @@ inline bool is_number(const std::string &s) {
                        }) == s.end();
 }
 
-class OperatorHandler {
+class Operators {
 public:
-  OperatorHandler() {
+  Operators() {
     operators = {
         {"and", {1, Operator::And}},
         {"or", {0, Operator::Or}},
