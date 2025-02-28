@@ -7,7 +7,7 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
-using namespace lahuta      ;
+using namespace lahuta;
 
 void set_logger_pattern(spdlog::level::level_enum level) {
   if (level == spdlog::level::debug) {

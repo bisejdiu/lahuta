@@ -72,6 +72,10 @@ void Residues::build_residues(const RDKit::RWMol &mol) {
 
   // residues are in the order how they are inserted into the map
   residues_ = std::move(residues);
+
+  for (const auto &residue : residues_) {
+    residues_by_name_[residue.name].push_back(&residue);
+  }
 }
 
 namespace residue_props {
