@@ -95,18 +95,18 @@ public:
 class AtomTypeFactory {
 public:
   static AtomTypeStrategy create() {
-    AtomTypeStrategy composite;
+    AtomTypeStrategy at;
 
-    composite.add_strategy<HBondDonorAtom>();
-    composite.add_strategy<HBondAcceptorAtom>();
-    composite.add_strategy<WeakHBondDonorAtom>();
-    composite.add_strategy<HydrophobicAtom>();
-    composite.add_strategy<HalogenDonorAtom>();
-    composite.add_strategy<HalogenAcceptorAtom>();
-    composite.add_strategy<MetalAtom>();
-    composite.add_strategy<MetalBindingAtom>();
+    at.add_strategy<HBondDonorAtom>();
+    at.add_strategy<HBondAcceptorAtom>();
+    at.add_strategy<WeakHBondDonorAtom>();
+    at.add_strategy<HydrophobicAtom>();
+    at.add_strategy<HalogenDonorAtom>();
+    at.add_strategy<HalogenAcceptorAtom>();
+    at.add_strategy<MetalAtom>();
+    at.add_strategy<MetalBindingAtom>();
 
-    return composite;
+    return at;
   }
 };
 
@@ -117,6 +117,7 @@ public:
 
     auto strategy = AtomTypeFactory::create();
 
+    // FIX: We ignore here atom typing added by OpenBabel typing system.
     ValenceModel valence_model;
     valence_model.apply(mol);
 

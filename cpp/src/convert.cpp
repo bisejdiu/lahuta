@@ -27,7 +27,7 @@ void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ig
     // temporarily only processing the first model
     if (is_first_model) {
       is_first_model = false;
-      curr_model = model.name; 
+      curr_model = model.name;
     } else if (curr_model != model.name) {
       break;
     }
@@ -55,6 +55,7 @@ void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ig
 
     auto *copy = static_cast<AtomMonomerInfo *>(atomInfo.copy());
     rAtom->setMonomerInfo(copy);
+
   }
 }
 

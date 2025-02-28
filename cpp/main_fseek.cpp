@@ -69,14 +69,13 @@ int main(int argc, char const *argv[]) {
 
     for (const auto &hit_id : hits) {
       SeqData target = targets[hit_id];
-      run_count++;
       std::cout << "T: " << target.SeqAA << std::endl;
       auto AR = aligner->align(query, target);
       if (!AR.success) continue;
 
       // FIX: building from mol changes it and crashes on the 2nd iteration bc bonds have been added
       /*Luni luni = Luni::from_RDKit(query.mol);*/
-      Luni luni = Luni::build(query.st);
+      /*Luni luni = Luni::build(query.st);*/
       /*Luni luni(query.file_name);*/
 
       std::cout << "New result: \n" << Matcher::results_to_string(AR.ar) << std::endl;
@@ -95,6 +94,8 @@ int main(int argc, char const *argv[]) {
       std::cout << "TTMscore: " << Scores->get_target_score().tmscore << std::endl;
       std::cout << "Prob: " << AR.scores.prob << std::endl;
       std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" << std::endl;
+
+      run_count++;
     }
   }
 

@@ -14,10 +14,22 @@
 namespace lahuta {
 
 namespace alignment_computers {
-static void print_alignment(const SeqData &query, const SeqData &target, const AlignmentResult &AR) {
-  std::cout << "Result: \n" << Matcher::results_to_string(AR.ar) << "\n"
-  << "Q Alignment: " << AR.query_alignment(query) << "\n"
-  << "T Alignment: " << AR.target_alignment(target) << "\n";
+
+static Matcher::result_t
+print_alignment(const SeqData &query, const SeqData &target, const AlignmentResult &AR) {
+  std::cout << "Result: \n"
+            << Matcher::results_to_string(AR.ar) << "\n"
+            << "Q Alignment: " << AR.query_alignment(query) << "\n"
+            << "T Alignment: " << AR.target_alignment(target) << "\n";
+
+  return AR.ar.front();
+}
+
+static void _print_alignment(const SeqData &query, const SeqData &target, const AlignmentResult &AR) {
+  std::cout << "Result: \n"
+            << Matcher::results_to_string(AR.ar) << "\n"
+            << "Q Alignment: " << AR.query_alignment(query) << "\n"
+            << "T Alignment: " << AR.target_alignment(target) << "\n";
 }
 
 static void print_result(SeqData &query, SeqData &target, AlignmentResult &ar) {
@@ -48,12 +60,25 @@ inline void log_sequence_(const SeqData &sd, const std::string &prefix = "") {
 }
 
 using FileList = std::vector<std::string>;
-using AlignProcessFunc = std::function<void(SeqData &query, SeqData &target, AlignmentResult &ar)>;
+using AlignProcessFunc2 =
+    std::function<std::optional<Matcher::result_t>(SeqData &query, SeqData &target, AlignmentResult &ar)>;
+
+struct AlignerResults {
+  std::string q_file;
+  std::string t_file;
+  std::string q_ch;
+  std::string t_ch;
+  Matcher::result_t result;
+};
 
 class Runner {
 public:
   virtual ~Runner() = default;
   virtual void run(FileList &query_files, FileList &target_files) = 0;
+
+public:
+  /*std::unordered_map<std::string, Matcher::result_t> results;*/
+  std::vector<AlignerResults> results;
 };
 
 class LahutaAligner : public Runner {
@@ -62,11 +87,11 @@ public:
   LahutaAligner(FoldSeekOps &ops, PrefilterOptions &pf_ops) : ops_(ops), pf_ops_(pf_ops) {}
 
   LahutaAligner(FoldSeekOps *ops = nullptr, PrefilterOptions *pf_ops = nullptr)
-      : ops_((ops) ? *ops : FoldSeekOps()), pf_ops_((pf_ops) ? *pf_ops : PrefilterOptions()) {}
+      : ops_(ops ? *ops : FoldSeekOps()), pf_ops_(pf_ops ? *pf_ops : PrefilterOptions()) {}
 
-  void set_computer(AlignProcessFunc func) { computer = func; }
-  AlignProcessFunc get_default_computer() { return alignment_computers::print_alignment; }
-  AlignProcessFunc get_computer() { return (computer) ? computer : get_default_computer(); }
+  void set_computer(AlignProcessFunc2 func) { computer = func; }
+  AlignProcessFunc2 get_default_computer() { return alignment_computers::print_alignment; }
+  AlignProcessFunc2 get_computer() { return (computer) ? computer : get_default_computer(); }
 
   void run(FileList &query_files, FileList &target_files) override {
     read_files(query_files, target_files);
@@ -91,9 +116,9 @@ private:
     targets = std::make_unique<SeqCollection>(std::move(targets_));
   }
 
-  // NOTE: the motivation to separate this step is to allow:
+  // NOTE: the motivation to separate this step is to:
   // - avoid buiding the index if not needed (implemented)
-  // - to re-use the index for different chunks (not implemented)
+  // - re-use the index for different chunks (not implemented)
   void build_resources() {
     if (pf_ops_.use_prefilter) {
       SeqFilter seq_filter_(*queries, *targets, pf_ops_);
@@ -141,7 +166,12 @@ private:
         continue;
       };
 
-      get_computer()(query, target, alignment_result);
+      auto v = get_computer()(query, target, alignment_result);
+      if (v.has_value()) {
+        std::cout << "v: " << v->eval << std::endl;
+      } else {
+        std::cout << "v: nullopt" << std::endl;
+      }
     }
   }
 
@@ -208,7 +238,19 @@ private:
         continue;
       };
 
-      get_computer()(query, target, alignment_result);
+      auto v = get_computer()(query, target, alignment_result);
+      if (v.has_value()) {
+        auto res = v.value();
+        /*std::string key = query.chain_name + "_" + target.chain_name;*/
+        /*results[key] = res;*/
+        /*std::cout << "result size: " << results.size() << std::endl;*/
+        /*results = {query.file_name, target.file_name, query.chain_name, target.chain_name, res};*/
+
+        results.push_back({query.file_name, target.file_name, query.chain_name, target.chain_name, res});
+        std::cout << "v: " << v->eval << std::endl;
+      } else {
+        std::cout << "v: nullopt" << std::endl;
+      }
     }
   }
 
@@ -219,9 +261,12 @@ private:
   std::vector<std::unique_ptr<SeqAligner>> thread_aligners{1};
   std::unique_ptr<SeqCollection> queries;
   std::unique_ptr<SeqCollection> targets;
-  AlignProcessFunc computer;
+  AlignProcessFunc2 computer;
 
   std::unique_ptr<ctpl::thread_pool> pool;
+
+  /*public:*/
+  /*  std::unordered_map<std::string, Matcher::result_t> results;*/
 };
 
 } // namespace lahuta

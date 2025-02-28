@@ -5,6 +5,23 @@
 
 namespace lahuta {
 
+// TODO: simplify `build_residues` to avoid the need for a map
+struct ResidueKeyHash {
+  std::size_t operator()(const std::tuple<std::string, int, std::string, std::string> &t) const {
+    std::size_t seed = 0;
+    auto hash_combine = [&seed](const auto &val) {
+      seed ^= std::hash<std::decay_t<decltype(val)>>{}(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    };
+
+    hash_combine(std::get<0>(t));
+    hash_combine(std::get<1>(t));
+    hash_combine(std::get<2>(t));
+    hash_combine(std::get<3>(t));
+
+    return seed;
+  }
+};
+
 std::vector<Residue> Residues::filter(std::function<bool(const Residue &)> predicate) const {
   std::vector<Residue> result;
   for (const auto &residue : residues_) {
@@ -26,45 +43,35 @@ std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)>
 }
 
 void Residues::build_residues(const RDKit::RWMol &mol) {
-  std::map<std::tuple<std::string, int, std::string, std::string>, Residue> residue_map;
+  std::unordered_map<std::tuple<std::string, int, std::string, std::string>, size_t, ResidueKeyHash>
+      residue_index_map;
+  std::vector<Residue> residues;
 
   for (const auto &atom : mol.atoms()) {
     if (atom->getAtomicNum() == 1) continue;
+
     auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     if (!info) continue;
 
     std::string chain_id = info->getChainId();
     int res_num = info->getResidueNumber();
     std::string res_name = info->getResidueName();
-    std::string alt_loc = info->getAltLoc();
 
-    auto key = std::make_tuple(chain_id, res_num, res_name, alt_loc);
+    // TODO: add a flag instead of the altloc
+    /*std::string alt_loc = info->getAltLoc();*/
 
-  /*  auto it = residue_map.find(key);*/
-  /*  if (it == residue_map.end()) {*/
-  /*    Residue residue(chain_id, res_num, res_name, alt_loc);*/
-  /*    residue.atoms.push_back(atom);*/
-  /*    residue_map[key] = std::move(residue);*/
-  /*  } else {*/
-  /*    it->second.atoms.push_back(atom);*/
-  /*  }*/
-  /*}*/
+    auto key = std::make_tuple(chain_id, res_num, res_name, "");
 
-    Residue &residue = residue_map[key];
-    if (residue.atoms.empty()) {
-      residue = Residue(chain_id, res_num, res_name, alt_loc);
+    auto it = residue_index_map.find(key);
+    if (it == residue_index_map.end()) {
+      residues.emplace_back(chain_id, res_num, res_name, "");
+      residue_index_map[key] = residues.size() - 1;
     }
-    residue.atoms.push_back(atom);
+    residues[residue_index_map[key]].atoms.push_back(atom);
   }
 
-  residues_.reserve(residue_map.size());
-  for (auto &kv : residue_map) {
-    residues_.push_back(std::move(kv.second));
-  }
-
-  for (const auto &residue : residues_) {
-    residues_by_name_[residue.name].push_back(&residue);
-  }
+  // residues are in the order how they are inserted into the map
+  residues_ = std::move(residues);
 }
 
 namespace residue_props {
@@ -72,7 +79,8 @@ namespace residue_props {
 template <typename ResultType>
 std::vector<ResultType> get_aromatic_rings(const Residues &residues, RingProcFunc<ResultType> func) {
   std::vector<ResultType> ring_list;
-  // FIX: we should be iterating over the residues in the molecule and checking if they are aromatic, instead of the other way around
+  // FIX: we should be iterating over the residues in the molecule and checking if they are aromatic, instead
+  // of the other way around
   for (const auto &item : definitions::AromaticResidues) {
     const std::string &res_name = item.first;
     const std::vector<int> &ring_sizes = item.second;

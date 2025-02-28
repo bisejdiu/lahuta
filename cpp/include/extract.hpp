@@ -88,8 +88,9 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
 
     seqData.Seq3Di = alphabet3di;
     seqData.SeqAA = alphabetAA;
-    seqData.file_name =
-        file_name.rfind('/') != std::string::npos ? file_name.substr(file_name.rfind('/') + 1) : file_name;
+    // seqData.file_name =
+    //     file_name.rfind('/') != std::string::npos ? file_name.substr(file_name.rfind('/') + 1) : file_name;
+    seqData.file_name = file_name;
     seqData.chain_name = readStructure.chainNames[ch];
 
     if (seqData.Seq3Di.size() != seqData.SeqAA.size()) {

@@ -11,6 +11,10 @@ const int kDIMENSIONS = 3;
 using Pairs = std::vector<std::pair<int, int>>;
 using Distances = std::vector<float>;
 
+void _transform_coordinates(
+    std::vector<RDGeom::Point3D> &coords, std::array<float, kDIMENSIONS> &pseudobox,
+    std::vector<double> &lmin, std::vector<double> &lmax, float scale_factor);
+
 void transform_coordinates(std::vector<RDGeom::Point3D> &coords,
                            std::array<float, 3> &pseudobox,
                            std::vector<double> &lmin,

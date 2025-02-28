@@ -39,7 +39,6 @@ public:
 
   LahutaProcessor(ProcessingConfig config) : cfg(std::move(config)) {}
 
-
   void process_files(const FileList &query_files, const FileList &target_files) {
     const FileList &target_files_ref = target_files.empty() ? query_files : target_files;
 
@@ -142,12 +141,17 @@ private:
     }
   }
 
+public:
   std::unique_ptr<Runner> set_default_runner() { return std::make_unique<LahutaAligner>(); }
   Runner &get_runner() {
     if (!runner_) runner_ = set_default_runner();
     return *runner_;
   }
 
+  /*std::unordered_map<std::string, Matcher::result_t> get_results() { return get_runner().results; }*/
+  std::vector<AlignerResults> get_results() { return get_runner().results; }
+
+public:
   ProcessingConfig cfg;
   ChunkQueue processing_queue_;
   std::unique_ptr<Runner> runner_;

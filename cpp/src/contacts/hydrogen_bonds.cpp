@@ -7,6 +7,7 @@
 
 namespace lahuta {
 
+// FIX: use the new syntax to check for waters
 bool is_water(const RDKit::Atom &atom) {
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!res_info) return false;
@@ -256,7 +257,11 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
   EntityNeighborSearch ens(luni.get_conformer());
   auto results = ens.search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
 
+  std::cout << "results: " << results.size() << std::endl;
   std::unordered_set<std::pair<int, int>, common::PairHash> seen;
+
+  const double distMax = distFactor * MAX_LINE_OF_SIGHT_DISTANCE;
+  FastNS grid = FastNS(luni.get_conformer().getPositions(), distMax, true);
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
@@ -264,13 +269,11 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
     auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
 
     // check the line of sight
-    const double distMax = distFactor * MAX_LINE_OF_SIGHT_DISTANCE;
     auto donor_com = donors.get_data()[donor_index].center;
     auto acceptor_com = acceptors.get_data()[acceptor_index].center;
 
     RDGeom::Point3D midpoint = (*donor_com + *acceptor_com) / 2;
 
-    FastNS grid = FastNS(luni.get_conformer().getPositions(), distMax, true);
     auto ns = grid.search({midpoint});
 
     // bool line_of_sight_blocked = false;

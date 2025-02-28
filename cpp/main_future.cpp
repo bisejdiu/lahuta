@@ -1,33 +1,18 @@
-#include "Geometry/point.h"
 #include "GraphMol/RWMol.h"
 #include "lahuta.hpp"
 #include "mapper.hpp"
 #include "processor.hpp"
-#include "residues.hpp"
 #include "seq.hpp"
 #include "seq_aligner.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 using namespace lahuta;
 
-/*void print_processor(SeqData &query, SeqData &target, AlignmentResult &ar) {*/
-/*  std::cout << "Result: \n"*/
-/*            << Matcher::results_to_string(ar.ar) << "\n"*/
-/*            << "Q Alignment: " << ar.query_alignment() << "\n"*/
-/*            << "T Alignment: " << ar.target_alignment() << "\n";*/
-/*}*/
-
 void mapping_processor(SeqData &query, SeqData &target, AlignmentResult &ar) {
 
   if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return;
-  /*std::cout << "Considering: " << query.file_name << "_" << query.chain_name << " : " << target.file_name*/
-  /*          << "_" << target.chain_name << std::endl;*/
 
-  /*if (ar.ar[0].eval > 10e-2) return;*/
-  if (ar.ar[0].eval > 1) return;
-
-  /*Mapper mapper(query, target, ar.ar.front());*/
-  /*mapper.map();*/
+  if (ar.ar[0].eval > 10e-2) return;
 
   std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
             << target.file_name << "_" << target.chain_name << " : " << Matcher::results_to_string(ar.ar)
@@ -50,7 +35,7 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
 
   auto luni = Luni::build(query.st);
   auto mol = luni.get_molecule();
-  std::cout << "Molecule: " << query.file_name << " " << mol.getNumAtoms() << std::endl;
+  std::cout << "Query Molecule: " << query.file_name << " " << mol.getNumAtoms() << std::endl;
 
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
@@ -72,7 +57,7 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
 
   auto luni_t = Luni::build(target.st);
   auto mol_t = luni_t.get_molecule();
-  std::cout << "Molecule: " << target.file_name << " " << mol_t.getNumAtoms() << std::endl;
+  std::cout << "Target Molecule: " << target.file_name << " " << mol_t.getNumAtoms() << std::endl;
 
   InteractionOptions opts_t{5.0};
   Interactions interactions_t(luni_t, opts_t);
@@ -137,46 +122,51 @@ void mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
 
   if (ar.ar.empty()) return;
 
-  // 0. Choose the alignment result
+  // 0. choose the alignment result
   Matcher::result_t res = ar.ar.front();
 
   auto mapper = LahutaMapper(query, target);
   mapper.map(res);
 
-  // 2. Map indices
   InteractionOptions opts{5.0};
 
   Interactions ic_q(mapper.get_luni(Mapping::Query), opts);
   Interactions ic_t(mapper.get_luni(Mapping::Target), opts);
 
-  // std::cout << "Q Ionic" << std::endl;
-  // auto _5 = ic_q.ionic();
-  // _5.sort_interactions();
-  // _5.print_interactions();
-
-  // std::cout << "T Ionic" << std::endl;
-  // Contacts _5_t = ic_t.ionic();
-  // _5_t.sort_interactions();
-  // _5_t.print_interactions();
-
-  // Contact v = _5_t.interactions[0];
-  /*std::cout << "v: " << v.*/
-
-  std::cout << "mapping check" << std::endl;
-  /*nm.evaluate(_5, Mapper::MappingType::Query, _5_t, Mapper::MappingType::Target);*/
-  /*mapper.evaluate(ic_q.hbond(), Mapping::Query, ic_t.hbond(), Mapping::Target);*/
-
-  /*auto contacts_q = compute_contacts(mapper.get_luni(Mapping::Query), opts);*/
-  /*auto contacts_t = compute_contacts(mapper.get_luni(Mapping::Target), opts);*/
-
   auto contacts_q = ic_q.compute_contacts();
   auto contacts_t = ic_t.compute_contacts();
 
   auto count = mapper.evaluate(contacts_q, Mapping::Query, contacts_t, Mapping::Target);
-  std::cout << "end: " << count << std::endl;
+  std::cout << "result: " << count << std::endl;
 }
 
+Contacts compute_neighbor_contacts(const Luni &luni, double cutoff) {
+  Contacts contacts(&luni);
+  auto grid = FastNS(luni.get_conformer().getPositions(), cutoff, true);
+  NSResults neighbors = grid.self_search();
+
+  for (const auto &[pair, dist] : neighbors) {
+    auto [i, j] = pair;
+    const RDKit::Atom *a1 = luni.get_molecule().getAtomWithIdx(i);
+    const RDKit::Atom *a2 = luni.get_molecule().getAtomWithIdx(j);
+    if (are_residueids_close(luni.get_molecule(), *a1, *a2, 4)) continue;
+
+    contacts.add(Contact(
+        make_entity_id(EntityType::Atom, a1->getIdx()),
+        make_entity_id(EntityType::Atom, a2->getIdx()),
+        dist));
+
+  }
+
+  contacts.sort_interactions();
+  std::cout << "Total Contacts: " << contacts.size() << std::endl;
+  /*contacts.print_interactions();*/
+  return contacts;
+};
+
 std::optional<Matcher::result_t> mapping_processor_w2(SeqData &query, SeqData &target, AlignmentResult &ar) {
+
+  using Mapping = TopologyMapper::MappingType;
 
   if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return std::nullopt;
   if (ar.ar[0].eval > 1) return std::nullopt;
@@ -186,6 +176,69 @@ std::optional<Matcher::result_t> mapping_processor_w2(SeqData &query, SeqData &t
             << Matcher::results_to_string(ar.ar) << std::endl;
 
   alignment_computers::print_result(query, target, ar);
+
+  if (ar.ar.empty()) return std::nullopt;
+
+  Matcher::result_t res = ar.ar.front();
+
+  auto mapper = LahutaMapper(query, target);
+  mapper.map(res);
+
+  InteractionOptions opts{5.0};
+  /*opts.ionic = false;*/
+  /*opts.hbond = false;*/
+  /*opts.weak_hbond = true;*/
+  /*opts.hydrophobic = false;*/
+  /*opts.halogen = false;*/
+  /*opts.metalic = false;*/
+  /*opts.cationpi = false;*/
+  /*opts.pistacking = false;*/
+
+  Interactions ic_q(mapper.get_luni(Mapping::Query), opts);
+  Interactions ic_t(mapper.get_luni(Mapping::Target), opts);
+
+  auto contacts_q = ic_q.compute_contacts();
+  auto contacts_t = ic_t.compute_contacts();
+  contacts_q.print_interactions();
+  contacts_t.print_interactions();
+
+  std::cout << "Q contacts: " << contacts_q.size() << std::endl;
+  std::cout << "T contacts: " << contacts_t.size() << std::endl;
+
+  /*auto count = mapper.evaluate(contacts_q, Mapping::Query, contacts_t, Mapping::Target);*/
+
+  std::cout << "returning result" << std::endl;
+  auto qc = compute_neighbor_contacts(mapper.get_luni(Mapping::Query), 6.0);
+  auto tc = compute_neighbor_contacts(mapper.get_luni(Mapping::Target), 6.0);
+
+  std::cout << "--> Q contacts: " << qc.size() << std::endl;
+  std::cout << "--> T contacts: " << tc.size() << std::endl;
+
+  /*auto count = mapper.evaluate(contacts_q, Mapping::Query, contacts_t, Mapping::Target);*/
+  auto count = mapper.evaluate(qc, Mapping::Query, tc, Mapping::Target);
+  std::cout << "end: " << count << std::endl;
+
+  return res;
+}
+
+std::optional<Matcher::result_t> mapping_processor_w3(SeqData &query, SeqData &target, AlignmentResult &ar) {
+
+  using Mapping = TopologyMapper::MappingType;
+
+  if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return std::nullopt;
+  if (ar.ar[0].eval > 1) return std::nullopt;
+
+  // std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
+  //           << target.file_name << "_" << target.chain_name << " : "              //
+  //           << Matcher::results_to_string(ar.ar) << std::endl;
+
+  // std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
+  //           << target.file_name << "_" << target.chain_name << " : "              //
+  //           << Matcher::results_to_string(ar.ar) << " : " << ar.scores.rmsd << std::endl;
+
+  std::cout << "xMapping: " << target.file_name << "_" << target.chain_name << " : " << ar.scores.rmsd
+            << std::endl;
+  /*alignment_computers::print_result(query, target, ar);*/
 
   if (ar.ar.empty()) return std::nullopt;
 
@@ -205,10 +258,12 @@ int main() {
   spdlog::level::level_enum log_level = spdlog::level::info;
   spdlog::set_level(log_level);
 
+  std::cout << "STARTING" << std::endl;
   /*DirectoryHandler dir_handler("/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP", ".cif", true);*/
   /*DirectoryHandler dir_handler("/Users/bsejdiu/data/mini_pdb_uncomp", ".cif", true);*/
+  DirectoryHandler dir_handler("/Users/bsejdiu/data/gpcrs/small/a", ".cif", true);
 
-  /*auto pdb_targets = dir_handler.get_all_files();*/
+  auto pdb_targets = dir_handler.get_all_files();
 
   try {
     LahutaProcessor::FileList query_files = {
@@ -219,9 +274,9 @@ int main() {
     };
 
     LahutaProcessor::FileList query_files_t = {
-        "/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",
+        /*"/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",*/
         "/Users/bsejdiu/progs/foldseek/build/src/test/4nc3.cif",
-        "/Users/bsejdiu/progs/foldseek/build/src/test/8w8b.cif",
+        // "/Users/bsejdiu/progs/foldseek/build/src/test/8w8b.cif",
     };
 
     LahutaProcessor::FileList target_files = {
@@ -233,14 +288,18 @@ int main() {
 
     LahutaProcessor::FileList target_files_t = {
         "/Users/bsejdiu/progs/foldseek/build/src/test2/4ami.cif",
-        "/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",
+        // "/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",
     };
 
     LahutaProcessor::FileList qf = {
-        "/Users/bsejdiu/tmp/tests/hemoglobin/2dn1_both_assemblies_renamed.cif",
-        "/Users/bsejdiu/tmp/tests/hemoglobin/2dn2.cif"};
+        "/Users/bsejdiu/tmp/old_lahuta_hemoglobin_network/hemoglobin/2dn1_both_assemblies_renamed.cif",
+        /*"/Users/bsejdiu/tmp/old_lahuta_hemoglobin_network/hemoglobin/2dn2.cif"*/
+    };
 
-    LahutaProcessor::FileList tf = {"/Users/bsejdiu/tmp/tests/hemoglobin/2dn2.cif"};
+    LahutaProcessor::FileList tf = {"/Users/bsejdiu/tmp/old_lahuta_hemoglobin_network/hemoglobin/2dn2.cif"};
+
+    LahutaProcessor::FileList qq = {"/Users/bsejdiu/projects/lahuta/cpp/build/2rh1.cif"};
+    LahutaProcessor::FileList tt = {"/Users/bsejdiu/projects/lahuta/cpp/build/3sn6_chainR.cif"};
 
     LahutaProcessor::ProcessingConfig config{
         .query_chunk_size = 10,
@@ -254,24 +313,41 @@ int main() {
     // FIX: test with using alternative alignments
     FoldSeekOps ops;
     PrefilterOptions pf_ops;
-    pf_ops.use_prefilter = false;
+    pf_ops.use_prefilter = true;
 
     std::unique_ptr<LahutaAligner> aligner = std::make_unique<LahutaAligner>(ops, pf_ops);
-    aligner->set_computer(mapping_processor_w);
-    /*aligner->set_computer(mapping_processor_w2);*/
+    /*aligner->set_computer(mapping_processor_w);*/
+    /*aligner->set_computer(mapping_processor_w3);*/
+    aligner->set_computer(mapping_processor_w2);
     /*aligner->set_computer(mapping_processor);*/
 
     LahutaProcessor processor(config); // , ops, pf_ops);
     processor.set_runner(std::move(aligner));
     /*processor.process_files(query_files);*/
 
-    processor.process_files(query_files, target_files);
-    /*processor.process_files(qf);*/
+    /*processor.process_files(query_files, target_files);*/
+    /*processor.process_files(qf, tf);*/
+    /*processor.process_files(qq, tt);*/
+
+    /*auto r = processor.runner_->results;*/
+    // auto r = processor.get_results();
+    /*std::cout << "Results: " << r.size() << std::endl;*/
+    /*for (auto &[key, value] : processor.get_runner().results) {*/
+    /*  std::cout << "KEY: " << key << " : " << Matcher::result_to_string(value) << std::endl;*/
+    /*}*/
+
+    // for (auto &res : r) {
+    //   std::cout << "Result: " << res.q_file << " : "                    //
+    //             << res.t_file << " : " << res.q_ch << " : " << res.t_ch //
+    //             << " : " << Matcher::result_to_string(res.result)       //
+    //             << std::endl;
+    // }
 
     /*processor.process_files({"/Users/bsejdiu/projects/lahuta/cpp/build/4ami.cif"}, pdb_targets);*/
 
     /*processor.process_files(query_files, pdb_targets);*/
-    /*processor.process_files(query_files_t, target_files_t);*/
+    processor.process_files(query_files_t, target_files_t);
+    /*processor.process_files(query_files, target_files);*/
 
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;

@@ -22,18 +22,6 @@ int main(int argc, char const *argv[]) {
   auto mol = &luni.get_molecule();
   std::cout << "Molecule: " << mol->getNumAtoms() << std::endl;
 
-  // for (const auto &atom: mol->atoms()) {
-  //   auto res_info = static_cast<RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-  //   std::cout << "RDKit atom: "
-  //             << " " << atom->getIdx()
-  //             << " " << res_info->getName()
-  //             << " " << res_info->getResidueNumber()
-  //             << " " << res_info->getResidueName()
-  //             << " " << res_info->getResidueIndex();
-  //   std::cout << std::endl;
-  // }
-
-
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Time: " << duration.count() << " ms" << std::endl;
@@ -46,71 +34,51 @@ int main(int argc, char const *argv[]) {
   
   std::cout << "HBonds" << std::endl;
   auto _1 = interactions.hbond();
-  _1.sort_interactions();
-  _1.print_interactions();
-  std::cout << "size: HBonds: " << _1.size() << std::endl;
+  /*_1.sort_interactions();*/
+  /*_1.print_interactions();*/
+  /*std::cout << "size: HBonds: " << _1.size() << std::endl;*/
 
   std::cout << "Weak HBonds" << std::endl;
   auto _2 = interactions.weak_hbond();
-  _2.sort_interactions();
-  _2.print_interactions();
-  std::cout << "size: Weak HBonds: " << _2.size() << std::endl;
+  /*_2.sort_interactions();*/
+  /*_2.print_interactions();*/
+  /*std::cout << "size: Weak HBonds: " << _2.size() << std::endl;*/
 
   std::cout << "Hydrophobic" << std::endl;
   auto _3 = interactions.hydrophobic();
-  _3.sort_interactions();
-  _3.print_interactions();
-  std::cout << "size: Hydrophobic: " << _3.size() << std::endl;
+  /*_3.sort_interactions();*/
+  /*_3.print_interactions();*/
+  /*std::cout << "size: Hydrophobic: " << _3.size() << std::endl;*/
 
   std::cout << "Halogen" << std::endl;
   auto _4 = interactions.halogen();
-  _4.sort_interactions();
-  _4.print_interactions();
-  std::cout << "Halogen: " << _4.size() << std::endl;
+  /*_4.sort_interactions();*/
+  /*_4.print_interactions();*/
+  /*std::cout << "Halogen: " << _4.size() << std::endl;*/
 
   std::cout << "Ionic" << std::endl;
   auto _5 = interactions.ionic();
-  _5.sort_interactions();
-  _5.print_interactions();
-  std::cout << "size: Ionic: " << _5.size() << std::endl;
+  /*_5.sort_interactions();*/
+  /*_5.print_interactions();*/
+  /*std::cout << "size: Ionic: " << _5.size() << std::endl;*/
 
   std::cout << "Metalic" << std::endl;
   auto _6 = interactions.metalic();
-  _6.sort_interactions();
-  _6.print_interactions();
-  std::cout << "size: Metalic: " << _6.size() << std::endl;
+  /*_6.sort_interactions();*/
+  /*_6.print_interactions();*/
+  /*std::cout << "size: Metalic: " << _6.size() << std::endl;*/
 
   std::cout << "CationPi" << std::endl;
   auto _7 = interactions.cationpi();
-  _7.sort_interactions();
-  _7.print_interactions();
-  std::cout << "size: CationPi: " << _7.size() << std::endl;
+  /*_7.sort_interactions();*/
+  /*_7.print_interactions();*/
+  /*std::cout << "size: CationPi: " << _7.size() << std::endl;*/
 
   std::cout << "PiStacking" << std::endl;
   auto _8 = interactions.pistacking();
-  _8.sort_interactions();
-  _8.print_interactions();
-  std::cout << "size: PiStacking: " << _8.size() << std::endl;
-
-  auto log_bond_info = [&](const RDKit::Bond *bond) {
-    auto first_atom = mol->getAtomWithIdx(bond->getBeginAtomIdx());
-    auto second_atom = mol->getAtomWithIdx(bond->getEndAtomIdx());
-    auto *res1 = static_cast<RDKit::AtomPDBResidueInfo *>(first_atom->getMonomerInfo());
-    auto *res2 = static_cast<RDKit::AtomPDBResidueInfo *>(second_atom->getMonomerInfo());
-    auto atom1_name = res1->getName();
-    auto atom2_name = res2->getName();
-    std::string residue1 = res1->getResidueName() + "-" + std::to_string(res1->getResidueNumber());
-    std::string residue2 = res2->getResidueName() + "-" + std::to_string(res2->getResidueNumber());
-
-    auto bond_order = std::to_string(bond->getBondTypeAsDouble());
-    if (bond->getIsAromatic()) {
-      bond_order = "a";
-    }
-
-    std::cout << " " << residue1 << " " << residue2 << " " << bond->getBeginAtomIdx() << " "
-              << bond->getEndAtomIdx() << " " << atom1_name << " " << atom2_name << " " << bond_order
-              << std::endl;
-  };
+  /*_8.sort_interactions();*/
+  /*_8.print_interactions();*/
+  /*std::cout << "size: PiStacking: " << _8.size() << std::endl;*/
 
   int o1{}, o2{}, aromatic{};
   for (auto bond_it = mol->beginBonds(); bond_it != mol->endBonds(); ++bond_it) {
