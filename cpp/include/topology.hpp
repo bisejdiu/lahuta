@@ -31,6 +31,8 @@ public:
 
   void assign_arpeggio_atom_types() {
 
+    std::cout << "Assigning Arpeggio atom types" << std::endl;
+
     using namespace residue_props;
 
     atom_types.resize(mol->getNumAtoms(), AtomType::NONE);
@@ -97,6 +99,8 @@ public:
   }
 
   void assign_molstar_typing() {
+
+    std::cout << "Assigning MolStar atom types" << std::endl;
 
     // FIX: to be replaced by the entitytype manager
     std::vector<AtomType> atom_types_ = AtomTypeAnalysis::analyze(*mol);

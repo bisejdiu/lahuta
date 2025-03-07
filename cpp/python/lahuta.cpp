@@ -466,8 +466,11 @@ void bind(py::module &_lahuta) {
       .def_property_readonly("rings",      &Topology::get_rings);
 
 
-  Luni.def(py::init<std::string>())
+  Luni
+    /*.def(py::init<std::string>())*/
       .def(py::init<const IR &>())
+      .def(py::init<std::string, std::optional<ContactComputerType>>(), py::arg("file_name"), py::arg("c_type") = std::nullopt)
+      .def(py::init([](std::string file_name, int c) { return new class Luni(file_name, static_cast<ContactComputerType>(c)); }), py::arg("file_name"), py::arg("contact_type"))
       .def("find_neighbors", &Luni::find_neighbors)
       /*.def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)*/
       /*.def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)*/
@@ -545,7 +548,7 @@ void bind(py::module &_lahuta) {
       .def_readwrite("z", &RDGeom::Point3D::z)
       .def("__str__",  [](const RDGeom::Point3D &p) { return "(" + std::to_string(p.x) + ", " + std::to_string(p.y) + ", " + std::to_string(p.z) + ")"; });
 
-  py::class_<RDKit::Atom> Atom_(_lahuta, "RDKitAtom"); // FIX: we cannot use "Atom" as it conflicts with an (outdated) definition in the old Lahuta Python code
+  py::class_<RDKit::Atom> Atom_(_lahuta, "Atom");
 
   Atom_
     .def_property_readonly("atomic_number",    &RDKit::Atom::getAtomicNum)

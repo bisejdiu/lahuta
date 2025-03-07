@@ -19,6 +19,13 @@ from typing import (
 import numpy as np
 from numpy.typing import NDArray
 
+from lahuta.lib._contacts import Contact as Contact
+from lahuta.lib._contacts import Contacts as Contacts
+from lahuta.lib._contacts import EntityID as EntityID
+from lahuta.lib._contacts import EntityType as EntityType
+from lahuta.lib._contacts import InteractionOptions as InteractionOptions
+from lahuta.lib._contacts import Interactions as Interactions
+from lahuta.lib._contacts import InteractionType as InteractionType
 from lahuta.lib._entities import AtomEntity as AtomEntity
 from lahuta.lib._entities import AtomEntityCollection as AtomEntityCollection
 from lahuta.lib._entities import EntityNeighborSearch as EntityNeighborSearch
@@ -220,7 +227,7 @@ class LahutaCPP:
     # @overload
     # def __init__(self) -> None: ...
     @overload
-    def __init__(self, filename: str) -> None: ...
+    def __init__(self, filename: str, contact_type: int = 1) -> None: ...
     @overload
     def __init__(self, ir: IR) -> None: ...
     # def get_positions(self) -> list[list[float]]: ...

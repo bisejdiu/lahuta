@@ -1,5 +1,6 @@
 from collections.abc import Callable, Iterator, Sequence
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Any, Protocol, TypeAlias, TypeVar, cast, overload
 
 import numpy as np
@@ -9,6 +10,8 @@ from typing_extensions import Self
 # import numpy as np
 # from numpy.typing import NDArray
 from lahuta.lib._lahuta import (
+    Atom,
+    AtomType,
     DistanceComputation_,
     FastNS_,
     LahutaCPP,
@@ -18,7 +21,6 @@ from lahuta.lib._lahuta import (
     Residue,
     RingEntityCollection,
 )
-from lahuta.lib._lahuta import AtomType, Atom
 
 # fmt: off
 
@@ -186,11 +188,16 @@ class DistanceComputation:
         # bit of a hack, but we avoid any runtime overhead.
         return DistanceComputation_.search(cast(MatrixType[_F_co], a), cast(MatrixType[_F_co], b), cutoff)
 
+class ContactComputerType(Enum):
+    """Contact computation types."""
+
+    Arpeggio = 0
+    MolStar  = 1
 
 class Lahuta:
-    def __init__(self, file_name: str) -> None:
+    def __init__(self, file_name: str, contact_computer_type: ContactComputerType = ContactComputerType.MolStar) -> None:
         self.file_name = file_name
-        self.luni = LahutaCPP(file_name)
+        self.luni = LahutaCPP(file_name, contact_computer_type.value)
 
     @classmethod
     def from_file(cls, file_name: str) -> "Lahuta": """Create a Lahuta object from a file."""; return cls(file_name)

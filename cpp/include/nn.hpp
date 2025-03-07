@@ -195,6 +195,8 @@ public:
   /// symmetric difference of two Contacts
   template <typename T> Contacts set_symmetric_difference(T &&other);
 
+  // FIX: missing + operator
+
   bool operator==(Contacts &other);
 
   bool operator!=(Contacts &other) { return !(*this == other); }
