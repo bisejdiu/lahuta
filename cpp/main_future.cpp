@@ -142,7 +142,11 @@ void mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) {
 
 Contacts compute_neighbor_contacts(const Luni &luni, double cutoff) {
   Contacts contacts(&luni);
-  auto grid = FastNS(luni.get_conformer().getPositions(), cutoff, true);
+  auto grid = FastNS(luni.get_conformer().getPositions());
+  auto ok = grid.build(cutoff);
+  if (!ok) {
+    throw std::runtime_error("Box dimension too small for the given cutoff.");
+  }
   NSResults neighbors = grid.self_search();
 
   for (const auto &[pair, dist] : neighbors) {

@@ -29,11 +29,9 @@ int main(int argc, char const *argv[]) {
   std::cout << "Time: " << duration.count() << " ms" << std::endl;
   /*return 0;*/
 
-  /*luni.assign_molstar_atom_types();*/
-
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
-  
+
   std::cout << "HBonds" << std::endl;
   auto _1 = interactions.hbond();
   /*_1.sort_interactions();*/

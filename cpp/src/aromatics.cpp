@@ -28,8 +28,7 @@ AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
       rings.push_back(ring);
     }
 
-    // planarity check adapted from
-    // https://github.com/molstar/molstar/blob/master/src/mol-model/structure/structure/unit/rings.ts
+    // planarity check adapted from molstar: src/mol-model/structure/structure/unit/rings.ts (b67eda7)
     if (ring.size() < 5) continue;
     // avoid planarity check if ring contains any aromatic atoms
     if (common::has_any_aromatic_atom(mol, ring)) continue;

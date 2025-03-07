@@ -151,7 +151,10 @@ NSResults Luni::find_neighbors_opt(double cutoff) {
     return neighbors->filter(cutoff);
   }
 
-  grid.update_cutoff(cutoff);
+  if (!grid.update(cutoff)) {
+    std::cerr << "Failed to update the grid with the given cutoff" << std::endl;
+    return NSResults();
+  }
   auto ns = grid.self_search();
   return ns;
 }

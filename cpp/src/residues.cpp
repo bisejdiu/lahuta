@@ -22,11 +22,14 @@ struct ResidueKeyHash {
   }
 };
 
-std::vector<Residue> Residues::filter(std::function<bool(const Residue &)> predicate) const {
-  std::vector<Residue> result;
+Residues Residues::filter(std::function<bool(const Residue &)> predicate) const {
+  Residues result(mol);
+  result.residues_.clear();
+  result.residues_by_name_.clear();
   for (const auto &residue : residues_) {
     if (predicate(residue)) {
-      result.push_back(residue);
+      result.residues_.push_back(residue);
+      result.residues_by_name_[residue.name].push_back(&result.residues_.back());
     }
   }
   return result;

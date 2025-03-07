@@ -11,8 +11,7 @@ Contacts find_ionic(const Luni &luni, IonicParams opts) {
   const auto positives = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
   const auto negatives = GroupEntityCollection::filter(&luni, AtomType::NEG_IONISABLE);
 
-  EntityNeighborSearch ens(luni.get_conformer());
-  auto results = ens.search(positives, negatives, opts.distance_max);
+  auto results = EntityNeighborSearch::search(positives, negatives, opts.distance_max);
 
   std::unordered_set<std::pair<int, int>, common::PairHash> seen;
 

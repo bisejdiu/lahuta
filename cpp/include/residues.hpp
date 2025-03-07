@@ -29,7 +29,7 @@ public:
   }
 
   /// filter residues by a predicate
-  std::vector<Residue> filter(std::function<bool(const Residue &)> predicate) const;
+  Residues filter(std::function<bool(const Residue &)> predicate) const;
 
   /// apply a function to each residue and collect the results
   template <typename ResultType>

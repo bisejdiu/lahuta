@@ -55,7 +55,12 @@ private:
   void create_topology() {
 
     try {
-      grid = FastNS(get_conformer().getPositions(), _cutoff, true);
+      grid = FastNS(get_conformer().getPositions());
+      auto ok = grid.build(_cutoff);
+      if (!ok) {
+          throw std::runtime_error("Box dimension too small for the given cutoff.");
+      }
+
       neighbors = std::make_shared<NSResults>(grid.self_search());
 
       Topology::compute_bonds(*mol, *neighbors);
@@ -165,43 +170,44 @@ public:
   }
 
   // FIX: computed distances represent atom-ring center distances.
-  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif = 1) {
-
-    auto rings = topology.rings_vec;
-    // FIX: keep an instance of the grid in the class
-    auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
-    auto centers = rings.positions();
-
-    NSResults nbrs = grid.search(centers);
-    if (res_dif > 0) {
-      nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);
-    }
-    return Neighbors<AtomRingPair>(*this, std::move(nbrs), false);
-  }
+  /*Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif = 1) {*/
+  /**/
+  /*  auto rings = topology.rings_vec;*/
+  /*  // FIX: keep an instance of the grid in the class*/
+  /*  auto grid = FastNS(mol->getConformer().getPositions(), cutoff, true);*/
+  /*  auto centers = rings.positions();*/
+  /**/
+  /*  NSResults nbrs = grid.search(centers);*/
+  /*  if (res_dif > 0) {*/
+  /*    nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);*/
+  /*  }*/
+  /*  return Neighbors<AtomRingPair>(*this, std::move(nbrs), false);*/
+  /*}*/
 
   // FIX: computed distances represent atom-ring center distances.
   // FIX: neighbors contain atoms that are also part of the ring.
-  auto find_ring_neighbors2(double cutoff, int res_dif = 1) {
+  // auto find_ring_neighbors2(double cutoff, int res_dif = 1) {
 
-    auto rings = topology.rings_vec;
-    // FIX: keep an instance of the grid in the class
-    auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
-    auto centers = rings.positions();
+  //   auto rings = topology.rings_vec;
+  //   // FIX: keep an instance of the grid in the class
+  //   bool should_throw = true;
+  //   auto grid = FastNS(mol->getConformer().getPositions(), cutoff, should_throw);
+  //   auto centers = rings.positions();
 
-    NSResults nbrs = grid.search(centers);
-    // log the first 10 pairs of neighbors if that many exist
-    for (size_t i = 0; i < nbrs.size(); ++i) {
-      auto &pair = nbrs.get_pairs()[i];
-      /*std::cout << "Ring: " << pair.first << " Atom: " << pair.second << "\n";*/
-      /*auto atom = mol->getAtomWithIdx(pair.first);*/
-      /*auto &ring = rings.rings[pair.second];*/
-      /*std::cout << "Atom: " << atom->getIdx() << " Ring: " << ring.center << "\n";*/
-    }
-    if (res_dif > 0) {
-      nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);
-    }
-    return nbrs;
-  }
+  //   NSResults nbrs = grid.search(centers);
+  //   // log the first 10 pairs of neighbors if that many exist
+  //   for (size_t i = 0; i < nbrs.size(); ++i) {
+  //     auto &pair = nbrs.get_pairs()[i];
+  //     /*std::cout << "Ring: " << pair.first << " Atom: " << pair.second << "\n";*/
+  //     /*auto atom = mol->getAtomWithIdx(pair.first);*/
+  //     /*auto &ring = rings.rings[pair.second];*/
+  //     /*std::cout << "Atom: " << atom->getIdx() << " Ring: " << ring.center << "\n";*/
+  //   }
+  //   if (res_dif > 0) {
+  //     nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);
+  //   }
+  //   return nbrs;
+  // }
 
   //! Returns the atoms of the molecule.
   const auto atoms() const { return mol->atoms(); }
@@ -240,6 +246,8 @@ public:
   friend class Contacts;
   /*friend class InteractionContainer::test_interface;*/
 
+  const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
+
 private:
   template <typename T> std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
 
@@ -267,7 +275,6 @@ public:
   static int count_unique(const std::vector<std::string> &vec);
   static std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers);
 
-  /*const std::vector<Feature> &get_features() const { return features; }*/
   const GroupEntityCollection &get_features() const { return features; }
 
   template <typename T> const T &get_entity(EntityID id) const;
@@ -275,28 +282,6 @@ public:
   const std::vector<EntityID> &get_ring_entities();
   const std::vector<EntityID> &get_group_entities();
 
-  Contacts test_find_neighbors(double cutoff, int res_dif) {
-    Contacts c(this);
-    /*const auto &atom_entities = get_atom_entities();*/
-    /*auto atom_neighbors = find_neighbors2(6.0, 10);*/
-    /*c.add_many(atom_neighbors, atom_entities);*/
-    /**/
-    /*std::vector<RingData> rings = get_rings().rings;*/
-    /*const auto &ring_entities = get_ring_entities();*/
-    /*auto ring_neighbors = find_ring_neighbors2(6.0);*/
-    /*c.add_many(ring_neighbors, ring_entities, atom_entities);*/
-
-    GroupEntityCollection group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
-    Interactions processor(*this, InteractionOptions{5.0});
-    auto ionic = processor.ionic();
-    auto hbonds = processor.hbond();
-    c.add(ionic);
-    c.add(hbonds);
-
-    return c;
-  }
-
-  /*void assign_molstar_atom_types() { topology.assign_molstar_atom_types(*mol); }*/
   void assign_molstar_atom_types() { topology.assign_molstar_typing(); }
   void assign_arpeggio_atom_types() { topology.assign_arpeggio_atom_types(); }
 

@@ -54,8 +54,7 @@ Contacts find_halogen_bonds(const Luni &luni, HalogenParams opts) {
   const auto donor_atoms = AtomEntityCollection::filter(&luni, AtomType::XBOND_DONOR);
   const auto acceptor_atoms = AtomEntityCollection::filter(&luni, AtomType::XBOND_ACCEPTOR);
 
-  EntityNeighborSearch ens(luni.get_conformer());
-  auto nbrs = ens.search(donor_atoms, acceptor_atoms, opts.distance_max);
+  auto nbrs = EntityNeighborSearch::search(donor_atoms, acceptor_atoms, opts.distance_max);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [donor_index, acceptor_index] = pair;

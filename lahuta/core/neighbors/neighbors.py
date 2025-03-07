@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from lahuta.lib import cAtomType
+from lahuta.lib import Flags
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
 from lahuta.utils import array_utils as au
 
@@ -192,7 +193,7 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
-        c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
+        c_atom_type = Flags.get_enum_as_string(atom_type.upper())
 
         # from lahuta.lib import cNSResults
         from lahuta.lib import cNeighbors

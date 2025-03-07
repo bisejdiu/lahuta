@@ -13,8 +13,7 @@ Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
   const auto rings = luni.get_rings();
   const auto features = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
 
-  EntityNeighborSearch ens(luni.get_conformer());
-  auto nbrs = ens.search(features, rings, opts.distance_max);
+  auto nbrs = EntityNeighborSearch::search(features, rings, opts.distance_max);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [feature_index, ring_index] = pair;

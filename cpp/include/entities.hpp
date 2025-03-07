@@ -28,33 +28,24 @@ enum class FeatureGroup {
 };
 
 struct Entity {
-  using GetCenterFn = const RDGeom::Point3D& (*)(const void*);
   using GetIdFn = size_t (*)(const void*);
-
-  GetCenterFn get_center_fn;
-  GetIdFn get_id_fn;
-  const void* obj;
+  using GetCenterFn = const RDGeom::Point3D& (*)(const void*);
 
   template <typename T>
   Entity(const T& t)
-    : get_center_fn([](const void* obj) -> const RDGeom::Point3D& {
-        return static_cast<const T*>(obj)->get_center();
-      }),
-      get_id_fn([](const void* obj) -> size_t {
-        return static_cast<const T*>(obj)->get_id();
-      }),
-      obj(&t)
-  {}
+    : get_id_fn    ([](const void* obj) -> size_t                 { return static_cast<const T*>(obj)->get_id(); }),
+      get_center_fn([](const void* obj) -> const RDGeom::Point3D& { return static_cast<const T*>(obj)->get_center(); }),
+      obj(&t) {}
 
-  const RDGeom::Point3D& get_center() const {
-    return get_center_fn(obj);
-  }
-
-  size_t get_id() const {
-    return get_id_fn(obj);
-  }
+  size_t get_id() const { return get_id_fn(obj); }
+  const RDGeom::Point3D& get_center() const { return get_center_fn(obj); }
+private:
+  GetCenterFn get_center_fn;
+  GetIdFn get_id_fn;
+  const void* obj;
 };
 
+// FIX: initialization argument order is inconsistent
 struct AtomEntity {
   AtomType type;
   const RDKit::Atom *atom;
@@ -75,7 +66,7 @@ struct AtomEntity {
     :
     type(type_),
     atoms(atoms_),
-    id(id_),
+    id(id_), // FIX: check if id (get_id) is used or even needed
     center(pos_),
     atom(atoms_.front()) {
   }
@@ -87,12 +78,13 @@ private:
 struct RingEntity {
   std::vector<const RDKit::Atom *> atoms;
   RDGeom::Point3D center;
-  RDGeom::Point3D norm;
+  RDGeom::Point3D norm; // FIX: should be renamed to normal rather than norm
 
   size_t get_id() const { return id; }
   const RDGeom::Point3D& get_center() const { return center; }
   std::vector<const RDKit::Atom *> get_data() const { return atoms; }
   bool has_atom(const RDKit::Atom *atom) const { return std::find(atoms.begin(), atoms.end(), atom) != atoms.end(); }
+  // FIX: add has_atom overload that accepts atom index
 
 public:
   explicit RingEntity(
@@ -107,9 +99,10 @@ private:
   size_t id;
 };
 
+// FIX: GroupEntity does not handle the `id` field the same as AtomEntity and RingEntity
 struct GroupEntity {
   AtomType type;
-  FeatureGroup group;
+  FeatureGroup group; // FIX: I think we should store the group (or post-compute it)
   std::vector<const RDKit::Atom *> atoms;
   RDGeom::Point3D center;
 
@@ -134,6 +127,8 @@ private:
 
 template <typename EntityType>
 struct EntityCollection {
+    using value_type = EntityType;
+
     EntityCollection() = default;
     EntityCollection(std::vector<EntityType> entities) : data(std::move(entities)) {}
     virtual ~EntityCollection() = default;
@@ -179,12 +174,9 @@ public:
     using EntityCollection::add_data;
     void add_data(const RDKit::RWMol& mol, const std::vector<int>& ring, int id);
 
-    std::vector<double> compute_angles(
-        const std::vector<int>& ring_indices,
-        const std::vector<std::vector<double>>& points) const;
-
-    // FIX: possibly move to ring props
+    // FIX: move to ring props?
     double compute_angle(const RingEntity& rd, const std::vector<double>& point) const;
+    std::vector<double> compute_angles(const std::vector<int>& ring_indices, const std::vector<std::vector<double>>& points) const;
 };
 
 class GroupEntityCollection : public EntityCollection<GroupEntity> {
@@ -228,8 +220,8 @@ const std::vector<const RDKit::Atom *>
 EntityCollection<EntityType>::atoms() const {
   std::vector<const RDKit::Atom *> atoms_vec;
   atoms_vec.reserve(data.size());
-  for (const auto &ring : data) {
-    atoms_vec.insert(atoms_vec.end(), ring.atoms.begin(), ring.atoms.end());
+  for (const auto &d : data) {
+    atoms_vec.insert(atoms_vec.end(), d.atoms.begin(), d.atoms.end());
   }
   return atoms_vec;
 }

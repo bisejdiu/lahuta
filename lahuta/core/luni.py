@@ -14,6 +14,7 @@ Example:
 
 """
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Optional, Type, Union, overload
 
@@ -44,6 +45,13 @@ if TYPE_CHECKING:
     from lahuta._types.openbabel import MolType
 
 __all__ = ["Luni"]
+
+
+@dataclass
+class Lahuta:
+    @staticmethod
+    def read(file_name: str) -> LahutaCPP:
+        return LahutaCPPLoader(file_name).luni
 
 
 class Luni:

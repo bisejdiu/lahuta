@@ -21,8 +21,7 @@ Contacts find_metalic(const Luni &luni, MetalicParams opts) {
   metals = AEC::filter(&luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);
   metal_binders = AEC::filter(&luni, AtomType::IonicTypePartner | AtomType::DativeBondPartner);
 
-  EntityNeighborSearch ens(luni.get_molecule().getConformer());
-  auto m_nbrs = ens.search(metals, metal_binders, opts.distance_max);
+  auto m_nbrs = EntityNeighborSearch::search(metals, metal_binders, opts.distance_max);
 
   for (const auto &[pair, dist] : m_nbrs) {
     auto [metal_index, metal_binding_index] = pair;

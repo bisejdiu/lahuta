@@ -168,16 +168,16 @@ inline bool has_all(AtomType flags, AtomType flag) { return (flags & flag) == fl
 
 inline AtomType remove(AtomType flags, AtomType flag) { return flags & ~flag; }
 
-inline bool all(AtomType flags, AtomType toCheck) {
-  return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(toCheck)) == static_cast<uint32_t>(toCheck);
+inline bool all(AtomType flags, AtomType flag) {
+  return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) == static_cast<uint32_t>(flag);
 }
 
-inline bool any(AtomType flags, AtomType toCheck) {
-  return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(toCheck)) != 0;
+inline bool any(AtomType flags, AtomType flag) {
+  return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) != 0;
 }
 
-inline bool none(AtomType flags, AtomType toCheck) {
-  return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(toCheck)) == 0;
+inline bool none(AtomType flags, AtomType flag) {
+  return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) == 0;
 }
 
 inline bool empty(AtomType flags) { return flags == AtomType::NONE; }
@@ -186,7 +186,7 @@ inline bool has_enum_as_string(AtomType flags, std::string flag_name) {
   return has(flags, string_to_atom_type(flag_name));
 }
 
-inline std::vector<AtomType> print_flags(AtomType flags) {
+inline std::vector<AtomType> split(AtomType flags) { // FIX: rename to get_components or similar
   std::vector<AtomType> result;
   for (int i = 0; i < 32; ++i) {
     AtomType flag = static_cast<AtomType>(1 << i);
@@ -200,7 +200,7 @@ inline std::vector<AtomType> print_flags(AtomType flags) {
 
 inline AtomType get_enum_as_string(std::string flag_name) { return string_to_atom_type(flag_name); }
 
-inline std::string atom_type_to_string(AtomType type) {
+inline std::string atom_type_to_string(AtomType type) { // FIX: refactor
 
   using namespace AtomTypeFlags;
 
@@ -224,6 +224,10 @@ inline std::string atom_type_to_string(AtomType type) {
   if (has(type, AtomType::TransitionMetal)) result += "TRANSITION_METAL ";
   if (has(type, AtomType::INVALID)) result += "UNKNOWN ";
 
+  if (!result.empty()) {
+      result.pop_back();
+      std::replace(result.begin(), result.end(), ' ', ',');
+  }
   return result.empty() ? "Unknown" : result;
 }
 

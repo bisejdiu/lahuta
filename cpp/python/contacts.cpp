@@ -69,16 +69,13 @@ void bind_contacts(py::module &m) {
       .def_static("prepare_input", &Contacts::prepare_input, py::arg("lhs"), py::arg("rhs"))
       .def("add", py::overload_cast<const Contacts &>(&Contacts::add), py::arg("contacts"))
       .def("add", py::overload_cast<const Contact &>(&Contacts::add), py::arg("interaction"))
-      .def(
-          "add",
-          py::overload_cast<EntityID, EntityID, float, InteractionType>(&Contacts::add),
+      .def("add", py::overload_cast<EntityID, EntityID, float, InteractionType>(&Contacts::add),
           py::arg("e1"),
           py::arg("e2"),
           py::arg("d"),
           py::arg("t"))
       .def("add", py::overload_cast<const std::vector<Contact> &>(&Contacts::add), py::arg("interactions"))
-      .def(
-          "add_many",
+      .def("add_many",
           (void(Contacts::*)(
               const NSResults &,
               const std::vector<EntityID> &,
@@ -89,8 +86,7 @@ void bind_contacts(py::module &m) {
           py::arg("e1"),
           py::arg("e2"),
           py::arg("type") = InteractionType::Any)
-      .def(
-          "add_many",
+      .def("add_many",
           (void(Contacts::*)(const NSResults &, const std::vector<EntityID> &, InteractionType))
               & Contacts::add_many,
           py::arg("neighbors"),
@@ -104,49 +100,24 @@ void bind_contacts(py::module &m) {
       // Overloaded operators
       .def("__eq__", &Contacts::operator==, py::is_operator())
       .def("__ne__", &Contacts::operator!=, py::is_operator())
-      .def(
-          "__and__",
-          [](Contacts &self, Contacts &other) { return self & other; },
-          py::is_operator())
-      .def(
-          "__or__",
-          [](Contacts &self, Contacts &other) { return self | other; },
-          py::is_operator())
-      .def(
-          "__sub__",
-          [](Contacts &self, Contacts &other) { return self - other; },
-          py::is_operator())
-      .def(
-          "__xor__",
-          [](Contacts &self, Contacts &other) { return self ^ other; },
-          py::is_operator())
-      .def(
-          "__iand__",
-          [](Contacts &self, Contacts &other) { return self &= other; },
-          py::is_operator())
-      .def(
-          "__ior__",
-          [](Contacts &self, Contacts &other) { return self |= other; },
-          py::is_operator())
-      .def(
-          "__isub__",
-          [](Contacts &self, Contacts &other) { return self -= other; },
-          py::is_operator())
-      .def(
-          "__ixor__",
-          [](Contacts &self, Contacts &other) { return self ^= other; },
-          py::is_operator())
+      .def("__and__",  [](Contacts &self, Contacts &other) {return self &  other;}, py::is_operator())
+      .def("__or__",   [](Contacts &self, Contacts &other) {return self |  other;}, py::is_operator())
+      .def("__sub__",  [](Contacts &self, Contacts &other) {return self -  other;}, py::is_operator())
+      .def("__xor__",  [](Contacts &self, Contacts &other) {return self ^  other;}, py::is_operator())
+      .def("__iand__", [](Contacts &self, Contacts &other) {return self &= other;}, py::is_operator())
+      .def("__ior__",  [](Contacts &self, Contacts &other) {return self |= other;}, py::is_operator())
+      .def("__isub__", [](Contacts &self, Contacts &other) {return self -= other;}, py::is_operator())
+      .def("__ixor__", [](Contacts &self, Contacts &other) {return self ^= other;}, py::is_operator())
 
       // Indexing support
-      .def(
-          "__getitem__",
-          [](const Contacts &self, int index) -> Contact {
+      .def("__getitem__", [](const Contacts &self, int index) -> Contact {
             if (index < 0 || index >= self.size()) {
               throw py::index_error("Index out of range");
             }
             return self.interactions[index];
           },
-          py::arg("index"));
+          py::arg("index")
+        );
 
   py::class_<InteractionOptions>(m, "InteractionOptions") //
       .def(py::init<float>(), py::arg("distance_cutoff"));

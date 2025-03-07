@@ -1,98 +1,59 @@
+#include <pybind11/attr.h>
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
-
-#include <rdkit/Geometry/point.h>
-#include <rdkit/GraphMol/RDKitBase.h>
 
 #include "at.hpp"
 #include "atom_types.hpp"
 
 using namespace lahuta;
-using namespace AtomTypeFlags;
+namespace Flags = AtomTypeFlags;
+namespace py = pybind11;
+
+// clang-format off
 
 void bind_atom_types(py::module &m) {
-
+  auto ATFlags = m.def_submodule("Flags", "Bindings for common utilities");
   py::enum_<AtomType> AtomType(m, "AtomType");
-  AtomType.value("NONE", AtomType::NONE)
-      .value("HBOND_ACCEPTOR", AtomType::HBOND_ACCEPTOR)
-      .value("HBOND_DONOR", AtomType::HBOND_DONOR)
-      .value("WEAK_HBOND_ACCEPTOR", AtomType::WEAK_HBOND_ACCEPTOR)
-      .value("WEAK_HBOND_DONOR", AtomType::WEAK_HBOND_DONOR)
-      .value("POS_IONISABLE", AtomType::POS_IONISABLE)
-      .value("NEG_IONISABLE", AtomType::NEG_IONISABLE)
-      .value("CARBONYL_OXYGEN", AtomType::CARBONYL_OXYGEN)
-      .value("CARBONYL_CARBON", AtomType::CARBONYL_CARBON)
-      .value("AROMATIC", AtomType::AROMATIC)
-      .value("HYDROPHOBIC", AtomType::HYDROPHOBIC)
-      .value("XBOND_ACCEPTOR", AtomType::XBOND_ACCEPTOR)
-      .value("XBOND_DONOR", AtomType::XBOND_DONOR)
-      .value("INVALID", AtomType::INVALID)
-      .export_values();
 
-  AtomType.def(pybind11::self | pybind11::self)
-      .def(pybind11::self & pybind11::self)
-      .def(pybind11::self ^ pybind11::self)
-      .def(pybind11::self |= pybind11::self)
-      .def(pybind11::self &= pybind11::self)
-      .def(pybind11::self ^= pybind11::self)
-      .def_property_readonly("name", [](enum AtomType flag) { return atom_type_to_string(flag); })
-      .def(
-          "components",
-          [](enum AtomType flag) {
-            std::vector<enum AtomType> components;
-            if (has(flag, AtomType::HBOND_ACCEPTOR))
-              components.push_back(AtomType::HBOND_ACCEPTOR);
-            if (has(flag, AtomType::HBOND_DONOR))
-              components.push_back(AtomType::HBOND_DONOR);
-            if (has(flag, AtomType::WEAK_HBOND_ACCEPTOR))
-              components.push_back(AtomType::WEAK_HBOND_ACCEPTOR);
-            if (has(flag, AtomType::WEAK_HBOND_DONOR))
-              components.push_back(AtomType::WEAK_HBOND_DONOR);
-            if (has(flag, AtomType::POS_IONISABLE))
-              components.push_back(AtomType::POS_IONISABLE);
-            if (has(flag, AtomType::NEG_IONISABLE))
-              components.push_back(AtomType::NEG_IONISABLE);
-            if (has(flag, AtomType::CARBONYL_OXYGEN))
-              components.push_back(AtomType::CARBONYL_OXYGEN);
-            if (has(flag, AtomType::CARBONYL_CARBON))
-              components.push_back(AtomType::CARBONYL_CARBON);
-            if (has(flag, AtomType::AROMATIC))
-              components.push_back(AtomType::AROMATIC);
-            if (has(flag, AtomType::HYDROPHOBIC))
-              components.push_back(AtomType::HYDROPHOBIC);
-            if (has(flag, AtomType::XBOND_ACCEPTOR))
-              components.push_back(AtomType::XBOND_ACCEPTOR);
-            if (has(flag, AtomType::XBOND_DONOR))
-              components.push_back(AtomType::XBOND_DONOR);
-            if (has(flag, AtomType::INVALID))
-              components.push_back(AtomType::INVALID);
-            return components;
-          })
-      .def_property_readonly(
-          "value",
-          [](enum AtomType flag) {
-            auto flag_str = atom_type_to_string(flag);
-            if (flag_str.back() == ' ') {
-              flag_str.pop_back();
-            }
-            return flag_str;
-            // return static_cast<uint32_t>(flag);
-          })
+  AtomType
+    .value("NONE",                AtomType::NONE)
+    .value("HBOND_ACCEPTOR",      AtomType::HBOND_ACCEPTOR)
+    .value("HBOND_DONOR",         AtomType::HBOND_DONOR)
+    .value("WEAK_HBOND_ACCEPTOR", AtomType::WEAK_HBOND_ACCEPTOR)
+    .value("WEAK_HBOND_DONOR",    AtomType::WEAK_HBOND_DONOR)
+    .value("POS_IONISABLE",       AtomType::POS_IONISABLE)
+    .value("NEG_IONISABLE",       AtomType::NEG_IONISABLE)
+    .value("CARBONYL_OXYGEN",     AtomType::CARBONYL_OXYGEN)
+    .value("CARBONYL_CARBON",     AtomType::CARBONYL_CARBON)
+    .value("AROMATIC",            AtomType::AROMATIC)
+    .value("HYDROPHOBIC",         AtomType::HYDROPHOBIC)
+    .value("XBOND_ACCEPTOR",      AtomType::XBOND_ACCEPTOR)
+    .value("XBOND_DONOR",         AtomType::XBOND_DONOR)
+    .value("INVALID",             AtomType::INVALID);
 
-      .def(~pybind11::self);
+  AtomType
+    .def(py::self |  py::self)
+    .def(py::self &  py::self)
+    .def(py::self ^  py::self)
+    .def(py::self |= py::self)
+    .def(py::self &= py::self)
+    .def(py::self ^= py::self)
+    .def(~py::self)
+    .def_property_readonly("value", [](const enum AtomType flag) { return atom_type_to_string(flag); })
+    .def("split",                   [](const enum AtomType flag) { return Flags::split(flag); })
+    // See: https://github.com/pybind/pybind11/issues/2537#issuecomment-702941967
+    .def("__str__", [](enum AtomType flag) { return "AtomType(" + atom_type_to_string(flag) + ")"; }, py::prepend());
 
-  AtomType.def("has", &has, "Check if flags contain a specific flag");
-  AtomType.def("has_enum_as_str", &has_enum_as_string, "Check if flags contain a specific flag");
-  AtomType.def("get_enum_as_str", &get_enum_as_string, "Get a specific flag");
-  AtomType.def("all", &all, "Check if flags contain all flags");
-  AtomType.def("any", &any, "Check if flags contain any flags");
-  AtomType.def("none", &none, "Check if flags contain none of the flags");
-  AtomType.def("print_flags", &print_flags, "Print flags");
-  AtomType.def("empty", &empty, "Check if flags are empty")
-      .def("__str__", [](enum AtomType flag) { return atom_type_to_string(flag); })
-      .def("__repr__", [](enum AtomType flag) { return "<AtomType." + atom_type_to_string(flag) + ">"; });
+  ATFlags
+    .def("has",     &Flags::has,     "Check if flags contain a specific flag",   py::arg("types"), py::arg("type"))
+    .def("has_any", &Flags::has_any, "Check if flags contain any of the flags",  py::arg("types"), py::arg("type"))
+    .def("all",     &Flags::all,     "Check if flags contain all flags",         py::arg("types"), py::arg("type"))
+    .def("any",     &Flags::any,     "Check if flags contain any flags",         py::arg("types"), py::arg("type"))
+    .def("none",    &Flags::none,    "Check if flags contain none of the flags", py::arg("types"), py::arg("type"))
+    .def("empty",   &Flags::empty,   "Check if flags are empty",                 py::arg("types"))
+    .def("split",   &Flags::split,   "Split flags into components",              py::arg("types"))
+    .def("string_to_atom_type", &string_to_atom_type, "Convert string to atom type", py::arg("types"))
+    .def("get_enum_as_string",  &get_enum_as_string,  "Get enum as string",          py::arg("types"));
 
-  // m.def("get_enum_as_str", &get_enum_as_string, "Get a specific flag");
-  m.def("atom_type_to_string", &atom_type_to_string);
 }

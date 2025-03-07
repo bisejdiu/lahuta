@@ -118,7 +118,7 @@ class AtomPlaneContacts:
         # first_atom_idx = np.array(rings.rings[0].atom_ids[0])
         first_atom_idx = []
         for ring in rings.rings:
-            first_atom_idx.append(ring.atom_ids()[0])
+            first_atom_idx.append(ring.get_atom_ids()[0])
         first_atom_idx = np.array(first_atom_idx)
 
         if rings.centers.shape[0] == 0:
