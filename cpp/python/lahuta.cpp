@@ -463,7 +463,7 @@ void bind(py::module &_lahuta) {
 
   Topology_
       .def_property_readonly("atom_types", &Topology::get_atom_types)
-      .def_property_readonly("residues",   [](Topology &top) {return top.residues.get();}, py::return_value_policy::reference)
+      .def_property_readonly("residues",   [](Topology &top) {return top.get_residues();}, py::return_value_policy::reference)
       .def_property_readonly("rings",      &Topology::get_rings);
 
 

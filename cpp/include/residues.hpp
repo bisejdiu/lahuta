@@ -25,26 +25,21 @@ class Residues {
 public:
   explicit Residues(const RDKit::RWMol &mol) : mol_(mol) {}
 
-  bool build() {
-    bool success = false;
-    build_residues(mol_, success);
-    return success;
-  }
+  bool build();
 
-  // FIX: Add an `add` or similar method to populate residues via a setter, rather than using a private data member
   const std::vector<Residue> &get_residues() const { return residues_; }
 
-  /// filter residues by a predicate
-  Residues filter(std::function<bool(const Residue &)> predicate) const; // TODO: `filter` copies of residues
-  Residues filter(std::function<bool(const std::string &)> predicate) const; // TODO: `filter` copies of residues
-  //
+  /// filter residues by a predicate (makes a copy)
+  Residues filter(std::function<bool(const Residue &)> predicate) const;
+  Residues filter(std::function<bool(const std::string &)> predicate) const;
+
   const RDKit::RWMol &get_mol() const { return mol_; }
 
   /// apply a function to each residue
   template <typename ResultType>
   std::vector<ResultType> map(std::function<ResultType(const Residue &)> func) const;
 
-  // NOTE: example of a topology getter
+  // NOTE: two examples of topology getters
   std::vector<int> get_atom_ids() const {
     std::vector<int> atom_ids;
     for (const auto &residue : residues_) {

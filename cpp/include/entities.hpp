@@ -141,6 +141,7 @@ struct EntityCollection {
     const EntityType& operator[](size_t index) const { return data[index]; }
 
     int size() const { return static_cast<int>(data.size()); }
+    void reserve(size_t size) { data.reserve(size); }
 
     // FIX: positions returns a copy of the points but performance impact is negligible 
     const RDGeom::POINT3D_VECT positions() const;
@@ -190,7 +191,7 @@ public:
     static const GroupEntityCollection filter(const Luni* luni, AtomType type, FeatureTypeCheckFunc check_func = AtomTypeFlags::has_any);
 };
 
-std::vector<const RDKit::Atom *> get_atom_types(const Luni *luni, AtomType type);
+/*std::vector<const RDKit::Atom *> get_atom_types(const Luni *luni, AtomType type);*/
 
 // clang-format off
 template <typename EntityType> const std::vector<size_t>

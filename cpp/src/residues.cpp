@@ -6,7 +6,6 @@
 // clang-format off
 namespace lahuta {
 
-// TODO: simplify `build_residues` to avoid the need for a map
 struct ResidueKeyHash {
   std::size_t operator()(const std::tuple<std::string, int, std::string, std::string> &t) const {
     std::size_t seed = 0;
@@ -22,6 +21,13 @@ struct ResidueKeyHash {
     return seed;
   }
 };
+
+
+bool Residues::build() {
+  bool success = false;
+  build_residues(mol_, success);
+  return success;
+}
 
 
 Residues Residues::filter(std::function<bool(const Residue &)> predicate) const {
@@ -55,6 +61,7 @@ std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)>
   return result;
 }
 
+
 void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
   std::unordered_map<std::tuple<std::string, int, std::string, std::string>, size_t, ResidueKeyHash> residue_index_map;
 
@@ -87,6 +94,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
   residues_ = std::move(residues);
   status = true;
 }
+
 
 std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RWMol &mol, const Residues &residues) {
 

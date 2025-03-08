@@ -110,7 +110,6 @@ enum RingSize {
 // (2) forces the same size with _AromaticResidues_ (which is important) and (3) for the current size it
 // actually should be comparable (likely even faster) than a hash map.  -Besian, March 2025
 //
-// FIX: this affects the ring ids in the Entity system (need to re-investigate)
 constexpr std::array<std::pair<const char *, RingSize>, _AROMATIC_RESIDUES_COUNT> AromaticResiduesRingSizes {{
   {"PHE", RS_6},
   {"TYR", RS_6},

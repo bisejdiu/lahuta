@@ -112,8 +112,9 @@ public:
 
 class AtomTypeAnalysis {
 public:
-  static std::vector<AtomType> analyze(const RDKit::RWMol &mol) {
-    std::vector<AtomType> atom_types = {mol.getNumAtoms(), AtomType::NONE};
+  static AtomEntityCollection analyze(const RDKit::RWMol &mol) {
+    AtomEntityCollection atom_types;
+    atom_types.reserve(mol.getNumAtoms());
 
     auto strategy = AtomTypeFactory::create();
 
@@ -122,7 +123,8 @@ public:
     valence_model.apply(mol);
 
     for (const auto &atom : mol.atoms()) {
-      atom_types[atom->getIdx()] = strategy.identify(mol, *atom);
+      AtomType at = strategy.identify(mol, *atom);
+      atom_types.add_data(mol, atom, at);
     }
     return atom_types;
   }

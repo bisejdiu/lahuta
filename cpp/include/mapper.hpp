@@ -72,7 +72,7 @@ private:
     BacktraceParser parser{res.backtrace};
 
     int residue_index = 0;
-    for (const auto &residue : *luni_ptr->get_topology().residues) {
+    for (const auto &residue : luni_ptr->get_topology().get_residues()) {
       if (residue.chain_id != sd.chain_name) continue;
 
       if (residue_index < start || residue_index > end) {

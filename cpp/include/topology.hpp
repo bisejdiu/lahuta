@@ -1,54 +1,101 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
+#include "aromatics.hpp"
 #include "atom_types.hpp"
-#include "bond_order.hpp"
-#include "bonds.hpp"
 #include "contacts/atoms.hpp"
+#include "contacts/groups.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
-#include "ob/clean_mol.hpp"
 #include "residues.hpp"
 #include "spdlog/spdlog.h"
 #include <rdkit/GraphMol/BondIterators.h>
 
 namespace lahuta {
 
-enum class TopologyBuildOptions {
-  check_for_ring_closure = 1,
+enum ContactComputerType { None, Arpeggio, Molstar };
+
+class TopologyBuildingOptions {
+  bool build_topology = true; // weird option. To build the topology you just call `build`, if you don't want to build it, you don't call `build`. No need for this option
+  const bool check_for_ring_closure = true; // if we decide to also check for ring indices using atom names:e.g. only for Protein-only systems as an optimization technique
+  ContactComputerType perceive_entity_typing = ContactComputerType::Molstar; // molstar atom typing
+  double cutoff = 4.5; // default cutoff
 };
+
 
 class Topology {
 public:
   Topology() = default;
-  Topology(RDKit::RWMol *mol) : mol_(mol) {}
+  Topology(std::shared_ptr<RDKit::RWMol> mol) : mol_(mol), residues(std::make_unique<Residues>(*mol)) {}
 
-  std::vector<AtomType> atom_types;
-  RingEntityCollection rings_vec;
-  RDKit::RWMol *mol_ = nullptr;
-  std::unique_ptr<Residues> residues;
+  const Residues &get_residues() const { return *residues; }
+  const AtomEntityCollection  &get_atom_types() const { return atom_types; }
+  const RingEntityCollection  &get_rings()      const { return rings_vec; }
+  const GroupEntityCollection &get_features()   const { return features; }
 
-  // FIX: we need a `build` function to initialize the topology
-  // FIX: building residues is hidden slightly, because it happens in the constructor of Residues
-public:
-  void build_residues(const RDKit::RWMol &mol) { residues = std::make_unique<Residues>(mol); residues->build(); }; // FIX: // FIX: // FIX:
+  void build(ContactComputerType c_type, float _cutoff) {
 
-  std::vector<AtomType> get_atom_types() const { return atom_types; }
-  RingEntityCollection  get_rings()      const { return rings_vec; }
+    try {
+      auto grid = FastNS(mol_->getConformer().getPositions());
+      auto ok = grid.build(_cutoff);
+      if (!ok) {
+          throw std::runtime_error("Failed to build the grid for neighbor search.");
+      }
+      auto neighbors = std::make_shared<NSResults>(grid.self_search());
+
+      // FIX: neighbor computation can technically be the responsibility of compute_bonds, but
+      // that moves them perhaps too much down the stack, and makes control of the process
+      // more difficult (e.g., if we need to use a memory pool or arena allocator)
+      this->compute_bonds(*neighbors);
+
+      // build residue information
+      residues->build();
+
+      // populate ring information to RDKit Mol
+      initialize_and_populate_ringinfo(*mol_, *residues);
+
+      switch (c_type) {
+        case ContactComputerType::Molstar:
+          this->assign_molstar_typing();
+          break;
+        case ContactComputerType::Arpeggio:
+          this->assign_arpeggio_atom_types();
+          break;
+        default:
+          break;
+      }
+
+    } catch (const std::runtime_error &e) {
+      spdlog::critical("Error creating topology! Exception caught: {}. Will not terminate, "
+                       "but no topology-based features will be available.", e.what());
+    }
+  }
+
+  void assign_molstar_typing() {
+    std::cout << "Assigning MolStar atom types" << std::endl;
+
+    // FIX: to be replaced by the entitytype manager
+    atom_types = AtomTypeAnalysis ::analyze(*mol_);
+    features   = GroupTypeAnalysis::analyze(*mol_, *residues);
+
+    // FIX: We have a conceptual issue with Aromaticity:
+    //  - `features` includes AromaticRingGroups.
+    //  - `rings_vec` includes ***only*** aromatic rings
+    //  - `atom_types`, which stores atom-level identifiers, does not store their aromaticity identifier
+
+    rings_vec = populate_ring_entities();
+  }
 
   void assign_arpeggio_atom_types() {
-    /*namespace rp = residue_props;*/
 
     std::cout << "Assigning Arpeggio atom types" << std::endl;
 
-    atom_types.resize(mol_->getNumAtoms(), AtomType::NONE);
-
+    atom_types.reserve(mol_->getNumAtoms());
     for (auto atom : mol_->atoms()) {
       AtomType atom_type = get_atom_type(atom);
-      atom_types[atom->getIdx()] = atom_type;
+      atom_types.add_data(*mol_, atom, atom_type);
     }
 
-    /*std::vector<int> unk_indices = rp::get_unknown_residues<std::vector<int>>(*residues, definitions::is_protein_extended);*/
     auto unk_indices = residues->filter(std::not_fn(definitions::is_protein_extended)).get_atom_ids();
     if (!unk_indices.empty()) {
       std::sort(unk_indices.begin(), unk_indices.end());
@@ -56,134 +103,29 @@ public:
       if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
         auto vec = match_atom_types(new_mol);
         for (size_t i = 0; i < unk_indices.size(); ++i) {
-          atom_types[unk_indices[i]] = vec[i];
+          atom_types.add_data(*mol_, mol_->getAtomWithIdx(unk_indices[i]), vec[i]);
         }
       }
     }
 
-    rings_vec = create_ringdatavec();
-  }
-  void assign_molstar_typing() {
-
-    std::cout << "Assigning MolStar atom types" << std::endl;
-
-    // FIX: to be replaced by the entitytype manager
-    std::vector<AtomType> atom_types_ = AtomTypeAnalysis::analyze(*mol_);
-
-    atom_types = std::move(atom_types_);
-    rings_vec = create_ringdatavec(); // FIX: rename to populate_rings
-  }
-
-  RingEntityCollection create_ringdatavec() {
-    RingEntityCollection rings;
-    size_t id = 0;
-    for (const auto &ring : mol_->getRingInfo()->atomRings()) { // NOTE: at this point, we've already added the rings to the molecule
-      rings.add_data(*mol_, ring, id++);
-    }
-    return rings;
-  }
-
-  static void compute_bonds(RDKit::RWMol &mol, const NSResults &neighbors) {
-    BondAssignmentResult result = assign_bonds(mol, neighbors);
-
-    // FIX: Refactor!
-
-    // for (gemmi::Connection &conn : st.connections) {
-    //   // Iterate over all models
-    //   gemmi::Atom *a1 = st.first_model().find_cra(conn.partner1).atom;
-    //   gemmi::Atom *a2 = st.first_model().find_cra(conn.partner2).atom;
-    //
-    //   if (mol.getBondBetweenAtoms(a1->serial-1, a2->serial-1) == nullptr) {
-    //     mol.addBond((unsigned int)a1->serial-1, (unsigned int)a2->serial-1,
-    //                 RDKit::Bond::BondType::SINGLE);
-    //   }
-    // }
-
-    mol.updatePropertyCache(false);
-    /*clean_bonds(mol, mol.getConformer());*/
-    MolOps::setHybridization(mol);
-    cleanup_predef(mol);
-
-    if (result.has_unlisted_resnames) {
-      clean_bonds(result.mol, result.mol.getConformer());
-      perceive_bond_orders_obabel(result.mol);
-      cleanup(result.mol);
-
-      merge_bonds(mol, result.mol, result.atom_indices);
-    }
+    rings_vec = populate_ring_entities();
   }
 
 private:
-  static void cleanup_predef(RWMol &mol) {
-    ROMol::VERTEX_ITER atBegin, atEnd;
-    boost::tie(atBegin, atEnd) = mol.getVertices();
-    while (atBegin != atEnd) {
-      RDKit::Atom *atom = mol[*atBegin];
-      atom->calcExplicitValence(false);
+  RingEntityCollection populate_ring_entities();
+  void compute_bonds(const NSResults &neighbors);
+  static void cleanup_predef(RDKit::RWMol &mol);
+  static void cleanup(RDKit::RWMol &mol);
+  static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
+  static bool should_initialize_ringinfo(int mol_size);
 
-      // correct four-valent neutral N -> N+
-      // This was github #1029
-      if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 && atom->getExplicitValence() == 4) {
-        atom->setFormalCharge(1);
-      }
-      ++atBegin;
-    }
-  }
+private:
+  AtomEntityCollection  atom_types;
+  RingEntityCollection  rings_vec;
+  GroupEntityCollection features;
 
-  static void cleanup(RDKit::RWMol &mol) {
-    cleanup_predef(mol);
-
-    // FIXME: provide the mechanism as an option?
-    // MolOps::fastFindRings(mol);
-    // MolOps::findSSSR(mol);
-    bool include_dative_bonds = true;
-    MolOps::symmetrizeSSSR(mol, include_dative_bonds);
-    MolOps::setAromaticity(mol);
-  }
-
-  static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
-    for (auto bondIt = source.beginBonds(); bondIt != source.endBonds(); ++bondIt) {
-      const RDKit::Bond *bond = *bondIt;
-      int bIdx = index_map[bond->getBeginAtomIdx()];
-      int eIdx = index_map[bond->getEndAtomIdx()];
-      if (target.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
-
-        // FIX: todo: instead of doing this check, we should iterate once over
-        // all atoms and set the number of explicit hydrogens based on the
-        // number of explicitly bonded hydrogens
-        auto a = target.getAtomWithIdx(bIdx);
-        auto b = target.getAtomWithIdx(eIdx);
-        int is_a_h = a->getAtomicNum() == 1;
-        int is_b_h = b->getAtomicNum() == 1;
-
-        if (is_a_h ^ is_b_h) {
-          auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
-          non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
-        }
-        target.addBond(bIdx, eIdx, bond->getBondType());
-      }
-    }
-  }
-
-  static bool should_initialize_ringinfo(int mol_size) {
-    constexpr int small_threshold = 20'000;
-    constexpr int medium_threshold = 50'000;
-    constexpr int large_threshold = 100'000;
-
-    if (mol_size < small_threshold) return true;
-
-    // FIX: explain what "filtered" means
-    if (mol_size < medium_threshold) {
-      spdlog::warn("Filtered molecule size ({}) is large. Performance may be affected.", mol_size);
-      return true;
-    } else if (mol_size < large_threshold) {
-      spdlog::warn("Filtered molecule size ({}) is very large. Performance may be severely affected.", mol_size);
-      return true;
-    }
-
-    spdlog::warn("Filtered molecule size ({}) is too large. Ring perception will be skipped!", mol_size);
-    return false;
-  }
+  std::shared_ptr<RDKit::RWMol> mol_;
+  std::unique_ptr<Residues> residues;
 };
 
 } // namespace lahuta

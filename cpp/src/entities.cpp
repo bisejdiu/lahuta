@@ -72,13 +72,13 @@ double RingEntityCollection::compute_angle(const RingEntity &rd, const std::vect
 
 const AtomEntityCollection
 AtomEntityCollection::filter(const Luni *luni, AtomType type, FeatureTypeCheckFunc check_func) {
-  const std::vector<AtomType> &atom_types = luni->get_atom_types();
+  const AtomEntityCollection &atom_data = luni->get_atom_types();
   const auto &mol = luni->get_molecule();
 
   AtomEntityCollection atom_data_vec;
-  for (const auto *atom : mol.atoms()) {
-    if (check_func(atom_types[atom->getIdx()], type)) {
-      atom_data_vec.add_data(mol, atom, atom_types[atom->getIdx()]);
+  for (const auto &atom : atom_data.get_data()) {
+    if (check_func(atom.type, type)) {
+      atom_data_vec.add_data(mol, atom.atom, atom.type);
     }
   }
   return std::move(atom_data_vec);
@@ -99,17 +99,17 @@ GroupEntityCollection::filter(const Luni *luni, AtomType type, FeatureTypeCheckF
 
 RingEntityCollection get_rings(const Luni *luni) { return luni->get_rings(); }
 
-std::vector<const RDKit::Atom *> get_atom_types(const Luni *luni, AtomType type) {
-  const std::vector<AtomType> &atom_types = luni->get_atom_types();
-  const auto &mol = luni->get_molecule();
-
-  std::vector<const RDKit::Atom *> filtered_atoms;
-  for (const auto *atom : mol.atoms()) {
-    if (AtomTypeFlags::has_any(atom_types[atom->getIdx()], type)) {
-      filtered_atoms.push_back(atom);
-    }
-  }
-  return filtered_atoms;
-}
+/*std::vector<const RDKit::Atom *> get_atom_types(const Luni *luni, AtomType type) {*/
+/*  const std::vector<AtomType> &atom_types = luni->get_atom_types();*/
+/*  const auto &mol = luni->get_molecule();*/
+/**/
+/*  std::vector<const RDKit::Atom *> filtered_atoms;*/
+/*  for (const auto *atom : mol.atoms()) {*/
+/*    if (AtomTypeFlags::has_any(atom_types[atom->getIdx()], type)) {*/
+/*      filtered_atoms.push_back(atom);*/
+/*    }*/
+/*  }*/
+/*  return filtered_atoms;*/
+/*}*/
 
 } // namespace lahuta

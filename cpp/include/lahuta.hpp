@@ -11,14 +11,12 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/BondIterators.h>
 
-#include "aromatics.hpp"
 #include "contacts/interactions.hpp"
 #include "convert.hpp"
 #include "neighbors.hpp"
 #include "nsgrid.hpp"
 #include "ob/kekulize.h"
 
-#include "contacts/groups.hpp"
 #include "nn.hpp"
 #include "spdlog/spdlog.h"
 #include "topology.hpp"
@@ -29,8 +27,6 @@
 namespace lahuta {
 
 static float BONDED_NS_CUTOFF = 4.5;
-
-enum ContactComputerType { Arpeggio, Molstar };
 
 class Luni {
   // FIX: move down
@@ -43,75 +39,34 @@ private:
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
 
-    topology = Topology(mol.get()); // initialize the topology (not built yet)
-  }
-
-  void create_topology() {
-
-    try {
-      // NOTE: GRID
-      grid = FastNS(get_conformer().getPositions());
-      auto ok = grid.build(_cutoff);
-      if (!ok) {
-          throw std::runtime_error("Box dimension too small for the given cutoff.");
-      }
-      // FIX: perhaps we should not store neighbors (large size, memory usage, etc.)
-      // Further, neighbors are only used in bond computation
-      neighbors = std::make_shared<NSResults>(grid.self_search());
-
-      // NOTE: BONDS
-      Topology::compute_bonds(*mol, *neighbors);
-
-      // NOTE: RESIDUES
-      topology.build_residues(*mol);
-
-      // NOTE: RINGS
-      initialize_and_populate_ringinfo(*mol, *topology.residues);
-
-      // NOTE: ATOM TYPES
-      if (c_type == ContactComputerType::Arpeggio) {
-        topology.assign_arpeggio_atom_types();
-      } else {
-        topology.assign_molstar_typing();
-      }
-
-    } catch (const std::runtime_error &e) {
-      throw std::runtime_error("Error creating topology: " + std::string(e.what()));
-    }
+    topology = Topology(mol); // initialize the topology (not built yet)
   }
 
 public:
   Luni() : _cutoff(BONDED_NS_CUTOFF) {}
-  // FIX: should to `build` the topology same as I am building the grid
   explicit Luni(std::string file_name, std::optional<ContactComputerType> c_type_ = std::nullopt)
     : _cutoff(BONDED_NS_CUTOFF), c_type(c_type_.value_or(ContactComputerType::Molstar)), file_name_(file_name) {
 
     spdlog::info("Processing file: {}", file_name_);
     read_structure();
 
+    // FIX: this should be called as part of a `build` member function, and not automatically in the constructor
+    // Further, the current `build` methods should be renamed to `create`
     try {
-      create_topology();
+      topology.build(c_type, _cutoff);
     } catch (const std::runtime_error &e) {
-      std::cerr << "Critical error: " << e.what() << "\n";
+      /*std::cerr << "Critical error: " << e.what() << "\n";*/
       success = false;
-      return;
     }
-
-    // FIX: double call to Residues(*mol)
-    Residues residues(*mol);
-    if (!residues.build()) {
-          throw std::runtime_error("Could not build residue information!");
-    }
-    features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
   }
 
   static Luni build(std::shared_ptr<RDKit::RWMol> mol) {
     Luni luni;
 
     luni.mol = mol;
-    luni.topology = Topology(luni.mol.get());
+    luni.topology = Topology(luni.mol);
 
-    luni.create_topology();
+    luni.topology.build(luni.c_type, luni._cutoff);
     return luni;
   }
 
@@ -122,15 +77,9 @@ public:
     create_RDKit_repr(*luni.mol, st, *conformer, false);
     luni.mol->updatePropertyCache(false);
     luni.mol->addConformer(conformer, true);
-    luni.topology = Topology(luni.mol.get());
+    luni.topology = Topology(luni.mol);
 
-    luni.create_topology();
-
-    Residues residues(*luni.mol);
-    if (!residues.build()) {
-          throw std::runtime_error("Could not build residue information!");
-    }
-    luni.features = std::move(GroupTypeAnalysis::analyze(*luni.mol, residues));
+    luni.topology.build(luni.c_type, luni._cutoff);
 
     return luni;
   }
@@ -138,7 +87,7 @@ public:
   // Luni from IR:
   Luni(const IR &ir) : _cutoff(BONDED_NS_CUTOFF) {
     IR_to_RWMol(*mol, ir);
-    create_topology();
+    topology.build(c_type, _cutoff);
   }
 
   Topology       &get_topology()       { return topology; }
@@ -152,8 +101,9 @@ public:
 
   const double get_cutoff() const { return _cutoff; }
 
-  const std::vector<AtomType> &get_atom_types() const { return topology.atom_types; }
-  const RingEntityCollection  &get_rings()      const { return topology.rings_vec; }
+  const AtomEntityCollection  &get_atom_types() const { return topology.get_atom_types(); }
+  const RingEntityCollection  &get_rings()      const { return topology.get_rings(); }
+  const GroupEntityCollection &get_features()   const { return topology.get_features(); }
 
   Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
     NSResults ns = find_neighbors_opt(cutoff);
@@ -258,8 +208,6 @@ public:
   static int count_unique(const std::vector<int> &vec);
   static int count_unique(const std::vector<std::string> &vec);
 
-  const GroupEntityCollection &get_features() const { return features; }
-
   template <typename T> const T &get_entity(EntityID id) const;
   const std::vector<EntityID> &get_atom_entities();
   const std::vector<EntityID> &get_ring_entities();
@@ -273,10 +221,9 @@ private:
   std::shared_ptr<NSResults> neighbors;
 
   double _cutoff;
-  ContactComputerType c_type;
+  ContactComputerType c_type = ContactComputerType::Molstar;
   FastNS grid; // FIXME: is this needed?
   Topology topology;
-  GroupEntityCollection features;
 
   std::vector<int> filtered_indices;
   std::unordered_map<lahuta::EntityType, std::vector<EntityID>> entities;

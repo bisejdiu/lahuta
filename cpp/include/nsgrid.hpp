@@ -67,7 +67,7 @@ struct NSResults {
   }
 
   void add_neighbors(int i, int j, float d2);
-  void reserve_space(size_t input_size);
+  void reserve_space(size_t input_size); // FIX: not accurate. should use a smarter estimate
 
   [[nodiscard]] NSResults filter(const double distance) const;
   [[nodiscard]] NSResults filter(const std::vector<int> &atom_indices) const;

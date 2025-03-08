@@ -79,11 +79,10 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   }
   mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
 
-  /*auto rings = tbl_find_aromatic_rings(mol, residues);*/
   auto rings = find_and_process_aromatic_residues(mol, residues);
   add_rings_to_mol(mol, rings);
 
-  /*if (spdlog::should_log(spdlog::level::debug)) {*/
+  // if (spdlog::should_log(spdlog::level::debug)) {
   if (true) {
     auto unk_res = residues.filter(std::not_fn(definitions::is_predefined));
 
