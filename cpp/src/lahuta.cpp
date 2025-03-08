@@ -1,6 +1,8 @@
 #include "lahuta.hpp"
 #include "definitions.hpp"
+#include "nsgrid.hpp"
 #include "parser.hpp"
+#include "visitor.hpp" // selection parser (bad file name)
 
 namespace lahuta {
 
@@ -49,7 +51,7 @@ std::vector<std::string> split_word(const std::string &word) {
       tokens.push_back("-");
       ++pos;
     } else {
-      // Unknown character, skip or handle error
+      // Unknown character, unclear if we should skip or throw an error
       ++pos;
     }
   }
@@ -145,33 +147,23 @@ auto Luni::match_smarts_string(std::string sm, std::string atype, bool log_value
 
 NSResults Luni::find_neighbors_opt(double cutoff) {
 
-  if (cutoff == _cutoff) {
-    return *neighbors;
-  } else if (cutoff < _cutoff) {
-    return neighbors->filter(cutoff);
-  }
+  auto grid = FastNS(mol->getConformer().getPositions());
 
-  if (!grid.update(cutoff)) {
-    std::cerr << "Failed to update the grid with the given cutoff" << std::endl;
+  if (!grid.build(cutoff)) {
+    spdlog::error("Failed to update the grid with the given cutoff");
     return NSResults();
   }
   auto ns = grid.self_search();
   return ns;
 }
 
+// FIX: confirm this has not been broken (we do not automatically build the topology now)
 Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {
 
   auto new_mol = filter_with_bonds(*mol, atom_indices);
   new_mol.updatePropertyCache(false);
 
-  Luni new_luni;
-  new_luni.mol = std::make_shared<RDKit::RWMol>(new_mol);
-  new_luni.neighbors = std::make_shared<NSResults>(neighbors->filter(atom_indices));
-
-  new_luni.topology.assign_arpeggio_atom_types();
-  /*new_luni.topology.assign_molstar_typing();*/
-
-  return new_luni;
+  return Luni(std::make_shared<RDKit::RWMol>(new_mol));
 }
 
 std::vector<std::string> Luni::tokenize_simple(const std::string &str) {

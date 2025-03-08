@@ -12,6 +12,7 @@
 #include "matcher.hpp"
 #include "nn.hpp"
 #include "seq.hpp"
+#include "spdlog/spdlog.h"
 #include "topology.hpp"
 #include "backtrace.hpp"
 
@@ -34,7 +35,11 @@ public:
 
 public:
   TopologyMapper(SeqData &sd_, MappingType type) : sd(sd_), type_(type) {
-    luni_ptr = std::make_unique<Luni>(Luni::build(sd.st));
+    luni_ptr = std::make_unique<Luni>(Luni::create(sd.st));
+    auto ok = luni_ptr->build_topology();
+    if (!ok) {
+      spdlog::warn("Failed building the topology!");
+    }
   }
 
   void map(const Matcher::result_t &res) { map_backtrace_and_atoms(res); }

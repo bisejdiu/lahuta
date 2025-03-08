@@ -156,13 +156,13 @@ Neighbors<T> Neighbors<T>::type_filter(AtomType type, int partner) {
   Distances dists;
   for (size_t i = 0; i < _data.size(); ++i) {
     if (partner == 0) {
-      auto atype = m_luni->topology.get_atom_types()[_data[i].i];
+      auto atype = m_luni->topology->get_atom_types()[_data[i].i];
       if (AtomTypeFlags::has(atype.type, type)) {
         filtered.push_back(_data[i].get_pair());
         dists.push_back(_data[i].d);
       }
     } else if (partner == 1) {
-      auto atype = m_luni->topology.get_atom_types()[_data[i].j];
+      auto atype = m_luni->topology->get_atom_types()[_data[i].j];
       if (AtomTypeFlags::has(atype.type, type)) {
         filtered.push_back(_data[i].get_pair());
         dists.push_back(_data[i].d);

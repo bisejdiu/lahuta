@@ -17,7 +17,7 @@ int main(int argc, char const *argv[]) {
   /*luni.assign_arpeggio_atom_types();*/
   /*luni.assign_molstar_atom_types();*/
 
-  if (!luni.success) {
+  if (!luni.build_topology()) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
     return 1;
   }

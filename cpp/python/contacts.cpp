@@ -1,4 +1,5 @@
 #include "contacts.hpp"
+#include "contacts/interactions.hpp"
 #include "lahuta.hpp"
 #include "nn.hpp"
 

@@ -469,9 +469,8 @@ void bind(py::module &_lahuta) {
 
   Luni
     /*.def(py::init<std::string>())*/
-      .def(py::init<const IR &>())
-      .def(py::init<std::string, std::optional<ContactComputerType>>(), py::arg("file_name"), py::arg("c_type") = std::nullopt)
-      .def(py::init([](std::string file_name, int c) { return new class Luni(file_name, static_cast<ContactComputerType>(c)); }), py::arg("file_name"), py::arg("contact_type"))
+      /*.def(py::init<const IR &>())*/ // FIX: this uses the `create` factory function now
+      .def(py::init<std::string>(), py::arg("file_name"))
       .def("find_neighbors", &Luni::find_neighbors)
       /*.def("find_neighbors_aa", &Luni::find_neighbors<AtomAtomPair>)*/
       /*.def("find_neighbors_ar", &Luni::find_neighbors<AtomRingPair>)*/
@@ -529,9 +528,7 @@ void bind(py::module &_lahuta) {
 
        // FIX: selection should be done using an enum
       .def("assign_molstar_atom_types",  &Luni::assign_molstar_atom_types)
-      .def("assign_arpeggio_atom_types", &Luni::assign_arpeggio_atom_types)
-
-      .def("get_cutoff", &Luni::get_cutoff);
+      .def("assign_arpeggio_atom_types", &Luni::assign_arpeggio_atom_types);
 
   // FIX: We provide a NumPy-based interface, so we should, perhaps, not expose the RDKit Poin3D class.
   py::class_<RDGeom::Point3D>(_lahuta, "Point3D")

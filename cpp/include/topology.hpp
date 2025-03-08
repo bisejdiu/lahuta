@@ -13,13 +13,15 @@
 
 namespace lahuta {
 
-enum ContactComputerType { None, Arpeggio, Molstar };
+// FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
+// atoms we'd use a larger cutoff but only around them.
+constexpr static float BONDED_NEIGHBOR_SEARCH_CUTOFF = 4.5;
+enum class ContactComputerType { None, Arpeggio, Molstar };
 
-class TopologyBuildingOptions {
-  bool build_topology = true; // weird option. To build the topology you just call `build`, if you don't want to build it, you don't call `build`. No need for this option
-  const bool check_for_ring_closure = true; // if we decide to also check for ring indices using atom names:e.g. only for Protein-only systems as an optimization technique
-  ContactComputerType perceive_entity_typing = ContactComputerType::Molstar; // molstar atom typing
-  double cutoff = 4.5; // default cutoff
+struct TopologyBuildingOptions {
+  const bool identify_ring_atoms = true; // if we decide to also check for ring atoms using atom names:e.g. only for protein-only systems as an optimization technique
+  ContactComputerType atom_typing_method = ContactComputerType::Molstar;
+  double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
 };
 
 
@@ -33,11 +35,17 @@ public:
   const RingEntityCollection  &get_rings()      const { return rings_vec; }
   const GroupEntityCollection &get_features()   const { return features; }
 
-  void build(ContactComputerType c_type, float _cutoff) {
+
+  void build(TopologyBuildingOptions tops) {
+
+    if (!mol_) {
+      spdlog::critical("Cannot build topology without a molecule.");
+      throw std::runtime_error("Make sure to provide a molecule before building the topology.");
+    }
 
     try {
       auto grid = FastNS(mol_->getConformer().getPositions());
-      auto ok = grid.build(_cutoff);
+      auto ok = grid.build(tops.cutoff);
       if (!ok) {
           throw std::runtime_error("Failed to build the grid for neighbor search.");
       }
@@ -54,7 +62,7 @@ public:
       // populate ring information to RDKit Mol
       initialize_and_populate_ringinfo(*mol_, *residues);
 
-      switch (c_type) {
+      switch (tops.atom_typing_method) {
         case ContactComputerType::Molstar:
           this->assign_molstar_typing();
           break;

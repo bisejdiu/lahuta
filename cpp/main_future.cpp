@@ -1,4 +1,5 @@
 #include "GraphMol/RWMol.h"
+#include "contacts/interactions.hpp"
 #include "lahuta.hpp"
 #include "mapper.hpp"
 #include "processor.hpp"
@@ -33,7 +34,10 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
 
   alignment_computers::print_result(query, target, ar);
 
-  auto luni = Luni::build(query.st);
+  auto luni = Luni::create(query.st);
+  if (!luni.build_topology()) {
+    spdlog::warn("Failed building topology for {}!", luni.get_file_name());
+  }
   auto mol = luni.get_molecule();
   std::cout << "Query Molecule: " << query.file_name << " " << mol.getNumAtoms() << std::endl;
 
@@ -55,7 +59,7 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
   _8.sort_interactions();
   _8.print_interactions();
 
-  auto luni_t = Luni::build(target.st);
+  auto luni_t = Luni::create(target.st);
   auto mol_t = luni_t.get_molecule();
   std::cout << "Target Molecule: " << target.file_name << " " << mol_t.getNumAtoms() << std::endl;
 
