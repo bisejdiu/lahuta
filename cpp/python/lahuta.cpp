@@ -432,6 +432,7 @@ void bind(py::module &_lahuta) {
   Residue_
       .def(py::init<>())
       .def(py::init<const std::string &, int, const std::string &, const std::string &>())
+      /*.def(py::init<const std::string &, int, const std::string &, bool>())*/
       .def_readwrite("chain_id", &Residue::chain_id)
       .def_readwrite("number",   &Residue::number)
       .def_readwrite("name",     &Residue::name)
@@ -503,7 +504,7 @@ void bind(py::module &_lahuta) {
       .def_property_readonly("chainlabels", [](class Luni &luni) {auto values = luni.chainlabels();    return string_array(values);})
 
       .def_property_readonly("n_atoms",     [](class Luni &luni) {return luni.n_atoms();})
-      .def_property_readonly("file_name",   [](class Luni &luni) {return luni.file_name.c_str();})
+      .def_property_readonly("file_name",   [](class Luni &luni) {return luni.file_name_.c_str();})
 
        .def("get_topology", [](class Luni &luni) -> const Topology& { return luni.get_topology(); }, py::return_value_policy::reference)
        /*.def("at", [](class Luni &luni) -> auto { auto &v = luni.get_topology(); return v.atom_types; })*/

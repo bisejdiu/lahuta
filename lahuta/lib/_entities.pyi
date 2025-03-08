@@ -93,13 +93,14 @@ AtomTypeCheckFunc: TypeAlias = Callable[[AtomType, AtomType], bool]
 
 class AtomEntityCollection(EntityCollection[AtomEntity]):
     @staticmethod
-    def filter(luni: LahutaCPP, type_: AtomType, check_func: AtomTypeCheckFunc = Flags.has_any) -> AtomEntityCollection: ...  # noqa: PYI011
+    def filter(luni: LahutaCPP, type_: AtomType, check_func: AtomTypeCheckFunc = Flags.has_any) -> AtomEntityCollection: ...
 
-class RingEntityCollection(EntityCollection[RingEntity]): ...
+class RingEntityCollection(EntityCollection[RingEntity]):
+    rings: list[RingEntity]
 
 class GroupEntityCollection(EntityCollection[GroupEntity]):
     @staticmethod
-    def filter(luni: LahutaCPP, type_: AtomType, check_func: AtomTypeCheckFunc = Flags.has_any) -> GroupEntityCollection: ...  # noqa: PYI011
+    def filter(luni: LahutaCPP, type_: AtomType, check_func: AtomTypeCheckFunc = Flags.has_any) -> GroupEntityCollection: ...
 
 
 # Works, but the type inference is not as good as with exhaustive (and painfully annoying) overloads.

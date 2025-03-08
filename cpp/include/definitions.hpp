@@ -5,7 +5,6 @@
 #include "bonds/token.h"
 #include <array>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -75,7 +74,8 @@ constexpr const std::pair<resTokenType, resTokenType> BaseResiduesRange = {
     resTokenType::GLY, resTokenType::GPN
 };
 
-constexpr const std::array<resTokenType, 28> _AromaticResidues_ = {
+constexpr int _AROMATIC_RESIDUES_COUNT = 28;
+constexpr const std::array<resTokenType, _AROMATIC_RESIDUES_COUNT> AromaticResidues = {
     resTokenType::PHE, resTokenType::TYR, // phenylalanine, tyrosine
     resTokenType::HIS, resTokenType::TRP, // histidine, tryptophan
     resTokenType::DHI, resTokenType::DPN, // d-histidine, d-phenylalanine
@@ -92,38 +92,75 @@ constexpr const std::array<resTokenType, 28> _AromaticResidues_ = {
     resTokenType::DU,  resTokenType::DN   // deoxyuridine, deoxynucleotide
 };
 
-// FIX: this changes the ring ids in the Entity system
-inline const std::unordered_map<std::string, std::vector<int>> AromaticResidues = {
-  {"PHE", {6}},
-  {"TYR", {6}},
-  {"HIS", {5}},
-  {"TRP", {5, 6}},
-  {"A", {5, 6}},
-  {"G", {6}},
-  {"C", {6}},
-  {"U", {6}},
 
-  {"DA", {6}},
-  {"DC", {6}},
-  {"DG", {6}},
-  {"DT", {6}},
-  {"N", {6}},
-  {"I", {6}},
-  {"DN", {6}},
-  {"DU", {6}},
-  {"DI", {6}},
-  {"DTR", {5, 6}},
-  {"DTY", {5, 6}},
-  {"DHI", {5}},
-  {"DPN", {5}},
-  {"HSD", {5}},
-  {"HSE", {5}},
-  {"HSP", {5}},
-  {"HID", {5}},
-  {"HIE", {5}},
-  {"HIP", {5}},
-  {"PTR", {6}}
+namespace arom_rings {
+// old-style enum to allow implicit conversion to int.
+enum RingSize {
+    RS_None = 0,
+    RS_3    = 1 << 0,
+    RS_4    = 1 << 1,
+    RS_5    = 1 << 2,
+    RS_6    = 1 << 3,
+    RS_7    = 1 << 4,
+    RS_8    = 1 << 5,
 };
+
+//
+// Using an array forces a linear search, but: 1. allows for optimizations (short-circuiting) and
+// (2) forces the same size with _AromaticResidues_ (which is important) and (3) for the current size it
+// actually should be comparable (likely even faster) than a hash map.  -Besian, March 2025
+//
+// FIX: this affects the ring ids in the Entity system (need to re-investigate)
+constexpr std::array<std::pair<const char *, RingSize>, _AROMATIC_RESIDUES_COUNT> AromaticResiduesRingSizes {{
+  {"PHE", RS_6},
+  {"TYR", RS_6},
+  {"HIS", RS_5},
+  {"TRP", static_cast<RingSize>(RS_5 | RS_6)},
+
+  {"A",   static_cast<RingSize>(RS_5 | RS_6)},
+  {"G",   RS_6},
+  {"C",   RS_6},
+  {"U",   RS_6},
+
+  {"DA",  RS_6},
+  {"DC",  RS_6},
+  {"DG",  RS_6},
+  {"DT",  RS_6},
+
+  {"N",   RS_6},
+  {"I",   RS_6},
+
+  {"DN",  RS_6},
+  {"DU",  RS_6},
+  {"DI",  RS_6},
+
+  {"DTR", static_cast<RingSize>(RS_5 | RS_6)},
+  {"DTY", static_cast<RingSize>(RS_5 | RS_6)},
+  {"DHI", RS_5},
+  {"DPN", RS_5},
+
+  {"HSD", RS_5},
+  {"HSE", RS_5},
+  {"HSP", RS_5},
+  {"HID", RS_5},
+  {"HIE", RS_5},
+  {"HIP", RS_5},
+  {"PTR", RS_6}
+}};
+
+inline std::vector<int> get_ringsizes(RingSize ring_mask) {
+      std::vector<int> sizes;
+    if (ring_mask & RS_3) sizes.push_back(3);
+    if (ring_mask & RS_4) sizes.push_back(4);
+    if (ring_mask & RS_5) sizes.push_back(5);
+    if (ring_mask & RS_6) sizes.push_back(6);
+    if (ring_mask & RS_7) sizes.push_back(7);
+    if (ring_mask & RS_8) sizes.push_back(8);
+    return sizes;
+}
+
+} // namespace arom_rings
+
 
 const std::unordered_set<std::string> ProteinBackboneAtoms = {
   "CA",  "C",   "N",   "O",   "O1",  "O2", "OC1",
@@ -139,20 +176,21 @@ const std::unordered_set<std::string> NucleicBackboneAtoms = {
   "O3*", "O4*", "O5*", "C1*", "C2*", "C3*", "C4*", "C5*"
 };
 
-using ResTesterFunc = std::function<bool(const std::string &)>;
-const auto is_water = make_tester(resTokenType::SOL, resTokenType::SPC);
-const auto is_histidine = make_tester(HistidineResidues);
-const auto is_positive_charge = make_tester(PositiveChargedResidues);
-const auto is_negative_charge = make_tester(NegativeChargedResidues);
-const auto is_standard_protein = make_tester(resTokenType::GLY, resTokenType::ARG);
-const auto is_protein_extended = make_tester(StandardAminoAcids.first, StandardAminoAcids.second);
-const auto is_rna = make_tester(resTokenType::A, resTokenType::N);
-const auto is_dna = make_tester(resTokenType::DA, resTokenType::DN);
+/*using ResTesterFunc = std::function<bool(const std::string &)>;*/
+const auto is_water   = make_tester(resTokenType::SOL, resTokenType::SPC);
+const auto is_rna     = make_tester(resTokenType::A, resTokenType::N);
+const auto is_dna     = make_tester(resTokenType::DA, resTokenType::DN);
+const auto is_base    = make_tester(BaseResiduesRange.first, BaseResiduesRange.second);
 const auto is_nucleic = make_tester(resTokenType::A, resTokenType::DN);
 const auto is_polymer = make_tester(PolymerResiduesRange.first, PolymerResiduesRange.second);
-const auto is_base = make_tester(BaseResiduesRange.first, BaseResiduesRange.second);
 
-const auto is_aromatic = make_tester(_AromaticResidues_);
+const auto is_histidine        = make_tester(HistidineResidues);
+const auto is_positive_charge  = make_tester(PositiveChargedResidues);
+const auto is_negative_charge  = make_tester(NegativeChargedResidues);
+const auto is_standard_protein = make_tester(resTokenType::GLY, resTokenType::ARG);
+const auto is_protein_extended = make_tester(StandardAminoAcids.first, StandardAminoAcids.second);
+
+const auto is_aromatic   = make_tester(AromaticResidues);
 const auto is_predefined = make_tester(PredefinedResidues);
 
 } // namespace definitions

@@ -20,6 +20,7 @@ void add_rings_to_mol(const RDKit::RWMol &mol, const RDKit::VECT_INT_VECT &rings
   }
 }
 
+
 AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
   RDKit::VECT_INT_VECT rings, bonds;
   RDKit::MolOps::symmetrizeSSSR(mol, true);
@@ -40,6 +41,7 @@ AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
   return {rings, bonds};
 }
 
+
 std::vector<std::vector<int>>
 map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector<int> &indices) {
   std::vector<std::vector<int>> mapped_rings;
@@ -57,6 +59,7 @@ map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector
   return mapped_rings;
 }
 
+
 void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::vector<int> &indices) {
 
   auto new_mol = filter_with_bonds(mol, indices);
@@ -68,35 +71,32 @@ void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::ve
   add_rings_to_mol(mol, mapped_rings);
 }
 
+
 void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &residues) {
-  using namespace residue_props;
 
   if (mol.getRingInfo()->isInitialized()) {
     mol.getRingInfo()->reset();
   }
   mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
 
-  auto rings = residue_props::tbl_find_aromatic_rings(mol, residues);
+  /*auto rings = tbl_find_aromatic_rings(mol, residues);*/
+  auto rings = find_and_process_aromatic_residues(mol, residues);
   add_rings_to_mol(mol, rings);
 
-  if (spdlog::should_log(spdlog::level::debug)) {
-    // compute rings for unknown residues
-    auto unk_res = get_unknown_residues<std::vector<Residue>>(residues, definitions::is_predefined);
-    std::vector<std::string> unk_res_names;
-    unk_res_names.reserve(unk_res.size());
-    for (const auto &res : unk_res) {
-      unk_res_names.push_back(res.name);
-    }
-    std::vector<std::string> unique_unk_res_names;
-    std::sort(unk_res_names.begin(), unk_res_names.end());
-    std::unique_copy(unk_res_names.begin(), unk_res_names.end(), std::back_inserter(unique_unk_res_names));
+  /*if (spdlog::should_log(spdlog::level::debug)) {*/
+  if (true) {
+    auto unk_res = residues.filter(std::not_fn(definitions::is_predefined));
 
-    for (const auto &name : unique_unk_res_names) {
-      spdlog::info("unk residue: {}, {}", name, std::count(unk_res_names.begin(), unk_res_names.end(), name));
+    std::unordered_map<std::string, int> residue_counts;
+    for (const auto &res : unk_res) { 
+      residue_counts[res.name]++;
+    }
+    for (const auto &[name, count] : residue_counts) {
+      spdlog::info("unk residue: {}, {}", name, count);
     }
   }
 
-  auto unk_indices = get_unknown_residues<std::vector<int>>(residues, definitions::is_predefined);
+  auto unk_indices = residues.filter(std::not_fn(definitions::is_predefined)).get_atom_ids();
   if (!unk_indices.empty()) {
     std::sort(unk_indices.begin(), unk_indices.end());
     apply_sssr_and_planarity_aromaticity(mol, unk_indices);

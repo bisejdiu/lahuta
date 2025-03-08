@@ -66,7 +66,7 @@ bool FastNS::build(double cutoff) {
   // validate box dimensions against cutoff
   if (box[0] < cutoff || box[1] < cutoff || box[2] < cutoff) {
 
-    if (_coords.size() < SMALL_SYSTEM_THRESHOLD) { // small systems: fall back to brute-force search
+    if (_coords.size() < SMALL_SYSTEM_THRESHOLD) { // fall back to brute-force search
       return adaptive_build(cutoff);
     }
     return false;

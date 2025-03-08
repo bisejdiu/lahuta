@@ -35,34 +35,40 @@ enum ContactComputerType { Arpeggio, Molstar };
 class Luni {
   // FIX: move down
 private:
-  void process_file(std::string file_path_) {
-    file_name = file_path_;
-    auto st = gemmi::read_structure_gz(file_path_);
+  void read_structure() {
+    auto st = gemmi::read_structure_gz(file_name_);
 
     RDKit::Conformer *conformer = new RDKit::Conformer();
     create_RDKit_repr(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
 
-    topology = Topology(mol.get());
+    topology = Topology(mol.get()); // initialize the topology (not built yet)
   }
 
   void create_topology() {
 
     try {
+      // NOTE: GRID
       grid = FastNS(get_conformer().getPositions());
       auto ok = grid.build(_cutoff);
       if (!ok) {
           throw std::runtime_error("Box dimension too small for the given cutoff.");
       }
-
+      // FIX: perhaps we should not store neighbors (large size, memory usage, etc.)
+      // Further, neighbors are only used in bond computation
       neighbors = std::make_shared<NSResults>(grid.self_search());
 
+      // NOTE: BONDS
       Topology::compute_bonds(*mol, *neighbors);
 
+      // NOTE: RESIDUES
       topology.build_residues(*mol);
+
+      // NOTE: RINGS
       initialize_and_populate_ringinfo(*mol, *topology.residues);
 
+      // NOTE: ATOM TYPES
       if (c_type == ContactComputerType::Arpeggio) {
         topology.assign_arpeggio_atom_types();
       } else {
@@ -78,10 +84,10 @@ public:
   Luni() : _cutoff(BONDED_NS_CUTOFF) {}
   // FIX: should to `build` the topology same as I am building the grid
   explicit Luni(std::string file_name, std::optional<ContactComputerType> c_type_ = std::nullopt)
-    : _cutoff(BONDED_NS_CUTOFF), c_type(c_type_.value_or(ContactComputerType::Molstar)) {
+    : _cutoff(BONDED_NS_CUTOFF), c_type(c_type_.value_or(ContactComputerType::Molstar)), file_name_(file_name) {
 
-    spdlog::info("Processing file: {}", file_name);
-    process_file(file_name);
+    spdlog::info("Processing file: {}", file_name_);
+    read_structure();
 
     try {
       create_topology();
@@ -93,6 +99,9 @@ public:
 
     // FIX: double call to Residues(*mol)
     Residues residues(*mol);
+    if (!residues.build()) {
+          throw std::runtime_error("Could not build residue information!");
+    }
     features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
   }
 
@@ -118,6 +127,9 @@ public:
     luni.create_topology();
 
     Residues residues(*luni.mol);
+    if (!residues.build()) {
+          throw std::runtime_error("Could not build residue information!");
+    }
     luni.features = std::move(GroupTypeAnalysis::analyze(*luni.mol, residues));
 
     return luni;
@@ -210,6 +222,8 @@ public:
   template <typename T> friend class Neighbors;
   friend class Contacts;
 
+  // FIX: add helper functions to get topology information
+  // FIX: Move these to the topology class
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
 
 private:
@@ -227,7 +241,7 @@ private:
 
 public:
   bool success{true};
-  std::string file_name;
+  std::string file_name_;
 
   static std::vector<std::string> tokenize(const std::string &str);
   static std::vector<std::string> tokenize_simple(const std::string &str);
