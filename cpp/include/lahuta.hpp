@@ -12,7 +12,6 @@
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include "convert.hpp"
-#include "neighbors.hpp"
 #include "topology.hpp"
 #include "spdlog/spdlog.h"
 
@@ -27,7 +26,7 @@ public:
     read_structure();
   }
 
-  bool build_topology(std::optional<TopologyBuildingOptions> tops = TopologyBuildingOptions()) {
+  bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt) {
     try {
       topology.emplace(mol);
       topology->build(tops.value_or(TopologyBuildingOptions()));
@@ -69,23 +68,6 @@ public:
   const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
   const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
   const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
-
-  // FIX: should probably get rid of these
-  Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
-    NSResults ns = find_neighbors_opt(cutoff);
-    if (res_dif > 0) {
-      ns = remove_adjascent_residueid_pairs(ns, res_dif);
-    }
-    return Neighbors<AtomAtomPair>(*this, std::move(ns), false);
-  }
-
-  NSResults find_neighbors2(double cutoff, int res_dif) {
-    NSResults ns = find_neighbors_opt(cutoff);
-    if (res_dif > 0) {
-      ns = remove_adjascent_residueid_pairs(ns, res_dif);
-    }
-    return ns;
-  }
 
   // FIX: move this to a separate class or namespace
 
@@ -142,6 +124,10 @@ public:
   // FIX: Move these to the topology class
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
 
+
+  // FIX: remove_adjascent_residueid_pairs should be part of NSResults filtering
+  NSResults remove_adjascent_residueid_pairs(NSResults &results, int res_diff);
+
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
 
@@ -150,10 +136,6 @@ private:
   template <typename T>
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
-
-  // FIX: make find_neighbors_opt public?
-  NSResults find_neighbors_opt(double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF);
-  NSResults remove_adjascent_residueid_pairs(NSResults &results, int res_diff);
 
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
 

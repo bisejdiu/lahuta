@@ -360,5 +360,24 @@ NSResults NSResults::filter(const std::vector<int> &atom_indices) const {
   return filtered;
 }
 
+NSResults NSResults::filter(const std::vector<int> &atom_indices, int col) const {
+  if (col != 0 && col != 1) {
+    throw std::invalid_argument("Column index must be 0 or 1");
+  }
+
+  NSResults filtered;
+  filtered.reserve_space(m_pairs.size());
+  std::unordered_set<int> atom_indices_set(atom_indices.begin(), atom_indices.end());
+
+  for (size_t i = 0; i < m_pairs.size(); ++i) {
+    if ((col == 0 && atom_indices_set.find(m_pairs[i].first) != atom_indices_set.end()) ||
+        (col == 1 && atom_indices_set.find(m_pairs[i].second) != atom_indices_set.end())) {
+      filtered.add_neighbors(m_pairs[i].first, m_pairs[i].second, m_dists[i]);
+    }
+  }
+
+  return filtered;
+}
+
 
 } // namespace lahuta

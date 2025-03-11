@@ -29,7 +29,7 @@ from lahuta.core import loader as L
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topology import LahutaCPPLoader, TopologyLoader
 from lahuta.core.topology.loaders import load_file
-from lahuta.lib._lahuta import LahutaCPP
+from lahuta.lib._lahuta import ContactComputerType, LahutaCPP, TopologyBuildingOptions
 from lahuta.utils.array_utils import cross_interaction_indices
 
 IntArray, StrArray, FloatArray, AnyArray = list[int], list[str], list[float], list[Any]
@@ -98,6 +98,9 @@ class Luni:
                 if file_format:
                     # print("-> to bench")
                     self._data = LahutaCPPLoader(s).luni
+                    top = TopologyBuildingOptions()
+                    top.atom_typing_method = ContactComputerType.Molstar
+                    self._data.build_topology(top)
                     self._fd = L.LoaderFactory.load(s, file_format)
                     print("->", self._fd.to_ir())
                 elif s.upper().split(".")[-1] in MDA_SUPPORTED_FORMATS:
@@ -145,7 +148,9 @@ class Luni:
             mda = self._mda.universe.atoms[union_indices]
 
         neighbors = self._data.find_neighbors(radius, res_dif)
-        pairs, distances = neighbors.get_pairs(), np.array(neighbors.get_distances_sq())
+        dists = neighbors.get_distances()
+
+        pairs, distances = neighbors.get_pairs(), np.array(dists)
 
         if target_spec is not None:
             cross_indices = cross_interaction_indices(pairs, self.indices, target_spec.indices)

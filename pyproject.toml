@@ -69,7 +69,7 @@ lint.ignore = [
 
     # new ones while we re-write the python API
     'D100', 'D101', 'E702',
-    'PYI011'
+    'PYI011', 'PYI015'
 ]
 
 lint.mccabe = { max-complexity = 14 }

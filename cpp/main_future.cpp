@@ -60,6 +60,9 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
   _8.print_interactions();
 
   auto luni_t = Luni::create(target.st);
+  if (!luni_t.build_topology()) {
+    spdlog::warn("Failed building topology for {}!", luni_t.get_file_name());
+  }
   auto mol_t = luni_t.get_molecule();
   std::cout << "Target Molecule: " << target.file_name << " " << mol_t.getNumAtoms() << std::endl;
 

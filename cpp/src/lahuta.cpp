@@ -145,17 +145,6 @@ auto Luni::match_smarts_string(std::string sm, std::string atype, bool log_value
   return match_list;
 };
 
-NSResults Luni::find_neighbors_opt(double cutoff) {
-
-  auto grid = FastNS(mol->getConformer().getPositions());
-
-  if (!grid.build(cutoff)) {
-    spdlog::error("Failed to update the grid with the given cutoff");
-    return NSResults();
-  }
-  auto ns = grid.self_search();
-  return ns;
-}
 
 // FIX: confirm this has not been broken (we do not automatically build the topology now)
 Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {

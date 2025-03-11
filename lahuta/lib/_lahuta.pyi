@@ -120,6 +120,8 @@ class NSResults_:
     def filter(self, value: float) -> NSResults_: ...
     @overload
     def filter(self, indices: list[int]) -> NSResults_: ... # replace list[int] with AtomIndices or something
+    @overload
+    def filter(self, indices: list[int], column_idx: int) -> NSResults_: ... # replace list[int] with AtomIndices or something
 
 
 class FastNS_:
@@ -209,6 +211,18 @@ class Residues_:
     def __getitem__(self, index: int) -> Residue: ...
 
 
+class ContactComputerType(Enum):
+    None_    = 0
+    Arpeggio = 1
+    Molstar  = 2
+
+
+@dataclass
+class TopologyBuildingOptions:
+    bonded_search_cutoff: float = 4.5 # the maximum distance to search for bonded atoms
+    atom_typing_method: ContactComputerType = ContactComputerType.Molstar
+
+
 @dataclass
 class Topology_:
     @property
@@ -216,7 +230,7 @@ class Topology_:
     @property
     def rings(self)      -> RingEntityCollection: ...
     @property
-    def atom_types(self) -> list[AtomType]: ...
+    def atom_types(self) -> AtomEntityCollection: ...
     # TODO: indexing by integer should give an atom object
     # TODO: indexing by list | slice should give a list of atom objects
 
@@ -230,6 +244,7 @@ class LahutaCPP:
     def __init__(self, filename: str, contact_type: int = 1) -> None: ...
     @overload
     def __init__(self, ir: IR) -> None: ...
+    def build_topology(self, t_ops: TopologyBuildingOptions | None = None) -> bool: ...
     # def get_positions(self) -> list[list[float]]: ...
     def get_positions(self, conformer_index: int = -1) -> NDArray[np.float64]: ...
     # def filter(self) -> LahutaCPP: ...
@@ -307,7 +322,7 @@ class RingData:
     def norm(self) -> NDArray[np.floating]: ...
 
 
-class AtomType(Enum):
+class AtomType(Enum): # FIX: write the actual values
     NONE:                AtomType # 0
     HBOND_ACCEPTOR:      AtomType # 1
     HBOND_DONOR:         AtomType # 2

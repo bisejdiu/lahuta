@@ -11,6 +11,7 @@ from typing_extensions import Self
 # from numpy.typing import NDArray
 from lahuta.lib._lahuta import (
     Atom,
+    AtomEntityCollection,
     AtomType,
     DistanceComputation_,
     FastNS_,
@@ -48,7 +49,7 @@ class Topology(Protocol):
     @property
     def rings(self)      -> RingEntityCollection:    """Ring perception result."""; ...
     @property
-    def atom_types(self) -> list[AtomType]: """Atom type assignment result."""; ...
+    def atom_types(self) -> AtomEntityCollection: """Atom type assignment result."""; ...
 
 
 class NeighborSearch:
@@ -188,16 +189,11 @@ class DistanceComputation:
         # bit of a hack, but we avoid any runtime overhead.
         return DistanceComputation_.search(cast(MatrixType[_F_co], a), cast(MatrixType[_F_co], b), cutoff)
 
-class ContactComputerType(Enum):
-    """Contact computation types."""
-
-    Arpeggio = 0
-    MolStar  = 1
 
 class Lahuta:
-    def __init__(self, file_name: str, contact_computer_type: ContactComputerType = ContactComputerType.MolStar) -> None:
+    def __init__(self, file_name: str) -> None:
         self.file_name = file_name
-        self.luni = LahutaCPP(file_name, contact_computer_type.value)
+        self.luni = LahutaCPP(file_name)
 
     @classmethod
     def from_file(cls, file_name: str) -> "Lahuta": """Create a Lahuta object from a file."""; return cls(file_name)

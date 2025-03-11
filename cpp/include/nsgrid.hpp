@@ -71,6 +71,7 @@ struct NSResults {
 
   [[nodiscard]] NSResults filter(const double distance) const;
   [[nodiscard]] NSResults filter(const std::vector<int> &atom_indices) const;
+  [[nodiscard]] NSResults filter(const std::vector<int> &atom_indices, int col) const;
 
   void clear() {
     m_pairs.clear();

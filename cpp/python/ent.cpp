@@ -4,6 +4,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RDKitBase.h>
 
@@ -41,6 +42,7 @@ py::array_t<double> extract_vectors(const Collection &coll, Func extractor) {
 // clang-format off
 void bind_entities(py::module &_lahuta) {
   py::enum_<FeatureGroup> FeatureGroup_(_lahuta, "FeatureGroup");
+
   py::class_<AtomEntity>  AtomEntity_ (_lahuta, "AtomEntity");
   py::class_<RingEntity>  RingEntity_ (_lahuta, "RingData");
   py::class_<GroupEntity> GroupEntity_(_lahuta, "GroupEntity");
