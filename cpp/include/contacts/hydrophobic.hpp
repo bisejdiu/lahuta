@@ -1,7 +1,7 @@
 #ifndef LAHUTA_HYDROPHOBIC_HPP
 #define LAHUTA_HYDROPHOBIC_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 #include <GraphMol/RWMol.h>
 
 namespace lahuta {

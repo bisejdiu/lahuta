@@ -1,8 +1,8 @@
 #ifndef PARSER_HPP
 #define PARSER_HPP
 
-#include "nodes.hpp"
-#include "operators.hpp"
+#include "selections/nodes.hpp"
+#include "selections/operators.hpp"
 #include <vector>
 
 namespace lahuta {

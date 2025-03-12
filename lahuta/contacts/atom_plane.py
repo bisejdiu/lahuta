@@ -112,13 +112,13 @@ class AtomPlaneContacts:
         mda = ns.luni.to("mda")
         rings = ns.luni._data.get_rings()
 
-        from lahuta.lib import cAtomType
+        # from lahuta.lib import cAtomType
 
         # first_atom_idx = np.array(rings.root_atom_ids())
         # first_atom_idx = np.array(rings.rings[0].atom_ids[0])
         first_atom_idx = []
         for ring in rings.rings:
-            first_atom_idx.append(ring.atom_ids()[0])
+            first_atom_idx.append(ring.get_atom_ids()[0])
         first_atom_idx = np.array(first_atom_idx)
 
         if rings.centers.shape[0] == 0:

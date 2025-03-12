@@ -17,7 +17,7 @@ AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol);
 std::vector<std::vector<int>>
 map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector<int> &indices);
 
-void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::vector<int> &indices);
+void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, std::vector<int> &indices);
 void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &residues);
 
 } // namespace lahuta

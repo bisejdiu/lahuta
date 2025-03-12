@@ -1,7 +1,7 @@
 #ifndef LAHUTA_IONIC_HPP
 #define LAHUTA_IONIC_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 
 namespace lahuta {
 

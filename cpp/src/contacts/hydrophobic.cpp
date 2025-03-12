@@ -28,8 +28,7 @@ Contacts find_hydrophobic_bonds(const Luni &luni, HydrophobicParams opts) {
   Contacts contacts(&luni);
   const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
 
-  EntityNeighborSearch ens(luni.get_conformer());
-  NSResults results = ens.search(hydrophobic_atoms, opts.distance_max);
+  NSResults results = EntityNeighborSearch::search(hydrophobic_atoms, opts.distance_max);
 
   for (const auto &[pair, dist] : results) {
     auto [atom1_index, atom2_index] = pair;

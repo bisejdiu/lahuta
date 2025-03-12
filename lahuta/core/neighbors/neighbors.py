@@ -9,8 +9,8 @@ import numpy as np
 from numpy.typing import NDArray
 from typing_extensions import Self
 
-from lahuta.lib import cAtomType
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
+from lahuta.lib._lahuta import AtomEntityCollection, FastNS_, Flags, NSResults_
 from lahuta.utils import array_utils as au
 
 from .mapping import AtomMapper, DefaultLNPFields, IndexFinder, LabeledNeighborPairsBuilder
@@ -192,25 +192,14 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
-        c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
+        c_atom_type = Flags.get_enum_as_string(atom_type.upper())
 
-        # from lahuta.lib import cNSResults
-        from lahuta.lib import cNeighbors
+        entities = AtomEntityCollection.filter(self.luni._data, c_atom_type)
+        nsr = NSResults_(self.pairs, self.distances)
+        result = nsr.filter(entities.get_atom_ids(), partner - 1)
+        pairs, distances = result.get_pairs(), result.get_distances()
 
-        # cns = cNSResults(self.luni._luni, self.pairs, self.distances)
-        # cns = cNSResults(self.luni._file_loader.luni, self.pairs, self.distances)
-
-        # print("-->", np.unique(self.resnames[:, 0]))  # , np.unique(self.resnames[:, 1]))
-        cns = cNeighbors(self.luni._data, self.pairs, self.distances, True)
-        # print("++>", np.unique(self.atoms[cns.get_pairs()].resnames[:, 0]))
-        result = cns.type_filter(c_atom_type, partner - 1)
-        # print("**>", np.unique(self.atoms[result.get_pairs()].resnames[:, 0]))
-        pairs, distances = result.get_pairs(), np.array(result.get_distances_sq())
-        # if atom_type == "carbonyl_oxygen":
-        #     print("check: ", pairs[:10], distances[:10])
-
-        # FIX: we are saving the cns that's not filtered. Is that correct?
-        self._ns = cns
+        self._ns = nsr
 
         # print("~" * 80)
         # print(self.labels.shape)

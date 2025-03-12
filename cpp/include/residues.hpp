@@ -11,80 +11,74 @@ struct Residue {
   int number;
   std::string name;
   std::string alt_loc;
+  /*bool has_alt_loc_;*/
   std::vector<const RDKit::Atom *> atoms;
 
   Residue() = default;
   Residue(const std::string &chain, int num, const std::string &name, const std::string &alt)
       : chain_id(chain), number(num), name(name), alt_loc(alt) {}
+  /*Residue(const std::string &chain, int num, const std::string &name, bool has_alt_loc)*/
+  /*    : chain_id(chain), number(num), name(name), has_alt_loc_(has_alt_loc) {}*/
 };
 
 class Residues {
 public:
-  explicit Residues(const RDKit::RWMol &mol_) : mol(mol_) { build_residues(mol_); }
+  explicit Residues(const RDKit::RWMol &mol) : mol_(mol) {}
+
+  bool build();
 
   const std::vector<Residue> &get_residues() const { return residues_; }
 
-  const std::unordered_map<std::string, std::vector<const Residue *>> &residue_map() const {
-    return residues_by_name_;
-  }
+  /// filter residues by a predicate (makes a copy)
+  Residues filter(std::function<bool(const Residue &)> predicate) const;
+  Residues filter(std::function<bool(const std::string &)> predicate) const;
 
-  /// filter residues by a predicate
-  std::vector<Residue> filter(std::function<bool(const Residue &)> predicate) const;
+  const RDKit::RWMol &get_mol() const { return mol_; }
 
-  /// apply a function to each residue and collect the results
+  /// apply a function to each residue
   template <typename ResultType>
   std::vector<ResultType> map(std::function<ResultType(const Residue &)> func) const;
+
+  // NOTE: two examples of topology getters
+  std::vector<int> get_atom_ids() const {
+    std::vector<int> atom_ids;
+    for (const auto &residue : residues_) {
+      for (const auto &atom : residue.atoms) {
+        atom_ids.push_back(atom->getIdx());
+      }
+    }
+
+    return atom_ids;
+  }
+
+  std::vector<std::string> get_residue_names() const {
+    std::vector<std::string> resnames;
+    resnames.reserve(residues_.size());
+    for (const auto &residue : residues_) {
+      resnames.push_back(residue.name);
+    }
+
+    return resnames;
+  }
 
   typedef std::vector<Residue>::const_iterator const_iterator;
   const_iterator begin() const { return residues_.begin(); }
   const_iterator end() const { return residues_.end(); }
 
 private:
-  void build_residues(const RDKit::RWMol &mol);
+  void build_residues(const RDKit::RWMol &mol, bool &status);
 
 private:
-  const RDKit::RWMol &mol;
+  const RDKit::RWMol &mol_;
   std::vector<Residue> residues_;
-  std::unordered_map<std::string, std::vector<const Residue *>> residues_by_name_;
 };
 
-namespace residue_props {
+//
+// Finds and validates aromatic residues using a list of predefined aromatics.
+// For validation, it checks for the existance of a closed ring of predefined size (avoiding error-prone name-based lookups)
+//
+std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RWMol &mol, const Residues &residues);
 
-template <typename ResultType> using RingProcFunc = std::function<ResultType(const Residue &, int)>;
-
-inline Residue identity(const Residue &residue, int ring_size) { return residue; }
-
-template <typename ResultType>
-std::vector<ResultType>
-get_aromatic_rings(const Residues &residues, RingProcFunc<ResultType> func = identity);
-
-// FIX: should define these in the header file to avoid potential linker issues
-template <typename ReturnType>
-ReturnType get_unknown_residues(const Residues &residues, const std::set<std::string> &KnownResiduesSet);
-
-template <>
-std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
-    const Residues &residues, const std::set<std::string> &KnownResiduesSet);
-
-template <>
-std::vector<int> get_unknown_residues<std::vector<int>>(
-    const Residues &residues, const std::set<std::string> &KnownResiduesSet);
-
-using ResTesterFunc = std::function<bool(const std::string &)>;
-template <typename ReturnType>
-ReturnType get_unknown_residues(const Residues &residues, const ResTesterFunc &PredefResidues);
-
-template <>
-std::vector<Residue>
-get_unknown_residues<std::vector<Residue>>(const Residues &residues, const ResTesterFunc &PredefResidues);
-
-template <>
-std::vector<int>
-get_unknown_residues<std::vector<int>>(const Residues &residues, const ResTesterFunc &PredefResidues);
-
-std::vector<std::vector<int>> tbl_find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues);
-
-} // namespace residue_props
 } // namespace lahuta
 
 #endif // LAHUTA_RESIDUES_HPP

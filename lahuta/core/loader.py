@@ -2,7 +2,8 @@ from typing import TypeVar, Callable, Type, Any, Protocol, ClassVar
 
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 from lahuta.core.topology.loaders import LahutaCPPLoader, TopologyLoader, Loader
-from lahuta.lib import cLuni, factorize_residues
+from lahuta.lib._lahuta import LahutaCPP as cLuni
+from lahuta.lib._lahuta import factorize_residues
 from lahuta.lib._lahuta import IR, LahutaCPP
 from lahuta.utils.radii import v_radii_assignment
 from lahuta.lib.utils import factorize
@@ -29,12 +30,12 @@ class GemmiLoader:
     def to_ir(self) -> IR:
         # Convert GemmiLoader to IR
         return IR(
-            self.input.get_indices(),
-            self.input.get_atomic_numbers(),
-            self.input.get_names(),
-            self.input.get_resids(),
-            self.input.get_resnames(),
-            self.input.get_chainlabels(),
+            self.input.indices,
+            self.input.atom_nums,
+            self.input.names,
+            self.input.resids,
+            self.input.resnames,
+            self.input.chainlabels,
             self.input.positions,
         )
 
@@ -52,7 +53,7 @@ class MDAnalysisLoader:
         # Convert MDAnalysisLoader to IR
         return IR(
             atom_indices=self.input.indices,
-            atomic_numbers=self.input.atoms.atomicnums,
+            atom_nums=self.input.atoms.atom_nums,
             atom_names=self.input.names,
             resids=self.input.resids,
             resnames=self.input.resnames,
@@ -77,7 +78,7 @@ class MDAnalysisLoader:
         )
 
         # Add topology attributes
-        elements = cLuni.find_elements(ir.atomic_numbers)
+        elements = cLuni.find_elements(ir.atom_nums)
         uv.add_TopologyAttr("names", ir.atom_names)
         # uv.add_TopologyAttr("type", self.arc.atoms.types)
         # uv.add_TopologyAttr("elements", ir.atom)

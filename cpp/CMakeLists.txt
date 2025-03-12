@@ -29,9 +29,9 @@ set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
 # set(SANITIZER "thread")
 
-#if(NOT CMAKE_BUILD_TYPE)
-#    set(CMAKE_BUILD_TYPE Release)
-#endif()
+if(NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE Release)
+endif()
 
 # set(CMAKE_BUILD_TYPE Release)
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -flto")
@@ -75,11 +75,13 @@ endif()
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
 add_subdirectory(external/foldseek)
+add_subdirectory(external/distopia)
+
 add_dependencies(foldseek gemmi_cpp)
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
-            src/contacts/geometry.cpp src/nn.cpp src/contacts/charges.cpp 
+            src/contacts/geometry.cpp src/contacts/charges.cpp src/topology.cpp
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
@@ -90,7 +92,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia)
 
 find_package(Eigen3 QUIET)
 if(USE_EIGEN3)
@@ -105,6 +107,7 @@ target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/external # for external headers
   ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include # for gemmi headers
+  ${CMAKE_SOURCE_DIR}/external/distopia/include # for distopia headers
 )
 
 add_library(lahuta_shared_headers INTERFACE)
@@ -185,7 +188,7 @@ if (USE_PYTHON)
   find_package(pybind11 2.6 CONFIG REQUIRED)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-  pybind11_add_module(lahuta_py python/at.cpp python/common.cpp python/contacts.cpp python/lahuta.cpp)
+  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/contacts.cpp python/lahuta.cpp)
 
   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
     target_sources(lahuta_py PRIVATE 
@@ -251,6 +254,7 @@ if (USE_PYTHON)
   endif()
   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
   install(FILES "${CMAKE_BINARY_DIR}/external/foldseek/libfoldseek.dylib" DESTINATION "${Python_SITEARCH}" COMPONENT py)
+  install(FILES "${CMAKE_BINARY_DIR}/external/distopia/libdistopia.dylib" DESTINATION "${Python_SITEARCH}" COMPONENT py)
   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs" DESTINATION "${Python_SITEARCH}" COMPONENT py)
   endif()

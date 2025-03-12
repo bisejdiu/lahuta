@@ -1,247 +1,371 @@
 #ifndef LAHUTA_NEIGHBORS_HPP
 #define LAHUTA_NEIGHBORS_HPP
 
-#include <algorithm>
-#include <vector>
-
-#include <rdkit/GraphMol/RWMol.h>
-
-#include "atom_types.hpp"
-#include "nsgrid.hpp"
 #include "entities.hpp"
+#include "entity.hpp"
+#include "nsgrid.hpp"
+#include <vector>
 
 namespace lahuta {
 
-class Luni;
-
-template <typename T> class ContextProvider;
-
-struct AtomRingPairType {
-  const RDKit::RWMol *mol;
-  const RingEntityCollection *ring;
+enum class InteractionType {
+  None,
+  Any,
+  Hydrophobic,
+  Halogen,
+  HydrogenBond,
+  WeakHydrogenBond,
+  Ionic,
+  MetalCoordination,
+  CationPi,
+  PiStackingP,
+  PiStackingT,
 };
 
-template <typename T> class BasePair {
-public:
-  int i;
-  int j;
-  float d;
+inline std::string interaction_type_to_string(InteractionType type) {
+  switch (type) {
+    case InteractionType::None:
+      return "None";
+    case InteractionType::Any:
+      return "Any";
+    case InteractionType::Hydrophobic:
+      return "Hydrophobic";
+    case InteractionType::Halogen:
+      return "Halogen";
+    case InteractionType::HydrogenBond:
+      return "HydrogenBond";
+    case InteractionType::WeakHydrogenBond:
+      return "WeakHydrogenBond";
+    case InteractionType::Ionic:
+      return "Ionic";
+    case InteractionType::MetalCoordination:
+      return "MetalCoordination";
+    case InteractionType::CationPi:
+      return "CationPi";
+    case InteractionType::PiStackingP:
+      return "PiStackingP";
+    case InteractionType::PiStackingT:
+      return "PiStackingT";
+  }
+}
 
-  using RefType = const T;
+struct Contact {
+  EntityID entity1;
+  EntityID entity2;
+  float distance;
+  InteractionType type;
 
-  BasePair(int i, int j, float d, bool sort = true) : d(d) {
-    if (sort) {
-      std::tie(this->i, this->j) = std::minmax(i, j);
+  Contact(EntityID e1, EntityID e2, float d) : Contact(e1, e2, d, InteractionType::Any) {}
+  Contact(EntityID e1, EntityID e2, float d, InteractionType t)
+      : entity1(e1), entity2(e2), distance(d), type(t) {
+
+    EntityType type1 = get_entity_type(entity1);
+    EntityType type2 = get_entity_type(entity2);
+
+    // Sort order:      Atom < Ring < Group
+    // different types: sort by type
+    // same types:      sort by index
+    if (type1 != type2) {
+      if (!is_higher_priority(type1, type2)) {
+        std::swap(entity1, entity2);
+      }
     } else {
-      this->i = i;
-      this->j = j;
+      if (entity1 > entity2) {
+        std::swap(entity1, entity2);
+      }
     }
   }
 
-  bool operator==(const BasePair &other) const {
-    return (i == other.i) && (j == other.j);
+  bool operator==(const Contact &other) const {
+    return (entity1 == other.entity1 && entity2 == other.entity2) ? (type == other.type) : false;
   }
 
-  bool operator!=(const BasePair &other) const {
-    return i != other.i || j != other.j;
+  bool operator<(const Contact &other) const {
+    return (entity1 != other.entity1)   ? (entity1 < other.entity1)
+           : (entity2 != other.entity2) ? (entity2 < other.entity2)
+                                        : (type < other.type);
   }
 
-  bool operator<(const BasePair &other) const {
-    return i != other.i ? i < other.i : j < other.j;
+  bool operator>(const Contact &other) const {
+    if (*this == other) {
+      return false;
+    }
+    return !(*this < other);
   }
 
-  bool operator>(const BasePair &other) const {
-    return i != other.i ? i > other.i : j > other.j;
+  bool operator!=(const Contact &other) const { return !(*this == other); }
+
+  bool operator<=(const Contact &other) const {
+    if (*this < other || *this == other) {
+      return true;
+    }
+    return false;
   }
 
-  bool operator<=(const BasePair &other) const {
-    return i != other.i ? i <= other.i : j <= other.j;
+  bool operator>=(const Contact &other) const {
+    if (*this > other || *this == other) {
+      return true;
+    }
+    return false;
   }
-
-  bool operator>=(const BasePair &other) const {
-    return i != other.i ? i >= other.i : j >= other.j;
-  }
-
-  std::pair<int, int> get_pair() const { return {i, j}; }
-  float get_distance() const { return d; }
 };
 
-class AtomAtomPair : public BasePair<RDKit::RWMol> {
+// Container for storing interactions (Interaction Container - IC)
+class Contacts {
 public:
-  using BasePair::BasePair;
+  std::vector<Contact> interactions;
+  bool is_sorted = false;
+  std::string instance_name{};
 
-  // FIXME: RefType, along with get_i and get_j are not being used.
-  const RDKit::Atom *get_i(RefType *mol) const {
-    return mol->getAtomWithIdx(i);
+  Contacts() = default;
+  Contacts(const Luni *luni) : luni(luni), is_sorted(false) {}
+
+  void set_luni(const Luni *luni) { this->luni = luni; }
+
+  void sort_interactions() {
+    std::sort(interactions.begin(), interactions.end());
+    is_sorted = true;
   }
 
-  const RDKit::Atom *get_j(RefType *mol) const {
-    return mol->getAtomWithIdx(j);
+  void sort_if_not_sorted() {
+    if (!is_sorted) {
+      sort_interactions();
+    }
   }
 
-  std::string names(const ContextProvider<AtomAtomPair> &ctx) const;
-};
+  static void prepare_input(Contacts &lhs, Contacts &rhs) {
+    lhs.sort_if_not_sorted();
+    rhs.sort_if_not_sorted();
+  }
 
-class AtomRingPair : public BasePair<AtomRingPairType> {
-public:
-  // FIXME:
-  /*using BasePair::BasePair;*/
-  AtomRingPair(int i, int j, float d, bool sort = false)
-      : BasePair(i, j, d, false) {}
-  /*AtomRingPair(int i, int j, float d) : BasePair(i, j, d, false) {}*/
+  void add(const Contacts &ic) { add(ic.interactions); }
 
-  /*const RDKit::Atom *get_i(RefType *ref) const {*/
-  /*  return ref->mol->getAtomWithIdx(i);*/
-  /*}*/
+  void add(const Contact &interaction) {
+    interactions.push_back(interaction);
+    is_sorted = false;
+  }
 
-  /*const RingData *get_j(RefType *ref) const { return &(ref->ring->rings[j]);
-   * }*/
+  void add(EntityID e1, EntityID e2, float d, InteractionType t) { add(Contact(e1, e2, d, t)); }
 
-  std::string names(const ContextProvider<AtomRingPair> &ctx) const;
-};
+  void add(const std::vector<Contact> &interactions) {
+    this->interactions.insert(this->interactions.end(), interactions.begin(), interactions.end());
+    is_sorted = false;
+  }
 
-///////////////////////////////////////////////////////
-///////////////// Neighbors class /////////////////////
-///////////////////////////////////////////////////////
+  void add_many(
+      const NSResults &neighbors, const std::vector<EntityID> &e1, const std::vector<EntityID> &e2,
+      InteractionType type = InteractionType::Any);
 
-template <> class ContextProvider<AtomAtomPair> {
-public:
-  explicit ContextProvider(const Luni &ctx);
-  const RDKit::RWMol &molecule() const;
+  void add_many(
+      const NSResults &neighbors, const std::vector<EntityID> &entities,
+      InteractionType type = InteractionType::Any) {
+    add_many(neighbors, entities, entities, type);
+  }
 
+  // FIX: The visit_entity functions represent a proof of concept for calling
+  // functions and passing the correct type of object
+  void visit_entity(const Luni &luni, EntityID entity) const;
+
+  template <typename Func1, typename Func2>
+  void visit_entity(const Luni &luni, EntityID entity, Func1 func1, Func2 func2) const;
+
+  template <typename Func> void visit_entity(const Luni &luni, EntityID entity, Func func) const {
+    visit_entity(luni, entity, func, func);
+  }
+
+  template <typename Func> void visit_entities(Func func) const {
+    for (const auto &interaction : interactions) {
+      visit_entity(*luni, interaction.entity1, func);
+      visit_entity(*luni, interaction.entity2, func);
+    }
+  }
+
+  // Make all interactions generic (i.e. remove type information)
+  void make_generic();
+
+  /// union of two Contacts
+  template <typename T> Contacts &set_union(T &&other);
+
+  /// intersection of two Contacts
+  template <typename T> Contacts set_intersection(T &&other);
+
+  /// difference of two Contacts
+  template <typename T> Contacts set_difference(T &&other);
+
+  /// symmetric difference of two Contacts
+  template <typename T> Contacts set_symmetric_difference(T &&other);
+
+  // FIX: missing + operator
+
+  bool operator==(Contacts &other);
+
+  bool operator!=(Contacts &other) { return !(*this == other); }
+
+  /// intersection of two Contacts: C1 & C2
+  Contacts operator&(Contacts &other) { return set_intersection(other); }
+
+  /// union of two Contacts: C1 | C2
+  Contacts operator|(Contacts &other) { return set_union(other); }
+
+  /// difference of two Contacts: C1 - C2
+  Contacts operator-(Contacts &other);
+
+  /// symmetric difference of two Contacts: C1 ^ C2
+  Contacts operator^(Contacts &other);
+
+  /// union of C1 with C2: C1 |= C2
+  template <typename T> Contacts &operator|=(T &&other);
+
+  /// add C2 to C1: C1 += C2
+  template <typename T> Contacts &operator+=(T &&other);
+
+  /// subtract C2 from C1: C1 -= C2
+  template <typename T> Contacts &operator-=(T &&other);
+
+  /// intersect C1 with C2: C1 &= C2
+  template <typename T> Contacts &operator&=(T &&other);
+
+  /// symmetric difference of C1 with C2: C1 ^= C2
+  template <typename T> Contacts &operator^=(T &&other);
+
+  /// access interaction by index
+  /// returns a Contacts object with a single interaction
+  Contacts operator[](int index) const { return Contacts(luni, interactions[index]); }
+
+  int size() const { return interactions.size(); }
   const Luni *get_luni() const { return luni; }
-
-private:
-  const Luni *luni;
-};
-
-template <> class ContextProvider<AtomRingPair> {
-public:
-  ContextProvider(const Luni &mainCtx);
-
-  const RDKit::RWMol &molecule() const;
-  const RingEntityCollection &rings() const;
-
-  const Luni *get_luni() const { return luni; }
-
-private:
-  const Luni *luni;
-};
-
-template <typename T> class Neighbors {
-
-public:
-  Neighbors() = delete;
-  Neighbors(const Luni &luni) : ctx(luni), m_luni(&luni) {}
-  Neighbors(const Neighbors &other)
-      : ctx(other.ctx), m_luni(other.m_luni), _data(other._data) {}
-
-  Neighbors(Neighbors &&other) noexcept
-      : ctx(other.ctx), m_luni(other.m_luni), _data(std::move(other._data)) {}
-
-  Neighbors &operator=(const Neighbors &other) {
-    if (this != &other) {
-      _data = other._data;
-    }
-    return *this;
-  }
-
-  Neighbors &operator=(Neighbors &&other) noexcept {
-    if (this != &other) {
-      _data = std::move(other._data);
-    }
-    return *this;
-  }
-
-  Neighbors(const Luni &luni, std::vector<T> data, bool is_sorted = false)
-      : _data(std::move(data)), ctx(luni) {
-    if (!is_sorted) {
-      std::sort(this->_data.begin(), this->_data.end());
-    }
-  }
-
-  Neighbors(const Luni &luni, const Pairs &&pairs, const Distances &&dists,
-            bool is_sorted = false)
-      : ctx(luni) {
-    if (pairs.size() != dists.size()) {
-      throw std::runtime_error("Pairs and distances must have the same size");
-    }
-    _data.reserve(pairs.size());
-    for (size_t i = 0; i < pairs.size(); ++i) {
-      _data.push_back({std::move(pairs[i].first), std::move(pairs[i].second),
-                       std::move(dists[i]), !is_sorted});
-    }
-    if (!is_sorted) {
-      std::sort(this->_data.begin(), this->_data.end());
-    }
-  }
-
-  Neighbors(const Luni &luni, NSResults &&results, bool is_sorted = false)
-      : ctx(luni) {
-    if (results.get_pairs().size() != results.get_distances().size()) {
-      throw std::runtime_error("Pairs and distances must have the same size");
-    }
-    _data.reserve(results.get_pairs().size());
-    for (size_t i = 0; i < results.get_pairs().size(); ++i) {
-      _data.push_back({std::move(results.get_pairs()[i].first),
-                       std::move(results.get_pairs()[i].second),
-                       std::move(results.get_distances()[i])});
-    }
-    if (!is_sorted) {
-      std::sort(this->_data.begin(), this->_data.end());
-    }
-  }
-
-  // FIX: Does the copy-based logic make a significant performance difference?
-  static std::vector<T> intersection(std::vector<T> data, std::vector<T> other);
-  static std::vector<T> difference(std::vector<T> data, std::vector<T> other);
-  static std::vector<T> union_(std::vector<T> data, std::vector<T> other);
-  static std::vector<T> symmetric_difference(std::vector<T> data,
-                                             std::vector<T> other);
-
-  Neighbors<T> intersection(const Neighbors<T> &other) const;
-  Neighbors<T> difference(const Neighbors<T> &other) const;
-  Neighbors<T> symmetric_difference(const Neighbors<T> &other) const;
-  Neighbors<T> union_(const Neighbors<T> &other) const;
-
-  Neighbors<T> operator+(const Neighbors<T> &other) const {
-    return union_(other);
-  }
-  Neighbors<T> operator-(const Neighbors<T> &other) const {
-    return difference(other);
-  }
-  Neighbors<T> operator^(const Neighbors<T> &other) const {
-    return symmetric_difference(other);
-  }
-  Neighbors<T> operator&(const Neighbors<T> &other) const {
-    return intersection(other);
-  }
-  /*Neighbors<T> operator|(const Neighbors<T> &other) const {*/
-  /*  return union_(other);*/
-  /*}*/
-
-  Neighbors<T> filter(std::function<bool(const T &)> predicate) const;
-  Neighbors<T> type_filter(AtomType type, int partner);
-
-  // void add_neighbor(int i, int j, float d, bool sort = true);
-
-  std::vector<std::string> names() const;
-  Pairs get_pairs() const;
-  Distances get_distances() const;
-
-  size_t size() const { return _data.size(); }
-  auto get_luni() const { return m_luni; }
-  std::vector<T> get_data() const { return _data; }
+  void print_interactions() const;
 
   friend class Luni;
 
 private:
-  using RefType = typename T::RefType;
-  const ContextProvider<T> ctx;
-  const Luni *const m_luni = ctx.get_luni();
-  std::vector<T> _data;
+  Contacts(const Luni *luni, std::vector<Contact> interactions) : luni(luni), interactions(interactions) {}
+  Contacts(const Luni *luni, Contact interaction) : luni(luni) { interactions.push_back(interaction); }
+
+  std::string get_entity_atoms(const EntityID &entity) const;
+
+private:
+  const Luni *luni;
+  const EntityVisitor visitor;
 };
+
+// clang-format off
+
+inline void Contacts::make_generic() {
+  for (auto &interaction : interactions) {
+    interaction.type = InteractionType::Any;
+  }
+  // remove duplicates and re-sort
+  std::sort(interactions.begin(), interactions.end());
+  interactions.erase(
+    std::unique(interactions.begin(),
+                interactions.end()),
+    interactions.end()
+  );
+}
+
+template <typename T> Contacts &Contacts::set_union(T &&other) {
+  prepare_input(*this, other);
+  std::vector<Contact> result;
+  result.reserve(interactions.size() + other.interactions.size());
+  std::set_union(interactions.begin(),
+                 interactions.end(),
+                 other.interactions.begin(),
+                 other.interactions.end(),
+                 std::back_inserter(result)
+  );
+  interactions = std::move(result);
+  is_sorted = true;
+  return *this;
+}
+
+template <typename T> Contacts Contacts::set_intersection(T &&other) {
+  prepare_input(*this, other);
+  Contacts result(this->luni);
+  std::set_intersection(interactions.begin(),
+                        interactions.end(),
+                        other.interactions.begin(),
+                        other.interactions.end(),
+                        std::back_inserter(result.interactions)
+  );
+  return result;
+}
+
+template <typename T> Contacts Contacts::set_difference(T &&other) {
+  prepare_input(*this, other);
+  Contacts result(this->luni);
+  std::set_difference(interactions.begin(),
+                      interactions.end(),
+                      other.interactions.begin(),
+                      other.interactions.end(),
+                      std::back_inserter(result.interactions)
+  );
+  return result;
+}
+
+template <typename T> Contacts Contacts::set_symmetric_difference(T &&other) {
+  prepare_input(*this, other);
+
+  Contacts result(this->luni);
+  std::set_symmetric_difference(interactions.begin(),
+                                interactions.end(),
+                                other.interactions.begin(),
+                                other.interactions.end(),
+                                std::back_inserter(result.interactions)
+  );
+
+  return result;
+}
+
+// clang-format on
+
+inline bool Contacts::operator==(Contacts &other) {
+  prepare_input(*this, other);
+  return interactions == other.interactions;
+}
+
+inline Contacts Contacts::operator-(Contacts &other) { return set_difference(other); }
+
+inline Contacts Contacts::operator^(Contacts &other) {
+  Contacts result = set_union(other);
+  Contacts common = set_intersection(other);
+  return result - common;
+}
+
+template <typename T> Contacts &Contacts::operator|=(T &&other) {
+  Contacts result = set_union(std::forward<T>(other));
+  interactions = std::move(result.interactions);
+  is_sorted = true;
+  return *this;
+}
+
+template <typename T> Contacts &Contacts::operator+=(T &&other) {
+  interactions.insert(interactions.end(), other.interactions.begin(), other.interactions.end());
+  is_sorted = false;
+  return *this;
+}
+
+template <typename T> Contacts &Contacts::operator-=(T &&other) {
+  Contacts result = set_difference(std::forward<T>(other));
+  interactions = std::move(result.interactions);
+  is_sorted = true;
+  return *this;
+}
+
+template <typename T> Contacts &Contacts::operator&=(T &&other) {
+  Contacts result = set_intersection(std::forward<T>(other));
+  interactions = std::move(result.interactions);
+  is_sorted = true;
+  return *this;
+}
+
+template <typename T> Contacts &Contacts::operator^=(T &&other) {
+  Contacts result = set_symmetric_difference(std::forward<T>(other));
+  interactions = std::move(result.interactions);
+  is_sorted = true;
+  return *this;
+}
 
 } // namespace lahuta
 
-#endif // LAUTA_NEIGHBORS_HPP
+#endif // LAHUTA_NEIGHBORS_HPP

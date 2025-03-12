@@ -1,70 +1,39 @@
 #ifndef LAHUTA_SEARCH_HPP
 #define LAHUTA_SEARCH_HPP
 
-#include "Geometry/point.h"
-#include "GraphMol/Conformer.h"
-#include "entities.hpp"
-#include "nsgrid.hpp"
+#include <optional>
+#include <type_traits>
 #include <vector>
+
+#include "entities.hpp"
+/*#include "entity.hpp"*/
+#include "nsgrid.hpp"
+
+// clang-format off
 
 namespace lahuta {
 
-/*inline std::vector<const RDKit::Atom *> get_atoms(const AtomData &a) {*/
-/*  return {a.atom};*/
-/*}*/
-/**/
-/*inline std::vector<const RDKit::Atom *> get_atoms(const Feature &f) {*/
-/*  return f.members;*/
-/*}*/
-/**/
-/*inline std::vector<const RDKit::Atom *> get_atoms(const RingData &f) {*/
-/*  return f.atoms;*/
-/*}*/
+template <typename EV1, typename EV2>
+using EnableIfEntityCollections =
+    std::enable_if_t<
+        std::is_base_of_v<EntityCollection<typename EV1::value_type>, EV1> &&
+        std::is_base_of_v<EntityCollection<typename EV2::value_type>, EV2>>;
 
-/*template <typename T>*/
-/*auto get_center_ptr(const T& entity) -> decltype(entity.get_center(), (const RDGeom::Point3D*)nullptr) {*/
-/*  if constexpr (std::is_pointer_v<decltype(entity.get_center())>) {*/
-/*    return entity.get_center();*/
-/*  } else {*/
-/*    return &entity.get_center();*/
-/*  }*/
-/*}*/
-/**/
-/*template <typename T>*/
-/*std::vector<const RDGeom::Point3D*> get_pos(const RDKit::Conformer& conf, const T& entity) {*/
-/*  return { get_center_ptr(entity) };*/
-/*}*/
+template <typename EV>
+using EnableIfEntityCollection =
+    std::enable_if_t<
+        std::is_base_of_v<EntityCollection<typename EV::value_type>, EV>>;
 
-/*template <typename T>*/
-/*auto get_pos(const RDKit::Conformer& conf, const T& entity) -> std::vector<const RDGeom::Point3D*> {*/
-/*  return { &entity.get_center() };*/
-/*}*/
-
-inline auto get_pos(const RDKit::Conformer& conf, const Entity& entity) -> std::vector<const RDGeom::Point3D*> {
-  return { &entity.get_center() };
-}
-
-/*inline std::vector<const RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const AtomData &a) {*/
-/*  return {&a.get_center()};*/
-/*}*/
-/**/
-/*inline std::vector<const RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const Feature &f) {*/
-/*  auto pos = new RDGeom::Point3D(f.center);*/
-/*  return {pos};*/
-/*}*/
-/**/
-/*inline std::vector<RDGeom::Point3D *> get_pos(const RDKit::Conformer &conf, const RingData &f) {*/
-/*  auto pos = new RDGeom::Point3D(f.center);*/
-/*  return {pos};*/
-/*}*/
-
-template <typename EV1, typename EV2> // entity vector
+//
+// Using std::optional seems like a good idea, but it cannot hold references, and would force us to use
+// a reference wrapper. Further, while it would simplify some of the code (constructors) it would
+// obfuscate the intend of the code in distinguishing between self (enforce i < j) and non-self searches.
+//
+template <typename EV1, typename EV2, typename = EnableIfEntityCollections<EV1, EV2>>
 class BruteForce {
 public:
-  BruteForce(const RDKit::Conformer &conf_, const EV1 &ev1_, const EV2 &ev2_)
-      : conf(conf_), ev1(ev1_), ev2(ev2_) {}
-  BruteForce(const RDKit::Conformer &conf_, const EV1 &ev_)
-      : conf(conf_), ev1(ev_), ev2(ev_), is_self_search(true) {}
+  BruteForce(const EV1 &ev_)                   : ev1(ev_), ev2(ev_), is_self_search(true) {}
+  BruteForce(const EV1 &ev1_, const EV2 &ev2_) : ev1(ev1_), ev2(ev2_) {}
 
   NSResults search(double radius) { return search_entities(radius); }
 
@@ -94,8 +63,8 @@ private:
   template <typename EntityA, typename EntityB>
   std::optional<double> get_dist_within_cutoff(const EntityA &a, const EntityB &b, double dist_sq) {
 
-    auto pos_as = get_pos(conf, a);
-    auto pos_bs = get_pos(conf, b);
+    auto pos_as = get_pos(a);
+    auto pos_bs = get_pos(b);
 
     for (const auto pos_a : pos_as) {
       for (const auto pos_b : pos_bs) {
@@ -113,14 +82,17 @@ private:
     return true;
   };
 
+  inline static auto get_pos(const Entity& entity) -> std::vector<const RDGeom::Point3D*> {
+    return { &entity.get_center() };
+  }
+
 private:
-  const RDKit::Conformer &conf;
   const EV1 &ev1;
   const EV2 &ev2;
   bool is_self_search = false;
 };
 
-template <typename EV1, typename EV2> //
+template <typename EV1, typename EV2, typename = EnableIfEntityCollections<EV1, EV2>>
 struct SearchStrategy {
   static constexpr bool prefer_grid(const EV1 &ev1, const EV2 &ev2, double) {
     return ev1.get_data().size() * ev2.get_data().size() > 500;
@@ -131,69 +103,60 @@ struct SearchStrategy {
   }
 };
 
-template <typename EV1, typename EV2> //
+template <typename EV1, typename EV2, typename = EnableIfEntityCollection<EV1>>
 class SearchImpl {
-  const RDKit::Conformer &conf;
-
 public:
-  explicit SearchImpl(const RDKit::Conformer &conf_) : conf(conf_) {}
+  NSResults brute_force(const EV1 &ev1, double radius) const {
+    BruteForce<EV1, EV1> brute_force(ev1);
+    return brute_force.search(radius);
+  }
 
   NSResults brute_force(const EV1 &ev1, const EV2 &ev2, double radius) const {
-    BruteForce<EV1, EV2> brute_force(conf, ev1, ev2);
+    BruteForce<EV1, EV2> brute_force(ev1, ev2);
     return brute_force.search(radius);
   }
 
-  NSResults grid(const EV1 &ev1, const EV2 &ev2, double radius) const {
-    auto grid = FastNS::create(ev2.positions(), radius);
-    return grid.is_valid() ? grid.search(ev1.positions()) : brute_force(ev1, ev2, radius);
+  NSResults _grid_impl(const EV1 &ev1, const EV2 &ev2, double radius) const {
+    auto grid = FastNS(ev2.positions());
+    auto ok = grid.build(radius);
+    return ok ? grid.search(ev1.positions()) : brute_force(ev1, ev2, radius);
   }
 
-  NSResults brute_force(const EV1 &ev1, double radius) const {
-    BruteForce<EV1, EV1> brute_force(conf, ev1);
-    return brute_force.search(radius);
+  NSResults _grid_impl(const EV1 &ev1, double radius) const {
+    auto grid = FastNS(ev1.positions());
+    auto ok = grid.build(radius);
+    return ok ? grid.self_search() : brute_force(ev1, radius);
   }
 
-  NSResults grid(const EV1 &ev1, double radius) const {
-    auto grid = FastNS::create(ev1.positions(), radius);
-    return grid.is_valid() ? grid.self_search() : brute_force(ev1, radius);
+  NSResults grid(const EV1 &ev1, const std::optional<EV2> &ev2, double radius) const {
+    if (radius <= 0.0) throw std::invalid_argument("Radius must be greater than 0.0");
+
+    if (ev2.has_value())
+      return _grid_impl(ev1, ev2.value(), radius);
+
+    return _grid_impl(ev1, radius);
   }
 };
 
 class EntityNeighborSearch {
 public:
-  explicit EntityNeighborSearch(const RDKit::Conformer &conf_) : conf(conf_) {}
-
-  template <typename EV1, typename EV2>
-  NSResults search(const EV1 &ev1, const EV2 &ev2, double radius) {
+template <typename EV1, typename EV2, typename = EnableIfEntityCollections<EV1, EV2>>
+  static NSResults search(const EV1 &ev1, const EV2 &ev2, double radius) {
     if (!SearchStrategy<EV1, EV2>::size_is_valid(ev1, ev2)) return NSResults();
-    SearchImpl<EV1, EV2> impl(conf);
-    return SearchStrategy<EV1, EV2>::prefer_grid(ev1, ev2, radius) //
+    SearchImpl<EV1, EV2> impl;
+    return SearchStrategy<EV1, EV2>::prefer_grid(ev1, ev2, radius)
                ? impl.grid(ev1, ev2, radius)
                : impl.brute_force(ev1, ev2, radius);
   }
 
-  template <typename EV> NSResults search(const EV &ev, double radius, int i) {
-    SearchImpl<EV, EV> impl(conf);
-    if (i == 0) {
-      return impl.brute_force(ev, radius);
-    } else {
-      return impl.grid(ev, radius);
-    }
+  template <typename EV, typename = EnableIfEntityCollection<EV>>
+  static NSResults search(const EV &ev, double radius) {
     if (!SearchStrategy<EV, EV>::size_is_valid(ev, ev)) return NSResults();
-    return SearchStrategy<EV, EV>::prefer_grid(ev, ev, radius) //
-               ? impl.grid(ev, radius)
+    SearchImpl<EV, EV> impl;
+    return SearchStrategy<EV, EV>::prefer_grid(ev, ev, radius)
+               ? impl.grid(ev, std::nullopt, radius)
                : impl.brute_force(ev, radius);
   }
-  template <typename EV> NSResults search(const EV &ev, double radius) {
-    if (!SearchStrategy<EV, EV>::size_is_valid(ev, ev)) return NSResults();
-    SearchImpl<EV, EV> impl(conf);
-    return SearchStrategy<EV, EV>::prefer_grid(ev, ev, radius) //
-               ? impl.grid(ev, radius)
-               : impl.brute_force(ev, radius);
-  }
-
-private:
-  const RDKit::Conformer &conf;
 };
 
 } // namespace lahuta

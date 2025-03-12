@@ -1,7 +1,7 @@
 #include "contacts/cationpi.hpp"
 #include "contacts/search.hpp"
 #include "lahuta.hpp"
-#include "nn.hpp"
+#include "neighbors.hpp"
 #include "contacts/geometry.hpp"
 
 namespace lahuta {
@@ -13,8 +13,7 @@ Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
   const auto rings = luni.get_rings();
   const auto features = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
 
-  EntityNeighborSearch ens(luni.get_conformer());
-  auto nbrs = ens.search(features, rings, opts.distance_max);
+  auto nbrs = EntityNeighborSearch::search(features, rings, opts.distance_max);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [feature_index, ring_index] = pair;
@@ -25,7 +24,7 @@ Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
 
     if (is_same_residue(luni.get_molecule(), *first_ring_atom, *feature.atoms.front())) continue;
 
-    auto offset = geometry::compute_in_plane_offset(feature.center, ring.center, ring.norm);
+    auto offset = geometry::compute_in_plane_offset(feature.center, ring.center, ring.normal);
 
     if (offset <= opts.offset_max) {
       contacts.add(Contact(

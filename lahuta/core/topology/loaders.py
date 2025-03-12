@@ -29,7 +29,7 @@ from lahuta.lib._lahuta import IR, LahutaCPP
 import pandas as pd
 from numpy.typing import NDArray
 
-from lahuta.lib import cLuni, cAtomType
+from lahuta.lib import cLuni
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 from lahuta._types.openbabel import MolType
 from lahuta.utils.radii import v_radii_assignment

@@ -44,7 +44,7 @@ from typing import TYPE_CHECKING, Any, Iterator, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.lib import cLuni
+from lahuta.lib._lahuta import LahutaCPP as cLuni
 from lahuta._types.mdanalysis import AtomGroupType, UniverseType
 
 if TYPE_CHECKING:

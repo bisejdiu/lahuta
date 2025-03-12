@@ -105,7 +105,7 @@ inline void write_aligned_pdb_w(
     return;
   }
 
-  auto luni = Luni::build(sd.st);
+  auto luni = Luni::create(sd.st);
   const RDKit::RWMol &mol = luni.get_molecule();
   const RDKit::Conformer &conf = luni.get_conformer();
 

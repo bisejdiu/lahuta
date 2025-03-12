@@ -260,14 +260,17 @@ def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashe
     """
     vdw_radii = ns.atoms.vdw_radii[ns.pairs[:, 0]] + ns.atoms.vdw_radii[ns.pairs[:, 1]]
 
-    distance_mask = ns._ns.get_distances() <= vdw_radii + vdw_comp_factor
+    import numpy as np
+
+    # distance_mask = ns._ns.get_distances() <= vdw_radii + vdw_comp_factor
+    distance_mask = np.sqrt(ns._distances) <= vdw_radii + vdw_comp_factor
     vdw_comp_pairs = ns.pairs[distance_mask]
     vdw_distances = ns.distances[distance_mask]
 
     if not remove_clashes:
         return ns.new(vdw_comp_pairs, vdw_distances)  # TODO @bisejdiu: check if this is correct
 
-    vdw_clash_pairs = ns.pairs[ns._ns.get_distances() < vdw_radii]
+    vdw_clash_pairs = ns.pairs[np.sqrt(ns._ns.get_distances()) < vdw_radii]
     no_clash_indices = difference(vdw_comp_pairs, vdw_clash_pairs)
 
     return ns.new(vdw_comp_pairs[no_clash_indices], vdw_distances[no_clash_indices])

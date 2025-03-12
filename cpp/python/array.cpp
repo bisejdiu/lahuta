@@ -1,4 +1,4 @@
-#include "common.hpp"
+#include "array.hpp"
 #include "struct_unit.hpp"
 
 using namespace lahuta;

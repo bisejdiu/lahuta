@@ -34,7 +34,7 @@ public:
       RDGeom::Point3D v1 = conf.getAtomPos(ring_atom_ids[i]) - center;
       RDGeom::Point3D v2 = conf.getAtomPos(ring_atom_ids[(i + 1) % ring_atom_ids.size()]) - center;
 
-      // we'll just crash if the cross product is zero. You have bigger problems if that happens.
+      // we'll just crash if the cross product is zero.
       auto new_norm = v1.crossProduct(v2);
       new_norm.normalize();
 

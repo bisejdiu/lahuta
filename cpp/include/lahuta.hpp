@@ -2,6 +2,7 @@
 #define LAHUTA_HPP
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -10,198 +11,66 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/BondIterators.h>
 
-#include "aromatics.hpp"
-#include "contacts/interactions.hpp"
 #include "convert.hpp"
-#include "neighbors.hpp"
-#include "nsgrid.hpp"
-#include "ob/kekulize.h"
-
-#include "contacts/groups.hpp"
-#include "nn.hpp"
-#include "spdlog/spdlog.h"
 #include "topology.hpp"
-#include "visitor.hpp" // selection parser (bad file name)
+#include "spdlog/spdlog.h"
 
 #define LAHUTA_VERSION "0.15.0"
 
 namespace lahuta {
 
-static float BONDED_NS_CUTOFF = 4.5;
+class Luni { // rename to Lahuta
+public:
+  explicit Luni(std::string file_name) : file_name_(file_name) {
+    spdlog::info("Processing file: {}", file_name_);
+    read_structure();
+  }
 
-class Luni {
-  // FIX: move down
-private:
-  std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  std::shared_ptr<NSResults> neighbors;
+  bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt) {
+    try {
+      auto tops_ = tops.value_or(TopologyBuildingOptions());
+      tops_.compute_bonds = !is_in_filtered_state;
 
-  double _cutoff;
-  FastNS grid; // FIXME: is this needed?
-  Topology topology;
-  GroupEntityCollection features;
+      topology.emplace(mol);
+      topology->build(tops_);
+    } catch (const std::runtime_error &e) {
+      return false;
+    }
+    return true;
+  }
 
-  void process_file(std::string file_path_) {
-    file_name = file_path_;
-    auto st = gemmi::read_structure_gz(file_path_);
+  static Luni create(std::shared_ptr<RDKit::RWMol> mol) {
+    return Luni(mol);
+  }
 
+  static Luni create(const gemmi::Structure &st) {
+    auto mol = std::make_shared<RDKit::RWMol>();
     RDKit::Conformer *conformer = new RDKit::Conformer();
     create_RDKit_repr(*mol, st, *conformer, false);
     mol->updatePropertyCache(false);
     mol->addConformer(conformer, true);
-
-    topology = Topology(mol.get());
+    return Luni(mol);
   }
 
-  void create_topology() {
-
-    try {
-      grid = FastNS(get_conformer().getPositions(), _cutoff, true);
-      neighbors = std::make_shared<NSResults>(grid.self_search());
-
-      Topology::compute_bonds(*mol, *neighbors);
-
-      topology.build_residues(*mol);
-      initialize_and_populate_ringinfo(*mol, *topology.residues);
-
-      topology.assign_molstar_typing();
-      /*topology.assign_arpeggio_atom_types();*/
-
-    } catch (const std::runtime_error &e) {
-      throw std::runtime_error("Error creating topology: " + std::string(e.what()));
-    }
-  }
-
-public:
-  Luni() : _cutoff(BONDED_NS_CUTOFF) {}
-  explicit Luni(std::string file_name) : _cutoff(BONDED_NS_CUTOFF) {
-    spdlog::info("Processing file: {}", file_name);
-    process_file(file_name);
-
-    try {
-      create_topology();
-    } catch (const std::runtime_error &e) {
-      std::cerr << "Critical error: " << e.what() << "\n";
-      success = false;
-      return;
-    }
-
-    // FIX: double call to Residues(*mol)
-    Residues residues(*mol);
-    features = std::move(GroupTypeAnalysis::analyze(*mol, residues));
-  }
-
-  static Luni build(std::shared_ptr<RDKit::RWMol> mol) {
-    Luni l;
-
-    l.mol = mol;
-    l.topology = Topology(l.mol.get());
-
-    l.create_topology();
-    return l;
-  }
-
-  static Luni build(const gemmi::Structure &st) {
-    Luni l;
-
-    RDKit::Conformer *conformer = new RDKit::Conformer();
-    create_RDKit_repr(*l.mol, st, *conformer, false);
-    l.mol->updatePropertyCache(false);
-    l.mol->addConformer(conformer, true);
-    l.topology = Topology(l.mol.get());
-
-    l.create_topology();
-
-    Residues residues(*l.mol);
-    l.features = std::move(GroupTypeAnalysis::analyze(*l.mol, residues));
-
-    return l;
-  }
-
-  // Luni from IR:
-  Luni(const IR &ir) : _cutoff(BONDED_NS_CUTOFF) {
+  static Luni create(const IR &ir) {
+    auto mol = std::make_shared<RDKit::RWMol>();
     IR_to_RWMol(*mol, ir);
-    create_topology();
+    return Luni(mol);
   }
 
-  //! get the total number of bonded h atoms (explicit + implicit) for all atoms
-  //! in the system
-  std::vector<int> total_hydrogen_count() const {
-    std::vector<int> hydrogen_counts;
-    for (const auto &atom : mol->atoms()) {
-      hydrogen_counts.push_back(atom->getTotalNumHs());
-    }
-    return hydrogen_counts;
-  }
+  std::string get_file_name() { return file_name_; };
+  const Topology &get_topology() const { return *get_topology_ptr(); }
+  bool has_topology_built() { return topology.has_value(); };
 
-  const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
-    return get_conformer(confId).getPositions();
-  }
-
-  const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
-
-  RDKit::RWMol &get_molecule() { return *mol; }
+  RDKit::RWMol       &get_molecule()       { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
 
-  const Topology &get_topology() { return topology; };
+  RDKit::Conformer       &get_conformer(int id = -1)       { return mol->getConformer(id); }
+  const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
-  const double get_cutoff() const { return _cutoff; }
-
-  const std::vector<AtomType> &get_atom_types() const { return topology.atom_types; }
-  const RingEntityCollection &get_rings() const { return topology.rings_vec; }
-
-  Neighbors<AtomAtomPair> find_neighbors(double cutoff, int res_dif) {
-    NSResults ns = find_neighbors_opt(cutoff);
-    if (res_dif > 0) {
-      ns = remove_adjascent_residueid_pairs(ns, res_dif);
-    }
-    return Neighbors<AtomAtomPair>(*this, std::move(ns), false);
-  }
-  NSResults find_neighbors2(double cutoff, int res_dif) {
-    NSResults ns = find_neighbors_opt(cutoff);
-    if (res_dif > 0) {
-      ns = remove_adjascent_residueid_pairs(ns, res_dif);
-    }
-    return ns;
-  }
-
-  // FIX: computed distances represent atom-ring center distances.
-  Neighbors<AtomRingPair> find_ring_neighbors(double cutoff, int res_dif = 1) {
-
-    auto rings = topology.rings_vec;
-    // FIX: keep an instance of the grid in the class
-    auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
-    auto centers = rings.positions();
-
-    NSResults nbrs = grid.search(centers);
-    if (res_dif > 0) {
-      nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);
-    }
-    return Neighbors<AtomRingPair>(*this, std::move(nbrs), false);
-  }
-
-  // FIX: computed distances represent atom-ring center distances.
-  // FIX: neighbors contain atoms that are also part of the ring.
-  auto find_ring_neighbors2(double cutoff, int res_dif = 1) {
-
-    auto rings = topology.rings_vec;
-    // FIX: keep an instance of the grid in the class
-    auto grid = FastNS(mol->getConformer().getPositions(), cutoff);
-    auto centers = rings.positions();
-
-    NSResults nbrs = grid.search(centers);
-    // log the first 10 pairs of neighbors if that many exist
-    for (size_t i = 0; i < nbrs.size(); ++i) {
-      auto &pair = nbrs.get_pairs()[i];
-      /*std::cout << "Ring: " << pair.first << " Atom: " << pair.second << "\n";*/
-      /*auto atom = mol->getAtomWithIdx(pair.first);*/
-      /*auto &ring = rings.rings[pair.second];*/
-      /*std::cout << "Atom: " << atom->getIdx() << " Ring: " << ring.center << "\n";*/
-    }
-    if (res_dif > 0) {
-      nbrs = remove_adjascent_residueid_pairs(nbrs, res_dif);
-    }
-    return nbrs;
-  }
+  const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
+  const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
+  const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
 
   //! Returns the atoms of the molecule.
   const auto atoms() const { return mol->atoms(); }
@@ -236,73 +105,86 @@ public:
   //! Returns the chain labels of the atoms.
   const std::vector<std::string> chainlabels() const;
 
+  const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
+    return get_conformer(confId).getPositions();
+  }
+
+  //! get the total number of bonded h atoms (explicit + implicit) for all atoms in the system
+  std::vector<int> total_hydrogen_count() const {
+    std::vector<int> hydrogen_counts;
+    for (const auto &atom : mol->atoms()) {
+      hydrogen_counts.push_back(atom->getTotalNumHs());
+    }
+    return hydrogen_counts;
+  }
+
   template <typename T> friend class Neighbors;
   friend class Contacts;
-  /*friend class InteractionContainer::test_interface;*/
+
+  // FIX: add helper functions to get topology information
+  // FIX: Move these to the topology class
+  const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
 
 private:
+  explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
+
   template <typename T> std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
 
   template <typename T>
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
 
-  // FIX: make find_neighbors_opt public?
-  NSResults find_neighbors_opt(double cutoff = BONDED_NS_CUTOFF);
-  NSResults remove_adjascent_residueid_pairs(NSResults &results, int res_diff);
-
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
 
-public:
-  bool success{true};
-  std::string file_name;
-  static std::vector<std::string> tokenize(const std::string &str);
-  static std::vector<std::string> tokenize_simple(const std::string &str);
-  std::vector<int> parse_and_filter(const std::string &selection) const;
-  bool parse_expression(const std::string &selection);
-  Luni filter_luni(const std::vector<int> &atom_indices) const;
-  Luni filter() const;
-  static std::vector<int> factorize(const std::vector<std::string> &labels);
-  static int count_unique(const std::vector<int> &vec);
-  static int count_unique(const std::vector<std::string> &vec);
-  static std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers);
-
-  /*const std::vector<Feature> &get_features() const { return features; }*/
-  const GroupEntityCollection &get_features() const { return features; }
-
-  template <typename T> const T &get_entity(EntityID id) const;
-  const std::vector<EntityID> &get_atom_entities();
-  const std::vector<EntityID> &get_ring_entities();
-  const std::vector<EntityID> &get_group_entities();
-
-  Contacts test_find_neighbors(double cutoff, int res_dif) {
-    Contacts c(this);
-    /*const auto &atom_entities = get_atom_entities();*/
-    /*auto atom_neighbors = find_neighbors2(6.0, 10);*/
-    /*c.add_many(atom_neighbors, atom_entities);*/
-    /**/
-    /*std::vector<RingData> rings = get_rings().rings;*/
-    /*const auto &ring_entities = get_ring_entities();*/
-    /*auto ring_neighbors = find_ring_neighbors2(6.0);*/
-    /*c.add_many(ring_neighbors, ring_entities, atom_entities);*/
-
-    GroupEntityCollection group_features = GroupTypeAnalysis::analyze(*mol, Residues(*mol));
-    Interactions processor(*this, InteractionOptions{5.0});
-    auto ionic = processor.ionic();
-    auto hbonds = processor.hbond();
-    c.add(ionic);
-    c.add(hbonds);
-
-    return c;
+  const Topology* get_topology_ptr() const {
+    if (!topology) {
+      spdlog::error("Cannot return topology, because no topology has been built.");
+      throw std::runtime_error("Topology not built");
+    }
+    return &topology.value();
   }
 
-  /*void assign_molstar_atom_types() { topology.assign_molstar_atom_types(*mol); }*/
-  void assign_molstar_atom_types() { topology.assign_molstar_typing(); }
-  void assign_arpeggio_atom_types() { topology.assign_arpeggio_atom_types(); }
+  void read_structure() {
+    auto st = gemmi::read_structure_gz(file_name_);
+
+    RDKit::Conformer *conformer = new RDKit::Conformer();
+    create_RDKit_repr(*mol, st, *conformer, false);
+    mol->updatePropertyCache(false);
+    mol->addConformer(conformer, true);
+  }
+
+public:
+  /// filter the molecule based on the atom indices
+  Luni filter(std::vector<int> &atom_indices) const;
+
+  /// EntityID -> AtomEntity/GroupEntity/RingEntity
+  template <typename T> const T &get_entity(EntityID id) const;
+
+  /// AtomEntity/GroupEntity/RingEntity -> EntityID
+  const std::vector<EntityID> &get_or_create_atom_entities();
+  const std::vector<EntityID> &get_or_create_ring_entities();
+  const std::vector<EntityID> &get_or_create_group_entities();
+
+  // FIX: part of the topology class. Can simply be called via the topology attribute
+  void assign_molstar_atom_types()  { 
+    if (topology) { topology->assign_molstar_typing(); } 
+    else { spdlog::error("Topology not built. Cannot assign Molstar atom types."); }
+  }
+
+  void assign_arpeggio_atom_types() {
+    if (topology) { topology->assign_arpeggio_atom_types(); } 
+    else { spdlog::error("Topology not built. Cannot assign Arpeggio atom types."); }
+  }
 
 private:
-  std::vector<int> filtered_indices;
+  std::string file_name_;
+
+  std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
+  std::optional<Topology> topology;
   std::unordered_map<lahuta::EntityType, std::vector<EntityID>> entities;
+
+  std::vector<int> filtered_indices;
+  bool is_in_filtered_state = false; // ambitious name, for know it's just a flag
 };
 
 } // namespace lahuta

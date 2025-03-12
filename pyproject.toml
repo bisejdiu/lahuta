@@ -65,7 +65,11 @@ lint.extend-select = [
 lint.ignore = [
     'A003', 'ANN101', 'ANN102', 'ANN204', 'COM812', 'D105', 'D107', 'D203',
     'D205', 'D213', 'D406', 'D407', 'D413', 'D415', 'ERA001', 'FIX002', 'PERF401', 'PLR2004', 'PLW0127', 'TD003',
-    'TRY003', 'PT018', 'RET504', 'D102'
+    'TRY003', 'PT018', 'RET504', 'D102', 
+
+    # new ones while we re-write the python API
+    'D100', 'D101', 'E702',
+    'PYI011', 'PYI015'
 ]
 
 lint.mccabe = { max-complexity = 14 }
@@ -91,6 +95,7 @@ max-args = 6
 'lahuta/core/index_finder.py' = ['PERF401']
 'lahuta/tests/*.py' = ['D100', 'D101', 'D104']
 'tests/*.py' = ['D100', 'D101', 'D102', 'D103', 'D401', 'PT004', 'PT019', 'PLR0915']
+'lahuta/core/*.py' = ['FIX', 'TD']
 
 [tool.mypy]
 python_version = "3.10"

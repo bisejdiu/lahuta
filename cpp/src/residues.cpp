@@ -3,9 +3,9 @@
 #include "definitions.hpp"
 #include "find_rings.hpp"
 
+// clang-format off
 namespace lahuta {
 
-// TODO: simplify `build_residues` to avoid the need for a map
 struct ResidueKeyHash {
   std::size_t operator()(const std::tuple<std::string, int, std::string, std::string> &t) const {
     std::size_t seed = 0;
@@ -22,15 +22,34 @@ struct ResidueKeyHash {
   }
 };
 
-std::vector<Residue> Residues::filter(std::function<bool(const Residue &)> predicate) const {
-  std::vector<Residue> result;
+
+bool Residues::build() {
+  bool success = false;
+  build_residues(mol_, success);
+  return success;
+}
+
+
+Residues Residues::filter(std::function<bool(const Residue &)> predicate) const {
+  Residues result(mol_);
   for (const auto &residue : residues_) {
     if (predicate(residue)) {
-      result.push_back(residue);
+      result.residues_.push_back(residue);
     }
   }
   return result;
 }
+
+Residues Residues::filter(std::function<bool(const std::string &)> predicate) const {
+  Residues result(mol_);
+  for (const auto &residue : residues_) {
+    if (predicate(residue.name)) {
+      result.residues_.push_back(residue);
+    }
+  }
+  return result;
+}
+
 
 template <typename ResultType>
 std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)> func) const {
@@ -42,23 +61,24 @@ std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)>
   return result;
 }
 
-void Residues::build_residues(const RDKit::RWMol &mol) {
-  std::unordered_map<std::tuple<std::string, int, std::string, std::string>, size_t, ResidueKeyHash>
-      residue_index_map;
-  std::vector<Residue> residues;
 
+void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
+  std::unordered_map<std::tuple<std::string, int, std::string, std::string>, size_t, ResidueKeyHash> residue_index_map;
+
+  std::vector<Residue> residues;
   for (const auto &atom : mol.atoms()) {
     if (atom->getAtomicNum() == 1) continue;
 
     auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     if (!info) continue;
 
-    std::string chain_id = info->getChainId();
-    int res_num = info->getResidueNumber();
+    int res_num          = info->getResidueNumber();
     std::string res_name = info->getResidueName();
+    std::string chain_id = info->getChainId();
 
     // TODO: add a flag instead of the altloc
     /*std::string alt_loc = info->getAltLoc();*/
+    /*bool has_alt_loc = !alt_loc.empty();*/
 
     auto key = std::make_tuple(chain_id, res_num, res_name, "");
 
@@ -72,134 +92,43 @@ void Residues::build_residues(const RDKit::RWMol &mol) {
 
   // residues are in the order how they are inserted into the map
   residues_ = std::move(residues);
-
-  for (const auto &residue : residues_) {
-    residues_by_name_[residue.name].push_back(&residue);
-  }
+  status = true;
 }
 
-namespace residue_props {
 
-template <typename ResultType>
-std::vector<ResultType> get_aromatic_rings(const Residues &residues, RingProcFunc<ResultType> func) {
-  std::vector<ResultType> ring_list;
-  // FIX: we should be iterating over the residues in the molecule and checking if they are aromatic, instead
-  // of the other way around
-  for (const auto &item : definitions::AromaticResidues) {
-    const std::string &res_name = item.first;
-    const std::vector<int> &ring_sizes = item.second;
+std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RWMol &mol, const Residues &residues) {
 
-    auto residues_it = residues.residue_map().find(res_name);
-    if (residues_it != residues.residue_map().end()) {
-      const std::vector<const Residue *> &res_list = residues_it->second;
-      for (const Residue *residue : res_list) {
-        for (int ring_size : ring_sizes) {
+  using               RingSize = definitions::arom_rings::RingSize;
+  constexpr auto &AromRingSize = definitions::arom_rings::AromaticResiduesRingSizes;
 
-          if (residue->atoms.size() < static_cast<size_t>(ring_size)) continue;
-          ResultType processed_data = func(*residue, ring_size);
+  std::vector<std::vector<int>> ring_vector;
+  for (const auto &residue : residues) {
 
-          if (processed_data.size() != ring_size) continue;
+    RingSize ring_size;
+    if      (residue.name == "PHE") { ring_size = RingSize::RS_6; }
+    else if (residue.name == "TYR") { ring_size = RingSize::RS_6; }
+    else if (residue.name == "HIS") { ring_size = RingSize::RS_5; }
+    else if (residue.name == "TRP") { ring_size = static_cast<RingSize>(RingSize::RS_5 | RingSize::RS_6); } 
+    else {
+      // linear search through remaining predefined residues
+      auto it = std::find_if(AromRingSize.begin(), AromRingSize.end(), [&](const auto &e) { return e.first == residue.name; });
+      if (it == std::end(AromRingSize)) continue;
 
-          ring_list.push_back(std::move(processed_data));
-        }
-      }
+      ring_size = it->second;
+    }
+
+    std::vector<int> ring_sizes = definitions::arom_rings::get_ringsizes(ring_size);
+    for (int ring_size : ring_sizes) {
+      if (residue.atoms.size() < static_cast<size_t>(ring_size)) continue;
+
+      std::vector<int> processed_data = FastRingFinder::find_ring_in_residue(residues.get_mol(), residue, ring_size);
+      if (processed_data.size() != ring_size) continue;
+
+      ring_vector.push_back(std::move(processed_data));
     }
   }
 
-  return ring_list;
+  return ring_vector;
 }
-
-template std::vector<std::vector<int>>
-get_aromatic_rings<std::vector<int>>(const Residues &, std::function<std::vector<int>(const Residue &, int)>);
-
-template std::vector<std::vector<const RDKit::Atom *>> //
-get_aromatic_rings<std::vector<const RDKit::Atom *>>(
-    const Residues &, std::function<std::vector<const RDKit::Atom *>(const Residue &, int)>);
-
-/*std::vector<Residue>*/
-/*get_unknown_residues(const Residues &residues, const std::set<std::string> &KnownResiduesSet) {*/
-/*  return residues.filter([&KnownResiduesSet](const Residue &residue) {*/
-/*    return KnownResiduesSet.find(residue.name) == KnownResiduesSet.end();*/
-/*  });*/
-/*}*/
-/**/
-/*std::vector<int> // collect all atom indices from residues into one vector*/
-/*get_unknown_residues(const Residues &residues, const std::set<std::string> &KnownResiduesSet) {*/
-/*  std::vector<int> unknown_indices;*/
-/*  for (const auto &residue : get_unknown_residues(residues, KnownResiduesSet)) {*/
-/*    for (const auto &atom : residue.atoms) {*/
-/*      unknown_indices.push_back(atom->getIdx());*/
-/*    }*/
-/*  }*/
-/*  return unknown_indices;*/
-/*}*/
-
-template <typename ReturnType>
-ReturnType get_unknown_residues(const Residues &residues, const std::set<std::string> &KnownResiduesSet);
-
-template <typename ReturnType>
-ReturnType get_unknown_residues(const Residues &residues, const ResTesterFunc &PredefResidues);
-
-template <>
-std::vector<Residue> get_unknown_residues<std::vector<Residue>>(
-    const Residues &residues, const std::set<std::string> &KnownResiduesSet) {
-  std::vector<Residue> unknown_residues;
-  std::copy_if(
-      residues.begin(),
-      residues.end(),
-      std::back_inserter(unknown_residues),
-      [&KnownResiduesSet](const Residue &residue) {
-        return KnownResiduesSet.find(residue.name) == KnownResiduesSet.end();
-      });
-  return unknown_residues;
-}
-
-template <>
-std::vector<Residue>
-get_unknown_residues<std::vector<Residue>>(const Residues &residues, const ResTesterFunc &PredefResidues) {
-  std::vector<Residue> unknown_residues;
-  std::copy_if(
-      residues.begin(),
-      residues.end(),
-      std::back_inserter(unknown_residues),
-      [&PredefResidues](const Residue &residue) { return !PredefResidues(residue.name); });
-  return unknown_residues;
-}
-
-template <>
-std::vector<int> get_unknown_residues<std::vector<int>>(
-    const Residues &residues, const std::set<std::string> &KnownResiduesSet) {
-  std::vector<int> unknown_indices;
-  for (const auto &residue : get_unknown_residues<std::vector<Residue>>(residues, KnownResiduesSet)) {
-    for (const auto &atom : residue.atoms) {
-      unknown_indices.push_back(atom->getIdx());
-    }
-  }
-  return unknown_indices;
-}
-
-template <>
-std::vector<int>
-get_unknown_residues<std::vector<int>>(const Residues &residues, const ResTesterFunc &PredefResidues) {
-  std::vector<int> unknown_indices;
-  for (const auto &residue : get_unknown_residues<std::vector<Residue>>(residues, PredefResidues)) {
-    for (const auto &atom : residue.atoms) {
-      unknown_indices.push_back(atom->getIdx());
-    }
-  }
-  return unknown_indices;
-}
-
-std::vector<std::vector<int>> tbl_find_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues) {
-  return get_aromatic_rings<std::vector<int>>(residues, [&mol](const Residue &residue, int ring_size) {
-    std::vector<int> atom_ids;
-    for (const auto &atom : FastRingFinder::find_ring_in_residue(mol, residue, ring_size)) {
-      atom_ids.push_back(atom->getIdx());
-    }
-    return atom_ids;
-  });
-}
-
-} // namespace residue_props
 
 } // namespace lahuta

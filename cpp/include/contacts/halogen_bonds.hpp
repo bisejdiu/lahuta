@@ -1,7 +1,7 @@
 #ifndef LAHUTA_HALOGEN_BONDS_HPP
 #define LAHUTA_HALOGEN_BONDS_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 
 namespace lahuta {
 

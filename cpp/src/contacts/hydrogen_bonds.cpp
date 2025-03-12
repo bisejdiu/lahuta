@@ -254,14 +254,18 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
   const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
   const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
 
-  EntityNeighborSearch ens(luni.get_conformer());
-  auto results = ens.search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
+  auto results = EntityNeighborSearch::search(donors, acceptors, std::max(opts.max_dist, opts.max_sulfur_dist));
 
   std::cout << "results: " << results.size() << std::endl;
   std::unordered_set<std::pair<int, int>, common::PairHash> seen;
 
   const double distMax = distFactor * MAX_LINE_OF_SIGHT_DISTANCE;
-  FastNS grid = FastNS(luni.get_conformer().getPositions(), distMax, true);
+  FastNS grid = FastNS(luni.get_conformer().getPositions());
+  auto ok = grid.build(distMax);
+  if (!ok) {
+    std::cerr << "Failed to build the grid" << std::endl;
+    return contacts;
+  }
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
@@ -340,8 +344,7 @@ Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts)
   const auto weak_donor_atoms = AtomEntityCollection::filter(&luni, AtomType::WEAK_HBOND_DONOR);
   const auto acceptor_atoms = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
 
-  EntityNeighborSearch ens(mol.getConformer());
-  auto nbrs = ens.search(weak_donor_atoms, acceptor_atoms, opts.max_dist);
+  auto nbrs = EntityNeighborSearch::search(weak_donor_atoms, acceptor_atoms, opts.max_dist);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [wdonor_index, acceptor_index] = pair;

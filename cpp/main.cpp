@@ -1,6 +1,7 @@
 #include "contacts/interactions.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
+#include "selections/tokenizer.hpp"
 
 using namespace lahuta;
 
@@ -17,10 +18,17 @@ int main(int argc, char const *argv[]) {
   /*luni.assign_arpeggio_atom_types();*/
   /*luni.assign_molstar_atom_types();*/
 
-  if (!luni.success) {
+  if (!luni.build_topology()) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
     return 1;
   }
+
+  std::cout << "ENTITIES: " << file_name << std::endl;
+  for (const long long &v  : luni.get_or_create_ring_entities()) {
+    std::cout << v << " ";
+  }
+  std::cout << "DONE with entities." << std::endl;
+
   auto mol = &luni.get_molecule();
   std::cout << "Molecule: " << mol->getNumAtoms() << std::endl;
 
@@ -29,11 +37,9 @@ int main(int argc, char const *argv[]) {
   std::cout << "Time: " << duration.count() << " ms" << std::endl;
   /*return 0;*/
 
-  /*luni.assign_molstar_atom_types();*/
-
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
-  
+
   std::cout << "HBonds" << std::endl;
   auto _1 = interactions.hbond();
   /*_1.sort_interactions();*/

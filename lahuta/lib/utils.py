@@ -4,7 +4,9 @@ from typing import overload
 import numpy as np
 from numpy.typing import NDArray
 
-from lahuta.lib import cLuni, factorize_residues
+# from lahuta.lib import cLuni, factorize_residues
+from lahuta.lib._lahuta import LahutaCPP as cLuni
+from lahuta.lib._lahuta import factorize_residues
 
 Labels = list[str] | NDArray[np.str_]
 Indices = list[int] | NDArray[np.int32]

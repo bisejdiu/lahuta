@@ -1,7 +1,7 @@
 #ifndef LAHUTA_METALIC_HPP
 #define LAHUTA_METALIC_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 namespace lahuta {
 
 bool is_metalic(AtomType at1, AtomType at2);

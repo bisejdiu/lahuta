@@ -9,6 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
+// clang-format off
+
 namespace lahuta {
 
 struct RingConfig {
@@ -18,16 +20,15 @@ struct RingConfig {
   static constexpr size_t MAX_RING_SIZE = 6;
 };
 
-using AtomIndex = size_t;
+using AtomIndex     = size_t;
 using NeighborCount = uint8_t;
-using AtomPath = std::vector<AtomIndex>;
-using VisitedSet = std::bitset<RingConfig::MAX_ATOMS>;
+using AtomPath      = std::vector<AtomIndex>;
+using VisitedSet    = std::bitset<RingConfig::MAX_ATOMS>;
 
 class MolecularGraph {
 public:
   using NeighborList = std::array<AtomIndex, RingConfig::MAX_NEIGHBORS>;
-
-  MolecularGraph(size_t num_atoms) : adjacency_(num_atoms), neighbor_counts_(num_atoms, 0) {}
+  MolecularGraph(const RDKit::RWMol &mol) : mol_(mol), adjacency_(0), neighbor_counts_(0, 0) {}
 
   void add_edge(AtomIndex from, AtomIndex to) {
     if (neighbor_counts_[from] < RingConfig::MAX_NEIGHBORS) {
@@ -35,11 +36,47 @@ public:
     }
   }
 
-  const NeighborList &get_neighbors(AtomIndex atom) const { return adjacency_[atom]; }
-  NeighborCount get_neighbor_count(AtomIndex atom) const { return neighbor_counts_[atom]; }
+  const NeighborList &get_neighbors(AtomIndex atom_idx) const {
+    if (atom_idx >= adjacency_.size()) {
+      throw std::out_of_range("Atom index out of range");
+    }
+    return adjacency_[atom_idx]; 
+  }
+  NeighborCount  get_neighbor_count(AtomIndex atom_idx) const {
+    if (atom_idx >= neighbor_counts_.size()) {
+      throw std::out_of_range("Atom index out of range");
+    }
+    return neighbor_counts_[atom_idx];
+  }
+
+  void build(const Residue &residue) {
+
+    adjacency_.resize(residue.atoms.size()); neighbor_counts_.resize(residue.atoms.size(), 0);
+
+    // Build atom index mapping
+    size_t index = 0;
+    std::unordered_map<const RDKit::Atom *, AtomIndex> atom_indices;
+
+    for (const auto &atom : residue.atoms) {
+      atom_indices[atom] = index++;
+    }
+
+    for (size_t i = 0; i < residue.atoms.size(); ++i) {
+      const auto &atom = residue.atoms[i];
+
+      for (const auto *bond : mol_.atomBonds(atom)) {
+        const auto neighbor = bond->getOtherAtom(atom);
+        auto it = atom_indices.find(neighbor);
+        if (it != atom_indices.end()) {
+          this->add_edge(i, it->second);
+        }
+      }
+    }
+  }
 
 private:
-  std::vector<NeighborList> adjacency_;
+  const RDKit::RWMol &mol_;
+  std::vector<NeighborList>  adjacency_;
   std::vector<NeighborCount> neighbor_counts_;
 };
 
@@ -69,13 +106,12 @@ public:
 private:
   static bool is_valid_ring_atom(const MolecularGraph &graph, AtomIndex atom) {
     auto count = graph.get_neighbor_count(atom);
-    return count >= 2 && count <= 3; // chemistry constraint
+    return count >= 2 && count <= 3; // max 2 or 3 covalent bonds in an aromatic ring
   }
 
-  // clang-format off
   /// depth-first search
   static bool dfs(
-    const MolecularGraph &graph, AtomIndex start_atom, AtomIndex current_atom, 
+    const MolecularGraph &graph, AtomIndex start_atom, AtomIndex current_atom,
     size_t depth, VisitedSet &visited, AtomPath &path, size_t ring_size) {
 
     if (depth == ring_size) {
@@ -112,16 +148,14 @@ private:
     return false;
   }
 };
-// clang-format on
 
 // RDKit integration layer
 class FastRingFinder {
 public:
-  static std::vector<const RDKit::Atom *>
-  find_ring_in_residue(const RDKit::RWMol &mol, const Residue &residue, size_t ring_size) {
+  static std::vector<int> find_ring_in_residue(const RDKit::RWMol &mol, const Residue &residue, size_t ring_size) {
 
     if (ring_size < RingConfig::MIN_RING_SIZE || ring_size > RingConfig::MAX_RING_SIZE) return {};
-    if (residue.atoms.size() > RingConfig::MAX_ATOMS) return {};
+    if (residue.atoms.size() > RingConfig::MAX_ATOMS || residue.atoms.empty()) return {};
 
     // Build atom index mapping
     std::unordered_map<const RDKit::Atom *, AtomIndex> atom_indices;
@@ -130,40 +164,19 @@ public:
       atom_indices[atom] = index++;
     }
 
-    MolecularGraph graph(residue.atoms.size());
-    build_graph(mol, residue, atom_indices, graph);
+    MolecularGraph graph(mol);
+    graph.build(residue);
 
     auto ring_indices = RingTopology::find_ring(graph, residue.atoms.size(), ring_size);
-
-    if (!ring_indices) {
-      return {};
-    }
+    if (!ring_indices) return {};
 
     // map indices back to RDKit atoms
-    std::vector<const RDKit::Atom *> ring_atoms;
+    std::vector<int> ring_atoms;
     ring_atoms.reserve(ring_size);
     for (AtomIndex idx : *ring_indices) {
-      ring_atoms.push_back(residue.atoms[idx]);
+      ring_atoms.push_back(residue.atoms[idx]->getIdx());
     }
     return ring_atoms;
-  }
-
-private:
-  static void build_graph(
-      const RDKit::RWMol &mol, const Residue &residue,
-      const std::unordered_map<const RDKit::Atom *, AtomIndex> &atom_indices, MolecularGraph &graph) {
-
-    for (size_t i = 0; i < residue.atoms.size(); ++i) {
-      const auto &atom = residue.atoms[i];
-      for (auto bondIt = mol.getAtomBonds(atom); bondIt.first != bondIt.second; ++bondIt.first) {
-        const RDKit::Bond *bond = mol[*bondIt.first];
-        const RDKit::Atom *neighbor = bond->getOtherAtom(atom);
-        auto it = atom_indices.find(neighbor);
-        if (it != atom_indices.end()) {
-          graph.add_edge(i, it->second);
-        }
-      }
-    }
   }
 };
 

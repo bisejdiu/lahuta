@@ -1,7 +1,7 @@
 #ifndef LAHUTA_INTERACTIONS_HPP
 #define LAHUTA_INTERACTIONS_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 #include <optional>
 
 namespace lahuta {
@@ -17,12 +17,6 @@ public:
   void add_interaction(const Contact &interaction) { contacts.add(interaction); }
   Contacts release() { return std::move(contacts); }
 };
-
-inline double compute_dist_sq(const RDGeom::Point3D &p1, const RDGeom::Point3D &p2) {
-  double p1_c[3] = {p1.x, p1.y, p1.z};
-  double p2_c[3] = {p2.x, p2.y, p2.z};
-  return FastNS::dist_sq(p1_c, p2_c);
-}
 
 // TODO: 1. We need to provide support for controling contact options
 //       2. InteractionOptions is used by the contact functions making compilation slow

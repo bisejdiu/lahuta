@@ -59,11 +59,11 @@ private:
 class GroupTypeFactory {
 public:
   static GroupTypeStrategy create() {
-    GroupTypeStrategy composite;
-    composite.add_strategy<PositiveChargeGroup>();
-    composite.add_strategy<NegativeChargeGroup>();
-    composite.add_strategy<AromaticRingGroup>();
-    return composite;
+    GroupTypeStrategy gt;
+    gt.add_strategy<PositiveChargeGroup>();
+    gt.add_strategy<NegativeChargeGroup>();
+    gt.add_strategy<AromaticRingGroup>();
+    return gt;
   }
 };
 

@@ -11,8 +11,7 @@ Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
   const auto rings = luni.get_rings();
 
   double dist_max = 6.0;
-  EntityNeighborSearch ens(luni.get_conformer());
-  auto nbrs = ens.search(rings, dist_max);
+  auto nbrs = EntityNeighborSearch::search(rings, dist_max);
 
   for (const auto &[pair, dist] : nbrs) {
     auto [ring_index_a, ring_index_b] = pair;
@@ -22,12 +21,12 @@ Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
     // e.g. trp
     if (is_same_residue(luni.get_molecule(), *ring_a.atoms.front(), *ring_b.atoms.front())) continue;
 
-    auto dot_product = ring_a.norm.dotProduct(ring_b.norm);
+    auto dot_product = ring_a.normal.dotProduct(ring_b.normal);
     auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
     if (angle > M_PI / 2) angle = M_PI - angle; // obtuse -> acute
 
-    double offset_a = geometry::compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.norm);
-    double offset_b = geometry::compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.norm);
+    double offset_a = geometry::compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.normal);
+    double offset_b = geometry::compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.normal);
 
     if (std::min(offset_a, offset_b) <= opts.offset_max) {
       EntityID entity1 = make_entity_id(EntityType::Ring, ring_a.get_id());
