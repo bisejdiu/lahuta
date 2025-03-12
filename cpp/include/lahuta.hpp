@@ -28,8 +28,11 @@ public:
 
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt) {
     try {
+      auto tops_ = tops.value_or(TopologyBuildingOptions());
+      tops_.compute_bonds = !is_in_filtered_state;
+
       topology.emplace(mol);
-      topology->build(tops.value_or(TopologyBuildingOptions()));
+      topology->build(tops_);
     } catch (const std::runtime_error &e) {
       return false;
     }
@@ -68,8 +71,6 @@ public:
   const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
   const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
   const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
-
-  // FIX: move this to a separate class or namespace
 
   //! Returns the atoms of the molecule.
   const auto atoms() const { return mol->atoms(); }
@@ -124,10 +125,6 @@ public:
   // FIX: Move these to the topology class
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
 
-
-  // FIX: remove_adjascent_residueid_pairs should be part of NSResults filtering
-  NSResults remove_adjascent_residueid_pairs(NSResults &results, int res_diff);
-
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
 
@@ -157,31 +154,18 @@ private:
   }
 
 public:
-  std::string file_name_;
+  /// filter the molecule based on the atom indices
+  Luni filter(std::vector<int> &atom_indices) const;
 
-  // FIX: document these four
-  static std::vector<std::string> tokenize(const std::string &str);
-  static std::vector<std::string> tokenize_simple(const std::string &str);
-  std::vector<int> parse_and_filter(const std::string &selection) const;
-  bool parse_expression(const std::string &selection);
-
-  // FIX: document the difference
-  Luni filter() const;
-  Luni filter_luni(const std::vector<int> &atom_indices) const;
-
-  static std::vector<int> factorize(const std::vector<std::string> &labels);
-  static std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers);
-
-  static int count_unique(const std::vector<int> &vec);
-  static int count_unique(const std::vector<std::string> &vec);
-
-  // FIX: what do we do about the entities here?
+  /// EntityID -> AtomEntity/GroupEntity/RingEntity
   template <typename T> const T &get_entity(EntityID id) const;
-  const std::vector<EntityID> &get_atom_entities();
-  const std::vector<EntityID> &get_ring_entities();
-  const std::vector<EntityID> &get_group_entities();
 
-  // FIX: part of the topology class. Debatable if they should be here. Can simply be called via the topology attribute
+  /// AtomEntity/GroupEntity/RingEntity -> EntityID
+  const std::vector<EntityID> &get_or_create_atom_entities();
+  const std::vector<EntityID> &get_or_create_ring_entities();
+  const std::vector<EntityID> &get_or_create_group_entities();
+
+  // FIX: part of the topology class. Can simply be called via the topology attribute
   void assign_molstar_atom_types()  { 
     if (topology) { topology->assign_molstar_typing(); } 
     else { spdlog::error("Topology not built. Cannot assign Molstar atom types."); }
@@ -193,10 +177,14 @@ public:
   }
 
 private:
+  std::string file_name_;
+
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
-  std::vector<int> filtered_indices;
   std::unordered_map<lahuta::EntityType, std::vector<EntityID>> entities;
+
+  std::vector<int> filtered_indices;
+  bool is_in_filtered_state = false; // ambitious name, for know it's just a flag
 };
 
 } // namespace lahuta

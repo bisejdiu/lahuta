@@ -10,7 +10,7 @@
 
 #include "lahuta.hpp"
 #include "matcher.hpp"
-#include "nn.hpp"
+#include "neighbors.hpp"
 #include "seq.hpp"
 #include "spdlog/spdlog.h"
 #include "topology.hpp"

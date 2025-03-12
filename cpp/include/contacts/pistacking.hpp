@@ -1,7 +1,7 @@
 #ifndef LAHUTA_PISTACKING_HPP
 #define LAHUTA_PISTACKING_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 
 namespace lahuta {
 

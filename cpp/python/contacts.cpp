@@ -1,7 +1,7 @@
 #include "contacts.hpp"
 #include "contacts/interactions.hpp"
 #include "lahuta.hpp"
-#include "nn.hpp"
+#include "neighbors.hpp"
 
 using namespace lahuta;
 // clang-format off

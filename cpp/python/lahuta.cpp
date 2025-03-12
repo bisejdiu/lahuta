@@ -9,6 +9,7 @@
 #include <rdkit/GraphMol/RDKitBase.h>
 
 #include "at.hpp"
+#include "array.hpp"
 #include "common.hpp"
 #include "contacts.hpp"
 #include "lahuta.hpp"
@@ -264,15 +265,13 @@ void bind(py::module &_lahuta) {
           }
           auto ns = grid.self_search();
           if (res_dif > 0) {
-            ns = luni.remove_adjascent_residueid_pairs(ns, res_dif);
+            ns = ns_utils::remove_adjascent_residueid_pairs(luni, ns, res_dif);
           }
           return ns;
       })
-      .def("filter",           &Luni::filter)
-      .def("parse_expression", &Luni::parse_expression)
       .def("get_atom_types",   &Luni::get_atom_types)
       .def("get_rings",        &Luni::get_rings)
-      .def("filter_luni",      &Luni::filter_luni)
+      .def("filter_luni",      &Luni::filter)
       /*.def("match_smarts_string", &Luni::match_smarts_string)*/
 
       .def("get_positions", [](class Luni &luni, int id = -1)    {auto values = luni.get_conformer(id).getPositions(); return coordinates(values);})
@@ -289,16 +288,16 @@ void bind(py::module &_lahuta) {
       .def_property_readonly("chainlabels", [](class Luni &luni) {auto values = luni.chainlabels();    return string_array(values);})
 
       .def_property_readonly("n_atoms",     [](class Luni &luni) {return luni.n_atoms();})
-      .def_property_readonly("file_name",   [](class Luni &luni) {return luni.file_name_.c_str();})
+      .def_property_readonly("file_name",   [](class Luni &luni) {return luni.get_file_name();})
 
        .def("get_topology", [](class Luni &luni) -> const Topology& { return luni.get_topology(); }, py::return_value_policy::reference)
        /*.def("at", [](class Luni &luni) -> auto { auto &v = luni.get_topology(); return v.atom_types; })*/
       .def("get_atom", &Luni::get_atom, py::return_value_policy::reference)
 
-      .def("count_unique", py::overload_cast<const std::vector<int> &>        (&Luni::count_unique))
-      .def("count_unique", py::overload_cast<const std::vector<std::string> &>(&Luni::count_unique))
-      .def("find_elements", &Luni::find_elements)
-      .def("factorize",     &Luni::factorize)
+      .def("count_unique", py::overload_cast<const std::vector<int> &>        (&common::count_unique))
+      .def("count_unique", py::overload_cast<const std::vector<std::string> &>(&common::count_unique))
+      .def("find_elements", &common::find_elements)
+      .def("factorize",     &common::factorize)
 
       // FIX: these will be moved to the topology class
       .def("assign_molstar_atom_types",  &Luni::assign_molstar_atom_types)

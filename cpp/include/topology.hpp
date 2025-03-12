@@ -22,6 +22,7 @@ struct TopologyBuildingOptions {
   const bool identify_ring_atoms = true; // if we decide to also check for ring atoms using atom names:e.g. only for protein-only systems as an optimization technique
   ContactComputerType atom_typing_method = ContactComputerType::Molstar;
   double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
+  bool compute_bonds = true;
 };
 
 
@@ -44,6 +45,7 @@ public:
     }
 
     try {
+      if (tops.compute_bonds) {
       auto grid = FastNS(mol_->getConformer().getPositions());
       auto ok = grid.build(tops.cutoff);
       if (!ok) {
@@ -55,6 +57,7 @@ public:
       // that moves them perhaps too much down the stack, and makes control of the process
       // more difficult (e.g., if we need to use a memory pool or arena allocator)
       this->compute_bonds(*neighbors);
+      }
 
       // build residue information
       residues->build();

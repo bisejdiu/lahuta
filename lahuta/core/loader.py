@@ -30,12 +30,12 @@ class GemmiLoader:
     def to_ir(self) -> IR:
         # Convert GemmiLoader to IR
         return IR(
-            self.input.get_indices(),
-            self.input.get_atomic_numbers(),
-            self.input.get_names(),
-            self.input.get_resids(),
-            self.input.get_resnames(),
-            self.input.get_chainlabels(),
+            self.input.indices,
+            self.input.atom_nums,
+            self.input.names,
+            self.input.resids,
+            self.input.resnames,
+            self.input.chainlabels,
             self.input.positions,
         )
 

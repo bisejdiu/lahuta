@@ -9,12 +9,11 @@
 #include <rdkit/GraphMol/RDKitBase.h>
 
 #include "atom_types.hpp"
-#include "common.hpp"
+#include "array.hpp"
 #include "contacts.hpp"
 #include "contacts/search.hpp"
 #include "entities.hpp"
 #include "lahuta.hpp"
-#include "neighbors.hpp"
 
 #define BIND_SEARCH_ONE(T)     .def("search", py::overload_cast<const T &,              double>(&EntityNeighborSearch::template search<T>))
 #define BIND_SEARCH_TWO(T1, T2).def("search", py::overload_cast<const T1 &, const T2 &, double>(&EntityNeighborSearch::template search<T1, T2>))
@@ -113,7 +112,7 @@ void bind_entities(py::module &_lahuta) {
 
     .def_property_readonly("id",     &RingEntity::get_id)
     .def_property_readonly("center", [](RingEntity &re) {return point3d_to_pyarray(re.center);})
-    .def_property_readonly("normal", [](RingEntity &re) {return point3d_to_pyarray(re.norm);})
+    .def_property_readonly("normal", [](RingEntity &re) {return point3d_to_pyarray(re.normal);})
 
     /*.def_readwrite("type", &RingEntity::type)*/
     .def_readwrite("atoms", &RingEntity::atoms)
@@ -197,7 +196,7 @@ void bind_entities(py::module &_lahuta) {
     // FIX: Should RingEntityCollection implement `filter`? Could we filter: RingEntityCollection.filter(luni, AtomType.AROMATIC)
     .def_property_readonly("rings",   [](RingEntityCollection &rdc) { return rdc.get_data(); })
     .def_property_readonly("centers", [](RingEntityCollection &rec) { return extract_vectors(rec, [](const auto &e) -> const auto& { return e.center; });})
-    .def_property_readonly("normal",  [](RingEntityCollection &rec) { return extract_vectors(rec, [](const auto &e) -> const auto& { return e.norm; });});
+    .def_property_readonly("normal",  [](RingEntityCollection &rec) { return extract_vectors(rec, [](const auto &e) -> const auto& { return e.normal; });});
 
 
   GroupEntityCollection_

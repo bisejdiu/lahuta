@@ -1,64 +1,7 @@
 #include "lahuta.hpp"
-#include "definitions.hpp"
 #include "nsgrid.hpp"
-#include "parser.hpp"
-#include "visitor.hpp" // selection parser (bad file name)
 
 namespace lahuta {
-
-namespace {
-// Check if a substring at 'pos' matches an operator
-bool is_operator(const std::string &word, size_t pos, const std::string &op) {
-  return word.compare(pos, op.length(), op) == 0;
-}
-
-// Split a word into tokens (operators and identifiers)
-std::vector<std::string> split_word(const std::string &word) {
-  std::vector<std::string> tokens;
-  size_t pos = 0;
-
-  while (pos < word.length()) {
-    if (word.compare(pos, 3, "and") == 0) {
-      tokens.push_back("and");
-      pos += 3;
-    } else if (word.compare(pos, 2, "or") == 0) {
-      tokens.push_back("or");
-      pos += 2;
-    } else if (word.compare(pos, 3, "not") == 0) {
-      tokens.push_back("not");
-      pos += 3;
-    } else if (word.compare(pos, 5, "resid") == 0) {
-      tokens.push_back("resid");
-      pos += 5;
-    } else if (word.compare(pos, 7, "resname") == 0) {
-      tokens.push_back("resname");
-      pos += 7;
-    } else if (std::isalpha(word[pos])) {
-      // Extract letters
-      size_t start = pos;
-      while (pos < word.length() && std::isalpha(word[pos])) {
-        ++pos;
-      }
-      tokens.push_back(word.substr(start, pos - start));
-    } else if (std::isdigit(word[pos])) {
-      // Extract digits
-      size_t start = pos;
-      while (pos < word.length() && std::isdigit(word[pos])) {
-        ++pos;
-      }
-      tokens.push_back(word.substr(start, pos - start));
-    } else if (word[pos] == '-') {
-      tokens.push_back("-");
-      ++pos;
-    } else {
-      // Unknown character, unclear if we should skip or throw an error
-      ++pos;
-    }
-  }
-
-  return tokens;
-}
-} // namespace
 
 const std::vector<std::string> Luni::symbols() const {
   return atom_attrs<std::string>([](const RDKit::Atom *atom) { return atom->getSymbol(); });
@@ -146,236 +89,31 @@ auto Luni::match_smarts_string(std::string sm, std::string atype, bool log_value
 };
 
 
-// FIX: confirm this has not been broken (we do not automatically build the topology now)
-Luni Luni::filter_luni(const std::vector<int> &atom_indices) const {
+Luni Luni::filter(std::vector<int> &atom_indices) const {
 
   auto new_mol = filter_with_bonds(*mol, atom_indices);
   new_mol.updatePropertyCache(false);
 
-  return Luni(std::make_shared<RDKit::RWMol>(new_mol));
+  auto new_luni = Luni::create(std::make_shared<RDKit::RWMol>(new_mol));
+  new_luni.is_in_filtered_state = true;
+  return new_luni;
 }
 
-std::vector<std::string> Luni::tokenize_simple(const std::string &str) {
-  std::vector<std::string> tokens;
-  std::string token;
 
-  std::istringstream iss(str);
-  while (iss >> token) {
-    tokens.push_back(token);
-  }
-  return tokens;
-}
-
-std::vector<std::string> Luni::tokenize(const std::string &str) {
-  std::vector<std::string> tokens;
-  size_t i = 0;
-
-  while (i < str.length()) {
-    char c = str[i];
-
-    // Skip whitespace
-    if (std::isspace(c)) {
-      ++i;
-      continue;
-    }
-
-    // Parentheses
-    if (c == '(' || c == ')') {
-      tokens.push_back(std::string(1, c));
-      ++i;
-      continue;
-    }
-
-    // Dash or negative sign
-    if (c == '-') {
-      bool is_negative = false;
-      if (tokens.empty() || tokens.back() == "(" || tokens.back() == "and" || tokens.back() == "or"
-          || tokens.back() == "not" || tokens.back() == "resid" || tokens.back() == "resname") {
-        is_negative = true;
-      }
-
-      if (is_negative && i + 1 < str.length() && std::isdigit(str[i + 1])) {
-        // Negative number
-        size_t start = i;
-        ++i; // Move past '-'
-        while (i < str.length() && std::isdigit(str[i])) {
-          ++i;
-        }
-        tokens.push_back(str.substr(start, i - start));
-      } else {
-        // Dash operator
-        tokens.push_back("-");
-        ++i;
-      }
-      continue;
-    }
-
-    // Identifiers and operators
-    if (std::isalpha(c)) {
-      size_t start = i;
-      while (i < str.length() && (std::isalpha(str[i]) || std::isdigit(str[i]) || str[i] == '-')) {
-        ++i;
-      }
-      std::string word = str.substr(start, i - start);
-
-      // Split the word into tokens
-      std::vector<std::string> word_tokens = split_word(word);
-
-      // Append the tokens
-      tokens.insert(tokens.end(), word_tokens.begin(), word_tokens.end());
-      continue;
-    }
-
-    // Numbers
-    if (std::isdigit(c)) {
-      size_t start = i;
-      while (i < str.length() && std::isdigit(str[i])) {
-        ++i;
-      }
-      tokens.push_back(str.substr(start, i - start));
-      continue;
-    }
-
-    // Handle any other character sequences
-    size_t start = i;
-    while (i < str.length() && !std::isspace(str[i]) && str[i] != '(' && str[i] != ')' && str[i] != '-') {
-      ++i;
-    }
-    tokens.push_back(str.substr(start, i - start));
-  }
-
-  return tokens;
-}
-
-bool Luni::parse_expression(const std::string &selection) {
-  try {
-    std::vector<std::string> tokens = Luni::tokenize(selection);
-    lahuta::Parser parser(tokens);
-
-    // Parse the expression
-    lahuta::NodePtr root = parser.parse_expression();
-
-    lahuta::FilterVisitor visitor(*this);
-    root->accept(visitor);
-
-    filtered_indices = visitor.get_result();
-    return true;
-  } catch (const std::exception &e) {
-    // Handle parsing errors
-    filtered_indices.clear();
-    return false;
-  }
-}
-
-Luni Luni::filter() const {
-  if (filtered_indices.empty()) {
-    std::cerr << "Selection not parsed or empty" << std::endl;
-  }
-  return filter_luni(filtered_indices);
-}
-
-std::vector<int> Luni::parse_and_filter(const std::string &selection) const {
-  std::vector<std::string> tokens = Luni::tokenize(selection);
-  lahuta::Parser parser(tokens);
-
-  // Parse the expression
-  lahuta::NodePtr root = parser.parse_expression();
-
-  lahuta::FilterVisitor visitor(*this);
-  root->accept(visitor);
-
-  const std::vector<int> &filtered_indices = visitor.get_result();
-  return filtered_indices;
-}
-
-// FIX: include MD protein residue names when filtering
-NSResults Luni::remove_adjascent_residueid_pairs(NSResults &results, int res_diff) {
-  Pairs filtered;
-  Distances dists;
-  // FIX: use the new iterator interface NSResults supports
-  for (size_t i = 0; i < results.get_pairs().size(); ++i) {
-    auto *fatom = get_molecule().getAtomWithIdx(results.get_pairs()[i].first);
-    auto *satom = get_molecule().getAtomWithIdx(results.get_pairs()[i].second);
-
-    auto *finfo = static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
-    auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
-
-    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1) continue;
-
-    // FIX: not fast
-    /*auto is_either_nonprotein =*/
-    /*    (definitions::PolymerNames.find(finfo->getResidueName()) == definitions::PolymerNames.end())*/
-    /*    || (definitions::PolymerNames.find(sinfo->getResidueName()) == definitions::PolymerNames.end());*/
-    auto is_either_nonprotein = !definitions::is_polymer(finfo->getResidueName())
-                                || !definitions::is_polymer(sinfo->getResidueName());
-
-    auto f_resid = finfo->getResidueNumber();
-    auto s_resid = sinfo->getResidueNumber();
-
-    if (std::abs(f_resid - s_resid) > res_diff || is_either_nonprotein) {
-      filtered.push_back(results.get_pairs()[i]);
-      dists.push_back(results.get_distances()[i]);
-    }
-  }
-  return NSResults(filtered, dists);
-}
-
-std::vector<int> Luni::factorize(const std::vector<std::string> &labels) {
-  std::vector<int> ids(labels.size());
-
-  // Hash map from labels to ids
-  std::unordered_map<std::string_view, int> label_to_id;
-  label_to_id.reserve(labels.size());
-
-  int current_id = 0;
-  for (size_t i = 0; i < labels.size(); ++i) {
-    std::string_view label = labels[i];
-    auto it = label_to_id.find(label);
-    if (it == label_to_id.end()) {
-      label_to_id[label] = current_id;
-      ids[i] = current_id;
-      ++current_id;
-    } else {
-      ids[i] = it->second;
-    }
-  }
-
-  return ids;
-}
-
-int Luni::count_unique(const std::vector<int> &vec) {
-  std::unordered_set<int> unique_elements(vec.begin(), vec.end());
-  return unique_elements.size();
-}
-
-int Luni::count_unique(const std::vector<std::string> &vec) {
-  std::unordered_set<std::string_view> unique_elements;
-  unique_elements.reserve(vec.size());
-
-  for (const auto &str : vec) {
-    unique_elements.insert(std::string_view(str));
-  }
-
-  return unique_elements.size();
-}
-
-std::vector<std::string> Luni::find_elements(const std::vector<int> &atomic_numbers) {
-  const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
-  std::vector<std::string> elements;
-  elements.reserve(atomic_numbers.size());
-
-  for (int atomic_number : atomic_numbers) {
-    elements.push_back(tbl->getElementSymbol(atomic_number));
-  }
-
-  return elements;
-}
-
-// FIX: not a good idea to define the template here
+//
+// The way Entities are generated, outside of atom entities, we don't have a guarantee that the index matches the entity id.
+// If we decide to use these implementations, we need to use `get_*_entities` methods to first populate the entities.
+// Only then can we use the `get_entity` method.  - Besian, March, 2025
+//
 template <> const RDKit::Atom &Luni::get_entity<RDKit::Atom>(EntityID id) const {
   auto index = get_entity_index(id);
   auto r = mol->getAtomWithIdx(index);
   return *r;
+}
+
+template <> const AtomEntity &Luni::get_entity<AtomEntity>(EntityID id) const {
+  auto index = get_entity_index(id);
+  return get_atom_types().get_data()[index];
 }
 
 template <> const RingEntity &Luni::get_entity<RingEntity>(EntityID id) const {
@@ -385,15 +123,15 @@ template <> const RingEntity &Luni::get_entity<RingEntity>(EntityID id) const {
 
 template <> const GroupEntity &Luni::get_entity<GroupEntity>(EntityID id) const {
   auto index = get_entity_index(id);
-  /*std::cout << "Getting feature with index: " << index << std::endl;*/
   // FIX: check if the index is valid
   return get_features()[index];
 }
 
-const std::vector<EntityID> &Luni::get_atom_entities() {
+const std::vector<EntityID> &Luni::get_or_create_atom_entities() {
   if (entities.find(EntityType::Atom) == entities.end()) {
     std::vector<EntityID> atom_entities;
     auto mol = get_molecule();
+
     atom_entities.reserve(mol.getNumAtoms());
     for (const auto &atom : mol.atoms()) {
       atom_entities.push_back(make_entity_id(EntityType::Atom, atom->getIdx()));
@@ -404,10 +142,12 @@ const std::vector<EntityID> &Luni::get_atom_entities() {
   return entities[EntityType::Atom];
 }
 
-const std::vector<EntityID> &Luni::get_ring_entities() {
+const std::vector<EntityID> &Luni::get_or_create_ring_entities() {
   if (entities.find(EntityType::Ring) == entities.end()) {
+
     std::vector<EntityID> ring_entities;
-    auto rings = get_rings().get_data();
+    std::vector<RingEntity> rings = get_rings().get_data();
+
     ring_entities.reserve(rings.size());
     for (std::size_t i = 0; i < rings.size(); ++i) {
       ring_entities.push_back(make_entity_id(EntityType::Ring, i));
@@ -418,9 +158,7 @@ const std::vector<EntityID> &Luni::get_ring_entities() {
   return entities[EntityType::Ring];
 }
 
-// TODO: Feature keeps an `id` field.
-// Because of that, it may not be necessary to keep a separate `entities` map.
-const std::vector<EntityID> &Luni::get_group_entities() {
+const std::vector<EntityID> &Luni::get_or_create_group_entities() {
   if (entities.find(EntityType::Group) == entities.end()) {
     std::vector<EntityID> group_entities;
     auto groups = get_features();

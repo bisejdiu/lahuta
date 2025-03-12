@@ -63,7 +63,7 @@ double RingEntityCollection::compute_angle(const RingEntity &rd, const std::vect
   auto vector_point_to_plane = point - rd.center;
   vector_point_to_plane.normalize();
 
-  double cos_theta = vector_point_to_plane.dotProduct(rd.norm);
+  double cos_theta = vector_point_to_plane.dotProduct(rd.normal);
   cos_theta = std::max(-1.0, std::min(1.0, cos_theta));
 
   double theta_radians = std::acos(cos_theta); // in radians

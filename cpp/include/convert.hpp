@@ -44,8 +44,7 @@ std::shared_ptr<RDKit::RWMol> create_RDKit(const gemmi::Structure &st);
 
 RDKit::RWMol filter_atoms(RDKit::RWMol &mol, std::vector<int> &indices);
 RDKit::RWMol filter_with_conf(RDKit::RWMol &mol, std::vector<int> &indices);
-RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol,
-                               const std::vector<int> &indices);
+RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol, std::vector<int> &indices);
 
 } // namespace lahuta
 //

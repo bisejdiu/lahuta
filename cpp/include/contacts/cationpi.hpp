@@ -1,7 +1,7 @@
 #ifndef LAHUTA_CATIONPI_HPP
 #define LAHUTA_CATIONPI_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 
 namespace lahuta {
 

@@ -9,14 +9,16 @@ namespace lahuta {
 RingEntityCollection Topology::populate_ring_entities() {
     RingEntityCollection rings;
     size_t id = 0;
-    for (const auto &ring : mol_->getRingInfo()->atomRings()) { // NOTE: at this point, we've already added the rings to the molecule
+    for (const std::vector<int> &ring : mol_->getRingInfo()->atomRings()) { // NOTE: at this point, we've already added the rings to the molecule
       rings.add_data(*mol_, ring, id++);
     }
     return rings;
   }
 
 void Topology::compute_bonds(const NSResults &neighbors) {
+  std::cout << "Computing bonds" << std::endl;
   BondAssignmentResult result = assign_bonds(*mol_, neighbors);
+  std::cout << "Bonds assigned" << std::endl;
 
   // FIX: How do we handle connection records? If we define and use topology option, then
   // we can make this user configurable

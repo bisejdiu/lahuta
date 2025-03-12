@@ -10,7 +10,7 @@
 
 #include "atom_types.hpp"
 #include "definitions.hpp"
-#include "nn.hpp"
+#include "neighbors.hpp"
 #include "utils.hpp"
 #include "valence_model.hpp"
 #include <GraphMol/Atom.h>

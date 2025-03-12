@@ -60,7 +60,7 @@ map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector
 }
 
 
-void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, const std::vector<int> &indices) {
+void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, std::vector<int> &indices) {
 
   auto new_mol = filter_with_bonds(mol, indices);
   auto aromatic_rings = get_molops_aromatic_rings(new_mol);

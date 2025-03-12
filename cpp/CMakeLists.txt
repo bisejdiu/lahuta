@@ -81,7 +81,7 @@ add_dependencies(foldseek gemmi_cpp)
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
-            src/contacts/geometry.cpp src/nn.cpp src/contacts/charges.cpp src/topology.cpp
+            src/contacts/geometry.cpp src/contacts/charges.cpp src/topology.cpp
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
@@ -188,7 +188,7 @@ if (USE_PYTHON)
   find_package(pybind11 2.6 CONFIG REQUIRED)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/common.cpp python/contacts.cpp python/lahuta.cpp)
+  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/contacts.cpp python/lahuta.cpp)
 
   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
     target_sources(lahuta_py PRIVATE 

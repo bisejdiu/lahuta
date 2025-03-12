@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "lahuta.hpp"
-#include "visitor.hpp"
+#include "selections/visitor.hpp"
 
 namespace lahuta {
 

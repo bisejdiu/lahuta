@@ -2,6 +2,7 @@
 #define LAHUTA_COMMON_HPP
 
 #include "GraphMol/MonomerInfo.h"
+#include "GraphMol/PeriodicTable.h"
 #include "GraphMol/RWMol.h"
 #include "spdlog/spdlog.h"
 namespace lahuta {
@@ -15,7 +16,7 @@ struct AtomInfo {
       : atom(atom), info(info), is_hydrogen(is_hydrogen) {}
 
   AtomInfo(const RDKit::RWMol &mol, int idx)
-      : atom(const_cast<RDKit::Atom*>(mol.getAtomWithIdx(idx))),
+      : atom(const_cast<RDKit::Atom *>(mol.getAtomWithIdx(idx))),
         info(static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo())),
         is_hydrogen(atom->getAtomicNum() == 1) {}
 };
@@ -48,6 +49,57 @@ inline bool has_any_aromatic_atom(const RDKit::RWMol &mol, const RDKit::INT_VECT
   return std::any_of(ring.begin(), ring.end(), [&mol](int idx) {
     return mol.getAtomWithIdx(idx)->getIsAromatic();
   });
+}
+
+inline std::vector<int> factorize(const std::vector<std::string> &labels) {
+  std::vector<int> ids(labels.size());
+
+  // hash map from labels to ids
+  std::unordered_map<std::string_view, int> label_to_id;
+  label_to_id.reserve(labels.size());
+
+  int current_id = 0;
+  for (size_t i = 0; i < labels.size(); ++i) {
+    std::string_view label = labels[i];
+    auto it = label_to_id.find(label);
+    if (it == label_to_id.end()) {
+      label_to_id[label] = current_id;
+      ids[i] = current_id;
+      ++current_id;
+    } else {
+      ids[i] = it->second;
+    }
+  }
+
+  return ids;
+}
+
+inline int count_unique(const std::vector<int> &vec) {
+  std::unordered_set<int> unique_elements(vec.begin(), vec.end());
+  return unique_elements.size();
+}
+
+inline int count_unique(const std::vector<std::string> &vec) {
+  std::unordered_set<std::string_view> unique_elements;
+  unique_elements.reserve(vec.size());
+
+  for (const auto &str : vec) {
+    unique_elements.insert(std::string_view(str));
+  }
+
+  return unique_elements.size();
+}
+
+inline std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers) {
+  const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
+  std::vector<std::string> elements;
+  elements.reserve(atomic_numbers.size());
+
+  for (int atomic_number : atomic_numbers) {
+    elements.push_back(tbl->getElementSymbol(atomic_number));
+  }
+
+  return elements;
 }
 
 inline void log_atom_info(const RDKit::Atom *atom) {

@@ -1,7 +1,7 @@
 #ifndef LAHUTA_INTERACTIONS_HPP
 #define LAHUTA_INTERACTIONS_HPP
 
-#include "nn.hpp"
+#include "neighbors.hpp"
 #include <optional>
 
 namespace lahuta {

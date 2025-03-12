@@ -153,6 +153,14 @@ private:
   double cutoff = 0.0;
 };
 
+class Luni;
+namespace ns_utils {
+
+NSResults remove_adjascent_residueid_pairs(const Luni &luni, NSResults &results, int res_diff);
+
+} // namespace ns_utils
+
+
 } // namespace lahuta
 
 #endif // LAHUTA_NSGRID_HPP

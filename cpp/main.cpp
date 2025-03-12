@@ -1,6 +1,7 @@
 #include "contacts/interactions.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
+#include "selections/tokenizer.hpp"
 
 using namespace lahuta;
 
@@ -21,6 +22,13 @@ int main(int argc, char const *argv[]) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
     return 1;
   }
+
+  std::cout << "ENTITIES: " << file_name << std::endl;
+  for (const long long &v  : luni.get_or_create_ring_entities()) {
+    std::cout << v << " ";
+  }
+  std::cout << "DONE with entities." << std::endl;
+
   auto mol = &luni.get_molecule();
   std::cout << "Molecule: " << mol->getNumAtoms() << std::endl;
 

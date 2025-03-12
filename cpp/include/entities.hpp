@@ -78,13 +78,12 @@ private:
 struct RingEntity {
   std::vector<const RDKit::Atom *> atoms;
   RDGeom::Point3D center;
-  RDGeom::Point3D norm; // FIX: should be renamed to normal rather than norm
+  RDGeom::Point3D normal;
 
   size_t get_id() const { return id; }
   const RDGeom::Point3D& get_center() const { return center; }
   std::vector<const RDKit::Atom *> get_data() const { return atoms; }
   bool has_atom(const RDKit::Atom *atom) const { return std::find(atoms.begin(), atoms.end(), atom) != atoms.end(); }
-  // FIX: add has_atom overload that accepts atom index
 
 public:
   explicit RingEntity(
@@ -93,7 +92,7 @@ public:
     std::vector<const RDKit::Atom *> atoms_,
     size_t id_
   )
-    : center(center_), norm(norm_), atoms(atoms_), id(id_) {}
+    : center(center_), normal(norm_), atoms(atoms_), id(id_) {}
 
 private:
   size_t id;
@@ -101,7 +100,7 @@ private:
 
 // FIX: GroupEntity does not handle the `id` field the same as AtomEntity and RingEntity
 struct GroupEntity {
-  AtomType type;
+  AtomType type; // FIX: How does it make sense for GroupENtity to hold a type?
   FeatureGroup group; // FIX: I think we should store the group (or post-compute it)
   std::vector<const RDKit::Atom *> atoms;
   RDGeom::Point3D center;
@@ -115,7 +114,7 @@ struct GroupEntity {
 
   GroupEntity(
     AtomType type_,
-    FeatureGroup group_, 
+    FeatureGroup group_,
     std::vector<const RDKit::Atom *> members_, 
     RDGeom::Point3D center_
   )

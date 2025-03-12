@@ -4,6 +4,7 @@
 #include <rdkit/Geometry/point.h>
 
 #include "nsgrid.hpp"
+#include "lahuta.hpp"
 #include "spdlog/spdlog.h"
 
 namespace lahuta {
@@ -378,6 +379,36 @@ NSResults NSResults::filter(const std::vector<int> &atom_indices, int col) const
 
   return filtered;
 }
+
+namespace ns_utils {
+
+NSResults remove_adjascent_residueid_pairs(const Luni &luni, NSResults &results, int res_diff) {
+  Pairs     f_pairs;
+  Distances distances;
+
+  for (const auto &[pair, dist] : results) {
+    auto *fatom = luni.get_molecule().getAtomWithIdx(pair.first);
+    auto *satom = luni.get_molecule().getAtomWithIdx(pair.second);
+
+    auto *finfo = static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
+    auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
+
+    // FIX: this is another filter (filtering out H-H pairs)
+    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1) continue;
+
+    auto f_resid = finfo->getResidueNumber();
+    auto s_resid = sinfo->getResidueNumber();
+
+    auto is_either_nonprotein = !definitions::is_polymer(finfo->getResidueName()) || !definitions::is_polymer(sinfo->getResidueName());
+    if (std::abs(f_resid - s_resid) > res_diff || is_either_nonprotein) {
+      f_pairs.push_back(pair);
+      distances.push_back(dist);
+    }
+  }
+  return NSResults(f_pairs, distances);
+}
+
+} // namespace ns_utils
 
 
 } // namespace lahuta
