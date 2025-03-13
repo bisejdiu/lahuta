@@ -16,9 +16,7 @@ RingEntityCollection Topology::populate_ring_entities() {
   }
 
 void Topology::compute_bonds(const NSResults &neighbors) {
-  std::cout << "Computing bonds" << std::endl;
   BondAssignmentResult result = assign_bonds(*mol_, neighbors);
-  std::cout << "Bonds assigned" << std::endl;
 
   // FIX: How do we handle connection records? If we define and use topology option, then
   // we can make this user configurable

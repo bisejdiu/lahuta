@@ -398,3 +398,25 @@ class Entity(Generic[_EI]):
     def __init__(self, t: _EI) -> None: ...
     def get_center(self) -> Point3D: ...
     def get_id(self) -> int: ...
+
+class Logger_:
+    class LogLevel(Enum):
+        Trace    = 0
+        Debug    = 1
+        Info     = 2
+        Warn     = 3
+        Error    = 4
+        Critical = 5
+        Off      = 6
+
+    class FormatStyle(Enum):
+        Simple   = 0
+        Detailed = 1
+
+    @staticmethod
+    def get_instance() -> Logger_: ...
+
+    def set_format(self,    style: FormatStyle) -> None: ...
+    def set_log_level(self, level: LogLevel)    -> None: ...
+
+    def log(self, level: LogLevel, message: str) -> None: ...

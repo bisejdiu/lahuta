@@ -1,6 +1,7 @@
 #include "contacts/interactions.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
+#include "logging.hpp"
 #include "selections/tokenizer.hpp"
 
 using namespace lahuta;
@@ -10,6 +11,8 @@ int main(int argc, char const *argv[]) {
   /*  std::cerr << "Usage: " << argv[0] << " <cif file>" << std::endl;*/
   /*  return 1;*/
   /*}*/
+
+  Logger::get_instance().set_log_level(Logger::LogLevel::Trace);
 
   auto start = std::chrono::high_resolution_clock::now();
   std::string file_name = argv[1];

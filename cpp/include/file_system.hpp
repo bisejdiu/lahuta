@@ -1,3 +1,6 @@
+#ifndef LAHUTA_FILE_SYSTEM_HPP
+#define LAHUTA_FILE_SYSTEM_HPP
+
 #include <filesystem>
 #include <iostream>
 #include <string>
@@ -196,3 +199,5 @@ inline std::size_t count_files(const DirectoryHandler &dir_handler) {
   }
   return count;
 }
+
+#endif // LAHUTA_FILE_SYSTEM_HPP

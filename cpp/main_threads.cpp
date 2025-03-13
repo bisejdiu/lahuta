@@ -1,36 +1,21 @@
+#include <optional>
+#include <string>
+#include <vector>
+
 #include "contacts/interactions.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
 
 #include "ctpl/ctpl.h"
-#include "spdlog/common.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
-#include "spdlog/spdlog.h"
+#include "logging.hpp"
+#include "parallel.hpp"
 
 using namespace lahuta;
-
-void set_logger_pattern(spdlog::level::level_enum level) {
-  if (level == spdlog::level::debug) {
-    spdlog::set_pattern("[%T] [%^%l%$] [thread %t] %v");
-  } else {
-    spdlog::set_pattern("[%^%l%$] %v");
-  }
-}
-
-int process_file(const std::string &file_path) {
-  try {
-    Luni luni(file_path);
-  } catch (const std::exception &e) {
-    std::cerr << "Error processing file " << file_path << ": " << e.what() << std::endl;
-    return 1;
-  }
-  return 0;
-}
 
 std::vector<std::string> get_file_paths(const std::string &file_name) {
   std::ifstream file_list(file_name);
   if (!file_list.is_open()) {
-    throw std::runtime_error("Failed to open FILES.txt");
+    throw std::runtime_error("Failed to open file: " + file_name);
   }
 
   std::vector<std::string> file_paths;
@@ -46,66 +31,40 @@ std::vector<std::string> get_file_paths(const std::string &file_name) {
 
 int main(int argc, char const *argv[]) {
 
-  auto logger = spdlog::stdout_color_mt("console");
-  spdlog::level::level_enum log_level = spdlog::level::info;
-  spdlog::set_level(log_level);
-  set_logger_pattern(log_level);
+  Logger::get_instance().set_log_level(Logger::LogLevel::Info);
+  Logger::get_instance().set_format(Logger::FormatStyle::Detailed);
 
-  try {
+  auto analyzer = [](const Luni &luni) -> LuniResult {
+    LuniResult r;
+    r.values = luni.indices();
+    r.labels = luni.names();
+    return r;
+  };
 
-    std::string file_name = argv[1];
-    /*std::string file_name = "F1000.txt";*/
-    /*std::string file_name = "/Users/bsejdiu/projects/lahuta/cpp/build/F1000.txt";*/
-    std::vector<std::string> file_paths = get_file_paths(file_name);
-    spdlog::info("Number of files: {}", file_paths.size());
+  LuniFileProcessor<decltype(analyzer), LuniResult> processor(
+      /* concurrency */ 4,
+      analyzer);
 
-    int num_threads = std::thread::hardware_concurrency();
-    if (num_threads == 0) num_threads = 1;
-    ctpl::thread_pool pool(num_threads);
+  std::string file_name = argv[1];
+  std::vector<std::string> file_paths = get_file_paths(file_name);
+  spdlog::info("Number of files: {}", file_paths.size());
 
-    InteractionOptions opts{5.0};
+  processor.process_files(file_paths);
+  processor.wait_for_completion();
 
-    std::vector<std::future<int>> futures;
-    for (const auto &file_name : file_paths) {
-      futures.emplace_back(pool.push([file_name, opts](int id) -> int {
-        try {
-          Luni luni(file_name);
-          /*Interactions interactions(luni, opts);*/
-          /**/
-          /*Contacts _1 = interactions.hbond();*/
-          /*_1.sort_interactions();*/
-
-          return 1;
-        } catch (const std::exception &e) {
-          spdlog::error("Error processing file {}: {}", file_name, e.what());
-        }
-
-        return 0;
-      }));
+  for (const auto &file : file_paths) {
+    auto res_opt = processor.get_result(file);
+    if (res_opt) {
+      spdlog::info("Test:: File {} => #labels={}, #values={}", file, res_opt->labels.size(), res_opt->values.size());
+    } else {
+      spdlog::warn("No result found for file {}", file);
     }
-
-    for (auto &fut : futures) {
-      auto r = fut.get();
-      /*auto l = r.get_luni();*/
-      /*if (l == nullptr) {*/
-      /*  spdlog::error("Luni is nullptr");*/
-      /*  continue;*/
-      /*}*/
-      /*spdlog::info("Luni: {}", l->get_molecule().getNumAtoms());*/
-      /*spdlog::info("size: {}", r.size());*/
-    }
-
-  } catch (const std::exception &e) {
-    spdlog::critical("Error: {}", e.what());
   }
+
   return 0;
 }
 
 int dir_based_main() {
-  auto logger = spdlog::stdout_color_mt("console");
-  spdlog::level::level_enum log_level = spdlog::level::info;
-  spdlog::set_level(log_level);
-  set_logger_pattern(log_level);
   try {
     DirectoryHandler dir_handler("/Users/bsejdiu/data/mini_pdb", ".cif.gz", true);
 

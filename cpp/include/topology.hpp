@@ -83,7 +83,6 @@ public:
   }
 
   void assign_molstar_typing() {
-    std::cout << "Assigning MolStar atom types" << std::endl;
 
     // FIX: to be replaced by the entitytype manager
     atom_types = AtomTypeAnalysis ::analyze(*mol_);
@@ -98,8 +97,6 @@ public:
   }
 
   void assign_arpeggio_atom_types() {
-
-    std::cout << "Assigning Arpeggio atom types" << std::endl;
 
     atom_types.reserve(mol_->getNumAtoms());
     for (auto atom : mol_->atoms()) {

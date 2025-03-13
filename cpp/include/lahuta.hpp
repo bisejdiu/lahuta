@@ -15,7 +15,7 @@
 #include "topology.hpp"
 #include "spdlog/spdlog.h"
 
-#define LAHUTA_VERSION "0.15.0"
+#define LAHUTA_VERSION "0.23.0"
 
 namespace lahuta {
 
@@ -72,6 +72,28 @@ public:
   const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
   const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
 
+  /// filter the molecule based on the atom indices
+  Luni filter(std::vector<int> &atom_indices) const;
+
+  /// EntityID -> AtomEntity/GroupEntity/RingEntity
+  template <typename T> const T &get_entity(EntityID id) const;
+
+  /// AtomEntity/GroupEntity/RingEntity -> EntityID
+  const std::vector<EntityID> &get_or_create_atom_entities();
+  const std::vector<EntityID> &get_or_create_ring_entities();
+  const std::vector<EntityID> &get_or_create_group_entities();
+
+  /// Can be called using the topology
+  void assign_molstar_atom_types()  { 
+    if (topology) { topology->assign_molstar_typing(); } 
+    else { spdlog::error("Topology not built. Cannot assign Molstar atom types."); }
+  }
+
+  void assign_arpeggio_atom_types() {
+    if (topology) { topology->assign_arpeggio_atom_types(); } 
+    else { spdlog::error("Topology not built. Cannot assign Arpeggio atom types."); }
+  }
+
   //! Returns the atoms of the molecule.
   const auto atoms() const { return mol->atoms(); }
 
@@ -109,20 +131,9 @@ public:
     return get_conformer(confId).getPositions();
   }
 
-  //! get the total number of bonded h atoms (explicit + implicit) for all atoms in the system
-  std::vector<int> total_hydrogen_count() const {
-    std::vector<int> hydrogen_counts;
-    for (const auto &atom : mol->atoms()) {
-      hydrogen_counts.push_back(atom->getTotalNumHs());
-    }
-    return hydrogen_counts;
-  }
-
-  template <typename T> friend class Neighbors;
   friend class Contacts;
 
   // FIX: add helper functions to get topology information
-  // FIX: Move these to the topology class
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
 
 private:
@@ -153,36 +164,12 @@ private:
     mol->addConformer(conformer, true);
   }
 
-public:
-  /// filter the molecule based on the atom indices
-  Luni filter(std::vector<int> &atom_indices) const;
-
-  /// EntityID -> AtomEntity/GroupEntity/RingEntity
-  template <typename T> const T &get_entity(EntityID id) const;
-
-  /// AtomEntity/GroupEntity/RingEntity -> EntityID
-  const std::vector<EntityID> &get_or_create_atom_entities();
-  const std::vector<EntityID> &get_or_create_ring_entities();
-  const std::vector<EntityID> &get_or_create_group_entities();
-
-  // FIX: part of the topology class. Can simply be called via the topology attribute
-  void assign_molstar_atom_types()  { 
-    if (topology) { topology->assign_molstar_typing(); } 
-    else { spdlog::error("Topology not built. Cannot assign Molstar atom types."); }
-  }
-
-  void assign_arpeggio_atom_types() {
-    if (topology) { topology->assign_arpeggio_atom_types(); } 
-    else { spdlog::error("Topology not built. Cannot assign Arpeggio atom types."); }
-  }
-
 private:
-  std::string file_name_;
-
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
-  std::unordered_map<lahuta::EntityType, std::vector<EntityID>> entities;
+  std::unordered_map<EntityType, std::vector<EntityID>> entities;
 
+  std::string file_name_;
   std::vector<int> filtered_indices;
   bool is_in_filtered_state = false; // ambitious name, for know it's just a flag
 };

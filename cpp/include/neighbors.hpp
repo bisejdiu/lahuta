@@ -183,6 +183,8 @@ public:
   // Make all interactions generic (i.e. remove type information)
   void make_generic();
 
+  // FIX: Do we need the following operator overloads to be templated?
+
   /// union of two Contacts
   template <typename T> Contacts &set_union(T &&other);
 
@@ -246,7 +248,7 @@ private:
 
 private:
   const Luni *luni;
-  const EntityVisitor visitor;
+  EntityVisitor visitor;
 };
 
 // clang-format off

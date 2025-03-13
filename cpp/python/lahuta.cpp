@@ -20,11 +20,45 @@
 #include "distances.hpp"
 #include "distopia.h"
 #include "ent.hpp"
+#include "logger_py.hpp"
+
+#include "parallel.hpp"
 
 namespace py = pybind11;
 using namespace lahuta;
 
 // clang-format off
+
+LuniResult simple_test_analyzer(const Luni &luni) {
+    LuniResult r;
+    r.values = luni.indices();
+    r.labels = luni.names();
+    return r;
+}
+
+class LuniProcessorWrapper {
+public:
+    explicit LuniProcessorWrapper(int concurrency) : processor(concurrency, &simple_test_analyzer) {}
+
+    void process_files(const std::vector<std::string>& file_paths) {
+        processor.process_files(file_paths);
+        processor.wait_for_completion();
+    }
+
+    LuniResult get_result(const std::string& file_name) {
+        auto res_opt = processor.get_result(file_name);
+        if (res_opt) {
+            return res_opt.value();
+        } else {
+            throw std::runtime_error("No result found for file: " + file_name);
+        }
+    }
+
+private:
+    // instantiate LuniFileProcessor with a function pointer type.
+    LuniFileProcessor<decltype(&simple_test_analyzer), LuniResult> processor;
+};
+
 
 template <typename T>
 static py::array_t<T> distance(const std::vector<std::vector<T>> &points1, const std::vector<std::vector<T>> &points2) {
@@ -75,6 +109,7 @@ void bind(py::module &_lahuta) {
 
   py::class_<TopologyBuildingOptions> Tops_   (_lahuta, "TopologyBuildingOptions");
   py::enum_<ContactComputerType>      CcompT_ (_lahuta, "ContactComputerType");
+
 
   DistComp_
     .def_static("distance", py::overload_cast<const Vector<float>&,  const Vector<float>&> (&DistanceComputation::distance<float>))
@@ -336,6 +371,17 @@ void bind(py::module &_lahuta) {
     .def_property_readonly("explicit_valence", &RDKit::Atom::getExplicitValence)
     .def_property_readonly("implicit_valence", &RDKit::Atom::getImplicitValence);
 
+
+    py::class_<LuniResult>(_lahuta, "LuniResult")
+        .def_readonly("values", &LuniResult::values)
+        .def_readonly("labels", &LuniResult::labels);
+
+
+    py::class_<LuniProcessorWrapper>(_lahuta, "LuniProcessor")
+        .def(py::init<int>(), py::arg("concurrency"))
+        .def("process_files", &LuniProcessorWrapper::process_files, py::call_guard<py::gil_scoped_release>())
+        .def("get_result",    &LuniProcessorWrapper::get_result);
+
 }
 
 PYBIND11_MODULE(_lahuta, m) {
@@ -349,4 +395,5 @@ PYBIND11_MODULE(_lahuta, m) {
   bind(m);
   bind_common(m);
   bind_entities(m);
+  bind_logger(m);
 }
