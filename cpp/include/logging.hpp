@@ -1,6 +1,7 @@
 #ifndef LAHUTA_LOGGING_HPP
 #define LAHUTA_LOGGING_HPP
 
+#include "spinner.hpp"
 #include <spdlog/common.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -33,6 +34,16 @@ public:
 
   void set_log_level(LogLevel level) { spdlog::set_level(convert_log_level(level)); }
   void log(LogLevel level, const std::string &message) { logger->log(convert_log_level(level), message); }
+  LogLevel get_log_level() { return static_cast<LogLevel>(logger->level()); }
+
+    void configure_for_spinner(indicators::MinimalProgressSpinner* spinner, std::mutex &spinner_mutex) {
+        auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        // wrap the console sink with the spinner-aware sink.
+        auto spinner_sink = std::make_shared<indicators::SpinnerAwareSink>(console_sink, spinner, spinner_mutex);
+        // create a logger with the spinner-aware sink.
+        logger = std::make_shared<spdlog::logger>("console", spinner_sink);
+        spdlog::set_default_logger(logger);
+    }
 
 private:
   std::shared_ptr<spdlog::logger> logger;

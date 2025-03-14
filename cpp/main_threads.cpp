@@ -1,4 +1,5 @@
 #include <optional>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,7 @@
 #include "ctpl/ctpl.h"
 #include "logging.hpp"
 #include "parallel.hpp"
+
 
 using namespace lahuta;
 
@@ -29,9 +31,17 @@ std::vector<std::string> get_file_paths(const std::string &file_name) {
   return file_paths;
 }
 
+std::vector<std::string> random_shuffle(const std::vector<std::string> &file_paths) {
+  std::vector<std::string> shuffled_paths = file_paths;
+  std::random_device rd;
+  std::mt19937 g(rd());
+  std::shuffle(shuffled_paths.begin(), shuffled_paths.end(), g);
+  return shuffled_paths;
+}
+
 int main(int argc, char const *argv[]) {
 
-  Logger::get_instance().set_log_level(Logger::LogLevel::Info);
+  Logger::get_instance().set_log_level(Logger::LogLevel::Warn);
   Logger::get_instance().set_format(Logger::FormatStyle::Detailed);
 
   auto analyzer = [](const Luni &luni) -> LuniResult {
@@ -41,21 +51,21 @@ int main(int argc, char const *argv[]) {
     return r;
   };
 
-  LuniFileProcessor<decltype(analyzer), LuniResult> processor(
-      /* concurrency */ 4,
-      analyzer);
+  std::string file_name2 = argv[1];
+  std::vector<std::string> file_paths2 = get_file_paths(file_name2);
+  spdlog::info("Number of files: {}", file_paths2.size());
 
-  std::string file_name = argv[1];
-  std::vector<std::string> file_paths = get_file_paths(file_name);
-  spdlog::info("Number of files: {}", file_paths.size());
+  LuniFileProcessorMinimal<decltype(analyzer), LuniResult> processor(/* concurrency */-1, analyzer);
 
-  processor.process_files(file_paths);
+  processor.process_files(file_paths2);
   processor.wait_for_completion();
 
-  for (const auto &file : file_paths) {
+  // Print final stats
+  for (const auto &file : file_paths2) {
     auto res_opt = processor.get_result(file);
     if (res_opt) {
-      spdlog::info("Test:: File {} => #labels={}, #values={}", file, res_opt->labels.size(), res_opt->values.size());
+      spdlog::info("Test:: File {} => #labels={}, #values={}",
+        file, res_opt->labels.size(), res_opt->values.size());
     } else {
       spdlog::warn("No result found for file {}", file);
     }

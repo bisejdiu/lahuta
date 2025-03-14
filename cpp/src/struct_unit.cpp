@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <unordered_map>
 #include "struct_unit.hpp"
 
