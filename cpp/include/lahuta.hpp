@@ -15,12 +15,18 @@
 #include "logging.hpp"
 #include "topology.hpp"
 
-#define LAHUTA_VERSION "0.23.0"
+#define LAHUTA_VERSION "0.25.0"
 
 namespace lahuta {
 // NOTE: rename to Lahuta?
 class Luni {
 public:
+  Luni(const Luni&)            = delete;
+  Luni& operator=(const Luni&) = delete;
+
+  Luni(Luni&&)            = default;
+  Luni& operator=(Luni&&) = default;
+
   explicit Luni(std::string file_name) : file_name_(file_name) {
     Logger::get_logger()->info("Processing file: {}", file_name_);
     read_structure();
