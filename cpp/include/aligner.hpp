@@ -3,6 +3,7 @@
 
 #include "fseek/ops.hpp"
 #include "fseek/utils.hpp"
+#include "logging.hpp"
 #include "prefilter.hpp"
 #include "seq.hpp"
 #include "seq_aligner.hpp"
@@ -50,7 +51,7 @@ static void print_result(SeqData &query, SeqData &target, AlignmentResult &ar) {
 } // namespace alignment_computers
 
 inline void log_sequence_(const SeqData &sd, const std::string &prefix = "") {
-  spdlog::info(
+  Logger::get_logger()->info(
       "{} Sequence: {} {} {} residues: {}",
       prefix,
       sd.file_name,
@@ -106,7 +107,7 @@ private:
     /*SeqCollection targets_ = extract_all(ops_, target_files);*/
     SeqCollection targets_ = extract_all_parallel(ops_, target_files);
 
-    spdlog::warn(
+    Logger::get_logger()->warn(
         "Read {} queries and {} targets: {} ",
         queries_.size(),
         targets_.size(),
@@ -126,7 +127,10 @@ private:
       seq_filter = std::make_unique<SeqFilter>(std::move(seq_filter_));
     }
 
-    spdlog::warn("Building alignment size info: {} queries and {} targets", queries->size(), targets->size());
+    Logger::get_logger()->warn(
+        "Building alignment size info: {} queries and {} targets",
+        queries->size(),
+        targets->size());
     aligner = SeqAlignerBuilder(ops_).build(*queries, *targets);
     aligner->set_needs_lddt(false);
 
@@ -234,7 +238,10 @@ private:
 
       auto alignment_result = aligner->align(query, target);
       if (!alignment_result.success) {
-        spdlog::info("Alignment unsuccessful with {} - {}", target.file_name, target.chain_name);
+        Logger::get_logger()->info(
+            "Alignment unsuccessful with {} - {}",
+            target.file_name,
+            target.chain_name);
         continue;
       };
 

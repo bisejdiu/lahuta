@@ -8,57 +8,29 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RDKitBase.h>
 
-#include "at.hpp"
 #include "array.hpp"
+#include "at.hpp"
 #include "common.hpp"
 #include "contacts.hpp"
-#include "lahuta.hpp"
-#include "entities.hpp"
-#include "nsgrid.hpp"
-#include "residues.hpp"
-#include "topology.hpp"
 #include "distances.hpp"
 #include "distopia.h"
 #include "ent.hpp"
+#include "entities.hpp"
+#include "lahuta.hpp"
 #include "logger_py.hpp"
-
+#include "logging.hpp"
+#include "luni_props.hpp"
+#include "nsgrid.hpp"
+#include "residues.hpp"
+#include "topology.hpp"
 #include "parallel.hpp"
+#include "py_properties.hpp"
+
 
 namespace py = pybind11;
 using namespace lahuta;
 
 // clang-format off
-
-LuniResult simple_test_analyzer(const Luni &luni) {
-    LuniResult r;
-    r.values = luni.indices();
-    r.labels = luni.names();
-    return r;
-}
-
-class LuniProcessorWrapper {
-public:
-    explicit LuniProcessorWrapper(int concurrency) : processor(concurrency, &simple_test_analyzer) {}
-
-    void process_files(const std::vector<std::string>& file_paths) {
-        processor.process_files(file_paths);
-        processor.wait_for_completion();
-    }
-
-    LuniResult get_result(const std::string& file_name) {
-        auto res_opt = processor.get_result(file_name);
-        if (res_opt) {
-            return res_opt.value();
-        } else {
-            throw std::runtime_error("No result found for file: " + file_name);
-        }
-    }
-
-private:
-    // instantiate LuniFileProcessor with a function pointer type.
-    LuniFileProcessor<decltype(&simple_test_analyzer), LuniResult> processor;
-};
-
 
 template <typename T>
 static py::array_t<T> distance(const std::vector<std::vector<T>> &points1, const std::vector<std::vector<T>> &points2) {
@@ -295,7 +267,7 @@ void bind(py::module &_lahuta) {
       .def("find_neighbors", [](class Luni &luni, double cutoff, int res_dif){
           auto grid = FastNS(luni.get_conformer().getPositions());
           if (!grid.build(cutoff)) {
-            spdlog::error("Failed to update the grid with the given cutoff");
+            Logger::get_logger()->error("Failed to update the grid with the given cutoff");
             return NSResults();
           }
           auto ns = grid.self_search();
@@ -327,7 +299,8 @@ void bind(py::module &_lahuta) {
 
        .def("get_topology", [](class Luni &luni) -> const Topology& { return luni.get_topology(); }, py::return_value_policy::reference)
        /*.def("at", [](class Luni &luni) -> auto { auto &v = luni.get_topology(); return v.atom_types; })*/
-      .def("get_atom", &Luni::get_atom, py::return_value_policy::reference)
+      .def("get_atom",  py::overload_cast<int>(&Luni::get_atom, py::const_), py::return_value_policy::reference_internal)
+      .def("get_atom",  py::overload_cast<int>(&Luni::get_atom),             py::return_value_policy::reference_internal)
 
       .def("count_unique", py::overload_cast<const std::vector<int> &>        (&common::count_unique))
       .def("count_unique", py::overload_cast<const std::vector<std::string> &>(&common::count_unique))
@@ -371,21 +344,12 @@ void bind(py::module &_lahuta) {
     .def_property_readonly("explicit_valence", &RDKit::Atom::getExplicitValence)
     .def_property_readonly("implicit_valence", &RDKit::Atom::getImplicitValence);
 
-
-    py::class_<LuniResult>(_lahuta, "LuniResult")
-        .def_readonly("values", &LuniResult::values)
-        .def_readonly("labels", &LuniResult::labels);
-
-
-    py::class_<LuniProcessorWrapper>(_lahuta, "LuniProcessor")
-        .def(py::init<int>(), py::arg("concurrency"))
-        .def("process_files", &LuniProcessorWrapper::process_files, py::call_guard<py::gil_scoped_release>())
-        .def("get_result",    &LuniProcessorWrapper::get_result);
-
 }
 
 PYBIND11_MODULE(_lahuta, m) {
   m.doc() = "lahuta: A Python binding for the Lahuta library";
+
+  LuniProperties::initialize();
 
   py::class_<RDKit::RWMol> lahutaRWMol(m, "RWMol");
   py::class_<RDKit::Conformer> lahutaConformer(m, "Conformer");
@@ -396,4 +360,6 @@ PYBIND11_MODULE(_lahuta, m) {
   bind_common(m);
   bind_entities(m);
   bind_logger(m);
+  bind_properties(m);
+
 }

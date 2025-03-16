@@ -12,17 +12,17 @@
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include "convert.hpp"
+#include "logging.hpp"
 #include "topology.hpp"
-#include "spdlog/spdlog.h"
 
 #define LAHUTA_VERSION "0.23.0"
 
 namespace lahuta {
-
-class Luni { // rename to Lahuta
+// NOTE: rename to Lahuta?
+class Luni {
 public:
   explicit Luni(std::string file_name) : file_name_(file_name) {
-    spdlog::info("Processing file: {}", file_name_);
+    Logger::get_logger()->info("Processing file: {}", file_name_);
     read_structure();
   }
 
@@ -62,10 +62,13 @@ public:
   const Topology &get_topology() const { return *get_topology_ptr(); }
   bool has_topology_built() { return topology.has_value(); };
 
-  RDKit::RWMol       &get_molecule()       { return *mol; }
+        RDKit::RWMol &get_molecule()       { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
 
-  RDKit::Conformer       &get_conformer(int id = -1)       { return mol->getConformer(id); }
+        auto *get_info(int idx)       { return static_cast<      RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
+  const auto *get_info(int idx) const { return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
+
+        RDKit::Conformer &get_conformer(int id = -1)       { return mol->getConformer(id); }
   const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
   const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
@@ -86,12 +89,12 @@ public:
   /// Can be called using the topology
   void assign_molstar_atom_types()  { 
     if (topology) { topology->assign_molstar_typing(); } 
-    else { spdlog::error("Topology not built. Cannot assign Molstar atom types."); }
+    else { Logger::get_logger()->error("Topology not built. Cannot assign Molstar atom types."); }
   }
 
   void assign_arpeggio_atom_types() {
     if (topology) { topology->assign_arpeggio_atom_types(); } 
-    else { spdlog::error("Topology not built. Cannot assign Arpeggio atom types."); }
+    else { Logger::get_logger()->error("Topology not built. Cannot assign Arpeggio atom types."); }
   }
 
   //! Returns the atoms of the molecule.
@@ -135,6 +138,34 @@ public:
 
   // FIX: add helper functions to get topology information
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
+  RDKit::Atom *get_atom(int idx) { return mol->getAtomWithIdx(idx); }
+
+
+  // Estimate (to the best possible extent) the memory footprint of instantiating and populating a Luni object:
+  size_t memory_footprint() const {
+    size_t size = sizeof(Luni);
+    size += mol->getNumAtoms() * sizeof(RDKit::Atom);
+    size += mol->getNumBonds() * sizeof(RDKit::Bond);
+    size += mol->getNumConformers() * sizeof(RDKit::Conformer);
+    size += mol->getNumConformers() * mol->getNumAtoms() * sizeof(RDGeom::Point3D);
+
+
+    if (topology) {
+      size += topology->memory_footprint();
+      // FIX: get ringinfo size (see RingInfo.cpp)
+    }
+
+    size += entities.size() * sizeof(EntityType);
+    for (const auto &[type, ids] : entities) {
+      size += ids.size() * sizeof(EntityID);
+    }
+
+    size += file_name_.size() * sizeof(char);
+    size += filtered_indices.size() * sizeof(int);
+    size += sizeof(bool);
+
+    return size;
+  }
 
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
@@ -149,7 +180,7 @@ private:
 
   const Topology* get_topology_ptr() const {
     if (!topology) {
-      spdlog::error("Cannot return topology, because no topology has been built.");
+      Logger::get_logger()->error("Cannot return topology, because no topology has been built.");
       throw std::runtime_error("Topology not built");
     }
     return &topology.value();
@@ -164,7 +195,6 @@ private:
     mol->addConformer(conformer, true);
   }
 
-private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
   std::unordered_map<EntityType, std::vector<EntityID>> entities;

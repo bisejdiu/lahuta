@@ -1,6 +1,8 @@
 #include "GraphMol/RWMol.h"
 #include "contacts/interactions.hpp"
+#include "file_system.hpp"
 #include "lahuta.hpp"
+#include "logging.hpp"
 #include "mapper.hpp"
 #include "processor.hpp"
 #include "seq.hpp"
@@ -36,7 +38,7 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
 
   auto luni = Luni::create(query.st);
   if (!luni.build_topology()) {
-    spdlog::warn("Failed building topology for {}!", luni.get_file_name());
+    Logger::get_logger()->warn("Failed building topology for {}!", luni.get_file_name());
   }
   auto mol = luni.get_molecule();
   std::cout << "Query Molecule: " << query.file_name << " " << mol.getNumAtoms() << std::endl;
@@ -61,7 +63,7 @@ void _mapping_processor_w(SeqData &query, SeqData &target, AlignmentResult &ar) 
 
   auto luni_t = Luni::create(target.st);
   if (!luni_t.build_topology()) {
-    spdlog::warn("Failed building topology for {}!", luni_t.get_file_name());
+    Logger::get_logger()->warn("Failed building topology for {}!", luni_t.get_file_name());
   }
   auto mol_t = luni_t.get_molecule();
   std::cout << "Target Molecule: " << target.file_name << " " << mol_t.getNumAtoms() << std::endl;
@@ -265,9 +267,6 @@ struct LahutaOptions {
 };
 
 int main() {
-  auto logger = spdlog::stdout_color_mt("console");
-  spdlog::level::level_enum log_level = spdlog::level::info;
-  spdlog::set_level(log_level);
 
   std::cout << "STARTING" << std::endl;
   /*DirectoryHandler dir_handler("/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP", ".cif", true);*/

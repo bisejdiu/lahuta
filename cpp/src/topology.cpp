@@ -1,6 +1,7 @@
 #include "topology.hpp"
 #include "bond_order.hpp"
 #include "bonds.hpp"
+#include "logging.hpp"
 #include "ob/clean_mol.hpp"
 
 // clang-format off
@@ -109,14 +110,14 @@ bool Topology::should_initialize_ringinfo(int mol_size) {
 
     // FIX: explain what "filtered" means
     if (mol_size < medium_threshold) {
-      spdlog::warn("Filtered molecule size ({}) is large. Performance may be affected.", mol_size);
+      Logger::get_logger()->warn("Filtered molecule size ({}) is large. Performance may be affected.", mol_size);
       return true;
     } else if (mol_size < large_threshold) {
-      spdlog::warn("Filtered molecule size ({}) is very large. Performance may be severely affected.", mol_size);
+      Logger::get_logger()->warn("Filtered molecule size ({}) is very large. Performance may be severely affected.", mol_size);
       return true;
     }
 
-    spdlog::warn("Filtered molecule size ({}) is too large. Ring perception will be skipped!", mol_size);
+    Logger::get_logger()->error("Filtered molecule size ({}) is too large. Ring perception will be skipped!", mol_size);
     return false;
   }
 

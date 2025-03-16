@@ -7,10 +7,11 @@
 #include "contacts/groups.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
+#include "logging.hpp"
 #include "residues.hpp"
-#include "spdlog/spdlog.h"
 #include <rdkit/GraphMol/BondIterators.h>
 
+// clang-format off
 namespace lahuta {
 
 // FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
@@ -36,11 +37,13 @@ public:
   const RingEntityCollection  &get_rings()      const { return rings_vec; }
   const GroupEntityCollection &get_features()   const { return features; }
 
+  std::vector<int> get_atom_ids() const { return residues->get_atom_ids(); }
+
 
   void build(TopologyBuildingOptions tops) {
 
     if (!mol_) {
-      spdlog::critical("Cannot build topology without a molecule.");
+      Logger::get_logger()->critical("Cannot build topology without a molecule.");
       throw std::runtime_error("Make sure to provide a molecule before building the topology.");
     }
 
@@ -77,8 +80,10 @@ public:
       }
 
     } catch (const std::runtime_error &e) {
-      spdlog::critical("Error creating topology! Exception caught: {}. Will not terminate, "
-                       "but no topology-based features will be available.", e.what());
+      Logger::get_logger()->critical(
+        "Error creating topology! Exception caught: {}. Will not terminate, "
+        "but no topology-based features will be available.", e.what()
+      );
     }
   }
 
@@ -117,6 +122,15 @@ public:
     }
 
     rings_vec = populate_ring_entities();
+  }
+
+  size_t memory_footprint() const {
+    size_t size = sizeof(Topology);
+    size += atom_types.size() * sizeof(AtomEntity);
+    size += rings_vec.size() * sizeof(RingEntity);
+    size += features.size() * sizeof(GroupEntity);
+    size += residues->get_residues().size() * sizeof(Residue);
+    return size;
   }
 
 private:

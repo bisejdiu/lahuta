@@ -1,4 +1,3 @@
-#include <optional>
 #include <random>
 #include <string>
 #include <vector>
@@ -9,12 +8,17 @@
 
 #include "ctpl/ctpl.h"
 #include "logging.hpp"
-#include "parallel.hpp"
 
+#include "luni_props.hpp"
+#include "properties/query.hpp"
+#include "properties/analyzer.hpp"
+#include "luni_processor.hpp"
+
+// clang-format off
 
 using namespace lahuta;
 
-std::vector<std::string> get_file_paths(const std::string &file_name) {
+std::vector<std::string> get_file_paths( std::string &file_name) {
   std::ifstream file_list(file_name);
   if (!file_list.is_open()) {
     throw std::runtime_error("Failed to open file: " + file_name);
@@ -31,7 +35,8 @@ std::vector<std::string> get_file_paths(const std::string &file_name) {
   return file_paths;
 }
 
-std::vector<std::string> random_shuffle(const std::vector<std::string> &file_paths) {
+
+std::vector<std::string> random_shuffle( std::vector<std::string> &file_paths) {
   std::vector<std::string> shuffled_paths = file_paths;
   std::random_device rd;
   std::mt19937 g(rd());
@@ -39,37 +44,73 @@ std::vector<std::string> random_shuffle(const std::vector<std::string> &file_pat
   return shuffled_paths;
 }
 
-int main(int argc, char const *argv[]) {
 
-  Logger::get_instance().set_log_level(Logger::LogLevel::Warn);
-  Logger::get_instance().set_format(Logger::FormatStyle::Detailed);
+int main(int argc, char  *argv[]) {
+  LuniProperties::initialize();
 
-  auto analyzer = [](const Luni &luni) -> LuniResult {
-    LuniResult r;
-    r.values = luni.indices();
-    r.labels = luni.names();
-    return r;
-  };
+  auto logger = Logger::get_instance();
+  logger.set_log_level(Logger::LogLevel::Info);
+  logger.set_format(Logger::FormatStyle::Simple);
 
-  std::string file_name2 = argv[1];
-  std::vector<std::string> file_paths2 = get_file_paths(file_name2);
-  spdlog::info("Number of files: {}", file_paths2.size());
+  logger.log(Logger::LogLevel::Critical, "Starting the program");
 
-  LuniFileProcessorMinimal<decltype(analyzer), LuniResult> processor(/* concurrency */-1, analyzer);
+  std::string file_name = argv[1];
+  std::vector<std::string> file_paths = get_file_paths(file_name);
+  Logger::get_logger()->info("Number of files: {}", file_paths.size());
 
-  processor.process_files(file_paths2);
+  auto query     = PropertyQuery<Luni>().select(PropertyKey::Names, PropertyKey::Indices);
+  auto analyzer  = PropertyAnalyzer<Luni>(query);
+  auto processor = FileProcessor(-1, analyzer, true);
+
+
+  /*Luni luni(file_paths2[0]);*/
+  /*auto v = luniAnalyzer(luni);*/
+  /**/
+  /*const auto& names = v.get<PropertyKey::Indices>();*/
+  /*const auto& indices = v.get<PropertyKey::Names>();*/
+  /*Logger::get_logger()->info("Test:: File {} => #labels={}, #values={}", file_paths2[0], names.size(), indices.size());*/
+
+  //! auto identityAnalyzer = IdentityAnalyzer<Luni>{};
+  //! FileProcessor processorL(-1, identityAnalyzer, true);
+
+  //! processorL.process_files(file_paths2);
+  //! processorL.wait_for_completion();
+
+  //! auto res_opt = processorL.get_result(file_paths2[0]);
+  //! if (res_opt) {
+  //!   const auto& names = res_opt->names();
+  //!   const auto& indices = res_opt->indices();
+  //!   Logger::get_logger()->info("Test:: File {} => #labels={}, #values={}", file_paths2[0], names.size(), indices.size());
+  //! } else {
+  //!   Logger::get_logger()->warn("No result found for file {}", file_paths2[0]);
+  //! }
+
+  auto start = std::chrono::high_resolution_clock::now();
+  processor.process_files(file_paths);
   processor.wait_for_completion();
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed_seconds = end - start;
+  Logger::get_logger()->info("Elapsed time: {}", elapsed_seconds.count());
 
-  // Print final stats
-  for (const auto &file : file_paths2) {
+
+  return 0;
+
+  start = std::chrono::high_resolution_clock::now();
+  for (auto &file : file_paths) {
     auto res_opt = processor.get_result(file);
     if (res_opt) {
-      spdlog::info("Test:: File {} => #labels={}, #values={}",
-        file, res_opt->labels.size(), res_opt->values.size());
+
+      const auto& names = res_opt->get<PropertyKey::Indices>();
+      const auto& indices = res_opt->get<PropertyKey::Names>();
+
+      Logger::get_logger()->info("Test:: File {} => #labels={}, #values={}", file, names.size(), indices.size());
     } else {
-      spdlog::warn("No result found for file {}", file);
+      Logger::get_logger()->warn("No result found for file {}", file);
     }
   }
+  end = std::chrono::high_resolution_clock::now();
+  elapsed_seconds = end - start;
+  Logger::get_logger()->info("Data access time: {}", elapsed_seconds.count());
 
   return 0;
 }
@@ -88,9 +129,9 @@ int dir_based_main() {
       futures.emplace_back(pool.push([file_name](int id) {
         try {
           Luni luni(file_name);
-          spdlog::info("Molecule: {}", luni.get_molecule().getNumAtoms());
+          Logger::get_logger()->info("Molecule: {}", luni.get_molecule().getNumAtoms());
         } catch (const std::exception &e) {
-          std::cerr << "Error processing file " << file_name << ": " << e.what() << std::endl;
+          Logger::get_logger()->error("Error processing file {}: {}", file_name.string(), e.what());
         }
       }));
     }

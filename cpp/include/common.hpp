@@ -4,6 +4,7 @@
 #include "GraphMol/MonomerInfo.h"
 #include "GraphMol/PeriodicTable.h"
 #include "GraphMol/RWMol.h"
+#include "logging.hpp"
 #include "spdlog/spdlog.h"
 namespace lahuta {
 
@@ -123,7 +124,7 @@ inline void log_bond_info(const RDKit::Bond *bond) {
   auto *info_begin = static_cast<const RDKit::AtomPDBResidueInfo *>(begin->getMonomerInfo());
   auto *info_end = static_cast<const RDKit::AtomPDBResidueInfo *>(end->getMonomerInfo());
   if (info_begin && info_end) {
-    spdlog::info(
+    Logger::get_logger()->info(
         "Bond: {}-{}-{}-{}-{} {}-{}-{}-{}-{}",
         begin->getIdx(),
         info_begin->getName(),
@@ -142,7 +143,7 @@ inline void log_bond_info(const RDKit::Atom *a1, const RDKit::Atom *a2) {
   auto *info_a1 = static_cast<const RDKit::AtomPDBResidueInfo *>(a1->getMonomerInfo());
   auto *info_a2 = static_cast<const RDKit::AtomPDBResidueInfo *>(a2->getMonomerInfo());
   if (info_a1 && info_a2) {
-    spdlog::info(
+    Logger::get_logger()->info(
         "Bond: {}-{}-{}-{}-{} {}-{}-{}-{}-{}",
         a1->getIdx(),
         info_a1->getName(),

@@ -86,7 +86,7 @@ public:
     void log(const spdlog::details::log_msg &msg) override {
         std::lock_guard<std::mutex> lock(spinner_mutex_);   // lock the spinner: avoid log and spinner output mixing
         std::cout << "\r\033[K";                            // clears the current spinner line
-        sink_->log(msg);                            // pass the log message to the wrapped sink
+        sink_->log(msg);                                    // pass the log message to the wrapped sink
         if (spinner_) { spinner_->print_progress(); }       // reprint the spinner
     }
 

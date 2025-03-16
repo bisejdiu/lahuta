@@ -5,7 +5,7 @@
 
 #include "nsgrid.hpp"
 #include "lahuta.hpp"
-#include "spdlog/spdlog.h"
+#include "logging.hpp"
 
 namespace lahuta {
 
@@ -71,7 +71,7 @@ bool FastNS::build(double cutoff) {
     if (_coords.size() < SMALL_SYSTEM_THRESHOLD) { // fall back to brute-force search
       return adaptive_build(cutoff);
     }
-    spdlog::critical("Failed to build grid: likely because the cutoff is larger than the box dimensions.");
+    Logger::get_logger()->critical("Failed to build grid: likely because the cutoff is larger than the box dimensions.");
     return false;
   }
 

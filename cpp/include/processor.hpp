@@ -2,7 +2,7 @@
 #define LAHUTA_PROCESSOR_HPP
 
 #include "aligner.hpp"
-#include "file_system.hpp"
+#include "logging.hpp"
 #include <memory>
 #include <queue>
 #include <string>
@@ -109,7 +109,7 @@ private:
         target_files.begin() + chunk.target_range.begin,
         target_files.begin() + chunk.target_range.end);
 
-    spdlog::warn(
+    Logger::get_logger()->warn(
         "Processing chunk: Q[{}:{}] x T[{}:{}]",
         chunk.query_range.begin,
         chunk.query_range.end,
