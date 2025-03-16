@@ -93,7 +93,7 @@ int main(int argc, char  *argv[]) {
   Logger::get_logger()->info("Elapsed time: {}", elapsed_seconds.count());
 
 
-  return 0;
+  /*return 0;*/
 
   start = std::chrono::high_resolution_clock::now();
   for (auto &file : file_paths) {

@@ -320,6 +320,67 @@ class RingInfo {
 
   //! @}
 
+  // --- Memory size ---
+  size_t getAtomMembersMemory() const {
+    size_t mem = d_atomMembers.capacity() * sizeof(MemberType);
+    for (const auto& vec : d_atomMembers) {
+      mem += vec.capacity() * sizeof(int);
+    }
+    return mem;
+  }
+
+  size_t getBondMembersMemory() const {
+    size_t mem = d_bondMembers.capacity() * sizeof(MemberType);
+    for (const auto& vec : d_bondMembers) {
+      mem += vec.capacity() * sizeof(int);
+    }
+    return mem;
+  }
+
+  size_t getAtomRingsMemory() const {
+    size_t mem = d_atomRings.capacity() * sizeof(INT_VECT);
+    for (const auto& vec : d_atomRings) {
+      mem += vec.capacity() * sizeof(int);
+    }
+    return mem;
+  }
+
+  size_t getBondRingsMemory() const {
+    size_t mem = d_bondRings.capacity() * sizeof(INT_VECT);
+    for (const auto& vec : d_bondRings) {
+      mem += vec.capacity() * sizeof(int);
+    }
+    return mem;
+  }
+
+  size_t getAtomRingFamiliesMemory() const {
+    size_t mem = d_atomRingFamilies.capacity() * sizeof(INT_VECT);
+    for (const auto& vec : d_atomRingFamilies) {
+      mem += vec.capacity() * sizeof(int);
+    }
+    return mem;
+  }
+
+  size_t getBondRingFamiliesMemory() const {
+    size_t mem = d_bondRingFamilies.capacity() * sizeof(INT_VECT);
+    for (const auto& vec : d_bondRingFamilies) {
+      mem += vec.capacity() * sizeof(int);
+    }
+    return mem;
+  }
+
+  /// returns the total memory used by this object
+  size_t getTotalMemory() const {
+    return sizeof(*this)
+           + getAtomMembersMemory()
+           + getBondMembersMemory()
+           + getAtomRingsMemory()
+           + getBondRingsMemory()
+           + getAtomRingFamiliesMemory()
+           + getBondRingFamiliesMemory();
+  }
+
+
  private:
   //! pre-allocates some memory to save time later
   void preallocate(unsigned int numAtoms, unsigned int numBonds);

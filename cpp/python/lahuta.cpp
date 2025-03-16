@@ -23,7 +23,6 @@
 #include "nsgrid.hpp"
 #include "residues.hpp"
 #include "topology.hpp"
-#include "parallel.hpp"
 #include "py_properties.hpp"
 
 
@@ -227,7 +226,7 @@ void bind(py::module &_lahuta) {
           // wrap the python callable as a C++ lambda.
           auto pred = [func](const Residue &r) {return func(r).cast<bool>();};
           return self.filter(pred);
-      }, py::arg("func"))
+       }, py::arg("func"))
 
       .def("map", [](const Residues &self, py::function func) {
           std::vector<py::object> results;
@@ -235,7 +234,8 @@ void bind(py::module &_lahuta) {
               results.push_back(func(r));
           }
           return results;
-      }, py::arg("func"))
+       }, py::arg("func"))
+      .def("total_size", &Residues::total_size)
 
       .def("__getitem__", [](const Residues &self, size_t i) {if (i >= self.get_residues().size()) throw py::index_error(); return self.get_residues()[i];})
       .def("__iter__",    [](const Residues &self) {return py::make_iterator(self.begin(), self.end());}, py::keep_alive<0, 1>());
@@ -244,7 +244,8 @@ void bind(py::module &_lahuta) {
   Topology_
       .def_property_readonly("atom_types", &Topology::get_atom_types)
       .def_property_readonly("residues",   [](Topology &top) {return top.get_residues();}, py::return_value_policy::reference)
-      .def_property_readonly("rings",      &Topology::get_rings);
+      .def_property_readonly("rings",      &Topology::get_rings)
+      .def("total_size", &Topology::total_size);
 
 
   CcompT_
@@ -306,6 +307,8 @@ void bind(py::module &_lahuta) {
       .def("count_unique", py::overload_cast<const std::vector<std::string> &>(&common::count_unique))
       .def("find_elements", &common::find_elements)
       .def("factorize",     &common::factorize)
+
+      .def("total_size", &Luni::total_size)
 
       // FIX: these will be moved to the topology class
       .def("assign_molstar_atom_types",  &Luni::assign_molstar_atom_types)

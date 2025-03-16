@@ -58,6 +58,34 @@ public:
     return map.find(Key) != map.end();
   }
 
+  /// Get the size of a specific property by key
+  template <PropertyKey Key>
+  size_t size_of_property() const {
+    using T = typename PropertyTypeTraits<Key>::type;
+    const auto& map = std::get<std::unordered_map<PropertyKey, std::unique_ptr<T>>>(results_);
+    auto it = map.find(Key);
+    return (it != map.end()) ? it->second->size() : 0;
+  }
+
+  /// Compute the total size of several specified properties using a fold expression
+  template <PropertyKey... Keys>
+  size_t total_size() const {
+    return (size_of_property<Keys>() + ...); // fold expression
+  }
+
+  /// Compute the total size of all properties stored in the result.
+  size_t total_size() const {
+    size_t sum = 0;
+    std::apply([&](auto&&... maps) {
+      (([&]() {
+          for (const auto& pair : maps) {
+            sum += pair.second->size();
+          }
+      }()), ...);
+    }, results_);
+    return sum;
+  }
+
 private:
   std::tuple<std::unordered_map<PropertyKey, std::unique_ptr<ResultTypes>>...> results_;
 };

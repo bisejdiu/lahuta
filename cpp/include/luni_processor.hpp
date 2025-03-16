@@ -11,6 +11,78 @@
 
 namespace lahuta {
 
+constexpr int MAX_MEM_THRESHOLD = 1024 * 1024 * 1000; // 1 GB
+
+template <typename T>
+class ResultStore {
+public:
+  // FIX: in Python, alias int to Bytes
+  explicit ResultStore(size_t mem_threshold = MAX_MEM_THRESHOLD) : mem_threshold_(mem_threshold), curr_mem_usage(0) {}
+
+  // 'value' is constructed in-place as a std::unique_ptr<T>
+  void add_result(const std::string &file_name, T &&value) {
+      std::lock_guard<std::mutex> lock(mtx_);
+
+      auto value_ = std::make_unique<T>(std::move(value));
+      size_t object_size = value_->total_size();
+
+      if (curr_mem_usage + object_size > mem_threshold_) {
+          std::stringstream error_msg;
+          error_msg << "Memory threshold exceeded. Current usage: "
+                    << curr_mem_usage / (1024 * 1024) << " MB, threshold: "
+                    << "Adding object of size " << object_size << " bytes would exceed threshold of "
+                    << mem_threshold_ / (1024 * 1024) << " MB";
+          throw std::runtime_error(error_msg.str());
+      }
+
+      results_.emplace(
+          std::piecewise_construct,
+          std::forward_as_tuple(file_name),
+          std::forward_as_tuple(std::move(value_)));
+
+      curr_mem_usage += object_size;
+  }
+
+  // Returns a pointer to the stored T, or nullptr if not present.
+  // The caller does *not* own the returned pointer.
+  T *get_result(const std::string &file_name) {
+      std::lock_guard<std::mutex> lock(mtx_);
+      auto it = results_.find(file_name);
+      if (it == results_.end()) {
+          return nullptr;
+      }
+      return it->second.get(); // raw pointer to T
+  }
+
+  // Return references to *all* stored results
+  std::unordered_map<std::string, T *> get_all_results() {
+      std::lock_guard<std::mutex> lock(mtx_);
+      std::unordered_map<std::string, T *> out;
+      out.reserve(results_.size());
+      for (auto &kv : results_) {
+          out.emplace(kv.first, kv.second.get());
+      }
+      return out;
+  }
+
+  size_t get_current_memory_usage() const {
+      std::lock_guard<std::mutex> lock(mtx_);
+      return curr_mem_usage;
+  }
+
+  void clear() {
+      std::lock_guard<std::mutex> lock(mtx_);
+      results_.clear();
+      curr_mem_usage = 0;
+  }
+
+private:
+  mutable std::mutex mtx_;
+  std::unordered_map<std::string, std::unique_ptr<T>> results_;
+  size_t mem_threshold_;
+  size_t curr_mem_usage;
+};
+
 struct NoOpCallback {
   inline void operator()(const std::string&) const noexcept { }
 };
@@ -81,26 +153,14 @@ public:
 
   }
 
-  /// Return a pointer to the result. If there's no entry, returns nullptr.
+  // Return a pointer to the result. If there's no entry, returns nullptr.
   ResultType* get_result(const std::string& file_name) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto it = results_.find(file_name);
-    if (it == results_.end()) {
-        return nullptr;
-    }
-    return it->second.get();
+    return threadpool_store_.get_result(file_name);
   }
 
-  /// Return all results as a map of string -> pointer.
+  // Return all results as a map of string -> pointer.
   std::unordered_map<std::string, ResultType*> get_all_results() {
-    std::lock_guard<std::mutex> lock(mutex_);
-
-    std::unordered_map<std::string, ResultType*> out;
-    out.reserve(results_.size());
-    for (auto & [key, value_ptr] : results_) {
-        out[key] = value_ptr.get();
-    }
-    return out;
+    return threadpool_store_.get_all_results();
   }
 
 private:
@@ -114,7 +174,7 @@ private:
 
       {
         std::lock_guard<std::mutex> lock(mutex_);
-        results_.emplace(file_path, std::make_unique<ResultType>(std::move(result)));
+        threadpool_store_.add_result(file_path, std::move(result));
       }
 
       on_tick_callback(file_path);
@@ -148,7 +208,7 @@ private:
 
   // Thread-safe store of file -> ResultType
   std::mutex mutex_;
-  std::unordered_map<std::string, std::unique_ptr<ResultType>> results_;
+  ResultStore<ResultType> threadpool_store_;
 };
 
 

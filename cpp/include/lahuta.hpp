@@ -141,18 +141,19 @@ public:
   RDKit::Atom *get_atom(int idx) { return mol->getAtomWithIdx(idx); }
 
 
-  // Estimate (to the best possible extent) the memory footprint of instantiating and populating a Luni object:
-  size_t memory_footprint() const {
+  /// very rough estimate of the memory size
+  size_t total_size() const {
     size_t size = sizeof(Luni);
-    size += mol->getNumAtoms() * sizeof(RDKit::Atom);
-    size += mol->getNumBonds() * sizeof(RDKit::Bond);
+
+    size += mol->getNumAtoms() * sizeof(RDKit::Atom) + mol->getNumAtoms() * sizeof(RDKit::Atom *);
+    size += mol->getNumBonds() * sizeof(RDKit::Bond) + mol->getNumBonds() * sizeof(RDKit::Bond *);
     size += mol->getNumConformers() * sizeof(RDKit::Conformer);
     size += mol->getNumConformers() * mol->getNumAtoms() * sizeof(RDGeom::Point3D);
 
 
     if (topology) {
-      size += topology->memory_footprint();
-      // FIX: get ringinfo size (see RingInfo.cpp)
+      size += topology->total_size();
+      size += mol->getRingInfo()->getTotalMemory();
     }
 
     size += entities.size() * sizeof(EntityType);
@@ -160,8 +161,8 @@ public:
       size += ids.size() * sizeof(EntityID);
     }
 
-    size += file_name_.size() * sizeof(char);
-    size += filtered_indices.size() * sizeof(int);
+    size += sizeof(char) * file_name_.size();
+    size += sizeof(int)  * filtered_indices.size();
     size += sizeof(bool);
 
     return size;

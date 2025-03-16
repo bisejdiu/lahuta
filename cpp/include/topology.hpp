@@ -124,14 +124,8 @@ public:
     rings_vec = populate_ring_entities();
   }
 
-  size_t memory_footprint() const {
-    size_t size = sizeof(Topology);
-    size += atom_types.size() * sizeof(AtomEntity);
-    size += rings_vec.size() * sizeof(RingEntity);
-    size += features.size() * sizeof(GroupEntity);
-    size += residues->get_residues().size() * sizeof(Residue);
-    return size;
-  }
+  /// approximate total memory usage
+  size_t total_size() const;
 
 private:
   RingEntityCollection populate_ring_entities();

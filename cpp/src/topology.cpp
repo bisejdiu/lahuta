@@ -101,6 +101,21 @@ void Topology::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std
   }
 }
 
+size_t Topology::total_size() const {
+  size_t total = sizeof(*this);
+
+  total += sizeof(AtomEntity)  * atom_types.get_data().size();
+  total += sizeof(RingEntity)  * rings_vec.get_data().size();
+  total += sizeof(GroupEntity) * features.get_data().size();
+
+  if (mol_) { total += sizeof(*mol_); }
+
+  total += residues->total_size();
+
+  return total;
+}
+
+
 bool Topology::should_initialize_ringinfo(int mol_size) {
     constexpr int small_threshold = 20'000;
     constexpr int medium_threshold = 50'000;
