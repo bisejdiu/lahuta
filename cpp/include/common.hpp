@@ -4,7 +4,8 @@
 #include "GraphMol/MonomerInfo.h"
 #include "GraphMol/PeriodicTable.h"
 #include "GraphMol/RWMol.h"
-#include "spdlog/spdlog.h"
+#include "logging.hpp"
+
 namespace lahuta {
 
 struct AtomInfo {
@@ -105,7 +106,7 @@ inline std::vector<std::string> find_elements(const std::vector<int> &atomic_num
 inline void log_atom_info(const RDKit::Atom *atom) {
   auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
   if (info) {
-    spdlog::info(
+    Logger::get_logger()->info(
         "Atom: {} {} {} {} {}",
         atom->getIdx(),
         info->getName(),
@@ -113,7 +114,7 @@ inline void log_atom_info(const RDKit::Atom *atom) {
         info->getResidueNumber(),
         info->getChainId());
   } else {
-    spdlog::trace("Atom: {} {}", atom->getIdx(), atom->getSymbol());
+    Logger::get_logger()->trace("Atom: {} {}", atom->getIdx(), atom->getSymbol());
   }
 }
 
@@ -123,7 +124,7 @@ inline void log_bond_info(const RDKit::Bond *bond) {
   auto *info_begin = static_cast<const RDKit::AtomPDBResidueInfo *>(begin->getMonomerInfo());
   auto *info_end = static_cast<const RDKit::AtomPDBResidueInfo *>(end->getMonomerInfo());
   if (info_begin && info_end) {
-    spdlog::info(
+    Logger::get_logger()->info(
         "Bond: {}-{}-{}-{}-{} {}-{}-{}-{}-{}",
         begin->getIdx(),
         info_begin->getName(),
@@ -142,7 +143,7 @@ inline void log_bond_info(const RDKit::Atom *a1, const RDKit::Atom *a2) {
   auto *info_a1 = static_cast<const RDKit::AtomPDBResidueInfo *>(a1->getMonomerInfo());
   auto *info_a2 = static_cast<const RDKit::AtomPDBResidueInfo *>(a2->getMonomerInfo());
   if (info_a1 && info_a2) {
-    spdlog::info(
+    Logger::get_logger()->info(
         "Bond: {}-{}-{}-{}-{} {}-{}-{}-{}-{}",
         a1->getIdx(),
         info_a1->getName(),

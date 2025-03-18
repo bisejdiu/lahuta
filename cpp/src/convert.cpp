@@ -1,5 +1,5 @@
 #include "convert.hpp"
-#include "spdlog/spdlog.h"
+#include "logging.hpp"
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <unordered_map>
 
@@ -56,7 +56,6 @@ void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ig
 
     auto *copy = static_cast<AtomMonomerInfo *>(atomInfo.copy());
     rAtom->setMonomerInfo(copy);
-
   }
 }
 
@@ -113,8 +112,9 @@ RWMol filter_with_conf(RWMol &mol, std::vector<int> &indices) {
   return new_mol;
 }
 
-
-RWMol filter_with_bonds(const RWMol &mol, std::vector<int> &indices) { // indices do not need to be sorted (they are sorted in the function)
+RWMol filter_with_bonds(
+    const RWMol &mol,
+    std::vector<int> &indices) { // indices do not need to be sorted (they are sorted in the function)
   RWMol filtered_mol;
   const Conformer &conf = mol.getConformer();
   auto *filtered_conf = new Conformer();
@@ -130,9 +130,11 @@ RWMol filter_with_bonds(const RWMol &mol, std::vector<int> &indices) { // indice
   std::sort(indices.begin(), indices.end());
 
   if (indices.back() >= mol.getNumAtoms()) {
-    std::string err_msg = fmt::format("Invalid atom index {} in the provided indices. Max index: {}", 
-                                      indices.back(), mol.getNumAtoms() - 1);
-    spdlog::critical("Error: {}", err_msg);
+    std::string err_msg = fmt::format(
+        "Invalid atom index {} in the provided indices. Max index: {}",
+        indices.back(),
+        mol.getNumAtoms() - 1);
+    Logger::get_logger()->critical("Error: {}", err_msg);
     throw std::runtime_error(err_msg);
   }
 
@@ -148,11 +150,12 @@ RWMol filter_with_bonds(const RWMol &mol, std::vector<int> &indices) { // indice
   // add bonds only if both atoms are in the selected indices.
   for (const auto &bond : mol.bonds()) {
     int start_idx = bond->getBeginAtomIdx();
-    int end_idx   = bond->getEndAtomIdx();
+    int end_idx = bond->getEndAtomIdx();
 
-    if (atom_index_map.find(start_idx) != atom_index_map.end() && atom_index_map.find(end_idx) != atom_index_map.end()) {
+    if (atom_index_map.find(start_idx) != atom_index_map.end()
+        && atom_index_map.find(end_idx) != atom_index_map.end()) {
       int new_start_idx = atom_index_map[start_idx];
-      int new_end_idx   = atom_index_map[end_idx];
+      int new_end_idx = atom_index_map[end_idx];
       filtered_mol.addBond(new_start_idx, new_end_idx, bond->getBondType());
     }
   }
@@ -160,11 +163,12 @@ RWMol filter_with_bonds(const RWMol &mol, std::vector<int> &indices) { // indice
   filtered_mol.addConformer(filtered_conf, true);
   filtered_mol.updatePropertyCache(false);
 
-
-  spdlog::warn("Filtered molecule has {} atoms and {} bonds", filtered_mol.getNumAtoms(), filtered_mol.getNumBonds());
+  Logger::get_logger()->warn(
+      "Filtered molecule has {} atoms and {} bonds",
+      filtered_mol.getNumAtoms(),
+      filtered_mol.getNumBonds());
 
   return filtered_mol;
 }
-
 
 } // namespace lahuta

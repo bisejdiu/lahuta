@@ -8,18 +8,25 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RDKitBase.h>
 
-#include "at.hpp"
 #include "array.hpp"
+#include "at.hpp"
 #include "common.hpp"
 #include "contacts.hpp"
-#include "lahuta.hpp"
-#include "entities.hpp"
-#include "nsgrid.hpp"
-#include "residues.hpp"
-#include "topology.hpp"
 #include "distances.hpp"
 #include "distopia.h"
 #include "ent.hpp"
+#include "entities.hpp"
+#include "lahuta.hpp"
+#include "logger_py.hpp"
+#include "logging.hpp"
+#include "luni_props.hpp"
+#include "nsgrid.hpp"
+#include "py_align.hpp"
+#include "py_te.hpp"
+#include "residues.hpp"
+#include "topology.hpp"
+#include "py_properties.hpp"
+
 
 namespace py = pybind11;
 using namespace lahuta;
@@ -75,6 +82,7 @@ void bind(py::module &_lahuta) {
 
   py::class_<TopologyBuildingOptions> Tops_   (_lahuta, "TopologyBuildingOptions");
   py::enum_<ContactComputerType>      CcompT_ (_lahuta, "ContactComputerType");
+
 
   DistComp_
     .def_static("distance", py::overload_cast<const Vector<float>&,  const Vector<float>&> (&DistanceComputation::distance<float>))
@@ -220,7 +228,7 @@ void bind(py::module &_lahuta) {
           // wrap the python callable as a C++ lambda.
           auto pred = [func](const Residue &r) {return func(r).cast<bool>();};
           return self.filter(pred);
-      }, py::arg("func"))
+       }, py::arg("func"))
 
       .def("map", [](const Residues &self, py::function func) {
           std::vector<py::object> results;
@@ -228,7 +236,8 @@ void bind(py::module &_lahuta) {
               results.push_back(func(r));
           }
           return results;
-      }, py::arg("func"))
+       }, py::arg("func"))
+      .def("total_size", &Residues::total_size)
 
       .def("__getitem__", [](const Residues &self, size_t i) {if (i >= self.get_residues().size()) throw py::index_error(); return self.get_residues()[i];})
       .def("__iter__",    [](const Residues &self) {return py::make_iterator(self.begin(), self.end());}, py::keep_alive<0, 1>());
@@ -237,7 +246,8 @@ void bind(py::module &_lahuta) {
   Topology_
       .def_property_readonly("atom_types", &Topology::get_atom_types)
       .def_property_readonly("residues",   [](Topology &top) {return top.get_residues();}, py::return_value_policy::reference)
-      .def_property_readonly("rings",      &Topology::get_rings);
+      .def_property_readonly("rings",      &Topology::get_rings)
+      .def("total_size", &Topology::total_size);
 
 
   CcompT_
@@ -260,7 +270,7 @@ void bind(py::module &_lahuta) {
       .def("find_neighbors", [](class Luni &luni, double cutoff, int res_dif){
           auto grid = FastNS(luni.get_conformer().getPositions());
           if (!grid.build(cutoff)) {
-            spdlog::error("Failed to update the grid with the given cutoff");
+            Logger::get_logger()->error("Failed to update the grid with the given cutoff");
             return NSResults();
           }
           auto ns = grid.self_search();
@@ -292,12 +302,15 @@ void bind(py::module &_lahuta) {
 
        .def("get_topology", [](class Luni &luni) -> const Topology& { return luni.get_topology(); }, py::return_value_policy::reference)
        /*.def("at", [](class Luni &luni) -> auto { auto &v = luni.get_topology(); return v.atom_types; })*/
-      .def("get_atom", &Luni::get_atom, py::return_value_policy::reference)
+      .def("get_atom",  py::overload_cast<int>(&Luni::get_atom, py::const_), py::return_value_policy::reference_internal)
+      .def("get_atom",  py::overload_cast<int>(&Luni::get_atom),             py::return_value_policy::reference_internal)
 
       .def("count_unique", py::overload_cast<const std::vector<int> &>        (&common::count_unique))
       .def("count_unique", py::overload_cast<const std::vector<std::string> &>(&common::count_unique))
       .def("find_elements", &common::find_elements)
       .def("factorize",     &common::factorize)
+
+      .def("total_size", &Luni::total_size)
 
       // FIX: these will be moved to the topology class
       .def("assign_molstar_atom_types",  &Luni::assign_molstar_atom_types)
@@ -341,6 +354,8 @@ void bind(py::module &_lahuta) {
 PYBIND11_MODULE(_lahuta, m) {
   m.doc() = "lahuta: A Python binding for the Lahuta library";
 
+  LuniProperties::initialize();
+
   py::class_<RDKit::RWMol> lahutaRWMol(m, "RWMol");
   py::class_<RDKit::Conformer> lahutaConformer(m, "Conformer");
 
@@ -349,4 +364,9 @@ PYBIND11_MODULE(_lahuta, m) {
   bind(m);
   bind_common(m);
   bind_entities(m);
+  bind_logger(m);
+  bind_properties(m);
+  bind_align(m);
+  bind_te(m);
+
 }

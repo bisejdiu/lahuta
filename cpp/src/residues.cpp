@@ -131,4 +131,22 @@ std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RW
   return ring_vector;
 }
 
+std::size_t Residues::total_size() const {
+  std::size_t total = 0;
+
+  total += sizeof(*this);
+  total += sizeof(residues_);
+  total += sizeof(Residue) * residues_.capacity();
+
+  for (const auto &res : residues_) {
+    total += sizeof(char) * res.chain_id.capacity();
+    total += sizeof(char) * res.name.capacity();
+    total += sizeof(char) * res.alt_loc.capacity();
+
+    total += sizeof(const RDKit::Atom*) * res.atoms.capacity();
+  }
+  return total;
+}
+
+
 } // namespace lahuta

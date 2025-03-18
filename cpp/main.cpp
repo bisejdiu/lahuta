@@ -1,6 +1,7 @@
 #include "contacts/interactions.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
+#include "logging.hpp"
 #include "selections/tokenizer.hpp"
 
 using namespace lahuta;
@@ -11,6 +12,8 @@ int main(int argc, char const *argv[]) {
   /*  return 1;*/
   /*}*/
 
+  Logger::get_instance().set_log_level(Logger::LogLevel::Trace);
+
   auto start = std::chrono::high_resolution_clock::now();
   std::string file_name = argv[1];
   /*std::string file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif";*/
@@ -18,10 +21,14 @@ int main(int argc, char const *argv[]) {
   /*luni.assign_arpeggio_atom_types();*/
   /*luni.assign_molstar_atom_types();*/
 
+  std::cout << "Memory footprint (!top): " << luni.total_size() / (1024 * 1024) << "MB" << std::endl;
   if (!luni.build_topology()) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
     return 1;
   }
+
+  std::cout << "Memory footprint (top): " << luni.total_size() / (1024 * 1024) << "MB" << std::endl;
+  std::cout << "Topology footprint (top): " << luni.get_topology().total_size() / (1024 * 1024) << "MB" << std::endl;
 
   std::cout << "ENTITIES: " << file_name << std::endl;
   for (const long long &v  : luni.get_or_create_ring_entities()) {

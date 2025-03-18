@@ -3,7 +3,7 @@
 #define LAHUTA_SCORE_MATRIX_HPP
 
 #include "ScoreMatrix.h"
-#include "ctpl/ctpl_stl.h"
+#include "ctpl/ctpl.h"
 #include "radix_sort.hpp"
 #include "substitution_matrix.hpp"
 #include "utils.hpp"

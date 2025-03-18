@@ -4,9 +4,8 @@
 #include "common.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
+#include "logging.hpp"
 #include "planarity.hpp"
-#include "spdlog/common.h"
-#include "spdlog/spdlog.h"
 
 namespace lahuta {
 
@@ -91,7 +90,7 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
       residue_counts[res.name]++;
     }
     for (const auto &[name, count] : residue_counts) {
-      spdlog::info("unk residue: {}, {}", name, count);
+      Logger::get_logger()->info("unk residue: {}, {}", name, count);
     }
   }
 

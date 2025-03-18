@@ -85,7 +85,7 @@ add_library(lahuta_cpp STATIC
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
-            src/entities.cpp
+            src/entities.cpp src/luni_props.cpp src/logging.cpp
             src/contacts/metals.cpp 
             src/contacts/interactions.cpp src/valence_model.cpp src/contacts/groups.cpp
             src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
@@ -145,6 +145,7 @@ add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
 add_lahuta_executable(lex_fseek main_fseek.cpp)
 add_lahuta_executable(lex_fut main_future.cpp)
+add_lahuta_executable(lex_align main_align.cpp)
 
 # file(WRITE ${CMAKE_BINARY_DIR}/debug.entitlements
 # [=[<?xml version="1.0" encoding="UTF-8"?>
@@ -188,7 +189,7 @@ if (USE_PYTHON)
   find_package(pybind11 2.6 CONFIG REQUIRED)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/contacts.cpp python/lahuta.cpp)
+  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/logger_py.cpp python/contacts.cpp python/py_properties.cpp python/py_align.cpp python/py_te.cpp python/lahuta.cpp)
 
   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
     target_sources(lahuta_py PRIVATE 

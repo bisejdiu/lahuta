@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import (
     Any,
     Callable,
@@ -8,6 +8,7 @@ from typing import (
     Generic,
     Iterable,
     Iterator,
+    Literal,
     NewType,
     Protocol,
     Self,
@@ -58,6 +59,7 @@ Matrix: TypeAlias = NDArray[np.float64] # shape=(n_atoms, 3)
 # Vector = NewType("Vector", NDArray[np.float64])
 # Matrix = NewType("Matrix", NDArray[np.float64])
 
+Bytes: TypeAlias = int
 
 _Float_co = TypeVar("_Float_co", bound=np.floating[Any], covariant=True)
 VectorType: TypeAlias = NDArray[_Float_co]  # shape=(3,)
@@ -207,6 +209,7 @@ class Residues_:
     def residue_map(self)  -> dict[int, list[Residue]]: ...
     def filter(self, func: Callable[[Residue], bool]) -> Residues_: ...
     def map(self,    func: Callable[[Residue], _T])   -> list[_T]: ...
+    def total_size(self) -> Bytes: ...
     def __iter__(self) -> Iterator[Residue]: ...
     def __getitem__(self, index: int) -> Residue: ...
 
@@ -231,6 +234,7 @@ class Topology_:
     def rings(self)      -> RingEntityCollection: ...
     @property
     def atom_types(self) -> AtomEntityCollection: ...
+    def total_size(self)  -> Bytes: ...
     # TODO: indexing by integer should give an atom object
     # TODO: indexing by list | slice should give a list of atom objects
 
@@ -270,6 +274,8 @@ class LahutaCPP:
     def get_chainlabels(self) -> list[str]: ...
 
     def get_atom(self, index: int) -> Atom: ...
+
+    def total_size(self) -> Bytes: ...
 
     def get_topology(self) -> Topology_: ...
     @staticmethod
@@ -398,3 +404,349 @@ class Entity(Generic[_EI]):
     def __init__(self, t: _EI) -> None: ...
     def get_center(self) -> Point3D: ...
     def get_id(self) -> int: ...
+
+class Logger_:
+    class LogLevel(Enum):
+        Trace    = 0
+        Debug    = 1
+        Info     = 2
+        Warn     = 3
+        Error    = 4
+        Critical = 5
+        Off      = 6
+
+    class FormatStyle(Enum):
+        Simple   = 0
+        Detailed = 1
+
+    @staticmethod
+    def get_instance() -> Logger_: ...
+
+    def set_format(self,    style: FormatStyle) -> None: ...
+    def set_log_level(self, level: LogLevel)    -> None: ...
+
+    def log(self, level: LogLevel, message: str) -> None: ...
+
+
+
+class PropertyKey(Enum):
+    Names     = 0
+    Indices   = 1
+    Elements  = 2
+    Positions = 3
+
+
+class PropertyQueryLuni:
+    def __init__(self) -> None: ...
+    @overload
+    def select(self, key: PropertyKey) -> PropertyQueryLuni: ...
+    @overload
+    def select(self, keys: list[PropertyKey]) -> PropertyQueryLuni: ...
+    def properties(self) -> list[PropertyKey]: ...
+
+
+class PropertyAnalyzerLuni:
+    def __init__(self, query: PropertyQueryLuni) -> None: ...
+
+
+class LuniResultType:
+    def __init__(self) -> None: ...
+
+    def has_property(self, key: PropertyKey) -> bool: ...
+    @overload
+    def get(self, key: Literal[PropertyKey.Names]) -> NDArray[np.str_]: ...
+    @overload
+    def get(self, key: Literal[PropertyKey.Indices]) -> NDArray[np.int32]: ...
+    @overload
+    def get(self, key: Literal[PropertyKey.Elements]) -> NDArray[np.str_]: ...
+    @overload
+    def get(self, key: Literal[PropertyKey.Positions]) -> NDArray[np.float64]: ...
+
+    def get(self, key: PropertyKey) -> NDArray[np.str_] | NDArray[np.int32] | NDArray[np.float64]: ...
+
+    @overload
+    def __getitem__(self, key: Literal[PropertyKey.Names]) -> NDArray[np.str_]: ...
+    @overload
+    def __getitem__(self, key: Literal[PropertyKey.Indices]) -> NDArray[np.int32]: ...
+    @overload
+    def __getitem__(self, key: Literal[PropertyKey.Elements]) -> NDArray[np.str_]: ...
+    @overload
+    def __getitem__(self, key: Literal[PropertyKey.Positions]) -> NDArray[np.float64]: ...
+
+    def __getitem__(self, key: PropertyKey) -> NDArray[np.str_] | NDArray[np.int32] | NDArray[np.float64]: ...
+
+    def __contains__(self, key: PropertyKey) -> bool: ...
+
+
+class LuniFileProcessor:
+    def __init__(self, n_threads: int, analyzer: PropertyAnalyzerLuni, use_spinner: bool) -> None: ...
+    def process_files(self, file_names: list[str]) -> None: ...
+    def wait_for_completion(self) -> None: ...
+    def get_result(self, file_name: str) -> LuniResultType | None: ...
+    def get_all_results(self) -> dict[str, LuniResultType]: ...
+
+
+@overload
+def process_files(files: list[str], property_keys: list[PropertyKey], n_jobs: int, use_spinner: bool = True) -> dict[str, LuniResultType]: ...
+@overload
+def process_files(files: list[str], n_jobs: int, use_spinner: bool = True) -> dict[str, LahutaCPP]: ...
+
+
+class AlignType(Enum):
+    AA_3Di: int
+    AA:     int
+    _3Di:   int
+
+class TMScoreThrMode(Enum):
+    alignment: int
+    query:     int
+    target:    int
+
+class SeqType(Enum):
+    AminoAcid: int
+    Nucleotide: int
+    HMM: int
+
+class FoldSeekOps:
+    alignType: AlignType
+    tmScoreThr: float
+    tmScoreThrMode: TMScoreThrMode
+    exactTMscore: bool
+    lddtThr: float
+    sortByStructureBits: bool
+    alignmentMode: int
+    alignmentOutputMode: int
+    wrappedScoring: bool
+    maxSeqLen: int
+    compBiasCorrection: bool
+    compBiasCorrectionScale: float
+    scoreBias: float
+    realign: bool
+    correlationScoreWeight: float
+    addBacktrace: int
+    covThr: float
+    covMode: int
+    evalThr: int
+    seqIdThr: float
+    seqIdMode: bool
+    alnLenThr: float
+    chainNameMode: int
+    maskBfactorThreshold: float
+    altAlignment: int
+    inputFormat: int
+    gapOpen: int
+    gapExtend: int
+
+class PrefilterOptions:
+    use_prefilter: bool
+    alphabetSize: int
+    maskMode: bool
+    maskLowerCaseMode: bool
+    maskProb: float
+    kmerSize: int
+    kmerThr: int
+    spacedKmer: bool
+    spacedKmerPattern: str
+    takeOnlyBestKmer: bool
+    querySeqType: SeqType
+    targetSeqType: SeqType
+    targetSearchMode: int
+    sensitivity: float
+    maxSeqLen: int
+    diagonalScoring: int
+    minDiagScoreThr: int
+    aaBiasCorrection: bool
+    aaBiasCorrectionScale: float
+    covThr: float
+    covMode: int
+    maxResListLen: int
+
+class ProcessingConfig:
+    query_chunk_size: int
+    target_chunk_size: int
+    allow_self_ops: bool
+
+
+FileList: TypeAlias = list[str]
+
+class AlignerResults:
+    query: SeqData
+    target: SeqData
+    results: list[Result]
+
+
+class LahutaAlignerBase: ...
+class LahutaAligner(LahutaAlignerBase):
+    def __init__(self, ops: FoldSeekOps = ..., pf_ops: PrefilterOptions = ..., n_threads: int = 0) -> None: ...
+    def run(self, query_files: FileList, target_files: FileList) -> None: ...
+    def get_results(self) -> list[AlignerResults]: ...
+
+
+class LahutaProcessor:
+    def __init__(self, aligner: LahutaAlignerBase, config: ProcessingConfig) -> None: ...
+    @overload
+    def process(self, query_files: FileList, target_files: FileList) -> None: ...
+    @overload
+    def process(self, query_files: FileList) -> None: ...
+
+
+class Result:
+    dbKey: int
+    score: int
+    qcov: float
+    dbcov: float
+    seqId: float
+    eval: float
+    alnLength: int
+    qStartPos: int
+    qEndPos: int
+    qLen: int
+    dbStartPos: int
+    dbEndPos: int
+    dbLen: int
+    queryOrfStartPos: int
+    queryOrfEndPos: int
+    dbOrfStartPos: int
+    dbOrfEndPos: int
+    backtrace: str
+
+    @overload
+    def __init__(self) -> None: ...
+
+    @overload
+    def __init__(self,
+                 dbkey: int,
+                 score: int,
+                 qcov: float,
+                 dbcov: float,
+                 seqId: float,
+                 eval: float,
+                 alnLength: int,
+                 qStartPos: int,
+                 qEndPos: int,
+                 qLen: int,
+                 dbStartPos: int,
+                 dbEndPos: int,
+                 dbLen: int,
+                 queryOrfStartPos: int,
+                 queryOrfEndPos: int,
+                 dbOrfStartPos: int,
+                 dbOrfEndPos: int,
+                 backtrace: str) -> None: ...
+
+    @overload
+    def __init__(self,
+                 dbkey: int,
+                 score: int,
+                 qcov: float,
+                 dbcov: float,
+                 seqId: float,
+                 eval: float,
+                 alnLength: int,
+                 qStartPos: int,
+                 qEndPos: int,
+                 qLen: int,
+                 dbStartPos: int,
+                 dbEndPos: int,
+                 dbLen: int,
+                 backtrace: str) -> None: ...
+
+    def __init__(self, *args, **kwargs) -> None: ...
+
+    @staticmethod
+    def protein2nucl(backtrace: str, newBacktrace: str) -> None: ...
+
+
+class Matcher:
+    @staticmethod
+    def compareHits(first: Result, second: Result) -> bool: ...
+
+    @staticmethod
+    def computeAlnLength(qStart: int, qEnd: int, dbStart: int, dbEnd: int) -> int: ...
+
+    @staticmethod
+    def compressAlignment(bt: str) -> str: ...
+
+    @staticmethod
+    def uncompressAlignment(cbt: str) -> str: ...
+
+    @staticmethod
+    def result_to_string(r: Result, compress_backtrace: bool = True) -> str: ...
+
+    @staticmethod
+    def results_to_string(vr: list[Result], compress_backtrace: bool = True) -> str: ...
+
+    @staticmethod
+    def resultToBuffer(result: Result, addBacktrace: bool, compress: bool = True, addOrfPosition: bool = False) -> str: ...
+
+
+class SeqData:
+    def __init__(self) -> None: ...
+    def size(self) -> int: ...
+    @property
+    def x(self) -> NDArray[np.float64]: ...
+    @property
+    def y(self) -> NDArray[np.float64]: ...
+    @property
+    def z(self) -> NDArray[np.float64]: ...
+    def __lt__(self, other: SeqData) -> bool: ...
+    def map_3di(self, matrix: NDArray[np.float64], ops: FoldSeekOps) -> None: ...
+    def map_aa(self, matrix: NDArray[np.float64], ops: FoldSeekOps) -> None: ...
+    def build_sequence(self, matrix: NDArray[np.float64], ops: FoldSeekOps) -> None: ...
+
+    Seq3Di: list[str]
+    SeqAA: list[str]
+    CaData: list[float]
+    file_name: str
+    chain_name: str
+
+
+class TopologyMapper:
+    class MappingType(IntEnum):
+        Query = 1
+        Target = 2
+
+    def __init__(self, sd: SeqData, type: TopologyMapper.MappingType) -> None: ...  # noqa: A002
+    def map(self, res: Result) -> None: ...
+    def get_mapped_resid(self, atom_index: int) -> int | None: ...
+    def get_entity_atoms(self, entity: EntityID) -> list[Atom]: ...
+    def get_luni(self) -> LahutaCPP: ...
+
+
+class ContactEquivKey:
+    e1_mapped_ids: list[int]
+    e2_mapped_ids: list[int]
+    contact_type: InteractionType
+
+
+class EquivalencyConfig:
+    contact_resolution: bool
+    contact_type: bool
+    hbond_type: bool
+    number_of_atoms: bool
+    atom_name: bool
+    element: bool
+    resname: bool
+
+
+class TopologicalEquivalency:
+    def __init__(self, 
+                 lm1: TopologyMapper,
+                 lm2: TopologyMapper,
+                 config: EquivalencyConfig | None = None) -> None: ...
+    def evaluate(self, a1: Atom, a2: Atom) -> bool: ...
+    def evaluate_atoms(self, a1: list[Atom], a2: list[Atom]) -> bool: ...
+    def should_consider(self, atoms: list[Atom], mt: TopologyMapper.MappingType) -> bool: ...
+    def is_mappable(self, mt: TopologyMapper.MappingType, atom: Atom) -> bool: ...
+    def get_lm(self, type: TopologyMapper.MappingType) -> TopologyMapper: ...  # noqa: A002
+
+
+class LahutaMapper:
+    def __init__(self, query: SeqData, target: SeqData) -> None: ...
+    def map(self, res: Result, config: EquivalencyConfig | None = None) -> None: ...
+    def evaluate(self,
+                 c1: Contacts,
+                 m1: TopologyMapper.MappingType,
+                 c2: Contacts,
+                 m2: TopologyMapper.MappingType) -> int: ...
+    def get_luni(self, type: TopologyMapper.MappingType) -> LahutaCPP: ...  # noqa: A002

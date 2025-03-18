@@ -3,13 +3,16 @@
 
 #include "fseek/ops.hpp"
 #include "fseek/utils.hpp"
+#include "logging.hpp"
 #include "prefilter.hpp"
+#include "procs/chunking/chunk_defs.hpp"
 #include "seq.hpp"
 #include "seq_aligner.hpp"
 #include "seq_aligner_builder.hpp"
-#include <functional>
 #include <memory>
 #include <spdlog/spdlog.h>
+
+// clang-format off
 
 namespace lahuta {
 
@@ -50,7 +53,7 @@ static void print_result(SeqData &query, SeqData &target, AlignmentResult &ar) {
 } // namespace alignment_computers
 
 inline void log_sequence_(const SeqData &sd, const std::string &prefix = "") {
-  spdlog::info(
+  Logger::get_logger()->info(
       "{} Sequence: {} {} {} residues: {}",
       prefix,
       sd.file_name,
@@ -59,214 +62,119 @@ inline void log_sequence_(const SeqData &sd, const std::string &prefix = "") {
       format_seq(sd.SeqAA));
 }
 
-using FileList = std::vector<std::string>;
-using AlignProcessFunc2 =
-    std::function<std::optional<Matcher::result_t>(SeqData &query, SeqData &target, AlignmentResult &ar)>;
-
+// FIX: Should we have one Matcher::result_t per query-target pair?
 struct AlignerResults {
-  std::string q_file;
-  std::string t_file;
-  std::string q_ch;
-  std::string t_ch;
-  Matcher::result_t result;
+  std::shared_ptr<SeqData> query;
+  std::shared_ptr<SeqData> target;
+  std::vector<Matcher::result_t> results;
 };
 
-class Runner {
+
+class LahutaAlignerBase {
 public:
-  virtual ~Runner() = default;
   virtual void run(FileList &query_files, FileList &target_files) = 0;
-
-public:
-  /*std::unordered_map<std::string, Matcher::result_t> results;*/
-  std::vector<AlignerResults> results;
+  virtual ~LahutaAlignerBase() = default;
 };
 
-class LahutaAligner : public Runner {
+
+class LahutaAligner: public LahutaAlignerBase {
 
 public:
-  LahutaAligner(FoldSeekOps &ops, PrefilterOptions &pf_ops) : ops_(ops), pf_ops_(pf_ops) {}
+    LahutaAligner(FoldSeekOps ops = {}, PrefilterOptions pf_ops = {}, unsigned int n_threads = 0) 
+      : ops_(std::move(ops)) , pf_ops_(std::move(pf_ops)), n_threads(n_threads) {}
 
-  LahutaAligner(FoldSeekOps *ops = nullptr, PrefilterOptions *pf_ops = nullptr)
-      : ops_(ops ? *ops : FoldSeekOps()), pf_ops_(pf_ops ? *pf_ops : PrefilterOptions()) {}
-
-  void set_computer(AlignProcessFunc2 func) { computer = func; }
-  AlignProcessFunc2 get_default_computer() { return alignment_computers::print_alignment; }
-  AlignProcessFunc2 get_computer() { return (computer) ? computer : get_default_computer(); }
-
-  void run(FileList &query_files, FileList &target_files) override {
-    read_files(query_files, target_files);
+  void run(std::vector<std::string> &query_files, std::vector<std::string> &target_files) override {
+    load_sequences(query_files, target_files);
     build_resources();
     process_sequences();
   }
 
+  std::vector<AlignerResults> &get_results() { return results; }
+
 private:
-  void read_files(FileList &query_files, FileList &target_files) {
+  void load_sequences(std::vector<std::string> &query_files, std::vector<std::string> &target_files) {
 
-    SeqCollection queries_ = extract_all(ops_, query_files);
-    /*SeqCollection targets_ = extract_all(ops_, target_files);*/
-    SeqCollection targets_ = extract_all_parallel(ops_, target_files);
+    queries = extract_all(ops_, query_files);
+    targets = extract_all_parallel(ops_, target_files);
 
-    spdlog::warn(
-        "Read {} queries and {} targets: {} ",
-        queries_.size(),
-        targets_.size(),
-        targets_.total_length);
-
-    queries = std::make_unique<SeqCollection>(std::move(queries_));
-    targets = std::make_unique<SeqCollection>(std::move(targets_));
+    Logger::get_logger()->warn("Read {} queries and {} targets: {} ", queries.size(), targets.size(), targets.total_length);
   }
 
   // NOTE: the motivation to separate this step is to:
   // - avoid buiding the index if not needed (implemented)
   // - re-use the index for different chunks (not implemented)
   void build_resources() {
+
     if (pf_ops_.use_prefilter) {
-      SeqFilter seq_filter_(*queries, *targets, pf_ops_);
+      SeqFilter seq_filter_(queries, targets, pf_ops_);
       seq_filter_.build_index();
       seq_filter = std::make_unique<SeqFilter>(std::move(seq_filter_));
     }
 
-    spdlog::warn("Building alignment size info: {} queries and {} targets", queries->size(), targets->size());
-    aligner = SeqAlignerBuilder(ops_).build(*queries, *targets);
-    aligner->set_needs_lddt(false);
+    uint32_t max_size = static_cast<unsigned int>(std::max(queries.size(), targets.size()));
+    uint32_t default_threads = std::min(std::thread::hardware_concurrency(), max_size);
+    uint32_t num_threads =  n_threads > 0 ? std::min(n_threads, default_threads) : default_threads;
 
-    int num_threads = std::thread::hardware_concurrency();
     thread_aligners.resize(num_threads);
-    for (int i = 0; i < num_threads; ++i) {
-      thread_aligners[i] = SeqAlignerBuilder(ops_).build(*queries, *targets);
-      /*thread_aligners[i]->set_needs_lddt(false);*/
+    for (auto &aligner : thread_aligners) {
+      aligner = SeqAlignerBuilder(ops_).build(queries, targets);
+      aligner->set_needs_lddt(false);
     }
 
-    pool = std::make_unique<ctpl::thread_pool>(num_threads);
+    thread_pool_ = std::make_unique<ctpl::thread_pool>(num_threads);
   }
 
   void process_sequences() {
-    for (auto &query : *queries) {
-      if (spdlog::default_logger()->level() == spdlog::level::info) log_sequence_(query, "Q:");
-
+    for (auto &query : queries) {
       if (pf_ops_.use_prefilter) {
         Hits hits = seq_filter->filter(query);
-        process_input_parallel(query, hits);
-        /*process_input(query, hits);*/
+        process_alignments(query, hits);
       } else {
-        process_input(query, *targets);
+        process_alignments(query, targets);
       }
     }
   }
 
-  void process_input(SeqData &query, const Hits &hits) {
-    for (const int &hit_id : hits) {
-      SeqData &target = (*targets)[hit_id];
-
-      if (spdlog::default_logger()->level() == spdlog::level::info) log_sequence_(target, "T:");
-
-      auto alignment_result = aligner->align(query, target);
-      if (!alignment_result.success) {
-        /*spdlog::info("Alignment unsuccessful with {} - {}", target.file_name, target.chain_name);*/
-        continue;
-      };
-
-      auto v = get_computer()(query, target, alignment_result);
-      if (v.has_value()) {
-        std::cout << "v: " << v->eval << std::endl;
-      } else {
-        std::cout << "v: nullopt" << std::endl;
-      }
-    }
-  }
-
-  void process_input_parallel(SeqData &query, const Hits &hits) {
+  template <typename TargetType>
+  void process_alignments(SeqData &query, TargetType &targets) {
     std::vector<std::future<AlignmentResult>> futures;
-    futures.reserve(hits.size());
+    futures.reserve(targets.size());
 
-    auto thread_aligners_ = &thread_aligners;
-    for (const auto &hit_id : hits) {
-      SeqData &target = (*targets)[hit_id];
-      futures.emplace_back(pool->push([this, &query, &target](int thread_id) {
+    // Submit alignment tasks
+    for (size_t i = 0; i < targets.size(); ++i) {
+      SeqData &target = get_target(targets, i);
+      futures.emplace_back(thread_pool_->push([this, &query, &target](int thread_id) {
         return thread_aligners[thread_id]->align(query, target);
       }));
     }
 
     for (size_t i = 0; i < futures.size(); ++i) {
       auto alignment_result = futures[i].get();
-      if (!alignment_result.success) {
-        continue;
-      }
+      if (!alignment_result.success) continue;
+      Logger::get_logger()->critical("Number of alignments: {}", alignment_result.ar.size());
 
-      SeqData &target = (*targets)[hits[i]];
-      get_computer()(query, target, alignment_result);
-    }
-  }
-
-  void _process_input_parallel(SeqData &query, const Hits &hits) {
-
-    struct alig_res {
-      SeqData &query;
-      SeqData &target;
-      AlignmentResult alignment_result;
+      SeqData &target = get_target(targets, i);
+      results.push_back({std::make_shared<SeqData>(query), std::make_shared<SeqData>(target), alignment_result.ar});
     };
-
-    int num_threads = std::thread::hardware_concurrency();
-    ctpl::thread_pool pool(num_threads);
-    std::vector<std::future<alig_res>> futures;
-
-    for (const auto &hit_id : hits) {
-      SeqData &target = (*targets)[hit_id];
-      futures.emplace_back(pool.push([this, &query, &target](int id) { //
-        AlignmentResult alignment_result = aligner->align(query, target);
-        return alig_res{query, target, std::move(alignment_result)};
-      }));
-    }
-
-    for (auto &f : futures) {
-      auto result = f.get();
-      if (!result.alignment_result.success) {
-        continue;
-      };
-
-      get_computer()(result.query, result.target, result.alignment_result);
-    }
   }
 
-  void process_input(SeqData &query, SeqCollection &targets) {
-    for (auto &target : targets) {
-      if (spdlog::default_logger()->level() == spdlog::level::info) log_sequence_(target, "T:");
+  SeqData &get_target(SeqCollection &targets, size_t index) const { return targets[index]; }
+  SeqData &get_target(Hits &hits, size_t index) { return targets[hits[index]]; }
 
-      auto alignment_result = aligner->align(query, target);
-      if (!alignment_result.success) {
-        spdlog::info("Alignment unsuccessful with {} - {}", target.file_name, target.chain_name);
-        continue;
-      };
-
-      auto v = get_computer()(query, target, alignment_result);
-      if (v.has_value()) {
-        auto res = v.value();
-        /*std::string key = query.chain_name + "_" + target.chain_name;*/
-        /*results[key] = res;*/
-        /*std::cout << "result size: " << results.size() << std::endl;*/
-        /*results = {query.file_name, target.file_name, query.chain_name, target.chain_name, res};*/
-
-        results.push_back({query.file_name, target.file_name, query.chain_name, target.chain_name, res});
-        std::cout << "v: " << v->eval << std::endl;
-      } else {
-        std::cout << "v: nullopt" << std::endl;
-      }
-    }
-  }
+private:
+  unsigned int n_threads;
 
   FoldSeekOps ops_;
   PrefilterOptions pf_ops_;
+
+  SeqCollection queries;
+  SeqCollection targets;
+
   std::unique_ptr<SeqFilter> seq_filter;
-  std::unique_ptr<SeqAligner> aligner;
   std::vector<std::unique_ptr<SeqAligner>> thread_aligners{1};
-  std::unique_ptr<SeqCollection> queries;
-  std::unique_ptr<SeqCollection> targets;
-  AlignProcessFunc2 computer;
+  std::unique_ptr<ctpl::thread_pool> thread_pool_;
 
-  std::unique_ptr<ctpl::thread_pool> pool;
-
-  /*public:*/
-  /*  std::unordered_map<std::string, Matcher::result_t> results;*/
+  std::vector<AlignerResults> results;
 };
 
 } // namespace lahuta

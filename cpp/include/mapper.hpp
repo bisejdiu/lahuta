@@ -9,10 +9,10 @@
 #include <vector>
 
 #include "lahuta.hpp"
+#include "logging.hpp"
 #include "matcher.hpp"
 #include "neighbors.hpp"
 #include "seq.hpp"
-#include "spdlog/spdlog.h"
 #include "topology.hpp"
 #include "backtrace.hpp"
 
@@ -38,7 +38,7 @@ public:
     luni_ptr = std::make_unique<Luni>(Luni::create(sd.st));
     auto ok = luni_ptr->build_topology();
     if (!ok) {
-      spdlog::warn("Failed building the topology!");
+      Logger::get_logger()->warn("Failed building the topology!");
     }
   }
 

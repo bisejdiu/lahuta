@@ -12,17 +12,23 @@
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include "convert.hpp"
+#include "logging.hpp"
 #include "topology.hpp"
-#include "spdlog/spdlog.h"
 
-#define LAHUTA_VERSION "0.15.0"
+#define LAHUTA_VERSION "0.25.0"
 
 namespace lahuta {
-
-class Luni { // rename to Lahuta
+// NOTE: rename to Lahuta?
+class Luni {
 public:
+  Luni(const Luni&)            = delete;
+  Luni& operator=(const Luni&) = delete;
+
+  Luni(Luni&&)            = default;
+  Luni& operator=(Luni&&) = default;
+
   explicit Luni(std::string file_name) : file_name_(file_name) {
-    spdlog::info("Processing file: {}", file_name_);
+    Logger::get_logger()->info("Processing file: {}", file_name_);
     read_structure();
   }
 
@@ -62,15 +68,40 @@ public:
   const Topology &get_topology() const { return *get_topology_ptr(); }
   bool has_topology_built() { return topology.has_value(); };
 
-  RDKit::RWMol       &get_molecule()       { return *mol; }
+        RDKit::RWMol &get_molecule()       { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
 
-  RDKit::Conformer       &get_conformer(int id = -1)       { return mol->getConformer(id); }
+        auto *get_info(int idx)       { return static_cast<      RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
+  const auto *get_info(int idx) const { return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
+
+        RDKit::Conformer &get_conformer(int id = -1)       { return mol->getConformer(id); }
   const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
   const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
   const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
   const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
+
+  /// filter the molecule based on the atom indices
+  Luni filter(std::vector<int> &atom_indices) const;
+
+  /// EntityID -> AtomEntity/GroupEntity/RingEntity
+  template <typename T> const T &get_entity(EntityID id) const;
+
+  /// AtomEntity/GroupEntity/RingEntity -> EntityID
+  const std::vector<EntityID> &get_or_create_atom_entities();
+  const std::vector<EntityID> &get_or_create_ring_entities();
+  const std::vector<EntityID> &get_or_create_group_entities();
+
+  /// Can be called using the topology
+  void assign_molstar_atom_types()  { 
+    if (topology) { topology->assign_molstar_typing(); } 
+    else { Logger::get_logger()->error("Topology not built. Cannot assign Molstar atom types."); }
+  }
+
+  void assign_arpeggio_atom_types() {
+    if (topology) { topology->assign_arpeggio_atom_types(); } 
+    else { Logger::get_logger()->error("Topology not built. Cannot assign Arpeggio atom types."); }
+  }
 
   //! Returns the atoms of the molecule.
   const auto atoms() const { return mol->atoms(); }
@@ -109,21 +140,39 @@ public:
     return get_conformer(confId).getPositions();
   }
 
-  //! get the total number of bonded h atoms (explicit + implicit) for all atoms in the system
-  std::vector<int> total_hydrogen_count() const {
-    std::vector<int> hydrogen_counts;
-    for (const auto &atom : mol->atoms()) {
-      hydrogen_counts.push_back(atom->getTotalNumHs());
-    }
-    return hydrogen_counts;
-  }
-
-  template <typename T> friend class Neighbors;
   friend class Contacts;
 
   // FIX: add helper functions to get topology information
-  // FIX: Move these to the topology class
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
+  RDKit::Atom *get_atom(int idx) { return mol->getAtomWithIdx(idx); }
+
+
+  /// very rough estimate of the memory size
+  size_t total_size() const {
+    size_t size = sizeof(Luni);
+
+    size += mol->getNumAtoms() * sizeof(RDKit::Atom) + mol->getNumAtoms() * sizeof(RDKit::Atom *);
+    size += mol->getNumBonds() * sizeof(RDKit::Bond) + mol->getNumBonds() * sizeof(RDKit::Bond *);
+    size += mol->getNumConformers() * sizeof(RDKit::Conformer);
+    size += mol->getNumConformers() * mol->getNumAtoms() * sizeof(RDGeom::Point3D);
+
+
+    if (topology) {
+      size += topology->total_size();
+      size += mol->getRingInfo()->getTotalMemory();
+    }
+
+    size += entities.size() * sizeof(EntityType);
+    for (const auto &[type, ids] : entities) {
+      size += ids.size() * sizeof(EntityID);
+    }
+
+    size += sizeof(char) * file_name_.size();
+    size += sizeof(int)  * filtered_indices.size();
+    size += sizeof(bool);
+
+    return size;
+  }
 
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
@@ -138,7 +187,7 @@ private:
 
   const Topology* get_topology_ptr() const {
     if (!topology) {
-      spdlog::error("Cannot return topology, because no topology has been built.");
+      Logger::get_logger()->error("Cannot return topology, because no topology has been built.");
       throw std::runtime_error("Topology not built");
     }
     return &topology.value();
@@ -153,36 +202,11 @@ private:
     mol->addConformer(conformer, true);
   }
 
-public:
-  /// filter the molecule based on the atom indices
-  Luni filter(std::vector<int> &atom_indices) const;
-
-  /// EntityID -> AtomEntity/GroupEntity/RingEntity
-  template <typename T> const T &get_entity(EntityID id) const;
-
-  /// AtomEntity/GroupEntity/RingEntity -> EntityID
-  const std::vector<EntityID> &get_or_create_atom_entities();
-  const std::vector<EntityID> &get_or_create_ring_entities();
-  const std::vector<EntityID> &get_or_create_group_entities();
-
-  // FIX: part of the topology class. Can simply be called via the topology attribute
-  void assign_molstar_atom_types()  { 
-    if (topology) { topology->assign_molstar_typing(); } 
-    else { spdlog::error("Topology not built. Cannot assign Molstar atom types."); }
-  }
-
-  void assign_arpeggio_atom_types() {
-    if (topology) { topology->assign_arpeggio_atom_types(); } 
-    else { spdlog::error("Topology not built. Cannot assign Arpeggio atom types."); }
-  }
-
-private:
-  std::string file_name_;
-
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
-  std::unordered_map<lahuta::EntityType, std::vector<EntityID>> entities;
+  std::unordered_map<EntityType, std::vector<EntityID>> entities;
 
+  std::string file_name_;
   std::vector<int> filtered_indices;
   bool is_in_filtered_state = false; // ambitious name, for know it's just a flag
 };

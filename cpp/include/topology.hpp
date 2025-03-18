@@ -7,10 +7,11 @@
 #include "contacts/groups.hpp"
 #include "convert.hpp"
 #include "definitions.hpp"
+#include "logging.hpp"
 #include "residues.hpp"
-#include "spdlog/spdlog.h"
 #include <rdkit/GraphMol/BondIterators.h>
 
+// clang-format off
 namespace lahuta {
 
 // FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
@@ -36,11 +37,13 @@ public:
   const RingEntityCollection  &get_rings()      const { return rings_vec; }
   const GroupEntityCollection &get_features()   const { return features; }
 
+  std::vector<int> get_atom_ids() const { return residues->get_atom_ids(); }
+
 
   void build(TopologyBuildingOptions tops) {
 
     if (!mol_) {
-      spdlog::critical("Cannot build topology without a molecule.");
+      Logger::get_logger()->critical("Cannot build topology without a molecule.");
       throw std::runtime_error("Make sure to provide a molecule before building the topology.");
     }
 
@@ -77,13 +80,14 @@ public:
       }
 
     } catch (const std::runtime_error &e) {
-      spdlog::critical("Error creating topology! Exception caught: {}. Will not terminate, "
-                       "but no topology-based features will be available.", e.what());
+      Logger::get_logger()->critical(
+        "Error creating topology! Exception caught: {}. Will not terminate, "
+        "but no topology-based features will be available.", e.what()
+      );
     }
   }
 
   void assign_molstar_typing() {
-    std::cout << "Assigning MolStar atom types" << std::endl;
 
     // FIX: to be replaced by the entitytype manager
     atom_types = AtomTypeAnalysis ::analyze(*mol_);
@@ -98,8 +102,6 @@ public:
   }
 
   void assign_arpeggio_atom_types() {
-
-    std::cout << "Assigning Arpeggio atom types" << std::endl;
 
     atom_types.reserve(mol_->getNumAtoms());
     for (auto atom : mol_->atoms()) {
@@ -121,6 +123,9 @@ public:
 
     rings_vec = populate_ring_entities();
   }
+
+  /// approximate total memory usage
+  size_t total_size() const;
 
 private:
   RingEntityCollection populate_ring_entities();

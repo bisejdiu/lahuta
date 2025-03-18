@@ -65,6 +65,9 @@ public:
   const_iterator begin() const { return residues_.begin(); }
   const_iterator end() const { return residues_.end(); }
 
+  /// approximate total memory size
+  std::size_t total_size() const;
+
 private:
   void build_residues(const RDKit::RWMol &mol, bool &status);
 

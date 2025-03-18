@@ -62,6 +62,19 @@ py::array int_array(const std::vector<int> &data) {
   return result;
 }
 
+py::array float_array(const std::vector<float> &data) {
+  size_t n = data.size();
+  auto result = py::array_t<float>(n);
+  auto buf = result.request();
+  float *ptr = static_cast<float *>(buf.ptr);
+
+  for (size_t i = 0; i < n; ++i) {
+    ptr[i] = data[i];
+  }
+
+  return result;
+}
+
 py::tuple factorize_residues(
     const std::vector<std::string> &resnames, const std::vector<int> &resids,
     const std::vector<std::string> &chains) {

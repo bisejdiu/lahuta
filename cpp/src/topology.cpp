@@ -1,6 +1,7 @@
 #include "topology.hpp"
 #include "bond_order.hpp"
 #include "bonds.hpp"
+#include "logging.hpp"
 #include "ob/clean_mol.hpp"
 
 // clang-format off
@@ -16,9 +17,7 @@ RingEntityCollection Topology::populate_ring_entities() {
   }
 
 void Topology::compute_bonds(const NSResults &neighbors) {
-  std::cout << "Computing bonds" << std::endl;
   BondAssignmentResult result = assign_bonds(*mol_, neighbors);
-  std::cout << "Bonds assigned" << std::endl;
 
   // FIX: How do we handle connection records? If we define and use topology option, then
   // we can make this user configurable
@@ -102,6 +101,21 @@ void Topology::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std
   }
 }
 
+size_t Topology::total_size() const {
+  size_t total = sizeof(*this);
+
+  total += sizeof(AtomEntity)  * atom_types.get_data().size();
+  total += sizeof(RingEntity)  * rings_vec.get_data().size();
+  total += sizeof(GroupEntity) * features.get_data().size();
+
+  if (mol_) { total += sizeof(*mol_); }
+
+  total += residues->total_size();
+
+  return total;
+}
+
+
 bool Topology::should_initialize_ringinfo(int mol_size) {
     constexpr int small_threshold = 20'000;
     constexpr int medium_threshold = 50'000;
@@ -111,14 +125,14 @@ bool Topology::should_initialize_ringinfo(int mol_size) {
 
     // FIX: explain what "filtered" means
     if (mol_size < medium_threshold) {
-      spdlog::warn("Filtered molecule size ({}) is large. Performance may be affected.", mol_size);
+      Logger::get_logger()->warn("Filtered molecule size ({}) is large. Performance may be affected.", mol_size);
       return true;
     } else if (mol_size < large_threshold) {
-      spdlog::warn("Filtered molecule size ({}) is very large. Performance may be severely affected.", mol_size);
+      Logger::get_logger()->warn("Filtered molecule size ({}) is very large. Performance may be severely affected.", mol_size);
       return true;
     }
 
-    spdlog::warn("Filtered molecule size ({}) is too large. Ring perception will be skipped!", mol_size);
+    Logger::get_logger()->error("Filtered molecule size ({}) is too large. Ring perception will be skipped!", mol_size);
     return false;
   }
 
