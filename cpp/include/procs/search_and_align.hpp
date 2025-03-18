@@ -12,7 +12,7 @@ namespace lahuta {
 
 class LahutaProcessor {
 public:
-  explicit LahutaProcessor(std::shared_ptr<LahutaAligner> aligner, const ProcessingConfig &config)
+  explicit LahutaProcessor(std::shared_ptr<LahutaAlignerBase> aligner, const ProcessingConfig &config)
     : aligner_(aligner), config_(config) {}
 
   void process(const FileList &query_files, const FileList &target_files) {
@@ -52,7 +52,7 @@ public:
   }
 
 private:
-  std::shared_ptr<LahutaAligner> aligner_;
+  std::shared_ptr<LahutaAlignerBase> aligner_;
   ProcessingConfig config_;
 };
 

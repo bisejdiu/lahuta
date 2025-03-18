@@ -259,11 +259,6 @@ std::optional<Matcher::result_t> mapping_processor_w3(SeqData &query, SeqData &t
   return res;
 }
 
-struct LahutaOptions {
-  bool use_prefilter = false;
-  bool use_alt_alignment = false;
-  bool allow_query_self_operations = false;
-};
 
 int main() {
 

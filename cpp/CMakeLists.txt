@@ -189,7 +189,7 @@ if (USE_PYTHON)
   find_package(pybind11 2.6 CONFIG REQUIRED)
   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
 
-  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/logger_py.cpp python/contacts.cpp python/py_properties.cpp python/lahuta.cpp)
+  pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/logger_py.cpp python/contacts.cpp python/py_properties.cpp python/py_align.cpp python/py_te.cpp python/lahuta.cpp)
 
   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
     target_sources(lahuta_py PRIVATE 

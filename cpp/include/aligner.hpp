@@ -5,6 +5,7 @@
 #include "fseek/utils.hpp"
 #include "logging.hpp"
 #include "prefilter.hpp"
+#include "procs/chunking/chunk_defs.hpp"
 #include "seq.hpp"
 #include "seq_aligner.hpp"
 #include "seq_aligner_builder.hpp"
@@ -61,19 +62,28 @@ inline void log_sequence_(const SeqData &sd, const std::string &prefix = "") {
       format_seq(sd.SeqAA));
 }
 
+// FIX: Should we have one Matcher::result_t per query-target pair?
 struct AlignerResults {
   std::shared_ptr<SeqData> query;
   std::shared_ptr<SeqData> target;
   std::vector<Matcher::result_t> results;
 };
 
-class LahutaAligner {
+
+class LahutaAlignerBase {
+public:
+  virtual void run(FileList &query_files, FileList &target_files) = 0;
+  virtual ~LahutaAlignerBase() = default;
+};
+
+
+class LahutaAligner: public LahutaAlignerBase {
 
 public:
     LahutaAligner(FoldSeekOps ops = {}, PrefilterOptions pf_ops = {}, unsigned int n_threads = 0) 
       : ops_(std::move(ops)) , pf_ops_(std::move(pf_ops)), n_threads(n_threads) {}
 
-  void run(std::vector<std::string> &query_files, std::vector<std::string> &target_files) {
+  void run(std::vector<std::string> &query_files, std::vector<std::string> &target_files) override {
     load_sequences(query_files, target_files);
     build_resources();
     process_sequences();

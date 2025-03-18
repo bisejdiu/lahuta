@@ -5,7 +5,7 @@
 #include "gemmi/model.hpp"
 #include "seq.hpp"
 
-#include "ctpl/ctpl_stl.h"
+#include "ctpl/ctpl.h"
 #include <cassert>
 #include <iostream>
 #include <matcher.hpp>

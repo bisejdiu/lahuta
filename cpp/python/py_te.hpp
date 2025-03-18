@@ -4,5 +4,4 @@
 
 namespace py = pybind11;
 
-void bind_entities(py::module &_lahuta);
-
+void bind_te(py::module &_lahuta);

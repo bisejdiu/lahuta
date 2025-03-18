@@ -21,6 +21,8 @@
 #include "logging.hpp"
 #include "luni_props.hpp"
 #include "nsgrid.hpp"
+#include "py_align.hpp"
+#include "py_te.hpp"
 #include "residues.hpp"
 #include "topology.hpp"
 #include "py_properties.hpp"
@@ -364,5 +366,7 @@ PYBIND11_MODULE(_lahuta, m) {
   bind_entities(m);
   bind_logger(m);
   bind_properties(m);
+  bind_align(m);
+  bind_te(m);
 
 }

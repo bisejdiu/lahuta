@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <algorithm>
 
-#include "ctpl_stl.h"
+#include "ctpl.h"
 
 // IndexEntryLocal is an entry with position and seqId for a kmer
 // structure needs to be packed or it will need 8 bytes instead of 6
