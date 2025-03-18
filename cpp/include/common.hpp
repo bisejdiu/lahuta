@@ -5,7 +5,7 @@
 #include "GraphMol/PeriodicTable.h"
 #include "GraphMol/RWMol.h"
 #include "logging.hpp"
-#include "spdlog/spdlog.h"
+
 namespace lahuta {
 
 struct AtomInfo {
@@ -106,7 +106,7 @@ inline std::vector<std::string> find_elements(const std::vector<int> &atomic_num
 inline void log_atom_info(const RDKit::Atom *atom) {
   auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
   if (info) {
-    spdlog::info(
+    Logger::get_logger()->info(
         "Atom: {} {} {} {} {}",
         atom->getIdx(),
         info->getName(),
@@ -114,7 +114,7 @@ inline void log_atom_info(const RDKit::Atom *atom) {
         info->getResidueNumber(),
         info->getChainId());
   } else {
-    spdlog::trace("Atom: {} {}", atom->getIdx(), atom->getSymbol());
+    Logger::get_logger()->trace("Atom: {} {}", atom->getIdx(), atom->getSymbol());
   }
 }
 

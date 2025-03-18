@@ -4,6 +4,7 @@
 #include "CalcProbTP.h"
 #include "fseek/align.hpp"
 #include "fseek/ops.hpp"
+#include "logging.hpp"
 #include "matcher.hpp"
 #include "seq.hpp"
 #include <StructureSmithWaterman.h>
@@ -16,6 +17,7 @@ namespace lahuta {
 class AlignmentScores;
 
 // NOTE: uniqe_ptr because the underlying objects do not provide move semantics
+// FIX: should these be shared_ptr?
 struct MatrixContainer {
   std::unique_ptr<SubstitutionMatrix> subMat3Di;
   std::unique_ptr<SubstitutionMatrix> subMatAA;
@@ -26,7 +28,7 @@ struct MatrixContainer {
 };
 
 struct Scores {
-  double rmsd;
+  double rmsd; // FIX: Is this MSE?
   double tmscore;
   double avgLddtScore;
   double prob;
@@ -157,6 +159,11 @@ public:
   void set_needs_lddt(bool value) { need_lddt = value; }
 
   AlignmentResult align(SeqData &Q, SeqData &T) {
+
+    std::string q = Q.file_name.substr(Q.file_name.find_last_of('/') + 1);
+    std::string t = T.file_name.substr(T.file_name.find_last_of('/') + 1);
+    Logger::get_logger()->critical("Aligning {} - {}", q, t);
+
 
     if (!is_initialized) throw std::runtime_error("SeqAligner is not initialized");
 

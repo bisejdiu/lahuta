@@ -145,6 +145,7 @@ add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
 add_lahuta_executable(lex_fseek main_fseek.cpp)
 add_lahuta_executable(lex_fut main_future.cpp)
+add_lahuta_executable(lex_align main_align.cpp)
 
 # file(WRITE ${CMAKE_BINARY_DIR}/debug.entitlements
 # [=[<?xml version="1.0" encoding="UTF-8"?>

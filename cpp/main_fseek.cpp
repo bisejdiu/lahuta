@@ -48,6 +48,8 @@ int main(int argc, char const *argv[]) {
   std::cout << "Queries: " << queries.size() << std::endl;
   std::cout << "Targets: " << targets.size() << std::endl;
 
+  // FIX: chances are we will fail to read one or some of the files, but not all
+  // If we fail to read all files, we should return an error before we arive here
   if (!queries.success || !targets.success) {
     std::cerr << "Failed to process files" << std::endl;
     return 1;
@@ -60,7 +62,7 @@ int main(int argc, char const *argv[]) {
 
   ops.altAlignment = 0;
   int query_count = 0;
-  std::unique_ptr<SeqAligner> aligner = builder.build(queries, targets);
+  std::shared_ptr<SeqAligner> aligner = builder.build(queries, targets);
 
   int run_count = 0;
   for (auto &query : queries) {

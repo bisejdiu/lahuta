@@ -10,6 +10,8 @@
 /*#include "proc.hpp"*/
 #include "procs/search_and_align.hpp"
 
+// clang-format off
+
 using namespace lahuta;
 
 void mapping_processor(SeqData &query, SeqData &target, AlignmentResult &ar) {
@@ -178,22 +180,22 @@ Contacts compute_neighbor_contacts(const Luni &luni, double cutoff) {
   return contacts;
 };
 
-std::optional<Matcher::result_t> mapping_processor_w2(SeqData &query, SeqData &target, std::vector<Matcher::result_t> &ar) {
+std::optional<Matcher::result_t> mapping_processor_w2(SeqData &query, SeqData &target, AlignmentResult &ar) {
 
   using Mapping = TopologyMapper::MappingType;
 
   if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return std::nullopt;
-  if (ar[0].eval > 1) return std::nullopt;
+  if (ar.ar[0].eval > 1) return std::nullopt;
 
   std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
             << target.file_name << "_" << target.chain_name << " : "              //
-            << Matcher::results_to_string(ar) << std::endl;
+            << Matcher::results_to_string(ar.ar) << std::endl;
 
-  /*alignment_computers::print_result(query, target, ar);*/
+  alignment_computers::print_result(query, target, ar);
 
-  if (ar.empty()) return std::nullopt;
+  if (ar.ar.empty()) return std::nullopt;
 
-  Matcher::result_t res = ar.front();
+  Matcher::result_t res = ar.ar.front();
 
   auto mapper = LahutaMapper(query, target);
   mapper.map(res);
@@ -242,22 +244,18 @@ std::optional<Matcher::result_t> mapping_processor_w3(SeqData &query, SeqData &t
   if (query.file_name == target.file_name && query.chain_name >= target.chain_name) return std::nullopt;
   if (ar.ar[0].eval > 1) return std::nullopt;
 
-  // std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
-  //           << target.file_name << "_" << target.chain_name << " : "              //
-  //           << Matcher::results_to_string(ar.ar) << std::endl;
+  std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : "
+            << target.file_name << "_" << target.chain_name << " : "
+            << Matcher::results_to_string(ar.ar) << std::endl;
 
-  // std::cout << "Mapping: " << query.file_name << "_" << query.chain_name << " : " //
-  //           << target.file_name << "_" << target.chain_name << " : "              //
-  //           << Matcher::results_to_string(ar.ar) << " : " << ar.scores.rmsd << std::endl;
-
-  std::cout << "xMapping: " << target.file_name << "_" << target.chain_name << " : " << ar.scores.rmsd
-            << std::endl;
-  /*alignment_computers::print_result(query, target, ar);*/
+  std::cout << "xMapping: " << target.file_name << "_" << target.chain_name << " : " << ar.scores.rmsd << std::endl;
+  alignment_computers::print_result(query, target, ar);
 
   if (ar.ar.empty()) return std::nullopt;
 
   Matcher::result_t res = ar.ar.front();
 
+  std::cout << "Returning result" << std::endl;
   return res;
 }
 
@@ -269,106 +267,165 @@ struct LahutaOptions {
 
 int main() {
 
-  std::cout << "STARTING" << std::endl;
-  /*DirectoryHandler dir_handler("/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP", ".cif", true);*/
-  /*DirectoryHandler dir_handler("/Users/bsejdiu/data/mini_pdb_uncomp", ".cif", true);*/
-  DirectoryHandler dir_handler("/Users/bsejdiu/data/gpcrs/small/a", ".cif", true);
+  /*Logger::get_instance().set_log_level(Logger::LogLevel::Info);*/
 
-  auto pdb_targets = dir_handler.get_all_files();
+  std::string dir = "/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP";
+  /*std::string dir = "/Users/bsejdiu/data/gpcrs/small/a";*/
+  /*std::string dir = "/Users/bsejdiu/data/mini_pdb_uncomp";*/
 
-  try {
-    std::vector<std::string> query_files = {
-        /*"/Users/bsejdiu/data/gpcrs/small/a/8w8b.cif",*/
-        "/Users/bsejdiu/projects/lahuta/cpp/build/4ami.cif",
-        /*"/Users/bsejdiu/data/gpcrs/small/a/4nc3.cif",*/
-        /*"/Users/bsejdiu/data/gpcrs/small/a/8w8b.cif",*/
-    };
+  DirectoryHandler dir_handler(dir, ".cif", /* recursive= */ true);
+  std::vector<std::string> pdb_targets = dir_handler.get_all_files();
 
-    std::vector<std::string> query_files_t = {
-        /*"/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",*/
-        "/Users/bsejdiu/progs/foldseek/build/src/test/4nc3.cif",
-        // "/Users/bsejdiu/progs/foldseek/build/src/test/8w8b.cif",
-    };
+  std::vector<std::string> query_files_t = {
+      "/Users/bsejdiu/progs/foldseek/build/src/test/4nc3.cif",
+      /*"/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",*/
+      /*"/Users/bsejdiu/progs/foldseek/build/src/test/8w8b.cif",*/
+  };
 
-    std::vector<std::string> target_files = {
-        "/Users/bsejdiu/data/gpcrs/small/b/2r4r.cif",
-        /*"/Users/bsejdiu/data/gpcrs/small/b/2r4s.cif",*/
-        /*"/Users/bsejdiu/data/gpcrs/small/b/3nya.cif",*/
-        /*"/Users/bsejdiu/data/gpcrs/small/b/8jj8.cif"*/
-    };
+  std::vector<std::string> target_files = {
+      "/Users/bsejdiu/data/gpcrs/small/b/2r4r.cif",
+      /*"/Users/bsejdiu/data/gpcrs/small/b/2r4s.cif",*/
+      /*"/Users/bsejdiu/data/gpcrs/small/b/3nya.cif",*/
+      "/Users/bsejdiu/data/gpcrs/small/b/8jj8.cif"
+  };
 
-    std::vector<std::string> target_files_t = {
-        "/Users/bsejdiu/progs/foldseek/build/src/test2/4ami.cif",
-        // "/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",
-    };
+  std::vector<std::string> target_files_t = {
+      /*"/Users/bsejdiu/progs/foldseek/build/src/test2/4ami.cif",*/
+      /*"/Users/bsejdiu/progs/foldseek/build/src/test2/8w8b.cif",*/
+  };
 
-    std::vector<std::string> qf = {
-        "/Users/bsejdiu/tmp/old_lahuta_hemoglobin_network/hemoglobin/2dn1_both_assemblies_renamed.cif",
-        /*"/Users/bsejdiu/tmp/old_lahuta_hemoglobin_network/hemoglobin/2dn2.cif"*/
-    };
+  std::vector<std::string> qq = {"/Users/bsejdiu/projects/lahuta/cpp/build/2rh1.cif"};
+  std::vector<std::string> tt = {"/Users/bsejdiu/projects/lahuta/cpp/build/3sn6_chainR.cif"};
 
-    std::vector<std::string> tf = {"/Users/bsejdiu/tmp/old_lahuta_hemoglobin_network/hemoglobin/2dn2.cif"};
 
-    std::vector<std::string> qq = {"/Users/bsejdiu/projects/lahuta/cpp/build/2rh1.cif"};
-    std::vector<std::string> tt = {"/Users/bsejdiu/projects/lahuta/cpp/build/3sn6_chainR.cif"};
+  // {
+
+  //   FoldSeekOps ops;
+  //   PrefilterOptions pf_ops;
+  //   pf_ops.use_prefilter = false;
+
+
+  //   ProcessingConfig config{
+  //       .query_chunk_size = 10,
+  //       .target_chunk_size = 10000, // NOTE: the number of targets will be higher because each chain makes up a new target
+  //       .allow_self_ops = false,
+  //   };
+
+  //   std::shared_ptr<LahutaAligner> aligner = std::make_shared<LahutaAligner>(ops, pf_ops);
+  //   LahutaProcessor processor(aligner, config);
+  //   processor.process(query_files_t, pdb_targets);
+
+  //   auto & results = aligner->get_results();
+  //   std::cout << "Results: " << results.size() << std::endl;
+
+  //   for (auto &res : results) {
+  //     auto &ars = res.results;
+  //     for (auto &ar : ars) {
+  //       std::cout << "Result: " << res.query->file_name << " : "
+  //                 /*<< res.t_file << " : " << res.q_ch << " : " << res.t_ch //*/
+  //                 << res.target->file_name << " : " << res.query->chain_name << " : " << res.target->chain_name
+  //                 << " : " << Matcher::result_to_string(ar)
+  //                 << std::endl;
+  //     }
+  //   }
+  // }
+
+
+  {
+
+    FoldSeekOps ops;
+    PrefilterOptions pf_ops;
+    pf_ops.use_prefilter = false; // FIX: LDDT works only with prefilter true (I think this is due to some memory-related issue in the source code)
+    ops.altAlignment = 8;
+
 
     ProcessingConfig config{
         .query_chunk_size = 10,
-        .target_chunk_size = 20000,
-        .allow_self_ops = true
+        .target_chunk_size = 20000, // NOTE: the number of targets will be higher because each chain makes up a new target
+        .allow_self_ops = true,
     };
 
-    // FIX: test with using alternative alignments
-    FoldSeekOps ops;
-    PrefilterOptions pf_ops;
-    pf_ops.use_prefilter = true;
-
     std::shared_ptr<LahutaAligner> aligner = std::make_shared<LahutaAligner>(ops, pf_ops);
-    /*aligner->set_computer(mapping_processor_w);*/
-    /*aligner->set_computer(mapping_processor_w3);*/
-    /*aligner->set_computer(mapping_processor_w2);*/
-    /*aligner->set_computer(mapping_processor);*/
-
     LahutaProcessor processor(aligner, config);
-    /*processor.process_files(query_files);*/
-
-    /*processor.process_files(query_files, target_files);*/
-    /*processor.process_files(qf, tf);*/
-    /*processor.process_files(qq, tt);*/
-
-    /*auto r = processor.runner_->results;*/
-    // auto r = processor.get_results();
-    /*std::cout << "Results: " << r.size() << std::endl;*/
-    /*for (auto &[key, value] : processor.get_runner().results) {*/
-    /*  std::cout << "KEY: " << key << " : " << Matcher::result_to_string(value) << std::endl;*/
-    /*}*/
-
-    // for (auto &res : r) {
-    //   std::cout << "Result: " << res.q_file << " : "                    //
-    //             << res.t_file << " : " << res.q_ch << " : " << res.t_ch //
-    //             << " : " << Matcher::result_to_string(res.result)       //
-    //             << std::endl;
-    // }
-
-    /*processor.process_files({"/Users/bsejdiu/projects/lahuta/cpp/build/4ami.cif"}, pdb_targets);*/
-
-    /*processor.process_files(query_files, pdb_targets);*/
-    processor.process(query_files_t, target_files_t);
-    /*processor.process_files(query_files, target_files);*/
+    processor.process(query_files_t, target_files);
 
     auto & results = aligner->get_results();
     std::cout << "Results: " << results.size() << std::endl;
-    auto res = results.front();
-    std::cout << "Res: " << res.results.size() << std::endl;
-    std::cout << "Result: " << res.query->file_name << " : "                    //
-              /*<< res.t_file << " : " << res.q_ch << " : " << res.t_ch //*/
-              << res.target->file_name << " : " << res.query->chain_name << " : " << res.target->chain_name //
-              << " : " << Matcher::result_to_string(res.results.front())              //
-              << std::endl;
-    auto v = mapping_processor_w2(*res.query, *res.target, results.front().results);
 
-
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << std::endl;
+    for (auto &res : results) {
+      auto &ars = res.results;
+      for (auto &ar : ars) {
+        std::cout << "Result: " << res.query->file_name << " : "
+                  /*<< res.t_file << " : " << res.q_ch << " : " << res.t_ch //*/
+                  << res.target->file_name << " : " << res.query->chain_name << " : " << res.target->chain_name
+                  << " : " << Matcher::result_to_string(ar)
+                  << std::endl;
+      }
+    }
   }
+
+  {
+
+    FoldSeekOps ops;
+    PrefilterOptions pf_ops;
+    pf_ops.use_prefilter = true;
+    ops.altAlignment = 8;
+
+
+    ProcessingConfig config{
+        .query_chunk_size = 10,
+        .target_chunk_size = 20000, // NOTE: the number of targets will be higher because each chain makes up a new target
+        .allow_self_ops = false,
+    };
+
+    std::shared_ptr<LahutaAligner> aligner = std::make_shared<LahutaAligner>(ops, pf_ops);
+    LahutaProcessor processor(aligner, config);
+    processor.process(query_files_t, target_files);
+
+    auto & results = aligner->get_results();
+    std::cout << "Results: " << results.size() << std::endl;
+
+    for (auto &res : results) {
+      auto &ars = res.results;
+      for (auto &ar : ars) {
+        std::cout << "Result: " << res.query->file_name << " : "
+                  << res.target->file_name << " : " << res.query->chain_name << " : " << res.target->chain_name
+                  << " : " << Matcher::result_to_string(ar)
+                  << std::endl;
+      }
+    }
+  }
+
+  {
+    FoldSeekOps ops;
+    PrefilterOptions pf_ops;
+    pf_ops.use_prefilter = false;
+    ops.altAlignment = 8;
+
+    ProcessingConfig config{
+        .query_chunk_size = 10,
+        .target_chunk_size = 20000, // NOTE: the number of targets will be higher because each chain makes up a new target
+        .allow_self_ops = true,
+    };
+
+    auto aligner = std::make_shared<LahutaAligner>(ops, pf_ops);
+    LahutaProcessor processor(aligner, config);
+    processor.process(target_files);
+
+    auto & results = aligner->get_results();
+    std::cout << "Results: " << results.size() << std::endl;
+
+    for (auto &res : results) {
+      auto &ars = res.results;
+      for (auto &ar : ars) {
+        std::cout << "Result: " << res.query->file_name << " : "
+                  << res.target->file_name << " : " << res.query->chain_name << " : " << res.target->chain_name
+                  << " : " << Matcher::result_to_string(ar)
+                  << std::endl;
+      }
+    }
+  }
+
+
 }
+
