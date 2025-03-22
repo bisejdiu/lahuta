@@ -7,7 +7,6 @@
 #include "contacts/hydrophobic.hpp"
 #include "contacts/metals.hpp"
 #include "hydrogen_bonds.hpp"
-#include "valence_model.hpp"
 
 namespace lahuta {
 
@@ -119,9 +118,6 @@ public:
     auto strategy = AtomTypeFactory::create();
 
     // FIX: We ignore here atom typing added by OpenBabel typing system.
-    ValenceModel valence_model;
-    valence_model.apply(mol);
-
     for (const auto &atom : mol.atoms()) {
       AtomType at = strategy.identify(mol, *atom);
       atom_types.add_data(mol, atom, at);

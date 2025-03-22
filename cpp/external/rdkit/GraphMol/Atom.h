@@ -224,6 +224,13 @@ class Atom : public RDProps {
   unsigned int getNumRadicalElectrons() const { return d_numRadicalElectrons; }
   void setNumRadicalElectrons(unsigned int num) { d_numRadicalElectrons = num; }
 
+  // b.i.s
+  unsigned int getNumCompImplicitHs() const { return comp_implicit_h; }
+  void setNumCompImplicitHs(unsigned int num) { comp_implicit_h = num; }
+
+  unsigned int getCompAtomType() const { return comp_atom_type; }
+  void setCompAtomType(unsigned int num) { comp_atom_type = num; }
+
   //! returns the formal charge of this atom
   int getFormalCharge() const { return d_formalCharge; }
   //! set's the formal charge of this atom
@@ -423,6 +430,10 @@ class Atom : public RDProps {
   std::uint8_t d_numRadicalElectrons;
   std::uint8_t d_chiralTag;
   std::uint8_t d_hybrid;
+
+  // b.i.s
+  std::uint8_t comp_implicit_h{0}; // used to store the implicit H count
+  std::uint32_t comp_atom_type{0}; // used to store the atom type (lahuta::AtomType)
 
   std::uint16_t d_isotope;
   atomindex_t d_index;

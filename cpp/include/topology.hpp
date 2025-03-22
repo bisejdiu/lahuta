@@ -38,6 +38,9 @@ public:
 
   void assign_molstar_typing() {
 
+    ValenceModel valence_model;
+    valence_model.apply(*mol_);
+
     // FIX: to be replaced by the entitytype manager
     atom_types = AtomTypeAnalysis ::analyze(*mol_);
     features   = GroupTypeAnalysis::analyze(*mol_, *residues);

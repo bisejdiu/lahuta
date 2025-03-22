@@ -176,8 +176,7 @@ bool are_geometrically_viable(
 }
 
 AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  int implicit_h = atom.getProp<int>("computed_implicit_h");
-  int total_h = atom.getNumExplicitHs() + implicit_h;
+  int total_h = atom.getNumExplicitHs() + atom.getNumCompImplicitHs();
 
   // include both nitrogen atoms in histidine due to their often ambiguous protonation assignment
   if (is_histidine_nitrogen(atom, mol)) return AtomType::HBOND_DONOR;
@@ -194,7 +193,6 @@ AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
-  int implicit_h = atom.getProp<int>("computed_implicit_h");
   int formal_charge = atom.getFormalCharge();
   int atomic_num = atom.getAtomicNum();
 
@@ -207,7 +205,7 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom)
     if (formal_charge < 1) {
       // Neutral nitrogen might be an acceptor
       // It must have at least one lone pair not conjugated
-      unsigned int total_bonds = get_bond_count(mol, atom) + implicit_h;
+      unsigned int total_bonds = get_bond_count(mol, atom) + atom.getNumCompImplicitHs();
 
       auto hybridization = atom.getHybridization();
       if ((hybridization == HybridizationType::SP3 && total_bonds < 4)
@@ -229,8 +227,7 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom)
 }
 
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  int implicit_h = atom.getProp<int>("computed_implicit_h");
-  int total_h = atom.getNumExplicitHs() + implicit_h;
+  int total_h = atom.getNumExplicitHs() + atom.getNumCompImplicitHs();
 
   if (atom.getAtomicNum() == 6 && total_h > 0) {
     if (get_bond_count(mol, atom, 7) > 0 ||        // Bonded to nitrogen

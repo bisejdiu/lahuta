@@ -39,8 +39,9 @@ void read_and_build_model_topology(RDKit::RWMol &mol, RDKit::Conformer &conf, Mo
                 residue + 1).release()
       );
 
-      (*atom).setProp<int>("computed_implicit_h", ih); // underneath this is a map, which means its very slow.
-      (*atom).setProp<int>("at", at);
+      atom->setNumCompImplicitHs(ih);
+      atom->setCompAtomType(at);
+
       AtomPtrs.push_back(std::move(atom));
       atom_idx++;
     }
@@ -129,12 +130,10 @@ void read_and_build_model_topology(RDKit::RWMol &mol, RDKit::Conformer &conf, Mo
       entry_.name,
       sequence.size() + 1).release());
 
-  // set the number of implicit Hs for OXT and first N atom
-  (*oxt_atom).setProp<int>("computed_implicit_h", 0);
-  (*oxt_atom).setProp<int>("at", 9217);
-  mol.getAtomWithIdx(0)->setProp<int>("computed_implicit_h", 3);
-
-  // add OXT
+  // add OXT, and set the number of implicit Hs for OXT and the first N atom
+  oxt_atom->setNumCompImplicitHs(0);
+  oxt_atom->setCompAtomType(9217);
+  mol.getAtomWithIdx(0)->setNumCompImplicitHs(3);
   mol.addAtomToBatch(oxt_atom.release());
 
   // set all atom positions
@@ -176,18 +175,20 @@ void read_and_build_model_topology(RDKit::RWMol &mol, RDKit::Conformer &conf, Mo
     residue_start_idx += entry.size;
   }
 
-  // add disulfide bonds
+  // handle disulfide bonds, and bonded S atoms
   auto disulfide_pairs = find_disulfide_bonds(sulphur_atom_indices, conf.getPositions());
   for (const auto &pair : disulfide_pairs) {
     mol.addBond(pair.first, pair.second, BondType::SINGLE);
 
     // correct the implicit Hs from S atoms
-    mol.getAtomWithIdx(pair.first )->setProp<int>("computed_implicit_h", 0);
-    mol.getAtomWithIdx(pair.second)->setProp<int>("computed_implicit_h", 0);
+    mol.getAtomWithIdx(pair.first )->setNumCompImplicitHs(0);
+    mol.getAtomWithIdx(pair.second)->setNumCompImplicitHs(0);
 
     // correct the atom type for S atoms
-    mol.getAtomWithIdx(pair.first )->setProp<int>("at", (int)(static_cast<AtomType>(mol.getAtomWithIdx(pair.first )->getProp<int>("at")) ^ AtomType::HBOND_DONOR));
-    mol.getAtomWithIdx(pair.second)->setProp<int>("at", (int)(static_cast<AtomType>(mol.getAtomWithIdx(pair.second)->getProp<int>("at")) ^ AtomType::HBOND_DONOR));
+    auto first_at  = static_cast<AtomType>(mol.getAtomWithIdx(pair.first )->getCompAtomType());
+    auto second_at = static_cast<AtomType>(mol.getAtomWithIdx(pair.second)->getCompAtomType());
+    mol.getAtomWithIdx(pair.first )->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HBOND_DONOR));
+    mol.getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HBOND_DONOR));
   }
 
   // Finally, we'll handle aromatic rings

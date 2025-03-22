@@ -301,16 +301,17 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
       break;
   }
 
-  // FIX: in lieu of a proper fix
+  // FIX: temporary, until we debug the issue
   auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (res_info->getResidueName() == "TRP" && res_info->getName() == "NE1") {
-    atom.setProp<int>("computed_implicit_h", 1);
+    atom.setNumCompImplicitHs(1);
+    return;
   } else if (res_info->getResidueName() == "HIS" && res_info->getName() == "NE2") {
-    atom.setProp<int>("computed_implicit_h", 1);
-  } else {
-    atom.setProp<int>("computed_implicit_h", implicit_h);
+    atom.setNumCompImplicitHs(1);
+    return;
   }
 
+  atom.setNumCompImplicitHs(implicit_h);
 }
 
 } // namespace lahuta
