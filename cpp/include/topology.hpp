@@ -1,13 +1,8 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
-#include "aromatics.hpp"
-#include "atom_types.hpp"
 #include "contacts/atoms.hpp"
 #include "contacts/groups.hpp"
-#include "convert.hpp"
-#include "definitions.hpp"
-#include "logging.hpp"
 #include "residues.hpp"
 #include <rdkit/GraphMol/BondIterators.h>
 
@@ -39,53 +34,7 @@ public:
 
   std::vector<int> get_atom_ids() const { return residues->get_atom_ids(); }
 
-
-  void build(TopologyBuildingOptions tops) {
-
-    if (!mol_) {
-      Logger::get_logger()->critical("Cannot build topology without a molecule.");
-      throw std::runtime_error("Make sure to provide a molecule before building the topology.");
-    }
-
-    try {
-      if (tops.compute_bonds) {
-      auto grid = FastNS(mol_->getConformer().getPositions());
-      auto ok = grid.build(tops.cutoff);
-      if (!ok) {
-          throw std::runtime_error("Failed to build the grid for neighbor search.");
-      }
-      auto neighbors = std::make_shared<NSResults>(grid.self_search());
-
-      // FIX: neighbor computation can technically be the responsibility of compute_bonds, but
-      // that moves them perhaps too much down the stack, and makes control of the process
-      // more difficult (e.g., if we need to use a memory pool or arena allocator)
-      this->compute_bonds(*neighbors);
-      }
-
-      // build residue information
-      residues->build();
-
-      // populate ring information to RDKit Mol
-      initialize_and_populate_ringinfo(*mol_, *residues);
-
-      switch (tops.atom_typing_method) {
-        case ContactComputerType::Molstar:
-          this->assign_molstar_typing();
-          break;
-        case ContactComputerType::Arpeggio:
-          this->assign_arpeggio_atom_types();
-          break;
-        default:
-          break;
-      }
-
-    } catch (const std::runtime_error &e) {
-      Logger::get_logger()->critical(
-        "Error creating topology! Exception caught: {}. Will not terminate, "
-        "but no topology-based features will be available.", e.what()
-      );
-    }
-  }
+  void build(TopologyBuildingOptions tops);
 
   void assign_molstar_typing() {
 
@@ -101,28 +50,7 @@ public:
     rings_vec = populate_ring_entities();
   }
 
-  void assign_arpeggio_atom_types() {
-
-    atom_types.reserve(mol_->getNumAtoms());
-    for (auto atom : mol_->atoms()) {
-      AtomType atom_type = get_atom_type(atom);
-      atom_types.add_data(*mol_, atom, atom_type);
-    }
-
-    auto unk_indices = residues->filter(std::not_fn(definitions::is_protein_extended)).get_atom_ids();
-    if (!unk_indices.empty()) {
-      std::sort(unk_indices.begin(), unk_indices.end());
-      auto new_mol = filter_with_bonds(*mol_, unk_indices);
-      if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
-        auto vec = match_atom_types(new_mol);
-        for (size_t i = 0; i < unk_indices.size(); ++i) {
-          atom_types.add_data(*mol_, mol_->getAtomWithIdx(unk_indices[i]), vec[i]);
-        }
-      }
-    }
-
-    rings_vec = populate_ring_entities();
-  }
+  void assign_arpeggio_atom_types();
 
   /// approximate total memory usage
   size_t total_size() const;

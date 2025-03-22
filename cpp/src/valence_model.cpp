@@ -121,6 +121,13 @@ HybridizationType ValenceModel::assign_geometry(int total_coordination) const {
   }
 }
 
+// FIX: TRP-NE1 is not evaluated as having 1 implicit H (but is by PropKa)
+//      HIS-NE1 is not evaluated as having 1 implicit H (but is by PropKa)
+//
+// NOTE:
+//      ASP-OD2 is evaluated as having 1 implicit H by PropKa (at 7.4) but only
+//      those facing the core of the protein. This means H assignment by PropKa
+//      is context dependent (more accurate).
 void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom) {
 
   const int h_count = atom.getNumExplicitHs();
@@ -226,6 +233,7 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
       }
 
       geom = assign_geometry(degree + implicit_h - charge + (conjugated && !multi_bond ? 1 : 2));
+
       atom.setHybridization(static_cast<HybridizationType>(geom));
       atom.setFormalCharge(charge);
       break;
@@ -292,7 +300,17 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
     default:
       break;
   }
-  atom.setProp<int>("computed_implicit_h", implicit_h);
+
+  // FIX: in lieu of a proper fix
+  auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
+  if (res_info->getResidueName() == "TRP" && res_info->getName() == "NE1") {
+    atom.setProp<int>("computed_implicit_h", 1);
+  } else if (res_info->getResidueName() == "HIS" && res_info->getName() == "NE2") {
+    atom.setProp<int>("computed_implicit_h", 1);
+  } else {
+    atom.setProp<int>("computed_implicit_h", implicit_h);
+  }
+
 }
 
 } // namespace lahuta

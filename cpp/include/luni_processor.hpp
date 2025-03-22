@@ -11,7 +11,7 @@
 
 namespace lahuta {
 
-constexpr int MAX_MEM_THRESHOLD = 1024 * 1024 * 1000; // 1 GB
+constexpr size_t MAX_MEM_THRESHOLD = 1024ull * 1024 * 10000; // 10 GB
 
 template <typename T>
 class ResultStore {
@@ -114,7 +114,8 @@ public:
     if (use_spinner_) {
       hide_cursor();
 
-      auto existing_logger = spdlog::default_logger();
+      auto current_format = Logger::get_instance().get_format_style();
+      /*auto existing_logger = spdlog::default_logger();*/
 
       spinner_.set_max_progress(file_paths.size());
       Logger::get_instance().configure_for_spinner(&spinner_, spinner_.get_mutex());
@@ -127,7 +128,8 @@ public:
           })
         );
       }
-      spdlog::set_default_logger(existing_logger);
+      /*spdlog::set_default_logger(existing_logger);*/
+      Logger::get_instance().set_format(current_format);
 
     } else {
 
@@ -165,11 +167,30 @@ public:
 
 private:
   template <typename OnTickCallback>
-  void process_file(const std::string& file_path, OnTickCallback on_tick_callback) {
+  void _process_file(const std::string& file_path, OnTickCallback on_tick_callback) {
     try {
       SourceType source(file_path);
       source.build_topology();
 
+      ResultType result = analyzer_(source);
+
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        threadpool_store_.add_result(file_path, std::move(result));
+      }
+
+      on_tick_callback(file_path);
+
+      Logger::get_logger()->info("Successfully processed file: {}", file_path);
+    } catch (const std::exception& e) {
+      Logger::get_logger()->error("Error processing file {}: {}", file_path, e.what());
+    }
+  }
+
+  template <typename OnTickCallback>
+  void process_file(const std::string& file_path, OnTickCallback on_tick_callback) {
+    try {
+      SourceType source(file_path, true); // FIX: very temporary solution to test AF2 models
       ResultType result = analyzer_(source);
 
       {

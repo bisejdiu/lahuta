@@ -60,6 +60,7 @@ class GroupTypeFactory {
 public:
   static GroupTypeStrategy create() {
     GroupTypeStrategy gt;
+    // FIX: rename to add_method or similar, not add_strategy
     gt.add_strategy<PositiveChargeGroup>();
     gt.add_strategy<NegativeChargeGroup>();
     gt.add_strategy<AromaticRingGroup>();

@@ -142,6 +142,14 @@ class RWMol : public ROMol {
     return ROMol::addBond(bond, takeOwnership);
   }
 
+  unsigned int addAtomToBatch(Atom *atom_p) {
+    return ROMol::addAtomToBatch(atom_p);
+  }
+
+  void preAllocateAtoms(unsigned int numAtoms) {
+    ROMol::preAllocateAtoms(numAtoms);
+  }
+
   //! starts a Bond and sets its beginAtomIdx
   /*!
     \return a pointer to the new bond

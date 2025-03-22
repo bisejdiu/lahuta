@@ -1,5 +1,4 @@
 #include "contacts/interactions.hpp"
-#include "file_system.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"
 #include "selections/tokenizer.hpp"
@@ -14,35 +13,31 @@ int main(int argc, char const *argv[]) {
 
   Logger::get_instance().set_log_level(Logger::LogLevel::Trace);
 
+  auto start_t = std::chrono::high_resolution_clock::now();
+
+   std::string file_name = argv[1];
+
   auto start = std::chrono::high_resolution_clock::now();
-  std::string file_name = argv[1];
   /*std::string file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif";*/
   Luni luni(file_name);
   /*luni.assign_arpeggio_atom_types();*/
   /*luni.assign_molstar_atom_types();*/
+  auto end = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+  std::cout << "Time: " << duration.count() << " us" << std::endl;
 
-  std::cout << "Memory footprint (!top): " << luni.total_size() / (1024 * 1024) << "MB" << std::endl;
+  auto start_topology = std::chrono::high_resolution_clock::now();
   if (!luni.build_topology()) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
     return 1;
   }
-
-  std::cout << "Memory footprint (top): " << luni.total_size() / (1024 * 1024) << "MB" << std::endl;
-  std::cout << "Topology footprint (top): " << luni.get_topology().total_size() / (1024 * 1024) << "MB" << std::endl;
-
-  std::cout << "ENTITIES: " << file_name << std::endl;
-  for (const long long &v  : luni.get_or_create_ring_entities()) {
-    std::cout << v << " ";
-  }
-  std::cout << "DONE with entities." << std::endl;
+  auto end_topology = std::chrono::high_resolution_clock::now();
+  auto duration_topology = std::chrono::duration_cast<std::chrono::microseconds>(end_topology - start_topology);
+  std::cout << "Topology Time: " << duration_topology.count() << " us" << std::endl;
 
   auto mol = &luni.get_molecule();
-  std::cout << "Molecule: " << mol->getNumAtoms() << std::endl;
-
-  auto end = std::chrono::high_resolution_clock::now();
-  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "Time: " << duration.count() << " ms" << std::endl;
-  /*return 0;*/
+  std::cout << "Molecule Atoms: " << mol->getNumAtoms() << std::endl;
+  std::cout << "Molecule Bonds: " << mol->getNumBonds() << std::endl;
 
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);

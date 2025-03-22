@@ -98,7 +98,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
 
 std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RWMol &mol, const Residues &residues) {
 
-  using               RingSize = definitions::arom_rings::RingSize;
+  using RingSize = definitions::arom_rings::RingSize;
   constexpr auto &AromRingSize = definitions::arom_rings::AromaticResiduesRingSizes;
 
   std::vector<std::vector<int>> ring_vector;

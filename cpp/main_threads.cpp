@@ -60,7 +60,7 @@ int main(int argc, char  *argv[]) {
 
   auto query     = PropertyQuery<Luni>().select(PropertyKey::Names, PropertyKey::Indices);
   auto analyzer  = PropertyAnalyzer<Luni>(query);
-  auto processor = FileProcessor(-1, analyzer, true);
+  auto processor = FileProcessor(1, analyzer, false);
 
 
   /*Luni luni(file_paths2[0]);*/
@@ -70,11 +70,11 @@ int main(int argc, char  *argv[]) {
   /*const auto& indices = v.get<PropertyKey::Names>();*/
   /*Logger::get_logger()->info("Test:: File {} => #labels={}, #values={}", file_paths2[0], names.size(), indices.size());*/
 
-  //! auto identityAnalyzer = IdentityAnalyzer<Luni>{};
-  //! FileProcessor processorL(-1, identityAnalyzer, true);
-
-  //! processorL.process_files(file_paths2);
-  //! processorL.wait_for_completion();
+  /*auto identityAnalyzer = IdentityAnalyzer<Luni>{};*/
+  /*FileProcessor processorL(-1, identityAnalyzer, true);*/
+  /**/
+  /*processorL.process_files(file_paths);*/
+  /*processorL.wait_for_completion();*/
 
   //! auto res_opt = processorL.get_result(file_paths2[0]);
   //! if (res_opt) {
@@ -85,32 +85,32 @@ int main(int argc, char  *argv[]) {
   //!   Logger::get_logger()->warn("No result found for file {}", file_paths2[0]);
   //! }
 
-  auto start = std::chrono::high_resolution_clock::now();
+  /*auto start = std::chrono::high_resolution_clock::now();*/
   processor.process_files(file_paths);
   processor.wait_for_completion();
-  auto end = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed_seconds = end - start;
-  Logger::get_logger()->info("Elapsed time: {}", elapsed_seconds.count());
+  /*auto end = std::chrono::high_resolution_clock::now();*/
+  /*std::chrono::duration<double> elapsed_seconds = end - start;*/
+  /*Logger::get_logger()->info("Elapsed time: {}", elapsed_seconds.count());*/
 
 
-  /*return 0;*/
+  return 0;
 
-  start = std::chrono::high_resolution_clock::now();
-  for (auto &file : file_paths) {
-    auto res_opt = processor.get_result(file);
-    if (res_opt) {
-
-      const auto& names = res_opt->get<PropertyKey::Indices>();
-      const auto& indices = res_opt->get<PropertyKey::Names>();
-
-      Logger::get_logger()->info("Test:: File {} => #labels={}, #values={}", file, names.size(), indices.size());
-    } else {
-      Logger::get_logger()->warn("No result found for file {}", file);
-    }
-  }
-  end = std::chrono::high_resolution_clock::now();
-  elapsed_seconds = end - start;
-  Logger::get_logger()->info("Data access time: {}", elapsed_seconds.count());
+  /*start = std::chrono::high_resolution_clock::now();*/
+  /*for (auto &file : file_paths) {*/
+  /*  auto res_opt = processor.get_result(file);*/
+  /*  if (res_opt) {*/
+  /**/
+  /*    const auto& names = res_opt->get<PropertyKey::Indices>();*/
+  /*    const auto& indices = res_opt->get<PropertyKey::Names>();*/
+  /**/
+  /*    Logger::get_logger()->info("Test:: File {} => #labels={}, #values={}", file, names.size(), indices.size());*/
+  /*  } else {*/
+  /*    Logger::get_logger()->warn("No result found for file {}", file);*/
+  /*  }*/
+  /*}*/
+  /*end = std::chrono::high_resolution_clock::now();*/
+  /*elapsed_seconds = end - start;*/
+  /*Logger::get_logger()->info("Data access time: {}", elapsed_seconds.count());*/
 
   return 0;
 }

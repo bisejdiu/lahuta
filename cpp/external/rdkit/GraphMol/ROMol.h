@@ -869,6 +869,14 @@ class ROMol : public RDProps {
     issues of ownership.
   */
   void initFromOther(const ROMol &other, bool quickCopy, int confId);
+
+  // --------------------------------------------
+  //! Unsafe method to add an atom to the molecule
+  //! These are here to do only one thing and do it fast.      - Besian, March 2025
+  unsigned int addAtomToBatch(Atom *atom_p);
+  void preAllocateAtoms(unsigned int numAtoms);
+  // --------------------------------------------
+
 };
 
 typedef std::vector<ROMol> MOL_VECT;

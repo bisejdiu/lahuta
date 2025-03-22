@@ -15,9 +15,10 @@
 #include "logging.hpp"
 #include "topology.hpp"
 
-#define LAHUTA_VERSION "0.25.0"
+#define LAHUTA_VERSION "0.30.0"
 
 namespace lahuta {
+
 // NOTE: rename to Lahuta?
 class Luni {
 public:
@@ -27,54 +28,26 @@ public:
   Luni(Luni&&)            = default;
   Luni& operator=(Luni&&) = default;
 
-  explicit Luni(std::string file_name) : file_name_(file_name) {
-    Logger::get_logger()->info("Processing file: {}", file_name_);
-    read_structure();
-  }
+  explicit Luni(std::string file_name);
+  explicit Luni(std::string file_name, bool test);
 
-  bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt) {
-    try {
-      auto tops_ = tops.value_or(TopologyBuildingOptions());
-      tops_.compute_bonds = !is_in_filtered_state;
+  static Luni create(const IR &ir);
+  static Luni create(const gemmi::Structure &st);
+  static Luni create(std::shared_ptr<RDKit::RWMol> mol) { return Luni(mol); }
 
-      topology.emplace(mol);
-      topology->build(tops_);
-    } catch (const std::runtime_error &e) {
-      return false;
-    }
-    return true;
-  }
+  bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
 
-  static Luni create(std::shared_ptr<RDKit::RWMol> mol) {
-    return Luni(mol);
-  }
-
-  static Luni create(const gemmi::Structure &st) {
-    auto mol = std::make_shared<RDKit::RWMol>();
-    RDKit::Conformer *conformer = new RDKit::Conformer();
-    create_RDKit_repr(*mol, st, *conformer, false);
-    mol->updatePropertyCache(false);
-    mol->addConformer(conformer, true);
-    return Luni(mol);
-  }
-
-  static Luni create(const IR &ir) {
-    auto mol = std::make_shared<RDKit::RWMol>();
-    IR_to_RWMol(*mol, ir);
-    return Luni(mol);
-  }
-
-  std::string get_file_name() { return file_name_; };
+  std::string get_file_name() const { return file_name_; };
   const Topology &get_topology() const { return *get_topology_ptr(); }
   bool has_topology_built() { return topology.has_value(); };
 
-        RDKit::RWMol &get_molecule()       { return *mol; }
+  RDKit::RWMol &get_molecule() { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
 
-        auto *get_info(int idx)       { return static_cast<      RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
+  auto *get_info(int idx) { return static_cast<RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
   const auto *get_info(int idx) const { return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
 
-        RDKit::Conformer &get_conformer(int id = -1)       { return mol->getConformer(id); }
+  RDKit::Conformer &get_conformer(int id = -1) { return mol->getConformer(id); }
   const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
   const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
@@ -146,61 +119,23 @@ public:
   const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
   RDKit::Atom *get_atom(int idx) { return mol->getAtomWithIdx(idx); }
 
-
   /// very rough estimate of the memory size
-  size_t total_size() const {
-    size_t size = sizeof(Luni);
-
-    size += mol->getNumAtoms() * sizeof(RDKit::Atom) + mol->getNumAtoms() * sizeof(RDKit::Atom *);
-    size += mol->getNumBonds() * sizeof(RDKit::Bond) + mol->getNumBonds() * sizeof(RDKit::Bond *);
-    size += mol->getNumConformers() * sizeof(RDKit::Conformer);
-    size += mol->getNumConformers() * mol->getNumAtoms() * sizeof(RDGeom::Point3D);
-
-
-    if (topology) {
-      size += topology->total_size();
-      size += mol->getRingInfo()->getTotalMemory();
-    }
-
-    size += entities.size() * sizeof(EntityType);
-    for (const auto &[type, ids] : entities) {
-      size += ids.size() * sizeof(EntityID);
-    }
-
-    size += sizeof(char) * file_name_.size();
-    size += sizeof(int)  * filtered_indices.size();
-    size += sizeof(bool);
-
-    return size;
-  }
+  size_t total_size() const;
 
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
 
-  template <typename T> std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
+  auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
+  const Topology* get_topology_ptr() const;
+  void read_structure();
+
+  template <typename T>
+  std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
 
   template <typename T>
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
 
-  auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
-
-  const Topology* get_topology_ptr() const {
-    if (!topology) {
-      Logger::get_logger()->error("Cannot return topology, because no topology has been built.");
-      throw std::runtime_error("Topology not built");
-    }
-    return &topology.value();
-  }
-
-  void read_structure() {
-    auto st = gemmi::read_structure_gz(file_name_);
-
-    RDKit::Conformer *conformer = new RDKit::Conformer();
-    create_RDKit_repr(*mol, st, *conformer, false);
-    mol->updatePropertyCache(false);
-    mol->addConformer(conformer, true);
-  }
 
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;

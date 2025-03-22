@@ -438,6 +438,20 @@ unsigned int ROMol::addBond(Bond *bond_pin, bool takeOwnership) {
   return numBonds;
 }
 
+unsigned int ROMol::addAtomToBatch(Atom *atom_p) {
+
+  atom_p->setOwningMol(this);
+  auto which = boost::add_vertex(d_graph);
+  d_graph[which] = atom_p;
+  atom_p->setIdx(which);
+
+  return rdcast<unsigned int>(which);
+}
+
+void ROMol::preAllocateAtoms(unsigned int numAtoms) {
+  d_graph.m_vertices.reserve(numAtoms);
+}
+
 void ROMol::setStereoGroups(std::vector<StereoGroup> stereo_groups) {
   d_stereo_groups = std::move(stereo_groups);
 }

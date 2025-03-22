@@ -3,6 +3,7 @@
 namespace lahuta {
 
 void Logger::set_format(FormatStyle style) {
+  current_style = style;
   switch (style) {
     case FormatStyle::Detailed:
       spdlog::set_pattern("[%T] [thread %t] [%^%l%$] %t] %v");
@@ -26,6 +27,7 @@ void Logger::configure_for_spinner(indicators::MinimalProgressSpinner *spinner, 
 
   new_logger->set_level(logger->level());
   logger = new_logger;
+  spdlog::set_default_logger(new_logger);
 }
 
 Logger::Logger() {

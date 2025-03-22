@@ -1,7 +1,116 @@
 #include "lahuta.hpp"
+#include "mmap/MemoryMapped.h"
+#include "models/parser.hpp"
+#include "models/topology.hpp"
 #include "nsgrid.hpp"
+#include <string>
 
 namespace lahuta {
+
+Luni::Luni(std::string file_name) : file_name_(file_name) {
+  Logger::get_logger()->info("Processing file: {}", file_name_);
+  read_structure();
+}
+
+Luni Luni::create(const gemmi::Structure &st) {
+  auto mol = std::make_shared<RDKit::RWMol>();
+  RDKit::Conformer *conformer = new RDKit::Conformer();
+  create_RDKit_repr(*mol, st, *conformer, false);
+  mol->updatePropertyCache(false);
+  mol->addConformer(conformer, true);
+  return Luni(mol);
+}
+
+Luni Luni::create(const IR &ir) {
+  auto mol = std::make_shared<RDKit::RWMol>();
+  IR_to_RWMol(*mol, ir);
+  return Luni(mol);
+}
+
+Luni::Luni(std::string file_name, bool test) {
+
+  file_name_ = file_name;
+  MemoryMapped mm(file_name.c_str());
+
+  if (!mm.isValid()) {
+    Logger::get_logger()->critical("Error opening file: {}", file_name);
+    return;
+  }
+
+  const char *data = reinterpret_cast<const char *>(mm.getData());
+  size_t size = static_cast<size_t>(mm.size());
+
+  ModelParserResult result = parse_model(data, size);
+  RDKit::Conformer *conformer = new RDKit::Conformer();
+  mol = std::make_shared<RDKit::RWMol>();
+  read_and_build_model_topology(*mol, *conformer, result);
+
+  /*mol = af_mol;*/
+  /*topology.emplace(af_mol);*/
+}
+
+bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
+  try {
+    auto tops_ = tops.value_or(TopologyBuildingOptions());
+    tops_.compute_bonds = !is_in_filtered_state;
+
+    topology.emplace(mol);
+    topology->build(tops_);
+  } catch (const std::runtime_error &e) {
+    return false;
+  }
+  return true;
+}
+
+void Luni::read_structure() {
+  auto start1 = std::chrono::high_resolution_clock::now();
+  auto st = gemmi::read_structure_gz(file_name_);
+  auto end1 = std::chrono::high_resolution_clock::now();
+  auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(end1 - start1);
+  Logger::get_logger()->info("gemmi Read file in {} us", duration1.count());
+
+  auto start2 = std::chrono::high_resolution_clock::now();
+  RDKit::Conformer *conformer = new RDKit::Conformer();
+  create_RDKit_repr(*mol, st, *conformer, false);
+  mol->updatePropertyCache(false);
+  mol->addConformer(conformer, true);
+  auto end2 = std::chrono::high_resolution_clock::now();
+  auto duration2 = std::chrono::duration_cast<std::chrono::microseconds>(end2 - start2);
+  Logger::get_logger()->info("RDKit Created mol in {} us", duration2.count());
+}
+
+const Topology *Luni::get_topology_ptr() const {
+  if (!topology) {
+    Logger::get_logger()->error("Cannot return topology, because no topology has been built.");
+    throw std::runtime_error("Topology not built");
+  }
+  return &topology.value();
+}
+
+size_t Luni::total_size() const {
+  size_t size = sizeof(Luni);
+
+  size += mol->getNumAtoms() * sizeof(RDKit::Atom) + mol->getNumAtoms() * sizeof(RDKit::Atom *);
+  size += mol->getNumBonds() * sizeof(RDKit::Bond) + mol->getNumBonds() * sizeof(RDKit::Bond *);
+  size += mol->getNumConformers() * sizeof(RDKit::Conformer);
+  size += mol->getNumConformers() * mol->getNumAtoms() * sizeof(RDGeom::Point3D);
+
+  if (topology) {
+    size += topology->total_size();
+    size += mol->getRingInfo()->getTotalMemory();
+  }
+
+  size += entities.size() * sizeof(EntityType);
+  for (const auto &[type, ids] : entities) {
+    size += ids.size() * sizeof(EntityID);
+  }
+
+  size += sizeof(char) * file_name_.size();
+  size += sizeof(int)  * filtered_indices.size();
+  size += sizeof(bool);
+
+  return size;
+}
 
 const std::vector<std::string> Luni::symbols() const {
   return atom_attrs<std::string>([](const RDKit::Atom *atom) { return atom->getSymbol(); });
@@ -88,7 +197,6 @@ auto Luni::match_smarts_string(std::string sm, std::string atype, bool log_value
   return match_list;
 };
 
-
 Luni Luni::filter(std::vector<int> &atom_indices) const {
 
   auto new_mol = filter_with_bonds(*mol, atom_indices);
@@ -99,11 +207,10 @@ Luni Luni::filter(std::vector<int> &atom_indices) const {
   return new_luni;
 }
 
-
 //
-// The way Entities are generated, outside of atom entities, we don't have a guarantee that the index matches the entity id.
-// If we decide to use these implementations, we need to use `get_*_entities` methods to first populate the entities.
-// Only then can we use the `get_entity` method.  - Besian, March, 2025
+// The way Entities are generated, outside of atom entities, we don't have a guarantee that the index matches
+// the entity id. If we decide to use these implementations, we need to use `get_*_entities` methods to first
+// populate the entities. Only then can we use the `get_entity` method.  - Besian, March, 2025
 //
 template <> const RDKit::Atom &Luni::get_entity<RDKit::Atom>(EntityID id) const {
   auto index = get_entity_index(id);

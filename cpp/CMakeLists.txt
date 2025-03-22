@@ -85,8 +85,8 @@ add_library(lahuta_cpp STATIC
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
-            src/entities.cpp src/luni_props.cpp src/logging.cpp
-            src/contacts/metals.cpp 
+            src/entities.cpp src/luni_props.cpp src/logging.cpp src/models/topology.cpp
+            src/contacts/metals.cpp src/models/parser.cpp external/mmap/MemoryMapped.cpp
             src/contacts/interactions.cpp src/valence_model.cpp src/contacts/groups.cpp
             src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
 )

@@ -22,6 +22,7 @@ public:
   }
 
   void set_format(FormatStyle style);
+  FormatStyle get_format_style() { return current_style; }
 
   // Wrapper around spdlog log functions.
   template <typename... Args>
@@ -38,6 +39,7 @@ public:
 
 private:
   std::shared_ptr<spdlog::logger> logger;
+  FormatStyle current_style = FormatStyle::Simple;
 
   Logger();
   spdlog::level::level_enum convert_log_level(LogLevel level);

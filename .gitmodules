@@ -1,0 +1,3 @@
+[submodule "cpp/external/mimalloc"]
+	path = cpp/external/mimalloc
+	url = https://github.com/microsoft/mimalloc.git
