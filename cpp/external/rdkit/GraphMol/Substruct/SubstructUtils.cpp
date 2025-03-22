@@ -139,7 +139,7 @@ bool atomCompat(const Atom *a1, const Atom *a2,
     res = a1->Match(a2);
   }
   if (res && !ps.atomProperties.empty()) {
-    res = propertyCompat(a1, a2, ps.atomProperties);
+    res = propertyCompat(a1->getProps().get(), a2->getProps().get(), ps.atomProperties);
   }
 
   return res;
@@ -151,8 +151,8 @@ bool chiralAtomCompat(const Atom *&a1, const Atom *&a2) {
   bool res = a1->Match(a2);
   if (res) {
     std::string s1, s2;
-    bool hascode1 = a1->getPropIfPresent(common_properties::_CIPCode, s1);
-    bool hascode2 = a2->getPropIfPresent(common_properties::_CIPCode, s2);
+    bool hascode1 = a1->getProps()->getPropIfPresent(common_properties::_CIPCode, s1);
+    bool hascode2 = a2->getProps()->getPropIfPresent(common_properties::_CIPCode, s2);
     if (hascode1 || hascode2) {
       res = hascode1 && hascode2 && s1 == s2;
     }

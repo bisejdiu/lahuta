@@ -1562,7 +1562,7 @@ yyreduce:
       molList->resize(sz + 1);
       (*molList)[sz] = new RWMol();
       RDKit::RWMol *curMol = (*molList)[sz];
-      (yyvsp[0].atom)->setProp(RDKit::common_properties::_SmilesStart, 1);
+      (yyvsp[0].atom)->getProps()->setProp(RDKit::common_properties::_SmilesStart, 1);
       curMol->addAtom((yyvsp[0].atom), true, true);
       // delete $1;
       (yyval.moli) = sz;
@@ -1630,7 +1630,7 @@ yyreduce:
 #line 214 "smiles.yy"
     {
       RWMol *mp = (*molList)[(yyval.moli)];
-      (yyvsp[0].atom)->setProp(RDKit::common_properties::_SmilesStart, 1, true);
+      (yyvsp[0].atom)->getProps()->setProp(RDKit::common_properties::_SmilesStart, 1, true);
       mp->addAtom((yyvsp[0].atom), true, true);
     }
 #line 1739 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1653,9 +1653,9 @@ yyreduce:
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
 
       INT_VECT tmp;
-      atom->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
       tmp.push_back(-((yyvsp[0].ival) + 1));
-      atom->setProp(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->setProp(RDKit::common_properties::_RingClosures, tmp);
     }
 #line 1764 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
@@ -1681,9 +1681,9 @@ yyreduce:
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
 
       INT_VECT tmp;
-      atom->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
       tmp.push_back(-((yyvsp[0].ival) + 1));
-      atom->setProp(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->setProp(RDKit::common_properties::_RingClosures, tmp);
       delete (yyvsp[-1].bond);
     }
 #line 1792 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1704,9 +1704,9 @@ yyreduce:
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
 
       INT_VECT tmp;
-      atom->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
       tmp.push_back(-((yyvsp[0].ival) + 1));
-      atom->setProp(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->setProp(RDKit::common_properties::_RingClosures, tmp);
     }
 #line 1815 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
@@ -1801,7 +1801,7 @@ yyreduce:
       (yyval.atom) = (yyvsp[-3].atom);
       (yyval.atom)->setNoImplicit(true);
       (yyval.atom)
-          ->setProp(RDKit::common_properties::molAtomMapNumber,
+          ->getProps()->setProp(RDKit::common_properties::molAtomMapNumber,
                     (yyvsp[-1].ival));
     }
 #line 1905 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1957,7 +1957,7 @@ yyreduce:
 #line 386 "smiles.yy"
     {
       (yyvsp[-1].atom)->setChiralTag((yyvsp[0].chiraltype));
-      (yyvsp[-1].atom)->setProp(common_properties::_chiralPermutation, 0);
+      (yyvsp[-1].atom)->getProps()->setProp(common_properties::_chiralPermutation, 0);
     }
 #line 2016 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
@@ -1967,7 +1967,7 @@ yyreduce:
     {
       (yyvsp[-2].atom)->setChiralTag((yyvsp[-1].chiraltype));
       (yyvsp[-2].atom)
-          ->setProp(common_properties::_chiralPermutation, (yyvsp[0].ival));
+          ->getProps()->setProp(common_properties::_chiralPermutation, (yyvsp[0].ival));
     }
 #line 2022 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;

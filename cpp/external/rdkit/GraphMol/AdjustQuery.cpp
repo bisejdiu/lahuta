@@ -28,7 +28,7 @@
 namespace RDKit {
 namespace {
 bool isMapped(const Atom *atom) {
-  return atom->hasProp(common_properties::molAtomMapNumber);
+  return atom->getProps()->hasProp(common_properties::molAtomMapNumber);
 }
 }  // namespace
 
@@ -100,8 +100,8 @@ void adjustConjugatedFiveRings(RWMol &mol) {
     qb.setQuery(makeSingleOrDoubleOrAromaticBondQuery());
     for (auto bi : ring) {
       const auto bond = mol.getBondWithIdx(bi);
-      bond->getBeginAtom()->setProp(conjugatedOrAromatic, 1, true);
-      bond->getEndAtom()->setProp(conjugatedOrAromatic, 1, true);
+      bond->getBeginAtom()->getProps()->setProp(conjugatedOrAromatic, 1, true);
+      bond->getEndAtom()->getProps()->setProp(conjugatedOrAromatic, 1, true);
       if (std::find(bondTypesToModify.begin(), bondTypesToModify.end(),
                     bond->getBondType()) != bondTypesToModify.end()) {
         if (bond->hasQuery()) {
@@ -117,7 +117,7 @@ void adjustConjugatedFiveRings(RWMol &mol) {
 }
 
 bool isAromaticOrConjugated(const Atom &atom) {
-  return atom.getIsAromatic() || atom.hasProp(conjugatedOrAromatic);
+  return atom.getIsAromatic() || atom.getProps()->hasProp(conjugatedOrAromatic);
 }
 void adjustSingleBondsFromAromaticAtoms(RWMol &mol, bool toDegreeOneNeighbors,
                                         bool betweenAromaticAtoms) {
@@ -524,7 +524,7 @@ void adjustQueryProperties(RWMol &mol, const AdjustQueryParameters *inParams) {
   }
   if (params.setMDLFiveRingAromaticity) {
     for (auto atom : mol.atoms()) {
-      atom->clearProp(conjugatedOrAromatic);
+      atom->getProps()->clearProp(conjugatedOrAromatic);
     }
   }
 }

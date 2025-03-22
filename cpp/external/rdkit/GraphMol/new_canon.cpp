@@ -375,7 +375,7 @@ bool hasRingNbr(const ROMol &mol, const Atom *at) {
   for (const auto nbr : mol.atomNeighbors(at)) {
     if ((nbr->getChiralTag() == Atom::CHI_TETRAHEDRAL_CW ||
          nbr->getChiralTag() == Atom::CHI_TETRAHEDRAL_CCW) &&
-        nbr->hasProp(common_properties::_ringStereoAtoms)) {
+        nbr->getProps()->hasProp(common_properties::_ringStereoAtoms)) {
       return true;
     }
   }
@@ -563,7 +563,7 @@ void advancedInitCanonAtom(const ROMol &mol, Canon::canon_atom &atom,
   atom.isRingStereoAtom =
       (atom.atom->getChiralTag() == Atom::CHI_TETRAHEDRAL_CW ||
        atom.atom->getChiralTag() == Atom::CHI_TETRAHEDRAL_CCW) &&
-      atom.atom->hasProp(common_properties::_ringStereoAtoms);
+      atom.atom->getProps()->hasProp(common_properties::_ringStereoAtoms);
   atom.hasRingNbr = hasRingNbr(mol, atom.atom);
 }
 }  // end anonymous namespace

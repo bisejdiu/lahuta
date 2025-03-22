@@ -1982,7 +1982,7 @@ case 144:
 YY_RULE_SETUP
 #line 287 "smiles.ll"
 {   yylval->atom = new Atom( 0 );
-		            yylval->atom->setProp(common_properties::dummyLabel,
+		            yylval->atom->getProps()->setProp(common_properties::dummyLabel,
                                                         std::string("*"));
                                 // must be ORGANIC_ATOM_TOKEN because
                                 // we aren't in square brackets:

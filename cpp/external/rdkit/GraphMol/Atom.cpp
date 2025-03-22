@@ -164,23 +164,23 @@ bool isEarlyAtom(int atomicNum) {
   return ((unsigned int)atomicNum < 119) && table[atomicNum];
 }
 
-Atom::Atom() : RDProps() {
+Atom::Atom() {
   d_atomicNum = 0;
   initAtom();
 }
 
-Atom::Atom(unsigned int num) : RDProps() {
+Atom::Atom(unsigned int num) {
   d_atomicNum = num;
   initAtom();
 };
 
-Atom::Atom(const std::string &what) : RDProps() {
+Atom::Atom(const std::string &what) {
   d_atomicNum = PeriodicTable::getTable()->getAtomicNumber(what);
   initAtom();
 };
 
 void Atom::initFromOther(const Atom &other) {
-  RDProps::operator=(other);
+  /*RDProps::operator=(other);*/
   // NOTE: we do *not* copy ownership!
   dp_mol = nullptr;
   d_atomicNum = other.d_atomicNum;
@@ -201,9 +201,15 @@ void Atom::initFromOther(const Atom &other) {
   } else {
     dp_monomerInfo = nullptr;
   }
+
+  if (other.dp_props) {
+    dp_props = std::make_unique<RDProps>(*(other.getProps()));
+  } else {
+    dp_props = nullptr;
+  }
 }
 
-Atom::Atom(const Atom &other) : RDProps() { initFromOther(other); }
+Atom::Atom(const Atom &other) { initFromOther(other); }
 
 Atom &Atom::operator=(const Atom &other) {
   if (this == &other) {
@@ -249,7 +255,7 @@ std::string Atom::getSymbol() const {
   std::string res;
   // handle dummies differently:
   if (d_atomicNum != 0 ||
-      !getPropIfPresent<std::string>(common_properties::dummyLabel, res)) {
+      !(getProps()->getPropIfPresent<std::string>(common_properties::dummyLabel, res))) {
     res = PeriodicTable::getTable()->getElementSymbol(d_atomicNum);
   }
   return res;
@@ -778,7 +784,7 @@ bool Atom::invertChirality() {
       setChiralTag(CHI_TETRAHEDRAL_CW);
       return true;
     case CHI_TETRAHEDRAL:
-      if (getPropIfPresent(common_properties::_chiralPermutation, perm)) {
+      if (getProps()->getPropIfPresent(common_properties::_chiralPermutation, perm)) {
         if (perm == 1) {
           perm = 2;
         } else if (perm == 2) {
@@ -786,21 +792,21 @@ bool Atom::invertChirality() {
         } else {
           perm = 0;
         }
-        setProp(common_properties::_chiralPermutation, perm);
+        getProps()->setProp(common_properties::_chiralPermutation, perm);
         return perm != 0;
       }
       break;
     case CHI_TRIGONALBIPYRAMIDAL:
-      if (getPropIfPresent(common_properties::_chiralPermutation, perm)) {
+      if (getProps()->getPropIfPresent(common_properties::_chiralPermutation, perm)) {
         perm = (perm <= 20) ? trigonalbipyramidal_invert[perm] : 0;
-        setProp(common_properties::_chiralPermutation, perm);
+        getProps()->setProp(common_properties::_chiralPermutation, perm);
         return perm != 0;
       }
       break;
     case CHI_OCTAHEDRAL:
-      if (getPropIfPresent(common_properties::_chiralPermutation, perm)) {
+      if (getProps()->getPropIfPresent(common_properties::_chiralPermutation, perm)) {
         perm = (perm <= 30) ? octahedral_invert[perm] : 0;
-        setProp(common_properties::_chiralPermutation, perm);
+        getProps()->setProp(common_properties::_chiralPermutation, perm);
         return perm != 0;
       }
       break;
@@ -816,65 +822,65 @@ void setAtomRLabel(Atom *atm, int rlabel) {
   PRECONDITION(rlabel >= 0 && rlabel < 100,
                "rlabel out of range for MDL files");
   if (rlabel) {
-    atm->setProp(common_properties::_MolFileRLabel,
+    atm->getProps()->setProp(common_properties::_MolFileRLabel,
                  static_cast<unsigned int>(rlabel));
   } else {
-    atm->clearProp(common_properties::_MolFileRLabel);
+    atm->getProps()->clearProp(common_properties::_MolFileRLabel);
   }
 }
 //! Gets the atom's RLabel
 int getAtomRLabel(const Atom *atom) {
   PRECONDITION(atom, "bad atom");
   unsigned int rlabel = 0;
-  atom->getPropIfPresent(common_properties::_MolFileRLabel, rlabel);
+  atom->getProps()->getPropIfPresent(common_properties::_MolFileRLabel, rlabel);
   return static_cast<int>(rlabel);
 }
 
 void setAtomAlias(Atom *atom, const std::string &alias) {
   PRECONDITION(atom, "bad atom");
   if (alias != "") {
-    atom->setProp(common_properties::molFileAlias, alias);
+    atom->getProps()->setProp(common_properties::molFileAlias, alias);
   } else {
-    atom->clearProp(common_properties::molFileAlias);
+    atom->getProps()->clearProp(common_properties::molFileAlias);
   }
 }
 
 std::string getAtomAlias(const Atom *atom) {
   PRECONDITION(atom, "bad atom");
   std::string alias;
-  atom->getPropIfPresent(common_properties::molFileAlias, alias);
+  atom->getProps()->getPropIfPresent(common_properties::molFileAlias, alias);
   return alias;
 }
 
 void setAtomValue(Atom *atom, const std::string &value) {
   PRECONDITION(atom, "bad atom");
   if (value != "") {
-    atom->setProp(common_properties::molFileValue, value);
+    atom->getProps()->setProp(common_properties::molFileValue, value);
   } else {
-    atom->clearProp(common_properties::molFileValue);
+    atom->getProps()->clearProp(common_properties::molFileValue);
   }
 }
 
 std::string getAtomValue(const Atom *atom) {
   PRECONDITION(atom, "bad atom");
   std::string value;
-  atom->getPropIfPresent(common_properties::molFileValue, value);
+  atom->getProps()->getPropIfPresent(common_properties::molFileValue, value);
   return value;
 }
 
 void setSupplementalSmilesLabel(Atom *atom, const std::string &label) {
   PRECONDITION(atom, "bad atom");
   if (label != "") {
-    atom->setProp(common_properties::_supplementalSmilesLabel, label);
+    atom->getProps()->setProp(common_properties::_supplementalSmilesLabel, label);
   } else {
-    atom->clearProp(common_properties::_supplementalSmilesLabel);
+    atom->getProps()->clearProp(common_properties::_supplementalSmilesLabel);
   }
 }
 
 std::string getSupplementalSmilesLabel(const Atom *atom) {
   PRECONDITION(atom, "bad atom");
   std::string label;
-  atom->getPropIfPresent(common_properties::_supplementalSmilesLabel, label);
+  atom->getProps()->getPropIfPresent(common_properties::_supplementalSmilesLabel, label);
   return label;
 }
 
@@ -972,7 +978,7 @@ std::ostream &operator<<(std::ostream &target, const RDKit::Atom &at) {
   if (at.getChiralTag() != RDKit::Atom::CHI_UNSPECIFIED) {
     target << " chi: " << chiralityToString(at.getChiralTag());
     int perm;
-    if (at.getPropIfPresent(RDKit::common_properties::_chiralPermutation,
+    if (at.getProps()->getPropIfPresent(RDKit::common_properties::_chiralPermutation,
                             perm)) {
       target << "(" << perm << ")";
     }

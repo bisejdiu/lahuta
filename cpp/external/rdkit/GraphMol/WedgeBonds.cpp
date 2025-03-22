@@ -313,7 +313,7 @@ int pickBondToWedge(
 
       // if at all possible, do not go to marked attachment points
       // since they may well be removed when we write a mol block
-      if (oatom->hasProp(common_properties::_fromAttachPoint)) {
+      if (oatom->getProps()->hasProp(common_properties::_fromAttachPoint)) {
         nbrScore += 500000;
       }
       // std::cerr << "    nrbScore: " << idx << " - " << oIdx << " : "

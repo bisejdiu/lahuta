@@ -138,7 +138,7 @@ std::string getAtomChiralityInfo(const Atom *atom) {
       // we need to also add permutation info
       int permutation = 0;
       if (atom->getChiralTag() > Atom::ChiralType::CHI_OTHER &&
-          atom->getPropIfPresent(common_properties::_chiralPermutation,
+          atom->getProps()->getPropIfPresent(common_properties::_chiralPermutation,
                                  permutation) &&
           !SmilesParseOps::checkChiralPermutation(atom->getChiralTag(),
                                                   permutation)) {
@@ -162,7 +162,7 @@ std::string GetAtomSmiles(const Atom *atom, const SmilesWriteParams &params) {
   bool needsBracket = false;
   std::string symb;
   bool hasCustomSymbol =
-      atom->getPropIfPresent(common_properties::smilesSymbol, symb);
+      atom->getProps()->getPropIfPresent(common_properties::smilesSymbol, symb);
   if (!hasCustomSymbol) {
     symb = PeriodicTable::getTable()->getElementSymbol(num);
   }
@@ -171,7 +171,7 @@ std::string GetAtomSmiles(const Atom *atom, const SmilesWriteParams &params) {
   std::string atString;
   if (params.doIsomericSmiles) {
     if (atom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
-        !atom->hasProp(common_properties::_brokenChirality)) {
+        !atom->getProps()->hasProp(common_properties::_brokenChirality)) {
       atString = getAtomChiralityInfo(atom);
     }
   }
@@ -203,7 +203,7 @@ std::string GetAtomSmiles(const Atom *atom, const SmilesWriteParams &params) {
     }
 
     if (fc || nonStandard ||
-        atom->hasProp(common_properties::molAtomMapNumber)) {
+        atom->getProps()->hasProp(common_properties::molAtomMapNumber)) {
       needsBracket = true;
     } else if (params.doIsomericSmiles && (isotope || atString != "")) {
       needsBracket = true;
@@ -250,7 +250,7 @@ std::string GetAtomSmiles(const Atom *atom, const SmilesWriteParams &params) {
     }
 
     int mapNum;
-    if (atom->getPropIfPresent(common_properties::molAtomMapNumber, mapNum)) {
+    if (atom->getProps()->getPropIfPresent(common_properties::molAtomMapNumber, mapNum)) {
       res += ":";
       res += std::to_string(mapNum);
     }
@@ -260,7 +260,7 @@ std::string GetAtomSmiles(const Atom *atom, const SmilesWriteParams &params) {
   // If the atom has this property, the contained string will
   // be inserted directly in the SMILES:
   std::string label;
-  if (atom->getPropIfPresent(common_properties::_supplementalSmilesLabel,
+  if (atom->getProps()->getPropIfPresent(common_properties::_supplementalSmilesLabel,
                              label)) {
     res += label;
   }
@@ -630,7 +630,7 @@ std::string MolToSmiles(const ROMol &mol, const SmilesWriteParams &params,
       if (tmol->hasProp("_canonicalRankingNumbers")) {
         for (const auto atom : tmol->atoms()) {
           unsigned int rankNum = 0;
-          atom->getPropIfPresent("_canonicalRankingNumber", rankNum);
+          atom->getProps()->getPropIfPresent("_canonicalRankingNumber", rankNum);
           ranks[atom->getIdx()] = rankNum;
         }
       } else {
@@ -904,8 +904,8 @@ std::string MolFragmentToSmiles(const ROMol &mol,
       for (auto aidx : atomsToUse) {
         const Atom *oAt = mol.getAtomWithIdx(aidx);
         std::string cipCode;
-        if (oAt->getPropIfPresent(common_properties::_CIPCode, cipCode)) {
-          tmol.getAtomWithIdx(aidx)->setProp(common_properties::_CIPCode,
+        if (oAt->getProps()->getPropIfPresent(common_properties::_CIPCode, cipCode)) {
+          tmol.getAtomWithIdx(aidx)->getProps()->setProp(common_properties::_CIPCode,
                                              cipCode);
         }
       }

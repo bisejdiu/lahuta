@@ -103,6 +103,7 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   void setResidueIndex(unsigned int idx) { d_residueIndex = idx; }
 
   friend class LeanAtomPDBResidueInfo;
+  friend class AtomPDBResidueInfoStatic;
 
  private:
   // the fields here are from the PDB definition
@@ -187,6 +188,57 @@ private:
   mutable std::string d_cachedName;
   mutable std::string d_cachedResidueName;
 };
+
+
+struct AtomStaticInfo {
+  const char *atom_name;
+  const char *residue_name;
+  int local_atom_index; // Atom position within residue
+};
+
+class AtomPDBResidueInfoStatic : public RDKit::AtomMonomerInfo {
+public:
+  const AtomStaticInfo* static_info; // pointer to compile-time static data
+  int residue_number;
+  char chain_id;
+
+  AtomPDBResidueInfoStatic(const AtomStaticInfo* staticInfo, int residueNum, char chainId = 'A')
+    : AtomMonomerInfo(PDBRESIDUE, staticInfo->atom_name),
+      static_info(staticInfo),
+      residue_number(residueNum),
+      chain_id(chainId) {}
+
+  AtomMonomerInfo* copy() const override {
+    return new AtomPDBResidueInfoStatic(*this);
+  }
+
+  /*const std::string& getResidueName() const { return static_info->residue_name; }*/
+  const std::string getResidueName() const { return static_info->residue_name; }
+  int getResidueNumber() const { return residue_number; }
+
+  const std::string& getChainId() const {
+    static const std::string defaultChain = "A";
+    return defaultChain;
+  }
+
+  const std::string& getAltLoc() const {
+    static const std::string emptyString = "";
+    return emptyString;
+  }
+
+  const std::string& getInsertionCode() const {
+    static const std::string emptyString = "";
+    return emptyString;
+  }
+
+  bool getIsHeteroAtom() const { return false; }
+  AtomMonomerType getMonomerType() const { return AtomPDBResidueInfo::PDBRESIDUE; }
+
+  void setResidueNumber(int val) { residue_number = val; }
+  void setChainId(char val) { chain_id = val; }
+};
+
+
 
 };  // namespace RDKit
 //! allows AtomPDBResidueInfo objects to be dumped to streams

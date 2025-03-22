@@ -71,7 +71,8 @@ class AtomMonomerInfo;
   at the *end* of the list of other bonds.
 
 */
-class Atom : public RDProps {
+/*class Atom : public RDProps {*/
+class Atom {
   friend class MolPickler;  //!< the pickler needs access to our privates
   friend class ROMol;
   friend class RWMol;
@@ -399,17 +400,29 @@ class Atom : public RDProps {
         !strict || (mapno >= 0 && mapno < 1000),
         "atom map number out of range [0..1000], use strict=false to override");
     if (mapno) {
-      setProp(common_properties::molAtomMapNumber, mapno);
-    } else if (hasProp(common_properties::molAtomMapNumber)) {
-      clearProp(common_properties::molAtomMapNumber);
+      getProps()->setProp(common_properties::molAtomMapNumber, mapno);
+    } else if (getProps()->hasProp(common_properties::molAtomMapNumber)) {
+      getProps()->clearProp(common_properties::molAtomMapNumber);
     }
   }
   //! Gets the atom map Number of the atom, if no atom map exists, 0 is
   //! returned.
   int getAtomMapNum() const {
     int mapno = 0;
-    getPropIfPresent(common_properties::molAtomMapNumber, mapno);
+    getProps()->getPropIfPresent(common_properties::molAtomMapNumber, mapno);
     return mapno;
+  }
+
+  std::unique_ptr<RDProps> &getProps() { 
+    if (!dp_props) {
+      std::cout << "Creating new RDProps" << std::endl;
+      dp_props.reset(new RDProps());
+    }
+    return dp_props;
+  }
+  const std::unique_ptr<RDProps> &getProps() const { 
+    if (!dp_props) throw std::runtime_error("No properties available");
+    return dp_props;
   }
 
  protected:
@@ -434,6 +447,7 @@ class Atom : public RDProps {
   // b.i.s
   std::uint8_t comp_implicit_h{0}; // used to store the implicit H count
   std::uint32_t comp_atom_type{0}; // used to store the atom type (lahuta::AtomType)
+  std::unique_ptr<RDProps> dp_props;
 
   std::uint16_t d_isotope;
   atomindex_t d_index;

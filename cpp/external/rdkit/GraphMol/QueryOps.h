@@ -176,7 +176,7 @@ static inline int queryAtomHasChiralTag(Atom const *at) {
 };
 static inline int queryAtomMissingChiralTag(Atom const *at) {
   return at->getChiralTag() == Atom::CHI_UNSPECIFIED &&
-         at->hasProp(common_properties::_ChiralityPossible);
+         at->getProps()->hasProp(common_properties::_ChiralityPossible);
 };
 
 static inline int queryAtomHasHeteroatomNbrs(Atom const *at) {

@@ -109,7 +109,7 @@ void AddFragToMol(RWMol *mol, RWMol *frag, Bond::BondType bondOrder,
   //
   for (const auto atom : frag->atoms()) {
     INT_VECT tmpVect;
-    if (atom->getPropIfPresent(common_properties::_RingClosures, tmpVect)) {
+    if (atom->getProps()->getPropIfPresent(common_properties::_RingClosures, tmpVect)) {
       for (auto &v : tmpVect) {
         // if the ring closure is not already a bond, don't touch it:
         if (v >= 0) {
@@ -117,7 +117,7 @@ void AddFragToMol(RWMol *mol, RWMol *frag, Bond::BondType bondOrder,
         }
       }
       auto newAtom = mol->getAtomWithIdx(nOrigAtoms + atom->getIdx());
-      newAtom->setProp(common_properties::_RingClosures, tmpVect);
+      newAtom->getProps()->setProp(common_properties::_RingClosures, tmpVect);
     }
   }
 
@@ -219,7 +219,7 @@ void AdjustAtomChiralityFlags(RWMol *mol) {
       // need to insert into the list in a particular order
       //
       INT_VECT ringClosures;
-      atom->getPropIfPresent(common_properties::_RingClosures, ringClosures);
+      atom->getProps()->getPropIfPresent(common_properties::_RingClosures, ringClosures);
 
 #if 0
       std::cerr << "CLOSURES: ";
@@ -296,7 +296,7 @@ void AdjustAtomChiralityFlags(RWMol *mol) {
       //      those cases by looking for unsaturated atoms
       //
       if (Canon::chiralAtomNeedsTagInversion(
-              *mol, atom, atom->hasProp(common_properties::_SmilesStart),
+              *mol, atom, atom->getProps()->hasProp(common_properties::_SmilesStart),
               ringClosures.size())) {
         ++nSwaps;
       }
@@ -385,7 +385,7 @@ void CheckChiralitySpecifications(RDKit::RWMol *mol, bool strict) {
     if (atom->getChiralTag() > RDKit::Atom::ChiralType::CHI_OTHER &&
         permutationLimits.find(atom->getChiralTag()) !=
             permutationLimits.end() &&
-        atom->getPropIfPresent(common_properties::_chiralPermutation,
+        atom->getProps()->getPropIfPresent(common_properties::_chiralPermutation,
                                permutation)) {
       if (!checkChiralPermutation(atom->getChiralTag(), permutation)) {
         std::string error =
@@ -401,10 +401,10 @@ void CheckChiralitySpecifications(RDKit::RWMol *mol, bool strict) {
       if (atom->getChiralTag() == RDKit::Atom::ChiralType::CHI_TETRAHEDRAL) {
         if (permutation == 0 || permutation == 1) {
           atom->setChiralTag(RDKit::Atom::ChiralType::CHI_TETRAHEDRAL_CCW);
-          atom->clearProp(common_properties::_chiralPermutation);
+          atom->getProps()->clearProp(common_properties::_chiralPermutation);
         } else if (permutation == 2) {
           atom->setChiralTag(RDKit::Atom::ChiralType::CHI_TETRAHEDRAL_CW);
-          atom->clearProp(common_properties::_chiralPermutation);
+          atom->getProps()->clearProp(common_properties::_chiralPermutation);
         }
       }
     }
@@ -563,25 +563,25 @@ void CloseMolRings(RWMol *mol, bool toleratePartials) {
           // property:
           if (bondIdx > -1) {
             CHECK_INVARIANT(
-                atom1->hasProp(common_properties::_RingClosures) &&
-                    atom2->hasProp(common_properties::_RingClosures),
+                atom1->getProps()->hasProp(common_properties::_RingClosures) &&
+                    atom2->getProps()->hasProp(common_properties::_RingClosures),
                 "somehow atom doesn't have _RingClosures property.");
             INT_VECT closures;
-            atom1->getProp(common_properties::_RingClosures, closures);
+            atom1->getProps()->getProp(common_properties::_RingClosures, closures);
             auto closurePos = std::find(closures.begin(), closures.end(),
                                         -(bookmark.first + 1));
             CHECK_INVARIANT(closurePos != closures.end(),
                             "could not find bookmark in atom _RingClosures");
             *closurePos = bondIdx - 1;
-            atom1->setProp(common_properties::_RingClosures, closures);
+            atom1->getProps()->setProp(common_properties::_RingClosures, closures);
 
-            atom2->getProp(common_properties::_RingClosures, closures);
+            atom2->getProps()->getProp(common_properties::_RingClosures, closures);
             closurePos = std::find(closures.begin(), closures.end(),
                                    -(bookmark.first + 1));
             CHECK_INVARIANT(closurePos != closures.end(),
                             "could not find bookmark in atom _RingClosures");
             *closurePos = bondIdx - 1;
-            atom2->setProp(common_properties::_RingClosures, closures);
+            atom2->getProps()->setProp(common_properties::_RingClosures, closures);
           }
           bookmarkedAtomsToRemove.push_back(atom1);
           bookmarkedAtomsToRemove.push_back(atom2);
@@ -601,18 +601,18 @@ void CloseMolRings(RWMol *mol, bool toleratePartials) {
 void CleanupAfterParsing(RWMol *mol) {
   PRECONDITION(mol, "no molecule");
   for (auto atom : mol->atoms()) {
-    atom->clearProp(common_properties::_RingClosures);
-    atom->clearProp(common_properties::_SmilesStart);
+    atom->getProps()->clearProp(common_properties::_RingClosures);
+    atom->getProps()->clearProp(common_properties::_SmilesStart);
     std::string label;
     if (atom->getAtomicNum() == 0 &&
-        atom->getPropIfPresent(common_properties::atomLabel, label)) {
+        atom->getProps()->getPropIfPresent(common_properties::atomLabel, label)) {
       // marvinsketch can output higher labels than _AP1 and _AP2, but they
       // aren't part of the MOL file spec so we don't treat them as attachment
       // points
       if (label == "_AP1") {
-        atom->setProp(common_properties::_fromAttachPoint, 1);
+        atom->getProps()->setProp(common_properties::_fromAttachPoint, 1);
       } else if (label == "_AP2") {
-        atom->setProp(common_properties::_fromAttachPoint, 2);
+        atom->getProps()->setProp(common_properties::_fromAttachPoint, 2);
       }
     }
   }
@@ -626,9 +626,9 @@ void CleanupAfterParsing(RWMol *mol) {
   if (!Chirality::getAllowNontetrahedralChirality()) {
     bool needWarn = false;
     for (auto atom : mol->atoms()) {
-      if (atom->hasProp(common_properties::_chiralPermutation)) {
+      if (atom->getProps()->hasProp(common_properties::_chiralPermutation)) {
         needWarn = true;
-        atom->clearProp(common_properties::_chiralPermutation);
+        atom->getProps()->clearProp(common_properties::_chiralPermutation);
       }
       if (atom->getChiralTag() > Atom::ChiralType::CHI_OTHER) {
         needWarn = true;

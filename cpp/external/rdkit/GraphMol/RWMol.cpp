@@ -144,7 +144,7 @@ void RWMol::insertMol(const ROMol &other) {
     addAtom(newAt, updateLabel, takeOwnership);
     // take care of atom-numbering-dependent properties:
     INT_VECT nAtoms;
-    if (newAt->getPropIfPresent(common_properties::_ringStereoAtoms, nAtoms)) {
+    if (newAt->getProps()->getPropIfPresent(common_properties::_ringStereoAtoms, nAtoms)) {
       for (auto &val : nAtoms) {
         if (val < 0) {
           val = -1 * (-val + origNumAtoms);
@@ -152,7 +152,7 @@ void RWMol::insertMol(const ROMol &other) {
           val += origNumAtoms;
         }
       }
-      newAt->setProp(common_properties::_ringStereoAtoms, nAtoms, true);
+      newAt->getProps()->setProp(common_properties::_ringStereoAtoms, nAtoms, true);
     }
   }
 
@@ -230,7 +230,7 @@ void RWMol::replaceAtom(unsigned int idx, Atom *atom_pin, bool,
   auto vd = boost::vertex(idx, d_graph);
   if (preserveProps) {
     const bool replaceExistingData = false;
-    atom_p->updateProps(*d_graph[vd], replaceExistingData);
+    atom_p->getProps()->updateProps(*d_graph[vd]->getProps(), replaceExistingData);
   }
 
   const auto orig_p = d_graph[vd];

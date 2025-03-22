@@ -109,8 +109,8 @@ void AssignHsResidueInfo(RWMol &mol) {
 std::map<unsigned int, std::vector<unsigned int>> getIsoMap(const ROMol &mol) {
   std::map<unsigned int, std::vector<unsigned int>> isoMap;
   for (auto atom : mol.atoms()) {
-    if (atom->hasProp(common_properties::_isotopicHs)) {
-      atom->clearProp(common_properties::_isotopicHs);
+    if (atom->getProps()->hasProp(common_properties::_isotopicHs)) {
+      atom->getProps()->clearProp(common_properties::_isotopicHs);
     }
   }
   for (auto bond : mol.bonds()) {
@@ -421,7 +421,7 @@ void setTerminalAtomCoords(ROMol &mol, unsigned int idx,
             // compute the normal:
             dirVect = nbr1Vect.crossProduct(nbr2Vect);
             std::string cipCode;
-            if (otherAtom->getPropIfPresent(common_properties::_CIPCode,
+            if (otherAtom->getProps()->getPropIfPresent(common_properties::_CIPCode,
                                             cipCode)) {
               // the heavy atom is a chiral center, make sure
               // that we went go the right direction to preserve
@@ -523,12 +523,12 @@ void addHs(RWMol &mol, bool explicitOnly, bool addCoords,
     Atom *newAt = mol.getAtomWithIdx(aidx);
 
     std::vector<unsigned int> isoHs;
-    if (newAt->getPropIfPresent(common_properties::_isotopicHs, isoHs)) {
-      newAt->clearProp(common_properties::_isotopicHs);
+    if (newAt->getProps()->getPropIfPresent(common_properties::_isotopicHs, isoHs)) {
+      newAt->getProps()->clearProp(common_properties::_isotopicHs);
     }
     std::vector<unsigned int>::const_iterator isoH = isoHs.begin();
     unsigned int newIdx;
-    newAt->clearComputedProps();
+    newAt->getProps()->clearComputedProps();
     // always convert explicit Hs
     unsigned int onumexpl = newAt->getNumExplicitHs();
     for (unsigned int i = 0; i < onumexpl; i++) {
@@ -556,7 +556,7 @@ void addHs(RWMol &mol, bool explicitOnly, bool addCoords,
         // set the isImplicit label so that we can strip these back
         // off later if need be.
         auto hAtom = mol.getAtomWithIdx(newIdx);
-        hAtom->setProp(common_properties::isImplicit, 1);
+        hAtom->getProps()->setProp(common_properties::isImplicit, 1);
         hAtom->updatePropertyCache();
         if (addCoords) {
           setTerminalAtomCoords(mol, newIdx, aidx);
@@ -718,7 +718,7 @@ void molRemoveH(RWMol &mol, unsigned int idx, bool updateExplicitCount) {
     // stereochem
     if (bond->getBondDir() == Bond::UNKNOWN &&
         bond->getBeginAtomIdx() == heavyAtom->getIdx()) {
-      heavyAtom->setProp(common_properties::_UnknownStereo, 1);
+      heavyAtom->getProps()->setProp(common_properties::_UnknownStereo, 1);
     } else if (bond->getBondDir() == Bond::ENDDOWNRIGHT ||
                bond->getBondDir() == Bond::ENDUPRIGHT) {
       // if the direction is set on this bond and the atom it's connected to
@@ -807,7 +807,7 @@ bool shouldRemoveH(const RWMol &mol, const Atom *atom,
   if (!ps.removeIsotopes && !ps.removeAndTrackIsotopes && atom->getIsotope()) {
     return false;
   }
-  if (!ps.removeNonimplicit && !atom->hasProp(common_properties::isImplicit)) {
+  if (!ps.removeNonimplicit && !atom->getProps()->hasProp(common_properties::isImplicit)) {
     return false;
   }
   if (!ps.removeMapped && atom->getAtomMapNum()) {
@@ -978,7 +978,7 @@ void removeHs(RWMol &mol, const RemoveHsParameters &ps, bool sanitize) {
   if (ps.removeAndTrackIsotopes) {
     for (const auto &pair : getIsoMap(mol)) {
       mol.getAtomWithIdx(pair.first)
-          ->setProp(common_properties::_isotopicHs, pair.second);
+          ->getProps()->setProp(common_properties::_isotopicHs, pair.second);
     }
   }
   boost::dynamic_bitset<> atomsToRemove{mol.getNumAtoms(), 0};
@@ -1175,7 +1175,7 @@ void mergeQueryHs(RWMol &mol, bool mergeUnmappedOnly, bool mergeIsotopes) {
           Atom &bgn = *mol.getAtomWithIdx(*begin);
           bool checkUnmapped =
               !mergeUnmappedOnly ||
-              !bgn.hasProp(common_properties::molAtomMapNumber);
+              !bgn.getProps()->hasProp(common_properties::molAtomMapNumber);
           bool checkIsotope = mergeIsotopes || bgn.getIsotope() == 0;
           if (checkUnmapped && checkIsotope) {
             atomsToRemove.push_back(rdcast<unsigned int>(*begin));
@@ -1204,7 +1204,7 @@ void mergeQueryHs(RWMol &mol, bool mergeUnmappedOnly, bool mergeIsotopes) {
           ATOM_EQUALS_QUERY *tmp = makeAtomNumQuery(atom->getAtomicNum());
           auto *newAt = new QueryAtom;
           newAt->setQuery(tmp);
-          newAt->updateProps(*atom);
+          newAt->getProps()->updateProps(*atom->getProps());
           mol.replaceAtom(atom->getIdx(), newAt);
           delete newAt;
           atom = mol.getAtomWithIdx(currIdx);
