@@ -21,6 +21,10 @@ inline std::vector<int> make_aromatic_ring(int residue_start_idx, const IndicesC
 // but they lead to weird lagging issues when run in parallel. At some point,
 // we may want to revisit this.     - Besian, March 2025
 //
+
+constexpr int aroms_max_elem_idx      = 3; // the index of the last aromatic element in the array
+constexpr int trp_aroms6_max_elem_idx = 4; // the index of the last aromatic element in the array
+
 template <typename MoleculeType, typename RingContainer, typename BondContainer>
 inline void add_phe_ring(MoleculeType& mol, int residue_start_idx,
                          RingContainer& aromatic_atom_indices,
@@ -45,7 +49,7 @@ inline void add_phe_ring(MoleculeType& mol, int residue_start_idx,
     aromatic_atom_indices.emplace_back(ring.begin(), ring.end());
     aromatic_bond_indices.emplace_back(bonds.begin(), bonds.end());
 
-    max_arom_atom_idx = std::max(max_arom_atom_idx, ring[aroms_max_elem_index]);
+    max_arom_atom_idx = std::max(max_arom_atom_idx, ring[aroms_max_elem_idx]);
     max_arom_bond_idx = bonds[ring_size - 1];
 }
 
@@ -72,7 +76,7 @@ inline void add_tyr_ring(MoleculeType& mol, int residue_start_idx,
     aromatic_atom_indices.emplace_back(ring.begin(), ring.end());
     aromatic_bond_indices.emplace_back(bonds.begin(), bonds.end());
 
-    max_arom_atom_idx = std::max(max_arom_atom_idx, ring[aroms_max_elem_index]);
+    max_arom_atom_idx = std::max(max_arom_atom_idx, ring[aroms_max_elem_idx]);
     max_arom_bond_idx = bonds[ring_size - 1];
 }
 
@@ -100,7 +104,7 @@ inline void add_his_ring(MoleculeType& mol, int residue_start_idx,
     aromatic_atom_indices.emplace_back(ring.begin(), ring.end());
     aromatic_bond_indices.emplace_back(bonds.begin(), bonds.end());
 
-    max_arom_atom_idx = std::max(max_arom_atom_idx, ring[aroms_max_elem_index]);
+    max_arom_atom_idx = std::max(max_arom_atom_idx, ring[aroms_max_elem_idx]);
     max_arom_bond_idx = bonds[ring_size - 1];
 }
 
@@ -146,7 +150,7 @@ inline void add_trp_rings(MoleculeType& mol, int residue_start_idx,
     aromatic_bond_indices.emplace_back(bonds5.begin(), bonds5.end());
     aromatic_bond_indices.emplace_back(bonds6.begin(), bonds6.end());
 
-    max_arom_atom_idx = std::max({max_arom_atom_idx, ring6[trp_aroms6_max_elem_index]});
+    max_arom_atom_idx = std::max({max_arom_atom_idx, ring6[trp_aroms6_max_elem_idx]});
     max_arom_bond_idx = bonds6[ring_size6 - 2];
 }
 

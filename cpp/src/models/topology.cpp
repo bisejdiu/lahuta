@@ -79,8 +79,13 @@ void read_and_build_model_topology(RDKit::RWMol &mol, RDKit::Conformer &conf, Mo
     }
 
     int residue_start_idx = atom_idx - entry.size;
+
     // inline lambda to construct and record an aromatic ring.
     auto add_aromatic_ring = [&](const auto &indices, bool skip_first = false) {
+
+      static const int max_ring_index = 3;
+      auto max_bond_index = aa[0] == 'W' || aa[0] == 'H' ? 4 : 5;
+
       auto ring = make_aromatic_ring(residue_start_idx, indices);
 
       std::vector<int> bonds;
@@ -97,9 +102,8 @@ void read_and_build_model_topology(RDKit::RWMol &mol, RDKit::Conformer &conf, Mo
       aromatic_atom_indices.push_back(ring);
       aromatic_bond_indices.push_back(bonds);
 
-      // FIX: use the provided table idicees to directly access the max element.
-      max_arom_atom_idx = *std::max_element(ring.begin(), ring.end());
-      max_arom_bond_idx = *std::max_element(bonds.begin(), bonds.end());
+      max_arom_atom_idx = ring[3];
+      max_arom_bond_idx = bonds[max_bond_index];
     };
 
     switch (aa[0]) {

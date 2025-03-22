@@ -99,9 +99,6 @@ constexpr std::array<const int, 5> his_arom_indices = {5, 7, 8, 9, 6};
 constexpr std::array<const int, 5> trp_arom_indices5 = {5, 7, 8, 10, 6};
 constexpr std::array<const int, 6> trp_arom_indices6 = {7, 8, 12, 11, 13, 9};
 
-constexpr int aroms_max_elem_index = 3; // the index of the last aromatic element in the array
-constexpr int trp_aroms6_max_elem_index = 4; // the index of the last aromatic element in the array
-
 
 // Edge structure with canonical ordering (i < j)
 struct Edge {
