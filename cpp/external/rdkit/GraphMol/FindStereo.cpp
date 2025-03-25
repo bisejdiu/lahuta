@@ -293,7 +293,7 @@ StereoInfo getStereoInfo(const Atom *atom) {
     if (bnd->getBondDir() == Bond::UNKNOWN) {
       explicitUnknownStereo = 1;
     } else if (!explicitUnknownStereo) {
-      bnd->getPropIfPresent<int>(common_properties::_UnknownStereo,
+      bnd->getProps()->getPropIfPresent<int>(common_properties::_UnknownStereo,
                                  explicitUnknownStereo);
     }
     sinfo.controllingAtoms.push_back(bnd->getOtherAtomIdx(atom->getIdx()));

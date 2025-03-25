@@ -43,7 +43,7 @@ class Atom;
           clients who need to store extra data on Bond objects.
 
 */
-class Bond : public RDProps {
+class Bond {
   friend class RWMol;
   friend class ROMol;
 
@@ -111,7 +111,7 @@ class Bond : public RDProps {
   virtual ~Bond();
   Bond &operator=(const Bond &other);
 
-  Bond(Bond &&o) noexcept : RDProps(std::move(o)) {
+  Bond(Bond &&o) noexcept {
     df_isAromatic = o.df_isAromatic;
     df_isConjugated = o.df_isConjugated;
     d_bondType = o.d_bondType;
@@ -129,7 +129,7 @@ class Bond : public RDProps {
     if (this == &o) {
       return *this;
     }
-    RDProps::operator=(std::move(o));
+    /*RDProps::operator=(std::move(o));*/
     df_isAromatic = o.df_isAromatic;
     df_isConjugated = o.df_isConjugated;
     d_bondType = o.d_bondType;
@@ -367,6 +367,18 @@ class Bond : public RDProps {
   */
   void updatePropertyCache(bool strict = true) { (void)strict; }
 
+  std::shared_ptr<RDProps> &getProps() { 
+    if (!d_props) {
+      std::cout << "Creating new RDProps" << std::endl;
+      d_props.reset(new RDProps());
+    }
+    return d_props;
+  }
+  const std::shared_ptr<RDProps> &getProps() const { 
+    if (!d_props) throw std::runtime_error("No properties available");
+    return d_props;
+  }
+  
  protected:
   //! sets our owning molecule
   /// void setOwningMol(ROMol *other);
@@ -381,6 +393,9 @@ class Bond : public RDProps {
   atomindex_t d_beginAtomIdx, d_endAtomIdx;
   ROMol *dp_mol;
   INT_VECT *dp_stereoAtoms;
+
+  // b.i.s
+  std::shared_ptr<RDProps> d_props;
 
   void initBond();
 };

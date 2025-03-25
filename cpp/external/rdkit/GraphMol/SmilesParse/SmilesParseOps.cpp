@@ -151,7 +151,7 @@ void AddFragToMol(RWMol *mol, RWMol *frag, Bond::BondType bondOrder,
         newB->setOwningMol(mol);
         newB->setBeginAtomIdx(atomIdx1);
         newB->setEndAtomIdx(atomIdx2);
-        newB->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
+        newB->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
         mol->addBond(newB);
         delete newB;
       } else {
@@ -328,7 +328,7 @@ Bond::BondType GetUnspecifiedBondType(const RWMol *mol, const Atom *atom1,
 void SetUnspecifiedBondTypes(RWMol *mol) {
   PRECONDITION(mol, "no molecule");
   for (auto bond : mol->bonds()) {
-    if (bond->hasProp(RDKit::common_properties::_unspecifiedOrder)) {
+    if (bond->getProps()->hasProp(RDKit::common_properties::_unspecifiedOrder)) {
       bond->setBondType(GetUnspecifiedBondType(mol, bond->getBeginAtom(),
                                                bond->getEndAtom()));
       if (bond->getBondType() == Bond::AROMATIC) {
@@ -493,9 +493,9 @@ void CloseMolRings(RWMol *mol, bool toleratePartials) {
 
           // we use the _cxsmilesBondIdx value from the second one, if it's
           // there
-          if (bond2->hasProp("_cxsmilesBondIdx")) {
-            bond1->setProp("_cxsmilesBondIdx",
-                           bond2->getProp<unsigned int>("_cxsmilesBondIdx"));
+          if (bond2->getProps()->hasProp("_cxsmilesBondIdx")) {
+            bond1->getProps()->setProp("_cxsmilesBondIdx",
+                           bond2->getProps()->getProp<unsigned int>("_cxsmilesBondIdx"));
           }
 
           Bond *matchedBond;
@@ -517,7 +517,7 @@ void CloseMolRings(RWMol *mol, bool toleratePartials) {
           //           << bond2->getBondType() << "("
           //           << bond2->hasProp(common_properties::_unspecifiedOrder)
           //           << "):" << bond2->getBondDir() << std::endl;
-          if (!bond1->hasProp(common_properties::_unspecifiedOrder)) {
+          if (!bond1->getProps()->hasProp(common_properties::_unspecifiedOrder)) {
             matchedBond = bond1;
             if (matchedBond->getBondType() == Bond::DATIVEL) {
               matchedBond->setBeginAtomIdx(atom2->getIdx());
@@ -617,8 +617,8 @@ void CleanupAfterParsing(RWMol *mol) {
     }
   }
   for (auto bond : mol->bonds()) {
-    bond->clearProp(common_properties::_unspecifiedOrder);
-    bond->clearProp("_cxsmilesBondIdx");
+    bond->getProps()->clearProp(common_properties::_unspecifiedOrder);
+    bond->getProps()->clearProp("_cxsmilesBondIdx");
   }
   for (auto sg : RDKit::getSubstanceGroups(*mol)) {
     sg.clearProp("_cxsmilesindex");
@@ -654,7 +654,7 @@ RDKit::QueryBond *getUnspecifiedQueryBond(const RDKit::Atom *a1,
     newB = new QueryBond(Bond::AROMATIC);
     newB->setQuery(makeSingleOrAromaticBondQuery());
   }
-  newB->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
+  newB->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
   return newB;
 }
 

@@ -295,7 +295,7 @@ std::string GetBondSmiles(const Bond *bond, const SmilesWriteParams &params,
 
   Bond::BondDir dir = bond->getBondDir();
 
-  bond->clearProp(common_properties::_TraversalRingClosureBond);
+  bond->getProps()->clearProp(common_properties::_TraversalRingClosureBond);
 
   switch (bond->getBondType()) {
     case Bond::SINGLE:
@@ -765,9 +765,9 @@ std::string MolToCXSmiles(const ROMol &romol, const SmilesWriteParams &params,
         bond->setBondDir(Bond::BondDir::NONE);
       }
       unsigned int cfg;
-      if (bond->getPropIfPresent<unsigned int>(
+      if (bond->getProps()->getPropIfPresent<unsigned int>(
               common_properties::_MolFileBondCfg, cfg)) {
-        bond->clearProp(common_properties::_MolFileBondCfg);
+        bond->getProps()->clearProp(common_properties::_MolFileBondCfg);
       }
     }
   }

@@ -142,7 +142,7 @@ bool isClosingRingBond(Bond *bond) {
   auto beginIdx = bond->getBeginAtomIdx();
   auto endIdx = bond->getEndAtomIdx();
   return beginIdx > endIdx && beginIdx - endIdx > 1 &&
-         bond->hasProp(common_properties::_TraversalRingClosureBond);
+         bond->getProps()->hasProp(common_properties::_TraversalRingClosureBond);
 }
 
 }  // namespace
@@ -444,7 +444,7 @@ void canonicalizeDoubleBond(Bond *dblBond, UINT_VECT &bondVisitOrders,
       // Here we set the bond direction to be opposite the other one (since
       // both come after the atom connected to the double bond).
       Bond::BondDir otherDir;
-      if (!secondFromAtom2->hasProp(
+      if (!secondFromAtom2->getProps()->hasProp(
               common_properties::_TraversalRingClosureBond)) {
         otherDir = flipBondDir(firstFromAtom2->getBondDir());
       } else {
@@ -478,7 +478,7 @@ void canonicalizeDoubleBond(Bond *dblBond, UINT_VECT &bondVisitOrders,
     if (bondVisitOrders[atom1ControllingBond->getIdx()] >
         atomVisitOrders[atom1->getIdx()]) {
       if (bondDirCounts[atom1ControllingBond->getIdx()] == 1) {
-        if (!atom1ControllingBond->hasProp(
+        if (!atom1ControllingBond->getProps()->hasProp(
                 common_properties::_TraversalRingClosureBond)) {
           // std::cerr<<"  switcheroo 1"<<std::endl;
           switchBondDir(atom1ControllingBond);
@@ -707,7 +707,7 @@ void dfsBuildStack(ROMol &mol, int atomIdx, int inBondIdx,
       Bond *bond = mol.getBondWithIdx(bIdx);
       seenFromHere.set(bond->getOtherAtomIdx(atomIdx));
       unsigned int ringIdx;
-      if (bond->getPropIfPresent(common_properties::_TraversalRingClosureBond,
+      if (bond->getProps()->getPropIfPresent(common_properties::_TraversalRingClosureBond,
                                  ringIdx)) {
         // this is end of the ring closure
         // we can just pull the ring index from the bond itself:
@@ -730,7 +730,7 @@ void dfsBuildStack(ROMol &mol, int atomIdx, int inBondIdx,
         unsigned int lowestRingIdx = cAIt - cyclesAvailable.begin();
         cyclesAvailable[lowestRingIdx] = 0;
         ++lowestRingIdx;
-        bond->setProp(common_properties::_TraversalRingClosureBond,
+        bond->getProps()->setProp(common_properties::_TraversalRingClosureBond,
                       lowestRingIdx);
         molStack.push_back(MolStackElem(lowestRingIdx));
       }

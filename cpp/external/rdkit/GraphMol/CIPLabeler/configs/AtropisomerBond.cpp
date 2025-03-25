@@ -50,7 +50,7 @@ void AtropisomerBond::setPrimaryLabel(Descriptor desc) {
       auto carriers = getCarriers();
       // dp_bond->setStereoAtoms(carriers[0]->getIdx(), carriers[1]->getIdx());
       // dp_bond->setStereo(d_cfg);
-      dp_bond->setProp(common_properties::_CIPCode, to_string(desc));
+      dp_bond->getProps()->setProp(common_properties::_CIPCode, to_string(desc));
       return;
     }
     case Descriptor::R:

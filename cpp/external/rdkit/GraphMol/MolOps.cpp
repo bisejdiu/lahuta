@@ -1111,8 +1111,8 @@ void addHapticBond(RWMol &mol, unsigned int metalIdx,
     endpts = endpts.substr(0, endpts.length() - 1);
   }
   endpts += ")";
-  bond->setProp(common_properties::_MolFileBondEndPts, endpts);
-  bond->setProp<std::string>(common_properties::_MolFileBondAttach, "ALL");
+  bond->getProps()->setProp(common_properties::_MolFileBondEndPts, endpts);
+  bond->getProps()->setProp<std::string>(common_properties::_MolFileBondAttach, "ALL");
 }
 }  // namespace
 
@@ -1161,7 +1161,7 @@ std::vector<int> hapticBondEndpoints(const Bond *bond) {
   // Returns the atom indices i.e. subtracts 1 from the numbers in the prop.
   std::vector<int> oats;
   std::string endpts;
-  if (bond->getPropIfPresent(common_properties::_MolFileBondEndPts, endpts)) {
+  if (bond->getProps()->getPropIfPresent(common_properties::_MolFileBondEndPts, endpts)) {
     if ('(' == endpts.front() && ')' == endpts.back()) {
       endpts = endpts.substr(1, endpts.length() - 2);
       boost::char_separator<char> sep(" ");

@@ -308,7 +308,7 @@ void finalizePolymerSGroup(RWMol &mol, SubstanceGroup &sgroup) {
 Bond *get_bond_with_smiles_idx(const ROMol &mol, unsigned idx) {
   for (auto bnd : mol.bonds()) {
     unsigned int smilesIdx;
-    if (bnd->getPropIfPresent("_cxsmilesBondIdx", smilesIdx) &&
+    if (bnd->getProps()->getPropIfPresent("_cxsmilesBondIdx", smilesIdx) &&
         smilesIdx == idx) {
       return bnd;
     }
@@ -1007,8 +1007,8 @@ bool parse_variable_attachments(Iterator &first, Iterator last,
       for (auto nbri : boost::make_iterator_range(
                mol.getAtomBonds(mol.getAtomWithIdx(at1idx - startAtomIdx)))) {
         auto bnd = mol[nbri];
-        bnd->setProp(common_properties::_MolFileBondEndPts, endPts);
-        bnd->setProp(common_properties::_MolFileBondAttach, std::string("ANY"));
+        bnd->getProps()->setProp(common_properties::_MolFileBondEndPts, endPts);
+        bnd->getProps()->setProp(common_properties::_MolFileBondAttach, std::string("ANY"));
       }
     }
     if (first < last && *first == ',') {
@@ -1084,7 +1084,7 @@ bool parse_wedged_bonds(Iterator &first, Iterator last, RDKit::RWMol &mol,
       }
 
       // we can't set wedging twice:
-      if (bond->hasProp(common_properties::_MolFileBondCfg)) {
+      if (bond->getProps()->hasProp(common_properties::_MolFileBondCfg)) {
         BOOST_LOG(rdWarningLog)
             << "w block attempts to set wedging on bond " << bond->getIdx()
             << " more than once." << std::endl;
@@ -1106,7 +1106,7 @@ bool parse_wedged_bonds(Iterator &first, Iterator last, RDKit::RWMol &mol,
         bond->setBeginAtomIdx(atom->getIdx());
         bond->setEndAtomIdx(eidx);
       }
-      bond->setProp(common_properties::_MolFileBondCfg, cfg);
+      bond->getProps()->setProp(common_properties::_MolFileBondCfg, cfg);
       bond->setBondDir(state);
       if (cfg == 2 && canHaveDirection(*bond)) {
         bond->getBeginAtom()->setChiralTag(Atom::ChiralType::CHI_UNSPECIFIED);
@@ -2136,7 +2136,7 @@ std::string get_bond_config_block(
               //  chiral atom
       unsigned int cfg = 0;
       if (bd == Bond::BondDir::NONE &&
-          bond->getPropIfPresent(common_properties::_MolFileBondCfg, cfg)) {
+          bond->getProps()->getPropIfPresent(common_properties::_MolFileBondCfg, cfg)) {
         switch (cfg) {
           case 1:
             bd = Bond::BondDir::BEGINWEDGE;

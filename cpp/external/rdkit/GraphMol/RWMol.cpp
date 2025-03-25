@@ -291,7 +291,8 @@ void RWMol::replaceBond(unsigned int idx, Bond *bond_pin, bool preserveProps,
 
   if (preserveProps) {
     const bool replaceExistingData = false;
-    bond_p->updateProps(*d_graph[*(bIter.first)], replaceExistingData);
+    /*bond_p->getProps()->updateProps(*d_graph[*(bIter.first)], replaceExistingData);*/
+    bond_p->getProps()->updateProps(*d_graph[*(bIter.first)]->getProps(), replaceExistingData);
   }
 
   const auto orig_p = d_graph[*(bIter.first)];
@@ -403,7 +404,7 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
   std::string sprop;
   while (beg != end) {
     Bond *bond = d_graph[*beg++];
-    if (bond->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
+    if (bond->getProps()->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
                                sprop)) {
       // This would ideally use ParseV3000Array but I'm buggered if I can get
       // the linker to find it.
@@ -428,8 +429,8 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
           --num_ats;
         }
         if (!num_ats) {
-          bond->clearProp(RDKit::common_properties::_MolFileBondEndPts);
-          bond->clearProp(common_properties::_MolFileBondAttach);
+          bond->getProps()->clearProp(RDKit::common_properties::_MolFileBondEndPts);
+          bond->getProps()->clearProp(common_properties::_MolFileBondAttach);
         } else {
           sprop = "(" + std::to_string(num_ats) + " ";
           for (auto &i : oats) {
@@ -439,7 +440,7 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
             sprop += std::to_string(i) + " ";
           }
           sprop[sprop.length() - 1] = ')';
-          bond->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
+          bond->getProps()->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
         }
       }
     }
@@ -784,7 +785,7 @@ void RWMol::batchRemoveAtoms() {
     std::string sprop;
     while (beg != end) {
       Bond *bond = d_graph[*beg++];
-      if (bond->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
+      if (bond->getProps()->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
                                  sprop)) {
         // This would ideally use ParseV3000Array but I'm buggered if I can get
         // the linker to find it.
@@ -809,8 +810,8 @@ void RWMol::batchRemoveAtoms() {
             --num_ats;
           }
           if (!num_ats) {
-            bond->clearProp(RDKit::common_properties::_MolFileBondEndPts);
-            bond->clearProp(common_properties::_MolFileBondAttach);
+            bond->getProps()->clearProp(RDKit::common_properties::_MolFileBondEndPts);
+            bond->getProps()->clearProp(common_properties::_MolFileBondAttach);
           } else {
             sprop = "(" + std::to_string(num_ats) + " ";
             for (auto &i : oats) {
@@ -820,7 +821,7 @@ void RWMol::batchRemoveAtoms() {
               sprop += std::to_string(i) + " ";
             }
             sprop[sprop.length() - 1] = ')';
-            bond->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
+            bond->getProps()->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
           }
         }
       }

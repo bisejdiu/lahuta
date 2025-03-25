@@ -595,7 +595,7 @@ void ROMol::clearComputedProps(bool includeRings) const {
   }
 
   for (auto bond : bonds()) {
-    bond->clearComputedProps();
+    bond->getProps()->clearComputedProps();
   }
 }
 

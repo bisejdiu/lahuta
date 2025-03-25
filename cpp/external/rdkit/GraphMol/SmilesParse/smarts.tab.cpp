@@ -1673,7 +1673,7 @@ yyreduce:
   newB->setOwningMol(mp);
   newB->setBeginAtomIdx(atomIdx1);
   newB->setEndAtomIdx(atomIdx2);
-  newB->setProp("_cxsmilesBondIdx",numBondsParsed++);
+  newB->getProps()->setProp("_cxsmilesBondIdx",numBondsParsed++);
   mp->addBond(newB,true);
 }
 #line 1679 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smarts.tab.cpp"
@@ -1697,7 +1697,7 @@ yyreduce:
     (yyvsp[-1].bond)->setBeginAtomIdx(atomIdx1);
     (yyvsp[-1].bond)->setEndAtomIdx(atomIdx2);
   }
-  (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx",numBondsParsed++);
+  (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx",numBondsParsed++);
   mp->addBond((yyvsp[-1].bond));
   delete (yyvsp[-1].bond);
 }
@@ -1725,7 +1725,7 @@ yyreduce:
   newB->setBeginAtomIdx(atom->getIdx());
   mp->setBondBookmark(newB,(yyvsp[0].ival));
   if(!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size()%2)){
-    newB->setProp("_cxsmilesBondIdx",numBondsParsed++);
+    newB->getProps()->setProp("_cxsmilesBondIdx",numBondsParsed++);
   }
   mp->setAtomBookmark(atom,(yyvsp[0].ival));
 
@@ -1751,7 +1751,7 @@ yyreduce:
   mp->setBondBookmark((yyvsp[-1].bond),(yyvsp[0].ival));
   (yyvsp[-1].bond)->setOwningMol(mp);
   (yyvsp[-1].bond)->setBeginAtomIdx(atom->getIdx());
-  (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx",numBondsParsed++);
+  (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx",numBondsParsed++);
   mp->setAtomBookmark(atom,(yyvsp[0].ival));
 
   SmilesParseOps::CheckRingClosureBranchStatus(atom,mp);
@@ -1779,7 +1779,7 @@ yyreduce:
   newB->setOwningMol(mp);
   newB->setBeginAtomIdx(atomIdx1);
   newB->setEndAtomIdx(atomIdx2);
-  newB->setProp("_cxsmilesBondIdx",numBondsParsed++);
+  newB->getProps()->setProp("_cxsmilesBondIdx",numBondsParsed++);
   mp->addBond(newB);
   delete newB;
 
@@ -1806,7 +1806,7 @@ yyreduce:
     (yyvsp[-1].bond)->setBeginAtomIdx(atomIdx1);
     (yyvsp[-1].bond)->setEndAtomIdx(atomIdx2);
   }
-  (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx",numBondsParsed++);
+  (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx",numBondsParsed++);
   mp->addBond((yyvsp[-1].bond),true);
   branchPoints->push_back(atomIdx1);
 

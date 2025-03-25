@@ -1581,7 +1581,7 @@ yyreduce:
                   SmilesParseOps::GetUnspecifiedBondType(
                       mp, a1, mp->getAtomWithIdx(atomIdx2)));
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $2;
     }
 #line 1691 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1605,7 +1605,7 @@ yyreduce:
         (yyvsp[-1].bond)->setBeginAtomIdx(atomIdx1);
         (yyvsp[-1].bond)->setEndAtomIdx(atomIdx2);
       }
-      (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx", numBondsParsed++);
+      (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       mp->addBond((yyvsp[-1].bond), true);
       // delete $3;
     }
@@ -1620,7 +1620,7 @@ yyreduce:
       int atomIdx2 = mp->addAtom((yyvsp[0].atom), true, true);
       mp->addBond(atomIdx1, atomIdx2, Bond::SINGLE);
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $3;
     }
 #line 1729 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1645,9 +1645,9 @@ yyreduce:
 
       Bond *newB = mp->createPartialBond(atom->getIdx(), Bond::UNSPECIFIED);
       mp->setBondBookmark(newB, (yyvsp[0].ival));
-      newB->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
+      newB->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
       if (!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size() % 2)) {
-        newB->setProp("_cxsmilesBondIdx", numBondsParsed++);
+        newB->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       }
 
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
@@ -1668,14 +1668,14 @@ yyreduce:
       Bond *newB = mp->createPartialBond(atom->getIdx(),
                                          (yyvsp[-1].bond)->getBondType());
       if ((yyvsp[-1].bond)
-              ->hasProp(RDKit::common_properties::_unspecifiedOrder)) {
-        newB->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
+              ->getProps()->hasProp(RDKit::common_properties::_unspecifiedOrder)) {
+        newB->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
       }
       newB->setBondDir((yyvsp[-1].bond)->getBondDir());
       mp->setAtomBookmark(atom, (yyvsp[0].ival));
       mp->setBondBookmark(newB, (yyvsp[0].ival));
       if (!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size() % 2)) {
-        newB->setProp("_cxsmilesBondIdx", numBondsParsed++);
+        newB->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       }
 
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
@@ -1698,7 +1698,7 @@ yyreduce:
       mp->setAtomBookmark(atom, (yyvsp[0].ival));
       mp->setBondBookmark(newB, (yyvsp[0].ival));
       if (!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size() % 2)) {
-        newB->setProp("_cxsmilesBondIdx", numBondsParsed++);
+        newB->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       }
 
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
@@ -1722,7 +1722,7 @@ yyreduce:
                   SmilesParseOps::GetUnspecifiedBondType(
                       mp, a1, mp->getAtomWithIdx(atomIdx2)));
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $3;
       branchPoints->push_back(atomIdx1);
     }
@@ -1747,7 +1747,7 @@ yyreduce:
         (yyvsp[-1].bond)->setBeginAtomIdx(atomIdx1);
         (yyvsp[-1].bond)->setEndAtomIdx(atomIdx2);
       }
-      (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx", numBondsParsed++);
+      (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       mp->addBond((yyvsp[-1].bond), true);
 
       // delete $4;
@@ -1764,7 +1764,7 @@ yyreduce:
       int atomIdx2 = mp->addAtom((yyvsp[0].atom), true, true);
       mp->addBond(atomIdx1, atomIdx2, Bond::SINGLE);
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $4;
       branchPoints->push_back(atomIdx1);
     }

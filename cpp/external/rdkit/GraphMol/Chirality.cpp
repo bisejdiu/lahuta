@@ -152,7 +152,7 @@ void controllingBondFromAtom(const ROMol &mol,
     if ((tBond->getBondType() == Bond::SINGLE ||
          tBond->getBondType() == Bond::AROMATIC) &&
         (tBond->getBondDir() == Bond::UNKNOWN ||
-         ((tBond->getPropIfPresent<int>(common_properties::_UnknownStereo,
+         ((tBond->getProps()->getPropIfPresent<int>(common_properties::_UnknownStereo,
                                         explicit_unknown_stereo) &&
            explicit_unknown_stereo)))) {
       squiggleBondSeen = true;
@@ -1279,7 +1279,7 @@ void findAtomNeighborDirHelper(const ROMol &mol, const Atom *atom,
     if (!hasExplicitUnknownStereo) {
       int explicit_unknown_stereo;
       if (bond->getBondDir() == Bond::UNKNOWN  // there's a squiggle bond
-          || (bond->getPropIfPresent<int>(common_properties::_UnknownStereo,
+          || (bond->getProps()->getPropIfPresent<int>(common_properties::_UnknownStereo,
                                           explicit_unknown_stereo) &&
               explicit_unknown_stereo)) {
         hasExplicitUnknownStereo = true;
@@ -2732,7 +2732,7 @@ void addStereoAnnotations(ROMol &mol, std::string absLabel, std::string orLabel,
   if (!bondLabel.empty()) {
     for (auto bond : mol.bonds()) {
       std::string cip;
-      if (!bond->getPropIfPresent(common_properties::_CIPCode, cip)) {
+      if (!bond->getProps()->getPropIfPresent(common_properties::_CIPCode, cip)) {
         if (bond->getStereo() == Bond::STEREOE) {
           cip = "E";
         } else if (bond->getStereo() == Bond::STEREOZ) {
@@ -2742,7 +2742,7 @@ void addStereoAnnotations(ROMol &mol, std::string absLabel, std::string orLabel,
       if (!cip.empty()) {
         std::string lab = bondLabel;
         boost::algorithm::replace_all(lab, "{cip}", cip);
-        bond->setProp(common_properties::bondNote, lab);
+        bond->getProps()->setProp(common_properties::bondNote, lab);
       }
     }
   }
@@ -3044,7 +3044,7 @@ bool isWigglyBond(const Bond *bond, const Atom *atom) {
   if (bond->getBeginAtomIdx() == atom->getIdx() &&
       bond->getBondType() == Bond::BondType::SINGLE &&
       (bond->getBondDir() == Bond::BondDir::UNKNOWN ||
-       (bond->getPropIfPresent<int>(common_properties::_UnknownStereo,
+       (bond->getProps()->getPropIfPresent<int>(common_properties::_UnknownStereo,
                                     hasWigglyBond) &&
         hasWigglyBond))) {
     return true;
@@ -3477,7 +3477,7 @@ void setDoubleBondNeighborDirections(ROMol &mol, const Conformer *conf) {
             int hasUnknownStereo = 0;
             if (nbrBond->getBeginAtom() == bondAtom &&
                 nbrDir == Bond::BondDir::UNKNOWN &&
-                nbrBond->getPropIfPresent(common_properties::_UnknownStereo,
+                nbrBond->getProps()->getPropIfPresent(common_properties::_UnknownStereo,
                                           hasUnknownStereo) &&
                 hasUnknownStereo) {
               // if there's a wiggly bond starting here, then we're not a
@@ -3560,7 +3560,7 @@ void clearSingleBondDirFlags(ROMol &mol, bool onlyWedgeFlags) {
   for (auto bond : mol.bonds()) {
     if (bond->getBondType() == Bond::SINGLE) {
       if (bond->getBondDir() == Bond::UNKNOWN) {
-        bond->setProp(common_properties::_UnknownStereo, 1);
+        bond->getProps()->setProp(common_properties::_UnknownStereo, 1);
       }
 
       if (!onlyWedgeFlags ||
@@ -3576,7 +3576,7 @@ void clearDirFlags(ROMol &mol, bool onlyWedgeTypeBondDirs) {
   for (auto bond : mol.bonds()) {
     if (bond->getBondDir() == Bond::UNKNOWN ||
         bond->getBondDir() == Bond::BondDir::EITHERDOUBLE) {
-      bond->setProp(common_properties::_UnknownStereo, 1);
+      bond->getProps()->setProp(common_properties::_UnknownStereo, 1);
     }
 
     if (onlyWedgeTypeBondDirs == false ||
