@@ -1,7 +1,5 @@
 #include <rdkit/GraphMol/RWMol.h>
 #include <rdkit/GraphMol/MolOps.h>
-#include <rdkit/GraphMol/AtomIterators.h>
-#include <rdkit/GraphMol/BondIterators.h>
 
 #include "bond_order.hpp"
 #include "ob/clean_mol.hpp"
@@ -39,8 +37,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   RDKit::Conformer &conf = mol.getConformer();
 
   // Set all atoms to sp hybridization (1 for openbabel)
-  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
-    auto atom = *atomIt;
+  for (auto atom: mol.atoms()) {
     atom->setHybridization(HybridizationType::SP);
   }
 
@@ -57,8 +54,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   if (!ringInfo->isSssrOrBetter()) {
     RDKit::MolOps::findSSSR(mol);
   }
-  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
-    RDKit::Atom *atom = *atomIt;
+  for (auto atom: mol.atoms()) {
     atom->getAtomicNum();
     double avgDegrees = AverageBondAngle(atom);
 
@@ -133,8 +129,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
 
   // NOTE: Hybridization assignment for all atoms is done before function is
   // called
-  for (auto atomIt = mol.beginAtoms(); atomIt != mol.endAtoms(); ++atomIt) {
-    RDKit::Atom *atom = *atomIt;
+  for (auto atom: mol.atoms()) {
     if (atom->getHybridization() == HybridizationType::SP ||
         atom->getHybridization() == HybridizationType::SP2) {
       bool openNbr = false;
@@ -388,8 +383,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   }
 
   if (needs_kekulization) {
-    for (auto bondIt = mol.beginBonds(); bondIt != mol.endBonds(); ++bondIt) {
-      RDKit::Bond *bond = *bondIt;
+    for (auto bond: mol.bonds()) {
       if (bond->getIsAromatic()) {
         bond->getBeginAtom()->setIsAromatic(true);
         bond->getEndAtom()->setIsAromatic(true);

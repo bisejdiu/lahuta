@@ -3654,7 +3654,7 @@ void assignChiralTypesFromBondDirs(ROMol &mol, const int confId,
   }
   auto conf = mol.getConformer(confId);
   boost::dynamic_bitset<> atomsSet(mol.getNumAtoms(), 0);
-  for (auto &bond : mol.bonds()) {
+  for (auto bond : mol.bonds()) {
     const Bond::BondDir dir = bond->getBondDir();
     Atom *atom = bond->getBeginAtom();
     if (dir == Bond::UNKNOWN) {

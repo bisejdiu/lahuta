@@ -369,7 +369,6 @@ class Bond {
 
   std::shared_ptr<RDProps> &getProps() { 
     if (!d_props) {
-      std::cout << "Creating new RDProps" << std::endl;
       d_props.reset(new RDProps());
     }
     return d_props;

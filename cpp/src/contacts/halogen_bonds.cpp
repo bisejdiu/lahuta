@@ -13,7 +13,7 @@ AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   if (!HalogenAcceptors.count(atom.getAtomicNum())) return AtomType::NONE;
 
-  for (const auto &bond : mol.atomBonds(&atom)) {
+  for (const auto bond : mol.atomBonds(&atom)) {
     const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
     int neighbor_atomic_num = neighbor->getAtomicNum();
 

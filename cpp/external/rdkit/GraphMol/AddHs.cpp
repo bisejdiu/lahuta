@@ -701,7 +701,7 @@ void molRemoveH(RWMol &mol, unsigned int idx, bool updateExplicitCount) {
     // If we are removing a H atom that defines bond stereo (e.g. imines),
     // Then also remove the bond stereo information, as it is no longer valid.
     if (heavyAtom->getDegree() == 2) {
-      for (auto &nbnd : mol.atomBonds(heavyAtom)) {
+      for (auto nbnd : mol.atomBonds(heavyAtom)) {
         if (nbnd != bond) {
           if (nbnd->getStereo() > Bond::STEREOANY) {
             nbnd->setStereo(Bond::STEREONONE);

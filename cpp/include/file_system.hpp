@@ -52,7 +52,7 @@ public:
       throw std::runtime_error("Not a directory: " + dir_path.string());
     }
   }
-
+  //
   // could be useful for the Python binding
   void set_extension(const std::string &extension) { extension_ = extension; }
   void set_recursive(bool recursive) { recursive_ = recursive; }
@@ -137,26 +137,25 @@ public:
     std::unique_ptr<FileHandler> current_file_;
   };
 
-  FileChunk next_chunk(size_t chunk_size) {
+std::optional<FileChunk> next_chunk(size_t chunk_size) {
+    if (!current_iter_) {
+        current_iter_ = std::make_unique<Iterator>(dir_path_, extension_, recursive_);
+    }
+
     FileChunk chunk;
     chunk.reserve(chunk_size);
 
-    if (!current_iter_) {
-      current_iter_ = std::make_unique<Iterator>(dir_path_, extension_, recursive_);
-    }
-
+    // While there is room in the chunk and the iterator hasn't reached the end.
     while (chunk.size() < chunk_size && *current_iter_ != end()) {
-      chunk.push_back((*current_iter_)->get_path().string());
-      ++(*current_iter_);
+        chunk.push_back((*current_iter_)->get_path().string());
+        ++(*current_iter_);
     }
 
-    // comparing *current_iter_ == end() does not work
     if (chunk.empty()) {
-      current_iter_.reset();
+        return std::nullopt;
     }
-
     return chunk;
-  }
+}
 
   std::vector<std::string> get_all_files() {
     std::vector<std::string> files;
@@ -176,7 +175,6 @@ private:
   std::string extension_;
   bool recursive_;
   std::unique_ptr<Iterator> current_iter_;
-  Iterator current_iterator_ = Iterator(dir_path_, extension_, recursive_);
 };
 
 inline int test_impl() {

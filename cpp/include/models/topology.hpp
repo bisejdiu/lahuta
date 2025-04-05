@@ -34,44 +34,24 @@ namespace lahuta {
 // This also means that there are no, or very few, UB checks. The program from this point forward
 // is in a "meaningful" state only as long as the assumptions are met.  - Besian, March 2025
 //
-void read_and_build_model_topology(RDKit::RWMol &mol, RDKit::Conformer &conf, ModelParserResult &P);
 
-
-// to help make atom info allocation more efficient
-class AtomInfoContainer {
-public:
-  AtomInfoContainer(size_t count) {
-    storage = static_cast<unsigned char*>(operator new[](count * sizeof(LeanAtomPDBResidueInfo)));
-    capacity = count;
-    constructed = 0;
-  }
-
-  ~AtomInfoContainer() {
-    // Memory ownership will have been transferred to the Atom objects
-  }
-
-  /// Creates a new atom info object and transfers ownership
-  std::unique_ptr<RDKit::AtomPDBResidueInfo>
-  createAtomInfo(const char *atom_name, int serial, const char *res_name, int res_number) {
-    if (constructed >= capacity) return nullptr; // Out of space
-
-    // pointer to next available storage
-    LeanAtomPDBResidueInfo *ptr = reinterpret_cast<LeanAtomPDBResidueInfo *>(&storage[constructed * sizeof(LeanAtomPDBResidueInfo)]);
-    new (ptr) LeanAtomPDBResidueInfo(atom_name, serial, res_name, res_number); // in-place construction
-    constructed++;
-
-    return std::unique_ptr<RDKit::AtomPDBResidueInfo>(ptr);
-  }
-
-private:
-  unsigned char *storage = nullptr;
-  size_t capacity    = 0;
-  size_t constructed = 0;
-
-  AtomInfoContainer(const AtomInfoContainer &) = delete;
-  AtomInfoContainer &operator=(const AtomInfoContainer &) = delete;
+enum class ModelTopologyMethod {
+  None,
+  Default,
+  CSR
 };
 
+void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P);
+void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P);
+
+inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
+    auto conformer = std::make_unique<RDKit::Conformer>(mol->getNumAtoms());
+    if (method == ModelTopologyMethod::CSR) {
+       build_model_topology_csr(mol, *conformer.release(), P);
+    } else if (method == ModelTopologyMethod::Default) {
+        build_model_topology_def(mol, *conformer.release(), P);
+    }
+}
 
 } // namespace lahuta
 

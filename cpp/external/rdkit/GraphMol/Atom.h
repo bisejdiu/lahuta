@@ -415,7 +415,6 @@ class Atom {
 
   std::unique_ptr<RDProps> &getProps() { 
     if (!dp_props) {
-      std::cout << "Creating new RDProps" << std::endl;
       dp_props.reset(new RDProps());
     }
     return dp_props;
@@ -424,6 +423,8 @@ class Atom {
     if (!dp_props) throw std::runtime_error("No properties available");
     return dp_props;
   }
+
+  void resetState();
 
  protected:
   //! sets our owning molecule

@@ -90,8 +90,7 @@ class RingInfo {
 
   //! unsafe but fast(er) way to add all rings at once, given fixed assumptions about the data  - Besian, March 2025
   unsigned int addAllRings(const std::vector<INT_VECT> &allAtomIndices,
-                           const std::vector<INT_VECT> &allBondIndices,
-                           unsigned int maxAtomIdx, unsigned int maxBondIdx);
+                           const std::vector<INT_VECT> &allBondIndices);
 
   //! \name Atom information
   //! @{

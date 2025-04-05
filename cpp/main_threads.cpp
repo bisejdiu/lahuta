@@ -62,7 +62,6 @@ int main(int argc, char  *argv[]) {
   auto analyzer  = PropertyAnalyzer<Luni>(query);
   auto processor = FileProcessor(1, analyzer, false);
 
-
   /*Luni luni(file_paths2[0]);*/
   /*auto v = luniAnalyzer(luni);*/
   /**/
@@ -93,9 +92,7 @@ int main(int argc, char  *argv[]) {
   /*Logger::get_logger()->info("Elapsed time: {}", elapsed_seconds.count());*/
 
 
-  return 0;
-
-  /*start = std::chrono::high_resolution_clock::now();*/
+  /*auto start = std::chrono::high_resolution_clock::now();*/
   /*for (auto &file : file_paths) {*/
   /*  auto res_opt = processor.get_result(file);*/
   /*  if (res_opt) {*/
@@ -108,9 +105,9 @@ int main(int argc, char  *argv[]) {
   /*    Logger::get_logger()->warn("No result found for file {}", file);*/
   /*  }*/
   /*}*/
-  /*end = std::chrono::high_resolution_clock::now();*/
-  /*elapsed_seconds = end - start;*/
-  /*Logger::get_logger()->info("Data access time: {}", elapsed_seconds.count());*/
+  /*auto end = std::chrono::high_resolution_clock::now();*/
+  /*auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);*/
+  /*Logger::get_logger()->info("Data access time: {} ms", duration.count());*/
 
   return 0;
 }

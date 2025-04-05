@@ -15,7 +15,7 @@
 #include "logging.hpp"
 #include "topology.hpp"
 
-#define LAHUTA_VERSION "0.30.0"
+#define LAHUTA_VERSION "0.40.0"
 
 namespace lahuta {
 

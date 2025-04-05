@@ -1,4 +1,5 @@
 #include "lahuta.hpp"
+#include "gemmi/gz.hpp"
 #include "mmap/MemoryMapped.h"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
@@ -27,26 +28,36 @@ Luni Luni::create(const IR &ir) {
   return Luni(mol);
 }
 
-Luni::Luni(std::string file_name, bool test) {
+Luni::Luni(std::string file_name, bool test) : file_name_(file_name) {
 
-  file_name_ = file_name;
-  MemoryMapped mm(file_name.c_str());
+  ModelParserResult result;
 
-  if (!mm.isValid()) {
-    Logger::get_logger()->critical("Error opening file: {}", file_name);
-    return;
+  try {
+    gemmi::MaybeGzipped input_file(file_name_);
+
+    if (input_file.is_compressed()) {
+      gemmi::CharArray buffer = input_file.uncompress_into_buffer();
+      result = parse_model(buffer.data(), buffer.size());
+
+    } else {
+      MemoryMapped mm(file_name_.c_str());
+
+      if (!mm.isValid()) {
+        Logger::get_logger()->critical("Error opening file: {}", file_name_);
+        return;
+      }
+
+      const char *data = reinterpret_cast<const char *>(mm.getData());
+      size_t size = static_cast<size_t>(mm.size());
+
+      result = parse_model(data, size);
+    }
+    build_model_topology(mol, result, ModelTopologyMethod::CSR);
+  } catch (const std::exception &e) {
+    Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
+  } catch (...) {
+    Logger::get_logger()->critical("Unknown exception processing file: {}", file_name_);
   }
-
-  const char *data = reinterpret_cast<const char *>(mm.getData());
-  size_t size = static_cast<size_t>(mm.size());
-
-  ModelParserResult result = parse_model(data, size);
-  RDKit::Conformer *conformer = new RDKit::Conformer();
-  mol = std::make_shared<RDKit::RWMol>();
-  read_and_build_model_topology(*mol, *conformer, result);
-
-  /*mol = af_mol;*/
-  /*topology.emplace(af_mol);*/
 }
 
 bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {

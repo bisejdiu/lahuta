@@ -195,15 +195,24 @@ unsigned int RingInfo::addRing(const INT_VECT &atomIndices,
 }
 
 unsigned int RingInfo::addAllRings(const std::vector<INT_VECT> &allAtomIndices,
-                                   const std::vector<INT_VECT> &allBondIndices,
-                                   unsigned int maxAtomIdx, unsigned int maxBondIdx) {
+                                   const std::vector<INT_VECT> &allBondIndices) {
 
   PRECONDITION(df_init, "RingInfo not initialized");
   PRECONDITION(allAtomIndices.size() == allBondIndices.size(), "ring count mismatch");
 
   size_t totalRingCount = allAtomIndices.size();
 
-  // pre-allocate
+  if (allAtomIndices.empty() || allAtomIndices.back().empty()) {
+    return rdcast<unsigned int>(d_atomRings.size());
+  }
+
+  if (allBondIndices.empty() || allBondIndices.back().empty()) {
+    return rdcast<unsigned int>(d_atomRings.size());
+  }
+
+  auto maxAtomIdx = *std::max_element(allAtomIndices.back().begin(), allAtomIndices.back().end());
+  auto maxBondIdx = *std::max_element(allBondIndices.back().begin(), allBondIndices.back().end());
+
   d_atomMembers.resize(maxAtomIdx + 1);
   d_bondMembers.resize(maxBondIdx + 1);
   d_atomRings.reserve(d_atomRings.size() + totalRingCount);

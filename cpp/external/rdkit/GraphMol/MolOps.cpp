@@ -636,7 +636,7 @@ std::vector<std::unique_ptr<MolSanitizeException>> detectChemistryProblems(
   // update computed properties on atoms and bonds:
   operation = SANITIZE_PROPERTIES;
   if (sanitizeOps & operation) {
-    for (auto &atom : mol.atoms()) {
+    for (auto atom : mol.atoms()) {
       try {
         bool strict = true;
         atom->updatePropertyCache(strict);
@@ -806,8 +806,8 @@ std::vector<ROMOL_SPTR> getMolFrags(const ROMol &mol, bool sanitizeFrags,
 unsigned int getMolFrags(const ROMol &mol, INT_VECT &mapping) {
   unsigned int natms = mol.getNumAtoms();
   mapping.resize(natms);
-  return natms ? boost::connected_components(mol.getTopology(), &mapping[0])
-               : 0;
+  return natms ? mol.getConnectedComponents(mapping) : 0;
+
 };
 
 unsigned int getMolFrags(const ROMol &mol, VECT_INT_VECT &frags) {

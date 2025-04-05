@@ -14,6 +14,7 @@ class AtomTypeBase {
 public:
   virtual ~AtomTypeBase() = default;
   virtual AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const = 0;
+  virtual std::string name() const = 0;
 };
 
 class HBondAcceptorAtom : public AtomTypeBase {
@@ -21,6 +22,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrogen_acceptor(mol, atom);
   }
+  std::string name() const override { return "HBondAcceptorAtom"; }
 };
 
 class HBondDonorAtom : public AtomTypeBase {
@@ -28,6 +30,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrogen_donor(mol, atom);
   }
+  std::string name() const override { return "HBondDonorAtom"; }
 };
 
 class WeakHBondDonorAtom : public AtomTypeBase {
@@ -35,6 +38,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_weak_hydrogen_donor(mol, atom);
   }
+  std::string name() const override { return "WeakHBondDonorAtom"; }
 };
 
 class HydrophobicAtom : public AtomTypeBase {
@@ -42,6 +46,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_hydrophobic_atom(mol, atom);
   }
+  std::string name() const override { return "HydrophobicAtom"; }
 };
 
 class HalogenDonorAtom : public AtomTypeBase {
@@ -49,6 +54,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_halogen_donor(mol, atom);
   }
+  std::string name() const override { return "HalogenDonorAtom"; }
 };
 
 class HalogenAcceptorAtom : public AtomTypeBase {
@@ -56,6 +62,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_halogen_acceptor(mol, atom);
   }
+  std::string name() const override { return "HalogenAcceptorAtom"; }
 };
 
 class MetalAtom : public AtomTypeBase {
@@ -63,6 +70,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_metal(mol, atom);
   }
+  std::string name() const override { return "MetalAtom"; }
 };
 
 class MetalBindingAtom : public AtomTypeBase {
@@ -70,6 +78,7 @@ public:
   AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
     return add_metal_binding(mol, atom);
   }
+  std::string name() const override { return "MetalBindingAtom"; }
 };
 
 class AtomTypeStrategy {
@@ -118,7 +127,7 @@ public:
     auto strategy = AtomTypeFactory::create();
 
     // FIX: We ignore here atom typing added by OpenBabel typing system.
-    for (const auto &atom : mol.atoms()) {
+    for (const auto atom : mol.atoms()) {
       AtomType at = strategy.identify(mol, *atom);
       atom_types.add_data(mol, atom, at);
     }

@@ -40,7 +40,12 @@ Bond::Bond(const Bond &other) {
   d_index = other.d_index;
 }
 
-Bond::~Bond() { delete dp_stereoAtoms; }
+Bond::~Bond() {
+  if (dp_stereoAtoms) {
+    delete dp_stereoAtoms;
+    dp_stereoAtoms = nullptr;
+  }
+}
 
 Bond &Bond::operator=(const Bond &other) {
   if (this == &other) {

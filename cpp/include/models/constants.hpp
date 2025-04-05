@@ -99,6 +99,11 @@ constexpr std::array<const int, 5> his_arom_indices = {5, 7, 8, 9, 6};
 constexpr std::array<const int, 5> trp_arom_indices5 = {5, 7, 8, 10, 6};
 constexpr std::array<const int, 6> trp_arom_indices6 = {7, 8, 12, 11, 13, 9};
 
+constexpr std::array<const int, 6> phe_bond_indices = {7, 9, 11, 10, 8, 6};
+constexpr std::array<const int, 6> tyr_bond_indices = {7, 9, 11, 10, 8, 6};
+constexpr std::array<const int, 5> trp_bond_indices5 = {7, 9, 11, 8, 6};
+constexpr std::array<const int, 6> trp_bond_indices6 = {9, 12, 14, 15, 13, 10};
+constexpr std::array<const int, 5> his_bond_indices = {7, 9, 10, 8, 6};
 
 // Edge structure with canonical ordering (i < j)
 struct Edge {
@@ -113,98 +118,109 @@ struct Edge {
     }
 };
 
-constexpr std::array<Edge, 3> gly_edges = {
+constexpr std::array<Edge, 4> gly_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
-    Edge(2, 3, BondType::DOUBLE)
+    Edge(2, 3, BondType::DOUBLE),
+    Edge(2, 4, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 4> ala_edges = {
-    Edge(0, 1, BondType::SINGLE),
-    Edge(1, 2, BondType::SINGLE),
-    Edge(1, 3, BondType::SINGLE),
-    Edge(2, 4, BondType::DOUBLE)
-};
-
-constexpr std::array<Edge, 6> val_edges = {
+constexpr std::array<Edge, 5> ala_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 5, BondType::SINGLE)
+};
+
+constexpr std::array<Edge, 7> val_edges = {
+    Edge(0, 1, BondType::SINGLE),
+    Edge(1, 2, BondType::SINGLE),
+    Edge(1, 3, BondType::SINGLE),
+    Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 7, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(3, 6, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 7> leu_edges = {
+constexpr std::array<Edge, 8> leu_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 8, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE),
     Edge(5, 7, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 7> ile_edges = {
+constexpr std::array<Edge, 8> ile_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 8, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(3, 6, BondType::SINGLE),
     Edge(5, 7, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 5> ser_edges = {
+constexpr std::array<Edge, 6> ser_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 6, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 6> thr_edges = {
+constexpr std::array<Edge, 7> thr_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 7, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(3, 6, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 5> cys_edges = {
+constexpr std::array<Edge, 6> cys_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 6, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 7> met_edges = {
+constexpr std::array<Edge, 8> met_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 8, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE),
     Edge(6, 7, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 7> pro_edges = {
+constexpr std::array<Edge, 8> pro_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(0, 6, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 7, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 11> phe_edges = {
+constexpr std::array<Edge, 12> phe_edges = {
     Edge(0, 1,  BondType::SINGLE),
     Edge(1, 2,  BondType::SINGLE),
     Edge(1, 3,  BondType::SINGLE),
     Edge(2, 4,  BondType::DOUBLE),
+    Edge(2, 11, BondType::SINGLE),
     Edge(3, 5,  BondType::SINGLE),
     Edge(5, 6,  BondType::AROMATIC),
     Edge(5, 7,  BondType::AROMATIC),
@@ -214,11 +230,12 @@ constexpr std::array<Edge, 11> phe_edges = {
     Edge(9, 10, BondType::AROMATIC)
 };
 
-constexpr std::array<Edge, 12> tyr_edges = {
+constexpr std::array<Edge, 13> tyr_edges = {
     Edge(0, 1,   BondType::SINGLE),
     Edge(1, 2,   BondType::SINGLE),
     Edge(1, 3,   BondType::SINGLE),
     Edge(2, 4,   BondType::DOUBLE),
+    Edge(2, 12,  BondType::SINGLE),
     Edge(3, 5,   BondType::SINGLE),
     Edge(5, 6,   BondType::AROMATIC),
     Edge(5, 7,   BondType::AROMATIC),
@@ -229,11 +246,12 @@ constexpr std::array<Edge, 12> tyr_edges = {
     Edge(11, 10, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 15> trp_edges = {
+constexpr std::array<Edge, 16> trp_edges = {
     Edge(0, 1,   BondType::SINGLE),
     Edge(1, 2,   BondType::SINGLE),
     Edge(1, 3,   BondType::SINGLE),
     Edge(2, 4,   BondType::DOUBLE),
+    Edge(2, 14,  BondType::SINGLE),
     Edge(3, 5,   BondType::SINGLE),
     Edge(5, 6,   BondType::AROMATIC),
     Edge(5, 7,   BondType::AROMATIC),
@@ -247,11 +265,12 @@ constexpr std::array<Edge, 15> trp_edges = {
     Edge(13, 11, BondType::AROMATIC),
 };
 
-constexpr std::array<Edge, 10> his_edges = {
+constexpr std::array<Edge, 11> his_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 10, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::AROMATIC),
     Edge(5, 7, BondType::AROMATIC),
@@ -260,64 +279,70 @@ constexpr std::array<Edge, 10> his_edges = {
     Edge(8, 9, BondType::AROMATIC)
 };
 
-constexpr std::array<Edge, 8> glu_edges = {
+constexpr std::array<Edge, 9> glu_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 9, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE),
     Edge(6, 7, BondType::DOUBLE),
     Edge(6, 8, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 7> asp_edges = {
+constexpr std::array<Edge, 8> asp_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 8, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::DOUBLE),
     Edge(5, 7, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 7> asn_edges = {
+constexpr std::array<Edge, 8> asn_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 8, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE),
     Edge(5, 7, BondType::DOUBLE)
 };
 
-constexpr std::array<Edge, 8> gln_edges = {
+constexpr std::array<Edge, 9> gln_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 9, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE),
     Edge(6, 7, BondType::SINGLE),
     Edge(6, 8, BondType::DOUBLE)
 };
 
-constexpr std::array<Edge, 8> lys_edges = {
+constexpr std::array<Edge, 9> lys_edges = {
     Edge(0, 1, BondType::SINGLE),
     Edge(1, 2, BondType::SINGLE),
     Edge(1, 3, BondType::SINGLE),
     Edge(2, 4, BondType::DOUBLE),
+    Edge(2, 9, BondType::SINGLE),
     Edge(3, 5, BondType::SINGLE),
     Edge(5, 6, BondType::SINGLE),
     Edge(6, 7, BondType::SINGLE),
     Edge(7, 8, BondType::SINGLE)
 };
 
-constexpr std::array<Edge, 10> arg_edges = {
+constexpr std::array<Edge, 11> arg_edges = {
     Edge(0, 1,  BondType::SINGLE),
     Edge(1, 2,  BondType::SINGLE),
     Edge(1, 3,  BondType::SINGLE),
     Edge(2, 4,  BondType::DOUBLE),
+    Edge(2, 11, BondType::SINGLE),
     Edge(3, 5,  BondType::SINGLE),
     Edge(5, 6,  BondType::SINGLE),
     Edge(6, 7,  BondType::SINGLE),

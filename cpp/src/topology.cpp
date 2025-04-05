@@ -135,20 +135,18 @@ void Topology::compute_bonds(const NSResults &neighbors) {
 }
 
 void Topology::cleanup_predef(RWMol &mol) {
-  ROMol::VERTEX_ITER at_begin, at_end;
-  boost::tie(at_begin, at_end) = mol.getVertices();
-  while (at_begin != at_end) {
-    RDKit::Atom *atom = mol[*at_begin];
+  for (auto atom : mol.atoms()) {
     atom->calcExplicitValence(false);
-
     // correct four-valent neutral N -> N+
     // This was github #1029
-    if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 && atom->getExplicitValence() == 4) {
+    if (atom->getAtomicNum() == 7 &&
+        atom->getFormalCharge() == 0 &&
+        atom->getExplicitValence() == 4) {
       atom->setFormalCharge(1);
     }
-    ++at_begin;
   }
 }
+
 
 // FIX: this is called for the parts of the molecule that are not predefined
 // It needs to be synchronized with the aromatic residue perception module. There we also get "unknown"
@@ -165,8 +163,7 @@ void Topology::cleanup(RDKit::RWMol &mol) {
 }
 
 void Topology::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
-  for (auto bondIt = source.beginBonds(); bondIt != source.endBonds(); ++bondIt) {
-    const RDKit::Bond *bond = *bondIt;
+  for (const auto &bond : source.bonds()) {
     int bIdx = index_map[bond->getBeginAtomIdx()];
     int eIdx = index_map[bond->getEndAtomIdx()];
     if (target.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {

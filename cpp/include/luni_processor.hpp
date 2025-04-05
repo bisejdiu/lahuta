@@ -6,9 +6,9 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "models/factory.hpp"
 
 // clang-format off
-
 namespace lahuta {
 
 constexpr size_t MAX_MEM_THRESHOLD = 1024ull * 1024 * 10000; // 10 GB
@@ -34,6 +34,9 @@ public:
                     << mem_threshold_ / (1024 * 1024) << " MB";
           throw std::runtime_error(error_msg.str());
       }
+    // log mmeory usage and object size
+    Logger::get_logger()->info("Current memory usage: {} MB, object size: {} bytes", curr_mem_usage / (1024 * 1024), object_size);
+
 
       results_.emplace(
           std::piecewise_construct,
@@ -111,6 +114,10 @@ public:
   void process_files(const std::vector<std::string>& file_paths) {
     futures_.reserve(file_paths.size());
 
+    InfoPoolFactory::initialize(pool_.size());
+    BondPoolFactory::initialize(pool_.size());
+    AtomPoolFactory::initialize(pool_.size());
+
     if (use_spinner_) {
       hide_cursor();
 
@@ -153,6 +160,8 @@ public:
     futures_.clear();
     if (use_spinner_) spinner_cleanup();
 
+    pool_.clear_queue();
+    pool_.stop(true);
   }
 
   // Return a pointer to the result. If there's no entry, returns nullptr.
@@ -190,15 +199,19 @@ private:
   template <typename OnTickCallback>
   void process_file(const std::string& file_path, OnTickCallback on_tick_callback) {
     try {
-      SourceType source(file_path, true); // FIX: very temporary solution to test AF2 models
-      ResultType result = analyzer_(source);
+      /*SourceType source(file_path, true); // FIX: very temporary solution to test fast parsing of models*/
+      auto source = std::make_unique<SourceType>(file_path, true);
+      /*source->build_topology();*/
+      /*ResultType result = analyzer_(*source);*/
+      /*std::cout << "Processed file: " << file_path << std::endl;*/
+      /*std::cout << "result type is: " << typeid(result).name() << std::endl;*/
 
-      {
-        std::lock_guard<std::mutex> lock(mutex_);
-        threadpool_store_.add_result(file_path, std::move(result));
-      }
-
-      on_tick_callback(file_path);
+      /*{*/
+      /*  std::lock_guard<std::mutex> lock(mutex_);*/
+      /*  threadpool_store_.add_result(file_path, std::move(result));*/
+      /*}*/
+      /**/
+      /*on_tick_callback(file_path);*/
 
       Logger::get_logger()->info("Successfully processed file: {}", file_path);
     } catch (const std::exception& e) {
@@ -243,8 +256,6 @@ private:
 //                                                                          - Besian, March 2025
 template <typename T, template <typename> typename AnalyzerTemplate>
 FileProcessor(int, AnalyzerTemplate<T>, bool = false) -> FileProcessor<T, AnalyzerTemplate<T>>;
-
-
 
 } // namespace lahuta
 

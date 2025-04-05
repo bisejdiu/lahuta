@@ -91,8 +91,7 @@ int main(int argc, char const *argv[]) {
   std::cout << "size: PiStacking: " << _8.size() << std::endl;
 
   int o1{}, o2{}, aromatic{};
-  for (auto bond_it = mol->beginBonds(); bond_it != mol->endBonds(); ++bond_it) {
-    RDKit::Bond *bond = *bond_it;
+  for (auto bond: mol->bonds()) {
 
     if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
       o1++;

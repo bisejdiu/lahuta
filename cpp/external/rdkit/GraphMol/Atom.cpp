@@ -251,6 +251,28 @@ void Atom::setOwningMol(ROMol *other) {
   dp_mol = other;
 }
 
+void Atom::resetState() {
+  dp_mol = nullptr;
+  d_index = 0;
+  d_implicitValence = -1;
+  d_explicitValence = -1;
+  d_formalCharge = 0;
+  d_numExplicitHs = 0;
+  df_isAromatic = false;
+  df_noImplicit = false;
+  d_isotope = 0;
+  d_chiralTag = CHI_UNSPECIFIED;
+  d_hybrid = UNSPECIFIED;
+  if (dp_monomerInfo) {
+    dp_monomerInfo->destroy();
+    dp_monomerInfo = nullptr;
+  }
+  if (dp_props) {
+    dp_props->clear();
+  }
+}
+
+
 std::string Atom::getSymbol() const {
   std::string res;
   // handle dummies differently:

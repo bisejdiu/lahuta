@@ -4,7 +4,6 @@
 #include "contacts/atoms.hpp"
 #include "contacts/groups.hpp"
 #include "residues.hpp"
-#include <rdkit/GraphMol/BondIterators.h>
 
 // clang-format off
 namespace lahuta {

@@ -102,8 +102,7 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   unsigned int getResidueIndex() const { return d_residueIndex; }
   void setResidueIndex(unsigned int idx) { d_residueIndex = idx; }
 
-  friend class LeanAtomPDBResidueInfo;
-  friend class AtomPDBResidueInfoStatic;
+  friend class pAtomPDBResidueInfo;
 
  private:
   // the fields here are from the PDB definition
@@ -126,23 +125,32 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   unsigned int d_residueIndex = 0;
 };
 
-class LeanAtomPDBResidueInfo : public AtomPDBResidueInfo {
+// intended to be used exclusively with Lahuta's ObjectPool
+class pAtomPDBResidueInfo : public AtomPDBResidueInfo {
 public:
-  LeanAtomPDBResidueInfo(const char* atomName, int serialNumber,
-                        const char* residueName, int residueNumber)
+  pAtomPDBResidueInfo() : AtomPDBResidueInfo() {}
+  pAtomPDBResidueInfo(const char* atom_name, int serial,
+                          const char* residue_name, int residue_number)
       : AtomPDBResidueInfo() {
-        d_atomNamePtr = atomName;
-        d_residueNamePtr = residueName;
-        d_serialNumber = serialNumber;
-        d_residueNumber = residueNumber;
+        d_atomNamePtr = atom_name;
+        d_residueNamePtr = residue_name;
+        d_serialNumber = serial;
+        d_residueNumber = residue_number;
   }
 
   void destroy() override {
-    // explicit
-    this->~LeanAtomPDBResidueInfo();
-    // This object was constructed using placement-new and memory is managed externally.
+    // The memory pool will reclaim the memory when it resets
   }
 
+  void initialize(const char* atomName, int serialNumber,
+                  const char* residueName, int residueNumber) {
+    d_atomNamePtr = atomName;
+    d_residueNamePtr = residueName;
+    d_serialNumber = serialNumber;
+    d_residueNumber = residueNumber;
+    d_cachedName.clear();
+    d_cachedResidueName.clear();
+  }
 
   const std::string& getName() const {
     if (d_cachedName.empty() && d_atomNamePtr) {
@@ -151,11 +159,27 @@ public:
     return d_cachedName;
   }
 
+  void setName(const std::string& name) {
+    d_atomNamePtr = name.c_str();
+  }
+
+  void setName(const char* name) {
+    d_atomNamePtr = name;
+  }
+
   const std::string& getResidueName() const {
     if (d_cachedResidueName.empty() && d_residueNamePtr) {
       d_cachedResidueName = d_residueNamePtr;
     }
     return d_cachedResidueName;
+  }
+
+  void setResidueName(const std::string& name) {
+    d_residueNamePtr = name.c_str();
+  }
+
+  void setResidueName(const char* name) {
+    d_residueNamePtr = name;
   }
 
   const std::string& getChainId() const {
@@ -177,68 +201,15 @@ public:
   AtomMonomerType getMonomerType() const { return AtomPDBResidueInfo::PDBRESIDUE; }
 
   RDKit::AtomMonomerInfo* copy() const override {
-    return static_cast<RDKit::AtomMonomerInfo*>(new LeanAtomPDBResidueInfo(*this));
+    throw std::runtime_error("PooledAtomPDBResidueInfo::copy() should not be called");
   }
 
 private:
-  // pointers to strings, no copies
   const char* d_atomNamePtr = nullptr;
   const char* d_residueNamePtr = nullptr;
-  // optional cache stuff
   mutable std::string d_cachedName;
   mutable std::string d_cachedResidueName;
 };
-
-
-struct AtomStaticInfo {
-  const char *atom_name;
-  const char *residue_name;
-  int local_atom_index; // Atom position within residue
-};
-
-class AtomPDBResidueInfoStatic : public RDKit::AtomMonomerInfo {
-public:
-  const AtomStaticInfo* static_info; // pointer to compile-time static data
-  int residue_number;
-  char chain_id;
-
-  AtomPDBResidueInfoStatic(const AtomStaticInfo* staticInfo, int residueNum, char chainId = 'A')
-    : AtomMonomerInfo(PDBRESIDUE, staticInfo->atom_name),
-      static_info(staticInfo),
-      residue_number(residueNum),
-      chain_id(chainId) {}
-
-  AtomMonomerInfo* copy() const override {
-    return new AtomPDBResidueInfoStatic(*this);
-  }
-
-  /*const std::string& getResidueName() const { return static_info->residue_name; }*/
-  const std::string getResidueName() const { return static_info->residue_name; }
-  int getResidueNumber() const { return residue_number; }
-
-  const std::string& getChainId() const {
-    static const std::string defaultChain = "A";
-    return defaultChain;
-  }
-
-  const std::string& getAltLoc() const {
-    static const std::string emptyString = "";
-    return emptyString;
-  }
-
-  const std::string& getInsertionCode() const {
-    static const std::string emptyString = "";
-    return emptyString;
-  }
-
-  bool getIsHeteroAtom() const { return false; }
-  AtomMonomerType getMonomerType() const { return AtomPDBResidueInfo::PDBRESIDUE; }
-
-  void setResidueNumber(int val) { residue_number = val; }
-  void setChainId(char val) { chain_id = val; }
-};
-
-
 
 };  // namespace RDKit
 //! allows AtomPDBResidueInfo objects to be dumped to streams
