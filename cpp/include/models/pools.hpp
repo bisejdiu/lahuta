@@ -36,14 +36,11 @@ private:
 struct BondPoolTraits {
   static RDKit::Bond *create() { return new RDKit::Bond(); }
 
-  static void reset(RDKit::Bond *bond) {
-    bond->setOwningMol(nullptr);
-    bond->setBeginAtomIdx(-1);
-    bond->setEndAtomIdx(-1);
-    bond->setBondType(RDKit::Bond::UNSPECIFIED);
-  }
+  static void reset(RDKit::Bond *bond) { bond->resetState(); }
 };
 
+// NOTE: calls to BondPool::createBond() seem to be more expensive than their counterparts.
+//       Could we be making unintended copies somewhere?
 class BondPool {
 public:
   explicit BondPool(std::size_t initial_capacity = 2000) : pool_(initial_capacity) {}

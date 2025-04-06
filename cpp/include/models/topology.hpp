@@ -49,9 +49,11 @@ inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, ModelParser
     if (method == ModelTopologyMethod::CSR) {
        build_model_topology_csr(mol, *conformer.release(), P);
     } else if (method == ModelTopologyMethod::Default) {
-        build_model_topology_def(mol, *conformer.release(), P);
+       build_model_topology_def(mol, *conformer.release(), P);
     }
 }
+
+bool mock_build_model_topology(const ModelParserResult &P);
 
 } // namespace lahuta
 

@@ -19,8 +19,8 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
   size_t num_atoms = P.coords.size();
 
-  auto* info_pool = PoolFactory<InfoPool>::getFreshPoolForCurrentThread();
-  auto* atom_pool = PoolFactory<AtomPool>::getFreshPoolForCurrentThread();
+  auto *info_pool = PoolFactory<InfoPool>::getFreshPoolForCurrentThread();
+  auto *atom_pool = PoolFactory<AtomPool>::getFreshPoolForCurrentThread();
   auto *bond_pool = PoolFactory<BondPool>::getFreshPoolForCurrentThread();
 
   std::vector<RDKit::Atom*> AtomPtrs;
@@ -171,9 +171,6 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     mol->getAtomWithIdx(pair.first )->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HBOND_DONOR));
     mol->getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HBOND_DONOR));
   }
-  Logger::get_logger()->info("Molecule Atoms: {}", mol->getNumAtoms());
-  Logger::get_logger()->info("Molecule Bonds: {}", mol->getNumBonds());
-
   if (mol->getRingInfo()->isInitialized()) {
     mol->getRingInfo()->reset();
   }
@@ -357,6 +354,65 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   }
   mol->getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
   mol->getRingInfo()->addAllRings(aromatic_atom_indices, aromatic_bond_indices);
+}
+
+bool mock_build_model_topology(const ModelParserResult &P) {
+
+  static const double MIN_COORD = -100000.0;
+  static const double MAX_COORD =  100000.0;
+
+  const auto &sequence = P.get_sequence();
+  const auto &coords   = P.coords;
+  if (sequence.empty() && coords.empty()) return true;
+
+  size_t total_expected_atoms = 0;
+  size_t current_coord_index  = 0;
+
+  for (const auto &res : sequence) {
+    if (res.size() != 1) { return false; }
+
+    const char residue_letter = res[0];
+    if (!StandardAminoAcidDataTable.is_valid(residue_letter)) return false;
+
+    const auto &entry = StandardAminoAcidDataTable[residue_letter];
+    size_t residue_atom_count = entry.size;
+
+    for (size_t i = 0; i < residue_atom_count; ++i) {
+      if (current_coord_index >= coords.size()) return false;
+
+      // invalid or NaN
+      const RDGeom::Point3D &pt = coords[current_coord_index];
+      if (!std::isfinite(pt.x) || !std::isfinite(pt.y) || !std::isfinite(pt.z)) return false;
+
+      // bounding box
+      if (pt.x < MIN_COORD || pt.x > MAX_COORD ||
+          pt.y < MIN_COORD || pt.y > MAX_COORD ||
+          pt.z < MIN_COORD || pt.z > MAX_COORD) {
+        return false;
+      }
+
+      ++current_coord_index;
+      ++total_expected_atoms;
+    }
+  }
+
+  ++total_expected_atoms; // terminal OXT (+1 atom):
+  if (current_coord_index >= coords.size()) { return false; }
+
+  const RDGeom::Point3D &oxt_pt = coords[current_coord_index];
+  if (!std::isfinite(oxt_pt.x) || !std::isfinite(oxt_pt.y) || !std::isfinite(oxt_pt.z)) {
+    return false;
+  }
+  if (oxt_pt.x < MIN_COORD || oxt_pt.x > MAX_COORD ||
+      oxt_pt.y < MIN_COORD || oxt_pt.y > MAX_COORD ||
+      oxt_pt.z < MIN_COORD || oxt_pt.z > MAX_COORD) {
+    return false;
+  }
+
+  ++current_coord_index;
+  if (total_expected_atoms != coords.size()) return false;
+
+  return true;
 }
 
 } // namespace lahuta

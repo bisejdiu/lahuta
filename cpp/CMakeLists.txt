@@ -71,6 +71,13 @@ if(NOT DEFINED BOOST_ROOT)
     endif()
 endif()
 
+ADD_LIBRARY(lmdb STATIC
+    ${CMAKE_SOURCE_DIR}/external/lmdb/mdb.c
+    ${CMAKE_SOURCE_DIR}/external/lmdb/midl.c
+)
+
+set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
+TARGET_INCLUDE_DIRECTORIES(lmdb PUBLIC ${CMAKE_SOURCE_DIR}/external)
 
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
@@ -78,6 +85,7 @@ add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
+# set(CMAKE_BUILD_TYPE Debug)
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
             src/contacts/geometry.cpp src/contacts/charges.cpp src/topology.cpp
@@ -91,7 +99,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb)
 
 find_package(Eigen3 QUIET)
 if(USE_EIGEN3)
@@ -107,6 +115,7 @@ target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include
   ${CMAKE_SOURCE_DIR}/external/distopia/include
+  ${CMAKE_SOURCE_DIR}/external/lmdb
 )
 
 add_library(lahuta_shared_headers INTERFACE)
@@ -145,6 +154,8 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 add_lahuta_executable(lex_fseek main_fseek.cpp)
 add_lahuta_executable(lex_fut main_future.cpp)
 add_lahuta_executable(lex_align main_align.cpp)
+add_lahuta_executable(create_db create_db.cpp)
+add_lahuta_executable(read_db read_db.cpp)
 
 ### Python bindings ###
 if (USE_PYTHON)

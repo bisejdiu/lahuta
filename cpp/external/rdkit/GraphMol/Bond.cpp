@@ -22,6 +22,25 @@ Bond::Bond(BondType bT) {
   d_bondType = bT;
 };
 
+void Bond::resetState() {
+  if (dp_stereoAtoms) {
+    delete dp_stereoAtoms;
+    dp_stereoAtoms = nullptr;
+  }
+  d_props.reset();
+
+  // Reset the bond's internal state.
+  d_bondType = UNSPECIFIED;
+  d_dirTag = NONE;
+  d_stereo = STEREONONE;
+  dp_mol = nullptr;
+  d_beginAtomIdx = 0;
+  d_endAtomIdx = 0;
+  d_index = 0;
+  df_isAromatic = false;
+  df_isConjugated = false;
+}
+
 Bond::Bond(const Bond &other) {
   // NOTE: we do *not* copy ownership!
   dp_mol = nullptr;

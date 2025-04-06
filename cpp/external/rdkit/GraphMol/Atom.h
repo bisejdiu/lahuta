@@ -424,6 +424,7 @@ class Atom {
     return dp_props;
   }
 
+  // Reset so it can be repurposed
   void resetState();
 
  protected:

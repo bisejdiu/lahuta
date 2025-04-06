@@ -377,7 +377,10 @@ class Bond {
     if (!d_props) throw std::runtime_error("No properties available");
     return d_props;
   }
-  
+
+  // Reset so it can be repurposed
+  void resetState();
+
  protected:
   //! sets our owning molecule
   /// void setOwningMol(ROMol *other);

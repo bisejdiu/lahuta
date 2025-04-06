@@ -14,6 +14,7 @@ static const std::array<int, 256> StandardAminoAcidAtomicNumbers = []() {
     return result;
 }();
 
+// FIX: not needed as we can use StandardAminoAcidDataTable[x].size
 static const std::array<int, 256> StandardAminoAcidAtomSizeTable = []() {
     std::array<int, 256> result{};
     result['G'] = 4;
