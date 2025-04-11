@@ -4,11 +4,11 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_traits.hpp>
-#include "Atom.h"
-#include "Bond.h"
 
 // clang-format off
 namespace RDKit {
+class Atom;
+class Bond;
 
 //! These are the BGL types used to store the topology:
 using MolGraph    = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, Atom*, Bond*>;

@@ -1,6 +1,5 @@
 #include "models/topology.hpp"
 #include "atom_types.hpp"
-#include "logging.hpp"
 #include "models/factory.hpp"
 #include "models/fast_lookup.hpp"
 #include "models/pools.hpp"
@@ -44,7 +43,7 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     for (size_t local_atom_index = 0; local_atom_index < entry.size; ++local_atom_index) {
 
       const char* atom_name = entry.atoms[local_atom_index];
-      int atom_number = StandardAminoAcidAtomicNumbers[atom_name[0]];
+      unsigned int atom_number = StandardAminoAcidAtomicNumbers[atom_name[0]];
       int ih = entry.ih[local_atom_index];
       int at = entry.at[local_atom_index];
 
@@ -52,7 +51,10 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
           sulphur_atom_indices.push_back(atom_idx);
       }
 
-      RDKit::Atom* atom = atom_pool->createAtom(atom_number);
+      // FIX: it seems we need to create an empty atom and set the atomic number
+      auto *atom = atom_pool->createAtom();
+      atom->setIdx(atom_idx);
+      atom->setAtomicNum(atom_number);
       atom->setMonomerInfo(info_pool->createAtomInfo(
                 entry.atoms[local_atom_index],
                 atom_idx + 1,
@@ -113,7 +115,9 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
   // add final OXT atom
   auto entry_ = StandardAminoAcidDataTable[sequence.back()[0]];
-  RDKit::Atom* oxt_atom = atom_pool->createAtom(8);
+  RDKit::Atom* oxt_atom = atom_pool->createAtom();
+  oxt_atom->setAtomicNum(8);
+  oxt_atom->setIdx(atom_idx);
   oxt_atom->setMonomerInfo(info_pool->createAtomInfo(
       "OXT",
       atom_idx + 1,
@@ -177,6 +181,7 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
   mol->getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
   mol->getRingInfo()->addAllRings(aromatic_atom_indices, aromatic_bond_indices);
+
 }
 
 void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P) {
@@ -186,8 +191,8 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   const size_t num_residues = sequence.size();
 
   // memory pools
-  auto* info_pool = PoolFactory<InfoPool>::getFreshPoolForCurrentThread();
-  auto* atom_pool = PoolFactory<AtomPool>::getFreshPoolForCurrentThread();
+  auto *info_pool = PoolFactory<InfoPool>::getFreshPoolForCurrentThread();
+  auto *atom_pool = PoolFactory<AtomPool>::getFreshPoolForCurrentThread();
   auto *bond_pool = PoolFactory<BondPool>::getFreshPoolForCurrentThread();
 
   // total bond count to pre-allocate memory
@@ -230,7 +235,10 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       const int at = entry.at[local_atom_index];
       int atom_number = StandardAminoAcidAtomicNumbers[atom_name[0]];
 
-      RDKit::Atom* atom = atom_pool->createAtom(atom_number);
+      auto *atom = atom_pool->createAtom();
+      atom->setIdx(atom_idx);
+      atom->setAtomicNum(atom_number);
+
       atom->setMonomerInfo(info_pool->createAtomInfo(
                 atom_name,
                 atom_idx + 1,
@@ -305,7 +313,9 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
   // Add terminal OXT atom
   auto last_entry = StandardAminoAcidDataTable[sequence.back()[0]];
-  RDKit::Atom* oxt_atom = atom_pool->createAtom(8);
+  RDKit::Atom* oxt_atom = atom_pool->createAtom();
+  oxt_atom->setAtomicNum(8);
+  oxt_atom->setIdx(atom_idx);
   oxt_atom->setMonomerInfo(info_pool->createAtomInfo(
       "OXT",
       atom_idx + 1,
@@ -354,8 +364,10 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   }
   mol->getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
   mol->getRingInfo()->addAllRings(aromatic_atom_indices, aromatic_bond_indices);
+
 }
 
+// FIX: we don't need to generate an RDKit molecule here, we can use a dummy one
 bool mock_build_model_topology(const ModelParserResult &P) {
 
   static const double MIN_COORD = -100000.0;

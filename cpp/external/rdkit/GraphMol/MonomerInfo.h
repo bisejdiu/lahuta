@@ -125,6 +125,7 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   unsigned int d_residueIndex = 0;
 };
 
+
 // intended to be used exclusively with Lahuta's ObjectPool
 class pAtomPDBResidueInfo : public AtomPDBResidueInfo {
 public:
@@ -161,10 +162,12 @@ public:
 
   void setName(const std::string& name) {
     d_atomNamePtr = name.c_str();
+    d_cachedName.clear();
   }
 
   void setName(const char* name) {
     d_atomNamePtr = name;
+    d_cachedName.clear();
   }
 
   const std::string& getResidueName() const {
@@ -176,10 +179,12 @@ public:
 
   void setResidueName(const std::string& name) {
     d_residueNamePtr = name.c_str();
+    d_cachedResidueName.clear();
   }
 
   void setResidueName(const char* name) {
     d_residueNamePtr = name;
+    d_cachedResidueName.clear();
   }
 
   const std::string& getChainId() const {

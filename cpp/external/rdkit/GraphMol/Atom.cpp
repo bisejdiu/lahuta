@@ -254,6 +254,7 @@ void Atom::setOwningMol(ROMol *other) {
 void Atom::resetState() {
   dp_mol = nullptr;
   d_index = 0;
+  d_atomicNum = 0;
   d_implicitValence = -1;
   d_explicitValence = -1;
   d_formalCharge = 0;

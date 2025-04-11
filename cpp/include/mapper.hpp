@@ -336,13 +336,17 @@ public:
           /*  continue;*/
           /*}*/
 
-          std::cout << "info: " << r1_a1->getResidueName() << " - " << r1_a2->getResidueName() << " "
+          std::cout << "info: "
+                    << r1_a1->getResidueName() << " - " << r1_a2->getResidueName() << " "
                     << r2_a1->getResidueName() << " - " << r2_a2->getResidueName() << " : "
                     << std::setw(3) << r1_a1->getName() << " - " << std::setw(3) << r1_a2->getName() << " "
                     << std::setw(3) << r2_a1->getName() << " - " << std::setw(3) << r2_a2->getName() << " : "
-                    << c1_e1_a->getIdx() << " - " << c1_e2_a->getIdx() << " " << c2_e1_a->getIdx() << " - "
-                    << c2_e2_a->getIdx() << " : " << m_c1_e1.value() << " - " << m_c1_e2.value() << " "
-                    << m_c2_e1.value() << " - " << m_c2_e2.value() << std::endl;
+                    << c1_e1_a->getIdx() << " - " << c1_e2_a->getIdx() << " "
+                    << c2_e1_a->getIdx() << " - " << c2_e2_a->getIdx() << " : "
+                    << m_c1_e1.value() << " - " << m_c1_e2.value() << " "
+                    << m_c2_e1.value() << " - " << m_c2_e2.value() << " : "
+                    << (int)c1_candidate->type << " - " << (int)contact2.type << " : "
+                    << std::endl;
 
           count++;
           break; // break here means we consider only one contact per residue

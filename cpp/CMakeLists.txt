@@ -3,6 +3,12 @@ project(lahuta VERSION 1.0.0 LANGUAGES CXX C)
 
 include(GNUInstallDirs)  # for CMAKE_INSTALL_LIBDIR, etc
 
+set(HWY_ENABLE_TESTS OFF CACHE BOOL "Enable HWY tests" FORCE)
+set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "Disable highway examples" FORCE)
+set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks" FORCE)
+set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "Disable highway contrib targets" FORCE)
+set(HWY_ENABLE_INSTALL OFF CACHE BOOL "Disable highway install targets" FORCE)
+
 if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
   # we set wheel.install-dir="/data" in pyproject.toml,
   # so here we need to only set paths to /platlib and /scripts

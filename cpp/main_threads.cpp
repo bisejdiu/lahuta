@@ -55,12 +55,14 @@ int main(int argc, char  *argv[]) {
   logger.log(Logger::LogLevel::Critical, "Starting the program");
 
   std::string file_name = argv[1];
+  int n_jobs = std::stoi(argv[2]);
+
   std::vector<std::string> file_paths = get_file_paths(file_name);
   Logger::get_logger()->info("Number of files: {}", file_paths.size());
 
   auto query     = PropertyQuery<Luni>().select(PropertyKey::Names, PropertyKey::Indices);
   auto analyzer  = PropertyAnalyzer<Luni>(query);
-  auto processor = FileProcessor(1, analyzer, false);
+  auto processor = FileProcessor(n_jobs, analyzer, false);
 
   /*Luni luni(file_paths2[0]);*/
   /*auto v = luniAnalyzer(luni);*/

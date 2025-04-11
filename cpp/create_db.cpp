@@ -48,7 +48,6 @@ public:
         futures_.reserve(chunk.size());
 
         for (const auto &file_path : chunk) {
-
           futures_.push_back(pool_.push([this, file_path](int /*thread_id*/) {
             try {
               ModelParserResult result;
@@ -177,7 +176,7 @@ int main(int argc, char  *argv[]) {
   logger.log(Logger::LogLevel::Critical, "Starting the program");
 
   DirectoryHandler dir_handler(data_path, ".cif.gz", true);
-  auto processor = CreateLahutaDB(writer, -1);
+  auto processor = CreateLahutaDB(writer, 16);
   processor.process_files(dir_handler);
   processor.shutdown();
 }

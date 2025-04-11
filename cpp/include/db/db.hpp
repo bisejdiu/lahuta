@@ -39,6 +39,22 @@ public:
   lmdb::env &get_env() { return m_env; }
   lmdb::dbi &get_dbi() { return m_dbi; }
 
+  /// iterate over all keys in the database with a callback function.
+  void for_each_key(const std::function<void(const std::string&)>& func) {
+    auto txn = lmdb::txn::begin(m_env.handle(), nullptr, MDB_RDONLY);
+    auto cur = lmdb::cursor::open(txn.handle(), m_dbi.handle());
+
+    MDB_val key, data;
+    int rc = mdb_cursor_get(cur.handle(), &key, &data, MDB_FIRST);
+    while (rc == MDB_SUCCESS) {
+      // construct an std::string from the key.
+      std::string key_str(static_cast<const char*>(key.mv_data), key.mv_size);
+      func(key_str);
+      rc = mdb_cursor_get(cur.handle(), &key, &data, MDB_NEXT); // Move to the next key.
+    }
+    txn.abort();
+  }
+
 private:
   lmdb::env m_env;
   lmdb::dbi m_dbi;

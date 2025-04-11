@@ -19,7 +19,8 @@ class AtomPool {
 public:
   explicit AtomPool(std::size_t initial_capacity = 2000) : pool_(initial_capacity) {}
 
-  auto *createAtom(int atomic_num = 0) { return pool_.create(atomic_num); }
+  auto *createAtom(int atomic_num) { return pool_.create(atomic_num); }
+  auto *createAtom() { return pool_.create(); }
 
   auto prepareAtoms(std::size_t count) {
     auto atoms = pool_.prepare(count);
