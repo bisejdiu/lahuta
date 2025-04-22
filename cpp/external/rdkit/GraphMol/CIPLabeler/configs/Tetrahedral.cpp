@@ -48,7 +48,7 @@ void Tetrahedral::setPrimaryLabel(Descriptor desc) {
     case Descriptor::S:
     case Descriptor::r:
     case Descriptor::s:
-      getFocus()->setProp(common_properties::_CIPCode, to_string(desc));
+      getFocus()->getProps()->setProp(common_properties::_CIPCode, to_string(desc));
       return;
     case Descriptor::seqTrans:
     case Descriptor::seqCis:

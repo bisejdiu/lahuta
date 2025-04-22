@@ -34,7 +34,7 @@ namespace lahuta {
 class ValenceModel {
 public:
   void apply(const RDKit::RWMol &mol) {
-    for (auto &atom : mol.atoms()) {
+    for (const auto atom : mol.atoms()) {
       molstar_valence_model(mol, *atom);
     }
   }

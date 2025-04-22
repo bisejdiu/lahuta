@@ -3,22 +3,16 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <unordered_map>
 
-// clang-format off
-#define ITER_GEMMI_ATOMS(st, model, chain, res, atom)               \
-  for (const gemmi::Model &model : st.models)                       \
-    for (const gemmi::Chain &chain : model.chains)                  \
-      for (const gemmi::Residue &res : chain.residues)              \
+#define ITER_GEMMI_ATOMS(st, model, chain, res, atom)                                                        \
+  for (const gemmi::Model &model : st.models)                                                                \
+    for (const gemmi::Chain &chain : model.chains)                                                           \
+      for (const gemmi::Residue &res : chain.residues)                                                       \
         for (const gemmi::Atom &atom : res.atoms)
-// clang-format on
 
-using namespace gemmi;
-using namespace RDKit;
-
+// clang-format off
 namespace lahuta {
 
-// FIX: We should build the Topology from here
-// FIX: Converters should in fact be loaders
-void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ign_h) {
+void create_RDKit_repr(RDKit::RWMol &mol, const gemmi::Structure &st, RDKit::Conformer &conf, bool ign_h) {
 
   ign_h = false; // FIX: ign_h=true is broken
   bool is_first_model = true;
@@ -33,7 +27,7 @@ void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ig
       break;
     }
 
-    if (ign_h && atom.element == Element("H")) { // FIX: use `is_hydrogen` (elem.hpp) instead
+    if (ign_h && atom.element == gemmi::Element("H")) { // FIX: use `is_hydrogen` (elem.hpp) instead
       continue;
     }
 
@@ -48,18 +42,17 @@ void create_RDKit_repr(RWMol &mol, const Structure &st, Conformer &conf, bool ig
 
     auto altLoc = (atom.altloc == '\0') ? "" : std::string(1, atom.altloc);
     // FIX: num is OptionalNum (not guaranteed to have a value)
-    AtomPDBResidueInfo atomInfo = {atom.name, atom.serial, altLoc, res.name, res.seqid.num.value, chain.name};
+    auto *atomInfo = new RDKit::AtomPDBResidueInfo(atom.name, atom.serial, altLoc, res.name, res.seqid.num.value, chain.name);
 
-    atomInfo.setResidueIndex(res.idx);
-    atomInfo.setIsHeteroAtom(res.het_flag == 'H');
-    atomInfo.setMonomerType(AtomMonomerInfo::PDBRESIDUE);
+    atomInfo->setResidueIndex(res.idx);
+    atomInfo->setIsHeteroAtom(res.het_flag == 'H');
+    atomInfo->setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
 
-    auto *copy = static_cast<AtomMonomerInfo *>(atomInfo.copy());
-    rAtom->setMonomerInfo(copy);
+    rAtom->setMonomerInfo(atomInfo);
   }
 }
 
-std::shared_ptr<RDKit::RWMol> create_RDKit(const Structure &st) {
+std::shared_ptr<RDKit::RWMol> create_RDKit(const gemmi::Structure &st) {
   auto mol = std::make_shared<RDKit::RWMol>();
   RDKit::Conformer *conformer = new RDKit::Conformer();
   create_RDKit_repr(*mol, st, *conformer, false);
@@ -68,12 +61,12 @@ std::shared_ptr<RDKit::RWMol> create_RDKit(const Structure &st) {
   return mol;
 }
 
-void IR_to_RWMol(RWMol &mol, const IR &ir) {
-  Conformer *conf = new Conformer();
+void IR_to_RWMol(RDKit::RWMol &mol, const IR &ir) {
+  RDKit::Conformer *conf = new RDKit::Conformer();
   for (size_t i = 0; i < ir.atom_indices.size(); ++i) {
     RDKit::Atom *atom = new RDKit::Atom(ir.atomic_numbers[i]);
     atom->setMonomerInfo(
-        new AtomPDBResidueInfo(ir.atom_names[i], -1, "", ir.resnames[i], ir.resids[i], ir.chainlabels[i]));
+        new RDKit::AtomPDBResidueInfo(ir.atom_names[i], -1, "", ir.resnames[i], ir.resids[i], ir.chainlabels[i]));
     mol.addAtom(atom, true, true);
     conf->setAtomPos(i, {ir.positions[i][0], ir.positions[i][1], ir.positions[i][2]});
   }
@@ -81,8 +74,8 @@ void IR_to_RWMol(RWMol &mol, const IR &ir) {
   mol.updatePropertyCache(false);
 }
 
-RWMol filter_atoms(RWMol &mol, std::vector<int> &indices) {
-  RWMol new_mol;
+RDKit::RWMol filter_atoms(RDKit::RWMol &mol, std::vector<int> &indices) {
+  RDKit::RWMol new_mol;
 
   for (auto atomIdx : indices) {
     auto atom = mol.getAtomWithIdx(atomIdx);
@@ -94,10 +87,10 @@ RWMol filter_atoms(RWMol &mol, std::vector<int> &indices) {
   return new_mol;
 }
 
-RWMol filter_with_conf(RWMol &mol, std::vector<int> &indices) {
-  Conformer conf = mol.getConformer();
-  RWMol new_mol;
-  Conformer *new_conf = new Conformer();
+RDKit::RWMol filter_with_conf(RDKit::RWMol &mol, std::vector<int> &indices) {
+  RDKit::Conformer conf = mol.getConformer();
+  RDKit::RWMol new_mol;
+  RDKit::Conformer *new_conf = new RDKit::Conformer();
 
   for (auto atomIdx : indices) {
     auto atom = mol.getAtomWithIdx(atomIdx);
@@ -112,12 +105,13 @@ RWMol filter_with_conf(RWMol &mol, std::vector<int> &indices) {
   return new_mol;
 }
 
-RWMol filter_with_bonds(
-    const RWMol &mol,
-    std::vector<int> &indices) { // indices do not need to be sorted (they are sorted in the function)
-  RWMol filtered_mol;
-  const Conformer &conf = mol.getConformer();
-  auto *filtered_conf = new Conformer();
+// indices will be sorted in ascending order
+RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol, std::vector<int> &indices) {
+
+  RDKit::RWMol filtered_mol;
+  const RDKit::Conformer &conf = mol.getConformer();
+
+  auto *filtered_conf = new RDKit::Conformer();
 
   std::unordered_map<int, int> atom_index_map;
 
@@ -152,8 +146,7 @@ RWMol filter_with_bonds(
     int start_idx = bond->getBeginAtomIdx();
     int end_idx = bond->getEndAtomIdx();
 
-    if (atom_index_map.find(start_idx) != atom_index_map.end()
-        && atom_index_map.find(end_idx) != atom_index_map.end()) {
+    if (atom_index_map.find(start_idx) != atom_index_map.end() && atom_index_map.find(end_idx) != atom_index_map.end()) {
       int new_start_idx = atom_index_map[start_idx];
       int new_end_idx = atom_index_map[end_idx];
       filtered_mol.addBond(new_start_idx, new_end_idx, bond->getBondType());

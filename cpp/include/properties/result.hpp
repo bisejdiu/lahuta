@@ -67,7 +67,7 @@ public:
     return (it != map.end()) ? it->second->size() : 0;
   }
 
-  /// Compute the total size of several specified properties using a fold expression
+  /// Compute the total size of several specified properties
   template <PropertyKey... Keys>
   size_t total_size() const {
     return (size_of_property<Keys>() + ...); // fold expression
@@ -75,15 +75,19 @@ public:
 
   /// Compute the total size of all properties stored in the result.
   size_t total_size() const {
-    size_t sum = 0;
-    std::apply([&](auto&&... maps) {
-      (([&]() {
-          for (const auto& pair : maps) {
-            sum += pair.second->size();
-          }
-      }()), ...);
-    }, results_);
-    return sum;
+      size_t sum = 0;
+      std::apply([&](auto&&... maps) {
+          (([&]() {
+              for (const auto& pair : maps) {
+                  if (!pair.second->empty()) {
+                      // use the first element as a representative size.
+                      size_t perElementSize = sizeof(pair.second->front());
+                      sum += pair.second->size() * perElementSize;
+                  }
+              }
+          }()), ...);
+      }, results_);
+      return sum;
   }
 
 private:

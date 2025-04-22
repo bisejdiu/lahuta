@@ -1982,7 +1982,7 @@ case 144:
 YY_RULE_SETUP
 #line 287 "smiles.ll"
 {   yylval->atom = new Atom( 0 );
-		            yylval->atom->setProp(common_properties::dummyLabel,
+		            yylval->atom->getProps()->setProp(common_properties::dummyLabel,
                                                         std::string("*"));
                                 // must be ORGANIC_ATOM_TOKEN because
                                 // we aren't in square brackets:
@@ -2126,7 +2126,7 @@ case 169:
 YY_RULE_SETUP
 #line 337 "smiles.ll"
 { yylval->bond = new Bond(Bond::UNSPECIFIED);
-	yylval->bond->setProp(RDKit::common_properties::_unspecifiedOrder,1);
+	yylval->bond->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder,1);
 	yylval->bond->setBondDir(Bond::ENDDOWNRIGHT);
 	return BOND_TOKEN;  }
 	YY_BREAK
@@ -2134,7 +2134,7 @@ case 170:
 YY_RULE_SETUP
 #line 342 "smiles.ll"
 { yylval->bond = new Bond(Bond::UNSPECIFIED);
-	yylval->bond->setProp(RDKit::common_properties::_unspecifiedOrder,1);
+	yylval->bond->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder,1);
 	yylval->bond->setBondDir(Bond::ENDUPRIGHT);
 	return BOND_TOKEN;  }
 	YY_BREAK

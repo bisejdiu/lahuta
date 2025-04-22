@@ -636,7 +636,7 @@ std::vector<std::unique_ptr<MolSanitizeException>> detectChemistryProblems(
   // update computed properties on atoms and bonds:
   operation = SANITIZE_PROPERTIES;
   if (sanitizeOps & operation) {
-    for (auto &atom : mol.atoms()) {
+    for (auto atom : mol.atoms()) {
       try {
         bool strict = true;
         atom->updatePropertyCache(strict);
@@ -806,8 +806,8 @@ std::vector<ROMOL_SPTR> getMolFrags(const ROMol &mol, bool sanitizeFrags,
 unsigned int getMolFrags(const ROMol &mol, INT_VECT &mapping) {
   unsigned int natms = mol.getNumAtoms();
   mapping.resize(natms);
-  return natms ? boost::connected_components(mol.getTopology(), &mapping[0])
-               : 0;
+  return natms ? mol.getConnectedComponents(mapping) : 0;
+
 };
 
 unsigned int getMolFrags(const ROMol &mol, VECT_INT_VECT &frags) {
@@ -984,7 +984,7 @@ int getFormalCharge(const ROMol &mol) {
 unsigned getNumAtomsWithDistinctProperty(const ROMol &mol, std::string prop) {
   unsigned numPropAtoms = 0;
   for (const auto atom : mol.atoms()) {
-    if (atom->hasProp(prop)) {
+    if (atom->getProps()->hasProp(prop)) {
       ++numPropAtoms;
     }
   }
@@ -1111,8 +1111,8 @@ void addHapticBond(RWMol &mol, unsigned int metalIdx,
     endpts = endpts.substr(0, endpts.length() - 1);
   }
   endpts += ")";
-  bond->setProp(common_properties::_MolFileBondEndPts, endpts);
-  bond->setProp<std::string>(common_properties::_MolFileBondAttach, "ALL");
+  bond->getProps()->setProp(common_properties::_MolFileBondEndPts, endpts);
+  bond->getProps()->setProp<std::string>(common_properties::_MolFileBondAttach, "ALL");
 }
 }  // namespace
 
@@ -1161,7 +1161,7 @@ std::vector<int> hapticBondEndpoints(const Bond *bond) {
   // Returns the atom indices i.e. subtracts 1 from the numbers in the prop.
   std::vector<int> oats;
   std::string endpts;
-  if (bond->getPropIfPresent(common_properties::_MolFileBondEndPts, endpts)) {
+  if (bond->getProps()->getPropIfPresent(common_properties::_MolFileBondEndPts, endpts)) {
     if ('(' == endpts.front() && ')' == endpts.back()) {
       endpts = endpts.substr(1, endpts.length() - 2);
       boost::char_separator<char> sep(" ");
@@ -1187,7 +1187,7 @@ unsigned int addExplicitAttachmentPoint(RWMol &mol, unsigned int atomIdx,
   } else {
     newAtom = new Atom(0);
   }
-  newAtom->setProp(common_properties::_fromAttachPoint, val);
+  newAtom->getProps()->setProp(common_properties::_fromAttachPoint, val);
   bool updateLabel = false;
   bool takeOwnership = true;
   auto idx = mol.addAtom(newAtom, updateLabel, takeOwnership);
@@ -1205,7 +1205,7 @@ bool isAttachmentPoint(const Atom *atom, bool markedOnly) {
   if (atom->getAtomicNum() != 0 || atom->getDegree() != 1) {
     return false;
   }
-  if (markedOnly && !atom->hasProp(common_properties::_fromAttachPoint)) {
+  if (markedOnly && !atom->getProps()->hasProp(common_properties::_fromAttachPoint)) {
     return false;
   }
   // we know that the atom is degree 1
@@ -1239,7 +1239,7 @@ bool isAttachmentPoint(const Atom *atom, bool markedOnly) {
 void expandAttachmentPoints(RWMol &mol, bool addAsQueries, bool addCoords) {
   for (auto atom : mol.atoms()) {
     int value;
-    if (atom->getPropIfPresent(common_properties::molAttachPoint, value)) {
+    if (atom->getProps()->getPropIfPresent(common_properties::molAttachPoint, value)) {
       std::vector<int> tgtVals;
       if (value == 1 || value == -1) {
         tgtVals.push_back(1);
@@ -1255,7 +1255,7 @@ void expandAttachmentPoints(RWMol &mol, bool addAsQueries, bool addCoords) {
         continue;
       }
       for (auto tval : tgtVals) {
-        atom->clearProp(common_properties::molAttachPoint);
+        atom->getProps()->clearProp(common_properties::molAttachPoint);
         details::addExplicitAttachmentPoint(mol, atom->getIdx(), tval,
                                             addAsQueries, addCoords);
       }
@@ -1270,7 +1270,7 @@ void collapseAttachmentPoints(RWMol &mol, bool markedOnly) {
   for (auto atom : mol.atoms()) {
     if (details::isAttachmentPoint(atom, markedOnly)) {
       int value = 0;
-      atom->getPropIfPresent(common_properties::_fromAttachPoint, value);
+      atom->getProps()->getPropIfPresent(common_properties::_fromAttachPoint, value);
       if (markedOnly && (value < 0 || value > 2)) {
         BOOST_LOG(rdWarningLog)
             << "Invalid value for _fromAttachPoint: " << value << " on atom "
@@ -1309,7 +1309,7 @@ void collapseAttachmentPoints(RWMol &mol, bool markedOnly) {
   // set the attachment point labels
   for (auto atom : mol.atoms()) {
     if (attachLabels[atom->getIdx()]) {
-      atom->setProp(common_properties::molAttachPoint,
+      atom->getProps()->setProp(common_properties::molAttachPoint,
                     attachLabels[atom->getIdx()]);
     }
   }

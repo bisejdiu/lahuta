@@ -286,7 +286,7 @@ void sanitizeMol(RWMol &mol) {
 void fixExplicitImplicitHs(ROMol &mol) {
   mol.clearComputedProps(false);
   for (ROMol::AtomIterator ai = mol.beginAtoms(); ai != mol.endAtoms(); ++ai) {
-    (*ai)->clearComputedProps();
+    (*ai)->getProps()->clearComputedProps();
     (*ai)->setNumExplicitHs((*ai)->getNumImplicitHs() +
                             (*ai)->getNumExplicitHs());
     (*ai)->updatePropertyCache();

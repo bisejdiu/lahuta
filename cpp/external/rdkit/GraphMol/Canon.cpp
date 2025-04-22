@@ -142,7 +142,7 @@ bool isClosingRingBond(Bond *bond) {
   auto beginIdx = bond->getBeginAtomIdx();
   auto endIdx = bond->getEndAtomIdx();
   return beginIdx > endIdx && beginIdx - endIdx > 1 &&
-         bond->hasProp(common_properties::_TraversalRingClosureBond);
+         bond->getProps()->hasProp(common_properties::_TraversalRingClosureBond);
 }
 
 }  // namespace
@@ -444,7 +444,7 @@ void canonicalizeDoubleBond(Bond *dblBond, UINT_VECT &bondVisitOrders,
       // Here we set the bond direction to be opposite the other one (since
       // both come after the atom connected to the double bond).
       Bond::BondDir otherDir;
-      if (!secondFromAtom2->hasProp(
+      if (!secondFromAtom2->getProps()->hasProp(
               common_properties::_TraversalRingClosureBond)) {
         otherDir = flipBondDir(firstFromAtom2->getBondDir());
       } else {
@@ -478,7 +478,7 @@ void canonicalizeDoubleBond(Bond *dblBond, UINT_VECT &bondVisitOrders,
     if (bondVisitOrders[atom1ControllingBond->getIdx()] >
         atomVisitOrders[atom1->getIdx()]) {
       if (bondDirCounts[atom1ControllingBond->getIdx()] == 1) {
-        if (!atom1ControllingBond->hasProp(
+        if (!atom1ControllingBond->getProps()->hasProp(
                 common_properties::_TraversalRingClosureBond)) {
           // std::cerr<<"  switcheroo 1"<<std::endl;
           switchBondDir(atom1ControllingBond);
@@ -707,7 +707,7 @@ void dfsBuildStack(ROMol &mol, int atomIdx, int inBondIdx,
       Bond *bond = mol.getBondWithIdx(bIdx);
       seenFromHere.set(bond->getOtherAtomIdx(atomIdx));
       unsigned int ringIdx;
-      if (bond->getPropIfPresent(common_properties::_TraversalRingClosureBond,
+      if (bond->getProps()->getPropIfPresent(common_properties::_TraversalRingClosureBond,
                                  ringIdx)) {
         // this is end of the ring closure
         // we can just pull the ring index from the bond itself:
@@ -730,7 +730,7 @@ void dfsBuildStack(ROMol &mol, int atomIdx, int inBondIdx,
         unsigned int lowestRingIdx = cAIt - cyclesAvailable.begin();
         cyclesAvailable[lowestRingIdx] = 0;
         ++lowestRingIdx;
-        bond->setProp(common_properties::_TraversalRingClosureBond,
+        bond->getProps()->setProp(common_properties::_TraversalRingClosureBond,
                       lowestRingIdx);
         molStack.push_back(MolStackElem(lowestRingIdx));
       }
@@ -823,7 +823,7 @@ void dfsBuildStack(ROMol &mol, int atomIdx, int inBondIdx,
     Bond *bond = std::get<2>(*possiblesIt);
     Atom *otherAtom = mol.getAtomWithIdx(possibleIdx);
     // ww might have some residual data from earlier calls, clean that up:
-    otherAtom->clearProp(common_properties::_TraversalBondIndexOrder);
+    otherAtom->getProps()->clearProp(common_properties::_TraversalBondIndexOrder);
     travList.push_back(bond->getIdx());
     if (possiblesIt + 1 != possibles.end()) {
       // we're branching
@@ -1031,7 +1031,7 @@ void canonicalizeFragment(ROMol &mol, int atomIdx,
   if (!mol.getRingInfo()->isInitialized()) {
     MolOps::findSSSR(mol);
   }
-  mol.getAtomWithIdx(atomIdx)->setProp(common_properties::_TraversalStartPoint,
+  mol.getAtomWithIdx(atomIdx)->getProps()->setProp(common_properties::_TraversalStartPoint,
                                        true);
 
   VECT_INT_VECT atomRingClosures(nAtoms);
@@ -1054,11 +1054,11 @@ void canonicalizeFragment(ROMol &mol, int atomIdx,
         // check if all of this atom's bonds are in play
         for (const auto bnd : mol.atomBonds(atom)) {
           if (bondsInPlay && !(*bondsInPlay)[bnd->getIdx()]) {
-            atom->setProp(common_properties::_brokenChirality, true);
+            atom->getProps()->setProp(common_properties::_brokenChirality, true);
             break;
           }
         }
-        if (atom->hasProp(common_properties::_brokenChirality)) {
+        if (atom->getProps()->hasProp(common_properties::_brokenChirality)) {
           continue;
         }
 
@@ -1068,7 +1068,7 @@ void canonicalizeFragment(ROMol &mol, int atomIdx,
           int nSwaps = 0;
           int perm = 0;
           if (Chirality::hasNonTetrahedralStereo(atom)) {
-            atom->getPropIfPresent(common_properties::_chiralPermutation, perm);
+            atom->getProps()->getPropIfPresent(common_properties::_chiralPermutation, perm);
           }
 
           // We have to make sure that trueOrder contains all the
@@ -1160,14 +1160,14 @@ void canonicalizeFragment(ROMol &mol, int atomIdx,
     if (doIsomericSmiles) {
       if (msI.type == MOL_STACK_ATOM &&
           msI.obj.atom->getChiralTag() != Atom::CHI_UNSPECIFIED &&
-          !msI.obj.atom->hasProp(common_properties::_brokenChirality)) {
-        if (msI.obj.atom->hasProp(common_properties::_ringStereoAtoms)) {
+          !msI.obj.atom->getProps()->hasProp(common_properties::_brokenChirality)) {
+        if (msI.obj.atom->getProps()->hasProp(common_properties::_ringStereoAtoms)) {
           // FIX: handle stereogroups here too
           if (!ringStereoChemAdjusted[msI.obj.atom->getIdx()]) {
             msI.obj.atom->setChiralTag(Atom::CHI_TETRAHEDRAL_CCW);
             ringStereoChemAdjusted.set(msI.obj.atom->getIdx());
           }
-          const INT_VECT &ringStereoAtoms = msI.obj.atom->getProp<INT_VECT>(
+          const INT_VECT &ringStereoAtoms = msI.obj.atom->getProps()->getProp<INT_VECT>(
               common_properties::_ringStereoAtoms);
           for (auto nbrV : ringStereoAtoms) {
             int nbrIdx = abs(nbrV) - 1;
@@ -1203,7 +1203,7 @@ void canonicalizeFragment(ROMol &mol, int atomIdx,
             }
           }
         } else if (size_t sgidx;
-                   msI.obj.atom->getPropIfPresent("_stereoGroup", sgidx) &&
+                   msI.obj.atom->getProps()->getPropIfPresent("_stereoGroup", sgidx) &&
                    mol.getStereoGroups().size() > sgidx) {
           // make sure that the reference atom in the stereogroup is CCW
           auto &sg = mol.getStereoGroups()[sgidx];
@@ -1228,7 +1228,7 @@ void canonicalizeFragment(ROMol &mol, int atomIdx,
               msI.obj.atom->invertChirality();
             }
           } else if (atomPermutationIndices[msI.obj.atom->getIdx()]) {
-            msI.obj.atom->setProp(
+            msI.obj.atom->getProps()->setProp(
                 common_properties::_chiralPermutation,
                 atomPermutationIndices[msI.obj.atom->getIdx()]);
           }
@@ -1353,7 +1353,7 @@ void canonicalizeEnhancedStereo(ROMol &mol,
     // note that we do not forward the Group Ids: this is intentional, so that
     // the Ids are reassigned based on the canonicalized order.
     if (sgAtoms.size() > 0) {
-      sgAtoms.front()->setProp("_stereoGroup", newSgs.size() - 1, true);
+      sgAtoms.front()->getProps()->setProp("_stereoGroup", newSgs.size() - 1, true);
     }
   }
   mol.setStereoGroups(newSgs);

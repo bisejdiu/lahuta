@@ -168,10 +168,10 @@ StereoInfo getStereoInfo(const Bond *bond) {
       // check to see if either the begin or end atoms has the _UnknownStereo
       // property set. This happens if there was a squiggle bond to an H
       int explicitUnknownStereo = 0;
-      if ((bond->getBeginAtom()->getPropIfPresent<int>(
+      if ((bond->getBeginAtom()->getProps()->getPropIfPresent<int>(
                common_properties::_UnknownStereo, explicitUnknownStereo) &&
            explicitUnknownStereo) ||
-          (bond->getEndAtom()->getPropIfPresent<int>(
+          (bond->getEndAtom()->getProps()->getPropIfPresent<int>(
                common_properties::_UnknownStereo, explicitUnknownStereo) &&
            explicitUnknownStereo)) {
         seenSquiggleBond = true;
@@ -293,7 +293,7 @@ StereoInfo getStereoInfo(const Atom *atom) {
     if (bnd->getBondDir() == Bond::UNKNOWN) {
       explicitUnknownStereo = 1;
     } else if (!explicitUnknownStereo) {
-      bnd->getPropIfPresent<int>(common_properties::_UnknownStereo,
+      bnd->getProps()->getPropIfPresent<int>(common_properties::_UnknownStereo,
                                  explicitUnknownStereo);
     }
     sinfo.controllingAtoms.push_back(bnd->getOtherAtomIdx(atom->getIdx()));
@@ -361,7 +361,7 @@ StereoInfo getStereoInfo(const Atom *atom) {
           break;
       }
       unsigned int permutation;
-      if (atom->getPropIfPresent(common_properties::_chiralPermutation,
+      if (atom->getProps()->getPropIfPresent(common_properties::_chiralPermutation,
                                  permutation)) {
         sinfo.permutation = permutation;
         if (!permutation) {
@@ -946,7 +946,7 @@ void cleanMolStereo(ROMol &mol, const boost::dynamic_bitset<> &fixedAtoms,
         case Atom::ChiralType::CHI_SQUAREPLANAR:
         case Atom::ChiralType::CHI_TRIGONALBIPYRAMIDAL:
         case Atom::ChiralType::CHI_OCTAHEDRAL:
-          atom->setProp(common_properties::_chiralPermutation, 0);
+          atom->getProps()->setProp(common_properties::_chiralPermutation, 0);
           break;
         default:
           break;
@@ -1179,7 +1179,7 @@ std::vector<StereoInfo> runCleanup(ROMol &mol, bool flagPossible,
     }
 
     for (const auto atom : mol.atoms()) {
-      atom->setProp<unsigned int>(common_properties::_ChiralAtomRank,
+      atom->getProps()->setProp<unsigned int>(common_properties::_ChiralAtomRank,
                                   aranks[atom->getIdx()]);
     }
   }

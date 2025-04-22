@@ -33,7 +33,7 @@ struct BondAssignmentResult {
   bool has_unlisted_resnames = false;
 
   BondAssignmentResult() = default;
-  BondAssignmentResult(RDKit::RWMol mol, std::vector<int> atom_indices)
+  BondAssignmentResult(RDKit::RWMol &&mol, std::vector<int> atom_indices)
       : mol(std::move(mol)), atom_indices(std::move(atom_indices)) {
     if (this->atom_indices.size() > 0) {
       this->has_unlisted_resnames = true;

@@ -162,7 +162,7 @@ void VisitPart(std::vector<int> &parts, const std::vector<Type> &types,
 int VisitParts(std::vector<int> &parts, const std::vector<Type> &types,
                const CIPMol &mol) {
   int numparts = 0;
-  for (auto &atom : mol.atoms()) {
+  for (auto atom : mol.atoms()) {
     int aidx = atom->getIdx();
     if (parts[aidx] == 0 && types[aidx] != Type::Other) {
       parts[aidx] = ++numparts;

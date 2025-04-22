@@ -194,6 +194,53 @@ unsigned int RingInfo::addRing(const INT_VECT &atomIndices,
   return rdcast<unsigned int>(d_atomRings.size());
 }
 
+unsigned int RingInfo::addAllRings(const std::vector<INT_VECT> &allAtomIndices,
+                                   const std::vector<INT_VECT> &allBondIndices) {
+
+  PRECONDITION(df_init, "RingInfo not initialized");
+  PRECONDITION(allAtomIndices.size() == allBondIndices.size(), "ring count mismatch");
+
+  size_t totalRingCount = allAtomIndices.size();
+
+  if (allAtomIndices.empty() || allAtomIndices.back().empty()) {
+    return rdcast<unsigned int>(d_atomRings.size());
+  }
+
+  if (allBondIndices.empty() || allBondIndices.back().empty()) {
+    return rdcast<unsigned int>(d_atomRings.size());
+  }
+
+  auto maxAtomIdx = *std::max_element(allAtomIndices.back().begin(), allAtomIndices.back().end());
+  auto maxBondIdx = *std::max_element(allBondIndices.back().begin(), allBondIndices.back().end());
+
+  d_atomMembers.resize(maxAtomIdx + 1);
+  d_bondMembers.resize(maxBondIdx + 1);
+  d_atomRings.reserve(d_atomRings.size() + totalRingCount);
+  d_bondRings.reserve(d_bondRings.size() + totalRingCount);
+
+  size_t startRingIdx = d_atomRings.size();
+
+  for (size_t ringIdx = 0; ringIdx < totalRingCount; ++ringIdx) {
+    size_t currentRingIdx = startRingIdx + ringIdx;
+
+    // add ring data
+    d_atomRings.push_back(allAtomIndices[ringIdx]);
+    d_bondRings.push_back(allBondIndices[ringIdx]);
+
+    // add membership information
+    for (const auto &atomIdx : allAtomIndices[ringIdx]) {
+      d_atomMembers[atomIdx].push_back(currentRingIdx);
+    }
+
+    for (const auto &bondIdx : allBondIndices[ringIdx]) {
+      d_bondMembers[bondIdx].push_back(currentRingIdx);
+    }
+  }
+
+  POSTCONDITION(d_atomRings.size() == d_bondRings.size(), "length mismatch");
+  return rdcast<unsigned int>(d_atomRings.size());
+}
+
 bool RingInfo::isRingFused(unsigned int ringIdx) {
   initFusedRings();
   PRECONDITION(ringIdx < d_fusedRings.size(), "ringIdx out of bounds");

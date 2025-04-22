@@ -51,7 +51,7 @@ void addquery(Q *qry, std::string symbol, RDKit::RWMol &mol, unsigned int idx) {
   qa->setNoImplicit(true);
   mol.replaceAtom(idx, qa);
   if (symbol != "") {
-    mol.getAtomWithIdx(idx)->setProp(RDKit::common_properties::atomLabel,
+    mol.getAtomWithIdx(idx)->getProps()->setProp(RDKit::common_properties::atomLabel,
                                      symbol);
   }
   delete qa;
@@ -63,8 +63,8 @@ void processCXSmilesLabels(RWMol &mol) {
   }
   for (auto atom : mol.atoms()) {
     std::string symb = "";
-    if (atom->getPropIfPresent(common_properties::atomLabel, symb)) {
-      atom->clearProp(common_properties::dummyLabel);
+    if (atom->getProps()->getPropIfPresent(common_properties::atomLabel, symb)) {
+      atom->getProps()->clearProp(common_properties::dummyLabel);
       if (symb == "star_e") {
         /* according to the MDL spec, these match anything, but in MARVIN they
         are "unspecified end groups" for polymers */
@@ -93,9 +93,9 @@ void processCXSmilesLabels(RWMol &mol) {
       } else if (std::find(pseudoatoms_p.begin(), pseudoatoms_p.end(), symb) !=
                  pseudoatoms_p.end()) {
         // strip off the "_p":
-        atom->setProp(common_properties::dummyLabel,
+        atom->getProps()->setProp(common_properties::dummyLabel,
                       symb.substr(0, symb.size() - 2));
-        atom->clearProp(common_properties::atomLabel);
+        atom->getProps()->clearProp(common_properties::atomLabel);
       }
     } else if (atom->getAtomicNum() == 0 && !atom->hasQuery() &&
                atom->getSymbol() == "*") {
@@ -308,7 +308,7 @@ void finalizePolymerSGroup(RWMol &mol, SubstanceGroup &sgroup) {
 Bond *get_bond_with_smiles_idx(const ROMol &mol, unsigned idx) {
   for (auto bnd : mol.bonds()) {
     unsigned int smilesIdx;
-    if (bnd->getPropIfPresent("_cxsmilesBondIdx", smilesIdx) &&
+    if (bnd->getProps()->getPropIfPresent("_cxsmilesBondIdx", smilesIdx) &&
         smilesIdx == idx) {
       return bnd;
     }
@@ -337,7 +337,7 @@ bool parse_atom_values(Iterator &first, Iterator last, RDKit::RWMol &mol,
   while (first <= last && *first != '$') {
     std::string tkn = read_text_to(first, last, ";$");
     if (tkn != "" && VALID_ATIDX(atIdx)) {
-      mol.getAtomWithIdx(atIdx)->setProp(RDKit::common_properties::molFileValue,
+      mol.getAtomWithIdx(atIdx)->getProps()->setProp(RDKit::common_properties::molFileValue,
                                          tkn);
     }
     ++atIdx;
@@ -373,7 +373,7 @@ bool parse_atom_props(Iterator &first, Iterator last, RDKit::RWMol &mol,
         ++first;
         std::string pval = read_text_to(first, last, ":|,");
         if (VALID_ATIDX(atIdx) && !pval.empty()) {
-          mol.getAtomWithIdx(atIdx - startAtomIdx)->setProp(pname, pval);
+          mol.getAtomWithIdx(atIdx - startAtomIdx)->getProps()->setProp(pname, pval);
         }
       }
     }
@@ -402,7 +402,7 @@ bool parse_atom_labels(Iterator &first, Iterator last, RDKit::RWMol &mol,
     std::string tkn = read_text_to(first, last, ";$");
     if (!tkn.empty() && VALID_ATIDX(atIdx)) {
       mol.getAtomWithIdx(atIdx - startAtomIdx)
-          ->setProp(RDKit::common_properties::atomLabel, tkn);
+          ->getProps()->setProp(RDKit::common_properties::atomLabel, tkn);
     }
     ++atIdx;
     if (first <= last && *first != '$') {
@@ -1007,8 +1007,8 @@ bool parse_variable_attachments(Iterator &first, Iterator last,
       for (auto nbri : boost::make_iterator_range(
                mol.getAtomBonds(mol.getAtomWithIdx(at1idx - startAtomIdx)))) {
         auto bnd = mol[nbri];
-        bnd->setProp(common_properties::_MolFileBondEndPts, endPts);
-        bnd->setProp(common_properties::_MolFileBondAttach, std::string("ANY"));
+        bnd->getProps()->setProp(common_properties::_MolFileBondEndPts, endPts);
+        bnd->getProps()->setProp(common_properties::_MolFileBondAttach, std::string("ANY"));
       }
     }
     if (first < last && *first == ',') {
@@ -1084,7 +1084,7 @@ bool parse_wedged_bonds(Iterator &first, Iterator last, RDKit::RWMol &mol,
       }
 
       // we can't set wedging twice:
-      if (bond->hasProp(common_properties::_MolFileBondCfg)) {
+      if (bond->getProps()->hasProp(common_properties::_MolFileBondCfg)) {
         BOOST_LOG(rdWarningLog)
             << "w block attempts to set wedging on bond " << bond->getIdx()
             << " more than once." << std::endl;
@@ -1106,7 +1106,7 @@ bool parse_wedged_bonds(Iterator &first, Iterator last, RDKit::RWMol &mol,
         bond->setBeginAtomIdx(atom->getIdx());
         bond->setEndAtomIdx(eidx);
       }
-      bond->setProp(common_properties::_MolFileBondCfg, cfg);
+      bond->getProps()->setProp(common_properties::_MolFileBondCfg, cfg);
       bond->setBondDir(state);
       if (cfg == 2 && canHaveDirection(*bond)) {
         bond->getBeginAtom()->setChiralTag(Atom::ChiralType::CHI_UNSPECIFIED);
@@ -1871,21 +1871,21 @@ std::string get_atomlabel_block(const ROMol &mol,
     std::string lbl;
     int val;
     const auto atom = mol.getAtomWithIdx(idx);
-    if (atom->getPropIfPresent(common_properties::_QueryAtomGenericLabel,
+    if (atom->getProps()->getPropIfPresent(common_properties::_QueryAtomGenericLabel,
                                lbl)) {
       res += quote_string(lbl + "_p");
     } else if (!atom->getAtomicNum() &&
-               atom->getPropIfPresent(common_properties::dummyLabel, lbl) &&
+               atom->getProps()->getPropIfPresent(common_properties::dummyLabel, lbl) &&
                std::find(SmilesParseOps::pseudoatoms.begin(),
                          SmilesParseOps::pseudoatoms.end(),
                          lbl) != SmilesParseOps::pseudoatoms.end()) {
       res += quote_string(lbl + "_p");
     } else if (!atom->getAtomicNum() &&
-               atom->getPropIfPresent(common_properties::_fromAttachPoint,
+               atom->getProps()->getPropIfPresent(common_properties::_fromAttachPoint,
                                       val) &&
                (val == 1 || val == 2)) {
       res += quote_string("_AP" + std::to_string(val));
-    } else if (atom->getPropIfPresent(common_properties::atomLabel, lbl)) {
+    } else if (atom->getProps()->getPropIfPresent(common_properties::atomLabel, lbl)) {
       res += quote_string(lbl);
     }
   }
@@ -1909,7 +1909,7 @@ std::string get_value_block(const ROMol &mol,
       first = false;
     }
     std::string lbl;
-    if (mol.getAtomWithIdx(idx)->getPropIfPresent(prop, lbl)) {
+    if (mol.getAtomWithIdx(idx)->getProps()->getPropIfPresent(prop, lbl)) {
       res += quote_string(lbl);
     }
   }
@@ -1989,11 +1989,11 @@ std::string get_atom_props_block(const ROMol &mol,
   for (auto idx : atomOrder) {
     const auto atom = mol.getAtomWithIdx(idx);
     bool isAttachmentPoint = !atom->getAtomicNum() &&
-                             atom->hasProp(common_properties::_fromAttachPoint);
+                             atom->getProps()->hasProp(common_properties::_fromAttachPoint);
     bool includePrivate = false, includeComputed = false;
-    for (const auto &pn : atom->getPropList(includePrivate, includeComputed)) {
+    for (const auto &pn : atom->getProps()->getPropList(includePrivate, includeComputed)) {
       if (std::find(skip.begin(), skip.end(), pn) == skip.end()) {
-        std::string pv = atom->getProp<std::string>(pn);
+        std::string pv = atom->getProps()->getProp<std::string>(pn);
         if (pn == "dummyLabel" &&
             (isAttachmentPoint ||
              std::find(SmilesParseOps::pseudoatoms.begin(),
@@ -2136,7 +2136,7 @@ std::string get_bond_config_block(
               //  chiral atom
       unsigned int cfg = 0;
       if (bd == Bond::BondDir::NONE &&
-          bond->getPropIfPresent(common_properties::_MolFileBondCfg, cfg)) {
+          bond->getProps()->getPropIfPresent(common_properties::_MolFileBondCfg, cfg)) {
         switch (cfg) {
           case 1:
             bd = Bond::BondDir::BEGINWEDGE;
@@ -2384,13 +2384,13 @@ std::string getCXExtensions(const ROMol &mol, std::uint32_t flags) {
   bool needValues = false;
   for (auto idx : atomOrder) {
     const auto at = mol.getAtomWithIdx(idx);
-    if (at->hasProp(common_properties::atomLabel) ||
-        at->hasProp(common_properties::_QueryAtomGenericLabel) ||
-        at->hasProp(common_properties::dummyLabel) ||
-        at->hasProp(common_properties::_fromAttachPoint)) {
+    if (at->getProps()->hasProp(common_properties::atomLabel) ||
+        at->getProps()->hasProp(common_properties::_QueryAtomGenericLabel) ||
+        at->getProps()->hasProp(common_properties::dummyLabel) ||
+        at->getProps()->hasProp(common_properties::_fromAttachPoint)) {
       needLabels = true;
     }
-    if (at->hasProp(common_properties::molFileValue)) {
+    if (at->getProps()->hasProp(common_properties::molFileValue)) {
       needValues = true;
     }
   }

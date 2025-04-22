@@ -27,6 +27,7 @@ class AtomMonomerInfo {
   typedef enum { UNKNOWN = 0, PDBRESIDUE, OTHER } AtomMonomerType;
 
   virtual ~AtomMonomerInfo() {}
+  virtual void destroy() { delete this; }
 
   AtomMonomerInfo() = default;
   AtomMonomerInfo(AtomMonomerType typ, std::string nm = "")
@@ -101,6 +102,8 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   unsigned int getResidueIndex() const { return d_residueIndex; }
   void setResidueIndex(unsigned int idx) { d_residueIndex = idx; }
 
+  friend class pAtomPDBResidueInfo;
+
  private:
   // the fields here are from the PDB definition
   // (http://www.wwpdb.org/documentation/format33/sect9.html#ATOM) [9 Aug, 2013]
@@ -121,6 +124,98 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
 
   unsigned int d_residueIndex = 0;
 };
+
+
+// intended to be used exclusively with Lahuta's ObjectPool
+class pAtomPDBResidueInfo : public AtomPDBResidueInfo {
+public:
+  pAtomPDBResidueInfo() : AtomPDBResidueInfo() {}
+  pAtomPDBResidueInfo(const char* atom_name, int serial,
+                          const char* residue_name, int residue_number)
+      : AtomPDBResidueInfo() {
+        d_atomNamePtr = atom_name;
+        d_residueNamePtr = residue_name;
+        d_serialNumber = serial;
+        d_residueNumber = residue_number;
+  }
+
+  void destroy() override {
+    // The memory pool will reclaim the memory when it resets
+  }
+
+  void initialize(const char* atomName, int serialNumber,
+                  const char* residueName, int residueNumber) {
+    d_atomNamePtr = atomName;
+    d_residueNamePtr = residueName;
+    d_serialNumber = serialNumber;
+    d_residueNumber = residueNumber;
+    d_cachedName.clear();
+    d_cachedResidueName.clear();
+  }
+
+  const std::string& getName() const {
+    if (d_cachedName.empty() && d_atomNamePtr) {
+      d_cachedName = d_atomNamePtr;
+    }
+    return d_cachedName;
+  }
+
+  void setName(const std::string& name) {
+    d_atomNamePtr = name.c_str();
+    d_cachedName.clear();
+  }
+
+  void setName(const char* name) {
+    d_atomNamePtr = name;
+    d_cachedName.clear();
+  }
+
+  const std::string& getResidueName() const {
+    if (d_cachedResidueName.empty() && d_residueNamePtr) {
+      d_cachedResidueName = d_residueNamePtr;
+    }
+    return d_cachedResidueName;
+  }
+
+  void setResidueName(const std::string& name) {
+    d_residueNamePtr = name.c_str();
+    d_cachedResidueName.clear();
+  }
+
+  void setResidueName(const char* name) {
+    d_residueNamePtr = name;
+    d_cachedResidueName.clear();
+  }
+
+  const std::string& getChainId() const {
+    static const std::string defaultChain = "A";
+    return defaultChain;
+  }
+
+  const std::string& getAltLoc() const {
+    static const std::string emptyString = "";
+    return emptyString;
+  }
+
+  const std::string& getInsertionCode() const {
+    static const std::string emptyString = "";
+    return emptyString;
+  }
+
+  bool getIsHeteroAtom() const { return false; }
+  AtomMonomerType getMonomerType() const { return AtomPDBResidueInfo::PDBRESIDUE; }
+
+  RDKit::AtomMonomerInfo* copy() const override {
+    throw std::runtime_error("PooledAtomPDBResidueInfo::copy() should not be called");
+  }
+
+private:
+  const char* d_atomNamePtr = nullptr;
+  const char* d_residueNamePtr = nullptr;
+  mutable std::string d_cachedName;
+  mutable std::string d_cachedResidueName;
+};
+
 };  // namespace RDKit
 //! allows AtomPDBResidueInfo objects to be dumped to streams
 std::ostream &operator<<(

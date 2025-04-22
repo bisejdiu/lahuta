@@ -102,7 +102,7 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     }
   }
 
-  return {new_mol, non_predef_atom_indices};
+  return {std::move(new_mol), non_predef_atom_indices};
 };
 
 } // namespace lahuta

@@ -50,7 +50,7 @@ class Point {
 #endif
 
 // typedef class Point3D Point;
-class Point3D : public Point {
+class Point3D {
  public:
   double x{0.0};
   double y{0.0};
@@ -59,16 +59,18 @@ class Point3D : public Point {
   Point3D() {}
   Point3D(double xv, double yv, double zv) : x(xv), y(yv), z(zv) {}
 
-  ~Point3D() override = default;
+  ~Point3D() = default;
 
-  Point3D(const Point3D &other)
-      : Point(other), x(other.x), y(other.y), z(other.z) {}
+  /*Point3D(const Point3D &other)*/
+  /*    : Point(other), x(other.x), y(other.y), z(other.z) {}*/
+  Point3D(const Point3D &other) : x(other.x), y(other.y), z(other.z) {}
 
-  Point *copy() const override { return new Point3D(*this); }
 
-  inline unsigned int dimension() const override { return 3; }
+  /*Point3D *copy() const override { return new Point3D(*this); }*/
 
-  inline double operator[](unsigned int i) const override {
+  inline unsigned int dimension() const { return 3; }
+
+  inline double operator[](unsigned int i) const {
     PRECONDITION(i < 3, "Invalid index on Point3D");
     if (i == 0) {
       return x;
@@ -79,7 +81,7 @@ class Point3D : public Point {
     }
   }
 
-  inline double &operator[](unsigned int i) override {
+  inline double &operator[](unsigned int i) {
     PRECONDITION(i < 3, "Invalid index on Point3D");
     if (i == 0) {
       return x;
@@ -136,19 +138,19 @@ class Point3D : public Point {
     return res;
   }
 
-  void normalize() override {
+  void normalize() {
     double l = this->length();
     x /= l;
     y /= l;
     z /= l;
   }
 
-  double length() const override {
+  double length() const {
     double res = x * x + y * y + z * z;
     return sqrt(res);
   }
 
-  double lengthSq() const override {
+  double lengthSq() const {
     // double res = pow(x,2) + pow(y,2) + pow(z,2);
     double res = x * x + y * y + z * z;
     return res;
@@ -281,7 +283,7 @@ class Point2D : public Point {
 
   Point2D(const Point2D &other) : Point(other), x(other.x), y(other.y) {}
   //! construct from a Point3D (ignoring the z coordinate)
-  Point2D(const Point3D &p3d) : Point(p3d), x(p3d.x), y(p3d.y) {}
+  /*Point2D(const Point3D &p3d) : Point(p3d), x(p3d.x), y(p3d.y) {}*/
 
   Point *copy() const override { return new Point2D(*this); }
 

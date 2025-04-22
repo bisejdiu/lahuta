@@ -313,7 +313,7 @@ int pickBondToWedge(
 
       // if at all possible, do not go to marked attachment points
       // since they may well be removed when we write a mol block
-      if (oatom->hasProp(common_properties::_fromAttachPoint)) {
+      if (oatom->getProps()->hasProp(common_properties::_fromAttachPoint)) {
         nbrScore += 500000;
       }
       // std::cerr << "    nrbScore: " << idx << " - " << oIdx << " : "
@@ -546,13 +546,13 @@ void reapplyMolBlockWedging(ROMol &mol, bool allBondTypes) {
   MolOps::clearDirFlags(mol, true);
   for (auto b : mol.bonds()) {
     int explicit_unknown_stereo = -1;
-    if (b->getPropIfPresent<int>(common_properties::_UnknownStereo,
+    if (b->getProps()->getPropIfPresent<int>(common_properties::_UnknownStereo,
                                  explicit_unknown_stereo) &&
         explicit_unknown_stereo) {
       b->setBondDir(Bond::UNKNOWN);
     }
     int bond_dir = -1;
-    if (b->getPropIfPresent<int>(common_properties::_MolFileBondStereo,
+    if (b->getProps()->getPropIfPresent<int>(common_properties::_MolFileBondStereo,
                                  bond_dir)) {
       if (allBondTypes || canHaveDirection(*b)) {
         if (bond_dir == 1) {
@@ -572,7 +572,7 @@ void reapplyMolBlockWedging(ROMol &mol, bool allBondTypes) {
       }
     }
     int cfg = -1;
-    b->getPropIfPresent<int>(common_properties::_MolFileBondCfg, cfg);
+    b->getProps()->getPropIfPresent<int>(common_properties::_MolFileBondCfg, cfg);
     switch (cfg) {
       case 1:
         if (allBondTypes || canHaveDirection(*b)) {
@@ -605,28 +605,28 @@ void reapplyMolBlockWedging(ROMol &mol, bool allBondTypes) {
 
 void clearMolBlockWedgingInfo(ROMol &mol) {
   for (auto b : mol.bonds()) {
-    b->clearProp(common_properties::_MolFileBondStereo);
-    b->clearProp(common_properties::_MolFileBondCfg);
+    b->getProps()->clearProp(common_properties::_MolFileBondStereo);
+    b->getProps()->clearProp(common_properties::_MolFileBondCfg);
   }
 }
 
 void invertMolBlockWedgingInfo(ROMol &mol) {
   for (auto b : mol.bonds()) {
     int bond_dir = -1;
-    if (b->getPropIfPresent<int>(common_properties::_MolFileBondStereo,
+    if (b->getProps()->getPropIfPresent<int>(common_properties::_MolFileBondStereo,
                                  bond_dir)) {
       if (bond_dir == 1) {
-        b->setProp<int>(common_properties::_MolFileBondStereo, 6);
+        b->getProps()->setProp<int>(common_properties::_MolFileBondStereo, 6);
       } else if (bond_dir == 6) {
-        b->setProp<int>(common_properties::_MolFileBondStereo, 1);
+        b->getProps()->setProp<int>(common_properties::_MolFileBondStereo, 1);
       }
     }
     int cfg = -1;
-    if (b->getPropIfPresent<int>(common_properties::_MolFileBondCfg, cfg)) {
+    if (b->getProps()->getPropIfPresent<int>(common_properties::_MolFileBondCfg, cfg)) {
       if (cfg == 1) {
-        b->setProp<int>(common_properties::_MolFileBondCfg, 3);
+        b->getProps()->setProp<int>(common_properties::_MolFileBondCfg, 3);
       } else if (cfg == 3) {
-        b->setProp<int>(common_properties::_MolFileBondCfg, 1);
+        b->getProps()->setProp<int>(common_properties::_MolFileBondCfg, 1);
       }
     }
   }

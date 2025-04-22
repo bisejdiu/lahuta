@@ -310,9 +310,9 @@ class AtomCompareFunctor {
       // use the atom-mapping numbers if they were assigned
       int molAtomMapNumber_i = 0;
       int molAtomMapNumber_j = 0;
-      dp_atoms[i].atom->getPropIfPresent(common_properties::molAtomMapNumber,
+      dp_atoms[i].atom->getProps()->getPropIfPresent(common_properties::molAtomMapNumber,
                                          molAtomMapNumber_i);
-      dp_atoms[j].atom->getPropIfPresent(common_properties::molAtomMapNumber,
+      dp_atoms[j].atom->getProps()->getPropIfPresent(common_properties::molAtomMapNumber,
                                          molAtomMapNumber_j);
       if (molAtomMapNumber_i < molAtomMapNumber_j) {
         return -1;
@@ -570,11 +570,11 @@ class ChiralAtomCompareFunctor {
     ivi = 0;
     ivj = 0;
     std::string cipCode;
-    if (dp_atoms[i].atom->getPropIfPresent(common_properties::_CIPCode,
+    if (dp_atoms[i].atom->getProps()->getPropIfPresent(common_properties::_CIPCode,
                                            cipCode)) {
       ivi = cipCode == "R" ? 2 : 1;
     }
-    if (dp_atoms[j].atom->getPropIfPresent(common_properties::_CIPCode,
+    if (dp_atoms[j].atom->getProps()->getPropIfPresent(common_properties::_CIPCode,
                                            cipCode)) {
       ivj = cipCode == "R" ? 2 : 1;
     }

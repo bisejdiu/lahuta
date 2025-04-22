@@ -91,6 +91,9 @@ public:
   template <typename T> 
   static ContiguousMatrix<T> distance(const Vector<T> &points) { return distance(points, points); }
 
+  template <typename T>
+  static ContiguousMatrix<T> distance(const std::vector<std::vector<T>> &points) { return distance(points, points); }
+
   // Compute distances between two sets of points given a cutoff.
   static NSResults search(const Matrix<double> &points1, const Matrix<double> &points2, double cutoff) {
     FastNS grid(points1);

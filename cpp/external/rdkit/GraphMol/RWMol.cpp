@@ -16,7 +16,6 @@
 #include "RWMol.h"
 #include "Atom.h"
 #include "Bond.h"
-#include "BondIterators.h"
 #include "RingInfo.h"
 #include "SubstanceGroup.h"
 
@@ -144,7 +143,7 @@ void RWMol::insertMol(const ROMol &other) {
     addAtom(newAt, updateLabel, takeOwnership);
     // take care of atom-numbering-dependent properties:
     INT_VECT nAtoms;
-    if (newAt->getPropIfPresent(common_properties::_ringStereoAtoms, nAtoms)) {
+    if (newAt->getProps()->getPropIfPresent(common_properties::_ringStereoAtoms, nAtoms)) {
       for (auto &val : nAtoms) {
         if (val < 0) {
           val = -1 * (-val + origNumAtoms);
@@ -152,7 +151,7 @@ void RWMol::insertMol(const ROMol &other) {
           val += origNumAtoms;
         }
       }
-      newAt->setProp(common_properties::_ringStereoAtoms, nAtoms, true);
+      newAt->getProps()->setProp(common_properties::_ringStereoAtoms, nAtoms, true);
     }
   }
 
@@ -205,9 +204,7 @@ void RWMol::insertMol(const ROMol &other) {
 unsigned int RWMol::addAtom(bool updateLabel) {
   auto *atom_p = new Atom();
   atom_p->setOwningMol(this);
-  auto which = boost::add_vertex(d_graph);
-  d_graph[which] = atom_p;
-  atom_p->setIdx(which);
+  auto which = addAtom(atom_p, updateLabel);
   if (updateLabel) {
     clearAtomBookmark(ci_RIGHTMOST_ATOM);
     setAtomBookmark(atom_p, ci_RIGHTMOST_ATOM);
@@ -227,15 +224,16 @@ void RWMol::replaceAtom(unsigned int idx, Atom *atom_pin, bool,
   auto atom_p = atom_pin->copy();
   atom_p->setOwningMol(this);
   atom_p->setIdx(idx);
-  auto vd = boost::vertex(idx, d_graph);
+  auto vd = m_impl->getAtomDegree(idx);
   if (preserveProps) {
     const bool replaceExistingData = false;
-    atom_p->updateProps(*d_graph[vd], replaceExistingData);
+    auto orig_p = m_impl->getAtom(vd);
+    atom_p->getProps()->updateProps(*orig_p->getProps(), replaceExistingData);
   }
 
-  const auto orig_p = d_graph[vd];
+  const auto orig_p = m_impl->getAtom(vd);
   delete orig_p;
-  d_graph[vd] = atom_p;
+  m_impl->setAtom(idx, atom_p);
 
   // handle bookmarks
   for (auto &ab : d_atomBookmarks) {
@@ -270,7 +268,8 @@ void RWMol::replaceBond(unsigned int idx, Bond *bond_pin, bool preserveProps,
   for (unsigned int i = 0; i < idx; i++) {
     ++bIter.first;
   }
-  const auto *obond = d_graph[*(bIter.first)];
+
+  const auto *obond = m_impl->getBond(*bIter.first);
   auto *bond_p = bond_pin->copy();
   bond_p->setOwningMol(this);
   bond_p->setIdx(idx);
@@ -291,12 +290,13 @@ void RWMol::replaceBond(unsigned int idx, Bond *bond_pin, bool preserveProps,
 
   if (preserveProps) {
     const bool replaceExistingData = false;
-    bond_p->updateProps(*d_graph[*(bIter.first)], replaceExistingData);
+    auto orig_p = m_impl->getBond(*bIter.first);
+    bond_p->getProps()->updateProps(*orig_p->getProps(), replaceExistingData);
   }
 
-  const auto orig_p = d_graph[*(bIter.first)];
+  const auto orig_p = m_impl->getBond(*bIter.first);
   delete orig_p;
-  d_graph[*(bIter.first)] = bond_p;
+  m_impl->setBond(*bIter.first, bond_p);
 
   if (!keepSGroups) {
     removeSubstanceGroupsReferencingBond(*this, idx);
@@ -402,8 +402,8 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
   boost::tie(beg, end) = getEdges();
   std::string sprop;
   while (beg != end) {
-    Bond *bond = d_graph[*beg++];
-    if (bond->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
+    Bond *bond = m_impl->getBond(*beg++);
+    if (bond->getProps()->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
                                sprop)) {
       // This would ideally use ParseV3000Array but I'm buggered if I can get
       // the linker to find it.
@@ -428,8 +428,8 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
           --num_ats;
         }
         if (!num_ats) {
-          bond->clearProp(RDKit::common_properties::_MolFileBondEndPts);
-          bond->clearProp(common_properties::_MolFileBondAttach);
+          bond->getProps()->clearProp(RDKit::common_properties::_MolFileBondEndPts);
+          bond->getProps()->clearProp(common_properties::_MolFileBondAttach);
         } else {
           sprop = "(" + std::to_string(num_ats) + " ";
           for (auto &i : oats) {
@@ -439,7 +439,7 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
             sprop += std::to_string(i) + " ";
           }
           sprop[sprop.length() - 1] = ')';
-          bond->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
+          bond->getProps()->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
         }
       }
     }
@@ -477,21 +477,58 @@ void RWMol::removeAtom(Atom *atom, bool clearProps) {
   atom->setOwningMol(nullptr);
 
   // remove all connections to the atom:
-  MolGraph::vertex_descriptor vd = boost::vertex(idx, d_graph);
-  boost::clear_vertex(vd, d_graph);
-  // finally remove the vertex itself
-  boost::remove_vertex(vd, d_graph);
+  m_impl->removeAtom(idx);
   delete atom;
 }
 
 void RWMol::removeAtom(Atom *atom) { removeAtom(atom, true); }
+
+// unsigned int RWMol::addBond(unsigned int atomIdx1, unsigned int atomIdx2,
+//                             Bond::BondType bondType) {
+//   URANGE_CHECK(atomIdx1, getNumAtoms());
+//   URANGE_CHECK(atomIdx2, getNumAtoms());
+//   PRECONDITION(atomIdx1 != atomIdx2, "attempt to add self-bond");
+//   PRECONDITION(!(boost::edge(atomIdx1, atomIdx2, d_graph).second),
+//                "bond already exists");
+// 
+//   auto *b = new Bond(bondType);
+//   b->setOwningMol(this);
+//   if (bondType == Bond::AROMATIC) {
+//     b->setIsAromatic(1);
+//     //
+//     // assume that aromatic bonds connect aromatic atoms
+//     //   This is relevant for file formats like MOL, where there
+//     //   is no such thing as an aromatic atom, but bonds can be
+//     //   marked aromatic.
+//     //
+//     getAtomWithIdx(atomIdx1)->setIsAromatic(1);
+//     getAtomWithIdx(atomIdx2)->setIsAromatic(1);
+//   }
+//   auto [which, ok] = boost::add_edge(atomIdx1, atomIdx2, d_graph);
+//   d_graph[which] = b;
+//   // unsigned int res = rdcast<unsigned int>(boost::num_edges(d_graph));
+//   ++numBonds;
+//   b->setIdx(numBonds - 1);
+//   b->setBeginAtomIdx(atomIdx1);
+//   b->setEndAtomIdx(atomIdx2);
+// 
+//   // if both atoms have a degree>1, reset our ring info structure,
+//   // because there's a non-trivial chance that it's now wrong.
+//   if (dp_ringInfo && dp_ringInfo->isInitialized() &&
+//       boost::out_degree(atomIdx1, d_graph) > 1 &&
+//       boost::out_degree(atomIdx2, d_graph) > 1) {
+//     dp_ringInfo->reset();
+//   }
+// 
+//   return numBonds;  // res;
+// }
 
 unsigned int RWMol::addBond(unsigned int atomIdx1, unsigned int atomIdx2,
                             Bond::BondType bondType) {
   URANGE_CHECK(atomIdx1, getNumAtoms());
   URANGE_CHECK(atomIdx2, getNumAtoms());
   PRECONDITION(atomIdx1 != atomIdx2, "attempt to add self-bond");
-  PRECONDITION(!(boost::edge(atomIdx1, atomIdx2, d_graph).second),
+  PRECONDITION(!(m_impl->getBondBetweenAtoms(atomIdx1, atomIdx2).first),
                "bond already exists");
 
   auto *b = new Bond(bondType);
@@ -507,8 +544,9 @@ unsigned int RWMol::addBond(unsigned int atomIdx1, unsigned int atomIdx2,
     getAtomWithIdx(atomIdx1)->setIsAromatic(1);
     getAtomWithIdx(atomIdx2)->setIsAromatic(1);
   }
-  auto [which, ok] = boost::add_edge(atomIdx1, atomIdx2, d_graph);
-  d_graph[which] = b;
+
+  m_impl->addBond(atomIdx1, atomIdx2, b);
+
   // unsigned int res = rdcast<unsigned int>(boost::num_edges(d_graph));
   ++numBonds;
   b->setIdx(numBonds - 1);
@@ -518,8 +556,8 @@ unsigned int RWMol::addBond(unsigned int atomIdx1, unsigned int atomIdx2,
   // if both atoms have a degree>1, reset our ring info structure,
   // because there's a non-trivial chance that it's now wrong.
   if (dp_ringInfo && dp_ringInfo->isInitialized() &&
-      boost::out_degree(atomIdx1, d_graph) > 1 &&
-      boost::out_degree(atomIdx2, d_graph) > 1) {
+      m_impl->getAtomDegree(atomIdx1) > 1 &&
+      m_impl->getAtomDegree(atomIdx2) > 1) {
     dp_ringInfo->reset();
   }
 
@@ -603,9 +641,7 @@ void RWMol::removeBond(unsigned int aid1, unsigned int aid2) {
   }
   bnd->setOwningMol(nullptr);
 
-  auto vd1 = boost::vertex(bnd->getBeginAtomIdx(), d_graph);
-  auto vd2 = boost::vertex(bnd->getEndAtomIdx(), d_graph);
-  boost::remove_edge(vd1, vd2, d_graph);
+  m_impl->removeBond(bnd->getBeginAtomIdx(), bnd->getEndAtomIdx());
   delete bnd;
   --numBonds;
 }
@@ -724,9 +760,7 @@ void RWMol::batchRemoveBonds() {
 
     bnd->setOwningMol(nullptr);
 
-    auto vd1 = boost::vertex(bnd->getBeginAtomIdx(), d_graph);
-    auto vd2 = boost::vertex(bnd->getEndAtomIdx(), d_graph);
-    boost::remove_edge(vd1, vd2, d_graph);
+    m_impl->removeBond(bnd->getBeginAtomIdx(), bnd->getEndAtomIdx());
     delete bnd;
     --numBonds;
   }
@@ -783,8 +817,8 @@ void RWMol::batchRemoveAtoms() {
     boost::tie(beg, end) = getEdges();
     std::string sprop;
     while (beg != end) {
-      Bond *bond = d_graph[*beg++];
-      if (bond->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
+      Bond *bond = m_impl->getBond(*beg++);
+      if (bond->getProps()->getPropIfPresent(RDKit::common_properties::_MolFileBondEndPts,
                                  sprop)) {
         // This would ideally use ParseV3000Array but I'm buggered if I can get
         // the linker to find it.
@@ -809,8 +843,8 @@ void RWMol::batchRemoveAtoms() {
             --num_ats;
           }
           if (!num_ats) {
-            bond->clearProp(RDKit::common_properties::_MolFileBondEndPts);
-            bond->clearProp(common_properties::_MolFileBondAttach);
+            bond->getProps()->clearProp(RDKit::common_properties::_MolFileBondEndPts);
+            bond->getProps()->clearProp(common_properties::_MolFileBondAttach);
           } else {
             sprop = "(" + std::to_string(num_ats) + " ";
             for (auto &i : oats) {
@@ -820,7 +854,7 @@ void RWMol::batchRemoveAtoms() {
               sprop += std::to_string(i) + " ";
             }
             sprop[sprop.length() - 1] = ')';
-            bond->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
+            bond->getProps()->setProp(RDKit::common_properties::_MolFileBondEndPts, sprop);
           }
         }
       }
@@ -833,10 +867,7 @@ void RWMol::batchRemoveAtoms() {
     atom->setOwningMol(nullptr);
 
     // remove all connections to the atom:
-    MolGraph::vertex_descriptor vd = boost::vertex(idx, d_graph);
-    boost::clear_vertex(vd, d_graph);
-    // finally remove the vertex itself
-    boost::remove_vertex(vd, d_graph);
+    m_impl->removeAtom(idx);
     delete atom;
     oldIndices[idx] = nullptr;
   }

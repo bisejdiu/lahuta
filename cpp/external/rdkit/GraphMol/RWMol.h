@@ -18,7 +18,6 @@
 
 // our stuff
 #include "ROMol.h"
-#include "RingInfo.h"
 
 namespace RDKit {
 
@@ -43,6 +42,12 @@ class RWMol : public ROMol {
   RWMol(const ROMol &other, bool quickCopy = false, int confId = -1)
       : ROMol(other, quickCopy, confId) {}
   RWMol(const RWMol &other) : ROMol(other) {}
+  RWMol(
+      const std::vector<Atom *> &atoms,
+      const std::vector<std::pair<size_t, size_t>> &edge_list,
+      const std::vector<Bond *> &edge_props, GraphType type = GraphType::CSRMolGraph)
+      : ROMol(atoms, edge_list, edge_props, type) {}
+
   RWMol &operator=(const RWMol &);
   RWMol(RWMol &&other) noexcept : ROMol(std::move(other)) {}
   RWMol &operator=(RWMol &&other) noexcept {
@@ -140,6 +145,10 @@ class RWMol : public ROMol {
   */
   unsigned int addBond(Bond *bond, bool takeOwnership = false) {
     return ROMol::addBond(bond, takeOwnership);
+  }
+
+  unsigned int addBonds(std::vector<Bond *> &bond) {
+    return ROMol::addBonds(bond);
   }
 
   //! starts a Bond and sets its beginAtomIdx

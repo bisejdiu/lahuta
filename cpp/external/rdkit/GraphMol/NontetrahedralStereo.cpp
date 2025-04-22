@@ -252,7 +252,7 @@ int isTrigonalBipyramidalAxialBond(const Atom *cen, const Bond *qry) {
     return false;
   }
   unsigned int perm = 0;
-  cen->getPropIfPresent(RDKit::common_properties::_chiralPermutation, perm);
+  cen->getProps()->getPropIfPresent(RDKit::common_properties::_chiralPermutation, perm);
   if (perm == 0 || perm > 20) return 0;
 
   unsigned int count = 0;
@@ -308,7 +308,7 @@ Bond *getChiralAcrossBond(const Atom *cen, const Bond *qry) {
   }
 
   unsigned int perm = 0;
-  cen->getPropIfPresent(common_properties::_chiralPermutation, perm);
+  cen->getProps()->getPropIfPresent(common_properties::_chiralPermutation, perm);
   if (!perm) {
     return nullptr;
   }
@@ -435,7 +435,7 @@ Bond *getTrigonalBipyramidalAxialBond(const Atom *cen, int axial) {
     return nullptr;
 
   unsigned int perm = 0;
-  cen->getPropIfPresent(RDKit::common_properties::_chiralPermutation, perm);
+  cen->getProps()->getPropIfPresent(RDKit::common_properties::_chiralPermutation, perm);
   if (perm == 0 || perm > 20) return 0;
 
   unsigned int idx = (axial != -1) ? trigonalbipyramidal_axial[perm][0]
@@ -471,7 +471,7 @@ unsigned int getChiralPermutation(const Atom *cen, const INT_LIST &probe) {
   PRECONDITION(cen->hasOwningMol(), "no owning mol");
 
   int perm;
-  if (!cen->getPropIfPresent(common_properties::_chiralPermutation, perm) ||
+  if (!cen->getProps()->getPropIfPresent(common_properties::_chiralPermutation, perm) ||
       perm <= 0) {
     return 0;
   }

@@ -3,6 +3,12 @@ project(lahuta VERSION 1.0.0 LANGUAGES CXX C)
 
 include(GNUInstallDirs)  # for CMAKE_INSTALL_LIBDIR, etc
 
+set(HWY_ENABLE_TESTS OFF CACHE BOOL "Enable HWY tests" FORCE)
+set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "Disable highway examples" FORCE)
+set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks" FORCE)
+set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "Disable highway contrib targets" FORCE)
+set(HWY_ENABLE_INSTALL OFF CACHE BOOL "Disable highway install targets" FORCE)
+
 if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
   # we set wheel.install-dir="/data" in pyproject.toml,
   # so here we need to only set paths to /platlib and /scripts
@@ -71,28 +77,35 @@ if(NOT DEFINED BOOST_ROOT)
     endif()
 endif()
 
+ADD_LIBRARY(lmdb STATIC
+    ${CMAKE_SOURCE_DIR}/external/lmdb/mdb.c
+    ${CMAKE_SOURCE_DIR}/external/lmdb/midl.c
+)
+
+set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
+TARGET_INCLUDE_DIRECTORIES(lmdb PUBLIC ${CMAKE_SOURCE_DIR}/external)
 
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
 add_subdirectory(external/foldseek)
+add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
-add_dependencies(foldseek gemmi_cpp)
-
+# set(CMAKE_BUILD_TYPE Debug)
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
             src/contacts/geometry.cpp src/contacts/charges.cpp src/topology.cpp
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
-            src/entities.cpp src/luni_props.cpp src/logging.cpp
-            src/contacts/metals.cpp 
+            src/entities.cpp src/luni_props.cpp src/logging.cpp src/models/topology.cpp
+            src/contacts/metals.cpp src/models/parser.cpp external/mmap/MemoryMapped.cpp
             src/contacts/interactions.cpp src/valence_model.cpp src/contacts/groups.cpp
             src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb)
 
 find_package(Eigen3 QUIET)
 if(USE_EIGEN3)
@@ -103,11 +116,12 @@ if(USE_EIGEN3)
 endif()
 
 target_include_directories(lahuta_cpp PUBLIC
-  ${CMAKE_SOURCE_DIR}/include # our headers
-  ${CMAKE_SOURCE_DIR}/external # for external headers
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/external
   ${CMAKE_SOURCE_DIR}/external/foldseek
-  ${CMAKE_SOURCE_DIR}/external/gemmi/include # for gemmi headers
-  ${CMAKE_SOURCE_DIR}/external/distopia/include # for distopia headers
+  ${CMAKE_SOURCE_DIR}/external/gemmi/include
+  ${CMAKE_SOURCE_DIR}/external/distopia/include
+  ${CMAKE_SOURCE_DIR}/external/lmdb
 )
 
 add_library(lahuta_shared_headers INTERFACE)
@@ -146,32 +160,8 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 add_lahuta_executable(lex_fseek main_fseek.cpp)
 add_lahuta_executable(lex_fut main_future.cpp)
 add_lahuta_executable(lex_align main_align.cpp)
-
-# file(WRITE ${CMAKE_BINARY_DIR}/debug.entitlements
-# [=[<?xml version="1.0" encoding="UTF-8"?>
-# <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-# <plist version="1.0">
-# <dict>
-#     <key>com.apple.security.get-task-allow</key>
-#     <true/>
-# </dict>
-# </plist>]=])
-#
-# add_custom_command(
-#     TARGET lex_parallel
-#     POST_BUILD
-#     COMMAND codesign --force --sign - --entitlements ${CMAKE_BINARY_DIR}/debug.entitlements $<TARGET_FILE:lex_parallel>
-#     COMMENT "Signing binary with debug entitlements"
-# )
-# add_custom_command(
-#     TARGET lex_fut
-#     POST_BUILD
-#     COMMAND codesign --force --sign - --entitlements ${CMAKE_BINARY_DIR}/debug.entitlements $<TARGET_FILE:lex_fut>
-#     COMMENT "Signing binary with debug entitlements"
-# )
-
-# target_link_libraries(lex_parallel PRIVATE ${JEMALLOC_LIB})
-
+add_lahuta_executable(create_db create_db.cpp)
+add_lahuta_executable(read_db read_db.cpp)
 
 ### Python bindings ###
 if (USE_PYTHON)

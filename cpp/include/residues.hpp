@@ -19,6 +19,7 @@ struct Residue {
       : chain_id(chain), number(num), name(name), alt_loc(alt) {}
   /*Residue(const std::string &chain, int num, const std::string &name, bool has_alt_loc)*/
   /*    : chain_id(chain), number(num), name(name), has_alt_loc_(has_alt_loc) {}*/
+  // FIX: add a constructor from AtomPDBResidueInfo
 };
 
 class Residues {

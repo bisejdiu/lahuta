@@ -1562,7 +1562,7 @@ yyreduce:
       molList->resize(sz + 1);
       (*molList)[sz] = new RWMol();
       RDKit::RWMol *curMol = (*molList)[sz];
-      (yyvsp[0].atom)->setProp(RDKit::common_properties::_SmilesStart, 1);
+      (yyvsp[0].atom)->getProps()->setProp(RDKit::common_properties::_SmilesStart, 1);
       curMol->addAtom((yyvsp[0].atom), true, true);
       // delete $1;
       (yyval.moli) = sz;
@@ -1581,7 +1581,7 @@ yyreduce:
                   SmilesParseOps::GetUnspecifiedBondType(
                       mp, a1, mp->getAtomWithIdx(atomIdx2)));
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $2;
     }
 #line 1691 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1605,7 +1605,7 @@ yyreduce:
         (yyvsp[-1].bond)->setBeginAtomIdx(atomIdx1);
         (yyvsp[-1].bond)->setEndAtomIdx(atomIdx2);
       }
-      (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx", numBondsParsed++);
+      (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       mp->addBond((yyvsp[-1].bond), true);
       // delete $3;
     }
@@ -1620,7 +1620,7 @@ yyreduce:
       int atomIdx2 = mp->addAtom((yyvsp[0].atom), true, true);
       mp->addBond(atomIdx1, atomIdx2, Bond::SINGLE);
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $3;
     }
 #line 1729 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1630,7 +1630,7 @@ yyreduce:
 #line 214 "smiles.yy"
     {
       RWMol *mp = (*molList)[(yyval.moli)];
-      (yyvsp[0].atom)->setProp(RDKit::common_properties::_SmilesStart, 1, true);
+      (yyvsp[0].atom)->getProps()->setProp(RDKit::common_properties::_SmilesStart, 1, true);
       mp->addAtom((yyvsp[0].atom), true, true);
     }
 #line 1739 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1645,17 +1645,17 @@ yyreduce:
 
       Bond *newB = mp->createPartialBond(atom->getIdx(), Bond::UNSPECIFIED);
       mp->setBondBookmark(newB, (yyvsp[0].ival));
-      newB->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
+      newB->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
       if (!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size() % 2)) {
-        newB->setProp("_cxsmilesBondIdx", numBondsParsed++);
+        newB->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       }
 
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
 
       INT_VECT tmp;
-      atom->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
       tmp.push_back(-((yyvsp[0].ival) + 1));
-      atom->setProp(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->setProp(RDKit::common_properties::_RingClosures, tmp);
     }
 #line 1764 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
@@ -1668,22 +1668,22 @@ yyreduce:
       Bond *newB = mp->createPartialBond(atom->getIdx(),
                                          (yyvsp[-1].bond)->getBondType());
       if ((yyvsp[-1].bond)
-              ->hasProp(RDKit::common_properties::_unspecifiedOrder)) {
-        newB->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
+              ->getProps()->hasProp(RDKit::common_properties::_unspecifiedOrder)) {
+        newB->getProps()->setProp(RDKit::common_properties::_unspecifiedOrder, 1);
       }
       newB->setBondDir((yyvsp[-1].bond)->getBondDir());
       mp->setAtomBookmark(atom, (yyvsp[0].ival));
       mp->setBondBookmark(newB, (yyvsp[0].ival));
       if (!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size() % 2)) {
-        newB->setProp("_cxsmilesBondIdx", numBondsParsed++);
+        newB->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       }
 
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
 
       INT_VECT tmp;
-      atom->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
       tmp.push_back(-((yyvsp[0].ival) + 1));
-      atom->setProp(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->setProp(RDKit::common_properties::_RingClosures, tmp);
       delete (yyvsp[-1].bond);
     }
 #line 1792 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1698,15 +1698,15 @@ yyreduce:
       mp->setAtomBookmark(atom, (yyvsp[0].ival));
       mp->setBondBookmark(newB, (yyvsp[0].ival));
       if (!(mp->getAllBondsWithBookmark((yyvsp[0].ival)).size() % 2)) {
-        newB->setProp("_cxsmilesBondIdx", numBondsParsed++);
+        newB->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       }
 
       SmilesParseOps::CheckRingClosureBranchStatus(atom, mp);
 
       INT_VECT tmp;
-      atom->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->getPropIfPresent(RDKit::common_properties::_RingClosures, tmp);
       tmp.push_back(-((yyvsp[0].ival) + 1));
-      atom->setProp(RDKit::common_properties::_RingClosures, tmp);
+      atom->getProps()->setProp(RDKit::common_properties::_RingClosures, tmp);
     }
 #line 1815 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
@@ -1722,7 +1722,7 @@ yyreduce:
                   SmilesParseOps::GetUnspecifiedBondType(
                       mp, a1, mp->getAtomWithIdx(atomIdx2)));
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $3;
       branchPoints->push_back(atomIdx1);
     }
@@ -1747,7 +1747,7 @@ yyreduce:
         (yyvsp[-1].bond)->setBeginAtomIdx(atomIdx1);
         (yyvsp[-1].bond)->setEndAtomIdx(atomIdx2);
       }
-      (yyvsp[-1].bond)->setProp("_cxsmilesBondIdx", numBondsParsed++);
+      (yyvsp[-1].bond)->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       mp->addBond((yyvsp[-1].bond), true);
 
       // delete $4;
@@ -1764,7 +1764,7 @@ yyreduce:
       int atomIdx2 = mp->addAtom((yyvsp[0].atom), true, true);
       mp->addBond(atomIdx1, atomIdx2, Bond::SINGLE);
       mp->getBondBetweenAtoms(atomIdx1, atomIdx2)
-          ->setProp("_cxsmilesBondIdx", numBondsParsed++);
+          ->getProps()->setProp("_cxsmilesBondIdx", numBondsParsed++);
       // delete $4;
       branchPoints->push_back(atomIdx1);
     }
@@ -1801,7 +1801,7 @@ yyreduce:
       (yyval.atom) = (yyvsp[-3].atom);
       (yyval.atom)->setNoImplicit(true);
       (yyval.atom)
-          ->setProp(RDKit::common_properties::molAtomMapNumber,
+          ->getProps()->setProp(RDKit::common_properties::molAtomMapNumber,
                     (yyvsp[-1].ival));
     }
 #line 1905 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
@@ -1957,7 +1957,7 @@ yyreduce:
 #line 386 "smiles.yy"
     {
       (yyvsp[-1].atom)->setChiralTag((yyvsp[0].chiraltype));
-      (yyvsp[-1].atom)->setProp(common_properties::_chiralPermutation, 0);
+      (yyvsp[-1].atom)->getProps()->setProp(common_properties::_chiralPermutation, 0);
     }
 #line 2016 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
@@ -1967,7 +1967,7 @@ yyreduce:
     {
       (yyvsp[-2].atom)->setChiralTag((yyvsp[-1].chiraltype));
       (yyvsp[-2].atom)
-          ->setProp(common_properties::_chiralPermutation, (yyvsp[0].ival));
+          ->getProps()->setProp(common_properties::_chiralPermutation, (yyvsp[0].ival));
     }
 #line 2022 "/scratch/RDKit_git/Code/GraphMol/SmilesParse/smiles.tab.cpp"
     break;
