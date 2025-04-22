@@ -91,7 +91,10 @@ add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
-# set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
             src/contacts/geometry.cpp src/contacts/charges.cpp src/topology.cpp
@@ -102,6 +105,10 @@ add_library(lahuta_cpp STATIC
             src/contacts/metals.cpp src/models/parser.cpp external/mmap/MemoryMapped.cpp
             src/contacts/interactions.cpp src/valence_model.cpp src/contacts/groups.cpp
             src/ob/kekulize.cpp src/ob/clean_mol.cpp src/ob/bitvec.cpp
+
+            src/mapping/bitset_mapping.cpp
+            src/mapping/mapping_matrix.cpp
+            src/mapping/residue_set.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -128,6 +135,7 @@ add_library(lahuta_shared_headers INTERFACE)
 target_include_directories(lahuta_shared_headers INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/include/fseek
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
+  ${CMAKE_CURRENT_SOURCE_DIR}/examples
 )
 
 if(TARGET Eigen3::Eigen)
@@ -162,6 +170,13 @@ add_lahuta_executable(lex_fut main_future.cpp)
 add_lahuta_executable(lex_align main_align.cpp)
 add_lahuta_executable(create_db create_db.cpp)
 add_lahuta_executable(read_db read_db.cpp)
+
+# Build examples
+file(GLOB EXAMPLE_SOURCES ${CMAKE_SOURCE_DIR}/examples/*.cpp)
+foreach(example_source ${EXAMPLE_SOURCES})
+    get_filename_component(example_name ${example_source} NAME_WE)
+    add_lahuta_executable(${example_name} ${example_source})
+endforeach()
 
 ### Python bindings ###
 if (USE_PYTHON)

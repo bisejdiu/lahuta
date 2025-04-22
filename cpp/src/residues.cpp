@@ -90,6 +90,10 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
     residues[residue_index_map[key]].atoms.push_back(atom);
   }
 
+  for (std::size_t i = 0; i < residues.size(); ++i) {
+    residues[i].idx = static_cast<unsigned>(i);
+  }
+
   // residues are in the order how they are inserted into the map
   residues_ = std::move(residues);
   status = true;

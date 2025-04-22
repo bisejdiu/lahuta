@@ -264,12 +264,12 @@ int main() {
 
   /*Logger::get_instance().set_log_level(Logger::LogLevel::Info);*/
 
-  std::string dir = "/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP";
+  /*std::string dir = "/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP";*/
   /*std::string dir = "/Users/bsejdiu/data/gpcrs/small/a";*/
   /*std::string dir = "/Users/bsejdiu/data/mini_pdb_uncomp";*/
 
-  DirectoryHandler dir_handler(dir, ".cif", /* recursive= */ true);
-  std::vector<std::string> pdb_targets = dir_handler.get_all_files();
+  // DirectoryHandler dir_handler(dir, ".cif", /* recursive= */ true);
+  // std::vector<std::string> pdb_targets = dir_handler.get_all_files();
 
   std::vector<std::string> query_files_t = {
       "/Users/bsejdiu/progs/foldseek/build/src/test/4nc3.cif",
@@ -279,6 +279,7 @@ int main() {
 
   std::vector<std::string> target_files = {
       "/Users/bsejdiu/data/gpcrs/small/b/2r4r.cif",
+      "/Users/bsejdiu/progs/foldseek/build/src/test/4ami.cif",
       /*"/Users/bsejdiu/data/gpcrs/small/b/2r4s.cif",*/
       /*"/Users/bsejdiu/data/gpcrs/small/b/3nya.cif",*/
       "/Users/bsejdiu/data/gpcrs/small/b/8jj8.cif"

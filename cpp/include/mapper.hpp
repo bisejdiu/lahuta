@@ -72,7 +72,7 @@ private:
     _map_.assign(mol.getNumAtoms(), std::nullopt);
 
     int start = (type_ == MappingType::Query) ? res.qStartPos : res.dbStartPos;
-    int end = (type_ == MappingType::Query) ? res.qEndPos : res.dbEndPos;
+    int end   = (type_ == MappingType::Query) ? res.qEndPos   : res.dbEndPos;
 
     BacktraceParser parser{res.backtrace};
 
