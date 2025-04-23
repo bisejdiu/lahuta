@@ -6,6 +6,7 @@
 
 namespace lahuta {
 
+// TODO: 1. add a constructor from AtomPDBResidueInfo
 struct Residue {
   std::string chain_id;
   int number;
@@ -13,15 +14,27 @@ struct Residue {
   std::string alt_loc;
   /*bool has_alt_loc_;*/
   std::vector<const RDKit::Atom *> atoms;
+  unsigned int idx = 0;
 
   Residue() = default;
   Residue(const std::string &chain, int num, const std::string &name, const std::string &alt)
       : chain_id(chain), number(num), name(name), alt_loc(alt) {}
   /*Residue(const std::string &chain, int num, const std::string &name, bool has_alt_loc)*/
   /*    : chain_id(chain), number(num), name(name), has_alt_loc_(has_alt_loc) {}*/
-  // FIX: add a constructor from AtomPDBResidueInfo
+
+  bool operator==(const Residue &other) const {
+    return chain_id == other.chain_id && number == other.number && name == other.name && alt_loc == other.alt_loc;
+  }
+
+  bool operator!=(const Residue &other) const {
+    return !(*this == other);
+  }
+
 };
 
+// TODO: 1. To get the residues from the topology, we end up calling `get_residues().get_residues()`
+//          Maybe just provide direct const access to the residues_ vector?
+//       2. Add support for operator[] to get a residue by index
 class Residues {
 public:
   explicit Residues(const RDKit::RWMol &mol) : mol_(mol) {}
@@ -65,6 +78,8 @@ public:
   typedef std::vector<Residue>::const_iterator const_iterator;
   const_iterator begin() const { return residues_.begin(); }
   const_iterator end() const { return residues_.end(); }
+  size_t size() const { return residues_.size(); }
+
 
   /// approximate total memory size
   std::size_t total_size() const;

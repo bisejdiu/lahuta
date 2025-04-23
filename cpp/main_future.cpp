@@ -272,9 +272,9 @@ int main() {
   std::cout << "STARTING" << std::endl;
   /*DirectoryHandler dir_handler("/Users/bsejdiu/data/PDB_ARCHIVE_UNCOMP", ".cif", true);*/
   /*DirectoryHandler dir_handler("/Users/bsejdiu/data/mini_pdb_uncomp", ".cif", true);*/
-  DirectoryHandler dir_handler("/Users/bsejdiu/data/gpcrs/small/a", ".cif", true);
+  // DirectoryHandler dir_handler("/Users/bsejdiu/data/gpcrs/small/a", ".cif", true);
 
-  auto pdb_targets = dir_handler.get_all_files();
+  // auto pdb_targets = dir_handler.get_all_files();
 
   try {
     std::vector<std::string> query_files = {

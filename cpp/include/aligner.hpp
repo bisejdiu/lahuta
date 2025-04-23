@@ -125,6 +125,7 @@ private:
   }
 
   void process_sequences() {
+    auto start = std::chrono::high_resolution_clock::now();
     for (auto &query : queries) {
       if (pf_ops_.use_prefilter) {
         Hits hits = seq_filter->filter(query);
@@ -133,6 +134,10 @@ private:
         process_alignments(query, targets);
       }
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto dur = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    Logger::get_logger()->info("Ali Processing time: {} us", dur);
   }
 
   template <typename TargetType>
