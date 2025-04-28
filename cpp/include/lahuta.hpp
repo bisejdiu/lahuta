@@ -187,7 +187,6 @@ private:
 
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
   const Topology* get_topology_ptr() const;
-  void read_structure();
 
   template <typename T>
   std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
