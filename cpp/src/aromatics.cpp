@@ -2,7 +2,7 @@
 #include "GraphMol/MolOps.h"
 #include "GraphMol/Rings.h"
 #include "common.hpp"
-#include "convert.hpp"
+#include "selections/mol_filters.hpp"
 #include "definitions.hpp"
 #include "logging.hpp"
 #include "planarity.hpp"

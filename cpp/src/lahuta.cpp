@@ -5,6 +5,7 @@
 #include "models/parser.hpp"
 #include "models/topology.hpp"
 #include "nsgrid.hpp"
+#include "selections/mol_filters.hpp"
 #include <string>
 
 namespace lahuta {
@@ -15,11 +16,12 @@ Luni::Luni(std::string file_name) : file_name_(file_name) {
 }
 
 Luni Luni::create(const gemmi::Structure &st) {
-  auto mol = std::make_shared<RDKit::RWMol>();
-  RDKit::Conformer *conformer = new RDKit::Conformer();
-  create_RDKit_repr(*mol, st, *conformer, false);
-  mol->updatePropertyCache(false);
-  mol->addConformer(conformer, true);
+  /*auto mol = std::make_shared<RDKit::RWMol>();*/
+  /*RDKit::Conformer *conformer = new RDKit::Conformer();*/
+  /*create_RDKit_repr(*mol, st, *conformer, false);*/
+  /*mol->updatePropertyCache(false);*/
+  /*mol->addConformer(conformer, true);*/
+  auto mol = create_RDKit(st);
   return Luni(mol);
 }
 
@@ -104,7 +106,7 @@ void Luni::read_structure() {
 
   auto start2 = std::chrono::high_resolution_clock::now();
   RDKit::Conformer *conformer = new RDKit::Conformer();
-  create_RDKit_repr(*mol, st, *conformer, false);
+  create_RDKit_repr(*mol, st, *conformer);
   mol->updatePropertyCache(false);
   mol->addConformer(conformer, true);
   auto end2 = std::chrono::high_resolution_clock::now();
