@@ -19,11 +19,7 @@ struct BondKernel {
   template <typename DataT>
   static ComputationResult
   execute(const DataContext<DataT, Mut::ReadOnly> &context, const BondComputationParams &params);
-
-private:
-  static void cleanup_predef(RDKit::RWMol &mol);
-  static void cleanup(RDKit::RWMol &mol);
-  static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
+  static void fix_bonds(RDKit::RWMol &mol);
 };
 
 struct NonStandardBondKernel {
@@ -32,7 +28,6 @@ struct NonStandardBondKernel {
   execute(const DataContext<DataT, Mut::ReadOnly> &context, const NonStandardBondComputationParams &params);
 
 private:
-  static void cleanup(RDKit::RWMol &mol);
   static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
 };
 

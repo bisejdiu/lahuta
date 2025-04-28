@@ -29,7 +29,7 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
 
     mol.updatePropertyCache(false);
     RDKit::MolOps::setHybridization(mol);
-    cleanup_predef(mol);
+    fix_bonds(mol);
 
     return ComputationResult(result);
   } catch (const std::exception &e) {
@@ -37,39 +37,12 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
   }
 }
 
-void BondKernel::cleanup_predef(RDKit::RWMol &mol) {
+void BondKernel::fix_bonds(RDKit::RWMol &mol) {
   for (auto atom : mol.atoms()) {
     atom->calcExplicitValence(false);
     // correct four-valent neutral N -> N+
     if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 && atom->getExplicitValence() == 4) {
       atom->setFormalCharge(1);
-    }
-  }
-}
-
-void BondKernel::cleanup(RDKit::RWMol &mol) {
-  cleanup_predef(mol);
-
-  bool include_dative_bonds = true;
-  RDKit::MolOps::symmetrizeSSSR(mol, include_dative_bonds);
-  RDKit::MolOps::setAromaticity(mol);
-}
-
-void BondKernel::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
-  for (const auto &bond : source.bonds()) {
-    int bIdx = index_map[bond->getBeginAtomIdx()];
-    int eIdx = index_map[bond->getEndAtomIdx()];
-    if (target.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
-      auto a = target.getAtomWithIdx(bIdx);
-      auto b = target.getAtomWithIdx(eIdx);
-      int is_a_h = a->getAtomicNum() == 1;
-      int is_b_h = b->getAtomicNum() == 1;
-
-      if (is_a_h ^ is_b_h) {
-        auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
-        non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
-      }
-      target.addBond(bIdx, eIdx, bond->getBondType());
     }
   }
 }
@@ -91,9 +64,14 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
 
     if (!result.has_unlisted_resnames) return ComputationResult(true);
 
+    // NOTE: unclear if these should be free functions, but merge_bonds and fix_bonds not
     clean_bonds(result.mol, result.mol.getConformer());
     perceive_bond_orders_obabel(result.mol);
-    cleanup(result.mol);
+    BondKernel::fix_bonds(result.mol);
+
+    bool include_dative_bonds = true;
+    RDKit::MolOps::symmetrizeSSSR(result.mol, include_dative_bonds);
+    RDKit::MolOps::setAromaticity(result.mol);
 
     // Merge into the original molecule
     merge_bonds(mol, result.mol, result.atom_indices);
@@ -104,27 +82,13 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
   }
 }
 
-void NonStandardBondKernel::cleanup(RDKit::RWMol &mol) {
-  for (auto atom : mol.atoms()) {
-    atom->calcExplicitValence(false);
-    // correct four-valent neutral N -> N+
-    if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 && atom->getExplicitValence() == 4) {
-      atom->setFormalCharge(1);
-    }
-  }
-
-  bool include_dative_bonds = true;
-  RDKit::MolOps::symmetrizeSSSR(mol, include_dative_bonds);
-  RDKit::MolOps::setAromaticity(mol);
-}
-
 void NonStandardBondKernel::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
   for (const auto &bond : source.bonds()) {
-    int bIdx = index_map[bond->getBeginAtomIdx()];
-    int eIdx = index_map[bond->getEndAtomIdx()];
-    if (target.getBondBetweenAtoms(bIdx, eIdx) == nullptr) {
-      auto a = target.getAtomWithIdx(bIdx);
-      auto b = target.getAtomWithIdx(eIdx);
+    int b_idx = index_map[bond->getBeginAtomIdx()];
+    int e_idx = index_map[bond->getEndAtomIdx()];
+    if (target.getBondBetweenAtoms(b_idx, e_idx) == nullptr) {
+      auto a = target.getAtomWithIdx(b_idx);
+      auto b = target.getAtomWithIdx(e_idx);
       int is_a_h = a->getAtomicNum() == 1;
       int is_b_h = b->getAtomicNum() == 1;
 
@@ -132,7 +96,7 @@ void NonStandardBondKernel::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &sour
         auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
         non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
       }
-      target.addBond(bIdx, eIdx, bond->getBondType());
+      target.addBond(b_idx, e_idx, bond->getBondType());
     }
   }
 }
