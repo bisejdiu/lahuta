@@ -82,7 +82,7 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   add_rings_to_mol(mol, rings);
 
   // if (spdlog::should_log(spdlog::level::debug)) {
-  if (true) {
+  if (true) { // FIX: 
     auto unk_res = residues.filter(std::not_fn(definitions::is_predefined));
 
     std::unordered_map<std::string, int> residue_counts;

@@ -111,8 +111,11 @@ add_library(lahuta_cpp STATIC
             src/mapping/residue_set.cpp
 
             src/topology/engine.cpp
-            src/topology/kernels.cpp
-
+            src/topology/kernels/neighbors.cpp
+            src/topology/kernels/bonds.cpp
+            src/topology/kernels/rings.cpp
+            src/topology/kernels/residues.cpp
+            src/topology/kernels/atom_typing.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -179,6 +182,7 @@ add_lahuta_executable(lex main.cpp)
 # add_lahuta_executable(topo_flags2 topology_deps_test.cpp)
 add_lahuta_executable(dep_test dependency_test.cpp)
 # add_lahuta_executable(cir_dep_test cir_dep_test.cpp)
+add_lahuta_executable(cir_dep_test compute_circular_deps.cpp)
 # add_lahuta_executable(cpx_dep_test complex_data_test.cpp)
 
 # Build examples

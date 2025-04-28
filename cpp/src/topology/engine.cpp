@@ -5,17 +5,14 @@
 namespace lahuta::topology {
 
 void TopologyEngine::initialize(const TopologyBuildingOptions &opts) {
-  // Set parameter values based on options
   if (auto* params = get_parameters<NeighborSearchParams>(NeighborSearchComputation<>::label)) {
     params->cutoff = opts.cutoff;
   }
-  
   if (auto* params = get_parameters<AtomTypingParams>(AtomTypingComputation<>::label)) {
     params->use_molstar = (opts.atom_typing_method == ContactComputerType::Molstar);
   }
-  
-  // Enable or disable computations based on the options
-  // Currently, all computations are enabled by default
+  // TODO: we need to rethink how parameters are set and handled
+  // Also, I notice, the syntax is a bit verbose.
 }
 
 } // namespace lahuta::topology

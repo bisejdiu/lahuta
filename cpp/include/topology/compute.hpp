@@ -42,7 +42,7 @@ class ResidueComputation : public KernelizedRWComputation<
     ResidueComputation<DataT>> {
 public:
     constexpr static const ComputationLabel label{"residues"};
-    using dependencies = Dependencies<Dependency<BondComputation<DataT>, bool>>;
+    using dependencies = NoDependencies;
     using ResidueComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
@@ -54,7 +54,8 @@ class RingComputation : public KernelizedRWComputation<
     RingComputation<DataT>> {
 public:
     constexpr static const ComputationLabel label{"rings"};
-    using dependencies = Dependencies<Dependency<BondComputation<DataT>, bool>>;
+    using dependencies = Dependencies<Dependency<BondComputation<DataT>,    bool>,
+                                      Dependency<ResidueComputation<DataT>, bool>>;
     using RingComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
