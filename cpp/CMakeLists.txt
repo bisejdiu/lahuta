@@ -171,7 +171,7 @@ endfunction()
 # target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
 
 add_lahuta_executable(lex main.cpp)
-# add_lahuta_executable(lex_parallel main_threads.cpp)
+add_lahuta_executable(lex_parallel main_threads.cpp)
 # add_lahuta_executable(lex_fseek main_fseek.cpp)
 # add_lahuta_executable(lex_fut main_future.cpp)
 # add_lahuta_executable(lex_align main_align.cpp)

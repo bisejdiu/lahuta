@@ -18,7 +18,7 @@ struct NeighborSearchKernel {
 struct BondKernel {
   template <typename DataT>
   static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const BondComputationParams &params);
+  execute(const DataContext<DataT, Mut::ReadOnly> &context, const BondComputationParams &params);
 
 private:
   static void cleanup_predef(RDKit::RWMol &mol);
@@ -26,16 +26,26 @@ private:
   static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
 };
 
+struct NonStandardBondKernel {
+  template <typename DataT>
+  static ComputationResult
+  execute(const DataContext<DataT, Mut::ReadOnly> &context, const NonStandardBondComputationParams &params);
+
+private:
+  static void cleanup(RDKit::RWMol &mol);
+  static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
+};
+
 struct ResidueKernel {
   template <typename DataT>
   static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ResidueComputationParams &params);
+  execute(const DataContext<DataT, Mut::ReadOnly> &context, const ResidueComputationParams &params);
 };
 
 struct RingKernel {
   template <typename DataT>
   static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const RingComputationParams &params);
+  execute(const DataContext<DataT, Mut::ReadOnly> &context, const RingComputationParams &params);
 };
 
 struct AtomTypingKernel {

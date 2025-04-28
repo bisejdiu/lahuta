@@ -25,11 +25,12 @@ public:
 
     engine_->set_auto_heal(true); // TODO: replace with TopologyBuildingOptions parameter
 
-    engine_->enable(NeighborSearchComputation<>::label, true);
-    engine_->enable(BondComputation<>          ::label, true);
-    engine_->enable(ResidueComputation<>       ::label, true);
-    engine_->enable(RingComputation<>          ::label, true);
-    engine_->enable(AtomTypingComputation<>    ::label, true);
+    engine_->enable(NeighborSearchComputation<> ::label, true);
+    engine_->enable(BondComputation<>           ::label, true);
+    engine_->enable(NonStandardBondComputation<>::label, true);
+    engine_->enable(ResidueComputation<>        ::label, true);
+    engine_->enable(RingComputation<>           ::label, true);
+    engine_->enable(AtomTypingComputation<>     ::label, true);
   }
 
   void initialize(const TopologyBuildingOptions &opts);
@@ -84,6 +85,7 @@ private:
   void register_computation() {
     engine_->add(std::make_unique<NeighborSearchComputation<>>(NeighborSearchParams{}));
     engine_->add(std::make_unique<BondComputation<>>(BondComputationParams{}));
+    engine_->add(std::make_unique<NonStandardBondComputation<>>(NonStandardBondComputationParams{}));
     engine_->add(std::make_unique<ResidueComputation<>>(ResidueComputationParams{}));
     engine_->add(std::make_unique<RingComputation<>>(RingComputationParams{}));
     engine_->add(std::make_unique<AtomTypingComputation<>>(AtomTypingParams{}));

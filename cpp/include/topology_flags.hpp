@@ -9,22 +9,23 @@
 namespace lahuta {
 
 enum class TopologyComputation : uint32_t {
-  None        = 0,
-  Neighbors   = 1 << 0,
-  Bonds       = 1 << 1,
-  Residues    = 1 << 2,
-  Rings       = 1 << 3,
-  AtomTyping  = 1 << 4,
+  None              = 0,
+  Neighbors         = 1 << 0,
+  Bonds             = 1 << 1,
+  NonStandardBonds  = 1 << 2,
+  Residues          = 1 << 3,
+  Rings             = 1 << 4,
+  AtomTyping        = 1 << 5,
 
-  // common computation combinations
-  Basic       = Neighbors | Bonds,
-  Standard    = Basic     | Residues,
-  Extended    = Standard  | Rings,
-  Complete    = Extended  | AtomTyping,
-  All         = ~0u
+  // combinations
+  Basic             = Neighbors | Bonds | NonStandardBonds,
+  Standard          = Basic     | Residues,
+  Extended          = Standard  | Rings,
+  Complete          = Extended  | AtomTyping,
+  All               = ~0u
 };
 
-// generate bit flag array
+/// generate bit flag array
 template <typename E, unsigned N> constexpr std::array<E, N> make_bitmask_flags() {
   std::array<E, N> a{};
   for (unsigned i = 0; i < N; ++i) {
@@ -33,9 +34,9 @@ template <typename E, unsigned N> constexpr std::array<E, N> make_bitmask_flags(
   return a;
 }
 
-constexpr unsigned NUM_BASE_COMPUTATION_FLAGS = 5;
+constexpr unsigned NUM_BASE_COMPUTATION_FLAGS = 6;
 
-// array of base flags
+/// array of base flags
 inline constexpr auto BASE_COMPUTATION_FLAGS = make_bitmask_flags<TopologyComputation, NUM_BASE_COMPUTATION_FLAGS>();
 
 inline constexpr TopologyComputation operator|(TopologyComputation a, TopologyComputation b) {
@@ -58,7 +59,7 @@ inline constexpr bool has_flag(TopologyComputation flags, TopologyComputation fl
   return (flags & flag) == flag && flag != TopologyComputation::None;
 }
 
-// Check if the value is a single base flag
+/// Check if the value is a single base flag
 inline constexpr bool is_base_flag(TopologyComputation comp) {
   for (auto flag : BASE_COMPUTATION_FLAGS) {
     if (comp == flag) return true;

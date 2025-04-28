@@ -12,6 +12,7 @@ namespace param_ids {
   constexpr ParameterInterface::TypeId BOND_COMPUTATION    = 3;
   constexpr ParameterInterface::TypeId ATOM_TYPING         = 4;
   constexpr ParameterInterface::TypeId RING_COMPUTATION    = 5;
+  constexpr ParameterInterface::TypeId NONSTANDARD_BOND_COMPUTATION = 6;
 }
 
 struct NeighborSearchParams : public ParameterBase<NeighborSearchParams> {
@@ -21,6 +22,10 @@ struct NeighborSearchParams : public ParameterBase<NeighborSearchParams> {
 
 struct BondComputationParams : public ParameterBase<BondComputationParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::BOND_COMPUTATION;
+};
+
+struct NonStandardBondComputationParams : public ParameterBase<NonStandardBondComputationParams> {
+  static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::NONSTANDARD_BOND_COMPUTATION;
 };
 
 struct ResidueComputationParams : public ParameterBase<ResidueComputationParams> {

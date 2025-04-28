@@ -18,6 +18,7 @@ struct TopologyBuildingOptions {
   ContactComputerType atom_typing_method = ContactComputerType::Molstar;
   double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
   bool auto_heal = true; // auto-healing of dependencies
+  bool compute_nonstandard_bonds = true; // whether to compute bonds for non-standard atoms
 };
 
 class Topology {
@@ -36,40 +37,44 @@ public:
   void build(TopologyBuildingOptions tops);
 
   void run_mask(TopologyComputation mask) const {
-      for (auto bit : BASE_COMPUTATION_FLAGS)
-          if (has_flag(mask, bit))
-              engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+    for (auto bit : BASE_COMPUTATION_FLAGS)
+      if (has_flag(mask, bit)) {
+        engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+      }
   }
 
   void assign_molstar_typing();
   void assign_arpeggio_atom_types();
 
-  // Enable/disable a specific computation
+  /// Enable/disable a specific computation
   void enable_computation(TopologyComputation comp, bool enabled);
-  
-  // Enable only the specified computations (disabling all others)
+
+  /// Enable only the specified computations (disabling all others)
   void enable_only(TopologyComputation comps);
-  
-  // Check if a specific computation is enabled
+
+  /// Check if a specific computation is enabled
   bool is_computation_enabled(TopologyComputation comp) const;
-  
-  // Execute a specific computation (with dependencies)
+
+  /// Execute a specific computation (with dependencies)
   bool execute_computation(TopologyComputation comp);
-  
-  // Set the neighbor search cutoff
+
+  /// Set the neighbor search cutoff
   void set_cutoff(double cutoff);
-  
-  // Set the atom typing method
+
+  /// Set the atom typing method
   void set_atom_typing_method(ContactComputerType method);
 
-  // get_engine
+  /// Set whether to compute non-standard bonds
+  void set_compute_nonstandard_bonds(bool compute);
+
+  /// Get the engine
   topology::TopologyEngine* get_engine() { return engine_.get(); }
 
   /// approximate total memory usage
   size_t total_size() const;
 
 private:
-  // Helper to get compute::ComputationLabel from TopologyComputation
+  // Get compute::ComputationLabel from TopologyComputation
   static const topology::ComputationLabel& get_label(TopologyComputation comp);
 
 private:

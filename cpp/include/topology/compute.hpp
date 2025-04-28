@@ -5,6 +5,7 @@
 #include "nsgrid.hpp"
 #include "topology/data.hpp"
 #include "topology/kernels.hpp"
+#include "bonds.hpp"
 
 // clang-format off
 namespace lahuta::topology {
@@ -23,7 +24,7 @@ public:
 };
 
 template <typename DataT = TopologyData>
-class BondComputation : public KernelizedRWComputation<
+class BondComputation : public KernelizedROComputation<
     DataT,
     BondComputationParams,
     BondKernel,
@@ -31,11 +32,23 @@ class BondComputation : public KernelizedRWComputation<
 public:
     constexpr static const ComputationLabel label{"bonds"};
     using dependencies = Dependencies<Dependency<NeighborSearchComputation<DataT>, std::shared_ptr<lahuta::NSResults>>>;
-    using BondComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
+    using BondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
 template <typename DataT = TopologyData>
-class ResidueComputation : public KernelizedRWComputation<
+class NonStandardBondComputation : public KernelizedROComputation<
+    DataT,
+    NonStandardBondComputationParams,
+    NonStandardBondKernel,
+    NonStandardBondComputation<DataT>> {
+public:
+    constexpr static const ComputationLabel label{"nonstandard_bonds"};
+    using dependencies = Dependencies<Dependency<BondComputation<DataT>, lahuta::BondAssignmentResult>>;
+    using NonStandardBondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+};
+
+template <typename DataT = TopologyData>
+class ResidueComputation : public KernelizedROComputation<
     DataT,
     ResidueComputationParams,
     ResidueKernel,
@@ -43,11 +56,11 @@ class ResidueComputation : public KernelizedRWComputation<
 public:
     constexpr static const ComputationLabel label{"residues"};
     using dependencies = NoDependencies;
-    using ResidueComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
+    using ResidueComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
 template <typename DataT = TopologyData>
-class RingComputation : public KernelizedRWComputation<
+class RingComputation : public KernelizedROComputation<
     DataT,
     RingComputationParams,
     RingKernel,
@@ -56,7 +69,7 @@ public:
     constexpr static const ComputationLabel label{"rings"};
     using dependencies = Dependencies<Dependency<BondComputation<DataT>,    bool>,
                                       Dependency<ResidueComputation<DataT>, bool>>;
-    using RingComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
+    using RingComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
 template <typename DataT = TopologyData>

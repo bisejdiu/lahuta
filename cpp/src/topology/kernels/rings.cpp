@@ -7,7 +7,7 @@ namespace lahuta::topology {
 
 template <typename DataT>
 ComputationResult
-RingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const RingComputationParams &params) {
+RingKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const RingComputationParams &params) {
   auto &data = context.data();
   try {
     const auto& residues = data.residues->get_residues();
@@ -18,6 +18,6 @@ RingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const RingCompu
   }
 }
 
-template ComputationResult RingKernel::execute<TopologyData>(DataContext<TopologyData, Mut::ReadWrite> &, const RingComputationParams &);
+template ComputationResult RingKernel::execute<TopologyData>(const DataContext<TopologyData, Mut::ReadOnly> &, const RingComputationParams &);
 
 } // namespace lahuta::topology

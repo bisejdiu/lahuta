@@ -9,7 +9,7 @@ namespace lahuta::topology {
 
 template <typename DataT>
 ComputationResult
-ResidueKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ResidueComputationParams &params) {
+ResidueKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const ResidueComputationParams &params) {
   auto &data = context.data();
   try {
     data.residues->build();
@@ -19,6 +19,6 @@ ResidueKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Residu
   }
 }
 
-template ComputationResult ResidueKernel::execute<TopologyData>(DataContext<TopologyData, Mut::ReadWrite> &, const ResidueComputationParams &);
+template ComputationResult ResidueKernel::execute<TopologyData>(const DataContext<TopologyData, Mut::ReadOnly> &, const ResidueComputationParams &);
 
 } // namespace lahuta::topology

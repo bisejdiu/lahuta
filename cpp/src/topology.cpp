@@ -123,14 +123,20 @@ void Topology::set_atom_typing_method(ContactComputerType method) {
   if (params) params->use_molstar = (method == ContactComputerType::Molstar);
 }
 
+void Topology::set_compute_nonstandard_bonds(bool compute) {
+  if (!engine_) throw std::runtime_error("No engine available");
+  engine_->enable(topology::NonStandardBondComputation<>::label, compute);
+}
+
 const topology::compute::ComputationLabel& Topology::get_label(TopologyComputation comp) {
   switch (comp) {
     // this is a bit hiddne here and we may easily forget to update it if we add new computations
-    case TopologyComputation::Neighbors:  return topology::NeighborSearchComputation<>::label;
-    case TopologyComputation::Bonds:      return topology::BondComputation<>::label;
-    case TopologyComputation::Residues:   return topology::ResidueComputation<>::label;
-    case TopologyComputation::Rings:      return topology::RingComputation<>::label;
-    case TopologyComputation::AtomTyping: return topology::AtomTypingComputation<>::label;
+    case TopologyComputation::Neighbors:         return topology::NeighborSearchComputation<>::label;
+    case TopologyComputation::Bonds:             return topology::BondComputation<>::label;
+    case TopologyComputation::NonStandardBonds:  return topology::NonStandardBondComputation<>::label;
+    case TopologyComputation::Residues:          return topology::ResidueComputation<>::label;
+    case TopologyComputation::Rings:             return topology::RingComputation<>::label;
+    case TopologyComputation::AtomTyping:        return topology::AtomTypingComputation<>::label;
     default:
       throw std::runtime_error("Invalid computation type or combination flag passed to get_label");
   }
