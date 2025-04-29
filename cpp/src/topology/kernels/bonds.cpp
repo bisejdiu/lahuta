@@ -27,6 +27,10 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
 
     BondAssignmentResult result = assign_bonds(mol, *neighbors);
 
+    // delete neibors to free memory and avoid large memory usage
+    neighbors->clear();
+    neighbors.reset();
+
     mol.updatePropertyCache(false);
     RDKit::MolOps::setHybridization(mol);
     fix_bonds(mol);

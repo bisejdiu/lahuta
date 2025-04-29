@@ -144,10 +144,10 @@ public:
         double avgLddtScore;
     };
 
-    void initQuery(unsigned int queryLen, float *qx, float *qy, float *qz);
+    void initQuery(unsigned int queryLen, const float *qx, const float *qy, const float *qz);
     void constructAlignHashes(int query_idx, int target_idx, const std::string & cigar);
     void calculateLddtScores();
-    LDDTScoreResult computeLDDTScore(unsigned int targetLen, int qStartPos, int tStartPos, const std::string &backtrace, float *tx, float *ty, float *tz);
+    LDDTScoreResult computeLDDTScore(unsigned int targetLen, int qStartPos, int tStartPos, const std::string &backtrace, const float *tx, const float *ty, const float *tz);
 
 private:
     unsigned int queryLength, targetLength, alignLength;

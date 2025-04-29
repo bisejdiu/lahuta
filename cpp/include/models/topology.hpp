@@ -23,8 +23,7 @@ namespace lahuta {
 
 //
 // Current Limitations:
-// 1. Only CIF files are currently supported
-// 2. No decompression is performed
+// - Only CIF files are supported
 //
 
 //
@@ -41,10 +40,10 @@ enum class ModelTopologyMethod {
   CSR
 };
 
-void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P);
-void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P);
+void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P);
+void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P);
 
-inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
+inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
     auto conformer = std::make_unique<RDKit::Conformer>(mol->getNumAtoms());
     if (method == ModelTopologyMethod::CSR) {
        build_model_topology_csr(mol, *conformer.release(), P);

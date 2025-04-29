@@ -13,25 +13,25 @@ struct SeqData {
   /// Returns the number of residues in the sequence
   int size() const { return SeqAA.size(); }
   int size() { return SeqAA.size(); }
-  float *x() { return CaData.data(); }
-  float *y() { return CaData.data() + SeqAA.size(); }
-  float *z() { return CaData.data() + 2 * SeqAA.size(); }
+  const float *x() const { return CaData.data(); }
+  const float *y() const { return CaData.data() + SeqAA.size(); }
+  const float *z() const { return CaData.data() + 2 * SeqAA.size(); }
 
   bool operator<(const SeqData &rhs) const { return SeqAA < rhs.SeqAA; }
 
-  std::unique_ptr<Sequence> map_3di(SubstitutionMatrix &matrix, FoldSeekOps &ops) {
+  std::unique_ptr<Sequence> map_3di(SubstitutionMatrix &matrix, FoldSeekOps &ops) const {
     std::unique_ptr<Sequence> qSeq = build_sequence(matrix, ops);
     qSeq->mapSequence(0, 0, Seq3Di.c_str(), Seq3Di.size());
     return qSeq;
   }
 
-  std::unique_ptr<Sequence> map_aa(SubstitutionMatrix &matrix, FoldSeekOps &ops) {
+  std::unique_ptr<Sequence> map_aa(SubstitutionMatrix &matrix, FoldSeekOps &ops) const {
     std::unique_ptr<Sequence> qSeq = build_sequence(matrix, ops);
     qSeq->mapSequence(0, 0, SeqAA.c_str(), SeqAA.size());
     return qSeq;
   }
 
-  std::unique_ptr<Sequence> build_sequence(SubstitutionMatrix &matrix, FoldSeekOps &ops) {
+  std::unique_ptr<Sequence> build_sequence(SubstitutionMatrix &matrix, FoldSeekOps &ops) const {
     return std::make_unique<Sequence>(ops.maxSeqLen, &matrix, ops.compBiasCorrection);
   }
 
@@ -46,7 +46,8 @@ struct SeqData {
 };
 
 struct SeqCollection {
-  void add_data(const SeqData entity) { data.push_back(entity); }
+  void add_data(const SeqData entity) { data.push_back(entity); } // FIX: remove copy
+  void add_data(const SeqData &&entity, bool nothing) { data.push_back(std::move(entity)); }
   const std::vector<SeqData> &get_data() const { return data; }
   std::vector<SeqData> &get_data() { return data; }
 
@@ -55,6 +56,7 @@ struct SeqCollection {
 
   /// Returns the number of sequences in the collection
   size_t size() const { return data.size(); }
+  bool is_empty() const { return data.empty(); }
 
   typename std::vector<SeqData>::iterator begin() { return data.begin(); }
   typename std::vector<SeqData>::iterator end() { return data.end(); }

@@ -4,6 +4,7 @@
 #include "db/data_type.hpp"
 #include "lmdb/lmdb++.h"
 #include "models/parser.hpp"
+#include "serialization/serializer.hpp"
 
 // clang-format off
 namespace lahuta {
@@ -41,8 +42,23 @@ public:
       result.coords[i].z = static_cast<double>(float_coords[i * 3 + 2]);
     }
 
-    return true; // Read-only transactions are automatically rolled back.
+    return true;
   }
+
+    bool fetch(std::string_view key, std::string_view& value) {
+        auto txn = lmdb::txn::begin(m_env, nullptr, MDB_RDONLY);
+        if (!m_dbi.get(txn.handle(), key, value)) return false;
+        txn.abort();
+        return true;
+    }
+
+    template<class Rec, class FormatTag>
+    bool fetch_typed(std::string_view key, Rec& out) {
+        std::string_view raw;
+        if (!fetch(key, raw)) return false;
+        out = serialization::Serializer<FormatTag,Rec>::deserialize(raw.data(), raw.size());
+        return true;
+    }
 
 private:
   lmdb::env &m_env;

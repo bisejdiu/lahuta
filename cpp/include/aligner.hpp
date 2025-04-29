@@ -69,6 +69,12 @@ struct AlignerResults {
   std::vector<Matcher::result_t> results;
 };
 
+struct AlignerResultsX {
+    const lahuta::SeqData* query;          // no ownership
+    const lahuta::SeqData* target;         // "
+    std::vector<Matcher::result_t> results;
+};
+
 
 class LahutaAlignerBase {
 public:
@@ -86,6 +92,7 @@ public:
   void run(std::vector<std::string> &query_files, std::vector<std::string> &target_files) override {
     load_sequences(query_files, target_files);
     build_resources();
+    /*process_sequences();*/
     process_sequences();
   }
 
@@ -126,12 +133,14 @@ private:
 
   void process_sequences() {
     auto start = std::chrono::high_resolution_clock::now();
-    for (auto &query : queries) {
+
+    for (std::size_t qi = 0; qi < queries.size(); ++qi) {
       if (pf_ops_.use_prefilter) {
-        Hits hits = seq_filter->filter(query);
-        process_alignments(query, hits);
-      } else {
-        process_alignments(query, targets);
+        Hits hits = seq_filter->filter(queries[qi]);
+        process_alignments(qi, hits);
+      }
+      else {
+        process_alignments(qi, targets);
       }
     }
 
@@ -141,26 +150,33 @@ private:
   }
 
   template <typename TargetType>
-  void process_alignments(SeqData &query, TargetType &targets) {
-    std::vector<std::future<AlignmentResult>> futures;
-    futures.reserve(targets.size());
+  void process_alignments(std::size_t query_idx, TargetType &targets) {
+    SeqData &query = get_target(targets, query_idx);
 
-    // Submit alignment tasks
-    for (size_t i = 0; i < targets.size(); ++i) {
-      SeqData &target = get_target(targets, i);
-      futures.emplace_back(thread_pool_->push([this, &query, &target](int thread_id) {
-        return thread_aligners[thread_id]->align(query, target);
-      }));
+    std::vector<std::future<AlignmentResult>> futures;
+    futures.reserve(targets.size() - query_idx - 1);
+
+    std::vector<std::size_t> target_idxs;
+    target_idxs.reserve(futures.capacity());
+
+    for (std::size_t j = query_idx + 1; j < targets.size(); ++j) {
+      SeqData &target = get_target(targets, j);
+      futures.emplace_back(
+        thread_pool_->push([this, &query, &target](int tid) {
+            return thread_aligners[tid]->align(query, target);
+          }
+        )
+      );
+      target_idxs.push_back(j);
     }
 
-    for (size_t i = 0; i < futures.size(); ++i) {
-      auto alignment_result = futures[i].get();
-      if (!alignment_result.success) continue;
-      Logger::get_logger()->critical("Number of alignments: {}", alignment_result.ar.size());
+    for (std::size_t k = 0; k < futures.size(); ++k) {
+      auto ar = futures[k].get();
+      if (!ar.success) continue;
 
-      SeqData &target = get_target(targets, i);
-      results.push_back({std::make_shared<SeqData>(query), std::make_shared<SeqData>(target), alignment_result.ar});
-    };
+      SeqData &tgt = get_target(targets, target_idxs[k]);
+      results.push_back({std::make_shared<SeqData>(query), std::make_shared<SeqData>(tgt), ar.ar});
+    }
   }
 
   SeqData &get_target(SeqCollection &targets, size_t index) const { return targets[index]; }

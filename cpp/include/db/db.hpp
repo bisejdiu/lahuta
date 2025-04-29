@@ -41,6 +41,7 @@ public:
 
   /// iterate over all keys in the database with a callback function.
   void for_each_key(const std::function<void(const std::string&)>& func) {
+    // FIX: we are creating a new transaction and cursor for each call to for_each_key.
     auto txn = lmdb::txn::begin(m_env.handle(), nullptr, MDB_RDONLY);
     auto cur = lmdb::cursor::open(txn.handle(), m_dbi.handle());
 

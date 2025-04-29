@@ -11,7 +11,7 @@
 // clang-format off
 namespace lahuta {
 
-void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P) {
+void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P) {
 
   mol->skipAtomCleanupDespiteOwnership(true);
   mol->skipBondCleanupDespiteOwnership(true);
@@ -184,7 +184,7 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
 }
 
-void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, ModelParserResult &P) {
+void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P) {
 
   const auto    sequence = P.get_sequence();
   const size_t num_atoms = P.coords.size();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "logging.hpp"
 #include "gemmi/numb.hpp"
 #include <gemmi/atox.hpp>
 #include <gemmi/cif.hpp>
@@ -116,14 +117,14 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
 
   const std::size_t atoms_per_model = model_coords[0].size();
 
-  for (const auto &coords : model_coords) {
-    if (coords.size() != atoms_per_model) {
-      throw std::runtime_error(
-        "Inconsistent number of atoms in model " + std::to_string(&coords - &model_coords[0] + 1) +
-        ": expected " + std::to_string(atoms_per_model) +
-        " but got " + std::to_string(coords.size())
-      );
+  auto new_end = std::remove_if(model_coords.begin(), model_coords.end(), [atoms_per_model](auto const &coords) {
+      return coords.size() != atoms_per_model;
     }
+  );
+
+  if (new_end != model_coords.end()) {
+    model_coords.erase(new_end, model_coords.end());
+    Logger::get_logger()->warn("Dropping {} models with inconsistent number of atoms", model_coords.size());
   }
 
   unsigned int conf_id = 0;
@@ -132,6 +133,10 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
     conformer->setId(conf_id++);
     conformer->setAllAtomPositions(std::move(coords));
     mol->addConformer(conformer, true);
+  }
+
+  if (mol->getNumConformers() != 0) {
+    Logger::get_logger()->info("Loaded {} models with {} atoms", mol->getNumConformers(), mol->getNumAtoms());
   }
 
   mol->updatePropertyCache(false);

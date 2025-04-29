@@ -299,6 +299,23 @@ public:
 
   /// Get the underlying MappingManager
   std::shared_ptr<MappingManager> get_manager() const { return manager_; }
+
+  /// Add a single alignment result to the mapping
+  void add_alignment_result(const AlignerResults& result) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    // Process all alignments in the result, not just the first one
+    for (const auto& alignment : result.results) {
+      manager_->add_mapping(*result.query, *result.target, alignment);
+    }
+  }
+
+  void add_alignment_result(const AlignerResultsX& result) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    // Process all alignments in the result, not just the first one
+    for (const auto& alignment : result.results) {
+      manager_->add_mapping(*result.query, *result.target, alignment);
+    }
+  }
 };
 
 // Create a BitSetMapping from alignment results

@@ -158,11 +158,11 @@ public:
   void set_needs_tmaligner(bool value) { need_tmaligner = value; }
   void set_needs_lddt(bool value) { need_lddt = value; }
 
-  AlignmentResult align(SeqData &Q, SeqData &T) {
+  AlignmentResult align(const SeqData &Q, const SeqData &T) {
 
     std::string q = Q.file_name.substr(Q.file_name.find_last_of('/') + 1);
     std::string t = T.file_name.substr(T.file_name.find_last_of('/') + 1);
-    Logger::get_logger()->critical("Aligning {} - {}", q, t);
+    Logger::get_logger()->info("Aligning {}::{} - {}::{}", q, Q.chain_name, t, T.chain_name);
 
 
     if (!is_initialized) throw std::runtime_error("SeqAligner is not initialized");
@@ -307,12 +307,12 @@ private:
     return result != -1;
   }
 
-  LDDTCalculator::LDDTScoreResult compute_lddt(Matcher::result_t &res, SeqData &s) {
+  LDDTCalculator::LDDTScoreResult compute_lddt(Matcher::result_t &res, const SeqData &s) {
     return lddt_calculator
         ->computeLDDTScore(res.dbLen, res.qStartPos, res.dbStartPos, res.backtrace, s.x(), s.y(), s.z());
   }
 
-  TMaligner::TMscoreResult compute_tm(SeqData &s, Matcher::result_t &res) {
+  TMaligner::TMscoreResult compute_tm(const SeqData &s, Matcher::result_t &res) {
     unsigned int norm_mode = TMaligner::normalization(
         ops.tmScoreThrMode,
         std::min(res.qEndPos - res.qStartPos, res.dbEndPos - res.dbStartPos),

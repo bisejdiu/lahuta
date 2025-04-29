@@ -100,9 +100,13 @@ process_file(const FoldSeekOps &ops, const SubstitutionMatrix &mat, const std::s
 
     seqData.st = readStructure.st;
     /*seqData.mol = mol;*/
-    seqDataList.add_data(seqData);
     seqDataList.total_length += seqData.SeqAA.size();
-    if (seqData.SeqAA.size() > seqDataList.max_length) seqDataList.max_length = seqData.SeqAA.size();
+    auto seqDataSize = seqData.SeqAA.size();
+    seqDataList.add_data(std::move(seqData));
+    /*if (seqData.SeqAA.size() > seqDataList.max_length) seqDataList.max_length = seqData.SeqAA.size();*/
+    if (seqDataSize > seqDataList.max_length) {
+      seqDataList.max_length = seqDataSize;
+    }
   }
 
   if (!seqDataList.get_data().empty()) seqDataList.success = true;

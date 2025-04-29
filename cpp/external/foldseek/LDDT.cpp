@@ -84,7 +84,7 @@ LDDTCalculator::~LDDTCalculator() {
     }
 }
 
-void LDDTCalculator::initQuery(unsigned int queryLen, float *qx, float *qy, float *qz) {
+void LDDTCalculator::initQuery(unsigned int queryLen, const float *qx, const float *qy, const float *qz) {
     queryLength = queryLen;
     for(unsigned int i = 0; i < queryLength; i++) {
         query_coordinates[i][0] = qx[i];
@@ -118,7 +118,7 @@ void LDDTCalculator::initQuery(unsigned int queryLen, float *qx, float *qy, floa
 }
 
 LDDTCalculator::LDDTScoreResult LDDTCalculator::computeLDDTScore(unsigned int targetLen, int qStartPos, int tStartPos, const std::string &backtrace,
-                                                                 float *tx, float *ty, float *tz) {
+                                                                 const float *tx, const float *ty, const float *tz) {
     targetLength = targetLen;
 
     for(unsigned int i = 0; i < targetLength; i++) {

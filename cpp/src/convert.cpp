@@ -5,7 +5,7 @@
 namespace lahuta {
 
 void add_atom_to_mol(RDKit::RWMol &mol, RDKit::Conformer &conf, const gemmi::Atom &atom, const gemmi::Residue &res, const gemmi::Chain &chain) {
-  int atomic_number  = atom.element.atomic_number();
+  unsigned int atomic_number  = atom.element.atomic_number();
   RDKit::Atom *rdkit_atom = new RDKit::Atom(atomic_number);
   rdkit_atom->setFormalCharge(static_cast<int>(atom.charge));
 
@@ -17,6 +17,7 @@ void add_atom_to_mol(RDKit::RWMol &mol, RDKit::Conformer &conf, const gemmi::Ato
   auto alt_loc = (atom.altloc == '\0') ? "" : std::string(1, atom.altloc);
   // FIX: num is OptionalNum (not guaranteed to have a value)
   auto *info = new RDKit::AtomPDBResidueInfo(atom.name, atom.serial, alt_loc, res.name, res.seqid.num.value, chain.name);
+
 
   info->setResidueIndex(res.idx);
   info->setIsHeteroAtom(res.het_flag == 'H');
