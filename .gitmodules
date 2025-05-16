@@ -4,3 +4,6 @@
 [submodule "cpp/external/distopia/highway"]
 	path = cpp/external/distopia/highway
 	url = https://github.com/google/highway.git
+[submodule "cpp/external/spdlog"]
+	path = cpp/external/spdlog
+	url = https://github.com/gabime/spdlog.git
