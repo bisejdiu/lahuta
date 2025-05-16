@@ -9,6 +9,13 @@ set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks" FORCE)
 set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "Disable highway contrib targets" FORCE)
 set(HWY_ENABLE_INSTALL OFF CACHE BOOL "Disable highway install targets" FORCE)
 
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use bundled fmt")
+set(SPDLOG_BUILD_EXAMPLES OFF  CACHE BOOL "")
+set(SPDLOG_BUILD_TESTS OFF     CACHE BOOL "")
+set(SPDLOG_BUILD_EXTRAS OFF    CACHE BOOL "")
+set(SPDLOG_BUILD_PERF_TESTS OFF CACHE BOOL "")
+set(SPDLOG_BUILD_HEADER_ONLY ON CACHE BOOL "")
+
 if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
   # we set wheel.install-dir="/data" in pyproject.toml,
   # so here we need to only set paths to /platlib and /scripts
@@ -94,6 +101,7 @@ ADD_LIBRARY(lmdb STATIC
 set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
 TARGET_INCLUDE_DIRECTORIES(lmdb PUBLIC ${CMAKE_SOURCE_DIR}/external)
 
+add_subdirectory(external/spdlog)
 # gemmi first to inherit its zlib configuration
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
@@ -129,7 +137,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb ZLIB::ZLIB)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only)
 
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include
@@ -173,7 +181,7 @@ function(add_lahuta_executable target main_file)
         target_link_libraries(${target} PRIVATE Eigen3::Eigen)
     endif()
 
-    target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB)
+    target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB spdlog::spdlog_header_only)
 endfunction()
 
 # add_executable(lex_parallel main.cpp)
