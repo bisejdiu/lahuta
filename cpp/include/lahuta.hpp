@@ -12,6 +12,7 @@
 #include <rdkit/GraphMol/BondIterators.h>
 
 #include "convert.hpp"
+#include "entity.hpp"
 #include "logging.hpp"
 #include "topology.hpp"
 
@@ -39,7 +40,7 @@ public:
 
   std::string get_file_name() const { return file_name_; };
   const Topology &get_topology() const { return *get_topology_ptr(); }
-  bool has_topology_built() { return topology.has_value(); };
+  bool has_topology_built() const { return topology_built_; }
 
   RDKit::RWMol &get_molecule() { return *mol; }
   const RDKit::RWMol &get_molecule() const { return *mol; }
@@ -68,12 +69,62 @@ public:
   /// Can be called using the topology
   void assign_molstar_atom_types()  { 
     if (topology) { topology->assign_molstar_typing(); } 
-    else { Logger::get_logger()->error("Topology not built. Cannot assign Molstar atom types."); }
+    else { Logger::get_logger()->error("Topology not initialized. Cannot assign Molstar atom types."); }
   }
 
   void assign_arpeggio_atom_types() {
     if (topology) { topology->assign_arpeggio_atom_types(); } 
-    else { Logger::get_logger()->error("Topology not built. Cannot assign Arpeggio atom types."); }
+    else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
+  }
+  
+  /// Enable or disable a specific computation in the topology
+  void enable_topology_computation(TopologyComputation comp, bool enabled) {
+    ensure_topology_initialized();
+    if (topology) {
+      topology->enable_computation(comp, enabled);
+    }
+  }
+  
+  /// Enable only the specified computations (disabling all others)
+  void enable_topology_only(TopologyComputation comps) {
+    ensure_topology_initialized();
+    if (topology) {
+      topology->enable_only(comps);
+    }
+  }
+  
+  /// Check if a specific computation is enabled
+  bool is_topology_computation_enabled(TopologyComputation comp) const {
+    if (topology) { 
+      return topology->is_computation_enabled(comp); 
+    }
+    Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
+    return false;
+  }
+  
+  /// Execute a specific computation with its dependencies
+  bool execute_topology_computation(TopologyComputation comp) {
+    if (topology) { 
+      return topology->execute_computation(comp); 
+    }
+    Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
+    return false;
+  }
+  
+  /// Set the cutoff for neighbor search
+  void set_neighbor_search_cutoff(double cutoff) {
+    ensure_topology_initialized();
+    if (topology) {
+      topology->set_cutoff(cutoff);
+    }
+  }
+  
+  /// Set the atom typing method
+  void set_atom_typing_method(ContactComputerType method) {
+    ensure_topology_initialized();
+    if (topology) {
+      topology->set_atom_typing_method(method);
+    }
   }
 
   //! Returns the atoms of the molecule.
@@ -123,11 +174,19 @@ public:
   size_t total_size() const;
 
 private:
-  explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) : mol(valid_mol), topology(valid_mol) {}
+  explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) 
+    : mol(valid_mol), topology(std::make_optional<Topology>(valid_mol)), topology_built_(false) {}
+
+  // Ensure topology is initialized for configuration
+  void ensure_topology_initialized() {
+    if (!topology) {
+      Logger::get_logger()->debug("Initializing topology for configuration");
+      topology = std::make_optional<Topology>(mol);
+    }
+  }
 
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
   const Topology* get_topology_ptr() const;
-  void read_structure();
 
   template <typename T>
   std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
@@ -139,6 +198,7 @@ private:
 
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
+  bool topology_built_ = false;
   std::unordered_map<EntityType, std::vector<EntityID>> entities;
 
   std::string file_name_;

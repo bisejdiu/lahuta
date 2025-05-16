@@ -109,6 +109,13 @@ add_library(lahuta_cpp STATIC
             src/mapping/bitset_mapping.cpp
             src/mapping/mapping_matrix.cpp
             src/mapping/residue_set.cpp
+
+            src/topology/engine.cpp
+            src/topology/kernels/neighbors.cpp
+            src/topology/kernels/bonds.cpp
+            src/topology/kernels/rings.cpp
+            src/topology/kernels/residues.cpp
+            src/topology/kernels/atom_typing.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -165,11 +172,18 @@ endfunction()
 
 add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
-add_lahuta_executable(lex_fseek main_fseek.cpp)
-add_lahuta_executable(lex_fut main_future.cpp)
-add_lahuta_executable(lex_align main_align.cpp)
-add_lahuta_executable(create_db create_db.cpp)
-add_lahuta_executable(read_db read_db.cpp)
+# add_lahuta_executable(lex_fseek main_fseek.cpp)
+# add_lahuta_executable(lex_fut main_future.cpp)
+# add_lahuta_executable(lex_align main_align.cpp)
+# add_lahuta_executable(create_db create_db.cpp)
+# add_lahuta_executable(read_db read_db.cpp)
+# add_lahuta_executable(atom_typing_test tests/atom_typing_test.cpp)
+# add_lahuta_executable(topo_flags topology_flags.cpp)
+# add_lahuta_executable(topo_flags2 topology_deps_test.cpp)
+add_lahuta_executable(dep_test dependency_test.cpp)
+# add_lahuta_executable(cir_dep_test cir_dep_test.cpp)
+add_lahuta_executable(cir_dep_test compute_circular_deps.cpp)
+# add_lahuta_executable(cpx_dep_test complex_data_test.cpp)
 
 # Build examples
 file(GLOB EXAMPLE_SOURCES ${CMAKE_SOURCE_DIR}/examples/*.cpp)

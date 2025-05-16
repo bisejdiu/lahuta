@@ -139,7 +139,7 @@ struct EntityCollection {
     EntityType& operator[](size_t index) { return data[index]; }
     const EntityType& operator[](size_t index) const { return data[index]; }
 
-    int size() const { return static_cast<int>(data.size()); }
+    size_t size() const { return data.size(); }
     void reserve(size_t size) { data.reserve(size); }
 
     // FIX: positions returns a copy of the points but performance impact is negligible 

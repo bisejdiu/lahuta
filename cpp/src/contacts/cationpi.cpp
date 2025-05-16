@@ -1,5 +1,6 @@
 #include "contacts/cationpi.hpp"
 #include "contacts/search.hpp"
+#include "contacts/utils.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
 #include "contacts/geometry.hpp"

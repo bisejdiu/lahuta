@@ -39,6 +39,46 @@ int main(int argc, char const *argv[]) {
   std::cout << "Molecule Atoms: " << mol->getNumAtoms() << std::endl;
   std::cout << "Molecule Bonds: " << mol->getNumBonds() << std::endl;
 
+  // Check if atom typing computation is enabled
+  bool is_enabled = luni.is_topology_computation_enabled(TopologyComputation::AtomTyping);
+  std::cout << "Atom typing enabled: " << (is_enabled ? "yes" : "no") << std::endl;
+  
+  // Get atom types using Molstar (already done in topology build)
+  const AtomEntityCollection &molstar_types = luni.get_topology().get_atom_types();
+  std::cout << "Molstar atom types: " << molstar_types.size() << std::endl;
+  
+  if (molstar_types.size() > 0) {
+    const auto hydrophobic_atoms_molstar = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
+    std::cout << "Hydrophobic atoms (Molstar): " << hydrophobic_atoms_molstar.size() << std::endl;
+  }
+  
+  // Now try Arpeggio atom typing
+  std::cout << "\nSwitching to Arpeggio atom typing..." << std::endl;
+  luni.assign_arpeggio_atom_types();
+  
+  // Check atom types after Arpeggio
+  const AtomEntityCollection &arpeggio_types = luni.get_topology().get_atom_types();
+  std::cout << "Arpeggio atom types: " << arpeggio_types.size() << std::endl;
+  
+  if (arpeggio_types.size() > 0) {
+    const auto hydrophobic_atoms_arpeggio = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
+    std::cout << "Hydrophobic atoms (Arpeggio): " << hydrophobic_atoms_arpeggio.size() << std::endl;
+  }
+  
+  // Switch back to Molstar
+  std::cout << "\nSwitching back to Molstar atom typing..." << std::endl;
+  luni.assign_molstar_atom_types();
+  
+  // Check atom types after switching back to Molstar
+  const AtomEntityCollection &molstar_types_again = luni.get_topology().get_atom_types();
+  std::cout << "Molstar atom types (again): " << molstar_types_again.size() << std::endl;
+  
+  if (molstar_types_again.size() > 0) {
+    const auto hydrophobic_atoms_molstar_again = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
+    std::cout << "Hydrophobic atoms (Molstar again): " << hydrophobic_atoms_molstar_again.size() << std::endl;
+  }
+
+
   InteractionOptions opts{5.0};
   Interactions interactions(luni, opts);
 

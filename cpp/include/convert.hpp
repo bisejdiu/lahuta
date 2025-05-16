@@ -38,13 +38,10 @@ struct IR {
 };
 
 void IR_to_RWMol(RDKit::RWMol &mol, const IR &ir);
-void create_RDKit_repr(RDKit::RWMol &mol, const gemmi::Structure &st,
-                           RDKit::Conformer &conf, bool ign_h = false);
+void add_atom_to_mol(RDKit::RWMol &mol, RDKit::Conformer &conf,
+                     const gemmi::Atom &atom, const gemmi::Residue &res, const gemmi::Chain &chain);
+void create_RDKit_repr(RDKit::RWMol &mol, const gemmi::Structure &st, RDKit::Conformer &conf);
 std::shared_ptr<RDKit::RWMol> create_RDKit(const gemmi::Structure &st);
-
-RDKit::RWMol filter_atoms(RDKit::RWMol &mol, std::vector<int> &indices);
-RDKit::RWMol filter_with_conf(RDKit::RWMol &mol, std::vector<int> &indices);
-RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol, std::vector<int> &indices);
 
 } // namespace lahuta
 //

@@ -5,6 +5,7 @@
 #include "array.hpp"
 #include "contacts.hpp"
 #include "contacts/interactions.hpp"
+#include "contacts/utils.hpp"
 #include "mapper.hpp"
 #include "py_te.hpp"
 

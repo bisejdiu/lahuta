@@ -1,5 +1,6 @@
 #include "contacts/hydrophobic.hpp"
 #include "contacts/search.hpp"
+#include "contacts/utils.hpp"
 #include "entities.hpp"
 #include "lahuta.hpp"
 
@@ -27,6 +28,7 @@ Contacts find_hydrophobic_bonds(const Luni &luni, HydrophobicParams opts) {
 
   Contacts contacts(&luni);
   const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
+  std::cout << "Hydrophobic atoms: " << hydrophobic_atoms.size() << std::endl;
 
   NSResults results = EntityNeighborSearch::search(hydrophobic_atoms, opts.distance_max);
 

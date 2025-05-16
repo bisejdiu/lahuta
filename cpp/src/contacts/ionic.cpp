@@ -1,5 +1,6 @@
 #include "contacts/ionic.hpp"
 #include "contacts/search.hpp"
+#include "contacts/utils.hpp"
 #include "lahuta.hpp"
 #include "common.hpp"
 

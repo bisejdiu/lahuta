@@ -1,4 +1,5 @@
 #include "luni_props.hpp"
+#include "GraphMol/PeriodicTable.h"
 #include "lahuta.hpp"
 #include "properties/registry.hpp"
 #include "properties/types.hpp"

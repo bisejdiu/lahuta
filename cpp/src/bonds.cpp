@@ -2,7 +2,7 @@
 #include "bonds/lookup.hpp"
 #include "bonds/table.hpp"
 #include "common.hpp"
-#include "convert.hpp"
+#include "selections/mol_filters.hpp"
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include <vector>
 

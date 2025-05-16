@@ -1,11 +1,11 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
-#include "contacts/atoms.hpp"
-#include "contacts/groups.hpp"
 #include "residues.hpp"
+#include "topology/engine.hpp"
+#include "topology_flags.hpp"
+#include <memory>
 
-// clang-format off
 namespace lahuta {
 
 // FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
@@ -13,65 +13,73 @@ namespace lahuta {
 constexpr static float BONDED_NEIGHBOR_SEARCH_CUTOFF = 4.5;
 enum class ContactComputerType { None, Arpeggio, Molstar };
 
+// Options for configuring topology parameters
 struct TopologyBuildingOptions {
-  const bool identify_ring_atoms = true; // if we decide to also check for ring atoms using atom names:e.g. only for protein-only systems as an optimization technique
   ContactComputerType atom_typing_method = ContactComputerType::Molstar;
   double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
-  bool compute_bonds = true;
+  bool auto_heal = true; // auto-healing of dependencies
+  bool compute_nonstandard_bonds = true; // whether to compute bonds for non-standard atoms
 };
-
 
 class Topology {
 public:
   Topology() = default;
-  Topology(std::shared_ptr<RDKit::RWMol> mol) : mol_(mol), residues(std::make_unique<Residues>(*mol)) {}
+  Topology(std::shared_ptr<RDKit::RWMol> mol) 
+    : mol_(mol), engine_(std::make_unique<topology::TopologyEngine>(mol)) {}
 
-  const Residues &get_residues() const { return *residues; }
-  const AtomEntityCollection  &get_atom_types() const { return atom_types; }
-  const RingEntityCollection  &get_rings()      const { return rings_vec; }
-  const GroupEntityCollection &get_features()   const { return features; }
+  const Residues &get_residues() const { return *engine_->get_data().residues; }
+  const AtomEntityCollection  &get_atom_types() const { return engine_->get_data().atom_types; }
+  const RingEntityCollection  &get_rings()      const { return engine_->get_data().rings; }
+  const GroupEntityCollection &get_features()   const { return engine_->get_data().features; }
 
-  std::vector<int> get_atom_ids() const { return residues->get_atom_ids(); }
+  std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
 
   void build(TopologyBuildingOptions tops);
 
-  void assign_molstar_typing() {
-
-    ValenceModel valence_model;
-    valence_model.apply(*mol_);
-
-    // FIX: to be replaced by the entitytype manager
-    atom_types = AtomTypeAnalysis ::analyze(*mol_);
-    features   = GroupTypeAnalysis::analyze(*mol_, *residues);
-
-    // FIX: We have a conceptual issue with Aromaticity:
-    //  - `features` includes AromaticRingGroups.
-    //  - `rings_vec` includes ***only*** aromatic rings
-    //  - `atom_types`, which stores atom-level identifiers, does not store their aromaticity identifier
-
-    rings_vec = populate_ring_entities();
+  void run_mask(TopologyComputation mask) const {
+    for (auto bit : BASE_COMPUTATION_FLAGS)
+      if (has_flag(mask, bit)) {
+        engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+      }
   }
 
+  void assign_molstar_typing();
   void assign_arpeggio_atom_types();
+
+  /// Enable/disable a specific computation
+  void enable_computation(TopologyComputation comp, bool enabled);
+
+  /// Enable only the specified computations (disabling all others)
+  void enable_only(TopologyComputation comps);
+
+  /// Check if a specific computation is enabled
+  bool is_computation_enabled(TopologyComputation comp) const;
+
+  /// Execute a specific computation (with dependencies)
+  bool execute_computation(TopologyComputation comp);
+
+  /// Set the neighbor search cutoff
+  void set_cutoff(double cutoff);
+
+  /// Set the atom typing method
+  void set_atom_typing_method(ContactComputerType method);
+
+  /// Set whether to compute non-standard bonds
+  void set_compute_nonstandard_bonds(bool compute);
+
+  /// Get the engine
+  topology::TopologyEngine* get_engine() { return engine_.get(); }
 
   /// approximate total memory usage
   size_t total_size() const;
 
 private:
-  RingEntityCollection populate_ring_entities();
-  void compute_bonds(const NSResults &neighbors);
-  static void cleanup_predef(RDKit::RWMol &mol);
-  static void cleanup(RDKit::RWMol &mol);
-  static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
-  static bool should_initialize_ringinfo(int mol_size);
+  // Get compute::ComputationLabel from TopologyComputation
+  static const topology::ComputationLabel& get_label(TopologyComputation comp);
 
 private:
-  AtomEntityCollection  atom_types;
-  RingEntityCollection  rings_vec;
-  GroupEntityCollection features;
-
   std::shared_ptr<RDKit::RWMol> mol_;
-  std::unique_ptr<Residues> residues;
+  std::unique_ptr<topology::TopologyEngine> engine_;
 };
 
 } // namespace lahuta

@@ -1,6 +1,7 @@
 #include "contacts/pistacking.hpp"
 #include "contacts/geometry.hpp"
 #include "contacts/search.hpp"
+#include "contacts/utils.hpp"
 #include "lahuta.hpp"
 
 namespace lahuta {

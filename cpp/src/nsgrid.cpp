@@ -4,6 +4,7 @@
 #include <rdkit/Geometry/point.h>
 
 #include "nsgrid.hpp"
+#include "definitions.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"
 
