@@ -3,22 +3,20 @@
 #include "contacts/utils.hpp"
 #include "entities.hpp"
 #include "lahuta.hpp"
+#include "elements.hpp"
 
 namespace lahuta {
 
 AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  const int atomic_number = atom.getAtomicNum();
+  const auto at_n = atom.getAtomicNum();
 
-  if (atomic_number == 9) return AtomType::HYDROPHOBIC;
-  if (atomic_number != 6) return AtomType::NONE;
+  if (at_n == Element::F) return AtomType::HYDROPHOBIC;
+  if (at_n != Element::C) return AtomType::NONE;
 
   for (const auto &bond : mol.atomBonds(&atom)) {
-    const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
-    int neighbor_atomic_num = neighbor->getAtomicNum();
-
-    if (neighbor_atomic_num != 6 && neighbor_atomic_num != 1) {
-      return AtomType::NONE;
-    }
+    const RDKit::Atom *nbr = bond->getOtherAtom(&atom);
+    const auto nbr_at_n = nbr->getAtomicNum();
+    if (nbr_at_n != Element::C && nbr_at_n != Element::H) return AtomType::NONE;
   }
 
   return AtomType::HYDROPHOBIC;
@@ -38,7 +36,7 @@ Contacts find_hydrophobic_bonds(const Luni &luni, std::optional<HydrophobicParam
     const auto &atom2_data = hydrophobic_atoms.get_data()[atom2_index];
 
     if (are_residueids_close(luni.get_molecule(), *atom1_data.atom, *atom2_data.atom, 0)) continue;
-    if (atom1_data.atom->getAtomicNum() == 9 && atom2_data.atom->getAtomicNum() == 9) continue;
+    if (atom1_data.atom->getAtomicNum() == Element::F && atom2_data.atom->getAtomicNum() == Element::F) continue;
 
     contacts.add(Contact(
         static_cast<EntityID>(atom1_data.atom->getIdx()),

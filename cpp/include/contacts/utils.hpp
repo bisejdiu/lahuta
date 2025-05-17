@@ -4,6 +4,7 @@
 #include "GraphMol/MonomerInfo.h"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
+#include "elements.hpp"
 
 namespace lahuta {
 
@@ -41,6 +42,19 @@ get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, unsigned int at
   }
   return bond_count;
 }
+
+inline unsigned int
+get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, const Element &element) {
+  unsigned int bond_count = 0;
+  for (const auto &bond : mol.atomBonds(&atom)) {
+    const RDKit::Atom *neighbor_atom = bond->getOtherAtom(&atom);
+    if (neighbor_atom->getAtomicNum() == element) {
+      bond_count++;
+    }
+  }
+  return bond_count;
+}
+
 
 /// Returns the number of hydrogen atoms bonded to the given atom.
 inline int get_h_count(RDKit::ROMol &mol, RDKit::Atom &atom) {

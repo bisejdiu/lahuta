@@ -2,26 +2,29 @@
 #include "contacts/halo_geo_validity.hpp"
 #include "contacts/search.hpp"
 #include "lahuta.hpp"
+#include <elements.hpp>
 
 namespace lahuta {
 
-std::unordered_set<int> HalogenDonors    = {17, 35, 53};
-std::unordered_set<int> HalogenAcceptors = {7, 8, 16};
-std::unordered_set<int> HalogenBinders   = {6, 7, 15, 16};
+std::unordered_set<Element> HalogenDonors    = {Element::Cl, Element::Br, Element::I};
+std::unordered_set<Element> HalogenAcceptors = {Element::N,  Element::O,  Element::S};
+std::unordered_set<Element> HalogenBinders   = {Element::C,  Element::N,  Element::P, Element::S};
 
 AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  if (HalogenDonors.count(atom.getAtomicNum())) return AtomType::XBOND_DONOR;
+  const auto at_n = static_cast<Element>(atom.getAtomicNum());
+  if (HalogenDonors.count(at_n)) return AtomType::XBOND_DONOR;
   return AtomType::NONE;
 }
 
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  if (!HalogenAcceptors.count(atom.getAtomicNum())) return AtomType::NONE;
+  const auto at_n = static_cast<Element>(atom.getAtomicNum());
+  if (!HalogenAcceptors.count(at_n)) return AtomType::NONE;
 
   for (const auto bond : mol.atomBonds(&atom)) {
-    const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
-    int neighbor_atomic_num = neighbor->getAtomicNum();
+    const RDKit::Atom *nbr = bond->getOtherAtom(&atom);
+    const auto nbr_at_n = static_cast<Element>(nbr->getAtomicNum());
 
-    if (HalogenBinders.count(neighbor_atomic_num)) return AtomType::XBOND_ACCEPTOR;
+    if (HalogenBinders.count(nbr_at_n)) return AtomType::XBOND_ACCEPTOR;
   }
 
   return AtomType::NONE;

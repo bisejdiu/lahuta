@@ -5,6 +5,7 @@
 #include "contacts/hbond_geo_validity.hpp"
 #include "contacts/search.hpp"
 #include "contacts/utils.hpp"
+#include "elements.hpp"
 #include "lahuta.hpp"
 
 // clang-format off
@@ -31,7 +32,7 @@ AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 
   // nitrogen, oxygen, or sulfur with hydrogen attached
   int atomic_num = atom.getAtomicNum();
-  if (total_h > 0 && (atomic_num == 7 || atomic_num == 8 || atomic_num == 16)) {
+  if (total_h > 0 && (atomic_num == Element::N || atomic_num == Element::O || atomic_num == Element::S)) {
     return AtomType::HBOND_DONOR;
   }
 
@@ -40,14 +41,15 @@ AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
 
 AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
+  if (!res_info) return AtomType::NONE;
 
   int formal_charge = atom.getFormalCharge();
   int atomic_num = atom.getAtomicNum();
 
   // Assume all oxygen atoms are acceptors!
-  if (atomic_num == 8) return AtomType::HBOND_ACCEPTOR;
+  if (atomic_num == Element::O) return AtomType::HBOND_ACCEPTOR;
 
-  if (atomic_num == 7) {
+  if (atomic_num == Element::N) {
     // include both nitrogen atoms in histidine due to their often ambiguous protonation assignment
     if (chemistry::is_histidine_nitrogen(atom, mol)) return AtomType::HBOND_ACCEPTOR;
     if (formal_charge < 1) {
@@ -56,17 +58,15 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom)
       unsigned int total_bonds = get_bond_count(mol, atom) + atom.getNumCompImplicitHs();
 
       auto hybridization = atom.getHybridization();
-      if ((hybridization == HybridizationType::SP3 && total_bonds < 4)
+      if (   (hybridization == HybridizationType::SP3 && total_bonds < 4)
           || (hybridization == HybridizationType::SP2 && total_bonds < 3)
-          || (hybridization == HybridizationType::SP && total_bonds < 2)) {
+          || (hybridization == HybridizationType::SP  && total_bonds < 2)) {
         return AtomType::HBOND_ACCEPTOR;
       }
     }
   }
 
-  if (atomic_num == 16) {
-    if (!res_info) return AtomType::NONE;
-    // FIX: hardcoded residue names
+  if (atomic_num == Element::S) {
     std::string res_name = res_info->getResidueName();
     if (res_name == "CYS" || res_name == "MET" || formal_charge == -1) return AtomType::HBOND_ACCEPTOR;
   }
@@ -77,10 +77,10 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom)
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   int total_h = atom.getNumExplicitHs() + atom.getNumCompImplicitHs();
 
-  if (atom.getAtomicNum() == 6 && total_h > 0) {
-    if (get_bond_count(mol, atom, 7) > 0 ||        // Bonded to nitrogen
-        get_bond_count(mol, atom, 8) > 0 ||        // Bonded to oxygen
-        chemistry::in_aromatic_ring_with_N_or_O(mol, atom)) { // Aromatic ring with N or O
+  if (atom.getAtomicNum() == Element::C && total_h > 0) {
+    if (get_bond_count(mol, atom, Element::N) > 0 ||
+        get_bond_count(mol, atom, Element::O) > 0 ||
+        chemistry::in_aromatic_ring_with_N_or_O(mol, atom)) {
       return AtomType::WEAK_HBOND_DONOR;
     }
   }
@@ -97,7 +97,7 @@ Contacts find_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> pa
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
   auto &mol = luni.get_molecule();
 
-  const auto donors = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
+  const auto donors    = AtomEntityCollection::filter(&luni, AtomType::HBOND_DONOR);
   const auto acceptors = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);
 
   auto results =
@@ -116,7 +116,7 @@ Contacts find_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> pa
 
   for (const auto &[pair, dist] : results) {
     auto [donor_index, acceptor_index] = pair;
-    auto &donor = donors.get_data()[donor_index].atoms.front();
+    auto &donor    = donors.get_data()[donor_index].atoms.front();
     auto &acceptor = acceptors.get_data()[acceptor_index].atoms.front();
 
     // check the line of sight
@@ -163,8 +163,10 @@ Contacts find_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> pa
     // FIX: improve this (it only checks residue numbers)
     if (are_residueids_close(mol, *donor, *acceptor, 0)) continue;
 
-    double max_dist = (donor->getAtomicNum() == 16 || acceptor->getAtomicNum() == 16) ? opts.max_sulfur_dist
-                                                                                      : opts.max_dist;
+    double max_dist = (donor->getAtomicNum() == Element::S || acceptor->getAtomicNum() == Element::S)
+                          ? opts.max_sulfur_dist
+                          : opts.max_dist;
+
     if (dist > max_dist * max_dist) continue;
 
     if (!opts.include_water && is_water_hbond(*donor, *acceptor)) continue;

@@ -7,7 +7,7 @@ namespace lahuta {
 bool is_metalic(AtomType at1, AtomType at2) {
   using AtomTypeFlags::has;
   if (has(at1, AtomType::TransitionMetal)) return has(at2, AtomType::DativeBondPartner);
-  if (has(at1, AtomType::IonicTypeMetal)) return has(at2, AtomType::IonicTypePartner);
+  if (has(at1, AtomType::IonicTypeMetal))  return has(at2, AtomType::IonicTypePartner);
   return false;
 }
 
