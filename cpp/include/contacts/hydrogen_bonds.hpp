@@ -24,7 +24,7 @@ constexpr double MAX_DON_ANGLE_DEV = M_PI / 4.0;          // 45 degrees
 constexpr double MAX_DON_OUT_OF_PLANE_ANGLE = M_PI / 4.0; // 45 degrees
 constexpr double MAX_ACC_OUT_OF_PLANE_ANGLE = M_PI / 2.0; // 90 degrees
 
-inline struct HBondParameters {
+struct HBondParameters {
   bool   ignore_hydrogens  = false;             // Ignore hydrogens in geometry calculations
   bool   include_backbone  = true;              // Include backbone-to-backbone hydrogen bonds
   bool   include_water     = true;              // Include water-to-water hydrogen bonds
@@ -35,15 +35,15 @@ inline struct HBondParameters {
   double max_don_out_of_plane_angle = MAX_DON_OUT_OF_PLANE_ANGLE; // Maximum out-of-plane deviation for donor
   double max_acc_out_of_plane_angle = MAX_ACC_OUT_OF_PLANE_ANGLE; // Maximum out-of-plane deviation for acceptor
 
-} hydrogen_bond_opts;
+};
 
 AtomType add_hydrogen_donor     (const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_hydrogen_acceptor  (const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
 class Luni;
-Contacts find_hydrogen_bonds     (const Luni &luni, const HBondParameters &opts = hydrogen_bond_opts);
-Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts = hydrogen_bond_opts);
+Contacts find_hydrogen_bonds     (const Luni &luni, std::optional<HBondParameters> opts = std::nullopt);
+Contacts find_weak_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> opts = std::nullopt);
 
 } // namespace lahuta
 

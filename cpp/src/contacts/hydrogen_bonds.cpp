@@ -88,10 +88,11 @@ AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &ato
   return AtomType::NONE;
 }
 
-Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
+Contacts find_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> params) {
 
   const double distFactor = 1.2;
   const constexpr double MAX_LINE_OF_SIGHT_DISTANCE = 3.0;
+  HBondParameters opts = params.value_or(HBondParameters{});
 
   Contacts contacts(&luni); // FIX: Contacts requires the Luni object (remove?).
   auto &mol = luni.get_molecule();
@@ -182,10 +183,11 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
   return contacts;
 }
 
-Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
+Contacts find_weak_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> params) {
 
   Contacts contacts(&luni);
   const auto &mol = luni.get_molecule();
+  HBondParameters opts = params.value_or(HBondParameters{});
 
   const auto weak_donor_atoms = AtomEntityCollection::filter(&luni, AtomType::WEAK_HBOND_DONOR);
   const auto acceptor_atoms = AtomEntityCollection::filter(&luni, AtomType::HBOND_ACCEPTOR);

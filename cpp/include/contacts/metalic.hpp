@@ -4,11 +4,11 @@
 #include "neighbors.hpp"
 namespace lahuta {
 
-inline struct MetalicParams {
-  constexpr static double distance_max = 3.0;
-} metalic_params;
+struct MetalicParams {
+  double distance_max = 3.0;
+};
 
-Contacts find_metalic(const Luni &luni, MetalicParams opts = metalic_params);
+Contacts find_metalic(const Luni &luni, std::optional<MetalicParams> params = std::nullopt);
 
 } // namespace lahuta
 

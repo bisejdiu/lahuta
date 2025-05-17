@@ -24,12 +24,12 @@ AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom) 
   return AtomType::HYDROPHOBIC;
 }
 
-Contacts find_hydrophobic_bonds(const Luni &luni, HydrophobicParams opts) {
+Contacts find_hydrophobic_bonds(const Luni &luni, std::optional<HydrophobicParams> params) {
 
   Contacts contacts(&luni);
-  const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
-  std::cout << "Hydrophobic atoms: " << hydrophobic_atoms.size() << std::endl;
+  HydrophobicParams opts = params.value_or(HydrophobicParams{});
 
+  const auto hydrophobic_atoms = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
   NSResults results = EntityNeighborSearch::search(hydrophobic_atoms, opts.distance_max);
 
   for (const auto &[pair, dist] : results) {

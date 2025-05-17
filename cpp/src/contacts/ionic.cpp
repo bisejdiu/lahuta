@@ -6,9 +6,11 @@
 
 namespace lahuta {
 
-Contacts find_ionic(const Luni &luni, IonicParams opts) {
+Contacts find_ionic(const Luni &luni, std::optional<IonicParams> params) {
 
   Contacts contacts(&luni);
+  IonicParams opts = params.value_or(IonicParams{});
+
   const auto positives = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
   const auto negatives = GroupEntityCollection::filter(&luni, AtomType::NEG_IONISABLE);
 

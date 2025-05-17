@@ -7,9 +7,10 @@
 
 namespace lahuta {
 
-Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
+Contacts find_cationpi(const Luni &luni, std::optional<CationPiParams> params) {
 
   Contacts contacts(&luni);
+  CationPiParams opts = params.value_or(CationPiParams{});
 
   const auto rings = luni.get_rings();
   const auto features = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);

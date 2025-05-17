@@ -7,13 +7,14 @@ namespace lahuta {
 
 class Luni;
 
-inline struct PiStackingParams {
-  constexpr static double distance_max = 6.0;
-  constexpr static double angle_dev_max = M_PI / 6.0;
-  constexpr static double offset_max = 2.1;
-} pistacking_params;
+struct PiStackingParams {
+  double distance_max = 6.0;
+  double angle_dev_max = M_PI / 6.0;
+  double offset_max = 2.1;
+};
 
-Contacts find_pistacking(const Luni &luni, PiStackingParams opts = pistacking_params);
+inline constexpr PiStackingParams default_pistacking_params{};
+Contacts find_pistacking(const Luni &luni, const PiStackingParams &opts = default_pistacking_params);
 
 } // namespace lahuta
 

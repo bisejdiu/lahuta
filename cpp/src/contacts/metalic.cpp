@@ -11,11 +11,12 @@ bool is_metalic(AtomType at1, AtomType at2) {
   return false;
 }
 
-Contacts find_metalic(const Luni &luni, MetalicParams opts) {
+Contacts find_metalic(const Luni &luni, std::optional<MetalicParams> params) {
   using AEC = AtomEntityCollection;
 
   Contacts contacts(&luni);
   const auto &mol = luni.get_molecule();
+  MetalicParams opts = params.value_or(MetalicParams{});
 
   AtomEntityCollection metals, metal_binders;
   metals = AEC::filter(&luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);

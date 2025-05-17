@@ -6,12 +6,12 @@
 
 namespace lahuta {
 
-Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
+Contacts find_pistacking(const Luni &luni, const PiStackingParams& opts) {
 
   Contacts contacts(&luni);
   const auto rings = luni.get_rings();
 
-  double dist_max = 6.0;
+  double dist_max = opts.distance_max;
   auto nbrs = EntityNeighborSearch::search(rings, dist_max);
 
   for (const auto &[pair, dist] : nbrs) {

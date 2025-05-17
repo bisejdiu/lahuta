@@ -27,9 +27,10 @@ AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) 
   return AtomType::NONE;
 }
 
-Contacts find_halogen_bonds(const Luni &luni, HalogenParams opts) {
+Contacts find_halogen_bonds(const Luni &luni, std::optional<HalogenParams> params) {
 
   Contacts contacts(&luni);
+  HalogenParams opts = params.value_or(HalogenParams{});
 
   const auto donor_atoms    = AtomEntityCollection::filter(&luni, AtomType::XBOND_DONOR);
   const auto acceptor_atoms = AtomEntityCollection::filter(&luni, AtomType::XBOND_ACCEPTOR);

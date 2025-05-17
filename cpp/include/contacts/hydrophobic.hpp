@@ -8,12 +8,12 @@ namespace lahuta {
 
 class Luni;
 
-inline struct HydrophobicParams {
-  constexpr static double distance_max = 4.0;
-} hydrophobic_params;
+struct HydrophobicParams {
+  double distance_max = 4.0;
+};
 
 AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom);
-Contacts find_hydrophobic_bonds(const Luni &luni, HydrophobicParams opts = hydrophobic_params);
+Contacts find_hydrophobic_bonds(const Luni &luni, std::optional<HydrophobicParams> params = std::nullopt);
 
 } // namespace lahuta
 

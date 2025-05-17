@@ -7,11 +7,11 @@ namespace lahuta {
 
 class Luni;
 
-inline struct IonicParams {
-  constexpr static double distance_max = 5.0;
-} ionic_params;
+struct IonicParams {
+  double distance_max = 5.0;
+};
 
-Contacts find_ionic(const Luni &luni, IonicParams opts = ionic_params);
+Contacts find_ionic(const Luni &luni, std::optional<IonicParams> params = std::nullopt);
 
 } // namespace lahuta
 
