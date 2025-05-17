@@ -14,11 +14,8 @@
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RWMol.h>
 
-
 // clang-format off
 namespace lahuta {
-
-class Luni;
 
 constexpr double MAX_DIST = 3.5;
 constexpr double MAX_SULFUR_DIST = 4.1;
@@ -33,25 +30,18 @@ inline struct HBondParameters {
   bool   include_water     = true;              // Include water-to-water hydrogen bonds
   double max_dist          = MAX_DIST;          // Maximum distance for hydrogen bonds
   double max_sulfur_dist   = MAX_SULFUR_DIST;   // Maximum distance for sulfur atoms
-  double max_acc_angle_dev = MAX_ACC_ANGLE_DEV; // Maximum deviation from ideal acceptor angle
   double max_don_angle_dev = MAX_DON_ANGLE_DEV; // Maximum deviation from ideal donor angle
-  double max_acc_out_of_plane_angle = MAX_ACC_OUT_OF_PLANE_ANGLE; // Maximum out-of-plane deviation for acceptor
+  double max_acc_angle_dev = MAX_ACC_ANGLE_DEV; // Maximum deviation from ideal acceptor angle
   double max_don_out_of_plane_angle = MAX_DON_OUT_OF_PLANE_ANGLE; // Maximum out-of-plane deviation for donor
+  double max_acc_out_of_plane_angle = MAX_ACC_OUT_OF_PLANE_ANGLE; // Maximum out-of-plane deviation for acceptor
 
 } hydrogen_bond_opts;
-
-/// Validate geometry for hydrogen bonds
-bool are_geometrically_viable(
-  const RDKit::RWMol &mol,
-  const RDKit::Atom &donor,
-  const RDKit::Atom &acceptor,
-  const HBondParameters &opts
-);
 
 AtomType add_hydrogen_donor     (const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_hydrogen_acceptor  (const RDKit::RWMol &mol, const RDKit::Atom &atom);
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
+class Luni;
 Contacts find_hydrogen_bonds     (const Luni &luni, const HBondParameters &opts = hydrogen_bond_opts);
 Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts = hydrogen_bond_opts);
 

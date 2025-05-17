@@ -1,4 +1,5 @@
 #include "chemistry/predicates.hpp"
+#include "definitions.hpp"
 
 namespace lahuta::chemistry {
 
@@ -40,4 +41,3 @@ bool in_aromatic_ring_with_N_or_O(const RDKit::RWMol &mol, const RDKit::Atom &at
 }
 
 } // namespace lahuta::chemistry
-

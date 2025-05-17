@@ -4,8 +4,6 @@
 #include "neighbors.hpp"
 namespace lahuta {
 
-bool is_metalic(AtomType at1, AtomType at2);
-
 inline struct MetalicParams {
   constexpr static double distance_max = 3.0;
 } metalic_params;

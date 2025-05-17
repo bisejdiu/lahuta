@@ -1,8 +1,8 @@
 #include "contacts/hydrogen_bonds.hpp"
-#include "chemistry/geometry.hpp"
-#include "chemistry/predicates.hpp"
 #include "chemistry/neighbors.hpp"
+#include "chemistry/predicates.hpp"
 #include "common.hpp"
+#include "contacts/hbond_geo_validity.hpp"
 #include "contacts/search.hpp"
 #include "contacts/utils.hpp"
 #include "lahuta.hpp"
@@ -11,7 +11,6 @@
 namespace lahuta {
 
 // FIX: use the new syntax to check for waters
-
 const std::array<std::string, 11> WaterResidues = {"HOH", "W", "SOL", "TIP3", "SPC", "H2O", "TIP4", "TIP", "DOD", "D3O", "WAT"};
 
 bool is_water(const RDKit::Atom &atom) {
@@ -22,63 +21,6 @@ bool is_water(const RDKit::Atom &atom) {
 
 bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
   return is_water(atom_a) && is_water(atom_b);
-}
-
-bool are_geometrically_viable(
-    const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
-    const HBondParameters &opts) {
-
-  // donor angles
-  const auto &[don_angles, don_h_angles] = chemistry::calculate_angle(mol, donor, acceptor, opts.ignore_hydrogens);
-
-  double ideal_don_angle = chemistry::get_atom_geometry_angle(donor.getHybridization());
-
-  for (double don_angle : don_angles) {
-    if (std::abs(ideal_don_angle - don_angle) > opts.max_don_angle_dev) {
-      return false;
-    }
-  }
-
-  if (!don_h_angles.empty() && std::all_of(don_h_angles.begin(), don_h_angles.end(), [&opts](double h_angle) {
-        return h_angle >= opts.max_don_angle_dev;
-      })) {
-    return false;
-  }
-
-  // out-of-plane angle for sp2 hybridized atoms
-  if (donor.getHybridization() == HybridizationType::SP2) {
-    auto out_of_plane = chemistry::compute_plane_angle(mol, donor, acceptor);
-    if (out_of_plane.value_or(-1.0) > opts.max_don_out_of_plane_angle) return false;
-  }
-
-  // If hydrogens are being considered and any exist, use the nearest H, otherwise use donor
-  const auto &donor_atom_for_acc = (!opts.ignore_hydrogens && !don_h_angles.empty())
-          ? chemistry::find_closest_hydrogen_atom(mol, donor, acceptor).value_or(std::cref(donor)).get()
-          : donor;
-
-  // acceptor angles
-  const auto &[acc_angles, acc_h_angles] = chemistry::calculate_angle(mol, acceptor, donor_atom_for_acc, opts.ignore_hydrogens);
-
-  double ideal_acc_angle = chemistry::get_atom_geometry_angle(acceptor.getHybridization());
-
-  // Check acceptor angles (do not limit large acceptor angles)
-  for (double acc_angle : acc_angles) {
-    if (ideal_acc_angle - acc_angle > opts.max_acc_angle_dev) {
-      return false;
-    }
-  }
-  for (double acc_h_angle : acc_h_angles) {
-    if (ideal_acc_angle - acc_h_angle > opts.max_acc_angle_dev) {
-      return false;
-    }
-  }
-
-  // out-of-plane angle for sp2 hybridized atoms
-  if (acceptor.getHybridization() == RDKit::Atom::HybridizationType::SP2) {
-    auto out_of_plane = chemistry::compute_plane_angle(mol, acceptor, donor_atom_for_acc);
-    if (out_of_plane.value_or(-1.0) > opts.max_acc_out_of_plane_angle) return false;
-  }
-  return true;
 }
 
 AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
@@ -225,7 +167,7 @@ Contacts find_hydrogen_bonds(const Luni &luni, const HBondParameters &opts) {
     if (dist > max_dist * max_dist) continue;
 
     if (!opts.include_water && is_water_hbond(*donor, *acceptor)) continue;
-    if (!are_geometrically_viable(mol, *donor, *acceptor, opts)) continue;
+    if (!hb_geo::are_geometrically_viable(mol, *donor, *acceptor, opts)) continue;
 
     if (donor->getIdx() == acceptor->getIdx() || dist < 2.0) continue;
     if (is_duplicate({donor->getIdx(), acceptor->getIdx()}, seen)) continue;
@@ -257,7 +199,7 @@ Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts)
 
     if (are_residueids_close(mol, *wdonor.atom, *acceptor.atom, 1)) continue;
     if (!opts.include_water && is_water_hbond(*wdonor.atom, *acceptor.atom)) continue;
-    if (!are_geometrically_viable(mol, *wdonor.atom, *acceptor.atom, opts)) continue;
+    if (!hb_geo::are_geometrically_viable(mol, *wdonor.atom, *acceptor.atom, opts)) continue;
 
     contacts.add(Contact(
         static_cast<EntityID>(wdonor.atom->getIdx()),
@@ -268,5 +210,6 @@ Contacts find_weak_hydrogen_bonds(const Luni &luni, const HBondParameters &opts)
 
   return contacts;
 }
+
 
 } // namespace lahuta
