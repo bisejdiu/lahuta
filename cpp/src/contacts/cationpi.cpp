@@ -3,7 +3,7 @@
 #include "contacts/utils.hpp"
 #include "lahuta.hpp"
 #include "neighbors.hpp"
-#include "contacts/geometry.hpp"
+#include "chemistry/geometry.hpp"
 
 namespace lahuta {
 
@@ -25,7 +25,7 @@ Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
 
     if (is_same_residue(luni.get_molecule(), *first_ring_atom, *feature.atoms.front())) continue;
 
-    auto offset = geometry::compute_in_plane_offset(feature.center, ring.center, ring.normal);
+    auto offset = chemistry::compute_in_plane_offset(feature.center, ring.center, ring.normal);
 
     if (offset <= opts.offset_max) {
       contacts.add(Contact(

@@ -1,5 +1,5 @@
 #include "contacts/pistacking.hpp"
-#include "contacts/geometry.hpp"
+#include "chemistry/geometry.hpp"
 #include "contacts/search.hpp"
 #include "contacts/utils.hpp"
 #include "lahuta.hpp"
@@ -26,8 +26,8 @@ Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
     auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
     if (angle > M_PI / 2) angle = M_PI - angle; // obtuse -> acute
 
-    double offset_a = geometry::compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.normal);
-    double offset_b = geometry::compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.normal);
+    double offset_a = chemistry::compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.normal);
+    double offset_b = chemistry::compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.normal);
 
     if (std::min(offset_a, offset_b) <= opts.offset_max) {
       EntityID entity1 = make_entity_id(EntityType::Ring, ring_a.get_id());

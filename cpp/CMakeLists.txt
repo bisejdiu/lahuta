@@ -115,7 +115,7 @@ add_subdirectory(external/distopia)
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
-            src/contacts/geometry.cpp src/contacts/charges.cpp src/topology.cpp
+            src/contacts/charges.cpp src/topology.cpp
             src/contacts/hydrophobic.cpp src/contacts/halogen_bonds.cpp
             src/residues.cpp src/contacts/aromaticity.cpp src/aromatics.cpp src/contacts/ionic.cpp
             src/contacts/metalic.cpp src/contacts/cationpi.cpp src/contacts/pistacking.cpp
@@ -134,6 +134,11 @@ add_library(lahuta_cpp STATIC
             src/topology/kernels/rings.cpp
             src/topology/kernels/residues.cpp
             src/topology/kernels/atom_typing.cpp
+
+            src/chemistry/neighbors.cpp
+            src/chemistry/geometry.cpp
+            src/chemistry/predicates.cpp
+
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)

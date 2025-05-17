@@ -1,5 +1,5 @@
 #include "contacts/halogen_bonds.hpp"
-#include "contacts/geometry.hpp"
+#include "chemistry/geometry.hpp"
 #include "contacts/search.hpp"
 #include "lahuta.hpp"
 
@@ -27,12 +27,12 @@ bool are_geometrically_viable(
     const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
     const HalogenParams &opts) {
 
-  auto [halogen_angles, _] = geometry::calculate_angle(mol, donor, acceptor, true);
+  auto [halogen_angles, _] = chemistry::calculate_angle(mol, donor, acceptor, true);
   if (halogen_angles.size() != 1) return false;
 
   if (opts.optimal_angle - halogen_angles[0] > opts.angle_max) return false;
 
-  auto [acceptor_angles, __] = geometry::calculate_angle(mol, acceptor, donor, true);
+  auto [acceptor_angles, __] = chemistry::calculate_angle(mol, acceptor, donor, true);
   if (acceptor_angles.empty()) return false;
 
   bool exit_outer_flag = false;

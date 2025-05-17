@@ -7,8 +7,6 @@
 
 namespace lahuta {
 
-constexpr double deg_to_rad(double degrees) { return degrees * (M_PI / 180.0); }
-
 /// Returns the atoms bonded to the given atom with the specified atomic number.
 inline std::vector<const RDKit::Atom *>
 bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, int atomic_number) {

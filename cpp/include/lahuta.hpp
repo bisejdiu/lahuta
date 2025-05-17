@@ -6,18 +6,14 @@
 #include <string>
 #include <vector>
 
-#include <gemmi/mmread_gz.hpp>
-#include <gemmi/model.hpp>
-#include <rdkit/Geometry/point.h>
-#include <rdkit/GraphMol/BondIterators.h>
-
 #include "convert.hpp"
 #include "entity.hpp"
 #include "logging.hpp"
 #include "topology.hpp"
 
-constexpr const char* LAHUTA_VERSION = "0.50.0";
+constexpr const char *LAHUTA_VERSION = "0.50.0";
 
+// clang-format off
 namespace lahuta {
 
 // NOTE: rename to Lahuta?
@@ -76,7 +72,7 @@ public:
     if (topology) { topology->assign_arpeggio_atom_types(); } 
     else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
   }
-  
+
   /// Enable or disable a specific computation in the topology
   void enable_topology_computation(TopologyComputation comp, bool enabled) {
     ensure_topology_initialized();
@@ -84,7 +80,7 @@ public:
       topology->enable_computation(comp, enabled);
     }
   }
-  
+
   /// Enable only the specified computations (disabling all others)
   void enable_topology_only(TopologyComputation comps) {
     ensure_topology_initialized();
@@ -92,7 +88,7 @@ public:
       topology->enable_only(comps);
     }
   }
-  
+
   /// Check if a specific computation is enabled
   bool is_topology_computation_enabled(TopologyComputation comp) const {
     if (topology) { 
@@ -101,7 +97,7 @@ public:
     Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
     return false;
   }
-  
+
   /// Execute a specific computation with its dependencies
   bool execute_topology_computation(TopologyComputation comp) {
     if (topology) { 
@@ -110,7 +106,7 @@ public:
     Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
     return false;
   }
-  
+
   /// Set the cutoff for neighbor search
   void set_neighbor_search_cutoff(double cutoff) {
     ensure_topology_initialized();
@@ -118,7 +114,7 @@ public:
       topology->set_cutoff(cutoff);
     }
   }
-  
+
   /// Set the atom typing method
   void set_atom_typing_method(ContactComputerType method) {
     ensure_topology_initialized();

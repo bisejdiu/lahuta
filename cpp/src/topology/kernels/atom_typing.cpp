@@ -6,6 +6,7 @@
 #include "topology/data.hpp"
 #include "topology/kernels.hpp"
 #include <rdkit/GraphMol/RWMol.h>
+#include <valence_model.hpp>
 
 // clang-format off
 namespace lahuta::topology {
