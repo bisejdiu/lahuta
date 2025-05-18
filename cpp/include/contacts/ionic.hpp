@@ -1,17 +1,18 @@
 #ifndef LAHUTA_IONIC_HPP
 #define LAHUTA_IONIC_HPP
 
-#include "neighbors.hpp"
+#include "entities/contact.hpp"
 
 namespace lahuta {
 
 class Luni;
+class Topology;
 
 struct IonicParams {
   double distance_max = 5.0;
 };
 
-Contacts find_ionic(const Luni &luni, std::optional<IonicParams> params = std::nullopt);
+ContactSet find_ionic(const Topology& topology, const IonicParams& params = IonicParams{});
 
 } // namespace lahuta
 

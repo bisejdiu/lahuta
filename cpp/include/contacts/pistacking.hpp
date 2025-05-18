@@ -1,11 +1,11 @@
 #ifndef LAHUTA_PISTACKING_HPP
 #define LAHUTA_PISTACKING_HPP
 
-#include "neighbors.hpp"
+#include "entities/contact.hpp"
 
 namespace lahuta {
 
-class Luni;
+class Topology;
 
 struct PiStackingParams {
   double distance_max = 6.0;
@@ -13,8 +13,7 @@ struct PiStackingParams {
   double offset_max = 2.1;
 };
 
-inline constexpr PiStackingParams default_pistacking_params{};
-Contacts find_pistacking(const Luni &luni, const PiStackingParams &opts = default_pistacking_params);
+ContactSet find_pistacking(const Topology &topology, const PiStackingParams &opts = PiStackingParams{});
 
 } // namespace lahuta
 

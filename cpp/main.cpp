@@ -2,14 +2,15 @@
 #include "lahuta.hpp"
 #include "logging.hpp"
 #include "selections/tokenizer.hpp"
+#include <GraphMol/BondIterators.h>
 
 using namespace lahuta;
 
 int main(int argc, char const *argv[]) {
-  /*if (argc < 2) {*/
-  /*  std::cerr << "Usage: " << argv[0] << " <cif file>" << std::endl;*/
-  /*  return 1;*/
-  /*}*/
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <cif file>" << std::endl;
+    return 1;
+  }
 
   Logger::get_instance().set_log_level(Logger::LogLevel::Trace);
 
@@ -40,95 +41,94 @@ int main(int argc, char const *argv[]) {
   bool is_enabled = luni.is_topology_computation_enabled(TopologyComputation::AtomTyping);
   std::cout << "Atom typing enabled: " << (is_enabled ? "yes" : "no") << std::endl;
   
-  // Get atom types using Molstar (already done in topology build)
-  const AtomEntityCollection &molstar_types = luni.get_topology().get_atom_types();
-  std::cout << "Molstar atom types: " << molstar_types.size() << std::endl;
-  
-  if (molstar_types.size() > 0) {
-    const auto hydrophobic_atoms_molstar = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
-    std::cout << "Hydrophobic atoms (Molstar): " << hydrophobic_atoms_molstar.size() << std::endl;
-  }
-  
-  // Now try Arpeggio atom typing
-  std::cout << "\nSwitching to Arpeggio atom typing..." << std::endl;
-  luni.assign_arpeggio_atom_types();
-  
-  // Check atom types after Arpeggio
-  const AtomEntityCollection &arpeggio_types = luni.get_topology().get_atom_types();
-  std::cout << "Arpeggio atom types: " << arpeggio_types.size() << std::endl;
-  
-  if (arpeggio_types.size() > 0) {
-    const auto hydrophobic_atoms_arpeggio = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
-    std::cout << "Hydrophobic atoms (Arpeggio): " << hydrophobic_atoms_arpeggio.size() << std::endl;
-  }
-  
-  // Switch back to Molstar
-  std::cout << "\nSwitching back to Molstar atom typing..." << std::endl;
-  luni.assign_molstar_atom_types();
-  
-  // Check atom types after switching back to Molstar
-  const AtomEntityCollection &molstar_types_again = luni.get_topology().get_atom_types();
-  std::cout << "Molstar atom types (again): " << molstar_types_again.size() << std::endl;
-  
-  if (molstar_types_again.size() > 0) {
-    const auto hydrophobic_atoms_molstar_again = AtomEntityCollection::filter(&luni, AtomType::HYDROPHOBIC);
-    std::cout << "Hydrophobic atoms (Molstar again): " << hydrophobic_atoms_molstar_again.size() << std::endl;
-  }
-
 
   InteractionOptions opts{5.0};
-  Interactions interactions(luni, opts);
+  auto &topology = luni.get_topology();
+  Interactions interactions(topology, opts);
 
   std::cout << "HBonds" << std::endl;
+  auto start_hb = std::chrono::high_resolution_clock::now();
   auto _1 = interactions.hbond();
+  auto end_hb = std::chrono::high_resolution_clock::now();
+  auto hb_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_hb - start_hb);
+  std::cout << "Time: " << hb_duration.count() << " us" << std::endl;
   /*_1.sort_interactions();*/
   /*_1.print_interactions();*/
   std::cout << "size: HBonds: " << _1.size() << std::endl;
 
   std::cout << "Weak HBonds" << std::endl;
+  auto start_weak_hb = std::chrono::high_resolution_clock::now();
   auto _2 = interactions.weak_hbond();
+  auto end_weak_hb = std::chrono::high_resolution_clock::now();
+  auto weak_hb_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_weak_hb - start_weak_hb);
+  std::cout << "Time: " << weak_hb_duration.count() << " us" << std::endl;
   /*_2.sort_interactions();*/
   /*_2.print_interactions();*/
   std::cout << "size: Weak HBonds: " << _2.size() << std::endl;
 
   std::cout << "Hydrophobic" << std::endl;
+  auto hb_start = std::chrono::high_resolution_clock::now();
   auto _3 = interactions.hydrophobic();
+  auto hb_end = std::chrono::high_resolution_clock::now();
+  auto hb_duration2 = std::chrono::duration_cast<std::chrono::microseconds>(hb_end - hb_start);
+  std::cout << "Time: " << hb_duration2.count() << " us" << std::endl;
   /*_3.sort_interactions();*/
   /*_3.print_interactions();*/
   std::cout << "size: Hydrophobic: " << _3.size() << std::endl;
 
   std::cout << "Halogen" << std::endl;
+  auto start_halogen = std::chrono::high_resolution_clock::now();
   auto _4 = interactions.halogen();
+  auto end_halogen = std::chrono::high_resolution_clock::now();
+  auto halogen_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_halogen - start_halogen);
+  std::cout << "Time: " << halogen_duration.count() << " us" << std::endl;
   /*_4.sort_interactions();*/
   /*_4.print_interactions();*/
-  std::cout << "Halogen: " << _4.size() << std::endl;
+  // std::cout << "size: Halogen: " << _4.size() << std::endl;
 
   std::cout << "Ionic" << std::endl;
+  auto start_ionic = std::chrono::high_resolution_clock::now();
   auto _5 = interactions.ionic();
+  auto end_ionic = std::chrono::high_resolution_clock::now();
+  auto ionic_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ionic - start_ionic);
+  std::cout << "Time: " << ionic_duration.count() << " us" << std::endl;
   /*_5.sort_interactions();*/
   /*_5.print_interactions();*/
   std::cout << "size: Ionic: " << _5.size() << std::endl;
 
   std::cout << "Metalic" << std::endl;
-  auto _6 = interactions.metalic();
+  auto start_metalic = std::chrono::high_resolution_clock::now();
+  auto _6 = interactions.metal();
+  auto end_metalic = std::chrono::high_resolution_clock::now();
+  auto metalic_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_metalic - start_metalic);
+  std::cout << "Time: " << metalic_duration.count() << " us" << std::endl;
   /*_6.sort_interactions();*/
   /*_6.print_interactions();*/
   std::cout << "size: Metalic: " << _6.size() << std::endl;
 
   std::cout << "CationPi" << std::endl;
+  auto start_cationpi = std::chrono::high_resolution_clock::now();
   auto _7 = interactions.cationpi();
+  auto end_cationpi = std::chrono::high_resolution_clock::now();
+  auto cationpi_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_cationpi - start_cationpi);
+  std::cout << "Time: " << cationpi_duration.count() << " us" << std::endl;
   /*_7.sort_interactions();*/
   /*_7.print_interactions();*/
   std::cout << "size: CationPi: " << _7.size() << std::endl;
 
   std::cout << "PiStacking" << std::endl;
+  auto start_pistacking = std::chrono::high_resolution_clock::now();
   auto _8 = interactions.pistacking();
+  auto end_pistacking = std::chrono::high_resolution_clock::now();
+  auto pistacking_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_pistacking - start_pistacking);
+  std::cout << "Time: " << pistacking_duration.count() << " us" << std::endl;
   /*_8.sort_interactions();*/
   /*_8.print_interactions();*/
   std::cout << "size: PiStacking: " << _8.size() << std::endl;
 
   int o1{}, o2{}, aromatic{};
-  for (auto bond: mol->bonds()) {
+  for (auto bond_it = mol->beginBonds(); bond_it != mol->endBonds(); ++bond_it) {
+    RDKit::Bond *bond = *bond_it;
 
     if (bond->getBondType() == RDKit::Bond::BondType::SINGLE) {
       o1++;

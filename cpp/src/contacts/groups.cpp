@@ -1,44 +1,31 @@
 #include "contacts/groups.hpp"
+#include "Geometry/point.h"
 
 namespace lahuta {
 
-GroupEntityCollection GroupTypeStrategy::identify(const RDKit::RWMol &mol, const Residues &residues) const {
+std::vector<GroupRec> GroupTypeAnalysis::analyze(const RDKit::RWMol &mol, const Residues &residues) {
+  std::vector<GroupRec> groups;
+  // groups.reserve(...); // ?
 
-  std::vector<GroupEntity> group_features; // all features from all strategies
-  for (const auto &strategy : strategies) {
-    auto features = strategy->identify(mol, residues); // features from one strategy
-    group_features.insert(group_features.end(), features.get_data().begin(), features.get_data().end());
+  for (std::size_t i = 0; i < NumBuiltinGroups; ++i) {
+    auto group_recs = BuilltInGroupFns[i](mol, residues);
+    groups.insert(groups.end(), std::make_move_iterator(group_recs.begin()), std::make_move_iterator(group_recs.end()));
   }
-  // NOTE: `group_features` is not sorted as we get it from the strategies.
-  // If we do not sort `members` somehow, the currently assign ids just lock-in
-  // the order of the features as it already is.
-  assign_ids(group_features);
-  compute_centers(group_features);
 
-  return {group_features};
-}
+  if (!groups.empty() && !groups.front().atoms.empty()) {
+    auto &conf = mol.getConformer();
 
-void GroupTypeStrategy::assign_ids(std::vector<GroupEntity> &features) const {
-  for (size_t i = 0; i < features.size(); ++i) {
-    features[i].set_id(i);
-  }
-}
-
-void GroupTypeStrategy::compute_centers(std::vector<GroupEntity> &features) const {
-  if (features.empty() || features.front().atoms.empty()) return;
-
-  auto &conf = features.front().atoms.front()->getOwningMol().getConformer();
-  for (auto &feature : features) {
-    RDGeom::Point3D center_ = {0.0, 0.0, 0.0};
-    for (const auto *atom : feature.atoms) {
-      auto pos = conf.getAtomPos(atom->getIdx());
-      center_ += pos;
+    for (auto &group : groups) {
+      RDGeom::Point3D centroid{0.0, 0.0, 0.0};
+      for (auto atom_idx : group.atoms) {
+          centroid += conf.getAtomPos(atom_idx);
+      }
+      centroid /= group.atoms.size();
+      group.center = centroid;
     }
-    center_ /= feature.atoms.size();
-    feature.center[0] = center_.x;
-    feature.center[1] = center_.y;
-    feature.center[2] = center_.z;
   }
+
+  return groups;
 }
 
 } // namespace lahuta

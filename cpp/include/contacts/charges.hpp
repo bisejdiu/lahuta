@@ -8,18 +8,19 @@
 #ifndef LAHUTA_CHARGES_HPP
 #define LAHUTA_CHARGES_HPP
 
-#include "entities.hpp"
+#include "entities/records.hpp"
 #include "residues.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
+#include <vector>
 
 namespace lahuta {
 
 auto identify_positive_charge_groups(const RDKit::RWMol &mol);
 auto identify_negative_charge_groups(const RDKit::RWMol &mol);
 
-[[nodiscard]] GroupEntityCollection add_positive_charges(const RDKit::RWMol &mol, const Residues &residues);
-[[nodiscard]] GroupEntityCollection add_negative_charges(const RDKit::RWMol &mol, const Residues &residues);
+[[nodiscard]] std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residues &residues);
+[[nodiscard]] std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residues &residues);
 
 } // namespace lahuta
 

@@ -103,16 +103,6 @@ inline bool are_residueids_close(
   return std::abs(info_a->getResidueNumber() - info_b->getResidueNumber()) <= threshold;
 }
 
-template <typename T, typename Hash = std::hash<T>>
-static bool is_duplicate(const T &pair, std::unordered_set<T, Hash> &seen) {
-
-  T sorted_pair = std::minmax(pair.first, pair.second);
-  if (seen.find(sorted_pair) != seen.end()) return true;
-
-  seen.insert(sorted_pair);
-  return false;
-}
-
 } // namespace lahuta
 
 #endif // LAHUTA_CONTACT_UTILS_HPP

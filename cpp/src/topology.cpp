@@ -18,6 +18,7 @@ void Topology::build(TopologyBuildingOptions tops) {
       Logger::get_logger()->error("Failed to execute topology computations");
       throw std::runtime_error("Failed to execute topology computations. See logs for details.");
     }
+
   } catch (const std::exception &e) {
     // FIX: I don't think we are properly propagating the error
     Logger::get_logger()->critical(
@@ -35,6 +36,7 @@ void Topology::assign_molstar_typing() {
     params->use_molstar = true;
     engine_->enable(label, true);
     engine_->execute_computation(label);
+
   } else {
     Logger::get_logger()->error("Could not get parameters for atom typing computation");
   }
@@ -48,6 +50,7 @@ void Topology::assign_arpeggio_atom_types() {
     params->use_molstar = false;
     engine_->enable(label, true);
     engine_->execute_computation(label);
+
   } else {
     Logger::get_logger()->error("Could not get parameters for atom typing computation");
   }
@@ -108,17 +111,18 @@ bool Topology::execute_computation(TopologyComputation comp) {
       success &= engine_->execute_computation(get_label(flag));
     }
   }
+
   return success;
 }
 
 void Topology::set_cutoff(double cutoff) {
-  if (engine_) throw std::runtime_error("No engine available");
+  if (!engine_) throw std::runtime_error("No engine available");
   auto* params = engine_->get_parameters<topology::NeighborSearchParams>(topology::NeighborSearchComputation<>::label);
   if (params) params->cutoff = cutoff;
 }
 
 void Topology::set_atom_typing_method(ContactComputerType method) {
-  if (engine_) throw std::runtime_error("No engine available");
+  if (!engine_) throw std::runtime_error("No engine available");
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(topology::AtomTypingComputation<>::label);
   if (params) params->use_molstar = (method == ContactComputerType::Molstar);
 }
@@ -128,9 +132,9 @@ void Topology::set_compute_nonstandard_bonds(bool compute) {
   engine_->enable(topology::NonStandardBondComputation<>::label, compute);
 }
 
-const topology::compute::ComputationLabel& Topology::get_label(TopologyComputation comp) {
+const topology::ComputationLabel& Topology::get_label(TopologyComputation comp) {
   switch (comp) {
-    // this is a bit hiddne here and we may easily forget to update it if we add new computations
+    // this is a bit hidden here and we may easily forget to update it if we add new computations
     case TopologyComputation::Neighbors:         return topology::NeighborSearchComputation<>::label;
     case TopologyComputation::Bonds:             return topology::BondComputation<>::label;
     case TopologyComputation::NonStandardBonds:  return topology::NonStandardBondComputation<>::label;
@@ -142,23 +146,49 @@ const topology::compute::ComputationLabel& Topology::get_label(TopologyComputati
   }
 }
 
+// FIX: We should update our code so we do not rely on this anymore.
 size_t Topology::total_size() const {
   size_t total = sizeof(*this);
 
   // Get size of topology data elements
   const auto& data = engine_->get_data();
 
-  total += sizeof(AtomEntity)  * data.atom_types.get_data().size();
-  total += sizeof(RingEntity)  * data.rings     .get_data().size();
-  total += sizeof(GroupEntity) * data.features.  get_data().size();
+  total += sizeof(AtomRec)  * data.atoms.size();
+  total += sizeof(RingRec)  * data.rings.size();
+  total += sizeof(GroupRec) * data.groups.size();
 
-  if (mol_) {
-    total += sizeof(*mol_);
-  }
+  total += sizeof(AtomRec)  * engine_->get_data().atoms.size();
+  total += sizeof(RingRec)  * engine_->get_data().rings.size();
+  total += sizeof(GroupRec) * engine_->get_data().groups.size();
 
+  if (mol_) { total += sizeof(*mol_); }
   total += data.residues->total_size();
 
   return total;
+}
+
+const AtomRec& Topology::atom(uint32_t idx) const {
+  if (idx >= engine_->get_data().atoms.size()) {
+    std::cerr << "ERROR: Atom index " << idx << " is out of bounds for size " << engine_->get_data().atoms.size() << std::endl;
+    throw std::out_of_range("Atom index out of range");
+  }
+  return engine_->get_data().atoms[idx];
+}
+
+const RingRec& Topology::ring(uint32_t idx) const {
+  if (idx >= engine_->get_data().rings.size()) {
+    std::cerr << "ERROR: Ring index " << idx << " is out of bounds for size " << engine_->get_data().rings.size() << std::endl;
+    throw std::out_of_range("Ring index out of range");
+  }
+  return engine_->get_data().rings[idx];
+}
+
+const GroupRec& Topology::group(uint32_t idx) const {
+  if (idx >= engine_->get_data().groups.size()) {
+    std::cerr << "ERROR: Group index " << idx << " is out of bounds for size " << engine_->get_data().groups.size() << std::endl;
+    throw std::out_of_range("Group index out of range");
+  }
+  return engine_->get_data().groups[idx];
 }
 
 } // namespace lahuta

@@ -7,11 +7,10 @@
 #include <vector>
 
 #include "convert.hpp"
-#include "entity.hpp"
 #include "logging.hpp"
 #include "topology.hpp"
 
-constexpr const char *LAHUTA_VERSION = "0.50.0";
+constexpr const char *LAHUTA_VERSION = "0.70.0";
 
 // clang-format off
 namespace lahuta {
@@ -47,20 +46,8 @@ public:
   RDKit::Conformer &get_conformer(int id = -1) { return mol->getConformer(id); }
   const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
-  const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
-  const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
-  const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
-
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
-
-  /// EntityID -> AtomEntity/GroupEntity/RingEntity
-  template <typename T> const T &get_entity(EntityID id) const;
-
-  /// AtomEntity/GroupEntity/RingEntity -> EntityID
-  const std::vector<EntityID> &get_or_create_atom_entities();
-  const std::vector<EntityID> &get_or_create_ring_entities();
-  const std::vector<EntityID> &get_or_create_group_entities();
 
   /// Can be called using the topology
   void assign_molstar_atom_types()  { 
@@ -195,7 +182,6 @@ private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
   bool topology_built_ = false;
-  std::unordered_map<EntityType, std::vector<EntityID>> entities;
 
   std::string file_name_;
   std::vector<int> filtered_indices;

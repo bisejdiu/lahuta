@@ -4,7 +4,11 @@
 #include "residues.hpp"
 #include "topology/engine.hpp"
 #include "topology_flags.hpp"
+#include "entities/entity_id.hpp"
+#include "entities/records.hpp"
+#include "entities/view.hpp"
 #include <memory>
+#include <vector>
 
 namespace lahuta {
 
@@ -28,9 +32,9 @@ public:
     : mol_(mol), engine_(std::make_unique<topology::TopologyEngine>(mol)) {}
 
   const Residues &get_residues() const { return *engine_->get_data().residues; }
-  const AtomEntityCollection  &get_atom_types() const { return engine_->get_data().atom_types; }
-  const RingEntityCollection  &get_rings()      const { return engine_->get_data().rings; }
-  const GroupEntityCollection &get_features()   const { return engine_->get_data().features; }
+
+  template<typename Rec>
+  constexpr const std::vector<Rec>& records() const noexcept;
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
 
@@ -67,20 +71,57 @@ public:
   /// Set whether to compute non-standard bonds
   void set_compute_nonstandard_bonds(bool compute);
 
-  /// Get the engine
-  topology::TopologyEngine* get_engine() { return engine_.get(); }
-
   /// approximate total memory usage
   size_t total_size() const;
 
+  const AtomRec&  atom (std::uint32_t idx) const;
+  const RingRec&  ring (std::uint32_t idx) const;
+  const GroupRec& group(std::uint32_t idx) const;
+
+  const RDKit::RWMol& molecule() const { return *mol_; }
+  const RDKit::Conformer& conformer() const { return mol_->getConformer(); }
+  const auto& get_engine() const { return *engine_; }
+
+  template <Kind K>
+  const typename RecordTypeFor<K>::type& resolve(EntityID id) const {
+    if (id.kind() != K) {
+      throw std::runtime_error("EntityID kind mismatch");
+    }
+    switch (K) {
+      case Kind::Atom:  return atom(id.index());
+      case Kind::Ring:  return ring(id.index());
+      case Kind::Group: return group(id.index());
+      default: throw std::runtime_error("Invalid EntityID kind");
+    }
+  }
+
+  template <typename Fn>
+  decltype(auto) apply_to_entity(EntityID id, Fn&& fun) {
+    switch (id.kind()) {
+      case Kind::Atom:  return fun(atom (id.index()));
+      case Kind::Ring:  return fun(ring (id.index()));
+      case Kind::Group: return fun(group(id.index()));
+      default: throw std::runtime_error("Invalid EntityID kind");
+    }
+  }
+
+  // create a view for a specific record type
+  template <typename RecordT, typename PredT>
+  auto record_view(PredT pred) const {
+    return make_view(records<RecordT>(), std::forward<PredT>(pred));
+  }
+
 private:
-  // Get compute::ComputationLabel from TopologyComputation
   static const topology::ComputationLabel& get_label(TopologyComputation comp);
 
 private:
   std::shared_ptr<RDKit::RWMol> mol_;
   std::unique_ptr<topology::TopologyEngine> engine_;
 };
+
+template<> inline constexpr const std::vector<AtomRec>&  Topology::records<AtomRec>()  const noexcept { return engine_->get_data().atoms; }
+template<> inline constexpr const std::vector<RingRec>&  Topology::records<RingRec>()  const noexcept { return engine_->get_data().rings; }
+template<> inline constexpr const std::vector<GroupRec>& Topology::records<GroupRec>() const noexcept { return engine_->get_data().groups; }
 
 } // namespace lahuta
 

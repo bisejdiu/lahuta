@@ -1,38 +1,20 @@
 #include "contacts/ionic.hpp"
-#include "contacts/search.hpp"
-#include "contacts/utils.hpp"
-#include "lahuta.hpp"
-#include "common.hpp"
+#include "entities/find_contacts.hpp"
 
+// clang-format off
 namespace lahuta {
 
-Contacts find_ionic(const Luni &luni, std::optional<IonicParams> params) {
-
-  Contacts contacts(&luni);
-  IonicParams opts = params.value_or(IonicParams{});
-
-  const auto positives = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
-  const auto negatives = GroupEntityCollection::filter(&luni, AtomType::NEG_IONISABLE);
-
-  auto results = EntityNeighborSearch::search(positives, negatives, opts.distance_max);
-
-  std::unordered_set<std::pair<int, int>, common::PairHash> seen;
-
-  for (const auto &[pair, dist] : results) {
-    auto [positive_idx, negative_idx] = pair;
-    auto positive = positives[positive_idx];
-    auto negative = negatives[negative_idx];
-
-    if (positive.get_id() == negative.get_id() || dist < 2.0) continue;
-    if (is_duplicate({negative.get_id(), positive.get_id()}, seen)) continue;
-
-    EntityID entity1 = make_entity_id(EntityType::Group, negative.get_id());
-    EntityID entity2 = make_entity_id(EntityType::Group, positive.get_id());
-
-    contacts.add(Contact(entity1, entity2, dist, InteractionType::Ionic));
-  }
-
-  return contacts;
+ContactSet find_ionic(const Topology& topology, const IonicParams& params) {
+  return find_contacts(
+    topology,
+    [](const GroupRec &r) { return (r.a_type & AtomType::POS_IONISABLE) == AtomType::POS_IONISABLE; },
+    [](const GroupRec &r) { return (r.a_type & AtomType::NEG_IONISABLE) == AtomType::NEG_IONISABLE; },
+    {params.distance_max, 0.5, 0.5},
+    [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
+      if (dist < 2.0 || rec_idx_a == rec_idx_b) return InteractionType::None; // FIX: idx1 == idx2 should not be necessary
+      return InteractionType::Ionic;
+    }
+  );
 }
 
 } // namespace lahuta

@@ -9,13 +9,14 @@
 #define LAHUTA_HYDROGEN_BONDS_HPP
 
 #include "atom_types.hpp"
-#include "neighbors.hpp"
+#include "entities/contact.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RWMol.h>
 
 // clang-format off
 namespace lahuta {
+class Topology;
 
 constexpr double MAX_DIST = 3.5;
 constexpr double MAX_SULFUR_DIST = 4.1;
@@ -42,8 +43,8 @@ AtomType add_hydrogen_acceptor  (const RDKit::RWMol &mol, const RDKit::Atom &ato
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
 class Luni;
-Contacts find_hydrogen_bonds     (const Luni &luni, std::optional<HBondParameters> opts = std::nullopt);
-Contacts find_weak_hydrogen_bonds(const Luni &luni, std::optional<HBondParameters> opts = std::nullopt);
+ContactSet find_hydrogen_bonds     (const Topology &topology, const HBondParameters &opts = HBondParameters{});
+ContactSet find_weak_hydrogen_bonds(const Topology &topology, HBondParameters opts = HBondParameters{});
 
 } // namespace lahuta
 

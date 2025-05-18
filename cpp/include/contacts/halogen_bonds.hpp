@@ -1,11 +1,13 @@
 #ifndef LAHUTA_HALOGEN_BONDS_HPP
 #define LAHUTA_HALOGEN_BONDS_HPP
 
-#include "neighbors.hpp"
+#include "atom_types.hpp"
+#include "entities/contact.hpp"
+#include <GraphMol/Atom.h>
+#include <GraphMol/RWMol.h>
 
 namespace lahuta {
-
-class Luni;
+class Topology;
 
 struct HalogenParams {
   double distance_max = 4.0;
@@ -20,7 +22,7 @@ AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 // Halogen bond acceptors (Y-{O|N|S}, with Y=C,P,N,S)
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-Contacts find_halogen_bonds(const Luni &luni, std::optional<HalogenParams> params = std::nullopt);
+ContactSet find_halogen_bonds(const Topology &topology, const HalogenParams &params = HalogenParams{});
 
 } // namespace lahuta
 

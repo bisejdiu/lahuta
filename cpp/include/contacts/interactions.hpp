@@ -1,92 +1,91 @@
 #ifndef LAHUTA_INTERACTIONS_HPP
 #define LAHUTA_INTERACTIONS_HPP
 
-#include "neighbors.hpp"
-#include <optional>
+#include "entities/contact.hpp"
 
 namespace lahuta {
 
-class Luni;
-
-class InteractionBase {
-  Contacts contacts;
-
-public:
-  virtual void handle(const GroupEntity &feature1, const GroupEntity &feature2) = 0;
-  virtual ~InteractionBase() = default;
-  void add_interaction(const Contact &interaction) { contacts.add(interaction); }
-  Contacts release() { return std::move(contacts); }
-};
-
-// TODO: 1. We need to provide support for controling contact options
-//       2. InteractionOptions is used by the contact functions making compilation slow
+class Topology;
 
 struct InteractionOptions {
-  float distance_cutoff;
-  bool hbond = true;
-  bool weak_hbond = true;
+  float distance_cutoff = 5.0;
+
+  bool hbond       = true;
+  bool weak_hbond  = true;
   bool hydrophobic = true;
-  bool halogen = true;
-  bool ionic = true;
-  bool metalic = true;
-  bool cationpi = true;
-  bool pistacking = true;
+  bool halogen     = true;
+  bool ionic       = true;
+  bool metal       = true;
+  bool cationpi    = true;
+  bool pistacking  = true;
 
   bool sort_globally = true;
-  bool sort_per_contact_type = false;
 };
 
 class Interactions {
-
-  struct InteractionEntry {
-    Contacts (Interactions::*func)() const;
-    bool InteractionOptions::*flag;
-  };
-
-  using InteractionFunc = Contacts (Interactions::*)() const;
-  const InteractionEntry entries[8] = {
-      {&Interactions::hbond, &InteractionOptions::hbond},
-      {&Interactions::weak_hbond, &InteractionOptions::weak_hbond},
-      {&Interactions::halogen, &InteractionOptions::halogen},
-      {&Interactions::hydrophobic, &InteractionOptions::hydrophobic},
-      {&Interactions::metalic, &InteractionOptions::metalic},
-      {&Interactions::ionic, &InteractionOptions::ionic},
-      {&Interactions::cationpi, &InteractionOptions::cationpi},
-      {&Interactions::pistacking, &InteractionOptions::pistacking}};
-
 public:
-  Interactions(const Luni &luni, std::optional<InteractionOptions> opts = std::nullopt)
-      : luni_(luni), opts_(opts.value_or(InteractionOptions{5.0})) {}
 
-  [[nodiscard]] Contacts hbond() const;
-  [[nodiscard]] Contacts weak_hbond() const;
-  [[nodiscard]] Contacts hydrophobic() const;
-  [[nodiscard]] Contacts halogen() const;
-  [[nodiscard]] Contacts ionic() const;
-  [[nodiscard]] Contacts metalic() const;
-  [[nodiscard]] Contacts cationpi() const;
-  [[nodiscard]] Contacts pistacking() const;
+  Interactions(const Topology &topology, InteractionOptions opts = InteractionOptions{})
+      : topology_(topology), opts_(opts) {}
 
-  Contacts compute_contacts() {
-    Contacts result{&luni_};
+  [[nodiscard]] ContactSet hbond() const;
+  [[nodiscard]] ContactSet weak_hbond() const;
+  [[nodiscard]] ContactSet hydrophobic() const;
+  [[nodiscard]] ContactSet halogen() const;
+  [[nodiscard]] ContactSet ionic() const;
+  [[nodiscard]] ContactSet metal() const;
+  [[nodiscard]] ContactSet cationpi() const;
+  [[nodiscard]] ContactSet pistacking() const;
 
-    for (const auto &entry : entries) {
-      if (!(opts_.*(entry.flag))) continue;
-      /*result.add((this->*(entry.func))());*/
-      Contacts cts = (this->*(entry.func))();
-      if (opts_.sort_per_contact_type) cts.sort_interactions();
-      result.add(cts);
+  ContactSet compute_contacts() {
+    ContactSet result;
+
+    if (opts_.hbond) {
+      auto contacts = hbond();
+      result |= contacts;
     }
 
-    if (opts_.sort_globally) result.sort_interactions();
-    std::cout << "Total Contacts: " << result.size() << std::endl;
+    if (opts_.weak_hbond) {
+      auto contacts = weak_hbond();
+      result |= contacts;
+    }
+
+    if (opts_.hydrophobic) {
+      auto contacts = hydrophobic();
+      result |= contacts;
+    }
+
+    if (opts_.halogen) {
+      auto contacts = halogen();
+      result |= contacts;
+    }
+
+    if (opts_.ionic) {
+      auto contacts = ionic();
+      result |= contacts;
+    }
+
+    if (opts_.metal) {
+      auto contacts = metal();
+      result |= contacts;
+    }
+
+    if (opts_.cationpi) {
+      auto contacts = cationpi();
+      result |= contacts;
+    }
+
+    if (opts_.pistacking) {
+      auto contacts = pistacking();
+      result |= contacts;
+    }
+
     return result;
   }
 
 private:
-  const Luni &luni_;
-  /*const std::vector<Feature> *group_features_;*/
-  InteractionOptions opts_{5.0};
+  const Topology &topology_;
+  InteractionOptions opts_;
 };
 
 } // namespace lahuta

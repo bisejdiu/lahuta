@@ -1,14 +1,18 @@
 #ifndef LAHUTA_METALIC_HPP
 #define LAHUTA_METALIC_HPP
 
-#include "neighbors.hpp"
+#include "entities/contact.hpp"
+#include <GraphMol/RWMol.h>
+
 namespace lahuta {
+
+class Topology;
 
 struct MetalicParams {
   double distance_max = 3.0;
 };
 
-Contacts find_metalic(const Luni &luni, std::optional<MetalicParams> params = std::nullopt);
+ContactSet find_metalic(const Topology &topology, const MetalicParams &params = MetalicParams{});
 
 } // namespace lahuta
 

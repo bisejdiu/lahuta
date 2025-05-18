@@ -2,7 +2,7 @@
 
 #include "compute/context.hpp"
 #include "compute/result.hpp"
-#include "entities.hpp"
+#include "entities/records.hpp"
 #include "parameters.hpp"
 #include <rdkit/GraphMol/RWMol.h>
 
@@ -49,7 +49,7 @@ struct AtomTypingKernel {
   execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params);
 
 private:
-  static RingEntityCollection populate_ring_entities(RDKit::RWMol &mol);
+  static std::vector<RingRec> populate_ring_entities(RDKit::RWMol &mol);
   static bool should_initialize_ringinfo(int mol_size);
 };
 
