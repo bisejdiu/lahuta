@@ -153,7 +153,7 @@ size_t Topology::total_size() const {
   total += sizeof(GroupEntity) * data.features.  get_data().size();
 
   if (mol_) {
-    total += sizeof(*mol_); // FIX: no idea if this measures the size of the Mol object
+    total += sizeof(*mol_);
   }
 
   total += data.residues->total_size();

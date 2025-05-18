@@ -21,6 +21,18 @@ bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, int atomic_number
   return bonded_atoms;
 }
 
+inline std::vector<const RDKit::Atom *>
+bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, Element element) {
+  std::vector<const RDKit::Atom *> bonded_atoms;
+  for (const auto &bond : mol.atomBonds(atom)) {
+    RDKit::Atom *neighbor_atom = bond->getOtherAtom(atom);
+    if (neighbor_atom->getAtomicNum() == element) {
+      bonded_atoms.push_back(neighbor_atom);
+    }
+  }
+  return bonded_atoms;
+}
+
 /// Returns the number of bonds for a given atom in the molecule.
 inline unsigned int get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   unsigned int bond_count = 0;
