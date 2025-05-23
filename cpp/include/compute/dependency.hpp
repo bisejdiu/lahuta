@@ -7,7 +7,7 @@
 // clang-format off
 namespace lahuta::topology::compute {
 
-struct NoDependencies {
+struct UnitComputation {
   static std::vector<ComputationLabel> labels() { return {}; }
 };
 

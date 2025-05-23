@@ -277,8 +277,8 @@ void Atom::resetState() {
 std::string Atom::getSymbol() const {
   std::string res;
   // handle dummies differently:
-  if (d_atomicNum != 0 ||
-      !(getProps()->getPropIfPresent<std::string>(common_properties::dummyLabel, res))) {
+  if (d_atomicNum != 0 || (dp_props &&
+      !(getProps()->getPropIfPresent<std::string>(common_properties::dummyLabel, res)))) {
     res = PeriodicTable::getTable()->getElementSymbol(d_atomicNum);
   }
   return res;

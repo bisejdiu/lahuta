@@ -18,10 +18,7 @@ int main(int argc, char const *argv[]) {
    std::string file_name = argv[1];
 
   auto start = std::chrono::high_resolution_clock::now();
-  /*std::string file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif";*/
   Luni luni(file_name);
-  /*luni.assign_arpeggio_atom_types();*/
-  /*luni.assign_molstar_atom_types();*/
   auto end = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
   std::cout << "Time: " << duration.count() << " us" << std::endl;

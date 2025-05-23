@@ -35,8 +35,8 @@ public:
         double tmscore;
         double rmsd;
     };
-    void initQuery(float * x, float * y, float * z, char * querySeq, unsigned int queryLen);
-    TMscoreResult computeTMscore(float *x, float *y, float *z,
+    void initQuery(const float * x, const float * y, const float * z, char * querySeq, unsigned int queryLen);
+    TMscoreResult computeTMscore(const float *x, const float *y, const float *z,
                                  unsigned int targetLen, int qStartPos,
                                  int targetStartPos, const std::string & backtrace,
                                  int normalizationLen);
@@ -66,11 +66,11 @@ private:
     bool computeExactScore;
     int * invmap;
 
-    TMscoreResult computeExactTMscore(float *x, float *y, float *z,
+    TMscoreResult computeExactTMscore(const float *x, const float *y, const float *z,
                                       unsigned int targetLen, int qStartPos,
                                       int targetStartPos, const std::string & backtrace,
                                       int normalizationLen);
-    TMscoreResult computeAppoximateTMscore(float *x, float *y, float *z,
+    TMscoreResult computeAppoximateTMscore(const float *x, const float *y, const float *z,
                                       unsigned int targetLen, int qStartPos,
                                       int targetStartPos, const std::string & backtrace,
                                       int normalizationLen);

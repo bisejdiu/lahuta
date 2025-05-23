@@ -46,7 +46,7 @@ TMaligner::~TMaligner(){
 }
 
 
-TMaligner::TMscoreResult TMaligner::computeAppoximateTMscore(float *x, float *y, float *z, unsigned int targetLen,
+TMaligner::TMscoreResult TMaligner::computeAppoximateTMscore(const float *x, const float *y, const float *z, unsigned int targetLen,
                                                              int qStartPos, int dbStartPos, const std::string &backtrace,
                                                              int normalizationLen) {
     int qPos = qStartPos;
@@ -103,7 +103,7 @@ TMaligner::TMscoreResult TMaligner::computeAppoximateTMscore(float *x, float *y,
 }
 
 
-TMaligner::TMscoreResult TMaligner::computeExactTMscore(float *x, float *y, float *z, unsigned int targetLen,
+TMaligner::TMscoreResult TMaligner::computeExactTMscore(const float *x, const float *y, const float *z, unsigned int targetLen,
                                                         int qStartPos, int dbStartPos, const std::string &backtrace,
                                                         int normalizationLen) {
     int qPos = qStartPos;
@@ -200,7 +200,7 @@ TMaligner::TMscoreResult TMaligner::computeExactTMscore(float *x, float *y, floa
     return TMaligner::TMscoreResult(u, t, TM, rmsd0);
 }
 
-TMaligner::TMscoreResult TMaligner::computeTMscore(float *x, float *y, float *z, unsigned int targetLen,
+TMaligner::TMscoreResult TMaligner::computeTMscore(const float *x, const float *y, const float *z, unsigned int targetLen,
                                                              int qStartPos, int dbStartPos, const std::string &backtrace,
                                                              int normalizationLen) {
     if(computeExactScore){
@@ -211,7 +211,7 @@ TMaligner::TMscoreResult TMaligner::computeTMscore(float *x, float *y, float *z,
 }
 
 
-void TMaligner::initQuery(float *x, float *y, float *z, char * querySeq, unsigned int queryLen){
+void TMaligner::initQuery(const float *x, const float *y, const float *z, char * querySeq, unsigned int queryLen){
     memset(querySecStruc, 0, sizeof(char) * queryLen);
     memcpy(query_x, x, sizeof(float) * queryLen);
     memcpy(query_y, y, sizeof(float) * queryLen);

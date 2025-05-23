@@ -7,6 +7,14 @@
 
 namespace lahuta {
 
+// POINT3D_VECT is a vector of Point3D objects.
+// class Point3D {
+//  public:
+//   double x{0.0};
+//   double y{0.0};
+//   double z{0.0};
+// };
+
 struct ModelParserResult {
   std::string sequence;
   RDGeom::POINT3D_VECT coords;

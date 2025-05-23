@@ -9,6 +9,13 @@ set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks" FORCE)
 set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "Disable highway contrib targets" FORCE)
 set(HWY_ENABLE_INSTALL OFF CACHE BOOL "Disable highway install targets" FORCE)
 
+set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use bundled fmt")
+set(SPDLOG_BUILD_EXAMPLES OFF  CACHE BOOL "")
+set(SPDLOG_BUILD_TESTS OFF     CACHE BOOL "")
+set(SPDLOG_BUILD_EXTRAS OFF    CACHE BOOL "")
+set(SPDLOG_BUILD_PERF_TESTS OFF CACHE BOOL "")
+set(SPDLOG_BUILD_HEADER_ONLY ON CACHE BOOL "")
+
 if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
   # we set wheel.install-dir="/data" in pyproject.toml,
   # so here we need to only set paths to /platlib and /scripts
@@ -17,9 +24,10 @@ endif()
 
 option(BUILD_SHARED_LIBS "Build shared library" ON)
 option(USE_PYTHON "Build Python bindings" ON)
-# option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
-# option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" ON)
-# option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
+
+option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
+option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" OFF)
+option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
 option(STANDALONE_PYTHON_MODULE "Avoid linking Python module to liblahuta_cpp DLL" ON)
 option(USE_EIGEN3 "Do not use Eigen3" ON)
@@ -60,6 +68,14 @@ endif()
 #endif()
 #message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
+# We need to find zlib before adding gemmi so it uses the same zlib
+find_package(ZLIB REQUIRED)
+if(ZLIB_FOUND)
+  message(STATUS "Found zlib: ${ZLIB_LIBRARIES}")
+else()
+  message(FATAL_ERROR "zlib not found - required for compression")
+endif()
+
 find_package(Boost REQUIRED COMPONENTS iostreams)
 
 if(Boost_FOUND)
@@ -85,15 +101,17 @@ ADD_LIBRARY(lmdb STATIC
 set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
 TARGET_INCLUDE_DIRECTORIES(lmdb PUBLIC ${CMAKE_SOURCE_DIR}/external)
 
+add_subdirectory(external/spdlog)
+# gemmi first to inherit its zlib configuration
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
 add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp src/bond_order.cpp src/convert.cpp src/nsgrid.cpp src/neighbors.cpp src/lahuta.cpp src/visitor.cpp src/struct_unit.cpp src/contacts/hydrogen_bonds.cpp 
@@ -119,21 +137,15 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb)
-
-find_package(Eigen3 QUIET)
-if(USE_EIGEN3)
-  if(NOT EIGEN3_FOUND)
-    add_subdirectory(external/Eigen)
-    add_definitions(-DLAHUTA_USE_EIGEN=1)
-  endif()
-endif()
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only)
 
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/external
   ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include
+  ${CMAKE_SOURCE_DIR}/external/gemmi/third_party   # For zlib headers
+  ${CMAKE_SOURCE_DIR}/external/gemmi/third_party/zlib
   ${CMAKE_SOURCE_DIR}/external/distopia/include
   ${CMAKE_SOURCE_DIR}/external/lmdb
 )
@@ -144,6 +156,14 @@ target_include_directories(lahuta_shared_headers INTERFACE
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
   ${CMAKE_CURRENT_SOURCE_DIR}/examples
 )
+
+find_package(Eigen3 QUIET)
+if(USE_EIGEN3)
+  if(NOT EIGEN3_FOUND)
+    add_subdirectory(external/Eigen)
+    add_definitions(-DLAHUTA_USE_EIGEN=1)
+  endif()
+endif()
 
 if(TARGET Eigen3::Eigen)
   message(STATUS "Eigen3 found.")
@@ -161,7 +181,7 @@ function(add_lahuta_executable target main_file)
         target_link_libraries(${target} PRIVATE Eigen3::Eigen)
     endif()
 
-    target_link_libraries(${target} PUBLIC lahuta_cpp)
+    target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB spdlog::spdlog_header_only)
 endfunction()
 
 # add_executable(lex_parallel main.cpp)
@@ -170,6 +190,7 @@ endfunction()
 # endif()
 # target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
 
+
 add_lahuta_executable(lex main.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
 # add_lahuta_executable(lex_fseek main_fseek.cpp)
@@ -177,20 +198,6 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 # add_lahuta_executable(lex_align main_align.cpp)
 # add_lahuta_executable(create_db create_db.cpp)
 # add_lahuta_executable(read_db read_db.cpp)
-# add_lahuta_executable(atom_typing_test tests/atom_typing_test.cpp)
-# add_lahuta_executable(topo_flags topology_flags.cpp)
-# add_lahuta_executable(topo_flags2 topology_deps_test.cpp)
-add_lahuta_executable(dep_test dependency_test.cpp)
-# add_lahuta_executable(cir_dep_test cir_dep_test.cpp)
-add_lahuta_executable(cir_dep_test compute_circular_deps.cpp)
-# add_lahuta_executable(cpx_dep_test complex_data_test.cpp)
-
-# Build examples
-file(GLOB EXAMPLE_SOURCES ${CMAKE_SOURCE_DIR}/examples/*.cpp)
-foreach(example_source ${EXAMPLE_SOURCES})
-    get_filename_component(example_name ${example_source} NAME_WE)
-    add_lahuta_executable(${example_name} ${example_source})
-endforeach()
 
 ### Python bindings ###
 if (USE_PYTHON)

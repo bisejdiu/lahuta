@@ -11,7 +11,7 @@ class SeqAlignerBuilder {
 public:
   explicit SeqAlignerBuilder(FoldSeekOps &ops) : ops(ops) {}
 
-  std::unique_ptr<SeqAligner> build(SeqCollection &Q, SeqCollection &T) {
+  std::unique_ptr<SeqAligner> build(const SeqCollection &Q, const SeqCollection &T) {
     auto matrix3Di = get_3Di_matrix();
     auto matrixAA = get_aa_matrix();
 

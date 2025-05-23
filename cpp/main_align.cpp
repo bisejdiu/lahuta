@@ -1,5 +1,6 @@
 #include "GraphMol/RWMol.h"
 #include "contacts/interactions.hpp"
+#include "contacts/utils.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"

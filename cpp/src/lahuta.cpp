@@ -15,6 +15,13 @@ namespace lahuta {
 Luni::Luni(std::string file_name) : file_name_(file_name) {
   Logger::get_logger()->info("Processing file: {}", file_name_);
   mol = read_and_make_molecule(gemmi::MaybeGzipped(file_name_));
+
+  /*auto st = gemmi::read_structure_gz(file_name_);*/
+  /*mol = std::make_shared<RDKit::RWMol>();*/
+  /*RDKit::Conformer *conformer = new RDKit::Conformer();*/
+  /*create_RDKit_repr(*mol, st, *conformer);*/
+  /*mol->updatePropertyCache(false);*/
+  /*mol->addConformer(conformer, true);*/
 }
 
 Luni Luni::create(const gemmi::Structure &st) {
@@ -64,32 +71,14 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
   try {
     ensure_topology_initialized();
 
-    // If we're in filtered state, disable bond computation and dependent computations
-    if (is_in_filtered_state) {
-      topology->enable_only(TopologyComputation::None);
-    }
+    if (tops) { topology->build(*tops); }
+    else      { topology->build(TopologyBuildingOptions{}); }
 
-    // Build the topology with the provided or default options
-    if (tops) {
-      topology->build(*tops);
-    } else {
-      // Use default options
-      auto default_options = TopologyBuildingOptions{};
-      topology->build(default_options);
-    }
-
-    // Mark topology as fully built
     topology_built_ = true;
-
     return true;
   } catch (const std::exception &e) {
-    // Log the error but don't re-throw - just return false to indicate failure
     Logger::get_logger()->error("Error building topology: {}", e.what());
-
-    // Still mark the topology as "built" but empty - this helps prevent accessing
-    // non-existent data later
     topology_built_ = true;
-
     return false;
   }
 }

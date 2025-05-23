@@ -79,6 +79,14 @@ public:
         return success;
     }
 
+    bool put_raw(const std::string& key, std::string_view   val, bool commit_now /* default=false */) {
+        if (!m_txn) m_txn = lmdb::txn::begin(m_env.handle());
+
+        bool ok = m_dbi.put(m_txn.handle(), key, val);
+        if (commit_now) commit_txn();
+        return ok;
+    }
+
 private:
     lmdb::env &m_env;
     lmdb::dbi &m_dbi;

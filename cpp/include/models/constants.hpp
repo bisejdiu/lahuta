@@ -107,7 +107,7 @@ constexpr std::array<const int, 5> his_bond_indices = {7, 9, 10, 8, 6};
 
 // Edge structure with canonical ordering (i < j)
 struct Edge {
-    int i, j;
+    int i, j; // FIX: use u8
     BondType order;
 
     constexpr Edge(int a, int b, BondType bt) : i(std::min(a, b)), j(std::max(a, b)), order(bt) {}

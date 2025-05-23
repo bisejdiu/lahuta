@@ -19,8 +19,20 @@ class NeighborSearchComputation : public KernelizedROComputation<
     NeighborSearchComputation<DataT>> {
 public:
     constexpr static const ComputationLabel label{"neighbors"};
-    using dependencies = NoDependencies;
+    using dependencies = UnitComputation;
     using NeighborSearchComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+};
+
+template <typename DataT = TopologyData>
+class ResidueComputation : public KernelizedROComputation<
+    DataT,
+    ResidueComputationParams,
+    ResidueKernel,
+    ResidueComputation<DataT>> {
+public:
+    constexpr static const ComputationLabel label{"residues"};
+    using dependencies = UnitComputation;
+    using ResidueComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
 template <typename DataT = TopologyData>
@@ -45,18 +57,6 @@ public:
     constexpr static const ComputationLabel label{"nonstandard_bonds"};
     using dependencies = Dependencies<Dependency<BondComputation<DataT>, lahuta::BondAssignmentResult>>;
     using NonStandardBondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
-};
-
-template <typename DataT = TopologyData>
-class ResidueComputation : public KernelizedROComputation<
-    DataT,
-    ResidueComputationParams,
-    ResidueKernel,
-    ResidueComputation<DataT>> {
-public:
-    constexpr static const ComputationLabel label{"residues"};
-    using dependencies = NoDependencies;
-    using ResidueComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
 template <typename DataT = TopologyData>
