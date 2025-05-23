@@ -11,7 +11,7 @@ bool is_transition_metal(int atomic_num) {
 
 AtomType add_metal(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   const int atomic_num = atom.getAtomicNum();
-  AtomType type = AtomType::NONE;
+  AtomType type = AtomType::None;
 
   if (std::find(IonicTypeMetals.begin(), IonicTypeMetals.end(), atomic_num) != IonicTypeMetals.end()) {
     type = AtomType::IonicTypeMetal;
@@ -47,7 +47,7 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
   if (!res_info) {
-    return AtomType::NONE;
+    return AtomType::None;
   }
 
   resname = res_info->getResidueName();
@@ -95,7 +95,7 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   if (ionic) {
     return AtomType::IonicTypePartner;
   }
-  return AtomType::NONE;
+  return AtomType::None;
 }
 
 } // namespace lahuta

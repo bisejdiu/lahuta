@@ -11,29 +11,29 @@ std::unordered_set<Element> HalogenBinders   = {Element::C,  Element::N,  Elemen
 
 AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   const auto at_n = static_cast<Element>(atom.getAtomicNum());
-  if (HalogenDonors.count(at_n)) return AtomType::XBOND_DONOR;
-  return AtomType::NONE;
+  if (HalogenDonors.count(at_n)) return AtomType::XbondDonor;
+  return AtomType::None;
 }
 
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   const auto at_n = static_cast<Element>(atom.getAtomicNum());
-  if (!HalogenAcceptors.count(at_n)) return AtomType::NONE;
+  if (!HalogenAcceptors.count(at_n)) return AtomType::None;
 
   for (const auto bond : mol.atomBonds(&atom)) {
     const RDKit::Atom *nbr = bond->getOtherAtom(&atom);
     const auto nbr_at_n = static_cast<Element>(nbr->getAtomicNum());
 
-    if (HalogenBinders.count(nbr_at_n)) return AtomType::XBOND_ACCEPTOR;
+    if (HalogenBinders.count(nbr_at_n)) return AtomType::XBondAcceptor;
   }
 
-  return AtomType::NONE;
+  return AtomType::None;
 }
 
 ContactSet find_halogen_bonds(const Topology &topology, const HalogenParams &params) {
   return find_contacts(
     topology,
-    [](const AtomRec &rec) { return (rec.type & AtomType::XBOND_DONOR)    == AtomType::XBOND_DONOR; },
-    [](const AtomRec &rec) { return (rec.type & AtomType::XBOND_ACCEPTOR) == AtomType::XBOND_ACCEPTOR; },
+    [](const AtomRec &rec) { return (rec.type & AtomType::XbondDonor)    == AtomType::XbondDonor; },
+    [](const AtomRec &rec) { return (rec.type & AtomType::XBondAcceptor) == AtomType::XBondAcceptor; },
     {params.distance_max, 0, 0, 0.7},
     [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
       const auto &donor_rec    = topology.atom(rec_idx_a);

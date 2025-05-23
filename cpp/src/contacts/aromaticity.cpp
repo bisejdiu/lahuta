@@ -1,5 +1,5 @@
 #include "contacts/aromaticity.hpp"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 
 namespace lahuta {
 
@@ -27,7 +27,7 @@ std::vector<GroupRec> add_aromatic_rings(const RDKit::RWMol &mol, const Residues
       }
 
       groups.push_back(GroupRec{
-        /*.a_type =*/ AtomType::AROMATIC,
+        /*.a_type =*/ AtomType::Aromatic,
         /*.type   =*/ FeatureGroup::None,
         /*.atoms  =*/ std::move(atom_indices),
         /*.center =*/ RDGeom::Point3D(0,0,0)

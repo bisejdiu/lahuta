@@ -16,24 +16,24 @@ namespace lahuta {
 using SubStrMatches = std::vector<RDKit::MatchVectType>;
 
 enum class AtomType : uint32_t {
-  NONE = 0x0,                 // 0
-  HBOND_ACCEPTOR = 0x1,       // 1
-  HBOND_DONOR = 0x2,          // 2
-  WEAK_HBOND_ACCEPTOR = 0x4,  // 4
-  WEAK_HBOND_DONOR = 0x8,     // 8
-  POS_IONISABLE = 0x10,       // 16
-  NEG_IONISABLE = 0x20,       // 32
-  CARBONYL_OXYGEN = 0x40,     // 64
-  CARBONYL_CARBON = 0x80,     // 128
-  AROMATIC = 0x100,           // 256
-  HYDROPHOBIC = 0x200,        // 512
-  XBOND_ACCEPTOR = 0x400,     // 1024
-  XBOND_DONOR = 0x800,        // 2048
-  IonicTypePartner = 0x1000,  // 4096
-  DativeBondPartner = 0x2000, // 8192
-  TransitionMetal = 0x4000,   // 16384
-  IonicTypeMetal = 0x8000,    // 32768
-  INVALID = 0x10000,          // 65536
+  None              = 0x0,     // 0
+  HbondAcceptor     = 0x1,     // 1
+  HbondDonor        = 0x2,     // 2
+  WeakHbondAcceptor = 0x4,     // 4
+  WeakHbondDonor    = 0x8,     // 8
+  PositiveCharge    = 0x10,    // 16
+  NegativeCharge    = 0x20,    // 32
+  CarbonylOxygen    = 0x40,    // 64
+  CarbonylCarbon    = 0x80,    // 128
+  Aromatic          = 0x100,   // 256
+  Hydrophobic       = 0x200,   // 512
+  XBondAcceptor     = 0x400,   // 1024
+  XbondDonor        = 0x800,   // 2048
+  IonicTypePartner  = 0x1000,  // 4096
+  DativeBondPartner = 0x2000,  // 8192
+  TransitionMetal   = 0x4000,  // 16384
+  IonicTypeMetal    = 0x8000,  // 32768
+  Invalid           = 0x10000, // 65536
 };
 
 namespace detail {
@@ -44,23 +44,23 @@ template <AtomType First, AtomType Second> constexpr bool check_order() {
 
 constexpr bool validate_enum_order() {
   // Check that each enum value is less than the next one
-  return check_order<AtomType::NONE, AtomType::HBOND_ACCEPTOR>()
-         && check_order<AtomType::HBOND_ACCEPTOR, AtomType::HBOND_DONOR>()
-         && check_order<AtomType::HBOND_DONOR, AtomType::WEAK_HBOND_ACCEPTOR>()
-         && check_order<AtomType::WEAK_HBOND_ACCEPTOR, AtomType::WEAK_HBOND_DONOR>()
-         && check_order<AtomType::WEAK_HBOND_DONOR, AtomType::POS_IONISABLE>()
-         && check_order<AtomType::POS_IONISABLE, AtomType::NEG_IONISABLE>()
-         && check_order<AtomType::NEG_IONISABLE, AtomType::CARBONYL_OXYGEN>()
-         && check_order<AtomType::CARBONYL_OXYGEN, AtomType::CARBONYL_CARBON>()
-         && check_order<AtomType::CARBONYL_CARBON, AtomType::AROMATIC>()
-         && check_order<AtomType::AROMATIC, AtomType::HYDROPHOBIC>()
-         && check_order<AtomType::HYDROPHOBIC, AtomType::XBOND_ACCEPTOR>()
-         && check_order<AtomType::XBOND_ACCEPTOR, AtomType::XBOND_DONOR>()
-         && check_order<AtomType::XBOND_DONOR, AtomType::IonicTypePartner>()
+  return check_order<AtomType::None, AtomType::HbondAcceptor>()
+         && check_order<AtomType::HbondAcceptor, AtomType::HbondDonor>()
+         && check_order<AtomType::HbondDonor, AtomType::WeakHbondAcceptor>()
+         && check_order<AtomType::WeakHbondAcceptor, AtomType::WeakHbondDonor>()
+         && check_order<AtomType::WeakHbondDonor, AtomType::PositiveCharge>()
+         && check_order<AtomType::PositiveCharge, AtomType::NegativeCharge>()
+         && check_order<AtomType::NegativeCharge, AtomType::CarbonylOxygen>()
+         && check_order<AtomType::CarbonylOxygen, AtomType::CarbonylCarbon>()
+         && check_order<AtomType::CarbonylCarbon, AtomType::Aromatic>()
+         && check_order<AtomType::Aromatic, AtomType::Hydrophobic>()
+         && check_order<AtomType::Hydrophobic, AtomType::XBondAcceptor>()
+         && check_order<AtomType::XBondAcceptor, AtomType::XbondDonor>()
+         && check_order<AtomType::XbondDonor, AtomType::IonicTypePartner>()
          && check_order<AtomType::IonicTypePartner, AtomType::DativeBondPartner>()
          && check_order<AtomType::DativeBondPartner, AtomType::TransitionMetal>()
          && check_order<AtomType::TransitionMetal, AtomType::IonicTypeMetal>()
-         && check_order<AtomType::IonicTypeMetal, AtomType::INVALID>();
+         && check_order<AtomType::IonicTypeMetal, AtomType::Invalid>();
 }
 } // namespace detail
 
@@ -71,24 +71,24 @@ namespace detail {
 constexpr bool is_power_of_two(uint32_t x) { return x == 0 || (x & (x - 1)) == 0; }
 
 constexpr bool validate_power_of_two() {
-  return is_power_of_two(static_cast<uint32_t>(AtomType::NONE))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::HBOND_ACCEPTOR))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::HBOND_DONOR))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::WEAK_HBOND_ACCEPTOR))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::WEAK_HBOND_DONOR))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::POS_IONISABLE))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::NEG_IONISABLE))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::CARBONYL_OXYGEN))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::CARBONYL_CARBON))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::AROMATIC))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::HYDROPHOBIC))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::XBOND_ACCEPTOR))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::XBOND_DONOR))
+  return is_power_of_two(static_cast<uint32_t>(AtomType::None))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::HbondAcceptor))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::HbondDonor))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::WeakHbondAcceptor))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::WeakHbondDonor))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::PositiveCharge))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::NegativeCharge))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::CarbonylOxygen))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::CarbonylCarbon))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::Aromatic))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::Hydrophobic))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::XBondAcceptor))
+         && is_power_of_two(static_cast<uint32_t>(AtomType::XbondDonor))
          && is_power_of_two(static_cast<uint32_t>(AtomType::IonicTypePartner))
          && is_power_of_two(static_cast<uint32_t>(AtomType::DativeBondPartner))
          && is_power_of_two(static_cast<uint32_t>(AtomType::TransitionMetal))
          && is_power_of_two(static_cast<uint32_t>(AtomType::IonicTypeMetal))
-         && is_power_of_two(static_cast<uint32_t>(AtomType::INVALID));
+         && is_power_of_two(static_cast<uint32_t>(AtomType::Invalid));
 }
 } // namespace detail
 
@@ -103,24 +103,24 @@ constexpr AtomType operator""_at(unsigned long long int value) {
 
 inline AtomType string_to_atom_type(const std::string &flag_name) {
   static const std::unordered_map<std::string, AtomType> stringToEnum = {
-      {"NONE", AtomType::NONE},
-      {"HBOND_ACCEPTOR", AtomType::HBOND_ACCEPTOR},
-      {"HBOND_DONOR", AtomType::HBOND_DONOR},
-      {"WEAK_HBOND_ACCEPTOR", AtomType::WEAK_HBOND_ACCEPTOR},
-      {"WEAK_HBOND_DONOR", AtomType::WEAK_HBOND_DONOR},
-      {"POS_IONISABLE", AtomType::POS_IONISABLE},
-      {"NEG_IONISABLE", AtomType::NEG_IONISABLE},
-      {"CARBONYL_OXYGEN", AtomType::CARBONYL_OXYGEN},
-      {"CARBONYL_CARBON", AtomType::CARBONYL_CARBON},
-      {"AROMATIC", AtomType::AROMATIC},
-      {"HYDROPHOBIC", AtomType::HYDROPHOBIC},
-      {"XBOND_ACCEPTOR", AtomType::XBOND_ACCEPTOR},
-      {"XBOND_DONOR", AtomType::XBOND_DONOR},
+      {"NONE", AtomType::None},
+      {"HBOND_ACCEPTOR", AtomType::HbondAcceptor},
+      {"HBOND_DONOR", AtomType::HbondDonor},
+      {"WEAK_HBOND_ACCEPTOR", AtomType::WeakHbondAcceptor},
+      {"WEAK_HBOND_DONOR", AtomType::WeakHbondDonor},
+      {"POS_IONISABLE", AtomType::PositiveCharge},
+      {"NEG_IONISABLE", AtomType::NegativeCharge},
+      {"CARBONYL_OXYGEN", AtomType::CarbonylOxygen},
+      {"CARBONYL_CARBON", AtomType::CarbonylCarbon},
+      {"AROMATIC", AtomType::Aromatic},
+      {"HYDROPHOBIC", AtomType::Hydrophobic},
+      {"XBOND_ACCEPTOR", AtomType::XBondAcceptor},
+      {"XBOND_DONOR", AtomType::XbondDonor},
       {"IONIC_TYPE_PARTNER", AtomType::IonicTypePartner},
       {"DATIVE_PARTNER", AtomType::DativeBondPartner},
       {"TRANSITION_METAL", AtomType::TransitionMetal},
       {"IONIC_TYPE_METAL", AtomType::IonicTypeMetal},
-      {"INVALID", AtomType::INVALID}};
+      {"INVALID", AtomType::Invalid}};
 
   auto it = stringToEnum.find(flag_name);
   if (it != stringToEnum.end()) {
@@ -163,7 +163,7 @@ namespace AtomTypeFlags {
 inline bool has(AtomType flags, AtomType flag) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) != 0;
 }
-inline bool has_any(AtomType flags, AtomType flag) { return (flags & flag) != AtomType::NONE; }
+inline bool has_any(AtomType flags, AtomType flag) { return (flags & flag) != AtomType::None; }
 inline bool has_all(AtomType flags, AtomType flag) { return (flags & flag) == flag; }
 
 inline AtomType remove(AtomType flags, AtomType flag) { return flags & ~flag; }
@@ -180,7 +180,7 @@ inline bool none(AtomType flags, AtomType flag) {
   return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(flag)) == 0;
 }
 
-inline bool empty(AtomType flags) { return flags == AtomType::NONE; }
+inline bool empty(AtomType flags) { return flags == AtomType::None; }
 
 inline bool has_enum_as_string(AtomType flags, std::string flag_name) {
   return has(flags, string_to_atom_type(flag_name));
@@ -204,25 +204,25 @@ inline std::string atom_type_to_string(AtomType type) { // FIX: refactor
 
   using namespace AtomTypeFlags;
 
-  if (type == AtomType::NONE) return "None";
+  if (type == AtomType::None) return "None";
 
   std::string result;
-  if (has(type, AtomType::HBOND_ACCEPTOR)) result += "HBOND_ACCEPTOR ";
-  if (has(type, AtomType::HBOND_DONOR)) result += "HBOND_DONOR ";
-  if (has(type, AtomType::WEAK_HBOND_ACCEPTOR)) result += "WEAK_HBOND_ACCEPTOR ";
-  if (has(type, AtomType::WEAK_HBOND_DONOR)) result += "WEAK_HBOND_DONOR ";
-  if (has(type, AtomType::POS_IONISABLE)) result += "POS_IONISABLE ";
-  if (has(type, AtomType::NEG_IONISABLE)) result += "NEG_IONISABLE ";
-  if (has(type, AtomType::CARBONYL_OXYGEN)) result += "CARBONYL_OXYGEN ";
-  if (has(type, AtomType::CARBONYL_CARBON)) result += "CARBONYL_CARBON ";
-  if (has(type, AtomType::AROMATIC)) result += "AROMATIC ";
-  if (has(type, AtomType::HYDROPHOBIC)) result += "HYDROPHOBIC ";
-  if (has(type, AtomType::XBOND_ACCEPTOR)) result += "XBOND_ACCEPTOR ";
-  if (has(type, AtomType::XBOND_DONOR)) result += "XBOND_DONOR ";
+  if (has(type, AtomType::HbondAcceptor)) result += "HBOND_ACCEPTOR ";
+  if (has(type, AtomType::HbondDonor)) result += "HBOND_DONOR ";
+  if (has(type, AtomType::WeakHbondAcceptor)) result += "WEAK_HBOND_ACCEPTOR ";
+  if (has(type, AtomType::WeakHbondDonor)) result += "WEAK_HBOND_DONOR ";
+  if (has(type, AtomType::PositiveCharge)) result += "POS_IONISABLE ";
+  if (has(type, AtomType::NegativeCharge)) result += "NEG_IONISABLE ";
+  if (has(type, AtomType::CarbonylOxygen)) result += "CARBONYL_OXYGEN ";
+  if (has(type, AtomType::CarbonylCarbon)) result += "CARBONYL_CARBON ";
+  if (has(type, AtomType::Aromatic)) result += "AROMATIC ";
+  if (has(type, AtomType::Hydrophobic)) result += "HYDROPHOBIC ";
+  if (has(type, AtomType::XBondAcceptor)) result += "XBOND_ACCEPTOR ";
+  if (has(type, AtomType::XbondDonor)) result += "XBOND_DONOR ";
   if (has(type, AtomType::IonicTypePartner)) result += "IONIC_TYPE_PARTNER ";
   if (has(type, AtomType::DativeBondPartner)) result += "DATIVE_PARTNER ";
   if (has(type, AtomType::TransitionMetal)) result += "TRANSITION_METAL ";
-  if (has(type, AtomType::INVALID)) result += "UNKNOWN ";
+  if (has(type, AtomType::Invalid)) result += "UNKNOWN ";
 
   if (!result.empty()) {
       result.pop_back();
@@ -258,7 +258,7 @@ inline auto encode_atom_name = [](const std::string &name) {
 };
 
 // clang-format off
-constexpr resTokenType operator"" _rt(char c) {
+constexpr resTokenType operator""_rt(char c) {
   if (c >= 'a' && c <= 'z') {
     c -= 32;
   }
@@ -289,7 +289,7 @@ constexpr resTokenType operator"" _rt(char c) {
 
 constexpr bool is_residue(resTokenType entry, const char* values) {
   while (*values) {
-    if (entry == operator"" _rt(*values)) {
+    if (entry == operator""_rt(*values)) {
       return true;
     }
     ++values;
@@ -318,7 +318,7 @@ static AtomType get_atom_type(RDKit::Atom *at) {
 
   // only standard amino acids
   if (static_cast<int>(entry) >= 20) {
-    return AtomType::INVALID;
+    return AtomType::Invalid;
   }
 
   switch (encode_atom_name(info->getName())) {
@@ -420,7 +420,7 @@ inline AtomType get_predef_aromatics(RDKit::Atom *at) {
 
   // Only consider standard residues
   if (static_cast<int>(entry) >= 20) {
-    return AtomType::INVALID;
+    return AtomType::Invalid;
   }
 
   switch (entry) {
@@ -430,7 +430,7 @@ inline AtomType get_predef_aromatics(RDKit::Atom *at) {
     case resTokenType::HIS:
       break;
     default:
-      return AtomType::NONE;
+      return AtomType::None;
   }
 
   const std::string atom_name = info->getName();
@@ -438,31 +438,31 @@ inline AtomType get_predef_aromatics(RDKit::Atom *at) {
 
     case encode_uint('C', 'D', '1'):
     case encode_uint('C', 'E', '2'):
-      return !is_residue(entry, "H") ? AtomType::AROMATIC : AtomType::NONE;
+      return !is_residue(entry, "H") ? AtomType::Aromatic : AtomType::None;
 
     case encode_uint('C', 'D', '2'):
     case encode_uint('C', 'G'):
-      return AtomType::AROMATIC;
+      return AtomType::Aromatic;
 
     case encode_uint('C', 'E', '1'):
-      return !is_residue(entry, "W") ? AtomType::AROMATIC : AtomType::NONE;
+      return !is_residue(entry, "W") ? AtomType::Aromatic : AtomType::None;
 
     case encode_uint('C', 'E', '3'):
     case encode_uint('C', 'Z', '2'):
     case encode_uint('C', 'Z', '3'):
     case encode_uint('C', 'H', '2'):
     case encode_uint('N', 'E', '1'):
-      return is_residue(entry, "W") ? AtomType::AROMATIC : AtomType::NONE;
+      return is_residue(entry, "W") ? AtomType::Aromatic : AtomType::None;
 
     case encode_uint('C', 'Z'):
-      return is_residue(entry, "FY") ? AtomType::AROMATIC : AtomType::NONE;
+      return is_residue(entry, "FY") ? AtomType::Aromatic : AtomType::None;
 
     case encode_uint('N', 'D', '1'):
     case encode_uint('N', 'E', '2'):
-      return is_residue(entry, "H") ? AtomType::AROMATIC : AtomType::NONE;
+      return is_residue(entry, "H") ? AtomType::Aromatic : AtomType::None;
 
     default:
-      return AtomType::NONE;
+      return AtomType::None;
   }
 }
 
@@ -512,7 +512,7 @@ inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
   RDKit::SubstructMatchParameters params;
   params.maxMatches = mol.getNumAtoms();
 
-  std::vector<AtomType> types = {mol.getNumAtoms(), AtomType::NONE};
+  std::vector<AtomType> types = {mol.getNumAtoms(), AtomType::None};
   for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
     const auto &[smarts, atom_type] = AtomTypeSMARTS[i];
     RDKit::ROMol *pattern = patterns[i];

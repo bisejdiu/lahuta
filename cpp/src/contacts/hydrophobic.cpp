@@ -9,22 +9,22 @@ namespace lahuta {
 AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
   const auto at_n = atom.getAtomicNum();
 
-  if (at_n == Element::F) return AtomType::HYDROPHOBIC;
-  if (at_n != Element::C) return AtomType::NONE;
+  if (at_n == Element::F) return AtomType::Hydrophobic;
+  if (at_n != Element::C) return AtomType::None;
 
   for (const auto &bond : mol.atomBonds(&atom)) {
     const RDKit::Atom *nbr = bond->getOtherAtom(&atom);
     const auto nbr_at_n = nbr->getAtomicNum();
-    if (nbr_at_n != Element::C && nbr_at_n != Element::H) return AtomType::NONE;
+    if (nbr_at_n != Element::C && nbr_at_n != Element::H) return AtomType::None;
   }
 
-  return AtomType::HYDROPHOBIC;
+  return AtomType::Hydrophobic;
 }
 
 ContactSet find_hydrophobic_bonds(const Topology& topology, const HydrophobicParams& opts) {
   return find_contacts(
       topology,
-      [](const AtomRec &rec) { return (rec.type & AtomType::HYDROPHOBIC) == AtomType::HYDROPHOBIC; },
+      [](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; },
       {opts.distance_max, 0.4},
       [&](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
         const auto& mol = topology.molecule();

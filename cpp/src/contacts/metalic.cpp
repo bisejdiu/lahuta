@@ -13,8 +13,8 @@ bool is_metalic(AtomType at1, AtomType at2) {
 ContactSet find_metalic(const Topology &topology, const MetalicParams &opts) {
   return find_contacts(
     topology,
-    [](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypeMetal   | AtomType::TransitionMetal))   != AtomType::NONE; },
-    [](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypePartner | AtomType::DativeBondPartner)) != AtomType::NONE; },
+    [](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypeMetal   | AtomType::TransitionMetal))   != AtomType::None; },
+    [](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypePartner | AtomType::DativeBondPartner)) != AtomType::None; },
     {opts.distance_max, 0, 0, 0.7},
     [&topology, &opts](std::uint32_t idx1, std::uint32_t idx2, float dist) -> InteractionType {
       const auto &m  = topology.atom(idx1);

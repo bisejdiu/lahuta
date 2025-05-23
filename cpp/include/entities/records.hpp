@@ -2,7 +2,7 @@
 #define LAHUTA_ENTITIES_RECORDS_HPP
 
 #include "Geometry/point.h"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include <entities/entity_id.hpp>
 #include <vector>
 

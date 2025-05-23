@@ -1,7 +1,7 @@
 #ifndef LAHUTA_HALOGEN_BONDS_HPP
 #define LAHUTA_HALOGEN_BONDS_HPP
 
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include "entities/contact.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>

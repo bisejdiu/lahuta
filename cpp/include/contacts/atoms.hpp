@@ -2,7 +2,7 @@
 #define LAHUTA_CONTACTS_HPP
 
 #include "GraphMol/RWMol.h"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include "contacts/halogen_bonds.hpp"
 #include "contacts/hydrophobic.hpp"
 #include "contacts/metals.hpp"
@@ -35,7 +35,7 @@ public:
     atoms.reserve(mol.getNumAtoms());
 
     for (auto *atom : mol.atoms()) {
-      AtomType t = AtomType::NONE;
+      AtomType t = AtomType::None;
       for (std::size_t i = 0; i < NumBuiltinDetectors; ++i) {
         t |= BuiltinDetectors[i](mol, *atom);
       }

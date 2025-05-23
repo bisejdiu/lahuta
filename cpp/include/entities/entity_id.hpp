@@ -7,6 +7,9 @@
 // clang-format off
 namespace lahuta {
 
+using u64 = std::uint64_t;
+using u32 = std::uint32_t;
+
 enum class Kind : uint8_t { Atom = 0, Ring = 1, Group = 2 }; // order encodes priority
 
 inline const char *kind_to_string(Kind kind) {
@@ -19,15 +22,15 @@ inline const char *kind_to_string(Kind kind) {
 }
 
 // The upper 8 bits store the Kind, and the lower 56 bits store the index.
-static constexpr uint64_t index_mask = (1ULL << 56) - 1;
+static constexpr u64 index_mask = (1ULL << 56) - 1;
 struct EntityID {
-  uint64_t raw;
+  u64 raw;
 
-  [[nodiscard]] constexpr Kind     kind()  const noexcept { return static_cast<Kind>    (raw >> 56); }
-  [[nodiscard]] constexpr uint32_t index() const noexcept { return static_cast<uint32_t>(raw & index_mask); }
+  [[nodiscard]] constexpr Kind  kind() const noexcept { return static_cast<Kind>(raw >> 56); }
+  [[nodiscard]] constexpr u32  index() const noexcept { return static_cast<u32> (raw & index_mask); }
 
-  static constexpr EntityID make(Kind k, uint32_t i) noexcept {
-    return {(static_cast<uint64_t>(k) << 56) | static_cast<uint64_t>(i)};
+  static constexpr EntityID make(Kind k, u32 i) noexcept {
+    return {(static_cast<u64>(k) << 56) | static_cast<u64>(i)};
   }
 
   std::string to_string() const {

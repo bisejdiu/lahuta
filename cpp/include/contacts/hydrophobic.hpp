@@ -2,7 +2,7 @@
 #define LAHUTA_HYDROPHOBIC_HPP
 
 #include "entities/contact.hpp"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include <GraphMol/RWMol.h>
 
 namespace lahuta {

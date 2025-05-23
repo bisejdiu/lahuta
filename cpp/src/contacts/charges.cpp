@@ -67,7 +67,7 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
 
       if (!member_indices.empty()) {
         features.push_back(GroupRec{
-          /*.a_type =*/ AtomType::POS_IONISABLE,
+          /*.a_type =*/ AtomType::PositiveCharge,
           /*.type   =*/ FeatureGroup::None,
           /*.atoms  =*/ std::move(member_indices),
           /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -93,7 +93,7 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
           }
 
           features.push_back(GroupRec{
-            /*.a_type =*/ AtomType::POS_IONISABLE,
+            /*.a_type =*/ AtomType::PositiveCharge,
             /*.type   =*/ it->second,
             /*.atoms  =*/ std::move(nitrogen_indices),
             /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -103,7 +103,7 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
           if (atom->getFormalCharge() > 0 && added_atoms.count(atom) == 0) {
             std::vector<uint32_t> atom_indices = {static_cast<uint32_t>(atom->getIdx())};
             features.push_back(GroupRec{
-              /*.a_type =*/ AtomType::POS_IONISABLE,
+              /*.a_type =*/ AtomType::PositiveCharge,
               /*.type   =*/ FeatureGroup::None,
               /*.atoms  =*/ std::move(atom_indices),
               /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -140,7 +140,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
       if (member_indices.empty()) continue;
       
       features.push_back(GroupRec{
-        /*.a_type =*/ AtomType::NEG_IONISABLE,
+        /*.a_type =*/ AtomType::NegativeCharge,
         /*.type   =*/ FeatureGroup::None,
         /*.atoms  =*/ std::move(member_indices),
         /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -160,7 +160,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           }
 
           features.push_back(GroupRec{
-            /*.a_type =*/ AtomType::NEG_IONISABLE,
+            /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ FeatureGroup::Phosphate,
             /*.atoms  =*/ std::move(oxygen_indices),
             /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -186,7 +186,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           }
 
           features.push_back(GroupRec{
-            /*.a_type =*/ AtomType::NEG_IONISABLE,
+            /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ it->second,
             /*.atoms  =*/ std::move(oxygen_indices),
             /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -199,7 +199,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           if (atom->getAtomicNum() == Element::N && definitions::ProteinBackboneAtoms.count(atom_name) == 0) {
             std::vector<uint32_t> atom_indices = {static_cast<uint32_t>(atom->getIdx())};
             features.push_back(GroupRec{
-              /*.a_type =*/ AtomType::NEG_IONISABLE,
+              /*.a_type =*/ AtomType::NegativeCharge,
               /*.type   =*/ FeatureGroup::None,
               /*.atoms  =*/ std::move(atom_indices),
               /*.center =*/ RDGeom::Point3D(0,0,0)
@@ -212,7 +212,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
         if (atom->getFormalCharge() < 0 && added_atoms.count(atom) == 0) {
           std::vector<uint32_t> atom_indices = {static_cast<uint32_t>(atom->getIdx())};
           features.push_back(GroupRec{
-            /*.a_type =*/ AtomType::NEG_IONISABLE,
+            /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ FeatureGroup::None,
             /*.atoms  =*/ std::move(atom_indices),
             /*.center =*/ RDGeom::Point3D(0,0,0)

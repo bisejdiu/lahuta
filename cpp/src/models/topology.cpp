@@ -1,5 +1,5 @@
 #include "models/topology.hpp"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include "models/factory.hpp"
 #include "models/fast_lookup.hpp"
 #include "models/pools.hpp"
@@ -172,8 +172,8 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     // correct the atom type for S atoms
     auto first_at  = static_cast<AtomType>(mol->getAtomWithIdx(pair.first )->getCompAtomType());
     auto second_at = static_cast<AtomType>(mol->getAtomWithIdx(pair.second)->getCompAtomType());
-    mol->getAtomWithIdx(pair.first )->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HBOND_DONOR));
-    mol->getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HBOND_DONOR));
+    mol->getAtomWithIdx(pair.first )->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HbondDonor));
+    mol->getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HbondDonor));
   }
   if (mol->getRingInfo()->isInitialized()) {
     mol->getRingInfo()->reset();
@@ -355,8 +355,8 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     // Correct the atom type for S-S bound atoms
     auto first_at   = static_cast<AtomType>(mol->getAtomWithIdx(pair.first) ->getCompAtomType());
     auto second_at  = static_cast<AtomType>(mol->getAtomWithIdx(pair.second)->getCompAtomType());
-    mol->getAtomWithIdx(pair.first) ->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HBOND_DONOR));
-    mol->getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HBOND_DONOR));
+    mol->getAtomWithIdx(pair.first) ->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HbondDonor));
+    mol->getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HbondDonor));
   }
 
   if (mol->getRingInfo()->isInitialized()) {

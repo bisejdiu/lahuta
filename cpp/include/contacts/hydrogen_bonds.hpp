@@ -8,7 +8,7 @@
 #ifndef LAHUTA_HYDROGEN_BONDS_HPP
 #define LAHUTA_HYDROGEN_BONDS_HPP
 
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include "entities/contact.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/MonomerInfo.h>

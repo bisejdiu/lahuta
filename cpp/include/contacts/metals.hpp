@@ -2,7 +2,7 @@
 #define LAHUTA_METALS_HPP
 
 #include "GraphMol/RWMol.h"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include "definitions.hpp"
 
 namespace lahuta {

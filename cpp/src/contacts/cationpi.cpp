@@ -9,7 +9,7 @@ namespace lahuta {
 ContactSet find_cationpi(const Topology& topology, const CationPiParams& params) {
   return find_contacts(
     topology,
-    [](const GroupRec& rec) { return (rec.a_type & AtomType::POS_IONISABLE) == AtomType::POS_IONISABLE; },
+    [](const GroupRec& rec) { return (rec.a_type & AtomType::PositiveCharge) == AtomType::PositiveCharge; },
     [](const RingRec & rec)  { return true; }, // we miss positive hits bc we miss genuine aromatic rings in our perception routine
     {params.distance_max, 0.1, 0.5, 1},
     [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
