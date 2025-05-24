@@ -8,7 +8,7 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RDKitBase.h>
 
-#include "atom_types.hpp"
+#include "typing/types.hpp"
 #include "array.hpp"
 #include "contacts.hpp"
 #include "contacts/search.hpp"

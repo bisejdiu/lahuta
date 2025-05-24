@@ -6,7 +6,12 @@
 #include "topology/data.hpp"
 #include "topology/kernels.hpp"
 #include <rdkit/GraphMol/RWMol.h>
+#include <typing/flags.hpp>
 #include <valence_model.hpp>
+#include "typing/types.hpp"
+#include "residues.hpp"
+#include "selections/mol_filters.hpp"
+#include "typing/smarts_matching.hpp"
 
 // clang-format off
 namespace lahuta::topology {
@@ -16,18 +21,60 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
-  try {
-    ValenceModel valence_model;
-    valence_model.apply(*data.mol);
+  if (params.use_molstar) {
+    try {
+      ValenceModel valence_model;
+      valence_model.apply(*data.mol);
 
-    data.atoms  = AtomTypeAnalysis()(*data.mol);
-    data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
-    data.rings  = populate_ring_entities(*data.mol);
+      data.atoms  = AtomTypeAnalysis()(*data.mol);
+      data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
+      data.rings  = populate_ring_entities(*data.mol);
 
-    return ComputationResult(true);
-  } catch (const std::exception &e) {
-    Logger::get_logger()->error("Exception in atom typing: {}", e.what());
-    return ComputationResult(ComputationError(std::string("Error computing atom types: ") + e.what()));
+      return ComputationResult(true);
+    } catch (const std::exception &e) {
+      Logger::get_logger()->error("Exception in atom typing: {}", e.what());
+      return ComputationResult(ComputationError(std::string("Error computing atom types: ") + e.what()));
+    }
+  } else {
+    try {
+      // FIX: should have a clear method on the TopologyData
+      data.atoms.clear(); data.groups.clear(); data.rings.clear();
+      data.atoms.reserve(data.mol->getNumAtoms());
+      for (auto atom : data.mol->atoms()) {
+        AtomType atom_type = get_atom_type(atom);
+        data.atoms.push_back(AtomRec{
+          /*.type =*/  atom_type,
+          /*.idx  =*/  static_cast<uint32_t>(atom->getIdx()),
+          /*,.atom =*/ *atom
+        });
+      }
+
+      auto unk_indices = data.residues->filter(std::not_fn(definitions::is_protein_extended)).get_atom_ids();
+      if (!unk_indices.empty()) {
+        std::sort(unk_indices.begin(), unk_indices.end());
+        auto new_mol = filter_with_bonds(*data.mol, unk_indices);
+        if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
+          new_mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
+          // RDKit::MolOps::findSSSR(new_mol);
+
+          auto vec = match_atom_types(new_mol);
+
+          for (size_t i = 0; i < unk_indices.size(); ++i) {
+            data.atoms.push_back(AtomRec{
+              /*.type =*/ vec[i],
+              /*.idx  =*/ static_cast<uint32_t>(unk_indices[i]),
+              /*.atom =*/ *data.mol->getAtomWithIdx(unk_indices[i])
+            });
+          }
+        }
+      }
+
+      data.rings = populate_ring_entities(*data.mol);
+      return ComputationResult(true);
+    } catch (const std::exception &e) {
+      Logger::get_logger()->error("Exception in atom typing: {}", e.what());
+      return ComputationResult(ComputationError(std::string("Error computing atom types: ") + e.what()));
+    }
   }
 }
 

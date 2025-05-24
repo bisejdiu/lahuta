@@ -46,7 +46,7 @@ template<
     typename Tester = search::NoTester,
     typename Rec   = raw_predicate_arg_t<Pred>,
     std::enable_if_t<is_predicate_on<Pred, Rec>::value, int> = 0>
-ContactSet find_contacts(const Topology& topology, Pred pred, const search::SearchOptions opts, Tester&& tester = {}) {
+ContactSet find_contacts(const Topology& topology, const Pred pred, const search::SearchOptions opts, Tester&& tester = {}) {
   using namespace search;
 
   const auto &recs = topology.records<Rec>();
@@ -58,7 +58,7 @@ ContactSet find_contacts(const Topology& topology, Pred pred, const search::Sear
 template<
   typename PredA, typename PredB, typename Tester,
   std::enable_if_t<std::is_invocable_r_v<InteractionType, Tester, uint32_t, uint32_t, float>, int> = 0>
-ContactSet find_contacts(const Topology &topology, PredA pred_a, PredB pred_b, const search::SearchOptions opts, Tester &&tester) {
+ContactSet find_contacts(const Topology &topology, const PredA pred_a, const PredB pred_b, const search::SearchOptions opts, Tester &&tester) {
 
   using namespace search;
   using RecA = raw_predicate_arg_t<PredA>;

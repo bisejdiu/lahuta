@@ -15,7 +15,6 @@
 #include "distances.hpp"
 #include "distopia.h"
 #include "ent.hpp"
-#include "entities.hpp"
 #include "lahuta.hpp"
 #include "logger_py.hpp"
 #include "logging.hpp"
@@ -32,6 +31,31 @@ namespace py = pybind11;
 using namespace lahuta;
 
 // clang-format off
+
+double compute_angle(const RingRec &rd, const std::vector<double> &_point) {
+  RDGeom::Point3D point(_point[0], _point[1], _point[2]);
+  auto vector_point_to_plane = point - rd.center;
+  vector_point_to_plane.normalize();
+
+  double cos_theta = vector_point_to_plane.dotProduct(rd.normal);
+  cos_theta = std::max(-1.0, std::min(1.0, cos_theta));
+
+  double theta_radians = std::acos(cos_theta); // in radians
+  return theta_radians * (180.0 / M_PI);
+}
+
+std::vector<double> compute_angles(const std::vector<RingRec> &data,
+                                   const std::vector<int> &ring_indices,
+                                   const std::vector<std::vector<double>> &points) {
+  std::vector<double> angles;
+  angles.reserve(ring_indices.size());
+  for (size_t i = 0; i < ring_indices.size(); ++i) {
+    auto angle = compute_angle(data[ring_indices[i]], points[i]);
+    angles.push_back(angle);
+  }
+  return angles;
+}
+
 
 template <typename T>
 static py::array_t<T> distance(const std::vector<std::vector<T>> &points1, const std::vector<std::vector<T>> &points2) {
@@ -83,6 +107,37 @@ void bind(py::module &_lahuta) {
   py::class_<TopologyBuildingOptions> Tops_   (_lahuta, "TopologyBuildingOptions");
   py::enum_<ContactComputerType>      CcompT_ (_lahuta, "ContactComputerType");
 
+
+  py::class_<AtomRec> AtomRec_(_lahuta, "AtomRec");
+  py::class_<RingRec> RingRec_(_lahuta, "RingRec");
+  py::class_<GroupRec> GroupRec_(_lahuta, "GroupRec");
+
+  AtomRec_
+      .def_readwrite("type", &AtomRec::type)
+      .def_readwrite("idx",  &AtomRec::idx)
+      .def("__repr__", [](const AtomRec &self) {
+          return py::str("AtomRec(type={}, idx={})").format(self.type, self.idx);
+      });
+
+  RingRec_
+      .def(py::init<>())
+      .def_readwrite("atoms",   &RingRec::atoms)
+      .def_readwrite("center",  &RingRec::center)
+      .def_readwrite("normal",  &RingRec::normal)
+      .def_readwrite("aromatic",&RingRec::aromatic)
+      .def("__repr__", [](const RingRec &self) {
+          return py::str("RingRec(atoms={}, center={}, normal={}, aromatic={})").format(self.atoms, self.center, self.normal, self.aromatic);
+      });
+
+  GroupRec_
+      .def(py::init<>())
+      .def_readwrite("a_type", &GroupRec::a_type)
+      .def_readwrite("type",   &GroupRec::type)
+      .def_readwrite("atoms",  &GroupRec::atoms)
+      .def_readwrite("center", &GroupRec::center)
+      .def("__repr__", [](const GroupRec &self) {
+          return py::str("GroupRec(a_type={}, type={}, atoms={}, center={})").format(self.a_type, self.type, self.atoms, self.center);
+      });
 
   DistComp_
     .def_static("distance", py::overload_cast<const Vector<float>&,  const Vector<float>&> (&DistanceComputation::distance<float>))
@@ -244,9 +299,22 @@ void bind(py::module &_lahuta) {
 
 
   Topology_
-      .def_property_readonly("atom_types", &Topology::get_atom_types)
+      .def_property_readonly("atom_types", &Topology::records<AtomRec>)
       .def_property_readonly("residues",   [](Topology &top) {return top.get_residues();}, py::return_value_policy::reference)
-      .def_property_readonly("rings",      &Topology::get_rings)
+      .def_property_readonly("rings",      &Topology::records<RingRec>)
+      .def_property_readonly("groups",     &Topology::records<GroupRec>)
+      .def("atom_types_filter_by_fn",      [](Topology &top, py::function func) {
+          auto pred = [func](const AtomRec &r) {return func(r).cast<bool>();};
+          auto recs = top.records<AtomRec>();
+          auto filtered = std::vector<AtomRec>();
+          filtered.reserve(recs.size());
+          for (const auto &rec : recs) {
+              if (pred(rec)) {
+                  filtered.push_back(rec);
+              }
+          }
+          return filtered;
+      }, py::arg("func"))
       .def("total_size", &Topology::total_size);
 
 
@@ -279,8 +347,16 @@ void bind(py::module &_lahuta) {
           }
           return ns;
       })
-      .def("get_atom_types",   &Luni::get_atom_types)
-      .def("get_rings",        &Luni::get_rings)
+      .def("get_atom_types",   [](class Luni &luni) {
+          auto atom_types = luni.get_topology().records<AtomRec>();
+          /*py::array_t<int> atom_indices(atom_types.size());*/
+          return atom_types;
+      })
+      .def("get_rings",        [](class Luni &luni) {
+          auto rings = luni.get_topology().records<RingRec>();
+          /*py::array_t<int> atom_indices(atom_types.size());*/
+          return rings;
+      })
       .def("filter_luni",      &Luni::filter)
       /*.def("match_smarts_string", &Luni::match_smarts_string)*/
 
@@ -363,10 +439,15 @@ PYBIND11_MODULE(_lahuta, m) {
   bind_contacts(m);
   bind(m);
   bind_common(m);
-  bind_entities(m);
+  // bind_entities(m);
   bind_logger(m);
   bind_properties(m);
   bind_align(m);
   bind_te(m);
+
+  // bind compute_angles as just a free function
+  m.def("compute_angles", [](const std::vector<RingRec> &data, const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) {
+    return compute_angles(data, ring_indices, points);
+  }, py::arg("data"), py::arg("ring_indices"), py::arg("points"));
 
 }

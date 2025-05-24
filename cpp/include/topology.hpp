@@ -65,7 +65,7 @@ public:
   /// Set the neighbor search cutoff
   void set_cutoff(double cutoff);
 
-  /// Set the atom typing method
+  // FIX: this is bad, because it gives us two sources of truth for setting the compute method
   void set_atom_typing_method(ContactComputerType method);
 
   /// Set whether to compute non-standard bonds

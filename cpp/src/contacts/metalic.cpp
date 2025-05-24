@@ -1,5 +1,6 @@
 #include "contacts/metalic.hpp"
 #include "entities/find_contacts.hpp"
+#include "typing/flags.hpp"
 
 namespace lahuta {
 

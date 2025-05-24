@@ -329,20 +329,24 @@ class RingData:
 
 
 class AtomType(Enum): # FIX: write the actual values
-    NONE:                AtomType # 0
-    HBOND_ACCEPTOR:      AtomType # 1
-    HBOND_DONOR:         AtomType # 2
-    WEAK_HBOND_ACCEPTOR: AtomType # 4
-    WEAK_HBOND_DONOR:    AtomType # 8
-    POS_IONISABLE:       AtomType # 16
-    NEG_IONISABLE:       AtomType # 32
-    CARBONYL_OXYGEN:     AtomType # 64
-    CARBONYL_CARBON:     AtomType # 128
-    AROMATIC:            AtomType # 256
-    HYDROPHOBIC:         AtomType # 512
-    XBOND_ACCEPTOR:      AtomType # 1024
-    XBOND_DONOR:         AtomType # 2048
-    INVALID:             AtomType # 4096
+    NONE:              AtomType # 0
+    HbondAcceptor:     AtomType # 1
+    HbondDonor:        AtomType # 2
+    WeakHbondAcceptor: AtomType # 4
+    WeakHbondDonor:    AtomType # 8
+    PositiveCharge:    AtomType # 16
+    NegativeCharge:    AtomType # 32
+    CarbonylOxygen:    AtomType # 64
+    CarbonylCarbon:    AtomType # 128
+    Aromatic:          AtomType # 256
+    Hydrophobic:       AtomType # 512
+    XBondAcceptor:     AtomType # 1024
+    XbondDonor:        AtomType # 2048
+    IonicTypePartner:  AtomType # 4096
+    DativeBondPartner: AtomType # 8192
+    TransitionMetal:   AtomType # 16384
+    IonicTypeMetal:    AtomType # 32768
+    Invalid:           AtomType # 65536
 
     def __init__(self, value: int) -> None: ...
 

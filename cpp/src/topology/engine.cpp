@@ -8,9 +8,9 @@ void TopologyEngine::initialize(const TopologyBuildingOptions &opts) {
   if (auto* params = get_parameters<NeighborSearchParams>(NeighborSearchComputation<>::label)) {
     params->cutoff = opts.cutoff;
   }
-  if (auto* params = get_parameters<AtomTypingParams>(AtomTypingComputation<>::label)) {
-    params->use_molstar = (opts.atom_typing_method == ContactComputerType::Molstar);
-  }
+  // if (auto* params = get_parameters<AtomTypingParams>(AtomTypingComputation<>::label)) {
+  //   params->use_molstar = (opts.atom_typing_method == ContactComputerType::Molstar);
+  // }
 
   enable(NonStandardBondComputation<>::label, opts.compute_nonstandard_bonds);
 

@@ -15,7 +15,6 @@ struct HydrophobicParams {
 
 AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-ContactSet find_hydrophobic_bondsx(const Topology& topology, const HydrophobicParams& opts = HydrophobicParams{});
 ContactSet find_hydrophobic_bonds(const Topology& topology, const HydrophobicParams& params = HydrophobicParams{});
 
 } // namespace lahuta

@@ -10,7 +10,7 @@ from numpy.typing import NDArray
 from typing_extensions import Self
 
 from lahuta.config.smarts import AVAILABLE_ATOM_TYPES
-from lahuta.lib._lahuta import AtomEntityCollection, FastNS_, Flags, NSResults_
+from lahuta.lib._lahuta import FastNS_, Flags, NSResults_
 from lahuta.utils import array_utils as au
 
 from .mapping import AtomMapper, DefaultLNPFields, IndexFinder, LabeledNeighborPairsBuilder
@@ -192,46 +192,21 @@ class NeighborPairs:
         Returns:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
-        c_atom_type = Flags.get_enum_as_string(atom_type.upper())
+        c_atom_type = Flags.get_enum_as_string(atom_type)
 
-        entities = AtomEntityCollection.filter(self.luni._data, c_atom_type)
+        entities = self.luni._data.get_topology().atom_types_filter_by_fn(lambda x: Flags.has(x.type, c_atom_type))
+
+        entity_atom_ids = []
+        for i in entities:
+            entity_atom_ids.append(i.idx)
+
         nsr = NSResults_(self.pairs, self.distances)
-        result = nsr.filter(entities.get_atom_ids(), partner - 1)
+        result = nsr.filter(entity_atom_ids, partner - 1)
         pairs, distances = result.get_pairs(), result.get_distances()
 
         self._ns = nsr
 
-        # print("~" * 80)
-        # print(self.labels.shape)
-        # print(self.resnames)
-
         return self.new(pairs, distances)
-
-        # ns = self.__class__(self.luni)
-        # ns.set_neighbors(pairs, distances)
-        # ns._ns = cns
-        # return ns
-
-        c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
-
-        from lahuta.lib import cNSResults
-
-        cns = cNSResults(self.luni._luni, self.pairs, self.distances)
-        result = cns.type_filter(c_atom_type, partner - 1)
-        pairs, distances = result.get_pairs(), result.get_distances()
-
-        ns = self.__class__(self.luni)
-        ns.set_neighbors(pairs, distances)
-        ns._ns = cns
-        return ns
-
-        test = self._ns.type_filter(c_atom_type, partner - 1)
-        # pairs, distances = NeighborPairs.sort_inputs(test.get_pairs(), test.get_distances())
-        pairs, distances = test.get_pairs(), test.get_distances()
-        new_ns = self.new(pairs, distances)
-        new_ns._future_neighbors = self._future_neighbors
-        new_ns._ns = test
-        return new_ns
 
     def _bk_type_filter(self, atom_type: str, partner: int) -> Self:
         """Filter pairs based on atom types.
@@ -260,16 +235,9 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the atom type filter.
         """
         atom_type_col_num = AVAILABLE_ATOM_TYPES[atom_type.upper()]
-        # print(AVAILABLE_ATOM_TYPES, atom_type_col_num, atom_type)
-
-        # c_atom_type = cAtomType.get_enum_as_str(atom_type.upper())
-        # test = self._ns.type_filter(c_atom_type, partner - 1)
-        # print("-->>>>>", test.get_pairs().size)
 
         nonzeros: NDArray[np.int32] = self.luni.atom_types.getcol(atom_type_col_num).nonzero()[0]
         mask = np.in1d(self.pairs[:, partner - 1], nonzeros)  # noqa: NPY201
-
-        # print("->mask<-", self.pairs[mask].size)
 
         return self.new(self.pairs[mask], self.distances[mask])
 
@@ -327,7 +295,6 @@ class NeighborPairs:
         # if the angle is larger than 90.0, use: angle = 180.0 - angle instead
         angles = np.where(angles > 90.0, 180.0 - angles, angles)
         mask = angles <= cutoff
-        # print("mask", mask.shape, mask.nonzero())
         return self.new(self.pairs[mask], self.distances[mask])
 
     def numeric_filter(self, array: NDArray[np.float32], cutoff: float) -> Self:
@@ -344,7 +311,6 @@ class NeighborPairs:
             A NeighborPairs object containing the pairs that meet the numeric filter.
         """
         mask = array <= cutoff
-        # print("mask", mask.shape, mask.nonzero())
         return self.new(self.pairs[mask], self.distances[mask])
 
     def radius_filter(self, radius: float, partner: int) -> Self:

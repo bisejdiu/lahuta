@@ -26,6 +26,7 @@ enum class FeatureGroup {
 struct AtomRec {
   AtomType type;
   uint32_t idx;
+  RDKit::Atom &atom;
 };
 
 struct RingRec {

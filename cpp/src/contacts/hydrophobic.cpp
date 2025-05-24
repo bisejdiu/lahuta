@@ -27,12 +27,12 @@ ContactSet find_hydrophobic_bonds(const Topology& topology, const HydrophobicPar
       [](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; },
       {opts.distance_max, 0.4},
       [&](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
-        const auto& mol = topology.molecule();
+        const auto &mol = topology.molecule();
 
         const auto atom_a_rec = topology.atom(rec_idx_a);
         const auto atom_b_rec = topology.atom(rec_idx_b);
-        const auto* atom_a = mol.getAtomWithIdx(atom_a_rec.idx);
-        const auto* atom_b = mol.getAtomWithIdx(atom_b_rec.idx);
+        const auto *atom_a = mol.getAtomWithIdx(atom_a_rec.idx);
+        const auto *atom_b = mol.getAtomWithIdx(atom_b_rec.idx);
 
         if (are_residueids_close(mol, *atom_a, *atom_b, 0)) return InteractionType::None;
         if (atom_a->getAtomicNum() == Element::F && atom_b->getAtomicNum() == Element::F) return InteractionType::None;

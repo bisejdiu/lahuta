@@ -15,7 +15,7 @@ struct InteractionOptions {
   bool hydrophobic = true;
   bool halogen     = true;
   bool ionic       = true;
-  bool metal       = true;
+  bool metalic     = true;
   bool cationpi    = true;
   bool pistacking  = true;
 
@@ -33,7 +33,7 @@ public:
   [[nodiscard]] ContactSet hydrophobic() const;
   [[nodiscard]] ContactSet halogen() const;
   [[nodiscard]] ContactSet ionic() const;
-  [[nodiscard]] ContactSet metal() const;
+  [[nodiscard]] ContactSet metalic() const;
   [[nodiscard]] ContactSet cationpi() const;
   [[nodiscard]] ContactSet pistacking() const;
 
@@ -65,8 +65,8 @@ public:
       result |= contacts;
     }
 
-    if (opts_.metal) {
-      auto contacts = metal();
+    if (opts_.metalic) {
+      auto contacts = metalic();
       result |= contacts;
     }
 

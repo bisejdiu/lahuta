@@ -2,6 +2,7 @@
 #include "chemistry/geometry.hpp"
 #include "contacts/utils.hpp"
 #include "entities/find_contacts.hpp"
+#include <logging.hpp>
 
 // clang-format off
 namespace lahuta {
@@ -38,6 +39,5 @@ ContactSet find_pistacking(const Topology &topology, const PiStackingParams& par
     }
   );
 }
-
 
 } // namespace lahuta

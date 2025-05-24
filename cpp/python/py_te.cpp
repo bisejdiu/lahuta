@@ -4,16 +4,16 @@
 
 #include "array.hpp"
 #include "contacts.hpp"
-#include "contacts/interactions.hpp"
 #include "contacts/utils.hpp"
+#include "entities/contact.hpp"
 #include "mapper.hpp"
 #include "py_te.hpp"
 
 namespace py = pybind11;
 using namespace lahuta;
 
-Contacts compute_neighbor_contacts(const Luni &luni, double cutoff) {
-  Contacts contacts;
+ContactSet compute_neighbor_contacts(const Luni &luni, double cutoff) {
+  ContactSet contacts;
   auto grid = FastNS(luni.get_conformer().getPositions());
   auto ok = grid.build(cutoff);
   if (!ok) {
@@ -27,15 +27,15 @@ Contacts compute_neighbor_contacts(const Luni &luni, double cutoff) {
     const RDKit::Atom *a2 = luni.get_molecule().getAtomWithIdx(j);
     if (are_residueids_close(luni.get_molecule(), *a1, *a2, 4)) continue;
 
-    contacts.add(Contact(
-        make_entity_id(EntityType::Atom, a1->getIdx()),
-        make_entity_id(EntityType::Atom, a2->getIdx()),
-        dist));
+    contacts.insert(Contact{
+      EntityID::make(Kind::Atom, a1->getIdx()),
+      EntityID::make(Kind::Atom, a2->getIdx()),
+      dist,
+      InteractionType::Generic
+    });
 
   }
 
-  contacts.sort_interactions();
-  std::cout << "Total Contacts: " << contacts.size() << std::endl;
   return contacts;
 };
 
