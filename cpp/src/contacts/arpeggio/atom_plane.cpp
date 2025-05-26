@@ -1,5 +1,6 @@
 #include "contacts/arpeggio/contacts.hpp"
-#include "contacts/arpeggio_helpers.hpp"
+#include "contacts/arpeggio/geo.hpp"
+#include "elements.hpp"
 #include "entities/context.hpp"
 #include <contacts/arpeggio/params.hpp>
 
