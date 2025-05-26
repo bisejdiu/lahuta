@@ -2,7 +2,7 @@
 
 #include "common.hpp"
 #include "contacts/molstar/hbond_geo_validity.hpp"
-#include "contacts/utils.hpp"
+#include "chemistry/utils.hpp"
 #include "elements.hpp"
 #include "entities/context.hpp"
 #include <GraphMol/Atom.h>

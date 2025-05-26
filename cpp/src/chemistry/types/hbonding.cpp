@@ -1,7 +1,7 @@
-#include "contacts/hydrogen_bonds.hpp"
+#include "chemistry/types/hbonding.hpp"
 #include "chemistry/neighbors.hpp"
 #include "chemistry/predicates.hpp"
-#include "contacts/utils.hpp"
+#include "chemistry/utils.hpp"
 #include "elements.hpp"
 
 // clang-format off

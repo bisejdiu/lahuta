@@ -1,8 +1,8 @@
-#include "contacts/charges.hpp"
-#include "contacts/heuristics.hpp"
-#include "contacts/utils.hpp"
-#include "entities/records.hpp"
+#include "chemistry/types/charges.hpp"
+#include "chemistry/heuristics.hpp"
+#include "chemistry/utils.hpp"
 #include "definitions.hpp"
+#include "entities/records.hpp"
 #include "residues.hpp"
 #include <elements.hpp>
 #include <unordered_map>

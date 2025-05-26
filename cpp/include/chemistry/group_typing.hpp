@@ -3,7 +3,7 @@
 
 #include "GraphMol/RWMol.h"
 #include "contacts/aromaticity.hpp"
-#include "contacts/charges.hpp"
+#include "types/charges.hpp"
 #include "residues.hpp"
 #include "entities/records.hpp"
 #include <vector>

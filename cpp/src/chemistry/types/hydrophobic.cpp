@@ -1,4 +1,4 @@
-#include "contacts/hydrophobic.hpp"
+#include "chemistry/types/hydrophobic.hpp"
 #include "elements.hpp"
 #include "typing/types.hpp"
 

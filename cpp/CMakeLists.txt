@@ -122,25 +122,30 @@ add_library(lahuta_cpp STATIC
             src/lahuta.cpp
             src/visitor.cpp
             src/struct_unit.cpp
-            src/contacts/hydrogen_bonds.cpp
-            src/contacts/charges.cpp
             src/topology.cpp
-            src/contacts/hydrophobic.cpp
-            src/contacts/halogen_bonds.cpp
             src/residues.cpp
-            src/contacts/aromaticity.cpp
             src/aromatics.cpp
             src/luni_props.cpp
             src/logging.cpp
+
             src/models/topology.cpp
-            src/contacts/metals.cpp
             src/models/parser.cpp
+
             external/mmap/MemoryMapped.cpp
             src/valence_model.cpp
-            src/contacts/groups.cpp
+
             src/ob/kekulize.cpp
             src/ob/clean_mol.cpp
             src/ob/bitvec.cpp
+
+            src/contacts/aromaticity.cpp
+
+            src/chemistry/group_typing.cpp
+            src/chemistry/types/charges.cpp
+            src/chemistry/types/metalics.cpp
+            src/chemistry/types/hydrophobic.cpp
+            src/chemistry/types/halogens.cpp
+            src/chemistry/types/hbonding.cpp
 
             src/mapping/bitset_mapping.cpp
             src/mapping/mapping_matrix.cpp
@@ -173,7 +178,6 @@ add_library(lahuta_cpp STATIC
             src/contacts/arpeggio/aromatic.cpp
             src/contacts/arpeggio/carbonyl.cpp
             src/contacts/arpeggio/atom_plane.cpp
-
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)

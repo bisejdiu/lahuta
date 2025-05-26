@@ -1,5 +1,5 @@
 #include "contacts/arpeggio/contacts.hpp"
-#include "contacts/utils.hpp"
+#include "chemistry/utils.hpp"
 #include "entities/context.hpp"
 #include <contacts/arpeggio/params.hpp>
 

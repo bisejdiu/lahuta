@@ -1,4 +1,4 @@
-#include "contacts/groups.hpp"
+#include "chemistry/group_typing.hpp"
 #include "Geometry/point.h"
 
 namespace lahuta {

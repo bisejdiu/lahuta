@@ -1,4 +1,5 @@
-#include "contacts/metals.hpp"
+#include "chemistry/types/metalics.hpp"
+#include "elements.hpp"
 
 namespace lahuta {
 
@@ -35,8 +36,11 @@ bool is_nucleic_backbone(const std::string &atomname) {
 }
 
 bool is_halogen(int atomic_num) {
-  // Halogens: F(9), Cl(17), Br(35), I(53), At(85)
-  return atomic_num == 9 || atomic_num == 17 || atomic_num == 35 || atomic_num == 53 || atomic_num == 85;
+  return atomic_num == Element::F  ||
+         atomic_num == Element::Cl ||
+         atomic_num == Element::Br ||
+         atomic_num == Element::I  ||
+         atomic_num == Element::At;
 }
 
 AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {

@@ -1,6 +1,6 @@
 #include "contacts/molstar/contacts.hpp"
 #include "chemistry/geometry.hpp"
-#include "contacts/utils.hpp"
+#include "chemistry/utils.hpp"
 #include "entities/context.hpp"
 
 // clang-format off

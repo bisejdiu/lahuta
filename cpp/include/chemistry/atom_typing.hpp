@@ -2,12 +2,12 @@
 #define LAHUTA_CONTACTS_HPP
 
 #include "GraphMol/RWMol.h"
-#include "typing/types.hpp"
-#include "contacts/halogen_bonds.hpp"
-#include "contacts/hydrophobic.hpp"
-#include "contacts/metals.hpp"
-#include "hydrogen_bonds.hpp"
 #include "entities/records.hpp"
+#include "types/halogens.hpp"
+#include "types/hbonding.hpp"
+#include "types/hydrophobic.hpp"
+#include "types/metalics.hpp"
+#include "typing/types.hpp"
 #include <vector>
 
 // clang-format off
@@ -39,12 +39,7 @@ public:
       for (std::size_t i = 0; i < NumBuiltinDetectors; ++i) {
         t |= BuiltinDetectors[i](mol, *atom);
       }
-
-      atoms.push_back(AtomRec{
-        /*.type =*/ t,
-        // /*.idx  =*/ static_cast<uint32_t>(atom->getIdx()),
-        /*.atom =*/ *atom
-      });
+      atoms.push_back(AtomRec{/*.type =*/ t, /*.atom =*/ *atom});
     }
 
     return atoms;
