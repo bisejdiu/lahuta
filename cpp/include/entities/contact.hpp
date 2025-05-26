@@ -51,7 +51,13 @@ class ContactSet {
 public:
   ContactSet() = default;
   ContactSet(std::initializer_list<Contact> contacts);
-  explicit ContactSet(std::vector<Contact> contacts);
+  template<typename Vt, typename = std::enable_if_t<std::is_same<std::decay_t<Vt>, std::vector<Contact>>::value>>
+  explicit ContactSet(Vt&& v, bool make_unique = false) : contacts_(std::forward<Vt>(v)) {
+    ensure_sorted();
+
+    if (!make_unique) return;
+    contacts_.erase(std::unique(contacts_.begin(), contacts_.end()), contacts_.end());
+  }
 
   void insert(const Contact& contact);
   void insert(const ContactSet& other);

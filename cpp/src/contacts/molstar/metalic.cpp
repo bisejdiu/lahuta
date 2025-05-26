@@ -1,0 +1,37 @@
+#include "contacts/molstar/contacts.hpp"
+#include "entities/contact_context.hpp"
+#include "typing/flags.hpp"
+
+// clang-format off
+namespace lahuta {
+
+bool is_metalicx(AtomType at1, AtomType at2) {
+  using AtomTypeFlags::has;
+  if (has(at1, AtomType::TransitionMetal)) return has(at2, AtomType::DativeBondPartner);
+  if (has(at1, AtomType::IonicTypeMetal))  return has(at2, AtomType::IonicTypePartner);
+  return false;
+}
+
+ContactRecipe<AtomRec, AtomRec, MetalicParams> make_metalic_recipe() {
+  return {
+    MetalicParams{},
+    +[](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypeMetal   | AtomType::TransitionMetal))   != AtomType::None; },
+    +[](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypePartner | AtomType::DativeBondPartner)) != AtomType::None; },
+    // {opts.distance_max, 0, 0, 0.7},
+    +[](std::uint32_t idx1, std::uint32_t idx2, float dist, const ContactContext& ctx) -> InteractionType {
+      const auto& opts = ctx.get_params<MetalicParams>();
+      const auto &m  = ctx.topology.atom(idx1);
+      const auto &mb = ctx.topology.atom(idx2);
+
+      if (dist < opts.distance_max) return InteractionType::None;
+      if (idx1 == idx2) return InteractionType::None;
+
+      if (!is_metalicx(m.type, mb.type) && !is_metalicx(mb.type, m.type)) return InteractionType::None;
+      if (ctx.topology.molecule().getBondBetweenAtoms(m.atom.getIdx(), mb.atom.getIdx()))       return InteractionType::None;
+
+      return InteractionType::MetalCoordination;
+    }
+  };
+}
+
+} // namespace lahuta

@@ -110,9 +110,9 @@ add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
-# set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp
@@ -140,7 +140,7 @@ add_library(lahuta_cpp STATIC
             src/contacts/metals.cpp
             src/models/parser.cpp
             external/mmap/MemoryMapped.cpp
-            src/contacts/interactions.cpp
+            # src/contacts/interactions.cpp
             src/valence_model.cpp
             src/contacts/groups.cpp
             src/ob/kekulize.cpp
@@ -163,6 +163,15 @@ add_library(lahuta_cpp STATIC
             src/chemistry/predicates.cpp
 
             src/entities/contact.cpp
+
+            src/contacts/molstar/ionic.cpp
+            src/contacts/molstar/hbond.cpp
+            src/contacts/molstar/hydrophobic.cpp
+            src/contacts/molstar/halogen.cpp
+            src/contacts/molstar/cationpi.cpp
+            src/contacts/molstar/pistacking.cpp
+            src/contacts/molstar/metalic.cpp
+
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -237,15 +246,15 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 #   else()
 #     find_package(Python ${PYTHON_VERSION} REQUIRED COMPONENTS Interpreter Development.Module)
 #   endif()
-#
+# 
 #   # use pybind11-config (if available) to determine pybind11_DIR
 #   execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR)
 #   string(STRIP "${pybind11_DIR}" pybind11_DIR)
 #   find_package(pybind11 2.6 CONFIG REQUIRED)
 #   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
-#
-#   pybind11_add_module(lahuta_py python/at.cpp python/ent.cpp python/array.cpp python/logger_py.cpp python/contacts.cpp python/py_properties.cpp python/py_align.cpp python/py_te.cpp python/lahuta.cpp)
-#
+# 
+#   pybind11_add_module(lahuta_py python/at.cpp python/array.cpp python/logger_py.cpp python/contacts.cpp python/py_properties.cpp python/py_align.cpp python/py_te.cpp python/lahuta.cpp)
+# 
 #   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
 #     target_sources(lahuta_py PRIVATE 
 #     $<TARGET_OBJECTS:lahuta_cpp>
@@ -255,12 +264,12 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 #   else()
 #     target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
 #   endif()
-#
+# 
 #   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
 #   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
 #     target_compile_options(lahuta_py PRIVATE "-Wno-shadow")
 #   endif()
-#
+# 
 #   if (GENERATE_STUBS AND CMAKE_CROSSCOMPILING)
 #     message(WARNING "Stubs cannot be generated when cross-compiling - skipping.")
 #   elseif (GENERATE_STUBS)
@@ -280,14 +289,14 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 # else()
 #   message(STATUS "Skipping Python module. Add -D USE_PYTHON=1 to build it.")
 # endif()
-#
-#
+# 
+# 
 # ### Installation ###
 # # Python module installation:
 # set(PYTHON_INSTALL_DIR "${CMAKE_BINARY_DIR}/../../lahuta/lib")
 # message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
-#
-#
+# 
+# 
 # if (USE_PYTHON)
 #   if (DEFINED PYTHON_INSTALL_DIR)
 #     message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
@@ -315,7 +324,7 @@ add_lahuta_executable(lex_parallel main_threads.cpp)
 #     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs" DESTINATION "${Python_SITEARCH}" COMPONENT py)
 #   endif()
 # endif()
-#
+# 
 # add_custom_command(TARGET lahuta_py POST_BUILD
 #   COMMAND install_name_tool -add_rpath "@loader_path" $<TARGET_FILE:lahuta_py>
 #   COMMENT "Adding @loader_path rpath to _lahuta module"
