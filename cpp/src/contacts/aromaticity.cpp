@@ -13,7 +13,7 @@ std::vector<const RDKit::Atom *> get_atoms(const RDKit::RWMol &mol, const std::v
   return atoms;
 }
 
-std::vector<GroupRec> add_aromatic_rings(const RDKit::RWMol &mol, const Residues &residues) {
+std::vector<GroupRec> add_aromatic_rings(const RDKit::RWMol &mol, const Residues &) {
   std::vector<GroupRec> groups;
 
   for (const auto &ring : mol.getRingInfo()->atomRings()) {

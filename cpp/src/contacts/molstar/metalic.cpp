@@ -3,7 +3,7 @@
 #include "typing/flags.hpp"
 
 // clang-format off
-namespace lahuta {
+namespace lahuta::molstar {
 
 bool is_metalic(AtomType at1, AtomType at2) {
   using AtomTypeFlags::has;
@@ -27,11 +27,11 @@ ContactRecipe<AtomRec, AtomRec, MetalicParams> make_metalic_recipe() {
       if (idx1 == idx2) return InteractionType::None;
 
       if (!is_metalic(m.type, mb.type) && !is_metalic(mb.type, m.type)) return InteractionType::None;
-      if (ctx.topology.molecule().getBondBetweenAtoms(m.atom.getIdx(), mb.atom.getIdx()))       return InteractionType::None;
+      if (ctx.topology.molecule().getBondBetweenAtoms(m.atom.get().getIdx(), mb.atom.get().getIdx())) return InteractionType::None;
 
       return InteractionType::MetalCoordination;
     }
   };
 }
 
-} // namespace lahuta
+} // namespace lahuta::molstar

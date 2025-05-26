@@ -4,14 +4,13 @@
 #include "entities/context.hpp"
 
 // clang-format off
-namespace lahuta {
+namespace lahuta::molstar {
 
 ContactRecipe<GroupRec, RingRec, CationPiParams> make_cationpi_recipe() {
   return {
     CationPiParams{},
     +[](const GroupRec& rec) { return (rec.a_type & AtomType::PositiveCharge) == AtomType::PositiveCharge; },
     +[](const RingRec & rec)  { return true; }, // we miss positive hits bc we miss genuine aromatic rings in our perception routine
-    // {params.distance_max, 0.1, 0.5, 1},
     +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
 
       const auto& params = ctx.get_params<CationPiParams>();
@@ -27,4 +26,4 @@ ContactRecipe<GroupRec, RingRec, CationPiParams> make_cationpi_recipe() {
   };
 }
 
-} // namespace lahuta
+} // namespace lahuta::molstar

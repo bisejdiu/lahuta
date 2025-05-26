@@ -3,13 +3,13 @@
 
 #include "chemistry/geometry.hpp"
 #include "chemistry/neighbors.hpp"
-#include "contacts/molstar/contacts.hpp"
+#include "contacts/molstar/params.hpp"
 
 // clang-format off
-namespace lahuta::hb_geo {
+namespace lahuta::molstar {
 
 inline bool
-are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor, const HBondParameters &opts) {
+are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor, const HBondParams &opts) {
 
   // donor angles
   const auto &[don_angles, don_h_angles] = chemistry::calculate_angle(mol, donor, acceptor, opts.ignore_hydrogens);
@@ -52,6 +52,6 @@ are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, cons
   return true;
 }
 
-} // namespace lahuta::contacts
+} // namespace lahuta::molstar
 
 #endif // LAHUTA_CONTACTS_HBOND_GEO_VALIDITY_HPP

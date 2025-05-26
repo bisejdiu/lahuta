@@ -2,14 +2,13 @@
 #define LAHUTA_CONTACTS_GEO_VALIDITY_HPP
 
 #include "chemistry/geometry.hpp"
-#include "contacts/molstar/contacts.hpp"
+#include "contacts/molstar/params.hpp"
 
 #include "GraphMol/Atom.h"
 #include "GraphMol/RWMol.h"
 
-
 // clang-format off
-namespace lahuta::halo_geo {
+namespace lahuta::molstar {
 
 
 inline bool
@@ -35,7 +34,6 @@ are_geometrically_viable( const RDKit::RWMol &mol, const RDKit::Atom &donor, con
   return true;
 }
 
-
-} // namespace lahuta::halo_geo
+} // namespace lahuta::molstar
 
 #endif // LAHUTA_CONTACTS_GEO_VALIDITY_HPP

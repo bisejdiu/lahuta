@@ -3,7 +3,7 @@
 #include "entities/context.hpp"
 
 // clang-format off
-namespace lahuta {
+namespace lahuta::molstar {
 
 ContactRecipe<AtomRec, AtomRec, HalogenParams> make_halogen_recipe() {
   return {
@@ -16,11 +16,11 @@ ContactRecipe<AtomRec, AtomRec, HalogenParams> make_halogen_recipe() {
       const auto &donor    = ctx.topology.atom(rec_idx_a).atom;
       const auto &acceptor = ctx.topology.atom(rec_idx_b).atom;
 
-      if (!halo_geo::are_geometrically_viable(ctx.molecule(), donor, acceptor, params)) return InteractionType::None;
+      if (!are_geometrically_viable(ctx.molecule(), donor, acceptor, params)) return InteractionType::None;
 
       return InteractionType::Halogen;
     }
   };
 }
 
-} // namespace lahuta
+} // namespace lahuta::molstar

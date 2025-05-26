@@ -167,6 +167,13 @@ add_library(lahuta_cpp STATIC
             src/contacts/molstar/pistacking.cpp
             src/contacts/molstar/metalic.cpp
 
+            src/contacts/arpeggio/hbonds.cpp
+            src/contacts/arpeggio/hydrophobic.cpp
+            src/contacts/arpeggio/ionic.cpp
+            src/contacts/arpeggio/aromatic.cpp
+            src/contacts/arpeggio/carbonyl.cpp
+            src/contacts/arpeggio/atom_plane.cpp
+
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -225,6 +232,7 @@ endfunction()
 
 
 add_lahuta_executable(lex main.cpp)
+add_lahuta_executable(lex_ag main_ag.cpp)
 add_lahuta_executable(lex_parallel main_threads.cpp)
 # add_lahuta_executable(lex_fseek main_fseek.cpp)
 # add_lahuta_executable(lex_fut main_future.cpp)

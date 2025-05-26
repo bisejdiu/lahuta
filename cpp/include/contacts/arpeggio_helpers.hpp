@@ -58,7 +58,6 @@ inline double compute_angle_rad(const RDGeom::Point3D &vertex, const RDGeom::Poi
   return std::acos(dot);
 }
 
-
 inline bool passes_hbond_angle_filter(
   const RDKit::ROMol& mol,
   const RDKit::Conformer& conformer,
@@ -76,13 +75,12 @@ inline bool passes_hbond_angle_filter(
       RDGeom::Point3D hydrogen_pos = conformer.getAtomPos(hydrogen->getIdx());
 
       // Calculate D-H...A angle (at H)
-      double angle = compute_angle_rad(donor_pos, hydrogen_pos, acceptor_pos);
+      double angle = compute_angle_rad(hydrogen_pos, donor_pos, acceptor_pos);
       if (angle >= angle_cutoff_rad) return true;
     }
 
     return false;
 }
-
 
 inline double compute_angle(const RingRec &rd, const RDGeom::Point3D &point) {
   auto vector_point_to_plane = point - rd.center;

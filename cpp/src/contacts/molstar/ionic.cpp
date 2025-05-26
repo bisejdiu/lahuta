@@ -2,7 +2,7 @@
 #include "entities/context.hpp"
 
 // clang-format off
-namespace lahuta {
+namespace lahuta::molstar {
 
 ContactRecipe<GroupRec, GroupRec, IonicParams> make_ionic_recipe() {
   return {
@@ -16,4 +16,4 @@ ContactRecipe<GroupRec, GroupRec, IonicParams> make_ionic_recipe() {
   };
 }
 
-} // namespace lahuta
+} // namespace lahuta::molstar

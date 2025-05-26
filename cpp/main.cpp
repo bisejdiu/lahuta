@@ -2,7 +2,6 @@
 #include "logging.hpp"
 #include "selections/tokenizer.hpp"
 #include <GraphMol/BondIterators.h>
-// #include "contacts/arpeggio.hpp"
 #include "contacts/engine.hpp"
 #include "contacts/molstar/provider.hpp"
 

@@ -13,10 +13,18 @@ enum class Category : std::uint8_t {
   Halogen,
   HydrogenBond,
   WeakHydrogenBond,
+  PolarHydrogenBond,
+  WeakPolarHydrogenBond,
+  Aromatic,
   Ionic,
   MetalCoordination,
   CationPi,
-  PiStacking
+  PiStacking,
+  Carbonyl,
+  VanDerWaals,
+  DonorPi,
+  SulphurPi,
+  CarbonPi
 };
 
 enum class Flavor : std::uint8_t {
@@ -40,10 +48,19 @@ struct InteractionType {
   static const InteractionType CationPi;
   static const InteractionType HydrogenBond;
   static const InteractionType WeakHydrogenBond;
+  static const InteractionType PolarHydrogenBond;
+  static const InteractionType WeakPolarHydrogenBond;
   static const InteractionType MetalCoordination;
+  static const InteractionType Aromatic;
   static const InteractionType PiStacking;
   static const InteractionType PiStackingP;
   static const InteractionType PiStackingT;
+
+  static const InteractionType Carbonyl;
+  static const InteractionType VanDerWaals;
+  static const InteractionType DonorPi;
+  static const InteractionType SulphurPi;
+  static const InteractionType CarbonPi;
 
   constexpr operator std::uint8_t() const noexcept {
     return static_cast<std::uint8_t>(category) | (static_cast<std::uint8_t>(flavor) << 4);
@@ -67,11 +84,21 @@ inline constexpr InteractionType InteractionType::CationPi    {Category::CationP
 
 inline constexpr InteractionType InteractionType::HydrogenBond     {Category::HydrogenBond,      Flavor::Default};
 inline constexpr InteractionType InteractionType::WeakHydrogenBond {Category::WeakHydrogenBond,  Flavor::Default};
+inline constexpr InteractionType InteractionType::PolarHydrogenBond     {Category::PolarHydrogenBond,      Flavor::Default};
+inline constexpr InteractionType InteractionType::WeakPolarHydrogenBond {Category::WeakPolarHydrogenBond,  Flavor::Default};
 inline constexpr InteractionType InteractionType::MetalCoordination{Category::MetalCoordination, Flavor::Default};
 
+inline constexpr InteractionType InteractionType::Aromatic     {Category::Aromatic, Flavor::Default};
 inline constexpr InteractionType InteractionType::PiStacking {Category::PiStacking, Flavor::Default}; // generic pi stacking
 inline constexpr InteractionType InteractionType::PiStackingP{Category::PiStacking, Flavor::Parallel};
 inline constexpr InteractionType InteractionType::PiStackingT{Category::PiStacking, Flavor::TShape};
+
+inline constexpr InteractionType InteractionType::Carbonyl     {Category::Carbonyl, Flavor::Default};
+inline constexpr InteractionType InteractionType::VanDerWaals {Category::VanDerWaals, Flavor::Default};
+inline constexpr InteractionType InteractionType::DonorPi     {Category::DonorPi, Flavor::Default};
+inline constexpr InteractionType InteractionType::SulphurPi   {Category::SulphurPi, Flavor::Default};
+inline constexpr InteractionType InteractionType::CarbonPi    {Category::CarbonPi, Flavor::Default};
+
 
 } // namespace lahuta
 

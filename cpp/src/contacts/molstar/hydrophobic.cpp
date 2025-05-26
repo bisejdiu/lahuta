@@ -3,7 +3,7 @@
 #include "entities/context.hpp"
 
 // clang-format off
-namespace lahuta {
+namespace lahuta::molstar {
 
 ContactRecipe<AtomRec, AtomRec, HydrophobicParams> make_hydrophobic_recipe() {
   return {
@@ -13,8 +13,8 @@ ContactRecipe<AtomRec, AtomRec, HydrophobicParams> make_hydrophobic_recipe() {
       const auto& opts = ctx.get_params<HydrophobicParams>();
       const auto &mol = ctx.topology.molecule();
 
-      const auto &atom_a = ctx.topology.atom(a).atom;
-      const auto &atom_b = ctx.topology.atom(b).atom;
+      const auto &atom_a = ctx.topology.atom(a).atom.get();
+      const auto &atom_b = ctx.topology.atom(b).atom.get();
 
       if (are_residueids_close(mol, atom_a, atom_b, 0)) return InteractionType::None;
       if (atom_a.getAtomicNum() == Element::F && atom_b.getAtomicNum() == Element::F) return InteractionType::None;
@@ -24,4 +24,4 @@ ContactRecipe<AtomRec, AtomRec, HydrophobicParams> make_hydrophobic_recipe() {
   };
 }
 
-} // namespace lahuta
+} // namespace lahuta::molstar

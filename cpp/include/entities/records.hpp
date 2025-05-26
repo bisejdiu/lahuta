@@ -25,8 +25,8 @@ enum class FeatureGroup {
 
 struct AtomRec {
   AtomType type;
-  const RDKit::Atom &atom; // Technically, atoms are stores as T*, but I'm not sure upstream will work
-                           // with a nullable object. So we use T& as a mandatory never-null.
+  std::reference_wrapper<const RDKit::Atom>  atom; // Technically, atoms are stores as T*, but I'm not sure upstream will work
+                                                   // with a nullable object. So we use T& as a mandatory never-null.
 };
 
 struct RingRec {

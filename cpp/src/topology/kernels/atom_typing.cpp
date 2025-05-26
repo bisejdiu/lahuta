@@ -21,8 +21,7 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
-  /*if (params.use_molstar) {*/
-  if (true) {
+  if (params.use_molstar) {
     try {
       ValenceModel valence_model;
       valence_model.apply(*data.mol);
@@ -58,17 +57,26 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
           // RDKit::MolOps::findSSSR(new_mol);
 
           auto vec = match_atom_types(new_mol);
-
           for (size_t i = 0; i < unk_indices.size(); ++i) {
-            data.atoms.push_back(AtomRec{
-              /*.type =*/ vec[i],
-              /*.atom =*/ *data.mol->getAtomWithIdx(unk_indices[i])
-            });
+            auto &rec = data.atoms[unk_indices[i]];
+            rec.type |= vec[i];
           }
         }
       }
 
       data.rings = populate_ring_entities(*data.mol);
+
+      // we need to have Aromatic flags set on the atoms in AtomRec
+      for (const auto &ring : data.rings) {
+        if (ring.aromatic) {
+          for (const auto &atom_ref : ring.atoms) {
+            auto &atom = atom_ref.get();
+            auto &rec = data.atoms[atom.getIdx()];
+            rec.type |= AtomType::Aromatic;
+          }
+        }
+      }
+
       return ComputationResult(true);
     } catch (const std::exception &e) {
       Logger::get_logger()->error("Exception in atom typing: {}", e.what());

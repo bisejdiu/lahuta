@@ -4,7 +4,7 @@
 #include "entities/context.hpp"
 
 // clang-format off
-namespace lahuta {
+namespace lahuta::molstar {
 
 ContactRecipe<RingRec, RingRec, PiStackingParams> make_pistacking_recipe() {
   return {
@@ -37,4 +37,4 @@ ContactRecipe<RingRec, RingRec, PiStackingParams> make_pistacking_recipe() {
   };
 }
 
-} // namespace lahuta
+} // namespace lahuta::molstar
