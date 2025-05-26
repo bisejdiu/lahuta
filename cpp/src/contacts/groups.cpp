@@ -18,7 +18,7 @@ std::vector<GroupRec> GroupTypeAnalysis::analyze(const RDKit::RWMol &mol, const 
     for (auto &group : groups) {
       RDGeom::Point3D centroid{0.0, 0.0, 0.0};
       for (auto atom_idx : group.atoms) {
-          centroid += conf.getAtomPos(atom_idx);
+          centroid += conf.getAtomPos(atom_idx.get().getIdx());
       }
       centroid /= group.atoms.size();
       group.center = centroid;

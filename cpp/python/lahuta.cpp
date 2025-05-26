@@ -114,9 +114,9 @@ void bind(py::module &_lahuta) {
 
   AtomRec_
       .def_readwrite("type", &AtomRec::type)
-      .def_readwrite("idx",  &AtomRec::idx)
+      .def("idx",  [](const AtomRec &self) { return self.atom.getIdx(); })
       .def("__repr__", [](const AtomRec &self) {
-          return py::str("AtomRec(type={}, idx={})").format(self.type, self.idx);
+          return py::str("AtomRec(type={}, idx={})").format(self.type, self.atom.getIdx());
       });
 
   RingRec_

@@ -42,7 +42,7 @@ public:
 
       atoms.push_back(AtomRec{
         /*.type =*/ t,
-        /*.idx  =*/ static_cast<uint32_t>(atom->getIdx()),
+        // /*.idx  =*/ static_cast<uint32_t>(atom->getIdx()),
         /*.atom =*/ *atom
       });
     }

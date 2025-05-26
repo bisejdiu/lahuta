@@ -55,12 +55,13 @@ public:
         std::vector<const RDKit::Atom *> atoms;
         atoms.reserve(atom_indices.size());
         for (const auto atom_index : atom_indices) {
-          atoms.push_back(luni_ptr->get_molecule().getAtomWithIdx(atom_index));
+          // atoms.push_back(luni_ptr->get_molecule().getAtomWithIdx(atom_index));
+          atoms.push_back(&atom_index.get());
         }
         return atoms;
       }
       case Kind::Atom: {
-        const auto atom_idx = luni_ptr->get_topology().records<AtomRec>()[entity.index()].idx;
+        const auto atom_idx = luni_ptr->get_topology().records<AtomRec>()[entity.index()].atom.getIdx();
         return {luni_ptr->get_molecule().getAtomWithIdx(atom_idx)};
       }
       case Kind::Ring: {
@@ -68,7 +69,8 @@ public:
         std::vector<const RDKit::Atom *> atoms;
         atoms.reserve(ring.atoms.size());
         for (const auto atom_index : ring.atoms) {
-          atoms.push_back(luni_ptr->get_molecule().getAtomWithIdx(atom_index));
+          // atoms.push_back(luni_ptr->get_molecule().getAtomWithIdx(atom_index));
+          atoms.push_back(&atom_index.get());
         }
         return atoms;
       }

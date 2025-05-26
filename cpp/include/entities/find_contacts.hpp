@@ -2,6 +2,7 @@
 #define LAHUTA_ENTITIES_FIND_CONTACTS_HPP
 
 #include "contact.hpp"
+#include "contact_context.hpp"
 #include "entity_id.hpp"
 #include "pipeline/function_traits.hpp"
 #include "records.hpp"
@@ -42,23 +43,24 @@ using is_predicate_on = std::integral_constant<bool,
   std::is_convertible<std::invoke_result_t<F, const Rec&>, bool>::value>;
 
 template<
-    typename Pred,
-    typename Tester = search::NoTester,
-    typename Rec   = raw_predicate_arg_t<Pred>,
-    std::enable_if_t<is_predicate_on<Pred, Rec>::value, int> = 0>
-ContactSet find_contacts(const Topology& topology, const Pred pred, const search::SearchOptions opts, Tester&& tester = {}) {
+  typename Pred,
+  typename Tester,
+  typename Rec = raw_predicate_arg_t<Pred>,
+  std::enable_if_t<is_predicate_on<Pred, Rec>::value &&
+                   std::is_invocable_r_v<InteractionType, Tester, uint32_t, uint32_t, float, const ContactContext&>, int> = 0>
+ContactSet find_contacts(const ContactContext& ctx, const Pred pred, const search::SearchOptions opts, Tester&& tester) {
   using namespace search;
 
-  const auto &recs = topology.records<Rec>();
-  auto result = neighbour_search<true>(CoordProvider<Rec, Rec>{topology}, recs, pred, recs, pred, opts, std::forward<Tester>(tester));
+  const auto &recs = ctx.topology.records<Rec>();
+  auto result = neighbour_search<true>(CoordProvider<Rec, Rec>{ctx.topology}, recs, pred, recs, pred, opts, std::forward<Tester>(tester), ctx);
 
-  return make_contacts<Rec, Rec>(topology, result);
+  return make_contacts<Rec, Rec>(ctx.topology, result);
 }
 
 template<
   typename PredA, typename PredB, typename Tester,
-  std::enable_if_t<std::is_invocable_r_v<InteractionType, Tester, uint32_t, uint32_t, float>, int> = 0>
-ContactSet find_contacts(const Topology &topology, const PredA pred_a, const PredB pred_b, const search::SearchOptions opts, Tester &&tester) {
+  std::enable_if_t<std::is_invocable_r_v<InteractionType, Tester, uint32_t, uint32_t, float, const ContactContext&>, int> = 0>
+ContactSet find_contacts(const ContactContext& ctx, const PredA pred_a, const PredB pred_b, const search::SearchOptions opts, Tester &&tester) {
 
   using namespace search;
   using RecA = raw_predicate_arg_t<PredA>;
@@ -67,12 +69,12 @@ ContactSet find_contacts(const Topology &topology, const PredA pred_a, const Pre
   static_assert(is_predicate_on<PredA, RecA>::value, "1st param must be a unary predicate returning bool‑convertible");
   static_assert(is_predicate_on<PredB, RecB>::value, "2nd param must be a unary predicate returning bool‑convertible");
 
-  const auto &recs_a = topology.records<RecA>();
-  const auto &recs_b = topology.records<RecB>();
+  const auto &recs_a = ctx.topology.records<RecA>();
+  const auto &recs_b = ctx.topology.records<RecB>();
 
-  auto nr = neighbour_search<false>(CoordProvider<RecA, RecB>{topology}, recs_a, pred_a, recs_b, pred_b, opts, std::forward<Tester>(tester));
+  auto nr = neighbour_search<false>(CoordProvider<RecA, RecB>{ctx.topology}, recs_a, pred_a, recs_b, pred_b, opts, std::forward<Tester>(tester), ctx);
 
-  return make_contacts<RecA, RecB>(topology, nr);
+  return make_contacts<RecA, RecB>(ctx.topology, nr);
 }
 
 } // namespace lahuta

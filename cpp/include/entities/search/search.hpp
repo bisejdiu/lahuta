@@ -9,6 +9,7 @@
 #include <vector>
 
 // clang-format off
+namespace lahuta { struct ContactContext;}
 namespace lahuta::search {
 
 static constexpr std::size_t GRID_THRESHOLD = 5000;
@@ -49,13 +50,13 @@ template<
     typename CoordT,
     typename RecordT1, typename PredT1,
     typename RecordT2, typename PredT2,
-    typename Tester = NoTester
+    typename Tester
 >
 NeighborResult neighbour_search(
   const CoordT &coord_provider,
   const std::vector<RecordT1> &recs_a, const PredT1 &pred_a,
   const std::vector<RecordT2> &recs_b, const PredT2 &pred_b,
-  const search::SearchOptions opts, Tester &&tester = NoTester{}) {
+  const search::SearchOptions opts, Tester &&tester, const ContactContext& ctx) {
 
   static_assert(is_coord_provider_v<CoordT>, "CoordProvider must expose get_a()/get_b() to Point3D&");
 
@@ -85,11 +86,11 @@ NeighborResult neighbour_search(
       auto &grid_span = SelfSearch ? span_a : span_b;
       GridSearch<SelfSearch, CoordT> grid{coord_provider, grid_span, opts.distance_max};
 
-      if (grid(span_a, span_b, buffer, std::forward<Tester>(tester))) return; // success
+      if (grid(span_a, span_b, buffer, std::forward<Tester>(tester), ctx)) return; // success
       Logger::get_logger()->warn("Grid search failed, falling back to brute force");
     }
     BruteForceSearch<SelfSearch, CoordT> brute{coord_provider, radius_sq};
-    brute(span_a, span_b, buffer, std::forward<Tester>(tester));
+    brute(span_a, span_b, buffer, std::forward<Tester>(tester), ctx);
   }();
 
   result.hits = buffer.release();

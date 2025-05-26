@@ -1,8 +1,6 @@
 #include "contacts/hydrophobic.hpp"
-#include "contacts/utils.hpp"
-#include "entities/contact.hpp"
-#include "entities/find_contacts.hpp"
 #include "elements.hpp"
+#include "typing/types.hpp"
 
 namespace lahuta {
 
@@ -21,25 +19,24 @@ AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom) 
   return AtomType::Hydrophobic;
 }
 
-ContactSet find_hydrophobic_bonds(const Topology& topology, const HydrophobicParams& opts) {
-  return find_contacts(
-      topology,
-      [](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; },
-      {opts.distance_max, 0.4},
-      [&](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
-        const auto &mol = topology.molecule();
-
-        const auto atom_a_rec = topology.atom(rec_idx_a);
-        const auto atom_b_rec = topology.atom(rec_idx_b);
-        const auto *atom_a = mol.getAtomWithIdx(atom_a_rec.idx);
-        const auto *atom_b = mol.getAtomWithIdx(atom_b_rec.idx);
-
-        if (are_residueids_close(mol, *atom_a, *atom_b, 0)) return InteractionType::None;
-        if (atom_a->getAtomicNum() == Element::F && atom_b->getAtomicNum() == Element::F) return InteractionType::None;
-
-        return InteractionType::Hydrophobic;
-      }
-  );
-}
+// ContactSet find_hydrophobic_bonds(const Topology& topology, const HydrophobicParams& opts) {
+//   return find_contacts(
+//     {topology, opts},
+//     [](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; },
+//     {opts.distance_max, 0.4},
+//     [](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+//       const auto& opts = ctx.get_params<HydrophobicParams>();
+//       const auto &mol = ctx.topology.molecule();
+//
+//       const auto &atom_a = ctx.topology.atom(rec_idx_a).atom;
+//       const auto &atom_b = ctx.topology.atom(rec_idx_b).atom;
+//
+//       if (are_residueids_close(mol, atom_a, atom_b, 0)) return InteractionType::None;
+//       if (atom_a.getAtomicNum() == Element::F && atom_b.getAtomicNum() == Element::F) return InteractionType::None;
+//
+//       return InteractionType::Hydrophobic;
+//     }
+//   );
+// }
 
 } // namespace lahuta

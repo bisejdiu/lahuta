@@ -2,7 +2,7 @@
 #define LAHUTA_CONTACTS_GEO_VALIDITY_HPP
 
 #include "chemistry/geometry.hpp"
-#include "contacts/halogen_bonds.hpp"
+#include "contacts/molstar/contacts.hpp"
 
 #include "GraphMol/Atom.h"
 #include "GraphMol/RWMol.h"

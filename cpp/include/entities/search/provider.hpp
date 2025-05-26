@@ -35,7 +35,8 @@ struct CoordProvider {
 private:
   template<typename Rec>
   static const RDGeom::Point3D& get_position(const Topology& t, uint32_t idx) noexcept {
-    if      constexpr (std::is_same_v<Rec, AtomRec >) { return t.conformer().getAtomPos(t.records<AtomRec>()[idx].idx); }
+    // if      constexpr (std::is_same_v<Rec, AtomRec >) { return t.conformer().getAtomPos(t.records<AtomRec>()[idx].atom.getIdx()); }
+    if      constexpr (std::is_same_v<Rec, AtomRec >) { return t.conformer().getAtomPos(idx); }
     else if constexpr (std::is_same_v<Rec, RingRec >) { return t.records<RingRec >()[idx].center; }
     else if constexpr (std::is_same_v<Rec, GroupRec>) { return t.records<GroupRec>()[idx].center; }
     else {

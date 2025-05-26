@@ -1,6 +1,7 @@
 #include "contacts/halogen_bonds.hpp"
-#include "contacts/halo_geo_validity.hpp"
+/*#include "contacts/halo_geo_validity.hpp"*/
 #include "entities/find_contacts.hpp"
+#include "entities/contact_context.hpp"
 #include <elements.hpp>
 
 namespace lahuta {
@@ -29,25 +30,22 @@ AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) 
   return AtomType::None;
 }
 
-ContactSet find_halogen_bonds(const Topology &topology, const HalogenParams &params) {
-  return find_contacts(
-    topology,
-    [](const AtomRec &rec) { return (rec.type & AtomType::XbondDonor)    == AtomType::XbondDonor; },
-    [](const AtomRec &rec) { return (rec.type & AtomType::XBondAcceptor) == AtomType::XBondAcceptor; },
-    {params.distance_max, 0, 0, 0.7},
-    [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
-      const auto &donor_rec    = topology.atom(rec_idx_a);
-      const auto &acceptor_rec = topology.atom(rec_idx_b);
-
-      const auto &mol = topology.molecule();
-      const auto *donor_atom    = mol.getAtomWithIdx(donor_rec.idx);
-      const auto *acceptor_atom = mol.getAtomWithIdx(acceptor_rec.idx);
-
-      if (!halo_geo::are_geometrically_viable(mol, *donor_atom, *acceptor_atom, params)) return InteractionType::None;
-
-      return InteractionType::Halogen;
-    }
-  );
-}
+// ContactSet find_halogen_bonds(const Topology &topology, const HalogenParams &params) {
+//   return find_contacts(
+//     {topology, params},
+//     [](const AtomRec &rec) { return (rec.type & AtomType::XbondDonor)    == AtomType::XbondDonor; },
+//     [](const AtomRec &rec) { return (rec.type & AtomType::XBondAcceptor) == AtomType::XBondAcceptor; },
+//     {params.distance_max, 0, 0, 0.7},
+//     [](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+//       const auto& params = ctx.get_params<HalogenParams>();
+//       const auto &donor    = ctx.topology.atom(rec_idx_a).atom;
+//       const auto &acceptor = ctx.topology.atom(rec_idx_b).atom;
+// 
+//       if (!halo_geo::are_geometrically_viable(ctx.molecule(), donor, acceptor, params)) return InteractionType::None;
+// 
+//       return InteractionType::Halogen;
+//     }
+//   );
+// }
 
 } // namespace lahuta

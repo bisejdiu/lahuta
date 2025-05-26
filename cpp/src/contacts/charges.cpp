@@ -54,22 +54,22 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
   for (const auto &residue : residues) {
     // Handle positively charged residues (ARG, HIS, LYS)
     if (definitions::is_positive_charge(residue.name)) {
-      std::vector<uint32_t> member_indices;
+      std::vector<std::reference_wrapper<const RDKit::Atom>> member_atoms;
       for (const auto *atom : residue.atoms) {
         auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
         std::string atom_name = res_info->getName();
 
         if (atom->getAtomicNum() == Element::N && definitions::ProteinBackboneAtoms.count(atom_name) == 0) {
-          member_indices.push_back(static_cast<uint32_t>(atom->getIdx()));
+          member_atoms.emplace_back(*atom);
           added_atoms.insert(atom);
         }
       }
 
-      if (!member_indices.empty()) {
+      if (!member_atoms.empty()) {
         features.push_back(GroupRec{
           /*.a_type =*/ AtomType::PositiveCharge,
           /*.type   =*/ FeatureGroup::None,
-          /*.atoms  =*/ std::move(member_indices),
+          /*.atoms  =*/ std::move(member_atoms),
           /*.center =*/ RDGeom::Point3D(0,0,0)
         });
       }
@@ -85,27 +85,27 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
           auto nitrogens = bonded_atoms(mol, atom, Element::N);
           if (nitrogens.empty()) continue;
 
-          std::vector<uint32_t> nitrogen_indices;
-          nitrogen_indices.reserve(nitrogens.size());
+          std::vector<std::reference_wrapper<const RDKit::Atom>> nitrogen_atoms;
+          nitrogen_atoms.reserve(nitrogens.size());
           for (const auto* n_atom : nitrogens) {
-            nitrogen_indices.push_back(static_cast<uint32_t>(n_atom->getIdx()));
+            nitrogen_atoms.emplace_back(*n_atom);
             added_atoms.insert(n_atom);
           }
 
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::PositiveCharge,
             /*.type   =*/ it->second,
-            /*.atoms  =*/ std::move(nitrogen_indices),
+            /*.atoms  =*/ std::move(nitrogen_atoms),
             /*.center =*/ RDGeom::Point3D(0,0,0)
           });
         } else {
           // Add remaining positively charged atoms not already added
           if (atom->getFormalCharge() > 0 && added_atoms.count(atom) == 0) {
-            std::vector<uint32_t> atom_indices = {static_cast<uint32_t>(atom->getIdx())};
+            std::vector<std::reference_wrapper<const RDKit::Atom>> atom_refs = {std::cref(*atom)};
             features.push_back(GroupRec{
               /*.a_type =*/ AtomType::PositiveCharge,
               /*.type   =*/ FeatureGroup::None,
-              /*.atoms  =*/ std::move(atom_indices),
+              /*.atoms  =*/ std::move(atom_refs),
               /*.center =*/ RDGeom::Point3D(0,0,0)
             });
             added_atoms.insert(atom);
@@ -126,23 +126,23 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
   for (const auto &residue : residues) {
     if (definitions::is_negative_charge(residue.name)) {
       // Handle negatively charged residues (GLU, ASP)
-      std::vector<uint32_t> member_indices;
+      std::vector<std::reference_wrapper<const RDKit::Atom>> member_atoms;
       for (const auto *atom : residue.atoms) {
         auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
         std::string atom_name = res_info->getName();
 
         if (atom->getAtomicNum() == Element::O && definitions::ProteinBackboneAtoms.count(atom_name) == 0) {
-          member_indices.push_back(static_cast<uint32_t>(atom->getIdx()));
+          member_atoms.emplace_back(*atom);
           added_atoms.insert(atom);
         }
       }
 
-      if (member_indices.empty()) continue;
+      if (member_atoms.empty()) continue;
       
       features.push_back(GroupRec{
         /*.a_type =*/ AtomType::NegativeCharge,
         /*.type   =*/ FeatureGroup::None,
-        /*.atoms  =*/ std::move(member_indices),
+        /*.atoms  =*/ std::move(member_atoms),
         /*.center =*/ RDGeom::Point3D(0,0,0)
       });
     } else if (definitions::is_base(residue.name)) {
@@ -152,17 +152,17 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           auto oxygens = bonded_atoms(mol, atom, Element::O);
           if (oxygens.empty()) continue;
 
-          std::vector<uint32_t> oxygen_indices;
-          oxygen_indices.reserve(oxygens.size());
+          std::vector<std::reference_wrapper<const RDKit::Atom>> oxygen_atoms;
+          oxygen_atoms.reserve(oxygens.size());
           for (const auto* o_atom : oxygens) {
-            oxygen_indices.push_back(static_cast<uint32_t>(o_atom->getIdx()));
+            oxygen_atoms.emplace_back(*o_atom);
             added_atoms.insert(o_atom);
           }
 
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ FeatureGroup::Phosphate,
-            /*.atoms  =*/ std::move(oxygen_indices),
+            /*.atoms  =*/ std::move(oxygen_atoms),
             /*.center =*/ RDGeom::Point3D(0,0,0)
           });
         }
@@ -178,17 +178,17 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           auto oxygens = bonded_atoms(mol, atom, Element::O);
           if (oxygens.empty()) continue;
 
-          std::vector<uint32_t> oxygen_indices;
-          oxygen_indices.reserve(oxygens.size());
+          std::vector<std::reference_wrapper<const RDKit::Atom>> oxygen_atoms;
+          oxygen_atoms.reserve(oxygens.size());
           for (const auto* o_atom : oxygens) {
-            oxygen_indices.push_back(static_cast<uint32_t>(o_atom->getIdx()));
+            oxygen_atoms.emplace_back(*o_atom);
             added_atoms.insert(o_atom);
           }
 
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ it->second,
-            /*.atoms  =*/ std::move(oxygen_indices),
+            /*.atoms  =*/ std::move(oxygen_atoms),
             /*.center =*/ RDGeom::Point3D(0,0,0)
           });
         } else {
@@ -197,11 +197,11 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           std::string atom_name = res_info->getName();
 
           if (atom->getAtomicNum() == Element::N && definitions::ProteinBackboneAtoms.count(atom_name) == 0) {
-            std::vector<uint32_t> atom_indices = {static_cast<uint32_t>(atom->getIdx())};
+            std::vector<std::reference_wrapper<const RDKit::Atom>> atom_refs = {std::cref(*atom)};
             features.push_back(GroupRec{
               /*.a_type =*/ AtomType::NegativeCharge,
               /*.type   =*/ FeatureGroup::None,
-              /*.atoms  =*/ std::move(atom_indices),
+              /*.atoms  =*/ std::move(atom_refs),
               /*.center =*/ RDGeom::Point3D(0,0,0)
             });
             added_atoms.insert(atom);
@@ -210,11 +210,11 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
 
         // Add remaining negatively charged atoms not already added
         if (atom->getFormalCharge() < 0 && added_atoms.count(atom) == 0) {
-          std::vector<uint32_t> atom_indices = {static_cast<uint32_t>(atom->getIdx())};
+          std::vector<std::reference_wrapper<const RDKit::Atom>> atom_refs = {std::cref(*atom)};
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ FeatureGroup::None,
-            /*.atoms  =*/ std::move(atom_indices),
+            /*.atoms  =*/ std::move(atom_refs),
             /*.center =*/ RDGeom::Point3D(0,0,0)
           });
           added_atoms.insert(atom);

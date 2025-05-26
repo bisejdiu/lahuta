@@ -21,7 +21,8 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
-  if (params.use_molstar) {
+  /*if (params.use_molstar) {*/
+  if (true) {
     try {
       ValenceModel valence_model;
       valence_model.apply(*data.mol);
@@ -44,7 +45,6 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
         AtomType atom_type = get_atom_type(atom);
         data.atoms.push_back(AtomRec{
           /*.type =*/  atom_type,
-          /*.idx  =*/  static_cast<uint32_t>(atom->getIdx()),
           /*,.atom =*/ *atom
         });
       }
@@ -62,7 +62,6 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
           for (size_t i = 0; i < unk_indices.size(); ++i) {
             data.atoms.push_back(AtomRec{
               /*.type =*/ vec[i],
-              /*.idx  =*/ static_cast<uint32_t>(unk_indices[i]),
               /*.atom =*/ *data.mol->getAtomWithIdx(unk_indices[i])
             });
           }
@@ -91,11 +90,14 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
   ring_recs.reserve(rings.size());
 
   for (const std::vector<int> &ring : rings) {
+    std::vector<std::reference_wrapper<const RDKit::Atom>> atoms;
     std::vector<std::uint32_t> atom_indices;
     atom_indices.reserve(ring.size());
+    atoms.reserve(ring.size());
 
     for (int atom_idx : ring) {
       atom_indices.push_back(static_cast<std::uint32_t>(atom_idx));
+      atoms.push_back(std::ref(*mol.getAtomWithIdx(atom_idx)));
     }
 
     // center of the ring
@@ -128,7 +130,7 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
     }
 
     ring_recs.push_back(RingRec{
-      /*.atoms    =*/ std::move(atom_indices),
+      /*.atoms    =*/ std::move(atoms),
       /*.center   =*/ center,
       /*.normal   =*/ normal,
       /*.aromatic =*/ is_aromatic

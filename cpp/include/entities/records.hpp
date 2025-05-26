@@ -25,12 +25,12 @@ enum class FeatureGroup {
 
 struct AtomRec {
   AtomType type;
-  uint32_t idx;
-  RDKit::Atom &atom;
+  const RDKit::Atom &atom; // Technically, atoms are stores as T*, but I'm not sure upstream will work
+                           // with a nullable object. So we use T& as a mandatory never-null.
 };
 
 struct RingRec {
-  std::vector<uint32_t> atoms;
+  std::vector<std::reference_wrapper<const RDKit::Atom>> atoms;
   RDGeom::Point3D       center;
   RDGeom::Point3D       normal;
   bool aromatic;
@@ -39,7 +39,8 @@ struct RingRec {
 struct GroupRec {
   AtomType              a_type;
   FeatureGroup          type;
-  std::vector<uint32_t> atoms;
+  // std::vector<uint32_t> atoms;
+  std::vector<std::reference_wrapper<const RDKit::Atom>> atoms;
   RDGeom::Point3D       center;
 };
 

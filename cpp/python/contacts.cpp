@@ -2,6 +2,7 @@
 #include "contacts/interactions.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/contact.hpp"
+#include "topology.hpp"
 
 using namespace lahuta;
 
@@ -9,7 +10,7 @@ using namespace lahuta;
 void bind_contacts(py::module &m) {
   py::class_<InteractionOptions> InteractionOptions_(m, "InteractionOptions");
   py::class_<Interactions>       Interactions_      (m, "Interactions");
-  py::enum_<InteractionType>     InteractionType_   (m, "InteractionType");
+  py::class_<InteractionType>     InteractionType_   (m, "InteractionType");
 
   py::enum_<Kind> EntityType_(m, "EntityType");
   py::class_<EntityID>    EntityID_  (m, "EntityID");
@@ -46,16 +47,15 @@ void bind_contacts(py::module &m) {
     .def("compute_contacts", &Interactions::compute_contacts);
 
     InteractionType_
-      .value("None",             InteractionType::None)
-      .value("Any",              InteractionType::Generic)
-      .value("Hydrophobic",      InteractionType::Hydrophobic)
-      .value("HydrogenBond",     InteractionType::HydrogenBond)
-      .value("WeakHydrogenBond", InteractionType::WeakHydrogenBond)
-      .value("Ionic",            InteractionType::Ionic)
-      .value("MetalCoordination",InteractionType::MetalCoordination)
-      .value("CationPi",         InteractionType::CationPi)
-      .value("PiStackingP",      InteractionType::PiStackingP)
-      .value("PiStackingT",      InteractionType::PiStackingT);
+      .def_readonly_static("None",             &InteractionType::None)
+      .def_readonly_static("Hydrophobic",      &InteractionType::Hydrophobic)
+      .def_readonly_static("HydrogenBond",     &InteractionType::HydrogenBond)
+      .def_readonly_static("WeakHydrogenBond", &InteractionType::WeakHydrogenBond)
+      .def_readonly_static("Ionic",            &InteractionType::Ionic)
+      .def_readonly_static("MetalCoordination",&InteractionType::MetalCoordination)
+      .def_readonly_static("CationPi",         &InteractionType::CationPi)
+      .def_readonly_static("PiStackingP",      &InteractionType::PiStackingP)
+      .def_readonly_static("PiStackingT",      &InteractionType::PiStackingT);
 
 
     EntityType_

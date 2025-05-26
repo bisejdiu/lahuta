@@ -5,14 +5,14 @@
 
 namespace lahuta {
 
-class Topology;
-
-struct CationPiParams {
-  double distance_max = 6.0;
-  double offset_max = 2.2;
-};
-
-ContactSet find_cationpi(const Topology& topology, const CationPiParams& params = CationPiParams{});
+// class Topology;
+// 
+// struct CationPiParams {
+//   double distance_max = 6.0;
+//   double offset_max = 2.2;
+// };
+// 
+// ContactSet find_cationpi(const Topology& topology, const CationPiParams& params = CationPiParams{});
 
 } // namespace lahuta
 

@@ -3,7 +3,7 @@
 
 #include "chemistry/geometry.hpp"
 #include "chemistry/neighbors.hpp"
-#include "contacts/hydrogen_bonds.hpp"
+#include "contacts/molstar/contacts.hpp"
 
 // clang-format off
 namespace lahuta::hb_geo {
