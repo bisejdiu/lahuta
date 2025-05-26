@@ -2,7 +2,6 @@
 #include <string>
 #include <vector>
 
-#include "contacts/interactions.hpp"
 #include "file_system.hpp"
 #include "lahuta.hpp"
 
