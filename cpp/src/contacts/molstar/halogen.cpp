@@ -1,5 +1,6 @@
 #include "contacts/halo_geo_validity.hpp"
 #include "contacts/molstar/contacts.hpp"
+#include "entities/context.hpp"
 
 // clang-format off
 namespace lahuta {

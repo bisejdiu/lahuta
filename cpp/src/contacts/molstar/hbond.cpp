@@ -4,7 +4,7 @@
 #include "contacts/hbond_geo_validity.hpp"
 #include "contacts/utils.hpp"
 #include "elements.hpp"
-#include "entities/contact_context.hpp"
+#include "entities/context.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RWMol.h>

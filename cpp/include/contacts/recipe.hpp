@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstdint>
+#include "entities/context.hpp"
 #include "entities/entity_id.hpp"
-#include "entities/records.hpp"
 #include "entities/interaction_types.hpp"
-#include "entities/contact_context.hpp"
+#include "entities/records.hpp"
+#include <cstdint>
 
 // clang-format off
 namespace lahuta {

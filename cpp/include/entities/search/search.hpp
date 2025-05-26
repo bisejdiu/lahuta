@@ -1,10 +1,10 @@
 #ifndef LAHUTA_ENTITIES_SEARCH_HPP
 #define LAHUTA_ENTITIES_SEARCH_HPP
 
+#include "entities/search/config.hpp"
 #include "entities/search/hit_buffer.hpp"
 #include "entities/search/provider.hpp"
 #include "entities/search/search_impl.hpp"
-#include "entities/search/config.hpp"
 #include "span.hpp"
 #include <logging.hpp>
 #include <vector>

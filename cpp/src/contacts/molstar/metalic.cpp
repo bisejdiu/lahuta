@@ -1,11 +1,11 @@
 #include "contacts/molstar/contacts.hpp"
-#include "entities/contact_context.hpp"
+#include "entities/context.hpp"
 #include "typing/flags.hpp"
 
 // clang-format off
 namespace lahuta {
 
-bool is_metalicx(AtomType at1, AtomType at2) {
+bool is_metalic(AtomType at1, AtomType at2) {
   using AtomTypeFlags::has;
   if (has(at1, AtomType::TransitionMetal)) return has(at2, AtomType::DativeBondPartner);
   if (has(at1, AtomType::IonicTypeMetal))  return has(at2, AtomType::IonicTypePartner);
@@ -26,7 +26,7 @@ ContactRecipe<AtomRec, AtomRec, MetalicParams> make_metalic_recipe() {
       if (dist < opts.distance_max) return InteractionType::None;
       if (idx1 == idx2) return InteractionType::None;
 
-      if (!is_metalicx(m.type, mb.type) && !is_metalicx(mb.type, m.type)) return InteractionType::None;
+      if (!is_metalic(m.type, mb.type) && !is_metalic(mb.type, m.type)) return InteractionType::None;
       if (ctx.topology.molecule().getBondBetweenAtoms(m.atom.getIdx(), mb.atom.getIdx()))       return InteractionType::None;
 
       return InteractionType::MetalCoordination;

@@ -1,7 +1,7 @@
 #include "contacts/molstar/contacts.hpp"
 #include "chemistry/geometry.hpp"
 #include "contacts/utils.hpp"
-#include "entities/contact_context.hpp"
+#include "entities/context.hpp"
 
 // clang-format off
 namespace lahuta {

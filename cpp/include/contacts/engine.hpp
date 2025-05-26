@@ -1,7 +1,7 @@
 #ifndef LAHUTA_CONTACTS_ENGINE_HPP
 #define LAHUTA_CONTACTS_ENGINE_HPP
 
-#include "entities/contact_context.hpp"
+#include "entities/context.hpp"
 #include "entities/find_contacts.hpp"
 #include "recipe.hpp"
 #include "spec.hpp"

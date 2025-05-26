@@ -1,9 +1,9 @@
 #ifndef LAHUTA_ENTITIES_SEARCH_IMPL_HPP
 #define LAHUTA_ENTITIES_SEARCH_IMPL_HPP
 
+#include "entities/context.hpp"
 #include "entities/search/hit_buffer.hpp"
 #include "entities/search/provider.hpp"
-#include "entities//contact_context.hpp"
 #include "nsgrid.hpp"
 #include <vector>
 

@@ -1,5 +1,5 @@
-#ifndef LAHUTA_ENTITIES_CONTACT_CONTEXT_HPP
-#define LAHUTA_ENTITIES_CONTACT_CONTEXT_HPP
+#ifndef LAHUTA_ENTITIES_CONTEXT_HPP
+#define LAHUTA_ENTITIES_CONTEXT_HPP
 
 #include "topology.hpp"
 
@@ -22,4 +22,4 @@ struct ContactContext {
 
 } // namespace lahuta
 
-#endif // LAHUTA_ENTITIES_CONTACT_CONTEXT_HPP
+#endif // LAHUTA_ENTITIES_CONTEXT_HPP

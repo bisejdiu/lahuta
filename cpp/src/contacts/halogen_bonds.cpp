@@ -1,7 +1,7 @@
 #include "contacts/halogen_bonds.hpp"
 /*#include "contacts/halo_geo_validity.hpp"*/
 #include "entities/find_contacts.hpp"
-#include "entities/contact_context.hpp"
+#include "entities/context.hpp"
 #include <elements.hpp>
 
 namespace lahuta {

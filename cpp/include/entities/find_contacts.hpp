@@ -2,7 +2,7 @@
 #define LAHUTA_ENTITIES_FIND_CONTACTS_HPP
 
 #include "contact.hpp"
-#include "contact_context.hpp"
+#include "context.hpp"
 #include "entity_id.hpp"
 #include "pipeline/function_traits.hpp"
 #include "records.hpp"
