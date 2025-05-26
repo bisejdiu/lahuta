@@ -3,7 +3,7 @@
 // clang-format off
 namespace lahuta {
 
-ContactRecipe<GroupRec,GroupRec,IonicParams> make_ionic_recipe() {
+ContactRecipe<GroupRec, GroupRec, IonicParams> make_ionic_recipe() {
   return {
     IonicParams{},
     +[](GroupRec const& r){ return (r.a_type & AtomType::PositiveCharge) == AtomType::PositiveCharge; },

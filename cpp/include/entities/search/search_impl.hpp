@@ -10,15 +10,6 @@
 // clang-format off
 namespace lahuta::search {
 
-enum class SearchAlgorithm { Brute, Grid };
-
-struct SearchOptions {
-  double distance_max        = 0.0f;
-  float hit_reserve_factor   = 0.0f;
-  float sel_reserve_factor_a = 0.7f;
-  float sel_reserve_factor_b = sel_reserve_factor_a;
-};
-
 template <bool SelfSearch, typename CoordProvider, typename Buffer = search::HitBuffer>
 struct BruteForceSearch {
   static_assert(is_coord_provider_v<CoordProvider>, "CoordProvider must expose get_a()/get_b() to Point3D&");

@@ -49,7 +49,8 @@ public:
 
       auto& R   = spec.recipe;
       auto ctx  = ContactContext{topo, R.params};
-      auto opts = search::SearchOptions{R.params.distance_max, 0.5f, 0.5f}; // these need to be passed down
+      auto opts = search::make_search_opts(spec.tag.category);
+      opts.distance_max = R.params.distance_max; // we need to override the default distance_max, which is not guaranteed to be set or correct
 
       if (R.mode == RecipeMode::Self) {
         out.insert(find_contacts(ctx, R.pred_a, opts, R.tester));

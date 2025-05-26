@@ -3,6 +3,7 @@
 
 #include "contacts/molstar/contacts.hpp"
 #include "contacts/spec.hpp"
+#include "entities/interaction_types.hpp"
 
 // clang-format off
 namespace lahuta {

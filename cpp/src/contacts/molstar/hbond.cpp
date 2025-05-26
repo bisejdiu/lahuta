@@ -25,7 +25,7 @@ bool is_water_hbond(const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
   return is_water(atom_a) && is_water(atom_b);
 }
 
-ContactRecipe<AtomRec,AtomRec,HBondParameters> make_hbond_recipe() {
+ContactRecipe<AtomRec, AtomRec, HBondParameters> make_hbond_recipe() {
   return {
     HBondParameters{},
     +[](const AtomRec& rec) { return (rec.type & AtomType::HbondDonor)    == AtomType::HbondDonor; },
@@ -50,7 +50,7 @@ ContactRecipe<AtomRec,AtomRec,HBondParameters> make_hbond_recipe() {
   };
 }
 
-ContactRecipe<AtomRec,AtomRec,HBondParameters> make_weak_hbond_recipe() {
+ContactRecipe<AtomRec, AtomRec, HBondParameters> make_weak_hbond_recipe() {
   return {
     HBondParameters{},
     +[](const AtomRec& rec) { return (rec.type & AtomType::WeakHbondDonor) == AtomType::WeakHbondDonor; },

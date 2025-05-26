@@ -130,17 +130,12 @@ add_library(lahuta_cpp STATIC
             src/residues.cpp
             src/contacts/aromaticity.cpp
             src/aromatics.cpp
-            src/contacts/ionic.cpp
-            src/contacts/metalic.cpp
-            src/contacts/cationpi.cpp
-            src/contacts/pistacking.cpp
             src/luni_props.cpp
             src/logging.cpp
             src/models/topology.cpp
             src/contacts/metals.cpp
             src/models/parser.cpp
             external/mmap/MemoryMapped.cpp
-            # src/contacts/interactions.cpp
             src/valence_model.cpp
             src/contacts/groups.cpp
             src/ob/kekulize.cpp

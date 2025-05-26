@@ -4,9 +4,9 @@
 // clang-format off
 namespace lahuta {
 
-ContactRecipe<AtomRec,AtomRec,HydrophobicParams> make_hydrophobic_recipe() {
+ContactRecipe<AtomRec, AtomRec, HydrophobicParams> make_hydrophobic_recipe() {
   return {
-    HydrophobicParams{},
+     HydrophobicParams{},
     +[](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; },
     +[](u32 a, u32 b, float d, const ContactContext &ctx) {
       const auto& opts = ctx.get_params<HydrophobicParams>();
