@@ -1,5 +1,5 @@
-#include "contacts/halo_geo_validity.hpp"
 #include "contacts/molstar/contacts.hpp"
+#include "contacts/molstar/halo_geo_validity.hpp"
 #include "entities/context.hpp"
 
 // clang-format off
@@ -10,11 +10,10 @@ ContactRecipe<AtomRec, AtomRec, HalogenParams> make_halogen_recipe() {
     HalogenParams{},
     +[](const AtomRec &rec) { return (rec.type & AtomType::XbondDonor)    == AtomType::XbondDonor; },
     +[](const AtomRec &rec) { return (rec.type & AtomType::XBondAcceptor) == AtomType::XBondAcceptor; },
-    // {params.distance_max, 0, 0, 0.7},
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
       const auto& params = ctx.get_params<HalogenParams>();
-      const auto &donor    = ctx.topology.atom(rec_idx_a).atom;
-      const auto &acceptor = ctx.topology.atom(rec_idx_b).atom;
+      const auto &donor    = ctx.topology.atom(a).atom;
+      const auto &acceptor = ctx.topology.atom(b).atom;
 
       if (!are_geometrically_viable(ctx.molecule(), donor, acceptor, params)) return InteractionType::None;
 

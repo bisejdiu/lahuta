@@ -11,12 +11,11 @@ ContactRecipe<RingRec, RingRec, PiStackingParams> make_pistacking_recipe() {
     PiStackingParams{},
     +[](const RingRec& rec) { return rec.aromatic; },
     +[](const RingRec& rec) { return rec.aromatic; },
-    //{params.distance_max, 0.1, 1},
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& context) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& context) -> InteractionType {
 
       const auto& params = context.get_params<PiStackingParams>();
-      const auto& ra = context.topology.ring(rec_idx_a);
-      const auto& rb = context.topology.ring(rec_idx_b);
+      const auto& ra = context.topology.ring(a);
+      const auto& rb = context.topology.ring(b);
 
       // e.g. trp
       if (is_same_residue(context.molecule(), ra.atoms.front(), rb.atoms.front())) return InteractionType::None;

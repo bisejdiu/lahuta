@@ -17,14 +17,13 @@ ContactRecipe<AtomRec, AtomRec, MetalicParams> make_metalic_recipe() {
     MetalicParams{},
     +[](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypeMetal   | AtomType::TransitionMetal))   != AtomType::None; },
     +[](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypePartner | AtomType::DativeBondPartner)) != AtomType::None; },
-    // {opts.distance_max, 0, 0, 0.7},
-    +[](std::uint32_t idx1, std::uint32_t idx2, float dist, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
       const auto& opts = ctx.get_params<MetalicParams>();
-      const auto &m  = ctx.topology.atom(idx1);
-      const auto &mb = ctx.topology.atom(idx2);
+      const auto &m  = ctx.topology.atom(a);
+      const auto &mb = ctx.topology.atom(b);
 
-      if (dist < opts.distance_max) return InteractionType::None;
-      if (idx1 == idx2) return InteractionType::None;
+      if (d_sq < opts.distance_max) return InteractionType::None;
+      if (a == b) return InteractionType::None;
 
       if (!is_metalic(m.type, mb.type) && !is_metalic(mb.type, m.type)) return InteractionType::None;
       if (ctx.topology.molecule().getBondBetweenAtoms(m.atom.get().getIdx(), mb.atom.get().getIdx())) return InteractionType::None;

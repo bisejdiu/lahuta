@@ -11,10 +11,10 @@ ContactRecipe<AtomRec, AtomRec, CarbonylParams> make_carbonyl_recipe() {
     CarbonylParams{},
     +[](const AtomRec& rec) { return (rec.type & AtomType::CarbonylCarbon) == AtomType::CarbonylCarbon; },
     +[](const AtomRec& rec) { return (rec.type & AtomType::CarbonylOxygen) == AtomType::CarbonylOxygen; },
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
 
-      const auto& rec_a = ctx.topology.atom(rec_idx_a);
-      const auto& rec_b = ctx.topology.atom(rec_idx_b);
+      const auto& rec_a = ctx.topology.atom(a);
+      const auto& rec_b = ctx.topology.atom(b);
 
       if (are_residueids_close(ctx.molecule(), rec_a.atom, rec_b.atom, 1)) return InteractionType::None;
       return InteractionType::PiStackingP;

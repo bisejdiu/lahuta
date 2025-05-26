@@ -1,7 +1,7 @@
 #include "contacts/molstar/contacts.hpp"
 
 #include "common.hpp"
-#include "contacts/hbond_geo_validity.hpp"
+#include "contacts/molstar/hbond_geo_validity.hpp"
 #include "contacts/utils.hpp"
 #include "elements.hpp"
 #include "entities/context.hpp"
@@ -30,17 +30,16 @@ ContactRecipe<AtomRec, AtomRec, HBondParams> make_hbond_recipe() {
     HBondParams{},
     +[](const AtomRec& rec) { return (rec.type & AtomType::HbondDonor)    == AtomType::HbondDonor; },
     +[](const AtomRec& rec) { return (rec.type & AtomType::HbondAcceptor) == AtomType::HbondAcceptor; },
-    // {std::max(opts.max_dist, opts.max_sulfur_dist), 0.7},
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
       const auto& opts = ctx.get_params<HBondParams>();
-      const auto &donor    = ctx.topology.atom(rec_idx_a).atom.get();
-      const auto &acceptor = ctx.topology.atom(rec_idx_b).atom.get();
+      const auto &donor    = ctx.topology.atom(a).atom.get();
+      const auto &acceptor = ctx.topology.atom(b).atom.get();
 
       double max_dist = (donor.getAtomicNum() == Element::S || acceptor.getAtomicNum() == Element::S)
                             ? opts.max_sulfur_dist
                             : opts.max_dist;
 
-      if (dist < 2.0 || dist > max_dist * max_dist) return InteractionType::None;
+      if (d_sq < 2.0 || d_sq > max_dist * max_dist) return InteractionType::None;
       if (are_residueids_close(ctx.molecule(), donor, acceptor, 0))  return InteractionType::None;
       if (!opts.include_water && is_water_hbond(donor, acceptor))    return InteractionType::None;
       if (!are_geometrically_viable(ctx.molecule(), donor, acceptor, opts)) return InteractionType::None;
@@ -55,15 +54,14 @@ ContactRecipe<AtomRec, AtomRec, HBondParams> make_weak_hbond_recipe() {
     HBondParams{},
     +[](const AtomRec& rec) { return (rec.type & AtomType::WeakHbondDonor) == AtomType::WeakHbondDonor; },
     +[](const AtomRec& rec) { return (rec.type & AtomType::HbondAcceptor) == AtomType::HbondAcceptor; },
-    // {params.max_dist, 0.10},
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
       const auto& params = ctx.get_params<HBondParams>();
-      const auto &wdonor   = ctx.topology.atom(rec_idx_a).atom;
-      const auto &acceptor = ctx.topology.atom(rec_idx_b).atom;
+      const auto &wdonor   = ctx.topology.atom(a).atom;
+      const auto &acceptor = ctx.topology.atom(b).atom;
 
       // FIX: we now need this additional distance check, because we're not passing down parameters!
       // We could make a WeakHBondParameters struct that inherits from HBondParameters and overrides the max_dist.
-      if (dist > params.max_dist * params.max_dist) return InteractionType::None;
+      if (d_sq > params.max_dist * params.max_dist) return InteractionType::None;
       if (are_residueids_close(ctx.molecule(), wdonor, acceptor, 1))  return InteractionType::None;
       if (!params.include_water && is_water_hbond(wdonor, acceptor))  return InteractionType::None;
       if (!are_geometrically_viable(ctx.molecule(), wdonor, acceptor, params)) return InteractionType::None;

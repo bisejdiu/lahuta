@@ -10,11 +10,11 @@ ContactRecipe<AtomRec, AtomRec, HydrophobicParams> make_hydrophobic_recipe() {
   return {
     HydrophobicParams{},
     +[](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; },
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
 
       const auto& params = ctx.get_params<HydrophobicParams>();
-      const auto rec_a = ctx.topology.atom(rec_idx_a);
-      const auto rec_b = ctx.topology.atom(rec_idx_b);
+      const auto rec_a = ctx.topology.atom(a);
+      const auto rec_b = ctx.topology.atom(b);
 
       if (are_residueids_close(ctx.molecule(), rec_a.atom, rec_b.atom, 1)) return InteractionType::None;
       return InteractionType::Hydrophobic;
@@ -27,11 +27,11 @@ ContactRecipe<AtomRec, AtomRec, VanDerWaalsParams> make_vdw_recipe() {
     VanDerWaalsParams{},
     +[](const AtomRec& rec) { return true; },
     +[](const AtomRec& rec) { return true; },
-    +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist_sq, const ContactContext& ctx) -> InteractionType {
+    +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
 
       const auto& params = ctx.get_params<VanDerWaalsParams>();
-      const auto& atom_a = ctx.topology.atom(rec_idx_a).atom.get();
-      const auto& atom_b = ctx.topology.atom(rec_idx_b).atom.get();
+      const auto& atom_a = ctx.topology.atom(a).atom.get();
+      const auto& atom_b = ctx.topology.atom(b).atom.get();
 
       if (atom_a.getAtomicNum() == Element::H || atom_b.getAtomicNum() == Element::H) return InteractionType::None;
 
@@ -42,7 +42,7 @@ ContactRecipe<AtomRec, AtomRec, VanDerWaalsParams> make_vdw_recipe() {
       float sum_vdw = vdw_a + vdw_b;
       float max_sq = (sum_vdw + params.vdw_comp_factor) * (sum_vdw + params.vdw_comp_factor);
 
-      if (dist_sq > max_sq || dist_sq < (sum_vdw * sum_vdw))  return InteractionType::None;
+      if (d_sq > max_sq || d_sq < (sum_vdw * sum_vdw))  return InteractionType::None;
       if (are_residueids_close(ctx.molecule(), atom_a, atom_b, 1)) return InteractionType::None;
 
       return InteractionType::VanDerWaals;
