@@ -39,10 +39,8 @@ public:
   bool execute() {
     try {
       auto results = engine_->w_execute_all();
-      bool success = !results.empty()
-                     && std::all_of(results.begin(), results.end(), [](const ResultEntry &entry) {
-                          return entry.result.is_success();
-                        });
+      auto is_success = [](const ResultEntry &entry) { return entry.result.is_success(); };
+      bool success = !results.empty() && std::all_of(results.begin(), results.end(), is_success);
 
       return success;
     } catch (const std::exception &e) {

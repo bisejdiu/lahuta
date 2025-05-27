@@ -1,76 +1,53 @@
 #include "contacts/halogen_bonds.hpp"
-#include "contacts/geometry.hpp"
-#include "contacts/search.hpp"
-#include "lahuta.hpp"
+#include "contacts/halo_geo_validity.hpp"
+#include "entities/find_contacts.hpp"
+#include <elements.hpp>
 
 namespace lahuta {
 
+std::unordered_set<Element> HalogenDonors    = {Element::Cl, Element::Br, Element::I};
+std::unordered_set<Element> HalogenAcceptors = {Element::N,  Element::O,  Element::S};
+std::unordered_set<Element> HalogenBinders   = {Element::C,  Element::N,  Element::P, Element::S};
+
 AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  if (HalogenDonors.count(atom.getAtomicNum())) return AtomType::XBOND_DONOR;
+  const auto at_n = static_cast<Element>(atom.getAtomicNum());
+  if (HalogenDonors.count(at_n)) return AtomType::XBOND_DONOR;
   return AtomType::NONE;
 }
 
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  if (!HalogenAcceptors.count(atom.getAtomicNum())) return AtomType::NONE;
+  const auto at_n = static_cast<Element>(atom.getAtomicNum());
+  if (!HalogenAcceptors.count(at_n)) return AtomType::NONE;
 
   for (const auto bond : mol.atomBonds(&atom)) {
-    const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
-    int neighbor_atomic_num = neighbor->getAtomicNum();
+    const RDKit::Atom *nbr = bond->getOtherAtom(&atom);
+    const auto nbr_at_n = static_cast<Element>(nbr->getAtomicNum());
 
-    if (HalogenBinders.count(neighbor_atomic_num)) return AtomType::XBOND_ACCEPTOR;
+    if (HalogenBinders.count(nbr_at_n)) return AtomType::XBOND_ACCEPTOR;
   }
 
   return AtomType::NONE;
 }
 
-bool are_geometrically_viable(
-    const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
-    const HalogenParams &opts) {
+ContactSet find_halogen_bonds(const Topology &topology, const HalogenParams &params) {
+  return find_contacts(
+    topology,
+    [](const AtomRec &rec) { return (rec.type & AtomType::XBOND_DONOR)    == AtomType::XBOND_DONOR; },
+    [](const AtomRec &rec) { return (rec.type & AtomType::XBOND_ACCEPTOR) == AtomType::XBOND_ACCEPTOR; },
+    {params.distance_max, 0, 0, 0.7},
+    [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
+      const auto &donor_rec    = topology.atom(rec_idx_a);
+      const auto &acceptor_rec = topology.atom(rec_idx_b);
 
-  auto [halogen_angles, _] = geometry::calculate_angle(mol, donor, acceptor, true);
-  if (halogen_angles.size() != 1) return false;
+      const auto &mol = topology.molecule();
+      const auto *donor_atom    = mol.getAtomWithIdx(donor_rec.idx);
+      const auto *acceptor_atom = mol.getAtomWithIdx(acceptor_rec.idx);
 
-  if (opts.optimal_angle - halogen_angles[0] > opts.angle_max) return false;
+      if (!halo_geo::are_geometrically_viable(mol, *donor_atom, *acceptor_atom, params)) return InteractionType::None;
 
-  auto [acceptor_angles, __] = geometry::calculate_angle(mol, acceptor, donor, true);
-  if (acceptor_angles.empty()) return false;
-
-  bool exit_outer_flag = false;
-  for (double acceptor_angle : acceptor_angles) {
-    if (opts.optimal_acceptor_angle - acceptor_angle > opts.angle_max) {
-      exit_outer_flag = true;
-      continue;
+      return InteractionType::Halogen;
     }
-  }
-  if (exit_outer_flag) return false;
-
-  return true;
-}
-
-Contacts find_halogen_bonds(const Luni &luni, HalogenParams opts) {
-
-  Contacts contacts(&luni);
-
-  const auto donor_atoms = AtomEntityCollection::filter(&luni, AtomType::XBOND_DONOR);
-  const auto acceptor_atoms = AtomEntityCollection::filter(&luni, AtomType::XBOND_ACCEPTOR);
-
-  auto nbrs = EntityNeighborSearch::search(donor_atoms, acceptor_atoms, opts.distance_max);
-
-  for (const auto &[pair, dist] : nbrs) {
-    auto [donor_index, acceptor_index] = pair;
-    const auto &donor = donor_atoms.get_data()[donor_index];
-    const auto &acceptor = acceptor_atoms.get_data()[acceptor_index];
-
-    if (!are_geometrically_viable(luni.get_molecule(), *donor.atom, *acceptor.atom, opts)) continue;
-
-    contacts.add(Contact(
-        static_cast<EntityID>(donor.atom->getIdx()),
-        static_cast<EntityID>(acceptor.atom->getIdx()),
-        dist,
-        InteractionType::Halogen));
-  }
-
-  return contacts;
+  );
 }
 
 } // namespace lahuta

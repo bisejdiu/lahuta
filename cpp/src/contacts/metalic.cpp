@@ -1,46 +1,34 @@
 #include "contacts/metalic.hpp"
-#include "contacts/search.hpp"
-#include "lahuta.hpp"
+#include "entities/find_contacts.hpp"
 
 namespace lahuta {
 
 bool is_metalic(AtomType at1, AtomType at2) {
   using AtomTypeFlags::has;
   if (has(at1, AtomType::TransitionMetal)) return has(at2, AtomType::DativeBondPartner);
-  if (has(at1, AtomType::IonicTypeMetal)) return has(at2, AtomType::IonicTypePartner);
+  if (has(at1, AtomType::IonicTypeMetal))  return has(at2, AtomType::IonicTypePartner);
   return false;
 }
 
-Contacts find_metalic(const Luni &luni, MetalicParams opts) {
-  using AEC = AtomEntityCollection;
+ContactSet find_metalic(const Topology &topology, const MetalicParams &opts) {
+  return find_contacts(
+    topology,
+    [](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypeMetal   | AtomType::TransitionMetal))   != AtomType::NONE; },
+    [](const AtomRec &rec) { return (rec.type & (AtomType::IonicTypePartner | AtomType::DativeBondPartner)) != AtomType::NONE; },
+    {opts.distance_max, 0, 0, 0.7},
+    [&topology, &opts](std::uint32_t idx1, std::uint32_t idx2, float dist) -> InteractionType {
+      const auto &m  = topology.atom(idx1);
+      const auto &mb = topology.atom(idx2);
 
-  Contacts contacts(&luni);
-  const auto &mol = luni.get_molecule();
+      if (dist < opts.distance_max) return InteractionType::None;
+      if (idx1 == idx2) return InteractionType::None;
 
-  AtomEntityCollection metals, metal_binders;
-  metals = AEC::filter(&luni, AtomType::IonicTypeMetal | AtomType::TransitionMetal);
-  metal_binders = AEC::filter(&luni, AtomType::IonicTypePartner | AtomType::DativeBondPartner);
+      if (!is_metalic(m.type, mb.type) && !is_metalic(mb.type, m.type)) return InteractionType::None;
+      if (topology.molecule().getBondBetweenAtoms(m.idx, mb.idx))       return InteractionType::None;
 
-  auto m_nbrs = EntityNeighborSearch::search(metals, metal_binders, opts.distance_max);
-
-  for (const auto &[pair, dist] : m_nbrs) {
-    auto [metal_index, metal_binding_index] = pair;
-    const auto &metal = metals.get_data()[metal_index];
-    const auto &metal_binding = metal_binders.get_data()[metal_binding_index];
-
-    if (!is_metalic(metal.type, metal_binding.type) && !is_metalic(metal_binding.type, metal.type)) continue;
-
-    auto bond = mol.getBondBetweenAtoms(metal.atom->getIdx(), metal_binding.atom->getIdx());
-    if (bond) continue;
-
-    contacts.add(Contact(
-        static_cast<EntityID>(metal.atom->getIdx()),
-        static_cast<EntityID>(metal_binding.atom->getIdx()),
-        dist,
-        InteractionType::MetalCoordination));
-  }
-
-  return contacts;
+      return InteractionType::MetalCoordination;
+    }
+  );
 }
 
 } // namespace lahuta

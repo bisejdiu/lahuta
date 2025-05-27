@@ -1,18 +1,18 @@
 #ifndef LAHUTA_CATIONPI_HPP
 #define LAHUTA_CATIONPI_HPP
 
-#include "neighbors.hpp"
+#include "entities/contact.hpp"
 
 namespace lahuta {
 
-class Luni;
+class Topology;
 
-inline struct CationPiParams {
-  constexpr static double distance_max = 6.0;
-  constexpr static double offset_max = 2.2;
-} cationpi_params;
+struct CationPiParams {
+  double distance_max = 6.0;
+  double offset_max = 2.2;
+};
 
-Contacts find_cationpi(const Luni &luni, CationPiParams opts = cationpi_params); 
+ContactSet find_cationpi(const Topology& topology, const CationPiParams& params = CationPiParams{});
 
 } // namespace lahuta
 

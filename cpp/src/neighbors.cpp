@@ -111,7 +111,4 @@ std::string Contacts::get_entity_atoms(const EntityID &entity) const {
   return atoms_info;
 }
 
-
-
-
 } // namespace lahuta

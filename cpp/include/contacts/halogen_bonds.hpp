@@ -1,38 +1,28 @@
 #ifndef LAHUTA_HALOGEN_BONDS_HPP
 #define LAHUTA_HALOGEN_BONDS_HPP
 
-#include "neighbors.hpp"
+#include "atom_types.hpp"
+#include "entities/contact.hpp"
+#include <GraphMol/Atom.h>
+#include <GraphMol/RWMol.h>
 
 namespace lahuta {
+class Topology;
 
-class Luni;
+struct HalogenParams {
+  double distance_max = 4.0;
+  double angle_max = M_PI / 6.0;                    // 30 degrees
+  double optimal_angle = M_PI;                      // 180 degrees
+  double optimal_acceptor_angle = M_PI * 2.0 / 3.0; // 120 degrees
+};
 
-inline std::unordered_set<int> HalogenDonors = {17, 35, 53};
-inline std::unordered_set<int> HalogenAcceptors = {7, 8, 16};
-inline std::unordered_set<int> HalogenBinders = {6, 7, 15, 16};
-
-inline struct HalogenParams {
-  constexpr static double distance_max = 4.0;
-  constexpr static double angle_max = M_PI / 6.0;                    // 30 degrees
-  constexpr static double optimal_angle = M_PI;                      // 180 degrees
-  constexpr static double optimal_acceptor_angle = M_PI * 2.0 / 3.0; // 120 degrees
-} halogen_params;
-
-/**
- * Halogen bond donors (X-C, with X one of Cl, Br, I or At) not F!
- */
+// Halogen bond donors (X-C, with X one of Cl, Br, I or At) not F!
 AtomType add_halogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-/**
- * Halogen bond acceptors (Y-{O|N|S}, with Y=C,P,N,S)
- */
+// Halogen bond acceptors (Y-{O|N|S}, with Y=C,P,N,S)
 AtomType add_halogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom);
 
-bool are_geometrically_viable(
-    const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor,
-    const HalogenParams &opts);
-
-Contacts find_halogen_bonds(const Luni &luni, HalogenParams opts = halogen_params);
+ContactSet find_halogen_bonds(const Topology &topology, const HalogenParams &params = HalogenParams{});
 
 } // namespace lahuta
 

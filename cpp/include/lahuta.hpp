@@ -6,18 +6,13 @@
 #include <string>
 #include <vector>
 
-#include <gemmi/mmread_gz.hpp>
-#include <gemmi/model.hpp>
-#include <rdkit/Geometry/point.h>
-#include <rdkit/GraphMol/BondIterators.h>
-
 #include "convert.hpp"
-#include "entity.hpp"
 #include "logging.hpp"
 #include "topology.hpp"
 
-constexpr const char* LAHUTA_VERSION = "0.50.0";
+constexpr const char *LAHUTA_VERSION = "0.70.0";
 
+// clang-format off
 namespace lahuta {
 
 // NOTE: rename to Lahuta?
@@ -51,20 +46,8 @@ public:
   RDKit::Conformer &get_conformer(int id = -1) { return mol->getConformer(id); }
   const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
-  const AtomEntityCollection  &get_atom_types() const { return get_topology_ptr()->get_atom_types(); }
-  const RingEntityCollection  &get_rings()      const { return get_topology_ptr()->get_rings(); }
-  const GroupEntityCollection &get_features()   const { return get_topology_ptr()->get_features(); }
-
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
-
-  /// EntityID -> AtomEntity/GroupEntity/RingEntity
-  template <typename T> const T &get_entity(EntityID id) const;
-
-  /// AtomEntity/GroupEntity/RingEntity -> EntityID
-  const std::vector<EntityID> &get_or_create_atom_entities();
-  const std::vector<EntityID> &get_or_create_ring_entities();
-  const std::vector<EntityID> &get_or_create_group_entities();
 
   /// Can be called using the topology
   void assign_molstar_atom_types()  { 
@@ -76,7 +59,7 @@ public:
     if (topology) { topology->assign_arpeggio_atom_types(); } 
     else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
   }
-  
+
   /// Enable or disable a specific computation in the topology
   void enable_topology_computation(TopologyComputation comp, bool enabled) {
     ensure_topology_initialized();
@@ -84,7 +67,7 @@ public:
       topology->enable_computation(comp, enabled);
     }
   }
-  
+
   /// Enable only the specified computations (disabling all others)
   void enable_topology_only(TopologyComputation comps) {
     ensure_topology_initialized();
@@ -92,7 +75,7 @@ public:
       topology->enable_only(comps);
     }
   }
-  
+
   /// Check if a specific computation is enabled
   bool is_topology_computation_enabled(TopologyComputation comp) const {
     if (topology) { 
@@ -101,7 +84,7 @@ public:
     Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
     return false;
   }
-  
+
   /// Execute a specific computation with its dependencies
   bool execute_topology_computation(TopologyComputation comp) {
     if (topology) { 
@@ -110,7 +93,7 @@ public:
     Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
     return false;
   }
-  
+
   /// Set the cutoff for neighbor search
   void set_neighbor_search_cutoff(double cutoff) {
     ensure_topology_initialized();
@@ -118,7 +101,7 @@ public:
       topology->set_cutoff(cutoff);
     }
   }
-  
+
   /// Set the atom typing method
   void set_atom_typing_method(ContactComputerType method) {
     ensure_topology_initialized();
@@ -199,7 +182,6 @@ private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::optional<Topology> topology;
   bool topology_built_ = false;
-  std::unordered_map<EntityType, std::vector<EntityID>> entities;
 
   std::string file_name_;
   std::vector<int> filtered_indices;

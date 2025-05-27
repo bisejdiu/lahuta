@@ -4,10 +4,9 @@
 #include "GraphMol/MonomerInfo.h"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
+#include "elements.hpp"
 
 namespace lahuta {
-
-constexpr double deg_to_rad(double degrees) { return degrees * (M_PI / 180.0); }
 
 /// Returns the atoms bonded to the given atom with the specified atomic number.
 inline std::vector<const RDKit::Atom *>
@@ -16,6 +15,18 @@ bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, int atomic_number
   for (const auto &bond : mol.atomBonds(atom)) {
     RDKit::Atom *neighbor_atom = bond->getOtherAtom(atom);
     if (neighbor_atom->getAtomicNum() == atomic_number) {
+      bonded_atoms.push_back(neighbor_atom);
+    }
+  }
+  return bonded_atoms;
+}
+
+inline std::vector<const RDKit::Atom *>
+bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, Element element) {
+  std::vector<const RDKit::Atom *> bonded_atoms;
+  for (const auto &bond : mol.atomBonds(atom)) {
+    RDKit::Atom *neighbor_atom = bond->getOtherAtom(atom);
+    if (neighbor_atom->getAtomicNum() == element) {
       bonded_atoms.push_back(neighbor_atom);
     }
   }
@@ -43,6 +54,19 @@ get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, unsigned int at
   }
   return bond_count;
 }
+
+inline unsigned int
+get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, const Element &element) {
+  unsigned int bond_count = 0;
+  for (const auto &bond : mol.atomBonds(&atom)) {
+    const RDKit::Atom *neighbor_atom = bond->getOtherAtom(&atom);
+    if (neighbor_atom->getAtomicNum() == element) {
+      bond_count++;
+    }
+  }
+  return bond_count;
+}
+
 
 /// Returns the number of hydrogen atoms bonded to the given atom.
 inline int get_h_count(RDKit::ROMol &mol, RDKit::Atom &atom) {
@@ -77,16 +101,6 @@ inline bool are_residueids_close(
   if (info_a->getChainId() != info_b->getChainId()) return false;
 
   return std::abs(info_a->getResidueNumber() - info_b->getResidueNumber()) <= threshold;
-}
-
-template <typename T, typename Hash = std::hash<T>>
-static bool is_duplicate(const T &pair, std::unordered_set<T, Hash> &seen) {
-
-  T sorted_pair = std::minmax(pair.first, pair.second);
-  if (seen.find(sorted_pair) != seen.end()) return true;
-
-  seen.insert(sorted_pair);
-  return false;
 }
 
 } // namespace lahuta

@@ -19,9 +19,7 @@ public:
     center /= static_cast<double>(ring_atom_ids.size());
   }
 
-  static void compute_normal(
-      const RDKit::RWMol *mol, const std::vector<int> &ring_atom_ids, const RDGeom::Point3D &center,
-      RDGeom::Point3D &norm) {
+  static void compute_normal(const RDKit::RWMol *mol, const std::vector<int> &ring_atom_ids, const RDGeom::Point3D &center, RDGeom::Point3D &norm) {
 
     if (ring_atom_ids.size() < 3) {
       throw std::invalid_argument("Ring must contain at least 3 atoms to compute a normal.");
@@ -34,7 +32,6 @@ public:
       RDGeom::Point3D v1 = conf.getAtomPos(ring_atom_ids[i]) - center;
       RDGeom::Point3D v2 = conf.getAtomPos(ring_atom_ids[(i + 1) % ring_atom_ids.size()]) - center;
 
-      // we'll just crash if the cross product is zero.
       auto new_norm = v1.crossProduct(v2);
       new_norm.normalize();
 
@@ -43,8 +40,7 @@ public:
     norm /= static_cast<double>(ring_atom_ids.size());
   }
 
-  static void
-  compute_normal_fast(const RDKit::RWMol *mol, const std::vector<int> &ring_, RDGeom::Point3D &norm1) {
+  static void compute_normal_fast(const RDKit::RWMol *mol, const std::vector<int> &ring_, RDGeom::Point3D &norm1) {
 
     if (ring_.size() < 3) {
       throw std::invalid_argument("Ring must contain at least 3 atoms to compute a normal.");

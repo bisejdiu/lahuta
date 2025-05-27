@@ -1,47 +1,43 @@
 #include "contacts/pistacking.hpp"
-#include "contacts/geometry.hpp"
-#include "contacts/search.hpp"
+#include "chemistry/geometry.hpp"
 #include "contacts/utils.hpp"
-#include "lahuta.hpp"
+#include "entities/find_contacts.hpp"
 
+// clang-format off
 namespace lahuta {
 
-Contacts find_pistacking(const Luni &luni, PiStackingParams opts) {
+ContactSet find_pistacking(const Topology &topology, const PiStackingParams& params) {
+  return find_contacts(
+    topology,
+    [](const RingRec& rec) { return rec.aromatic; },
+    {params.distance_max, 0.1, 1},
+    [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
 
-  Contacts contacts(&luni);
-  const auto rings = luni.get_rings();
+      const auto& ring_rec_a = topology.ring(rec_idx_a);
+      const auto& ring_rec_b = topology.ring(rec_idx_b);
 
-  double dist_max = 6.0;
-  auto nbrs = EntityNeighborSearch::search(rings, dist_max);
+      const auto& mol = topology.molecule();
+      const auto* r_atom_a = mol.getAtomWithIdx(ring_rec_a.atoms.front());
+      const auto* r_atom_b = mol.getAtomWithIdx(ring_rec_b.atoms.front());
 
-  for (const auto &[pair, dist] : nbrs) {
-    auto [ring_index_a, ring_index_b] = pair;
-    const auto &ring_a = rings[ring_index_a];
-    const auto &ring_b = rings[ring_index_b];
+      // e.g. trp
+      if (is_same_residue(mol, *r_atom_a, *r_atom_b)) return InteractionType::None;
 
-    // e.g. trp
-    if (is_same_residue(luni.get_molecule(), *ring_a.atoms.front(), *ring_b.atoms.front())) continue;
+      auto dot_product = ring_rec_a.normal.dotProduct(ring_rec_b.normal);
+      auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
+      if (angle > M_PI / 2) angle = M_PI - angle; // obtuse -> acute
 
-    auto dot_product = ring_a.normal.dotProduct(ring_b.normal);
-    auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
-    if (angle > M_PI / 2) angle = M_PI - angle; // obtuse -> acute
+      double offset_a = chemistry::compute_in_plane_offset(ring_rec_a.center, ring_rec_b.center, ring_rec_a.normal);
+      double offset_b = chemistry::compute_in_plane_offset(ring_rec_b.center, ring_rec_a.center, ring_rec_b.normal);
 
-    double offset_a = geometry::compute_in_plane_offset(ring_a.center, ring_b.center, ring_a.normal);
-    double offset_b = geometry::compute_in_plane_offset(ring_b.center, ring_a.center, ring_b.normal);
+      if (std::min(offset_a, offset_b) > params.offset_max) return InteractionType::None;
+      if (angle <= params.angle_dev_max)                    return InteractionType::PiStackingP;
+      if (std::abs(angle - M_PI/2) <= params.angle_dev_max) return InteractionType::PiStackingT;
 
-    if (std::min(offset_a, offset_b) <= opts.offset_max) {
-      EntityID entity1 = make_entity_id(EntityType::Ring, ring_a.get_id());
-      EntityID entity2 = make_entity_id(EntityType::Ring, ring_b.get_id());
-
-      (angle <= opts.angle_dev_max)
-          ? contacts.add(Contact(entity1, entity2, dist, InteractionType::PiStackingP))
-      : (std::abs(angle - M_PI / 2) <= opts.angle_dev_max)
-          ? contacts.add(Contact(entity1, entity2, dist, InteractionType::PiStackingT))
-          : void();
+      return InteractionType::None;
     }
-  }
-
-  return contacts;
+  );
 }
+
 
 } // namespace lahuta

@@ -7,131 +7,46 @@
 #include "contacts/hydrophobic.hpp"
 #include "contacts/metals.hpp"
 #include "hydrogen_bonds.hpp"
+#include "entities/records.hpp"
+#include <vector>
 
+// clang-format off
 namespace lahuta {
 
-class AtomTypeBase {
-public:
-  virtual ~AtomTypeBase() = default;
-  virtual AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const = 0;
-  virtual std::string name() const = 0;
+using DetectorFn = AtomType (*)(const RDKit::RWMol&, const RDKit::Atom&);
+
+static inline constexpr DetectorFn BuiltinDetectors[] = {
+    &add_hydrogen_donor,
+    &add_hydrogen_acceptor,
+    &add_weak_hydrogen_donor,
+    &add_hydrophobic_atom,
+    &add_halogen_donor,
+    &add_halogen_acceptor,
+    &add_metal,
+    &add_metal_binding
 };
 
-class HBondAcceptorAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_hydrogen_acceptor(mol, atom);
-  }
-  std::string name() const override { return "HBondAcceptorAtom"; }
-};
-
-class HBondDonorAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_hydrogen_donor(mol, atom);
-  }
-  std::string name() const override { return "HBondDonorAtom"; }
-};
-
-class WeakHBondDonorAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_weak_hydrogen_donor(mol, atom);
-  }
-  std::string name() const override { return "WeakHBondDonorAtom"; }
-};
-
-class HydrophobicAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_hydrophobic_atom(mol, atom);
-  }
-  std::string name() const override { return "HydrophobicAtom"; }
-};
-
-class HalogenDonorAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_halogen_donor(mol, atom);
-  }
-  std::string name() const override { return "HalogenDonorAtom"; }
-};
-
-class HalogenAcceptorAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_halogen_acceptor(mol, atom);
-  }
-  std::string name() const override { return "HalogenAcceptorAtom"; }
-};
-
-class MetalAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_metal(mol, atom);
-  }
-  std::string name() const override { return "MetalAtom"; }
-};
-
-class MetalBindingAtom : public AtomTypeBase {
-public:
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const override {
-    return add_metal_binding(mol, atom);
-  }
-  std::string name() const override { return "MetalBindingAtom"; }
-};
-
-class AtomTypeStrategy {
-private:
-  std::vector<std::unique_ptr<AtomTypeBase>> strategies;
-
-public:
-  template <typename T> void add_strategy() {
-    static_assert(std::is_base_of<AtomTypeBase, T>::value, "T must derive from AtomTypeStrategy");
-    strategies.push_back(std::make_unique<T>());
-  }
-
-  AtomType identify(const RDKit::RWMol &mol, const RDKit::Atom &atom) const {
-    AtomType result = AtomType::NONE;
-    for (const auto &strategy : strategies) {
-      result |= strategy->identify(mol, atom);
-    }
-    return result;
-  }
-};
-
-class AtomTypeFactory {
-public:
-  static AtomTypeStrategy create() {
-    AtomTypeStrategy at;
-
-    at.add_strategy<HBondDonorAtom>();
-    at.add_strategy<HBondAcceptorAtom>();
-    at.add_strategy<WeakHBondDonorAtom>();
-    at.add_strategy<HydrophobicAtom>();
-    at.add_strategy<HalogenDonorAtom>();
-    at.add_strategy<HalogenAcceptorAtom>();
-    at.add_strategy<MetalAtom>();
-    at.add_strategy<MetalBindingAtom>();
-
-    return at;
-  }
-};
+constexpr std::size_t NumBuiltinDetectors = sizeof(BuiltinDetectors) / sizeof(*BuiltinDetectors);
 
 class AtomTypeAnalysis {
 public:
-  static AtomEntityCollection analyze(const RDKit::RWMol &mol) {
-    AtomEntityCollection atom_types;
-    atom_types.reserve(mol.getNumAtoms());
+  std::vector<AtomRec> operator()(const RDKit::RWMol &mol) const {
+    std::vector<AtomRec> atoms;
+    atoms.reserve(mol.getNumAtoms());
 
-    auto strategy = AtomTypeFactory::create();
+    for (auto *atom : mol.atoms()) {
+      AtomType t = AtomType::NONE;
+      for (std::size_t i = 0; i < NumBuiltinDetectors; ++i) {
+        t |= BuiltinDetectors[i](mol, *atom);
+      }
 
-    // FIX: We ignore here atom typing added by OpenBabel typing system.
-    for (const auto atom : mol.atoms()) {
-      AtomType at = strategy.identify(mol, *atom);
-      atom_types.add_data(mol, atom, at);
+      atoms.push_back(AtomRec{
+        /*.type =*/ t,
+        /*.idx  =*/ static_cast<uint32_t>(atom->getIdx())
+      });
     }
-    return atom_types;
+
+    return atoms;
   }
 };
 

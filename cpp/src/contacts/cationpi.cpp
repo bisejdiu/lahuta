@@ -1,42 +1,33 @@
 #include "contacts/cationpi.hpp"
-#include "contacts/search.hpp"
+#include "chemistry/geometry.hpp"
 #include "contacts/utils.hpp"
-#include "lahuta.hpp"
-#include "neighbors.hpp"
-#include "contacts/geometry.hpp"
+#include "entities/find_contacts.hpp"
 
+// clang-format off
 namespace lahuta {
 
-Contacts find_cationpi(const Luni &luni, CationPiParams opts) {
+ContactSet find_cationpi(const Topology& topology, const CationPiParams& params) {
+  return find_contacts(
+    topology,
+    [](const GroupRec& rec) { return (rec.a_type & AtomType::POS_IONISABLE) == AtomType::POS_IONISABLE; },
+    [](const RingRec & rec)  { return true; }, // we miss positive hits bc we miss genuine aromatic rings in our perception routine
+    {params.distance_max, 0.1, 0.5, 1},
+    [&topology, &params](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist) -> InteractionType {
+      const auto &cation_rec = topology.group(rec_idx_a);
+      const auto &ring_rec   = topology.ring(rec_idx_b);
 
-  Contacts contacts(&luni);
+      const auto &mol = topology.molecule();
+      const auto *cation_atom = mol.getAtomWithIdx(cation_rec.atoms.front());
+      const auto *ring_atom   = mol.getAtomWithIdx(ring_rec.atoms.front());
 
-  const auto rings = luni.get_rings();
-  const auto features = GroupEntityCollection::filter(&luni, AtomType::POS_IONISABLE);
+      if (is_same_residue(mol, *ring_atom, *cation_atom)) return InteractionType::None;
 
-  auto nbrs = EntityNeighborSearch::search(features, rings, opts.distance_max);
-
-  for (const auto &[pair, dist] : nbrs) {
-    auto [feature_index, ring_index] = pair;
-    const auto &ring = rings.data[ring_index];
-    const auto &feature = features[feature_index];
-
-    auto first_ring_atom = ring.atoms.front();
-
-    if (is_same_residue(luni.get_molecule(), *first_ring_atom, *feature.atoms.front())) continue;
-
-    auto offset = geometry::compute_in_plane_offset(feature.center, ring.center, ring.normal);
-
-    if (offset <= opts.offset_max) {
-      contacts.add(Contact(
-          make_entity_id(EntityType::Group, feature.get_id()),
-          make_entity_id(EntityType::Ring, ring.get_id()),
-          dist,
-          InteractionType::CationPi));
+      auto offset = chemistry::compute_in_plane_offset(cation_rec.center, ring_rec.center, ring_rec.normal);
+      if (offset > params.offset_max) return InteractionType::None;
+      return InteractionType::CationPi;
     }
-  }
-
-  return contacts;
+  );
 }
+
 
 } // namespace lahuta

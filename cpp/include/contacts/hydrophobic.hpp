@@ -1,19 +1,22 @@
 #ifndef LAHUTA_HYDROPHOBIC_HPP
 #define LAHUTA_HYDROPHOBIC_HPP
 
-#include "neighbors.hpp"
+#include "entities/contact.hpp"
+#include "atom_types.hpp"
 #include <GraphMol/RWMol.h>
 
 namespace lahuta {
 
-class Luni;
+class Topology;
 
-inline struct HydrophobicParams {
-  constexpr static double distance_max = 4.0;
-} hydrophobic_params;
+struct HydrophobicParams {
+  double distance_max = 4.0;
+};
 
 AtomType add_hydrophobic_atom(const RDKit::RWMol &mol, const RDKit::Atom &atom);
-Contacts find_hydrophobic_bonds(const Luni &luni, HydrophobicParams opts = hydrophobic_params);
+
+ContactSet find_hydrophobic_bondsx(const Topology& topology, const HydrophobicParams& opts = HydrophobicParams{});
+ContactSet find_hydrophobic_bonds(const Topology& topology, const HydrophobicParams& params = HydrophobicParams{});
 
 } // namespace lahuta
 
