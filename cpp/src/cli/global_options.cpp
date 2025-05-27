@@ -9,7 +9,7 @@ namespace lahuta::cli {
 
 namespace global_opts {
 const option::Descriptor usage[] = {
-  {GlobalOptionIndex::Unknown, 0, "", "", validate::Unknown,
+  {GlobalOptionIndex::Unknown, 0, "", "", validate::Ignore,
    "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n\n"
    "Commands:\n"
    "  run <input_file> [options]    Compute inter-atomic contacts\n\n"
@@ -30,6 +30,10 @@ const option::Descriptor usage[] = {
     {"run", &RunCommand::create}
   };
   return registry;
+}
+
+void print_global_help() {
+  option::printUsage(std::cout, global_opts::usage);
 }
 
 [[nodiscard]] std::string parse_global_options(int argc, char* argv[], lahuta::Logger::LogLevel& log_level, int& sub_argc, char**& sub_argv) {

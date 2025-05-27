@@ -71,56 +71,10 @@ void RunCommand::compute_contacts(const Topology& topology, const std::vector<st
 }
 
 int RunCommand::run(int argc, char* argv[]) {
-  // First, scan for global options and handle them
-  std::vector<char*> filtered_argv;
-  filtered_argv.reserve(argc);
-  
-  for (int i = 0; i < argc; ++i) {
-    const std::string_view arg{argv[i]};
-    bool is_global_option = false;
-    
-    // Check if this is a global verbosity option and handle it directly
-    if (arg == "-v" || arg == "--verbose") {
-      // Check if there's a next argument for the verbosity level
-      if (i + 1 < argc) {
-        const std::string_view level{argv[i + 1]};
-        if (level == "0") {
-          Logger::get_instance().set_log_level(Logger::LogLevel::Error);
-          is_global_option = true;
-          ++i; // Skip the verbosity level argument
-        } else if (level == "1") {
-          Logger::get_instance().set_log_level(Logger::LogLevel::Warn);
-          is_global_option = true;
-          ++i; // Skip the verbosity level argument
-        } else if (level == "2") {
-          Logger::get_instance().set_log_level(Logger::LogLevel::Debug);
-          is_global_option = true;
-          ++i; // Skip the verbosity level argument
-        } else {
-          // Invalid verbosity level
-          Logger::get_logger()->error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (warnings+), or 2 (info+debug){}", level, validate::HELP_MSG_SUFFIX);
-          return 1;
-        }
-      } else {
-        // Missing verbosity level argument
-        Logger::get_logger()->error("Option '{}' requires a verbosity level (0, 1, or 2){}", arg, validate::HELP_MSG_SUFFIX);
-        return 1;
-      }
-    }
-    
-    // If not a global option, keep it for the run command parser
-    if (!is_global_option) {
-      filtered_argv.push_back(argv[i]);
-    }
-  }
-  
-  // Update argc to reflect filtered arguments
-  int filtered_argc = static_cast<int>(filtered_argv.size());
-  
-  option::Stats stats(true, run_opts::usage, filtered_argc, const_cast<const char**>(filtered_argv.data()));
+  option::Stats stats(true, run_opts::usage, argc, const_cast<const char**>(argv));
   std::vector<option::Option> options(stats.options_max);
   std::vector<option::Option> buffer (stats.buffer_max);
-  option::Parser parse(true, run_opts::usage, filtered_argc, const_cast<const char**>(filtered_argv.data()), options.data(), buffer.data());
+  option::Parser parse(true, run_opts::usage, argc, const_cast<const char**>(argv), options.data(), buffer.data());
 
   if (parse.error()) return 1;
 

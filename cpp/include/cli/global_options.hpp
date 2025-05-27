@@ -29,6 +29,8 @@ using CommandFactory = std::unique_ptr<CliCommand>(*)();
 // Parse global options and return the subcommand name and remaining arguments. Returns subcommand name if found, or empty string on error/help
 [[nodiscard]] std::string parse_global_options(int argc, char* argv[], lahuta::Logger::LogLevel& log_level, int& sub_argc, char**& sub_argv);
 
+void print_global_help();
+
 } // namespace lahuta::cli
 
 #endif // LAHUTA_CLI_GLOBAL_OPTIONS_HPP
