@@ -23,7 +23,7 @@ ContactRecipe<AtomRec, RingRec, DonorPiParams> make_donor_pi_recipe() {
       auto angle = compute_angle(rec_b, ctx.topology.conformer().getAtomPos(rec_a.atom.get().getIdx()));
       if (!passes_angle_filter(angle, params.angle_cutoff)) return InteractionType::None;
 
-      return InteractionType::Hydrophobic;
+      return InteractionType::DonorPi;
     }
   };
 }
@@ -43,7 +43,7 @@ ContactRecipe<AtomRec, RingRec, SulphurPiParams> make_sulphur_pi_recipe() {
       // NOTE: this can be added as part of the predicate
       if (!res_a_info || res_a_info->getResidueName() != "MET") return InteractionType::None;
 
-      return InteractionType::Hydrophobic;
+      return InteractionType::SulphurPi;
     }
   };
 }
@@ -69,7 +69,7 @@ ContactRecipe<AtomRec, RingRec, CarbonPiParams> make_carbon_pi_recipe() {
       if (!passes_angle_filter(angle, params.angle_cutoff)) return InteractionType::None;
 
       // FIX: need to make sure we remove metals here
-      return InteractionType::Hydrophobic;
+      return InteractionType::CarbonPi;
     }
   };
 }
@@ -90,7 +90,7 @@ ContactRecipe<AtomRec, RingRec, CationPiParams> make_cation_pi_recipe() {
       auto angle = compute_angle(rec_b, ctx.topology.conformer().getAtomPos(rec_a.atom.get().getIdx()));
       if (!passes_angle_filter(angle, params.angle_cutoff)) return InteractionType::None;
 
-      return InteractionType::Hydrophobic;
+      return InteractionType::CationPi;
     }
   };
 }

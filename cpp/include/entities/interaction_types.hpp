@@ -2,6 +2,7 @@
 #define LAHUTA_ENTITIES_INTERACTION_TYPES_HPP
 
 #include <cstdint>
+#include <string>
 
 // clang-format off
 namespace lahuta {
@@ -99,6 +100,33 @@ inline constexpr InteractionType InteractionType::DonorPi     {Category::DonorPi
 inline constexpr InteractionType InteractionType::SulphurPi   {Category::SulphurPi, Flavor::Default};
 inline constexpr InteractionType InteractionType::CarbonPi    {Category::CarbonPi, Flavor::Default};
 
+
+inline std::string interaction_type_to_string(const InteractionType& type) {
+  switch (type.category) {
+    case Category::None:              return "None";
+    case Category::Generic:           return "Generic";
+    case Category::Hydrophobic:       return "Hydrophobic";
+    case Category::Halogen:           return "Halogen";
+    case Category::HydrogenBond:          return "HydrogenBond";
+    case Category::WeakHydrogenBond:      return "WeakHydrogenBond";
+    case Category::PolarHydrogenBond:     return "PolarHydrogenBond";
+    case Category::WeakPolarHydrogenBond: return "WeakPolarHydrogenBond";
+    case Category::MetalCoordination:     return "MetalCoordination";
+    case Category::Aromatic:      return "Aromatic";
+    case Category::Ionic:         return "Ionic";
+    case Category::CationPi:      return "CationPi";
+    case Category::PiStacking:
+      if (type.flavor == Flavor::Parallel) return "PiStackingP";
+      if (type.flavor == Flavor::TShape)   return "PiStackingT";
+      return "PiStacking";
+    case Category::Carbonyl:    return "Carbonyl";
+    case Category::VanDerWaals: return "VanDerWaals";
+    case Category::DonorPi:     return "DonorPi";
+    case Category::SulphurPi:   return "SulphurPi";
+    case Category::CarbonPi:    return "CarbonPi";
+    default: return "Unknown";
+  }
+}
 
 } // namespace lahuta
 

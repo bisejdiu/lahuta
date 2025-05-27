@@ -16,7 +16,7 @@ ContactRecipe<AtomRec, AtomRec, AromaticParams> make_aromatic_recipe() {
       const auto& ring_b = ctx.topology.atom(b);
 
       if (are_residueids_close(ctx.molecule(), ring_a.atom.get(), ring_b.atom.get(), 1)) return InteractionType::None;
-      return InteractionType::PiStackingP;
+      return InteractionType::Aromatic;
     }
   };
 }

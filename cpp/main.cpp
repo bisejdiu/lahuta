@@ -2,8 +2,11 @@
 #include "logging.hpp"
 #include "selections/tokenizer.hpp"
 #include <GraphMol/BondIterators.h>
+#include <iostream>
+#include <ostream>
 #include "contacts/engine.hpp"
 #include "contacts/molstar/provider.hpp"
+#include "entities/formatter.hpp"
 
 using namespace lahuta;
 
@@ -46,89 +49,70 @@ int main(int argc, char const *argv[]) {
   auto &topology = luni.get_topology();
   InteractionEngine<MolStarContactProvider> engine;
 
-  // just ionic
-  auto ionic_contacts = engine.compute(topology, InteractionType::Ionic);
-  std::cout << "Ionic Contacts: " << ionic_contacts.size() << std::endl;
-
-  std::cout << "HBonds" << std::endl;
+  // Compute and log all interaction types
+  std::cout << "Computing HBonds..." << std::endl;
   auto start_hb = std::chrono::high_resolution_clock::now();
-  auto _1 = engine.compute(topology, InteractionType::HydrogenBond);
+  auto hbonds = engine.compute(topology, InteractionType::HydrogenBond);
   auto end_hb = std::chrono::high_resolution_clock::now();
   auto hb_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_hb - start_hb);
-  std::cout << "Time: " << hb_duration.count() << " us" << std::endl;
-  /*_1.sort_interactions();*/
-  /*_1.print_interactions();*/
-  std::cout << "size: HBonds: " << _1.size() << std::endl;
+  std::cout << "HBonds computation time: " << hb_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(hbonds, topology, "HydrogenBond");
 
-  std::cout << "Weak HBonds" << std::endl;
+  std::cout << "Computing Weak HBonds..." << std::endl;
   auto start_weak_hb = std::chrono::high_resolution_clock::now();
-  auto _2 = engine.compute(topology, InteractionType::WeakHydrogenBond);
+  auto weak_hbonds = engine.compute(topology, InteractionType::WeakHydrogenBond);
   auto end_weak_hb = std::chrono::high_resolution_clock::now();
   auto weak_hb_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_weak_hb - start_weak_hb);
-  std::cout << "Time: " << weak_hb_duration.count() << " us" << std::endl;
-  /*_2.sort_interactions();*/
-  /*_2.print_interactions();*/
-  std::cout << "size: Weak HBonds: " << _2.size() << std::endl;
+  std::cout << "Weak HBonds computation time: " << weak_hb_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(weak_hbonds, topology, "WeakHydrogenBond");
 
-  std::cout << "Hydrophobic" << std::endl;
-  auto hb_start = std::chrono::high_resolution_clock::now();
-  auto _3 = engine.compute(topology, InteractionType::Hydrophobic);
-  auto hb_end = std::chrono::high_resolution_clock::now();
-  auto hb_duration2 = std::chrono::duration_cast<std::chrono::microseconds>(hb_end - hb_start);
-  std::cout << "Time: " << hb_duration2.count() << " us" << std::endl;
-  /*_3.sort_interactions();*/
-  /*_3.print_interactions();*/
-  std::cout << "size: Hydrophobic: " << _3.size() << std::endl;
+  std::cout << "Computing Hydrophobic..." << std::endl;
+  auto hydrophobic_start = std::chrono::high_resolution_clock::now();
+  auto hydrophobic = engine.compute(topology, InteractionType::Hydrophobic);
+  auto hydrophobic_end = std::chrono::high_resolution_clock::now();
+  auto hydrophobic_duration = std::chrono::duration_cast<std::chrono::microseconds>(hydrophobic_end - hydrophobic_start);
+  std::cout << "Hydrophobic computation time: " << hydrophobic_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(hydrophobic, topology, "Hydrophobic");
 
-  std::cout << "Halogen" << std::endl;
+  std::cout << "Computing Halogen..." << std::endl;
   auto start_halogen = std::chrono::high_resolution_clock::now();
-  auto _4 = engine.compute(topology, InteractionType::Halogen);
+  auto halogen = engine.compute(topology, InteractionType::Halogen);
   auto end_halogen = std::chrono::high_resolution_clock::now();
   auto halogen_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_halogen - start_halogen);
-  std::cout << "Time: " << halogen_duration.count() << " us" << std::endl;
-  /*_4.sort_interactions();*/
-  /*_4.print_interactions();*/
-  // std::cout << "size: Halogen: " << _4.size() << std::endl;
+  std::cout << "Halogen computation time: " << halogen_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(halogen, topology, "Halogen");
 
-  std::cout << "Ionic" << std::endl;
+  std::cout << "Computing Ionic..." << std::endl;
   auto start_ionic = std::chrono::high_resolution_clock::now();
-  auto _5 = engine.compute(topology, InteractionType::Ionic);
+  auto ionic = engine.compute(topology, InteractionType::Ionic);
   auto end_ionic = std::chrono::high_resolution_clock::now();
   auto ionic_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_ionic - start_ionic);
-  std::cout << "Time: " << ionic_duration.count() << " us" << std::endl;
-  /*_5.sort_interactions();*/
-  /*_5.print_interactions();*/
-  std::cout << "size: Ionic: " << _5.size() << std::endl;
+  std::cout << "Ionic computation time: " << ionic_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(ionic, topology, "Ionic");
 
-  std::cout << "Metalic" << std::endl;
+  std::cout << "Computing MetalCoordination..." << std::endl;
   auto start_metalic = std::chrono::high_resolution_clock::now();
-  auto _6 = engine.compute(topology, InteractionType::MetalCoordination);
+  auto metalic = engine.compute(topology, InteractionType::MetalCoordination);
   auto end_metalic = std::chrono::high_resolution_clock::now();
   auto metalic_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_metalic - start_metalic);
-  std::cout << "Time: " << metalic_duration.count() << " us" << std::endl;
-  /*_6.sort_interactions();*/
-  /*_6.print_interactions();*/
-  std::cout << "size: Metalic: " << _6.size() << std::endl;
+  std::cout << "MetalCoordination computation time: " << metalic_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(metalic, topology, "MetalCoordination");
 
-  std::cout << "CationPi" << std::endl;
+  std::cout << "Computing CationPi..." << std::endl;
   auto start_cationpi = std::chrono::high_resolution_clock::now();
-  auto _7 = engine.compute(topology, InteractionType::CationPi);
+  auto cationpi = engine.compute(topology, InteractionType::CationPi);
   auto end_cationpi = std::chrono::high_resolution_clock::now();
   auto cationpi_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_cationpi - start_cationpi);
-  std::cout << "Time: " << cationpi_duration.count() << " us" << std::endl;
-  /*_7.sort_interactions();*/
-  /*_7.print_interactions();*/
-  std::cout << "size: CationPi: " << _7.size() << std::endl;
+  std::cout << "CationPi computation time: " << cationpi_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(cationpi, topology, "CationPi");
 
-  std::cout << "PiStacking" << std::endl;
+  std::cout << "Computing PiStacking..." << std::endl;
   auto start_pistacking = std::chrono::high_resolution_clock::now();
-  auto _8 = engine.compute(topology, InteractionType::PiStacking);
+  auto pistacking = engine.compute(topology, InteractionType::PiStacking);
   auto end_pistacking = std::chrono::high_resolution_clock::now();
   auto pistacking_duration = std::chrono::duration_cast<std::chrono::microseconds>(end_pistacking - start_pistacking);
-  std::cout << "Time: " << pistacking_duration.count() << " us" << std::endl;
-  /*_8.sort_interactions();*/
-  /*_8.print_interactions();*/
-  std::cout << "size: PiStacking: " << _8.size() << std::endl;
+  std::cout << "PiStacking computation time: " << pistacking_duration.count() << " us" << std::endl;
+  ContactTableFormatter::print_contact_table(pistacking, topology, "PiStacking");
 
   int o1{}, o2{}, aromatic{};
   for (auto bond_it = mol->beginBonds(); bond_it != mol->endBonds(); ++bond_it) {

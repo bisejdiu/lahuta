@@ -17,7 +17,7 @@ ContactRecipe<AtomRec, AtomRec, CarbonylParams> make_carbonyl_recipe() {
       const auto& rec_b = ctx.topology.atom(b);
 
       if (are_residueids_close(ctx.molecule(), rec_a.atom, rec_b.atom, 1)) return InteractionType::None;
-      return InteractionType::PiStackingP;
+      return InteractionType::Carbonyl;
     }
   };
 }

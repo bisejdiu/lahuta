@@ -76,7 +76,7 @@ ContactRecipe<AtomRec, AtomRec, WeakPolarHbondParams> make_weak_polar_hbond_reci
       const auto& rec_b = ctx.topology.atom(rec_idx_b);
 
       if (are_residueids_close(ctx.molecule(), rec_a.atom, rec_b.atom, 1)) return InteractionType::None;
-      return InteractionType::WeakHydrogenBond;
+      return InteractionType::WeakPolarHydrogenBond;
     }
   };
 }
