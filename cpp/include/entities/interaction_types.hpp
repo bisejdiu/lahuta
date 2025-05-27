@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 // clang-format off
 namespace lahuta {
@@ -101,7 +102,7 @@ inline constexpr InteractionType InteractionType::SulphurPi   {Category::Sulphur
 inline constexpr InteractionType InteractionType::CarbonPi    {Category::CarbonPi, Flavor::Default};
 
 
-inline std::string interaction_type_to_string(const InteractionType& type) {
+[[nodiscard]] inline std::string interaction_type_to_string(const InteractionType& type) noexcept {
   switch (type.category) {
     case Category::None:              return "None";
     case Category::Generic:           return "Generic";
@@ -126,6 +127,32 @@ inline std::string interaction_type_to_string(const InteractionType& type) {
     case Category::CarbonPi:    return "CarbonPi";
     default: return "Unknown";
   }
+}
+
+[[nodiscard]] inline InteractionType get_interaction_type(const std::string& type_str) noexcept {
+  static const std::unordered_map<std::string, InteractionType> type_map = {
+    {"hbond",            InteractionType::HydrogenBond},
+    {"weak_hbond",       InteractionType::WeakHydrogenBond},
+    {"polar_hbond",      InteractionType::PolarHydrogenBond},
+    {"weak_polar_hbond", InteractionType::WeakPolarHydrogenBond},
+    {"hydrophobic",      InteractionType::Hydrophobic},
+    {"ionic",            InteractionType::Ionic},
+    {"halogen",          InteractionType::Halogen},
+    {"metalic",          InteractionType::MetalCoordination},
+    {"cationpi",         InteractionType::CationPi},
+    {"pistacking",       InteractionType::PiStacking},
+    {"aromatic",         InteractionType::Aromatic},
+    {"carbonyl",         InteractionType::Carbonyl},
+    {"vdw",              InteractionType::VanDerWaals},
+    {"donor_pi",         InteractionType::DonorPi},
+    {"sulphur_pi",       InteractionType::SulphurPi},
+    {"carbon_pi",        InteractionType::CarbonPi}
+  };
+
+  if (const auto it = type_map.find(type_str); it != type_map.end()) {
+      return it->second;
+  }
+  return InteractionType::None;
 }
 
 } // namespace lahuta

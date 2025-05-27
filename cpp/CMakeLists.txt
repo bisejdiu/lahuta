@@ -110,9 +110,9 @@ add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp
@@ -178,6 +178,10 @@ add_library(lahuta_cpp STATIC
             src/contacts/arpeggio/aromatic.cpp
             src/contacts/arpeggio/carbonyl.cpp
             src/contacts/arpeggio/atom_plane.cpp
+
+            src/cli/arg_validation.cpp
+            src/cli/global_options.cpp
+            src/commands/run.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
