@@ -25,13 +25,17 @@ const option::Descriptor usage[] = {
   {RunOptionIndex::ContactType, 0, "t", "type", validate::ContactType,
    "  --type, -t <type>            \tContact type to compute. Can be specified multiple times.\n"
    "                               \tIf not specified, all available types are computed."},
-  {RunOptionIndex::Quiet, 0, "q", "quiet", option::Arg::None,
-   "  --quiet, -q                  \tSuppress verbose output."}, {0, 0, "", "", option::Arg::None,
+  {0, 0, "", "", option::Arg::None,
    "\nAvailable Contact Types:\n"
    "  Common (both providers):     hbond, hydrophobic, ionic\n"
    "  MolStar specific:            weak_hbond, halogen, metalic, cationpi, pistacking\n"
    "  Arpeggio specific:           polar_hbond, weak_polar_hbond, aromatic, carbonyl,\n"
-   "                               vdw, donor_pi, sulphur_pi, carbon_pi"},
+   "                               vdw, donor_pi, sulphur_pi, carbon_pi\n\n"
+   "Verbosity Options (global):\n"
+   "  Use -v/--verbose <level> where level is:\n"
+   "    0 = errors only\n"
+   "    1 = warnings and errors (default)\n"
+   "    2 = info, warnings, errors, and debug"},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace run_opts
@@ -41,13 +45,13 @@ const option::Descriptor usage[] = {
 }
 
 template<typename Provider>
-void RunCommand::compute_contacts(const Topology& topology, const std::vector<std::string>& contact_types, bool quiet) {
+void RunCommand::compute_contacts(const Topology& topology, const std::vector<std::string>& contact_types) {
   InteractionEngine<Provider> engine;
 
   if (contact_types.empty()) {
     // Compute all available contact types
     auto all_contacts = engine.compute(topology);
-    if (!quiet) Logger::get_logger()->info("Computing all available contact types...");
+    Logger::get_logger()->info("Computing all available contact types...");
     ContactTableFormatter::print_contact_table(all_contacts, topology, "All Contacts");
   } else {
     // Compute specific contact types
@@ -58,7 +62,7 @@ void RunCommand::compute_contacts(const Topology& topology, const std::vector<st
         continue;
       }
 
-      if (!quiet) Logger::get_logger()->info("Computing {} contacts...", type_str);
+      Logger::get_logger()->info("Computing {} contacts...", type_str);
 
       auto contacts = engine.compute(topology, interaction_type);
       ContactTableFormatter::print_contact_table(contacts, topology, type_str);
@@ -67,10 +71,56 @@ void RunCommand::compute_contacts(const Topology& topology, const std::vector<st
 }
 
 int RunCommand::run(int argc, char* argv[]) {
-  option::Stats stats(true, run_opts::usage, argc, const_cast<const char**>(argv));
+  // First, scan for global options and handle them
+  std::vector<char*> filtered_argv;
+  filtered_argv.reserve(argc);
+  
+  for (int i = 0; i < argc; ++i) {
+    const std::string_view arg{argv[i]};
+    bool is_global_option = false;
+    
+    // Check if this is a global verbosity option and handle it directly
+    if (arg == "-v" || arg == "--verbose") {
+      // Check if there's a next argument for the verbosity level
+      if (i + 1 < argc) {
+        const std::string_view level{argv[i + 1]};
+        if (level == "0") {
+          Logger::get_instance().set_log_level(Logger::LogLevel::Error);
+          is_global_option = true;
+          ++i; // Skip the verbosity level argument
+        } else if (level == "1") {
+          Logger::get_instance().set_log_level(Logger::LogLevel::Warn);
+          is_global_option = true;
+          ++i; // Skip the verbosity level argument
+        } else if (level == "2") {
+          Logger::get_instance().set_log_level(Logger::LogLevel::Debug);
+          is_global_option = true;
+          ++i; // Skip the verbosity level argument
+        } else {
+          // Invalid verbosity level
+          Logger::get_logger()->error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (warnings+), or 2 (info+debug){}", level, validate::HELP_MSG_SUFFIX);
+          return 1;
+        }
+      } else {
+        // Missing verbosity level argument
+        Logger::get_logger()->error("Option '{}' requires a verbosity level (0, 1, or 2){}", arg, validate::HELP_MSG_SUFFIX);
+        return 1;
+      }
+    }
+    
+    // If not a global option, keep it for the run command parser
+    if (!is_global_option) {
+      filtered_argv.push_back(argv[i]);
+    }
+  }
+  
+  // Update argc to reflect filtered arguments
+  int filtered_argc = static_cast<int>(filtered_argv.size());
+  
+  option::Stats stats(true, run_opts::usage, filtered_argc, const_cast<const char**>(filtered_argv.data()));
   std::vector<option::Option> options(stats.options_max);
   std::vector<option::Option> buffer (stats.buffer_max);
-  option::Parser parse(true, run_opts::usage, argc, const_cast<const char**>(argv), options.data(), buffer.data());
+  option::Parser parse(true, run_opts::usage, filtered_argc, const_cast<const char**>(filtered_argv.data()), options.data(), buffer.data());
 
   if (parse.error()) return 1;
 
@@ -98,12 +148,6 @@ int RunCommand::run(int argc, char* argv[]) {
     contact_types.emplace_back(opt->arg);
   }
 
-  // Check quiet flag (note: global quiet is handled by the caller)
-  const bool quiet = static_cast<bool>(options[run_opts::RunOptionIndex::Quiet]);
-
-  if (quiet) { Logger::get_instance().set_log_level(Logger::LogLevel::Error); }
-  else       { Logger::get_instance().set_log_level(Logger::LogLevel::Info); }
-
   try {
 
     Logger::get_logger()->info("Loading file: {}", input_file);
@@ -125,8 +169,8 @@ int RunCommand::run(int argc, char* argv[]) {
     Logger::get_logger()->info("Molecule loaded: {} atoms, {} bonds", luni.get_molecule().getNumAtoms(), luni.get_molecule().getNumBonds());
 
     // Compute contacts
-    if (provider == "arpeggio") { compute_contacts<ArpeggioContactProvider>(topology, contact_types, quiet); }
-    else                        { compute_contacts<MolStarContactProvider> (topology, contact_types, quiet); }
+    if (provider == "arpeggio") { compute_contacts<ArpeggioContactProvider>(topology, contact_types); }
+    else                        { compute_contacts<MolStarContactProvider> (topology, contact_types); }
 
   } catch (const std::exception& e) {
     Logger::get_logger()->error("{}{}", e.what(), validate::HELP_MSG_SUFFIX);

@@ -17,8 +17,7 @@ enum RunOptionIndex : unsigned {
   Unknown,
   Help,
   Provider,
-  ContactType,
-  Quiet
+  ContactType
 };
 } // namespace run_opts
 
@@ -32,7 +31,7 @@ private:
 
   // computes contacts given a provider and a list of contact types
   template<typename Provider>
-  static void compute_contacts(const Topology& topology, const std::vector<std::string>& contact_types, bool quiet);
+  static void compute_contacts(const Topology& topology, const std::vector<std::string>& contact_types);
 };
 
 } // namespace cli

@@ -3,6 +3,7 @@
 #include "commands/run.hpp"
 #include "logging.hpp"
 #include <iostream>
+#include <string_view>
 
 namespace lahuta::cli {
 
@@ -15,8 +16,11 @@ const option::Descriptor usage[] = {
    "Main Options:"},
   {GlobalOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help,  -h                  \tPrint this help message and exit."},
-  {GlobalOptionIndex::Quiet, 0, "q", "quiet", option::Arg::None,
-   "  --quiet, -q                  \tSuppress verbose output."},
+  {GlobalOptionIndex::Verbose, 0, "v", "verbose", validate::Verbosity,
+   "  --verbose, -v <level>        \tSet verbosity level:\n"
+   "                               \t  0 = errors only\n"
+   "                               \t  1 = warnings and errors (default)\n"
+   "                               \t  2 = info, warnings, errors, and debug"},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace global_opts
@@ -28,7 +32,7 @@ const option::Descriptor usage[] = {
   return registry;
 }
 
-[[nodiscard]] std::string parse_global_options(int argc, char* argv[], bool& global_quiet, int& sub_argc, char**& sub_argv) {
+[[nodiscard]] std::string parse_global_options(int argc, char* argv[], lahuta::Logger::LogLevel& log_level, int& sub_argc, char**& sub_argv) {
   argc -= (argc > 0);
   argv += (argc > 0);
 
@@ -42,17 +46,44 @@ const option::Descriptor usage[] = {
     return {};
   }
 
-  global_quiet = false;
+  // Default log level is Warn (level 1)
+  log_level = lahuta::Logger::LogLevel::Warn;
   int subcommand_start = 0;
 
   // Look for global options before the subcommand
   for (int i = 0; i < argc; ++i) {
     const std::string_view arg{argv[i]};
-    if (arg == "-q" || arg == "--quiet") {
-      global_quiet = true;
+    if (arg == "-v" || arg == "--verbose") {
+      // Check if there's a next argument for the verbosity level
+      if (i + 1 < argc) {
+        const std::string_view level{argv[i + 1]};
+        if (level == "0") {
+          log_level = lahuta::Logger::LogLevel::Error;
+        } else if (level == "1") {
+          log_level = lahuta::Logger::LogLevel::Warn;
+        } else if (level == "2") {
+          log_level = lahuta::Logger::LogLevel::Debug;
+        } else {
+          lahuta::Logger::get_logger()->error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (warnings+), or 2 (info+debug){}", level, validate::HELP_MSG_SUFFIX);
+          return {};
+        }
+        ++i; // Skip the verbosity level argument
+      } else {
+        lahuta::Logger::get_logger()->error("Option '{}' requires a verbosity level (0, 1, or 2){}", arg, validate::HELP_MSG_SUFFIX);
+        return {};
+      }
+    } else if (arg == "-h" || arg == "--help") {
+      // Help option - already handled above, but include here for completeness
+      option::printUsage(std::cout, global_opts::usage);
+      return {};
     } else if (arg.empty() || arg[0] != '-') {
+      // Found the subcommand
       subcommand_start = i;
       break;
+    } else {
+      // Unknown global option
+      lahuta::Logger::get_logger()->error("Unknown global option '{}'{}", arg, validate::HELP_MSG_SUFFIX);
+      return {};
     }
   }
 

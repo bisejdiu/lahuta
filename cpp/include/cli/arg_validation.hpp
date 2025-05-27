@@ -15,6 +15,7 @@ option::ArgStatus Unknown    (const option::Option& option, bool msg); // unknwn
 option::ArgStatus Required   (const option::Option& option, bool msg); // options that require an argument
 option::ArgStatus Provider   (const option::Option& option, bool msg); // provider options
 option::ArgStatus ContactType(const option::Option& option, bool msg); // contact type options
+option::ArgStatus Verbosity  (const option::Option& option, bool msg); // verbosity level options
 
 // Get the set of valid contact types for validation.
 [[nodiscard]] const std::unordered_set<std::string>& get_valid_contact_types() noexcept;

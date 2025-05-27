@@ -2,6 +2,7 @@
 #define LAHUTA_CLI_GLOBAL_OPTIONS_HPP
 
 #include "commands/command.hpp"
+#include "logging.hpp"
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -16,7 +17,7 @@ namespace global_opts {
 enum GlobalOptionIndex : unsigned {
   Unknown,
   Help,
-  Quiet
+  Verbose
 };
 } // namespace global_opts
 
@@ -26,7 +27,7 @@ using CommandFactory = std::unique_ptr<CliCommand>(*)();
 [[nodiscard]] const std::unordered_map<std::string, CommandFactory>& get_command_registry() noexcept;
 
 // Parse global options and return the subcommand name and remaining arguments. Returns subcommand name if found, or empty string on error/help
-[[nodiscard]] std::string parse_global_options(int argc, char* argv[], bool& global_quiet, int& sub_argc, char**& sub_argv);
+[[nodiscard]] std::string parse_global_options(int argc, char* argv[], lahuta::Logger::LogLevel& log_level, int& sub_argc, char**& sub_argv);
 
 } // namespace lahuta::cli
 

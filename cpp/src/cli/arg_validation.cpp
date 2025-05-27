@@ -41,7 +41,6 @@ option::ArgStatus Provider(const option::Option& option, bool msg) {
   return option::ARG_ILLEGAL;
 }
 
-
 option::ArgStatus ContactType(const option::Option& option, bool msg) {
   if (!option.arg) {
     if (msg) log_error("Option '{}' requires a contact type", HELP_MSG_SUFFIX, opt_name(option));
@@ -54,6 +53,19 @@ option::ArgStatus ContactType(const option::Option& option, bool msg) {
   if (const auto it = valid_types.find(std::string{type}); it != valid_types.end()) return option::ARG_OK;
 
   if (msg) log_error("Invalid contact type '{}'", HELP_MSG_SUFFIX, type);
+  return option::ARG_ILLEGAL;
+}
+
+option::ArgStatus Verbosity(const option::Option& option, bool msg) {
+  if (!option.arg) {
+    if (msg) log_error("Option '{}' requires a verbosity level (0, 1, or 2)", HELP_MSG_SUFFIX, opt_name(option));
+    return option::ARG_ILLEGAL;
+  }
+
+  const std::string_view level{option.arg};
+  if (level == "0" || level == "1" || level == "2") return option::ARG_OK;
+
+  if (msg) log_error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (warnings+), or 2 (info+debug)", HELP_MSG_SUFFIX, level);
   return option::ARG_ILLEGAL;
 }
 
