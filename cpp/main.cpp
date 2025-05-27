@@ -28,7 +28,7 @@ int main(int argc, char const *argv[]) {
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
   std::cout << "Time: " << duration.count() << " us" << std::endl;
 
-  // luni.set_atom_typing_method(ContactComputerType::Arpeggio);
+  luni.set_atom_typing_method(ContactComputerType::Molstar);
   auto start_topology = std::chrono::high_resolution_clock::now();
   if (!luni.build_topology()) {
     std::cerr << "Failed to process file: " << file_name << std::endl;
