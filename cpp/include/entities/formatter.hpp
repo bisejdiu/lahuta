@@ -7,10 +7,10 @@
 #include "records.hpp"
 #include "topology.hpp"
 #include <GraphMol/MonomerInfo.h>
-#include <iostream>
 #include <span.hpp>
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include <iomanip>
 
 // clang-format off
