@@ -242,6 +242,7 @@ target_include_directories(foldseek PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/generated
     ${CMAKE_CURRENT_LIST_DIR}/simd
     ${CMAKE_CURRENT_LIST_DIR}/tmalign
+    $ENV{CONDA_PREFIX}/include
 )
 
 set_source_files_properties(
