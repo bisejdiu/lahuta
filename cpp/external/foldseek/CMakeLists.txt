@@ -210,7 +210,6 @@ add_library(foldseek SHARED
     CacheFriendlyOperations.cpp
     Debug.cpp
     EvalueNeuralNet.cpp
-    GemmiWrapper.cpp
     Indexer.cpp
     KmerGenerator.cpp
     LDDT.cpp
