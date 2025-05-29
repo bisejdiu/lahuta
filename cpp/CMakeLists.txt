@@ -77,15 +77,6 @@ else()
   message(FATAL_ERROR "zlib not found - required for compression")
 endif()
 
-find_package(Boost REQUIRED COMPONENTS iostreams)
-
-if(Boost_FOUND)
-  message(STATUS "Boost found at ${Boost_INCLUDE_DIRS}")
-else()
-  message(FATAL_ERROR "Boost not found!")
-endif()
-
-
 if(NOT DEFINED BOOST_ROOT)
   if(DEFINED ENV{CONDA_PREFIX})
     set(BOOST_ROOT $ENV{CONDA_PREFIX})
