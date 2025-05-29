@@ -77,12 +77,26 @@ else()
   message(FATAL_ERROR "zlib not found - required for compression")
 endif()
 
-if(NOT DEFINED BOOST_ROOT)
-  if(DEFINED ENV{CONDA_PREFIX})
-    set(BOOST_ROOT $ENV{CONDA_PREFIX})
-    else()
-     message(FATAL_ERROR "BOOST_ROOT is not defined. Please set it to the path where Boost is installed.")
-    endif()
+if(DEFINED ENV{BOOST_ROOT} AND NOT DEFINED BOOST_ROOT)
+  set(BOOST_ROOT $ENV{BOOST_ROOT})
+endif()
+
+set(_BOOST_HINTS ${BOOST_ROOT} $ENV{CONDA_PREFIX} /usr/local /opt/homebrew /usr)
+
+find_package(Boost 1.81 REQUIRED
+    COMPONENTS graph
+    HINTS ${_BOOST_HINTS}
+    PATH_SUFFIXES lib64 lib
+)
+
+if(NOT Boost_FOUND)
+  message(FATAL_ERROR
+    "Could not find Boost ≥ 1.81. Tried:\n"
+    "  -DBOOST_ROOT=${BOOST_ROOT}\n"
+    "  $ENV{CONDA_PREFIX}\n"
+    "  /usr/local, /opt/homebrew, /usr\n"
+    "Override with -DBOOST_ROOT=/path/to/boost."
+  )
 endif()
 
 ADD_LIBRARY(lmdb STATIC
@@ -100,10 +114,6 @@ add_subdirectory(external/rdkit)
 add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
-
-# set(CMAKE_BUILD_TYPE Debug)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp
@@ -176,7 +186,7 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only Boost::headers)
 
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include
@@ -210,126 +220,14 @@ if(TARGET Eigen3::Eigen)
   set(LAHUTA_HAS_EIGEN ON)
 endif()
 
-# add_compile_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
-# add_link_options(-fsanitize=${SANITIZER} -fno-omit-frame-pointer)
-
 function(add_lahuta_executable target main_file)
-    add_executable(${target} ${main_file})
+  add_executable(${target} ${main_file})
 
-    if (LAHUTA_HAS_EIGEN)
-        target_link_libraries(${target} PRIVATE Eigen3::Eigen)
-    endif()
+  if (LAHUTA_HAS_EIGEN)
+    target_link_libraries(${target} PRIVATE Eigen3::Eigen)
+  endif()
 
-    target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB spdlog::spdlog_header_only)
+  target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB spdlog::spdlog_header_only)
 endfunction()
 
-# add_executable(lex_parallel main.cpp)
-# if (LAHUTA_HAS_EIGEN)
-#     target_link_libraries(lex_parallel PRIVATE Eigen3::Eigen)
-# endif()
-# target_link_libraries(lex_parallel PUBLIC lahuta_cpp) 
-
-
 add_lahuta_executable(lahuta_demo lahuta_demo.cpp)
-# add_lahuta_executable(lex main.cpp)
-# add_lahuta_executable(lex_ag main_ag.cpp)
-# add_lahuta_executable(lex_parallel main_threads.cpp)
-# add_lahuta_executable(lahuta main_contacts_refactored.cpp)
-# add_lahuta_executable(lex_fseek main_fseek.cpp)
-# add_lahuta_executable(lex_fut main_future.cpp)
-# add_lahuta_executable(lex_align main_align.cpp)
-# add_lahuta_executable(create_db create_db.cpp)
-# add_lahuta_executable(read_db read_db.cpp)
-
-# ### Python bindings ###
-# if (USE_PYTHON)
-#   message(STATUS "Building Python module.")
-#   # CMake >=3.18 has subcomponent Development.Module, scikit-build-core also has it
-#   if (${CMAKE_VERSION} VERSION_LESS 3.18 AND NOT SKBUILD)
-#     find_package(Python ${PYTHON_VERSION} REQUIRED COMPONENTS Interpreter Development)
-#   else()
-#     find_package(Python ${PYTHON_VERSION} REQUIRED COMPONENTS Interpreter Development.Module)
-#   endif()
-# 
-#   # use pybind11-config (if available) to determine pybind11_DIR
-#   execute_process(COMMAND pybind11-config --cmakedir OUTPUT_VARIABLE pybind11_DIR)
-#   string(STRIP "${pybind11_DIR}" pybind11_DIR)
-#   find_package(pybind11 2.6 CONFIG REQUIRED)
-#   message(STATUS "Found pybind11 ${pybind11_VERSION}: ${pybind11_INCLUDE_DIRS}")
-# 
-#   pybind11_add_module(lahuta_py python/at.cpp python/array.cpp python/logger_py.cpp python/contacts.cpp python/py_properties.cpp python/py_align.cpp python/py_te.cpp python/lahuta.cpp)
-# 
-#   if (0) # FIX: STANDALONE_PYTHON_MODULE branch is broken
-#     target_sources(lahuta_py PRIVATE 
-#     $<TARGET_OBJECTS:lahuta_cpp>
-#     )
-#     get_target_property(_lahuta_cpp_libs lahuta_cpp LINK_LIBRARIES)
-#     set_property(TARGET lahuta_py APPEND PROPERTY LINK_LIBRARIES ${_lahuta_cpp_libs})
-#   else()
-#     target_link_libraries(lahuta_py PRIVATE lahuta_cpp)
-#   endif()
-# 
-#   set_property(TARGET lahuta_py PROPERTY OUTPUT_NAME _lahuta)
-#   if(CMAKE_CXX_FLAGS MATCHES "-Wshadow")
-#     target_compile_options(lahuta_py PRIVATE "-Wno-shadow")
-#   endif()
-# 
-#   if (GENERATE_STUBS AND CMAKE_CROSSCOMPILING)
-#     message(WARNING "Stubs cannot be generated when cross-compiling - skipping.")
-#   elseif (GENERATE_STUBS)
-#     set(sep ":")
-#     if (WIN32)
-#       set(sep ";")
-#     endif()
-#     add_custom_command(TARGET lahuta_py POST_BUILD
-#     COMMAND ${CMAKE_COMMAND} -E env
-#          "PYTHONPATH=$<TARGET_FILE_DIR:lahuta_py>${sep}$ENV{PYTHONPATH}"
-#        ${Python_EXECUTABLE} -m pybind11_stubgen _lahuta
-#      COMMAND ${CMAKE_COMMAND} -E touch stubs/py.typed
-#      COMMENT "Generate type stubs with pybind11-stubgen"
-#      BYPRODUCTS stubs/__init__.pyi stubs/_lahuta.pyi stubs/py.typed
-#      VERBATIM)
-#   endif()
-# else()
-#   message(STATUS "Skipping Python module. Add -D USE_PYTHON=1 to build it.")
-# endif()
-# 
-# 
-# ### Installation ###
-# # Python module installation:
-# set(PYTHON_INSTALL_DIR "${CMAKE_BINARY_DIR}/../../lahuta/lib")
-# message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
-# 
-# 
-# if (USE_PYTHON)
-#   if (DEFINED PYTHON_INSTALL_DIR)
-#     message(STATUS "Install directory for Python module: ${PYTHON_INSTALL_DIR}")
-#     set(Python_SITEARCH "${PYTHON_INSTALL_DIR}")
-#   endif()
-#   file(TO_CMAKE_PATH "${Python_SITEARCH}" Python_SITEARCH)
-#   # Using Python_SITEARCH/SITELIB is not good, because they are absolute
-#   # and don't respect CMAKE_INSTALL_PREFIX.
-#   # https://discourse.cmake.org/t/findpython3-how-to-specify-local-installation-directory-for-python-module/3580/5
-#   if (BUILD_SHARED_LIBS AND NOT STANDALONE_PYTHON_MODULE)
-#     if (DEFINED SKBUILD)
-#       # When building via pip, Python_SITEARCH is /tmp.../wheel/platlib,
-#       # different from the actual install path. Best guess:
-#       set(rpath_rel "../../../${CMAKE_INSTALL_LIBDIR}")
-#     else()
-#       file(RELATIVE_PATH rpath_rel "${Python_SITEARCH}" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-#     endif()
-#     # set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "${origin}/${rpath_rel}")
-#     set_target_properties(lahuta_py PROPERTIES INSTALL_RPATH "@loader_path" BUILD_WITH_INSTALL_RPATH TRUE)
-#   endif()
-#   install(TARGETS lahuta_py DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   install(FILES "${CMAKE_BINARY_DIR}/external/foldseek/libfoldseek.dylib" DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   install(FILES "${CMAKE_BINARY_DIR}/external/distopia/libdistopia.dylib" DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   if (GENERATE_STUBS AND NOT CMAKE_CROSSCOMPILING)
-#     install(DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/stubs" DESTINATION "${Python_SITEARCH}" COMPONENT py)
-#   endif()
-# endif()
-# 
-# add_custom_command(TARGET lahuta_py POST_BUILD
-#   COMMAND install_name_tool -add_rpath "@loader_path" $<TARGET_FILE:lahuta_py>
-#   COMMENT "Adding @loader_path rpath to _lahuta module"
-# )
