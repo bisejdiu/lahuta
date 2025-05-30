@@ -134,4 +134,4 @@ int RunCommand::run(int argc, char* argv[]) {
   return 0;
 }
 
-} // namespace lahuta::cli 
+} // namespace lahuta::cli

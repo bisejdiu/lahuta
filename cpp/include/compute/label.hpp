@@ -12,17 +12,9 @@ public:
 
   std::string_view to_string_view() const noexcept { return sv_; }
 
-  bool operator==(ComputationLabel const& o) const noexcept {
-    return sv_ == o.sv_;
-  }
-
-  bool operator!=(ComputationLabel const& o) const noexcept {
-    return sv_ != o.sv_;
-  }
-
-  bool operator< (ComputationLabel const& o) const noexcept {
-    return sv_ < o.sv_;  // lexicographical compare
-  }
+  bool operator==(ComputationLabel const& o) const noexcept { return sv_ == o.sv_; }
+  bool operator!=(ComputationLabel const& o) const noexcept { return sv_ != o.sv_; }
+  bool operator< (ComputationLabel const& o) const noexcept { return sv_ <  o.sv_; } // lexicographical compare
 
 private:
   std::string_view sv_;

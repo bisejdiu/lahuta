@@ -251,8 +251,8 @@ set_source_files_properties(
 )
 
 target_link_libraries(foldseek PRIVATE gemmi_cpp)
-target_link_libraries(foldseek PUBLIC lahuta_shared_headers)
 target_link_libraries(foldseek PRIVATE block_aligner_c)
+target_link_libraries(foldseek PUBLIC lahuta_shared_headers)
 target_link_libraries(foldseek PUBLIC Boost::headers)
 set_property(TARGET foldseek PROPERTY POSITION_INDEPENDENT_CODE ON)
 

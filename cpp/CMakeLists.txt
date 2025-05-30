@@ -1,40 +1,27 @@
 cmake_minimum_required(VERSION 3.15...3.22)
 project(lahuta VERSION 1.0.0 LANGUAGES CXX C)
 
-include(GNUInstallDirs)  # for CMAKE_INSTALL_LIBDIR, etc
+include(GNUInstallDirs)
+include(CheckIncludeFile)
 
-set(HWY_ENABLE_TESTS OFF CACHE BOOL "Enable HWY tests" FORCE)
-set(HWY_ENABLE_EXAMPLES OFF CACHE BOOL "Disable highway examples" FORCE)
+set(HWY_ENABLE_TESTS      OFF CACHE BOOL "Enable HWY tests" FORCE)
+set(HWY_ENABLE_EXAMPLES   OFF CACHE BOOL "Disable highway examples" FORCE)
 set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks" FORCE)
-set(HWY_ENABLE_CONTRIB OFF CACHE BOOL "Disable highway contrib targets" FORCE)
-set(HWY_ENABLE_INSTALL OFF CACHE BOOL "Disable highway install targets" FORCE)
+set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE)
+set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
 
-set(SPDLOG_FMT_EXTERNAL OFF CACHE BOOL "Use bundled fmt")
-set(SPDLOG_BUILD_EXAMPLES OFF  CACHE BOOL "")
-set(SPDLOG_BUILD_TESTS OFF     CACHE BOOL "")
-set(SPDLOG_BUILD_EXTRAS OFF    CACHE BOOL "")
+set(SPDLOG_FMT_EXTERNAL     OFF CACHE BOOL "Use bundled fmt")
+set(SPDLOG_BUILD_EXAMPLES   OFF CACHE BOOL "")
+set(SPDLOG_BUILD_TESTS      OFF CACHE BOOL "")
+set(SPDLOG_BUILD_EXTRAS     OFF CACHE BOOL "")
 set(SPDLOG_BUILD_PERF_TESTS OFF CACHE BOOL "")
 set(SPDLOG_BUILD_HEADER_ONLY ON CACHE BOOL "")
 
-if (DEFINED SKBUILD)  # building with scikit-build-core (pip install)
-  # we set wheel.install-dir="/data" in pyproject.toml,
-  # so here we need to only set paths to /platlib and /scripts
-  set(PYTHON_INSTALL_DIR "${SKBUILD_PLATLIB_DIR}")
-endif()
-
-option(BUILD_SHARED_LIBS "Build shared library" ON)
-option(USE_PYTHON "Build Python bindings" ON)
-
-option(USE_ZLIB_NG "Use zlib-ng instead of zlib" OFF)
-option(FETCH_ZLIB_NG "Download, build (statically) and use zlib-ng" OFF)
-option(INTERNAL_ZLIB "Use subset of zlib distributed with gemmi" OFF)
+option(USE_ZLIB_NG    "Use zlib-ng instead of zlib" OFF)
+option(FETCH_ZLIB_NG  "Download, build (statically) and use zlib-ng" OFF)
+option(INTERNAL_ZLIB  "Use subset of zlib distributed with gemmi" OFF)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
-option(STANDALONE_PYTHON_MODULE "Avoid linking Python module to liblahuta_cpp DLL" ON)
 option(USE_EIGEN3 "Do not use Eigen3" ON)
-
-if (DEFINED Python_EXECUTABLE)
-  set(USE_PYTHON ON CACHE BOOL "Build Python bindings" FORCE)
-endif()
 
 set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_EXTENSIONS OFF)
@@ -42,32 +29,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
-# set(SANITIZER "thread")
-
-if(NOT CMAKE_BUILD_TYPE)
-   set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# set(CMAKE_BUILD_TYPE Release)
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3 -march=native -flto")
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -march=native -flto -ffast-math")
-# set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-# find_library(JEMALLOC_LIB jemalloc REQUIRED)
-
-include(CheckIncludeFile)
-
 if (DEFINED ENV{CXXFLAGS})
   set(USING_ENV_CXXFLAGS ON CACHE BOOL "" FORCE)
 endif()
 
-# If CMAKE_BUILD_TYPE is not set, and CXXFLAGS is not set in the environment,
-# set it to Release. This is to avoid the default Debug build type.
-#if (NOT CMAKE_BUILD_TYPE AND NOT USING_ENV_CXXFLAGS)
-#  set(CMAKE_BUILD_TYPE Release CACHE STRING
-#      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
-#      FORCE)
-#endif()
-#message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+if(NOT CMAKE_BUILD_TYPE)
+   set(CMAKE_BUILD_TYPE Release)
+endif()
 
 # We need to find zlib before adding gemmi so it uses the same zlib
 find_package(ZLIB REQUIRED)
@@ -83,20 +51,12 @@ endif()
 
 set(_BOOST_HINTS ${BOOST_ROOT} $ENV{CONDA_PREFIX} /usr/local /opt/homebrew /usr)
 
-find_package(Boost 1.81 REQUIRED
-    COMPONENTS graph
-    HINTS ${_BOOST_HINTS}
-    PATH_SUFFIXES lib64 lib
-)
+find_package(Boost 1.81 REQUIRED COMPONENTS graph HINTS ${_BOOST_HINTS} PATH_SUFFIXES lib64 lib)
 
 if(NOT Boost_FOUND)
-  message(FATAL_ERROR
-    "Could not find Boost ≥ 1.81. Tried:\n"
-    "  -DBOOST_ROOT=${BOOST_ROOT}\n"
-    "  $ENV{CONDA_PREFIX}\n"
-    "  /usr/local, /opt/homebrew, /usr\n"
-    "Override with -DBOOST_ROOT=/path/to/boost."
-  )
+  message(FATAL_ERROR "Could not find Boost≥1.81."
+  "Tried:\n -DBOOST_ROOT=${BOOST_ROOT}\n $ENV{CONDA_PREFIX}\n /usr/local, /opt/homebrew, /usr\n"
+  "Set BOOST_ROOT to the correct path or install Boost.")
 endif()
 
 ADD_LIBRARY(lmdb STATIC
@@ -193,7 +153,7 @@ target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/external
   ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include
-  ${CMAKE_SOURCE_DIR}/external/gemmi/third_party   # For zlib headers
+  ${CMAKE_SOURCE_DIR}/external/gemmi/third_party
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party/zlib
   ${CMAKE_SOURCE_DIR}/external/distopia/include
   ${CMAKE_SOURCE_DIR}/external/lmdb
