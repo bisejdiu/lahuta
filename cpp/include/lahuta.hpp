@@ -35,46 +35,35 @@ public:
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
 
   std::string get_file_name() const { return file_name_; };
-  const Topology &get_topology()     const { return *get_topology_ptr(); }
-  const Topology *get_topology_ptr() const {
+  const Topology &get_topology() const {
     if (!topology) {
-      Logger::get_logger()->error("Topology not initialized. Cannot get topology pointer.");
-      return nullptr;
+      throw std::logic_error("Topology not built");
     }
-    return topology.get();
+    return *topology;
   }
-  // implementation of release_topology() so we can allow external code to request ownershipd of the topology
+
   std::unique_ptr<Topology> release_topology() {
     if (!topology) {
       Logger::get_logger()->error("Topology not initialized. Cannot release topology.");
       return nullptr;
     }
-    topology_built_ = false; // reset the built state
+    topology_built_ = false;
     return std::move(topology);
   }
 
   bool has_topology_built() const { return topology_built_; }
 
-  RDKit::RWMol &get_molecule() { return *mol; }
-  const RDKit::RWMol &get_molecule() const { return *mol; }
-
-  auto *get_info(int idx) { return static_cast<RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
-  const auto *get_info(int idx) const { return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
-
-  RDKit::Conformer &get_conformer(int id = -1) { return mol->getConformer(id); }
-  const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
-
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
 
   /// Can be called using the topology
-  void assign_molstar_atom_types()  { 
-    if (topology) { topology->assign_molstar_typing(); } 
+  void assign_molstar_atom_types()  {
+    if (topology) { topology->assign_molstar_typing(); }
     else { Logger::get_logger()->error("Topology not initialized. Cannot assign Molstar atom types."); }
   }
 
   void assign_arpeggio_atom_types() {
-    if (topology) { topology->assign_arpeggio_atom_types(); } 
+    if (topology) { topology->assign_arpeggio_atom_types(); }
     else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
   }
 
@@ -96,8 +85,8 @@ public:
 
   /// Check if a specific computation is enabled
   bool is_topology_computation_enabled(TopologyComputation comp) const {
-    if (topology) { 
-      return topology->is_computation_enabled(comp); 
+    if (topology) {
+      return topology->is_computation_enabled(comp);
     }
     Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
     return false;
@@ -105,7 +94,7 @@ public:
 
   /// Execute a specific computation with its dependencies
   bool execute_topology_computation(TopologyComputation comp) {
-    if (topology) { 
+    if (topology) {
       return topology->execute_computation(comp); 
     }
     Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
@@ -139,15 +128,19 @@ public:
   const std::vector<std::string> resnames() const;
   const std::vector<std::string> chainlabels() const;
 
+  const auto &get_molecule() const { return *mol; }
+  const auto &get_conformer(int id = -1) const { return mol->getConformer(id); }
+  const auto *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
+
+  const auto *get_info(int idx) const {
+    return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo());
+  }
+
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return get_conformer(confId).getPositions();
   }
 
   friend class Contacts;
-
-  // FIX: add helper functions to get topology information
-  const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
-  RDKit::Atom *get_atom(int idx) { return mol->getAtomWithIdx(idx); }
 
   /// very rough estimate of the memory size
   size_t total_size() const;
