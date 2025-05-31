@@ -83,14 +83,6 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
   }
 }
 
-const Topology *Luni::get_topology_ptr() const {
-  if (!topology) {
-    Logger::get_logger()->error("Cannot return topology, because no topology has been built.");
-    throw std::runtime_error("Topology not built");
-  }
-  return &topology.value();
-}
-
 size_t Luni::total_size() const {
   size_t size = sizeof(Luni);
 

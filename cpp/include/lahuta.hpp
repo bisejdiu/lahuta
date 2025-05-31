@@ -31,10 +31,28 @@ public:
   static Luni create(const gemmi::Structure &st);
   static Luni create(std::shared_ptr<RDKit::RWMol> mol) { return Luni(mol); }
 
+  // FIX: no need to use optional here
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
 
   std::string get_file_name() const { return file_name_; };
-  const Topology &get_topology() const { return *get_topology_ptr(); }
+  const Topology &get_topology()     const { return *get_topology_ptr(); }
+  const Topology *get_topology_ptr() const {
+    if (!topology) {
+      Logger::get_logger()->error("Topology not initialized. Cannot get topology pointer.");
+      return nullptr;
+    }
+    return topology.get();
+  }
+  // implementation of release_topology() so we can allow external code to request ownershipd of the topology
+  std::unique_ptr<Topology> release_topology() {
+    if (!topology) {
+      Logger::get_logger()->error("Topology not initialized. Cannot release topology.");
+      return nullptr;
+    }
+    topology_built_ = false; // reset the built state
+    return std::move(topology);
+  }
+
   bool has_topology_built() const { return topology_built_; }
 
   RDKit::RWMol &get_molecule() { return *mol; }
@@ -110,37 +128,15 @@ public:
     }
   }
 
-  //! Returns the atoms of the molecule.
-  const auto atoms() const { return mol->atoms(); }
-
-  //! Returns the number of atoms in the molecule.
   const auto n_atoms() const { return mol->getNumAtoms(); }
-
-  //! Returns the names of the atoms.
-  const std::vector<std::string> names() const;
-
-  //! Returns the symbols of the atoms.
-  const std::vector<std::string> symbols() const;
-
-  //! Returns the residue indices of the atoms.
-  const std::vector<int> indices() const;
-
-  //! Returns the atomic numbers of the atoms.
-  const std::vector<int> atomic_numbers() const;
-
-  //! Returns the elements of the atoms.
-  const std::vector<std::string> elements() const;
-
-  //! Returns the residue names of the atoms.
-  const std::vector<std::string> resnames() const;
-
-  //! Returns the residue ids of the atoms.
-  const std::vector<int> resids() const;
-
-  //! Returns the residue indices of the atoms.
+  const std::vector<int> indices()    const;
+  const std::vector<int> resids()     const;
   const std::vector<int> resindices() const;
-
-  //! Returns the chain labels of the atoms.
+  const std::vector<int> atomic_numbers() const;
+  const std::vector<std::string> names()    const;
+  const std::vector<std::string> symbols()  const;
+  const std::vector<std::string> elements() const;
+  const std::vector<std::string> resnames() const;
   const std::vector<std::string> chainlabels() const;
 
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
@@ -158,18 +154,16 @@ public:
 
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) 
-    : mol(valid_mol), topology(std::make_optional<Topology>(valid_mol)), topology_built_(false) {}
+    : mol(valid_mol), topology(std::make_unique<Topology>(valid_mol)), topology_built_(false) {}
 
-  // Ensure topology is initialized for configuration
   void ensure_topology_initialized() {
     if (!topology) {
       Logger::get_logger()->debug("Initializing topology for configuration");
-      topology = std::make_optional<Topology>(mol);
+      topology = std::make_unique<Topology>(mol);
     }
   }
 
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
-  const Topology* get_topology_ptr() const;
 
   template <typename T>
   std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
@@ -178,9 +172,9 @@ private:
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
 
-
+  // FIX: It should not be necessary to have a default constructed RWMol here
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  std::optional<Topology> topology;
+  std::unique_ptr<Topology> topology;
   bool topology_built_ = false;
 
   std::string file_name_;
