@@ -10,9 +10,6 @@
 #include <zlib.h>
 
 // clang-format off
-// FIX: How do we read back the gzipped data? Probably should not be bothered.
-// The user can decompress manually. Binary is also weird as it overlaps with lmdb.
-
 namespace lahuta {
 
 template<

@@ -10,18 +10,18 @@ set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks" FORCE)
 set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE)
 set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
 
-set(SPDLOG_FMT_EXTERNAL     OFF CACHE BOOL "Use bundled fmt")
-set(SPDLOG_BUILD_EXAMPLES   OFF CACHE BOOL "")
-set(SPDLOG_BUILD_TESTS      OFF CACHE BOOL "")
-set(SPDLOG_BUILD_EXTRAS     OFF CACHE BOOL "")
-set(SPDLOG_BUILD_PERF_TESTS OFF CACHE BOOL "")
-set(SPDLOG_BUILD_HEADER_ONLY ON CACHE BOOL "")
+set(SPDLOG_FMT_EXTERNAL      OFF CACHE BOOL "Use bundled fmt")
+set(SPDLOG_BUILD_EXAMPLES    OFF CACHE BOOL "")
+set(SPDLOG_BUILD_TESTS       OFF CACHE BOOL "")
+set(SPDLOG_BUILD_EXTRAS      OFF CACHE BOOL "")
+set(SPDLOG_BUILD_PERF_TESTS  OFF CACHE BOOL "")
+set(SPDLOG_BUILD_HEADER_ONLY ON  CACHE BOOL "")
 
 option(USE_ZLIB_NG    "Use zlib-ng instead of zlib" OFF)
 option(FETCH_ZLIB_NG  "Download, build (statically) and use zlib-ng" OFF)
 option(INTERNAL_ZLIB  "Use subset of zlib distributed with gemmi" OFF)
 option(GENERATE_STUBS "Generate Python type stubs" OFF)
-option(USE_EIGEN3 "Do not use Eigen3" ON)
+option(USE_EIGEN3     "Do not use Eigen3" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 # set(CMAKE_CXX_EXTENSIONS OFF)
@@ -74,6 +74,10 @@ add_subdirectory(external/rdkit)
 add_subdirectory(external/foldseek)
 add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
+
+# set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0")
 
 add_library(lahuta_cpp STATIC
             src/bonds.cpp
@@ -142,7 +146,7 @@ add_library(lahuta_cpp STATIC
 
             src/cli/arg_validation.cpp
             src/cli/global_options.cpp
-            src/commands/run.cpp
+            src/commands/contacts.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -190,4 +194,4 @@ function(add_lahuta_executable target main_file)
   target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB spdlog::spdlog_header_only)
 endfunction()
 
-add_lahuta_executable(lahuta_demo lahuta_demo.cpp)
+add_lahuta_executable(lahuta main.cpp)

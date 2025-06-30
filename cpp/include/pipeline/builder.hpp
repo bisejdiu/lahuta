@@ -42,7 +42,7 @@ struct pipelayer {
         });
 
         // One sink, use it. Many, fork.
-        // We reference the caller‑owned SinkStage objects, so their lifetime is the caller's.
+        // We reference the caller owned SinkStage objects, so their lifetime is the caller's.
         auto pipe_tail = [&] {
           if constexpr (sizeof...(sinks) == 1)
             return (sinks, ...);
@@ -69,7 +69,7 @@ struct pipelayer {
   }
 };
 
-// entry‑point
+// entry point
 inline pipelayer make_pipeline() { return {}; }
 
 } // namespace lahuta::pipeline::dsl

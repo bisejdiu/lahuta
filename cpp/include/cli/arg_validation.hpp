@@ -8,8 +8,8 @@
 
 namespace lahuta::cli::validate {
 
-inline constexpr std::string_view HELP_MSG_SUFFIX       = " (run lahuta -h for more information)";
-inline constexpr std::string_view RUN_HELP_MSG_SUFFIX   = " (run lahuta run -h for more information)";
+inline constexpr std::string_view HELP_MSG_SUFFIX = " (run lahuta -h for more information)";
+inline constexpr std::string_view CONTACTS_HELP_MSG_SUFFIX = " (run lahuta contacts -h for more information)";
 
 option::ArgStatus Unknown    (const option::Option& option, bool msg); // unknwn options
 option::ArgStatus Required   (const option::Option& option, bool msg); // options that require an argument

@@ -12,7 +12,7 @@
 namespace lahuta::sources {
 namespace fs = std::filesystem;
 
-// batch‑oriented directory iterator.
+// batch-oriented directory iterator.
 class DirectorySource {
 public:
   using value_type = std::string;

@@ -30,17 +30,17 @@ struct ContactRecipe {
   template<typename PredA, typename PredB, typename Tester>
   constexpr ContactRecipe(Params p, PredA pa, PredB pb, Tester ts ) noexcept
     : params{p}, pred_a{+pa}, pred_b{+pb}, tester{+ts} {
-      static_assert(std::is_convertible_v<PredA, bool (*)(const RecA&)>, "PredA must be capture‑less");
-      static_assert(std::is_convertible_v<PredB, bool (*)(const RecB&)>, "PredB must be capture‑less");
-      static_assert(std::is_convertible_v<Tester, InteractionType (*)(std::uint32_t,std::uint32_t, float,const ContactContext&)>, "Tester must be capture‑less");
+      static_assert(std::is_convertible_v<PredA, bool (*)(const RecA&)>, "PredA must be captureless");
+      static_assert(std::is_convertible_v<PredB, bool (*)(const RecB&)>, "PredB must be captureless");
+      static_assert(std::is_convertible_v<Tester, InteractionType (*)(std::uint32_t,std::uint32_t, float,const ContactContext&)>, "Tester must be captureless");
     }
 
   template<typename Pred, typename Tester>
   constexpr ContactRecipe(Params p, Pred pred, Tester ts ) noexcept
     : params{p}, pred_a{+pred}, pred_b{+pred}, tester{+ts}, mode{RecipeMode::Self} {
-        static_assert(std::is_convertible_v<Pred, bool (*)(const RecA&)>, "Pred must be capture‑less");
-        static_assert(std::is_convertible_v<Tester, InteractionType (*)(std::uint32_t,std::uint32_t, float,const ContactContext&)>, "Tester must be capture‑less");
-        static_assert(std::is_same_v<RecA,RecB>, "One‑predicate constructor is only valid when RecA == RecB");
+        static_assert(std::is_convertible_v<Pred, bool (*)(const RecA&)>, "Pred must be captureless");
+        static_assert(std::is_convertible_v<Tester, InteractionType (*)(std::uint32_t,std::uint32_t, float,const ContactContext&)>, "Tester must be captureless");
+        static_assert(std::is_same_v<RecA,RecB>, "One-predicate constructor is only valid when RecA == RecB");
     }
 };
 

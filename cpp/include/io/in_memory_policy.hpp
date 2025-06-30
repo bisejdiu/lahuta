@@ -17,13 +17,17 @@ private:
 public:
   using ptr_type = Ptr;
 
-  explicit InMemoryPolicy(std::size_t max_items = 1'000'000)
+  //
+  // max_items is not enforced. From a CLI perspective, this policy is nonsensical.
+  // Once we revisit other language bindings, we will have to think about how to handle this.
+  //
+  explicit InMemoryPolicy(std::size_t max_items = 50'000)
     : max_items_(max_items) {}
 
   void append(ptr_type &&v)      { buf_.emplace_back(std::move(v)); }
   void append(const ptr_type &v) { buf_.emplace_back(v); }
 
-  std::size_t append_size(const ptr_type &) const { 
+  std::size_t append_size(const ptr_type &) const {
     return sizeof(ptr_type); // NOTE: we add just the size of the pointer, not the underlying object
   }
 
@@ -39,6 +43,6 @@ private:
   std::size_t           max_items_;
 };
 
-} // namespace lahuta::collector 
+} // namespace lahuta::collector
 
 #endif // LAHUTA_IO_IN_MEMORY_POLICY_HPP

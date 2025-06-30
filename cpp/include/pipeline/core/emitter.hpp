@@ -24,7 +24,7 @@ template<> struct IEmitter<void> {
     virtual ~IEmitter() = default;
 };
 
-// no‑op emitters for ct plumbing
+// no-op emitters for ct plumbing
 template<typename T> struct NullEmit       : IEmitter<T>    { void emit(typename IEmitter<T>::ptr_type) override {} };
 template<>           struct NullEmit<void> : IEmitter<void> { void emit() override {} };
 

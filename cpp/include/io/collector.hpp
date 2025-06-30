@@ -20,7 +20,7 @@
 // clang-format off
 namespace lahuta {
 
-// global back‑pressure counters (see fix note above)
+// global backpressure counters (see fix note above)
 inline std::atomic<std::size_t> g_bytes_in_flight{0};
 inline std::size_t HIGH_WATER = 512ul * 1024 * 1024; // 512MB
 inline std::size_t LOW_WATER  = 300ul * 1024 * 1024; // 300MB // NOTE: not used

@@ -1,17 +1,18 @@
-#include "cli/global_options.hpp"
 #include "cli/global_flags.hpp"
+#include "cli/global_options.hpp"
 #include "logging.hpp"
 
 using namespace lahuta::cli;
 
+// clang-format off
 int main(int argc, char* argv[]) {
   try {
-    // xxtract global flags and get clean argv for subcommands
+    // extract global flags and get clean argv for subcommands
     auto g = extract_global_flags(argc, argv);
 
     lahuta::Logger::get_instance().set_log_level(g.log_level);
 
-    if (g.help_requested || g.tail.empty()) {
+    if (g.help_requested) {
       print_global_help();
       return 0;
     }

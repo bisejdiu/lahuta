@@ -1,6 +1,6 @@
 #include "cli/global_options.hpp"
 #include "cli/arg_validation.hpp"
-#include "commands/run.hpp"
+#include "commands/contacts.hpp"
 #include "logging.hpp"
 #include <iostream>
 #include <string_view>
@@ -10,9 +10,11 @@ namespace lahuta::cli {
 namespace global_opts {
 const option::Descriptor usage[] = {
   {GlobalOptionIndex::Unknown, 0, "", "", validate::Ignore,
-   "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n\n"
-   "Commands:\n"
-   "  run <input_file> [options]    Compute inter-atomic contacts\n\n"
+   "Usage: lahuta [global-options] [subcommand-options]\n\n"
+   "Lahuta computes inter-atomic contacts using high-performance pipeline architecture.\n"
+   "The 'contacts' subcommand is used by default when no subcommand is specified.\n\n"
+   "Available subcommands:\n"
+   "  contacts [options]            Compute inter-atomic contacts (default)\n\n"
    "Main Options:"},
   {GlobalOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help,  -h                  \tPrint this help message and exit."},
@@ -27,7 +29,7 @@ const option::Descriptor usage[] = {
 
 [[nodiscard]] const std::unordered_map<std::string, CommandFactory>& get_command_registry() noexcept {
   static const std::unordered_map<std::string, CommandFactory> registry = {
-    {"run", &RunCommand::create}
+    {"contacts", &ContactsCommand::create}
   };
   return registry;
 }
@@ -77,7 +79,7 @@ void print_global_help() {
         return {};
       }
     } else if (arg == "-h" || arg == "--help") {
-      // Help option - already handled above, but include here for completeness
+      // Help option, already handled above
       option::printUsage(std::cout, global_opts::usage);
       return {};
     } else if (arg.empty() || arg[0] != '-') {
@@ -92,11 +94,22 @@ void print_global_help() {
   }
 
   if (subcommand_start >= argc) {
-    lahuta::Logger::get_logger()->error("Subcommand is required{}", validate::HELP_MSG_SUFFIX);
-    return {};
+    // No subcommand provided then default to "contacts"
+    sub_argc = argc;
+    sub_argv = argv;
+    return "contacts";
   }
 
   const std::string subcommand{argv[subcommand_start]}; // get subcommand
+
+  // Check if this is actually a subcommand or just an option for the default contacts command
+  const auto& registry = get_command_registry();
+  if (registry.find(subcommand) == registry.end()) {
+    // Not a recognized subcommand, treat as options for default "contacts" command
+    sub_argc = argc;
+    sub_argv = argv;
+    return "contacts";
+  }
 
   // prep args for subcommand
   sub_argc = argc - subcommand_start - 1;

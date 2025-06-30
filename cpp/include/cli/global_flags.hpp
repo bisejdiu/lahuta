@@ -18,12 +18,12 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
   GlobalFlags g;
   g.tail.reserve(argc);
 
-  // subcommand check
-  bool has_subcommand = false;
+  // check subcommand
+  bool has_explicit_subcommand = false;
   for (int i = 1; i < argc; ++i) {
     std::string_view arg{argv[i]};
     if (!arg.empty() && arg[0] != '-') {
-      has_subcommand = true;
+      if (arg == "contacts") { has_explicit_subcommand = true; }
       break;
     }
   }
@@ -41,8 +41,8 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
 
       continue;           // swallow both tokens
     } else if (arg == "-h" || arg == "--help") {
-      // **only** treat help as global if there's no subcommand
-      if (!has_subcommand) {
+      // only treat help as global if there's no explicit subcommand
+      if (!has_explicit_subcommand) {
         g.help_requested = true;
         continue;           // swallow help flag
       }
@@ -50,6 +50,14 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
     }
     g.tail.push_back(argv[i]);
   }
+
+  // if no subcommand was explicitly provided, default to "contacts"
+  if (!has_explicit_subcommand && !g.tail.empty()) {
+    g.tail.insert(g.tail.begin(), const_cast<char*>("contacts"));
+  } else if (!has_explicit_subcommand && g.tail.empty()) {
+    g.tail.push_back(const_cast<char*>("contacts"));
+  }
+
   return g;
 }
 
