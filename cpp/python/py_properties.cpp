@@ -8,7 +8,6 @@
 
 #include "array.hpp"
 #include "contacts.hpp"
-#include "entities.hpp"
 #include "lahuta.hpp"
 #include "luni_processor.hpp"
 #include "properties/analyzer.hpp"

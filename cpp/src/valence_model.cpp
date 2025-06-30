@@ -1,5 +1,5 @@
 #include "valence_model.hpp"
-#include "contacts/utils.hpp"
+#include <GraphMol/MonomerInfo.h>
 
 namespace lahuta {
 

@@ -21,7 +21,8 @@ constexpr double get_atom_geometry_angle(HybridizationType hybridization) {
 }
 
 // FIX: Should have consistency in the variable names and ordering
-std::optional<std::pair<int, int>> get_bonded_neighbor_indices(
+std::optional<std::pair<int, int>> // FIX: alias what std::pair<int, int> means
+get_bonded_neighbor_indices(
   const RDKit::Atom &atom,
   const RDKit::RWMol &mol,
   bool ignore_hydrogens = true

@@ -17,7 +17,6 @@ Contact::Contact(EntityID e1, EntityID e2, float dist, InteractionType t) : dist
 }
 
 ContactSet::ContactSet(std::initializer_list<Contact> contacts) : contacts_(contacts)  { ensure_sorted(); }
-ContactSet::ContactSet(std::vector<Contact> contacts) : contacts_(std::move(contacts)) { ensure_sorted(); }
 
 void ContactSet::insert(const Contact& contact) {
   contacts_.push_back(contact);

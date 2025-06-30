@@ -109,9 +109,9 @@ def metalic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["metal"]["di
     """
     metal_indices = ns.atoms.select_atoms("element " + " ".join(METALS)).indices
 
-    acceptor_metal = ns.type_filter("hbond_acceptor", 1).index_filter(metal_indices, 2).distance_filter(distance)
+    acceptor_metal = ns.type_filter("HbondAcceptor", 1).index_filter(metal_indices, 2).distance_filter(distance)
 
-    metal_acceptor = ns.type_filter("hbond_acceptor", 2).index_filter(metal_indices, 1).distance_filter(distance)
+    metal_acceptor = ns.type_filter("HbondAcceptor", 2).index_filter(metal_indices, 1).distance_filter(distance)
 
     return acceptor_metal + metal_acceptor
 
@@ -142,9 +142,9 @@ def carbonyl_neighbors(ns: NeighborPairs, distance: float = CONTACTS["carbonyl"]
         (NeighborPairs): A NeighborPairs object containing only carbonyl contacts.
     """
     distance *= distance
-    contacts_atom12 = ns.type_filter("carbonyl_oxygen", 1).type_filter("carbonyl_carbon", 2).distance_filter(distance)
+    contacts_atom12 = ns.type_filter("CarbonylOxygen", 1).type_filter("CarbonylCarbon", 2).distance_filter(distance)
 
-    contacts_atom21 = ns.type_filter("carbonyl_carbon", 1).type_filter("carbonyl_oxygen", 2).distance_filter(distance)
+    contacts_atom21 = ns.type_filter("CarbonylCarbon", 1).type_filter("CarbonylOxygen", 2).distance_filter(distance)
 
     return contacts_atom12 + contacts_atom21
 
@@ -172,9 +172,9 @@ def ionic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["ionic"]["dist
 
     """
     distance *= distance
-    contacts_atom12 = ns.type_filter("pos_ionisable", 1).type_filter("neg_ionisable", 2).distance_filter(distance)
+    contacts_atom12 = ns.type_filter("PositiveCharge", 1).type_filter("NegativeCharge", 2).distance_filter(distance)
 
-    contacts_atom21 = ns.type_filter("neg_ionisable", 1).type_filter("pos_ionisable", 2).distance_filter(distance)
+    contacts_atom21 = ns.type_filter("NegativeCharge", 1).type_filter("PositiveCharge", 2).distance_filter(distance)
 
     return contacts_atom12 + contacts_atom21
 
@@ -201,10 +201,10 @@ def aromatic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["aromatic"]
         (NeighborPairs): A NeighborPairs object containing only aromatic contacts.
     """
     distance *= distance
-    return ns.type_filter("aromatic", 1).type_filter("aromatic", 2).distance_filter(distance)
+    return ns.type_filter("Aromatic", 1).type_filter("Aromatic", 2).distance_filter(distance)
 
 
-def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydrophobic"]["distance"]) -> NeighborPairs:
+def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["Hydrophobic"]["distance"]) -> NeighborPairs:
     """Handle the computation of hydrophobic contacts in a molecular system.
 
     Hydrophobic contacts are interactions between hydrophobic atoms in a molecular system.
@@ -227,11 +227,11 @@ def hydrophobic_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hydroph
         (NeighborPairs): A NeighborPairs object containing only hydrophobic contacts.
     """
     distance *= distance
-    n1 = ns.type_filter("hydrophobic", 1)
-    n2 = ns.type_filter("hydrophobic", 2)
+    n1 = ns.type_filter("Hydrophobic", 1)
+    n2 = ns.type_filter("Hydrophobic", 2)
     n = (n1 & n2).distance_filter(distance)
     return n
-    return ns.type_filter("hydrophobic", 1).type_filter("hydrophobic", 2).distance_filter(distance)
+    return ns.type_filter("Hydrophobic", 1).type_filter("Hydrophobic", 2).distance_filter(distance)
 
 
 def vdw_neighbors(ns: NeighborPairs, vdw_comp_factor: float = 0.1, remove_clashes: bool = True) -> NeighborPairs:
@@ -298,11 +298,11 @@ def hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = None) 
     """
     handler = _handler or HBondHandler(ns)
 
-    hbond_atom12 = ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2)
+    hbond_atom12 = ns.type_filter("HbondDonor", 1).type_filter("HbondAcceptor", 2)
     hbond_atom12 = handler.hbond_distance_filter(hbond_atom12, partner=2)
     hbond_atom12 = handler.hbond_angle_filter(hbond_atom12, partner=1)
 
-    hbond_atom21 = ns.type_filter("hbond_donor", 2).type_filter("hbond_acceptor", 1)
+    hbond_atom21 = ns.type_filter("HbondDonor", 2).type_filter("HbondAcceptor", 1)
     hbond_atom21 = handler.hbond_distance_filter(hbond_atom21, partner=1)
     hbond_atom21 = handler.hbond_angle_filter(hbond_atom21, partner=2)
 
@@ -331,11 +331,11 @@ def weak_hbond_neighbors(ns: NeighborPairs, _handler: Optional[HBondHandler] = N
         (NeighborPairs): A NeighborPairs object containing only weak hydrogen bonds.
     """
     handler = _handler or HBondHandler(ns)
-    hbond_atom12 = ns.type_filter("hbond_acceptor", 1).type_filter("weak_hbond_donor", 2)
+    hbond_atom12 = ns.type_filter("HbondAcceptor", 1).type_filter("WeakHbondDonor", 2)
     hbond_atom12 = handler.hbond_distance_filter(hbond_atom12, partner=1)
     hbond_atom12 = handler.hbond_angle_filter(hbond_atom12, partner=2, weak=True)
 
-    hbond_atom21 = ns.type_filter("hbond_acceptor", 2).type_filter("weak_hbond_donor", 1)
+    hbond_atom21 = ns.type_filter("HbondAcceptor", 2).type_filter("WeakHbondDonor", 1)
     hbond_atom21 = handler.hbond_distance_filter(hbond_atom21, partner=2)
     hbond_atom21 = handler.hbond_angle_filter(hbond_atom21, partner=1, weak=True)
 
@@ -364,9 +364,9 @@ def polar_hbond_neighbors(ns: NeighborPairs, distance: float = CONTACTS["hbond"]
         (NeighborPairs): A NeighborPairs object containing only polar hydrogen bonds.
     """
     distance *= distance
-    hbond_atom12 = ns.type_filter("hbond_donor", 1).type_filter("hbond_acceptor", 2).distance_filter(distance)
+    hbond_atom12 = ns.type_filter("HbondDonor", 1).type_filter("HbondAcceptor", 2).distance_filter(distance)
 
-    hbond_atom21 = ns.type_filter("hbond_donor", 2).type_filter("hbond_acceptor", 1).distance_filter(distance)
+    hbond_atom21 = ns.type_filter("HbondDonor", 2).type_filter("HbondAcceptor", 1).distance_filter(distance)
 
     return hbond_atom12 + hbond_atom21
 
@@ -393,8 +393,8 @@ def weak_polar_hbond_neighbors(
         (NeighborPairs): A NeighborPairs object containing only weak polar hydrogen bonds.ff
     """
     distance *= distance
-    hbond_atom12 = ns.type_filter("hbond_acceptor", 1).type_filter("weak_hbond_donor", 2).distance_filter(distance)
+    hbond_atom12 = ns.type_filter("HbondAcceptor", 1).type_filter("WeakHbondDonor", 2).distance_filter(distance)
 
-    hbond_atom21 = ns.type_filter("hbond_acceptor", 2).type_filter("weak_hbond_donor", 1).distance_filter(distance)
+    hbond_atom21 = ns.type_filter("HbondAcceptor", 2).type_filter("WeakHbondDonor", 1).distance_filter(distance)
 
     return hbond_atom12 + hbond_atom21

@@ -97,7 +97,7 @@ public:
     return node.res.template get_value<R>();
   }
 
-  /// "fire-and-forget" computations  (R == void)  -> returns bool
+  /// "fire-and-forget" computations  (R == void) returns bool
   template <typename R = void, std::enable_if_t<std::is_void_v<R>, int> = 0>
   bool run(ComputationLabel root) { // target label
     run_impl(root);
@@ -122,7 +122,7 @@ public:
     auto &node = registry[idx];
     if (!node.done || !node.res.is_success()) return std::nullopt;
 
-    try { return node.res.template get_value<R>(); } 
+    try { return node.res.template get_value<R>(); }
     catch (...) { return std::nullopt; }
   }
 

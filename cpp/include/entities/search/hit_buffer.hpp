@@ -8,16 +8,21 @@
 #include <utility>
 #include <vector>
 
-// clang-format off
+namespace lahuta { struct ContactContext; }
+
 namespace lahuta::search {
 
 template<typename T, typename = void>
 struct is_hit_buffer : std::false_type {};
 
-template<typename T>
-struct is_hit_buffer<T,
-  std::void_t<decltype(std::declval<T&>().push(0u, 0u, 0.f, std::declval<int>()))>>
-  : std::true_type {};
+// clang-format on
+template <typename T>
+struct is_hit_buffer<
+    T, std::void_t<decltype(std::declval<T &>().push(
+           0u, 0u, 0.0f,
+           std::declval<std::function<InteractionType(uint32_t, uint32_t, float, const ContactContext &)>>(),
+           std::declval<const ContactContext &>()))>> : std::true_type {};
+// clang-format off
 
 template<typename T>
 constexpr bool is_hit_buffer_v = is_hit_buffer<T>::value;
@@ -40,9 +45,9 @@ class HitBuffer {
 
 public:
   template<typename Tester>
-  void push(std::uint32_t i, std::uint32_t j, float d2, Tester&& f) {
+  void push(std::uint32_t i, std::uint32_t j, float d2, Tester&& f, const ContactContext& ctx) {
 
-    InteractionType t = f(i, j, d2);
+    InteractionType t = f(i, j, d2, ctx);
     if (t == InteractionType::None) return;
 
     //

@@ -38,7 +38,7 @@ struct RingComputationParams : public ParameterBase<RingComputationParams> {
 
 struct AtomTypingParams : public ParameterBase<AtomTypingParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::ATOM_TYPING;
-  bool use_molstar = false;  // Whether to use Mol* atom typing method
+  bool use_molstar = true;
 };
 
 } // namespace lahuta::topology

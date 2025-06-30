@@ -70,7 +70,7 @@ public:
   /// Compute the total size of several specified properties
   template <PropertyKey... Keys>
   size_t total_size() const {
-    return (size_of_property<Keys>() + ...); // fold expression
+    return (size_of_property<Keys>() + ...);
   }
 
   /// Compute the total size of all properties stored in the result.

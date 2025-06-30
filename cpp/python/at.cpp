@@ -4,7 +4,8 @@
 #include <pybind11/stl.h>
 
 #include "at.hpp"
-#include "atom_types.hpp"
+#include "typing/types.hpp"
+#include "typing/flags.hpp"
 
 using namespace lahuta;
 namespace Flags = AtomTypeFlags;
@@ -12,25 +13,61 @@ namespace py = pybind11;
 
 // clang-format off
 
+inline AtomType string_to_atom_type(const std::string &flag_name) {
+  static const std::unordered_map<std::string, AtomType> stringToEnum = {
+      {"None",              AtomType::None},
+      {"HbondAcceptor",     AtomType::HbondAcceptor},
+      {"HbondDonor",        AtomType::HbondDonor},
+      {"WeakHbondAcceptor", AtomType::WeakHbondAcceptor},
+      {"WeakHbondDonor",    AtomType::WeakHbondDonor},
+      {"PositiveCharge",    AtomType::PositiveCharge},
+      {"NegativeCharge",    AtomType::NegativeCharge},
+      {"CarbonylOxygen",    AtomType::CarbonylOxygen},
+      {"CarbonylCarbon",    AtomType::CarbonylCarbon},
+      {"Aromatic",          AtomType::Aromatic},
+      {"Hydrophobic",       AtomType::Hydrophobic},
+      {"XBondAcceptor",     AtomType::XBondAcceptor},
+      {"XbondDonor",        AtomType::XbondDonor},
+      {"IonicTypePartner",  AtomType::IonicTypePartner},
+      {"DativeBondPartner", AtomType::DativeBondPartner},
+      {"TransitionMetal",   AtomType::TransitionMetal},
+      {"IonicTypeMetal",    AtomType::IonicTypeMetal},
+      {"Invalid",           AtomType::Invalid}};
+
+  auto it = stringToEnum.find(flag_name);
+  if (it != stringToEnum.end()) {
+    return it->second;
+  }
+  throw std::invalid_argument("Invalid AtomType flag name: " + flag_name);
+}
+
+inline AtomType get_enum_as_string(std::string flag_name) { return string_to_atom_type(flag_name); }
+
+
 void bind_atom_types(py::module &m) {
   auto ATFlags = m.def_submodule("Flags", "Bindings for common utilities");
   py::enum_<AtomType> AtomType(m, "AtomType");
 
   AtomType
-    .value("NONE",                AtomType::NONE)
-    .value("HBOND_ACCEPTOR",      AtomType::HBOND_ACCEPTOR)
-    .value("HBOND_DONOR",         AtomType::HBOND_DONOR)
-    .value("WEAK_HBOND_ACCEPTOR", AtomType::WEAK_HBOND_ACCEPTOR)
-    .value("WEAK_HBOND_DONOR",    AtomType::WEAK_HBOND_DONOR)
-    .value("POS_IONISABLE",       AtomType::POS_IONISABLE)
-    .value("NEG_IONISABLE",       AtomType::NEG_IONISABLE)
-    .value("CARBONYL_OXYGEN",     AtomType::CARBONYL_OXYGEN)
-    .value("CARBONYL_CARBON",     AtomType::CARBONYL_CARBON)
-    .value("AROMATIC",            AtomType::AROMATIC)
-    .value("HYDROPHOBIC",         AtomType::HYDROPHOBIC)
-    .value("XBOND_ACCEPTOR",      AtomType::XBOND_ACCEPTOR)
-    .value("XBOND_DONOR",         AtomType::XBOND_DONOR)
-    .value("INVALID",             AtomType::INVALID);
+    .value("None",              AtomType::None)
+    .value("HbondAcceptor",     AtomType::HbondAcceptor)
+    .value("HbondDonor",        AtomType::HbondDonor)
+    .value("WeakHbondAcceptor", AtomType::WeakHbondAcceptor)
+    .value("WeakHbondDonor",    AtomType::WeakHbondDonor)
+    .value("PositiveCharge",    AtomType::PositiveCharge)
+    .value("NegativeCharge",    AtomType::NegativeCharge)
+    .value("CarbonylOxygen",    AtomType::CarbonylOxygen)
+    .value("CarbonylCarbon",    AtomType::CarbonylCarbon)
+    .value("Aromatic",          AtomType::Aromatic)
+    .value("Hydrophobic",       AtomType::Hydrophobic)
+    .value("XBondAcceptor",     AtomType::XBondAcceptor)
+    .value("XbondDonor",        AtomType::XbondDonor)
+    .value("IonicTypePartner",  AtomType::IonicTypePartner)
+    .value("DativeBondPartner", AtomType::DativeBondPartner)
+    .value("TransitionMetal",   AtomType::TransitionMetal)
+    .value("IonicTypeMetal",    AtomType::IonicTypeMetal)
+    .value("Invalid",           AtomType::Invalid);
+
 
   AtomType
     .def(py::self |  py::self)
@@ -39,7 +76,6 @@ void bind_atom_types(py::module &m) {
     .def(py::self |= py::self)
     .def(py::self &= py::self)
     .def(py::self ^= py::self)
-    .def(~py::self)
     .def_property_readonly("value", [](const enum AtomType flag) { return atom_type_to_string(flag); })
     .def("split",                   [](const enum AtomType flag) { return Flags::split(flag); })
     // See: https://github.com/pybind/pybind11/issues/2537#issuecomment-702941967

@@ -1,10 +1,10 @@
 """Defines a class for computing hydrophobic contacts using a class-based approach.
-The HydrophobicContacts class inherits from the base ContactAnalysis class and 
+The HydrophobicContacts class inherits from the base ContactAnalysis class and
 implements the `compute` method for hydrophobic contact computation.
 
 Class:
     HydrophobicContacts(ContactAnalysis): Computes hydrophobic contacts.
-                                       
+
 
 Example:
     luni = Luni(...)
@@ -53,7 +53,7 @@ class HydrophobicContacts(ContactAnalysis):
         ```
     """
 
-    distance = CONTACTS["hydrophobic"]["distance"]
+    distance = CONTACTS["Hydrophobic"]["distance"]
 
     def compute(self) -> NeighborPairs:
         """Compute hydrophobic contacts based on the neighbor pairs.

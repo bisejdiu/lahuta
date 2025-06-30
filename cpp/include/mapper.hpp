@@ -2,7 +2,7 @@
 #define LAHUTA_MAPPER_HPP
 
 #include "GraphMol/Atom.h"
-#include <iostream>
+#include <entities/records.hpp>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -11,10 +11,10 @@
 #include "lahuta.hpp"
 #include "logging.hpp"
 #include "matcher.hpp"
-#include "neighbors.hpp"
 #include "seq.hpp"
 #include "topology.hpp"
 #include "backtrace.hpp"
+#include "entities/contact.hpp"
 
 #include <algorithm>
 #include <memory>
@@ -48,18 +48,31 @@ public:
 
   // FIX: get_entity_atoms does not belong here
   std::vector<const RDKit::Atom *> get_entity_atoms(const EntityID &entity) const {
-    switch (get_entity_type(entity)) {
-      case EntityType::Group: {
-        const GroupEntity &group = luni_ptr->get_entity<GroupEntity>(entity);
-        return group.atoms;
+    switch (entity.kind()) {
+      case Kind::Group: {
+        const auto &group = luni_ptr->get_topology().records<GroupRec>()[entity.index()];
+        auto atom_indices = group.atoms;
+        std::vector<const RDKit::Atom *> atoms;
+        atoms.reserve(atom_indices.size());
+        for (const auto atom_index : atom_indices) {
+          // atoms.push_back(luni_ptr->get_molecule().getAtomWithIdx(atom_index));
+          atoms.push_back(&atom_index.get());
+        }
+        return atoms;
       }
-      case EntityType::Atom: {
-        const RDKit::Atom &atom = luni_ptr->get_entity<RDKit::Atom>(entity);
-        return {&atom};
+      case Kind::Atom: {
+        const auto atom_idx = luni_ptr->get_topology().records<AtomRec>()[entity.index()].atom.getIdx();
+        return {luni_ptr->get_molecule().getAtomWithIdx(atom_idx)};
       }
-      case EntityType::Ring: {
-        const RingEntity &ring = luni_ptr->get_entity<RingEntity>(entity);
-        return ring.atoms;
+      case Kind::Ring: {
+        const auto &ring = luni_ptr->get_topology().records<RingRec>()[entity.index()];
+        std::vector<const RDKit::Atom *> atoms;
+        atoms.reserve(ring.atoms.size());
+        for (const auto atom_index : ring.atoms) {
+          // atoms.push_back(luni_ptr->get_molecule().getAtomWithIdx(atom_index));
+          atoms.push_back(&atom_index.get());
+        }
+        return atoms;
       }
     }
   }
@@ -91,11 +104,9 @@ private:
       if (letter == 'M') {
         residue_is_mapped = true;
       } else if (type_ == MappingType::Query && letter == 'D') {
-        // skip all deletions.
         parser.skip('D');
         if (parser.has_next() && parser.current() == 'M') residue_is_mapped = true;
       } else if (type_ == MappingType::Target && letter == 'I') {
-        // skip all insertions.
         parser.skip('I');
         if (parser.has_next() && parser.current() == 'M') residue_is_mapped = true;
       }
@@ -122,7 +133,7 @@ struct ContactEquivKey {
   std::vector<unsigned int> e1_mapped_ids;
   std::vector<unsigned int> e2_mapped_ids;
 
-  InteractionType contact_type = InteractionType::Any;
+  InteractionType contact_type = InteractionType::Generic;
 };
 
 struct ContactEquivKeyHash {
@@ -270,7 +281,7 @@ public:
     te = std::make_unique<TopologicalEquivalency>(qm, tm, cfg);
   }
 
-  int evaluate(const Contacts &c1, Mapping m1, const Contacts &c2, Mapping m2) {
+  int evaluate(const ContactSet &c1, Mapping m1, const ContactSet &c2, Mapping m2) {
     if (m1 == m2) throw std::runtime_error("Mapping not sensible between same object type");
     // FIX: could also make an initialization parameter
     if (!te) throw std::runtime_error("No alignment result has been mapped.");
@@ -278,14 +289,14 @@ public:
     // build an index for c1
     std::unordered_map<ContactEquivKey, std::vector<const Contact *>, ContactEquivKeyHash, ContactEquivKeyEqual> index;
 
-    index.reserve(c1.interactions.size());
-    for (auto &contact1 : c1.interactions) {
+    index.reserve(c1.data().size());
+    for (auto &contact1 : c1.data()) {
       ContactEquivKey key = make_equiv_key(contact1, m1);
       index[key].push_back(&contact1);
     }
 
     int count = 0;
-    for (auto &contact2 : c2.interactions) {
+    for (auto &contact2 : c2.data()) {
 
       auto [e1_atoms, e2_atoms] = get_entity_atoms(contact2, m2);
 
@@ -423,8 +434,8 @@ private:
   }
 
   bool is_same_resolution(const Contact &c1, const Contact &c2) const {
-    if (get_entity_type(c1.entity1) != get_entity_type(c2.entity1)) return false;
-    if (get_entity_type(c1.entity2) != get_entity_type(c2.entity2)) return false;
+    if (c1.lhs.kind() != c2.lhs.kind()) return false;
+    if (c1.rhs.kind() != c2.rhs.kind()) return false;
     return true;
   }
 
@@ -433,9 +444,9 @@ private:
   get_entity_atoms(const Contact &c, Mapping m) const {
     switch (m) {
       case Mapping::Query:
-        return std::make_tuple(qm.get_entity_atoms(c.entity1), qm.get_entity_atoms(c.entity2));
+        return std::make_tuple(qm.get_entity_atoms(c.lhs), qm.get_entity_atoms(c.rhs));
       case Mapping::Target:
-        return std::make_tuple(tm.get_entity_atoms(c.entity1), tm.get_entity_atoms(c.entity2));
+        return std::make_tuple(tm.get_entity_atoms(c.lhs), tm.get_entity_atoms(c.rhs));
       default:
         throw std::invalid_argument("Unsupported MappingType");
     }

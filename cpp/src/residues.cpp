@@ -67,7 +67,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
 
   std::vector<Residue> residues;
   for (const auto &atom : mol.atoms()) {
-    if (atom->getAtomicNum() == 1) continue;
+    // if (atom->getAtomicNum() == 1) continue;
 
     auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
     if (!info) continue;

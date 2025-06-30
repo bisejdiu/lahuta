@@ -62,7 +62,7 @@ CONTACTS: dict[str, dict[str, float]] = {
         "angle theta 2 max degree": 170.0,
     },
     "ionic": {"distance": 4.0},
-    "hydrophobic": {"distance": 4.5},
+    "Hydrophobic": {"distance": 4.5},
     "carbonyl": {"distance": 3.6},
     "metal": {"distance": 2.8},
 }
@@ -81,3 +81,4 @@ MDA_SUPPORTED_FORMATS: set[str] = set(MDAParsers.keys())
 """
 Type: `set`: set of file formats that are supported by MDAnalysis. 
 """
+
