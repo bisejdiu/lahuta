@@ -71,8 +71,8 @@ add_subdirectory(external/spdlog)
 # gemmi first to inherit its zlib configuration
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
-add_subdirectory(external/foldseek)
-add_dependencies(foldseek gemmi_cpp)
+# add_subdirectory(external/foldseek)
+# add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
 # set(CMAKE_BUILD_TYPE Debug)
@@ -150,12 +150,12 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit foldseek libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only Boost::headers)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only Boost::headers)
 
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/external
-  ${CMAKE_SOURCE_DIR}/external/foldseek
+  # ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/gemmi/include
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party/zlib

@@ -11,6 +11,10 @@
 #include "serialization/formats.hpp"
 #include "tasks/contacts_task.hpp"
 
+#define STB_SPRINTF_IMPLEMENTATION
+#include "gemmi/third_party/stb_sprintf.h"
+
+#include <cstdarg>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -110,45 +114,66 @@ template<> struct CollectorTraits<OutFmt::Text, true>  {
   static constexpr std::string_view ext = ".txt.gz";
 };
 
-// Logging sink for stdout output
+namespace {
+  std::string format_string(const char* format, ...) {
+    char buffer[2048];
+    va_list args;
+    va_start(args, format);
+    stbsp_vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    return std::string(buffer);
+  }
+
+  // Extract just the filename from a full path
+  std::string extract_filename(const std::string& filepath) {
+    size_t pos = filepath.find_last_of("/\\");
+    return (pos == std::string::npos) ? filepath : filepath.substr(pos + 1);
+  }
+}
+
 class LoggingSink final : public ICollectorSink {
 public:
   void emit(ptrT p) override {
     if (!p) return;
 
     const auto& result = *p;
+    std::string filename = extract_filename(result.file_path);
 
+    std::string output;
     std::string contact_type_str = (result.contact_type == InteractionType::None)
       ? "All"
       : interaction_type_to_string(result.contact_type);
 
-    Logger::get_logger()->info("Contact Results for {}", result.file_path);
-    Logger::get_logger()->info("Provider: {}, Type: {}, Success: {}", 
-                              result.provider == tasks::ContactProvider::Arpeggio ? "Arpeggio" : "MolStar",
-                              contact_type_str,
-                              result.success ? "Yes" : "No");
+    output += format_string("Contact Results for %s", filename.c_str()) + "\n";
+    output += format_string("Provider: %s, Type: %s, Success: %s",
+                           result.provider == tasks::ContactProvider::Arpeggio ? "Arpeggio" : "MolStar",
+                           contact_type_str.c_str(),
+                           result.success ? "Yes" : "No") + "\n";
 
     if (!result.success) {
-      Logger::get_logger()->info("Processing failed for this file");
+      output += format_string("%s: Processing failed", filename.c_str()) + "\n";
     } else if (result.contacts.empty()) {
-      Logger::get_logger()->info("No contacts found");
+      output += format_string("%s: No contacts found", filename.c_str()) + "\n";
     } else {
-      Logger::get_logger()->info("Found {} contacts:", result.contacts.size());
+      output += format_string("%s: Found %zu contacts:", filename.c_str(), result.contacts.size()) + "\n";
       for (const auto& contact : result.contacts) {
         if (result.topology) {
           std::string lhs_entity = ContactTableFormatter::format_entity_compact(*result.topology, contact.lhs);
           std::string rhs_entity = ContactTableFormatter::format_entity_compact(*result.topology, contact.rhs);
-          Logger::get_logger()->info("  {} <-> {} (distance: {:.3f}, type: {})", 
-                                    lhs_entity, rhs_entity, contact.distance, 
-                                    interaction_type_to_string(contact.type));
+          output += format_string("%s:   %s <-> %s (distance: %.3f, type: %s)",
+                                 filename.c_str(), lhs_entity.c_str(), rhs_entity.c_str(),
+                                 contact.distance, interaction_type_to_string(contact.type).c_str()) + "\n";
         } else {
-          Logger::get_logger()->info("  {} <-> {} (distance: {:.3f}, type: {})", 
-                                    contact.lhs.to_string(), contact.rhs.to_string(), contact.distance,
-                                    interaction_type_to_string(contact.type));
+          output += format_string("%s:   %s <-> %s (distance: %.3f, type: %s)",
+                                 filename.c_str(), contact.lhs.to_string().c_str(),
+                                 contact.rhs.to_string().c_str(), contact.distance,
+                                 interaction_type_to_string(contact.type).c_str()) + "\n";
         }
       }
     }
-    Logger::get_logger()->info("");
+    output += "\n";
+
+    std::cout << output << std::flush;
   }
 
   ~LoggingSink() override = default;
@@ -221,7 +246,7 @@ namespace contacts_opts {
 const option::Descriptor usage[] = {
   {ContactsOptionIndex::Unknown, 0, "", "", validate::Unknown,
    "Usage: lahuta contacts [options]\n\n"
-   "Compute inter-atomic contacts using high-performance pipeline architecture.\n\n"
+   "Compute inter-atomic contacts.\n\n"
    "Source Options (choose one):"},
   {ContactsOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help, -h                   \tPrint this help message and exit."},
@@ -240,8 +265,7 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::Provider, 0, "p", "provider", validate::Provider,
    "  --provider, -p <provider>    \tContact provider: 'molstar' or 'arpeggio' (default: molstar)."},
   {ContactsOptionIndex::InteractionType, 0, "i", "interaction", validate::ContactType,
-   "  --interaction, -i <type>     \tInteraction type: 'hbond', 'hydrophobic', 'ionic', etc.\n"
-   "                               \t(default: hbond)."},
+   "  --interaction, -i <type>     \tInteraction type: 'hbond', 'hydrophobic', 'ionic', etc.\n"},
   {0, 0, "", "", option::Arg::None,
    "\nOutput Options:"},
   {ContactsOptionIndex::OutputJson, 0, "", "json", option::Arg::None,
