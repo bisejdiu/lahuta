@@ -44,12 +44,11 @@ bool ValenceModel::is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &ato
     return true;
   }
 
-  // If atom is N or O, process neighboring atoms
+  // If atom is N or O, inspect its directly bonded neighbors
   if (is_hetero) {
-    auto neighbors = mol.getAtomNeighbors(&atom);
-    for (auto nbr = neighbors.first; nbr != neighbors.second; ++nbr) {
-      const RDKit::Atom *neighbor = mol.getAtomWithIdx(*nbr);
-      if (is_conjugated_and_not_excluded(*neighbor, mol)) {
+    for (const auto &bond : mol.atomBonds(&atom)) {
+      const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
+      if (neighbor && is_conjugated_and_not_excluded(*neighbor, mol)) {
         return true;
       }
     }

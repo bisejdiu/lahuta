@@ -32,6 +32,7 @@ public:
     : mol_(mol), engine_(std::make_unique<topology::TopologyEngine>(mol)) {}
 
   const Residues &get_residues() const { return *engine_->get_data().residues; }
+  Residues &get_residues() { return *engine_->get_data().residues; }
 
   template<typename Rec>
   constexpr const std::vector<Rec>& records() const noexcept;
@@ -78,8 +79,11 @@ public:
   const RingRec&  ring (std::uint32_t idx) const;
   const GroupRec& group(std::uint32_t idx) const;
 
+  RDKit::RWMol& molecule() { return *mol_; }
   const RDKit::RWMol& molecule() const { return *mol_; }
   const RDKit::Conformer& conformer() const { return mol_->getConformer(); }
+
+  auto& get_engine() { return *engine_; }
   const auto& get_engine() const { return *engine_; }
 
   template <Kind K>

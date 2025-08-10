@@ -1,6 +1,7 @@
 #include "cli/global_options.hpp"
 #include "cli/arg_validation.hpp"
 #include "commands/contacts.hpp"
+#include "commands/createdb.hpp"
 #include "logging.hpp"
 #include <iostream>
 #include <string_view>
@@ -14,7 +15,8 @@ const option::Descriptor usage[] = {
    "Lahuta computes inter-atomic contacts using high-performance pipeline architecture.\n"
    "The 'contacts' subcommand is used by default when no subcommand is specified.\n\n"
    "Available subcommands:\n"
-   "  contacts [options]            Compute inter-atomic contacts (default)\n\n"
+   "  contacts [options]            Compute inter-atomic contacts (default)\n"
+   "  createdb [options]            Create database from structure files\n\n"
    "Main Options:"},
   {GlobalOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help,  -h                  \tPrint this help message and exit."},
@@ -29,7 +31,8 @@ const option::Descriptor usage[] = {
 
 [[nodiscard]] const std::unordered_map<std::string, CommandFactory>& get_command_registry() noexcept {
   static const std::unordered_map<std::string, CommandFactory> registry = {
-    {"contacts", &ContactsCommand::create}
+    {"contacts", &ContactsCommand::create},
+    {"createdb", &CreateDbCommand::create}
   };
   return registry;
 }

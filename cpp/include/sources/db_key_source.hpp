@@ -17,8 +17,6 @@ public:
 
   explicit DBKeySource(LMDBDatabase &database, std::size_t batch_size = 1024)
     : db_(database), batch_size_(batch_size) {
-
-    Logger::get_logger()->info("DBKeySource: reading keys from database with batch_size={}", batch_size_);
     load_next_batch();
   }
 
@@ -28,6 +26,8 @@ public:
 
     return current_batch_[current_index_++];
   }
+
+  [[nodiscard]] std::size_t size() const noexcept { return current_batch_.size(); }
 
 private:
   bool load_next_batch() {
@@ -51,7 +51,7 @@ private:
           return false; // empty db
         }
       } else {
-        // Start after the last key we processed
+        // start after the last key we processed
         key = last_key_;
         if (!cursor.get(key, data, MDB_SET)) {
           cursor.close();
@@ -59,7 +59,7 @@ private:
           return false; // should not happen?!
         }
 
-        // Move to the next key
+        // go to the next key
         if (!cursor.get(key, data, MDB_NEXT)) {
           cursor.close();
           txn.abort();

@@ -6,6 +6,7 @@
 #include "models/rings.hpp"
 #include "models/ssbonds.hpp"
 #include "models/tables.hpp"
+#include <logging.hpp>
 #include <vector>
 
 // clang-format off
@@ -46,6 +47,7 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       unsigned int atom_number = StandardAminoAcidAtomicNumbers[atom_name[0]];
       int ih = entry.ih[local_atom_index];
       int at = entry.at[local_atom_index];
+      int hyb = entry.hyb[local_atom_index];
 
       if (atom_number == 16 && aa[0] == 'C') { // CYS (not MET)
           sulphur_atom_indices.push_back(atom_idx);
@@ -53,7 +55,6 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
       // FIX: it seems we need to create an empty atom and set the atomic number
       auto *atom = atom_pool->createAtom();
-      atom->setIdx(atom_idx);
       atom->setAtomicNum(atom_number);
       atom->setMonomerInfo(info_pool->createAtomInfo(
                 entry.atoms[local_atom_index],
@@ -64,6 +65,7 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
       atom->setNumCompImplicitHs(ih);
       atom->setCompAtomType(at);
+      atom->setHybridization(static_cast<RDKit::Atom::HybridizationType>(hyb));
 
       mol->addAtom(atom, false, true);
 
@@ -87,6 +89,11 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       auto *bond = bond_pool->createBond(ring.back(), ring.front(), RDKit::Bond::AROMATIC);
       bonds.push_back(mol->addBond(bond, true));
       if (skip_first == 1) ring.erase(ring.begin());
+
+      // mark atoms as aromatic
+      for (int atom_global_idx : ring) {
+        mol->getAtomWithIdx(atom_global_idx)->setIsAromatic(true);
+      }
 
       aromatic_atom_indices.reserve(ring.size());
       aromatic_bond_indices.reserve(bonds.size());
@@ -113,28 +120,6 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     }
   }
 
-  // add final OXT atom
-  auto entry_ = StandardAminoAcidDataTable[sequence.back()[0]];
-  RDKit::Atom* oxt_atom = atom_pool->createAtom();
-  oxt_atom->setAtomicNum(8);
-  oxt_atom->setIdx(atom_idx);
-  oxt_atom->setMonomerInfo(info_pool->createAtomInfo(
-      "OXT",
-      atom_idx + 1,
-      entry_.name,
-      sequence.size() + 1));
-
-  // add OXT, and set the number of implicit Hs for OXT and the first N atom
-  oxt_atom->setNumCompImplicitHs(0);
-  oxt_atom->setCompAtomType(9217);
-  mol->getAtomWithIdx(0)->setNumCompImplicitHs(3);
-  mol->addAtom(oxt_atom, false, true);
-
-  // set all atom positions
-  conf.reserve(num_atoms);
-  conf.setAllAtomPositions(std::move(P.coords));
-  mol->addConformer(&conf, true);
-
   // add bonds
   int residue_start_idx = 0;
   for (int residue = 0; residue < sequence.size(); ++residue) {
@@ -158,6 +143,54 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
     residue_start_idx += entry.size;
   }
+
+  // Add inter-residue peptide bonds (C-N bonds between consecutive residues)
+  residue_start_idx = 0;
+  for (int residue = 0; residue < sequence.size() - 1; ++residue) {
+    const auto &aa = sequence[residue];
+    const auto &entry = StandardAminoAcidDataTable[aa[0]];
+
+    int current_c_idx = residue_start_idx + 2;  // C is always at position 2
+    int next_n_idx = residue_start_idx + entry.size;  // N of next residue (position 0)
+
+    auto *peptide_bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
+    mol->addBond(peptide_bond, true);
+
+    residue_start_idx += entry.size;
+  }
+
+  // add final OXT atom
+  auto entry_ = StandardAminoAcidDataTable[sequence.back()[0]];
+  RDKit::Atom* oxt_atom = atom_pool->createAtom();
+  oxt_atom->setAtomicNum(8);
+  oxt_atom->setMonomerInfo(info_pool->createAtomInfo(
+      "OXT",
+      atom_idx + 1,
+      entry_.name,
+      sequence.size()));
+
+  // add OXT, and set the number of implicit Hs for OXT and the first N atom
+  oxt_atom->setNumCompImplicitHs(0);
+  oxt_atom->setCompAtomType(9217);
+  oxt_atom->setHybridization(RDKit::Atom::SP2);
+  mol->getAtomWithIdx(0)->setNumCompImplicitHs(3);
+  mol->addAtom(oxt_atom, false, true);
+
+  // set all atom positions
+  conf.reserve(num_atoms);
+  conf.setAllAtomPositions(std::move(P.coords));
+  mol->addConformer(&conf, true);
+
+  // Add C-OXT bond (carbonyl carbon of last residue to OXT)
+  auto last_entry = StandardAminoAcidDataTable[sequence.back()[0]];
+  int last_residue_c_idx = (num_atoms - 1) - last_entry.size + 2;  // C is at position 2 in all AA
+  int oxt_atom_idx = num_atoms - 1;  // OXT is the last atom (index num_atoms - 1)
+  auto *c_oxt_bond = bond_pool->createBond(last_residue_c_idx, oxt_atom_idx, RDKit::Bond::SINGLE);
+  mol->addBond(c_oxt_bond, true);
+
+  // set the first atom (N of first residue) to tetrahedral geometry
+  mol->getAtomWithIdx(0)->setHybridization(RDKit::Atom::SP3);
+  mol->getAtomWithIdx(0)->setNumCompImplicitHs(3);
 
   // handle disulfide bonds, and bonded S atoms
   auto disulfide_pairs = find_disulfide_bonds(sulphur_atom_indices, conf.getPositions());
@@ -190,7 +223,6 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   const size_t num_atoms = P.coords.size();
   const size_t num_residues = sequence.size();
 
-  // memory pools
   auto *info_pool = PoolFactory<InfoPool>::getFreshPoolForCurrentThread();
   auto *atom_pool = PoolFactory<AtomPool>::getFreshPoolForCurrentThread();
   auto *bond_pool = PoolFactory<BondPool>::getFreshPoolForCurrentThread();
@@ -216,6 +248,7 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   aromatic_bond_indices.reserve(num_residues / 7);
   sulphur_atom_indices.reserve(64);
 
+  // collect edges for the CSR builder
   std::vector<std::pair<size_t, size_t>> edge_list;
   std::vector<RDKit::Bond*> edge_props;
   edge_list.reserve(expected_bond_count);
@@ -233,6 +266,7 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       const char *atom_name = entry.atoms[local_atom_index];
       const int ih = entry.ih[local_atom_index];
       const int at = entry.at[local_atom_index];
+      const int hyb = entry.hyb[local_atom_index];
       int atom_number = StandardAminoAcidAtomicNumbers[atom_name[0]];
 
       auto *atom = atom_pool->createAtom();
@@ -248,6 +282,7 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
       atom->setNumCompImplicitHs(ih);
       atom->setCompAtomType(at);
+      atom->setHybridization(static_cast<RDKit::Atom::HybridizationType>(hyb));
       atom->setIdx(atom_idx);
 
       if (atom_number == 16 && aa[0] == 'C') { // CYS sulfur
@@ -260,37 +295,31 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
     const AminoAcidEdges& edges = StandardAminoAcidBondTable[aa[0]];
 
-    int first_bond_idx = edge_props.size();
     for (size_t j = 0; j < edges.size; ++j) {
       const auto& edge = edges.edges[j];
       int atom1_idx = residue_start_idx + edge.i;
       int atom2_idx = residue_start_idx + edge.j;
 
+      edge_list.emplace_back(static_cast<size_t>(atom1_idx), static_cast<size_t>(atom2_idx));
       auto bond = bond_pool->createBond(atom1_idx, atom2_idx, edge.order);
-      bond->setIdx(edge_props.size());
-
-      edge_list.emplace_back(atom1_idx, atom2_idx);
       edge_props.push_back(bond);
     }
 
-    // generic lambda
-    auto process_ring = [&aromatic_atom_indices, &aromatic_bond_indices, residue_start_idx, first_bond_idx]
-                      (const auto& atom_indices, const auto& bond_indices) {
+    auto process_ring = [&aromatic_atom_indices, &vertices, residue_start_idx]
+                      (const auto& atom_indices, const auto& /*bond_indices*/) {
         std::vector<int> ring_atom_indices;
-        std::vector<int> ring_bond_indices;
 
         // map predefined aromatic atom indices to actual atom indices
         for (int idx : atom_indices) {
             ring_atom_indices.push_back(residue_start_idx + idx);
         }
 
-        // find bond indices
-        for (size_t i = 0; i < atom_indices.size(); ++i) {
-            ring_bond_indices.push_back(first_bond_idx + bond_indices[i]);
-        }
-
         aromatic_atom_indices.push_back(ring_atom_indices);
-        aromatic_bond_indices.push_back(ring_bond_indices);
+
+        // mark atoms as aromatic
+        for (int atom_global_idx : ring_atom_indices) {
+          vertices[static_cast<size_t>(atom_global_idx)]->setIsAromatic(true);
+        }
     };
 
     switch (aa[0]) {
@@ -311,6 +340,24 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     }
   }
 
+  // Add inter-residue peptide bonds (C-N bonds between consecutive residues)
+  int residue_start_idx = 0;
+  for (int residue_idx = 0; residue_idx < num_residues - 1; ++residue_idx) {
+    const auto &aa = sequence[residue_idx];
+    const auto &entry = StandardAminoAcidDataTable[aa[0]];
+
+    int current_c_idx = residue_start_idx + 2;  // C is always at position 2
+    int next_n_idx = residue_start_idx + entry.size;  // N of next residue (position 0)
+
+    edge_list.emplace_back(static_cast<size_t>(current_c_idx), static_cast<size_t>(next_n_idx));
+    {
+      auto bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
+      edge_props.push_back(bond);
+    }
+
+    residue_start_idx += entry.size;
+  }
+
   // Add terminal OXT atom
   auto last_entry = StandardAminoAcidDataTable[sequence.back()[0]];
   RDKit::Atom* oxt_atom = atom_pool->createAtom();
@@ -323,9 +370,23 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       num_residues));
   oxt_atom->setNumCompImplicitHs(0);
   oxt_atom->setCompAtomType(9217);
+  oxt_atom->setHybridization(RDKit::Atom::SP2);
   oxt_atom->setIdx(atom_idx);
 
   vertices.push_back(oxt_atom);
+
+  // the first atom (N of first residue) gets 3 implicit Hs and tetrahedral geometry
+  vertices.front()->setHybridization(RDKit::Atom::SP3);
+  vertices.front()->setNumCompImplicitHs(3);
+
+  // Add C-OXT bond (carbonyl carbon of last residue to OXT)
+  int last_residue_c_idx = atom_idx - last_entry.size + 2;  // C is at position 2 in all AA
+  edge_list.emplace_back(static_cast<size_t>(last_residue_c_idx), static_cast<size_t>(atom_idx));
+  {
+    auto bond = bond_pool->createBond(last_residue_c_idx, atom_idx, RDKit::Bond::SINGLE);
+    edge_props.push_back(bond);
+  }
+
   // for the first atom, set implicit Hs to 3
   vertices.front()->setNumCompImplicitHs(3);
 
@@ -333,19 +394,42 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   conf.reserve(num_atoms);
   conf.setAllAtomPositions(std::move(P.coords));
 
-  // disulfide bonds
+  // Add disulfide bonds to edge list
   auto disulfide_pairs = find_disulfide_bonds(sulphur_atom_indices, conf.getPositions());
   for (const auto &pair : disulfide_pairs) {
-    RDKit::Bond* bond = bond_pool->createBond(pair.first, pair.second, RDKit::Bond::SINGLE);
-    bond->setIdx(edge_props.size());
-
-    auto it = std::lower_bound(edge_list.begin(), edge_list.end(), std::make_pair(pair.first, pair.second));
-    edge_list.insert(it, std::make_pair(pair.first, pair.second));
+    edge_list.emplace_back(static_cast<size_t>(pair.first), static_cast<size_t>(pair.second));
+    auto bond = bond_pool->createBond(pair.first, pair.second, RDKit::Bond::SINGLE);
     edge_props.push_back(bond);
+  }
+
+  // Assign a single canonical index per logical bond before CSR build
+  for (size_t i = 0; i < edge_props.size(); ++i) {
+    if (edge_props[i]) edge_props[i]->setIdx(static_cast<unsigned int>(i));
   }
 
   mol = std::make_shared<RDKit::RWMol>(vertices, edge_list, edge_props, GraphType::CSRMolGraph);
   mol->addConformer(&conf, true);
+
+  // Build ring bond indices against the final CSR graph order
+  aromatic_bond_indices.clear();
+  aromatic_bond_indices.reserve(aromatic_atom_indices.size());
+  for (const auto &ring_atoms : aromatic_atom_indices) {
+    std::vector<int> ring_bonds;
+    const size_t n = ring_atoms.size();
+    if (n < 3) { aromatic_bond_indices.push_back(ring_bonds); continue; }
+    for (size_t i = 0; i < n; ++i) {
+      int u = ring_atoms[i];
+      int v = ring_atoms[(i + 1) % n];
+      const RDKit::Bond *b = mol->getBondBetweenAtoms(u, v);
+      if (b) {
+        ring_bonds.push_back(static_cast<int>(b->getIdx()));
+      } else {
+        Logger::get_logger()->warn("build_model_topology_csr: No bond found between atoms {} and {} in ring", u, v);
+        ring_bonds.push_back(-1);
+      }
+    }
+    aromatic_bond_indices.push_back(std::move(ring_bonds));
+  }
 
   for (const auto &pair : disulfide_pairs) {
     // Correct the implicit Hs from S atoms
@@ -364,12 +448,9 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   }
   mol->getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
   mol->getRingInfo()->addAllRings(aromatic_atom_indices, aromatic_bond_indices);
-
 }
 
-// FIX: we don't need to generate an RDKit molecule here, we can use a dummy one
 bool mock_build_model_topology(const ModelParserResult &P) {
-
   static const double MIN_COORD = -100000.0;
   static const double MAX_COORD =  100000.0;
 

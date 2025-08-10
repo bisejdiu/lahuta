@@ -2,24 +2,20 @@
 #include "cli/arg_validation.hpp"
 #include "logging.hpp"
 
+#include "db/db.hpp"
 #include "entities/formatter.hpp"
 #include "io/collector.hpp"
 #include "io/file_backend.hpp"
 #include "io/file_spill_policy.hpp"
 #include "io/gzip_file_spill_policy.hpp"
+#include "models/factory.hpp"
 #include "pipeline/dsl.hpp"
 #include "serialization/formats.hpp"
 #include "tasks/contacts_task.hpp"
+#include "tasks/model_db_writer.hpp"
 
 #define STB_SPRINTF_IMPLEMENTATION
 #include "gemmi/third_party/stb_sprintf.h"
-
-#include <cstdarg>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <variant>
-#include <vector>
 
 // clang-format off
 namespace lahuta::cli {
@@ -30,8 +26,14 @@ using ContactsRes = tasks::ContactsTask::result_type;
 using ptrT = std::shared_ptr<const ContactsRes>;
 using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
 
+static void initialize_factories(int num_threads) {
+  lahuta::InfoPoolFactory::initialize(num_threads);
+  lahuta::BondPoolFactory::initialize(num_threads);
+  lahuta::AtomPoolFactory::initialize(num_threads);
+}
+
 struct ContactsOptions {
-  enum class SourceMode { Directory, Vector, FileList };
+  enum class SourceMode { Directory, Vector, FileList, Database };
 
   SourceMode source_mode = SourceMode::Directory;
   std::string directory_path;
@@ -39,6 +41,7 @@ struct ContactsOptions {
   bool recursive = true;
   std::vector<std::string> file_vector;
   std::string file_list_path;
+  std::string database_path;
 
   tasks::ContactProvider provider = tasks::ContactProvider::MolStar;
   InteractionType interaction_type = InteractionType::None;
@@ -58,6 +61,7 @@ Source pick_source(const ContactsOptions& cli) {
     case ContactsOptions::SourceMode::Directory: return sources::DirectorySource{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
     case ContactsOptions::SourceMode::Vector:    return sources::VectorSource   {cli.file_vector};
     case ContactsOptions::SourceMode::FileList:  return sources::FileListSource {cli.file_list_path};
+    case ContactsOptions::SourceMode::Database:  break; // Handled separately
   }
   throw std::logic_error("Invalid source mode");
 }
@@ -66,6 +70,36 @@ auto build_compute_stage(tasks::ContactProvider provider, InteractionType intera
   tasks::ContactsTask task{provider, interaction_type};
   return stage(dsl::thread_safe, [task](std::string path, IEmitter<ptrT>& out) mutable {
     auto result = task(std::move(path));
+    out.emit(std::make_shared<const ContactsRes>(std::move(result)));
+  });
+}
+
+// Database deserialize stage
+template<class Rec, class FormatTag>
+auto make_database_deserialize_stage(lahuta::LMDBReader& rdr) {
+    using Ptr = std::shared_ptr<const Rec>;
+    return stage(dsl::thread_safe,
+        [&rdr](std::string&& key, IEmitter<Ptr>& out)
+        {
+            std::string_view raw;
+            if (!rdr.fetch(key, raw)) {
+                 lahuta::Logger::get_logger()->error("missing key {}", key);
+                return;
+            }
+            Rec obj = serialization::Serializer<FormatTag,Rec>
+                          ::deserialize(raw.data(), raw.size());
+            out.emit(std::make_shared<const Rec>(std::move(obj)));
+        });
+}
+
+// Contacts computation stage that takes deserialized model data and uses ContactsTask
+auto build_contacts_from_model_stage(tasks::ContactProvider provider, InteractionType interaction_type) {
+  using WriterRes = tasks::ModelWriteTask::result_type;
+  using InputPtr = std::shared_ptr<const WriterRes>;
+
+  tasks::ContactsTask task{provider, interaction_type};
+  return stage(dsl::thread_safe, [task](InputPtr input, IEmitter<ptrT>& out) {
+    auto result = task(*input);
     out.emit(std::make_shared<const ContactsRes>(std::move(result)));
   });
 }
@@ -124,7 +158,6 @@ namespace {
     return std::string(buffer);
   }
 
-  // Extract just the filename from a full path
   std::string extract_filename(const std::string& filepath) {
     size_t pos = filepath.find_last_of("/\\");
     return (pos == std::string::npos) ? filepath : filepath.substr(pos + 1);
@@ -247,7 +280,7 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::Unknown, 0, "", "", validate::Unknown,
    "Usage: lahuta contacts [options]\n\n"
    "Compute inter-atomic contacts.\n\n"
-   "Source Options (choose one):"},
+   "Input Options (choose one):"},
   {ContactsOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help, -h                   \tPrint this help message and exit."},
   {ContactsOptionIndex::SourceDirectory, 0, "d", "directory", validate::Required,
@@ -256,6 +289,8 @@ const option::Descriptor usage[] = {
    "  --files, -f <file1,file2>    \tProcess specific files (comma-separated)."},
   {ContactsOptionIndex::SourceFileList, 0, "l", "file-list", validate::Required,
    "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."},
+  {ContactsOptionIndex::SourceDatabase, 0, "", "database", validate::Required,
+   "  --database <path>            \tProcess structures from database."},
   {ContactsOptionIndex::Extension, 0, "e", "extension", validate::Required,
    "  --extension, -e <ext>        \tFile extension for directory mode (default: .cif)."},
   {ContactsOptionIndex::Recursive, 0, "r", "recursive", option::Arg::None,
@@ -286,7 +321,6 @@ const option::Descriptor usage[] = {
 };
 } // namespace contacts_opts
 
-// Command Implementation
 [[nodiscard]] std::unique_ptr<CliCommand> ContactsCommand::create() {
   return std::unique_ptr<CliCommand>(new ContactsCommand());
 }
@@ -305,10 +339,10 @@ int ContactsCommand::run(int argc, char* argv[]) {
   }
 
   try {
-    // Parse CLI Arguments into ContactsOptions
+    // parse CLI Arguments into ContactsOptions
     ContactsOptions cli;
 
-    // Parse source options
+    // parse source options
     int source_count = 0;
     if (options[contacts_opts::ContactsOptionIndex::SourceDirectory]) {
       cli.source_mode = ContactsOptions::SourceMode::Directory;
@@ -319,7 +353,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       cli.source_mode = ContactsOptions::SourceMode::Vector;
       std::string files_str = options[contacts_opts::ContactsOptionIndex::SourceVector].arg;
 
-      // Parse comma-separated files
+      // parse comma-separated files
       std::stringstream ss(files_str);
       std::string file;
       while (std::getline(ss, file, ',')) {
@@ -334,9 +368,14 @@ int ContactsCommand::run(int argc, char* argv[]) {
       cli.file_list_path = options[contacts_opts::ContactsOptionIndex::SourceFileList].arg;
       source_count++;
     }
+    if (options[contacts_opts::ContactsOptionIndex::SourceDatabase]) {
+      cli.source_mode = ContactsOptions::SourceMode::Database;
+      cli.database_path = options[contacts_opts::ContactsOptionIndex::SourceDatabase].arg;
+      source_count++;
+    }
 
     if (source_count == 0) {
-      Logger::get_logger()->error("Must specify exactly one source option: --directory, --files, or --file-list");
+      Logger::get_logger()->error("Must specify exactly one source option: --directory, --files, --file-list, or --database");
       return 1;
     }
     if (source_count > 1) {
@@ -376,12 +415,9 @@ int ContactsCommand::run(int argc, char* argv[]) {
     cli.want_log    = options[contacts_opts::ContactsOptionIndex::OutputLog]  ? true : false;
     cli.no_compress = options[contacts_opts::ContactsOptionIndex::NoCompress] ? true : false;
 
-    // Default to JSON if no output format specified
-    if (!cli.want_json && !cli.want_text && !cli.want_log) {
-      cli.want_json = true;
-    }
+    if (!cli.want_json && !cli.want_text && !cli.want_log) cli.want_json = true; // json if nothing specified
 
-    // Parse runtime options
+    // runtime options
     if (options[contacts_opts::ContactsOptionIndex::Threads]) {
       cli.threads = std::stoi(options[contacts_opts::ContactsOptionIndex::Threads].arg);
       if (cli.threads <= 0) {
@@ -398,21 +434,6 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
     }
 
-    Logger::get_logger()->info("Computing Contacts...");
-    Logger::get_logger()->info("Provider: {}", cli.provider == tasks::ContactProvider::MolStar ? "MolStar" : "Arpeggio");
-    Logger::get_logger()->info("Interaction: {}", interaction_type_to_string(cli.interaction_type));
-
-    std::string outputs;
-    if (cli.want_json) outputs += "json ";
-    if (cli.want_text) outputs += "text ";
-    if (cli.want_log) outputs  += "log ";
-    if (!cli.want_log) { // Only show compression info for file outputs
-      outputs += cli.no_compress ? "(uncompressed)" : "(compressed)";
-    }
-    Logger::get_logger()->info("Outputs: {}", outputs);
-    Logger::get_logger()->info("Threads: {}", cli.threads);
-    Logger::get_logger()->info("Batch size: {}", cli.batch_size);
-
     // build and run pipeline
     auto compute_stage = build_compute_stage(cli.provider, cli.interaction_type);
 
@@ -420,12 +441,28 @@ int ContactsCommand::run(int argc, char* argv[]) {
     std::vector<OutputOption> option_list;
     if (cli.want_json) { option_list.push_back(OutputOption{OutFmt::Json, !cli.no_compress}); }
     if (cli.want_text) { option_list.push_back(OutputOption{OutFmt::Text, !cli.no_compress}); }
-    if (cli.want_log)  { option_list.push_back(OutputOption{OutFmt::Log, false}); } // Compression N/A for logging
+    if (cli.want_log)  { option_list.push_back(OutputOption{OutFmt::Log, false}); } // Compression n/a for logging
     OutputMultiplexer output_emitter{std::move(option_list), cli.batch_size, "contacts"};
 
-    Logger::get_logger()->info("Running...");
-    Source source_variant = pick_source(cli);
-    run_dispatch(source_variant, compute_stage, output_emitter, cli.threads);
+    if (cli.source_mode == ContactsOptions::SourceMode::Database) {
+      initialize_factories(cli.threads);
+
+      // special handling for database sources
+      LMDBDatabase database(cli.database_path);
+      LMDBReader reader(database.get_env(), database.get_dbi());
+
+      // we create the pipeline
+      auto key_source         = dsl::db_keys(database, cli.batch_size);
+      auto deserialize_stage  = make_database_deserialize_stage<tasks::ModelWriteTask::result_type, fmt::binary>(reader);
+      auto compute_stage      = build_contacts_from_model_stage(cli.provider, cli.interaction_type);
+
+      auto pipeline = key_source | deserialize_stage | compute_stage | output_emitter;
+      dsl::run(pipeline, cli.threads);
+    } else {
+      // file-based sources
+      Source source_variant = pick_source(cli);
+      run_dispatch(source_variant, compute_stage, output_emitter, cli.threads);
+    }
 
     Logger::get_logger()->info("Contact computation completed successfully!");
     return 0;

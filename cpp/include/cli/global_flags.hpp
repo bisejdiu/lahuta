@@ -23,7 +23,7 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
   for (int i = 1; i < argc; ++i) {
     std::string_view arg{argv[i]};
     if (!arg.empty() && arg[0] != '-') {
-      if (arg == "contacts") { has_explicit_subcommand = true; }
+      if (arg == "contacts" || arg == "createdb") { has_explicit_subcommand = true; }
       break;
     }
   }

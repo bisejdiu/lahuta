@@ -1,23 +1,20 @@
 #ifndef RD_GRAPHS_H
 #define RD_GRAPHS_H
 
-/// Std stuff
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <cstddef>
 #include <utility>
 
-// boost stuff
 #include <RDGeneral/BoostStartInclude.h>
 #include <boost/dynamic_bitset.hpp>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/smart_ptr.hpp>
-
 #include <RDGeneral/BoostEndInclude.h>
 
-// our stuff
 #include "Atom.h"
 #include "Bond.h"
+#include "GraphDefs.hpp"
 #include "GraphIterators.hpp"
 #include <RDGeneral/RDProps.h>
 #include <RDGeneral/types.h>
@@ -258,7 +255,7 @@ public:
   explicit CSRMolGraphImpl(const CSRMolGraph &graph) : m_graph(graph) {}
 
   unsigned int getNumVertices() const override { return boost::num_vertices(m_graph); }
-  unsigned int getNumEdges()    const override { return boost::num_edges(m_graph); }
+  unsigned int getNumEdges()    const override { return boost::num_edges(m_graph) / 2; }
 
   Atom *getAtom(unsigned int idx) const override {
     return m_graph[static_cast<MolGraphTraits<CSRMolGraph>::vertex_descriptor>(idx)];
@@ -354,13 +351,13 @@ public:
   std::unique_ptr<GraphImpl> clone() const override { return std::make_unique<CSRMolGraphImpl>(m_graph); }
 
   void clear() override {
-    std::vector<std::pair<size_t, size_t>> emptyEdgeList;
-    std::vector<Bond *> emptyEdgeProps;
+    std::vector<std::pair<size_t, size_t>> empty_edge_list;
+    std::vector<Bond *> empty_edge_props;
     m_graph = CSRMolGraph(
         boost::edges_are_sorted,
-        emptyEdgeList.begin(),
-        emptyEdgeList.end(),
-        emptyEdgeProps.begin(),
+        empty_edge_list.begin(),
+        empty_edge_list.end(),
+        empty_edge_props.begin(),
         0);
   }
 
@@ -368,18 +365,35 @@ public:
   CSRMolGraph &getGraph() { return m_graph; }
 
   void build(
-      const std::vector<Atom *> &atoms, const std::vector<std::pair<size_t, size_t>> &edge_list,
-      const std::vector<Bond *> &edge_props) {
+    const std::vector<Atom*>& atoms,
+    const std::vector<std::pair<size_t,size_t>>& edge_list,
+    const std::vector<Bond*>& edge_props) {
+
+    //
+    // We duplicate edges/properties for an undirected graph. This is not the best way
+    // to handle undirectedness, but anything else will be a lot more complicated. - Besian, August 2025
+    //
+    std::vector<std::pair<size_t,size_t>> edges;
+    std::vector<Bond*> props;
+    edges.reserve(edge_list.size()  * 2);
+    props.reserve(edge_props.size() * 2);
+    for (auto i = 0; i < edge_list.size(); ++i) {
+      const auto [u, v] = edge_list[i];
+      Bond* b = edge_props[i];
+      edges.emplace_back(u, v);
+      edges.emplace_back(v, u);
+      props.emplace_back(b);
+      props.emplace_back(b);
+    }
 
     m_graph = CSRMolGraph(
-        boost::edges_are_sorted,
-        edge_list.begin(),
-        edge_list.end(),
-        edge_props.begin(),
-        atoms.size());
+      boost::edges_are_unsorted,
+      edges.begin(), edges.end(),
+      props.begin(), atoms.size());
 
+    // assign atoms
     for (size_t i = 0; i < atoms.size(); ++i) {
-      atoms[i]->setIdx(i);
+      atoms[i]->setIdx(static_cast<unsigned int>(i));
       m_graph[i] = atoms[i];
     }
   }

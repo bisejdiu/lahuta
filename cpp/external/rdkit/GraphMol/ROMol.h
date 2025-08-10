@@ -211,6 +211,12 @@ public:
       } break;
       case GraphType::CSRMolGraph: {
         m_impl = std::make_unique<CSRMolGraphImpl>();
+        for (auto atom : atoms) {
+          atom->setOwningMol(this);
+        }
+        for (auto bond : edge_props) {
+          bond->setOwningMol(this);
+        }
         dynamic_cast<CSRMolGraphImpl *>(m_impl.get())->build(atoms, edge_list, edge_props);
       } break;
         return;

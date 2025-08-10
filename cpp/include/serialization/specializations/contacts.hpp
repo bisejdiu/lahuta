@@ -32,7 +32,10 @@ struct Serializer<fmt::json, ContactsRes> {
            .key("contact_type").value(contact_type_str)
            .key("num_contacts").value(v.num_contacts);
 
-    if (!v.topology) return builder.str();
+    if (!v.topology) {
+      Logger::get_logger()->warn("ContactsRes serialization: topology is null, cannot serialize contacts.");
+      return builder.str();
+    }
 
     builder.key("contacts").begin_array();
     for (const auto& contact : v.contacts) {

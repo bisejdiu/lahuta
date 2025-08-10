@@ -5,6 +5,8 @@
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_traits.hpp>
 
+#include "csr_undirected_extension.hpp"
+
 // clang-format off
 namespace RDKit {
 class Atom;
@@ -12,7 +14,8 @@ class Bond;
 
 //! These are the BGL types used to store the topology:
 using MolGraph    = boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS, Atom*, Bond*>;
-using CSRMolGraph = boost::compressed_sparse_row_graph<boost::directedS, Atom*, Bond*>;
+using CSRMolGraph = boost::compressed_sparse_row_graph<boost::undirectedS, Atom*, Bond*>;
+
 
 enum class GraphType { MolGraph, CSRMolGraph };
 

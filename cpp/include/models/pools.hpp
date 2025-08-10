@@ -81,10 +81,7 @@ struct InfoPoolTraits {
   static auto *create() { return new RDKit::pAtomPDBResidueInfo(); }
 
   static void reset(RDKit::pAtomPDBResidueInfo *info) {
-    info->setName("");
-    info->setSerialNumber(-1);
-    info->setResidueName("");
-    info->setResidueNumber(-1);
+    info->resetState();
   }
 };
 
@@ -94,10 +91,11 @@ public:
 
   auto *createAtomInfo(const char *atom_name, int serial, const char *res_name, int res_number) {
     RDKit::pAtomPDBResidueInfo *info = pool_.create();
-    info->setName(atom_name);
+    info->setName(std::string(atom_name));
     info->setSerialNumber(serial);
-    info->setResidueName(res_name);
+    info->setResidueName(std::string(res_name));
     info->setResidueNumber(res_number);
+    info->setChainId("A"); // Default chain ID
     return info;
   }
 

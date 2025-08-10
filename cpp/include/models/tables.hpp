@@ -12,16 +12,18 @@ struct AminoAcidEntry {
   const char *name;
   const int *ih;
   const int *at;
+  const int *hyb;
 
   template <size_t N>
   constexpr AminoAcidEntry(
       const std::array<const char *, N> &arr,
       const char *n,
       const std::array<int, N> &ih_arr,
-      const std::array<int, N> &at_arr)
-      : atoms(arr.data()), size(N), name(n), ih(ih_arr.data()), at(at_arr.data()) {}
+      const std::array<int, N> &at_arr,
+      const std::array<int, N> &hyb_arr = {})
+      : atoms(arr.data()), size(N), name(n), ih(ih_arr.data()), at(at_arr.data()), hyb(hyb_arr.data()) {}
 
-  constexpr AminoAcidEntry() : atoms(nullptr), size(0), name(nullptr), ih(nullptr), at(nullptr) {}
+  constexpr AminoAcidEntry() : atoms(nullptr), size(0), name(nullptr), ih(nullptr), at(nullptr), hyb(nullptr) {}
 };
 
 
@@ -41,26 +43,26 @@ private:
 
 public:
   constexpr AminoAcidTable() {
-    data['G' - BASE_CHAR] = AminoAcidEntry(gly, "GLY", gly_ih, gly_at);
-    data['A' - BASE_CHAR] = AminoAcidEntry(ala, "ALA", ala_ih, ala_at);
-    data['V' - BASE_CHAR] = AminoAcidEntry(val, "VAL", val_ih, val_at);
-    data['L' - BASE_CHAR] = AminoAcidEntry(leu, "LEU", leu_ih, leu_at);
-    data['I' - BASE_CHAR] = AminoAcidEntry(ile, "ILE", ile_ih, ile_at);
-    data['S' - BASE_CHAR] = AminoAcidEntry(ser, "SER", ser_ih, ser_at);
-    data['T' - BASE_CHAR] = AminoAcidEntry(thr, "THR", thr_ih, thr_at);
-    data['C' - BASE_CHAR] = AminoAcidEntry(cys, "CYS", cys_ih, cys_at);
-    data['M' - BASE_CHAR] = AminoAcidEntry(met, "MET", met_ih, met_at);
-    data['P' - BASE_CHAR] = AminoAcidEntry(pro, "PRO", pro_ih, pro_at);
-    data['F' - BASE_CHAR] = AminoAcidEntry(phe, "PHE", phe_ih, phe_at);
-    data['Y' - BASE_CHAR] = AminoAcidEntry(tyr, "TYR", tyr_ih, tyr_at);
-    data['W' - BASE_CHAR] = AminoAcidEntry(trp, "TRP", trp_ih, trp_at);
-    data['H' - BASE_CHAR] = AminoAcidEntry(his, "HIS", his_ih, his_at);
-    data['E' - BASE_CHAR] = AminoAcidEntry(glu, "GLU", glu_ih, glu_at);
-    data['D' - BASE_CHAR] = AminoAcidEntry(asp, "ASP", asp_ih, asp_at);
-    data['N' - BASE_CHAR] = AminoAcidEntry(asn, "ASN", asn_ih, asn_at);
-    data['Q' - BASE_CHAR] = AminoAcidEntry(gln, "GLN", gln_ih, gln_at);
-    data['K' - BASE_CHAR] = AminoAcidEntry(lys, "LYS", lys_ih, lys_at);
-    data['R' - BASE_CHAR] = AminoAcidEntry(arg, "ARG", arg_ih, arg_at);
+    data['G' - BASE_CHAR] = AminoAcidEntry(gly, "GLY", gly_ih, gly_at, gly_hyb);
+    data['A' - BASE_CHAR] = AminoAcidEntry(ala, "ALA", ala_ih, ala_at, ala_hyb);
+    data['V' - BASE_CHAR] = AminoAcidEntry(val, "VAL", val_ih, val_at, val_hyb);
+    data['L' - BASE_CHAR] = AminoAcidEntry(leu, "LEU", leu_ih, leu_at, leu_hyb);
+    data['I' - BASE_CHAR] = AminoAcidEntry(ile, "ILE", ile_ih, ile_at, ile_hyb);
+    data['S' - BASE_CHAR] = AminoAcidEntry(ser, "SER", ser_ih, ser_at, ser_hyb);
+    data['T' - BASE_CHAR] = AminoAcidEntry(thr, "THR", thr_ih, thr_at, thr_hyb);
+    data['C' - BASE_CHAR] = AminoAcidEntry(cys, "CYS", cys_ih, cys_at, cys_hyb);
+    data['M' - BASE_CHAR] = AminoAcidEntry(met, "MET", met_ih, met_at, met_hyb);
+    data['P' - BASE_CHAR] = AminoAcidEntry(pro, "PRO", pro_ih, pro_at, pro_hyb);
+    data['F' - BASE_CHAR] = AminoAcidEntry(phe, "PHE", phe_ih, phe_at, phe_hyb);
+    data['Y' - BASE_CHAR] = AminoAcidEntry(tyr, "TYR", tyr_ih, tyr_at, tyr_hyb);
+    data['W' - BASE_CHAR] = AminoAcidEntry(trp, "TRP", trp_ih, trp_at, trp_hyb);
+    data['H' - BASE_CHAR] = AminoAcidEntry(his, "HIS", his_ih, his_at, his_hyb);
+    data['E' - BASE_CHAR] = AminoAcidEntry(glu, "GLU", glu_ih, glu_at, glu_hyb);
+    data['D' - BASE_CHAR] = AminoAcidEntry(asp, "ASP", asp_ih, asp_at, asp_hyb);
+    data['N' - BASE_CHAR] = AminoAcidEntry(asn, "ASN", asn_ih, asn_at, asn_hyb);
+    data['Q' - BASE_CHAR] = AminoAcidEntry(gln, "GLN", gln_ih, gln_at, gln_hyb);
+    data['K' - BASE_CHAR] = AminoAcidEntry(lys, "LYS", lys_ih, lys_at, lys_hyb);
+    data['R' - BASE_CHAR] = AminoAcidEntry(arg, "ARG", arg_ih, arg_at, arg_hyb);
   }
 
   constexpr const AminoAcidEntry &operator[](char c) const {

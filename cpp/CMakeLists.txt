@@ -147,6 +147,7 @@ add_library(lahuta_cpp STATIC
             src/cli/arg_validation.cpp
             src/cli/global_options.cpp
             src/commands/contacts.cpp
+            src/commands/createdb.cpp
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -156,6 +157,7 @@ target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/external
   # ${CMAKE_SOURCE_DIR}/external/foldseek
+  # ${CMAKE_SOURCE_DIR}/external/foldseek/generated
   ${CMAKE_SOURCE_DIR}/external/gemmi/include
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party/zlib

@@ -40,7 +40,7 @@ ContactRecipe<AtomRec, AtomRec, HBondParams> make_hbond_recipe() {
                             : opts.max_dist;
 
       if (d_sq < 2.0 || d_sq > max_dist * max_dist) return InteractionType::None;
-      if (are_residueids_close(ctx.molecule(), donor, acceptor, 0))  return InteractionType::None;
+      if (are_residueids_close(ctx.molecule(), donor, acceptor, 1))  return InteractionType::None;
       if (!opts.include_water && is_water_hbond(donor, acceptor))    return InteractionType::None;
       if (!are_geometrically_viable(ctx.molecule(), donor, acceptor, opts)) return InteractionType::None;
 

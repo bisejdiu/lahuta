@@ -34,7 +34,7 @@ class AtomMonomerInfo {
       : d_monomerType(typ), d_name(std::move(nm)) {}
   AtomMonomerInfo(const AtomMonomerInfo &other) = default;
 
-  const std::string &getName() const { return d_name; }
+  virtual const std::string &getName() const { return d_name; }
   void setName(const std::string &nm) { d_name = nm; }
   AtomMonomerType getMonomerType() const { return d_monomerType; }
   void setMonomerType(AtomMonomerType typ) { d_monomerType = typ; }
@@ -76,7 +76,7 @@ class AtomPDBResidueInfo : public AtomMonomerInfo {
   void setSerialNumber(int val) { d_serialNumber = val; }
   const std::string &getAltLoc() const { return d_altLoc; }
   void setAltLoc(const std::string &val) { d_altLoc = val; }
-  const std::string &getResidueName() const { return d_residueName; }
+  virtual const std::string &getResidueName() const { return d_residueName; }
   void setResidueName(const std::string &val) { d_residueName = val; }
   int getResidueNumber() const { return d_residueNumber; }
   void setResidueNumber(int val) { d_residueNumber = val; }
@@ -133,10 +133,10 @@ public:
   pAtomPDBResidueInfo(const char* atom_name, int serial,
                           const char* residue_name, int residue_number)
       : AtomPDBResidueInfo() {
-        d_atomNamePtr = atom_name;
-        d_residueNamePtr = residue_name;
-        d_serialNumber = serial;
-        d_residueNumber = residue_number;
+        setName(atom_name);
+        setSerialNumber(serial);
+        setResidueName(residue_name);
+        setResidueNumber(residue_number);
   }
 
   void destroy() override {
@@ -145,75 +145,22 @@ public:
 
   void initialize(const char* atomName, int serialNumber,
                   const char* residueName, int residueNumber) {
-    d_atomNamePtr = atomName;
-    d_residueNamePtr = residueName;
-    d_serialNumber = serialNumber;
-    d_residueNumber = residueNumber;
-    d_cachedName.clear();
-    d_cachedResidueName.clear();
+    setName(atomName);
+    setSerialNumber(serialNumber);
+    setResidueName(residueName);
+    setResidueNumber(residueNumber);
   }
-
-  const std::string& getName() const {
-    if (d_cachedName.empty() && d_atomNamePtr) {
-      d_cachedName = d_atomNamePtr;
-    }
-    return d_cachedName;
-  }
-
-  void setName(const std::string& name) {
-    d_atomNamePtr = name.c_str();
-    d_cachedName.clear();
-  }
-
-  void setName(const char* name) {
-    d_atomNamePtr = name;
-    d_cachedName.clear();
-  }
-
-  const std::string& getResidueName() const {
-    if (d_cachedResidueName.empty() && d_residueNamePtr) {
-      d_cachedResidueName = d_residueNamePtr;
-    }
-    return d_cachedResidueName;
-  }
-
-  void setResidueName(const std::string& name) {
-    d_residueNamePtr = name.c_str();
-    d_cachedResidueName.clear();
-  }
-
-  void setResidueName(const char* name) {
-    d_residueNamePtr = name;
-    d_cachedResidueName.clear();
-  }
-
-  const std::string& getChainId() const {
-    static const std::string defaultChain = "A";
-    return defaultChain;
-  }
-
-  const std::string& getAltLoc() const {
-    static const std::string emptyString = "";
-    return emptyString;
-  }
-
-  const std::string& getInsertionCode() const {
-    static const std::string emptyString = "";
-    return emptyString;
-  }
-
-  bool getIsHeteroAtom() const { return false; }
-  AtomMonomerType getMonomerType() const { return AtomPDBResidueInfo::PDBRESIDUE; }
 
   RDKit::AtomMonomerInfo* copy() const override {
-    throw std::runtime_error("PooledAtomPDBResidueInfo::copy() should not be called");
+    throw std::runtime_error("pAtomPDBResidueInfo::copy() should not be called");
   }
 
-private:
-  const char* d_atomNamePtr = nullptr;
-  const char* d_residueNamePtr = nullptr;
-  mutable std::string d_cachedName;
-  mutable std::string d_cachedResidueName;
+  void resetState() {
+    setName("");
+    setResidueName("");
+    setSerialNumber(0);
+    setResidueNumber(0);
+  }
 };
 
 };  // namespace RDKit
