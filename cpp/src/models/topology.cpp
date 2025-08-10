@@ -3,7 +3,6 @@
 #include "models/factory.hpp"
 #include "models/fast_lookup.hpp"
 #include "models/pools.hpp"
-#include "models/rings.hpp"
 #include "models/ssbonds.hpp"
 #include "models/tables.hpp"
 #include <logging.hpp>
@@ -23,18 +22,11 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   auto *atom_pool = PoolFactory<AtomPool>::getFreshPoolForCurrentThread();
   auto *bond_pool = PoolFactory<BondPool>::getFreshPoolForCurrentThread();
 
-  std::vector<RDKit::Atom*> AtomPtrs;
-  AtomPtrs.reserve(num_atoms);
-
   auto sequence = P.get_sequence(); // NOTE: converts "SEQ" to {'S','E','Q'}
 
   std::vector<std::vector<int>> aromatic_atom_indices;
   std::vector<std::vector<int>> aromatic_bond_indices;
   std::vector<int> sulphur_atom_indices;
-
-  aromatic_atom_indices.reserve(sequence.size() / 7);
-  aromatic_bond_indices.reserve(sequence.size() / 7);
-  sulphur_atom_indices .reserve(64);
 
   std::uint32_t atom_idx = 0;
   for (int residue_idx = 0; residue_idx < sequence.size(); ++residue_idx) {
@@ -125,20 +117,13 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       mol->addBond(bond, true);
     }
 
-    residue_start_idx += entry.size;
-  }
-
-  // Add inter-residue peptide bonds (C-N bonds between consecutive residues)
-  residue_start_idx = 0;
-  for (int residue = 0; residue < sequence.size() - 1; ++residue) {
-    const auto &aa = sequence[residue];
-    const auto &entry = StandardAminoAcidDataTable[aa[0]];
-
-    int current_c_idx = residue_start_idx + 2;  // C is always at position 2
-    int next_n_idx = residue_start_idx + entry.size;  // N of next residue (position 0)
-
-    auto *peptide_bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
-    mol->addBond(peptide_bond, true);
+    // Add peptide bond (current C to next residue N)
+    if (residue < static_cast<int>(sequence.size()) - 1) {
+      int current_c_idx = residue_start_idx + 2;                 // C is at position 2
+      int next_n_idx    = residue_start_idx + static_cast<int>(entry.size); // N of next residue (position 0)
+      auto *peptide_bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
+      mol->addBond(peptide_bond, true);
+    }
 
     residue_start_idx += entry.size;
   }
@@ -243,6 +228,8 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     expected_bond_count += edges.size;
   }
 
+  // add peptide bonds and an estimate for disulfides
+  if (num_residues > 0) expected_bond_count += (num_residues - 1);
   expected_bond_count += num_residues / 10;
 
   std::vector<RDKit::Atom*> vertices;
@@ -251,10 +238,6 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   std::vector<std::vector<int>> aromatic_atom_indices;
   std::vector<std::vector<int>> aromatic_bond_indices;
   std::vector<int> sulphur_atom_indices;
-
-  aromatic_atom_indices.reserve(num_residues / 7);
-  aromatic_bond_indices.reserve(num_residues / 7);
-  sulphur_atom_indices.reserve(64);
 
   // collect bonds for the CSR builder
   std::vector<RDKit::Bond*> bonds;
@@ -310,6 +293,14 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       bonds.push_back(bond);
     }
 
+    // Add peptide bond (current C to next residue N)
+    if (residue_idx < static_cast<int>(num_residues) - 1) {
+      int current_c_idx = residue_start_idx + 2; // C is always at position 2
+      int next_n_idx    = atom_idx;              // start index of next residue (N at position 0)
+      auto bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
+      bonds.push_back(bond);
+    }
+
     auto process_ring = [&aromatic_atom_indices, &vertices, residue_start_idx]
                       (const auto& atom_indices, const auto& /*bond_indices*/) {
         std::vector<int> ring_atom_indices;
@@ -343,23 +334,6 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
             process_ring(trp_arom_indices6, trp_bond_indices6);
             break;
     }
-  }
-
-  // Add inter-residue peptide bonds (C-N bonds between consecutive residues)
-  int residue_start_idx = 0;
-  for (int residue_idx = 0; residue_idx < num_residues - 1; ++residue_idx) {
-    const auto &aa = sequence[residue_idx];
-    const auto &entry = StandardAminoAcidDataTable[aa[0]];
-
-    int current_c_idx = residue_start_idx + 2;  // C is always at position 2
-    int next_n_idx = residue_start_idx + entry.size;  // N of next residue (position 0)
-
-    {
-      auto bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
-      bonds.push_back(bond);
-    }
-
-    residue_start_idx += entry.size;
   }
 
   // Add terminal OXT atom
