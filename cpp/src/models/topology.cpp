@@ -160,7 +160,7 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   }
 
   // build molecule
-  mol = std::make_shared<RDKit::RWMol>(vertices, bonds, GraphType::CSRMolGraph);
+  mol = std::make_shared<RDKit::RWMol>(vertices, bonds, GraphType::MolGraph);
   mol->addConformer(&conf, true);
 
   // Build ring bond indices based on final graph
