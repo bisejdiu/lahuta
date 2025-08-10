@@ -366,8 +366,7 @@ public:
 
   void build(
     const std::vector<Atom*>& atoms,
-    const std::vector<std::pair<size_t,size_t>>& edge_list,
-    const std::vector<Bond*>& edge_props) {
+    const std::vector<Bond*>& bonds) {
 
     //
     // We duplicate edges/properties for an undirected graph. This is not the best way
@@ -375,11 +374,11 @@ public:
     //
     std::vector<std::pair<size_t,size_t>> edges;
     std::vector<Bond*> props;
-    edges.reserve(edge_list.size()  * 2);
-    props.reserve(edge_props.size() * 2);
-    for (auto i = 0; i < edge_list.size(); ++i) {
-      const auto [u, v] = edge_list[i];
-      Bond* b = edge_props[i];
+    edges.reserve(bonds.size() * 2);
+    props.reserve(bonds.size() * 2);
+    for (auto *b : bonds) {
+      const auto u = static_cast<size_t>(b->getBeginAtomIdx());
+      const auto v = static_cast<size_t>(b->getEndAtomIdx());
       edges.emplace_back(u, v);
       edges.emplace_back(v, u);
       props.emplace_back(b);

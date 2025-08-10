@@ -74,46 +74,31 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
     int residue_start_idx = atom_idx - entry.size;
 
-    // inline lambda to construct and record an aromatic ring.
-    auto add_aromatic_ring = [&](const auto &indices, bool skip_first = false) {
-
-      auto ring = make_aromatic_ring(residue_start_idx, indices);
-
-      std::vector<int> bonds;
-      // if trp, we skip the shared bond (the first one)
-      for (size_t ri = static_cast<int>(skip_first); ri < ring.size() - 1; ++ri) {
-        auto bond = bond_pool->createBond(ring[ri], ring[ri + 1], RDKit::Bond::AROMATIC);
-        bonds.push_back(mol->addBond(bond, true));
+    // mark atoms aromatic and record ring atom indices
+    auto process_aromatic_ring = [&](const auto &atom_indices) {
+      std::vector<int> ring_atom_indices;
+      ring_atom_indices.reserve(atom_indices.size());
+      for (int idx : atom_indices) {
+        int global_idx = residue_start_idx + idx;
+        ring_atom_indices.push_back(global_idx);
+        mol->getAtomWithIdx(global_idx)->setIsAromatic(true);
       }
-
-      auto *bond = bond_pool->createBond(ring.back(), ring.front(), RDKit::Bond::AROMATIC);
-      bonds.push_back(mol->addBond(bond, true));
-      if (skip_first == 1) ring.erase(ring.begin());
-
-      // mark atoms as aromatic
-      for (int atom_global_idx : ring) {
-        mol->getAtomWithIdx(atom_global_idx)->setIsAromatic(true);
-      }
-
-      aromatic_atom_indices.reserve(ring.size());
-      aromatic_bond_indices.reserve(bonds.size());
-      aromatic_atom_indices.push_back(ring);
-      aromatic_bond_indices.push_back(bonds);
+      aromatic_atom_indices.push_back(std::move(ring_atom_indices));
     };
 
     switch (aa[0]) {
       case 'F':
-        add_aromatic_ring(phe_arom_indices);
+        process_aromatic_ring(phe_arom_indices);
         break;
       case 'Y':
-        add_aromatic_ring(tyr_arom_indices);
+        process_aromatic_ring(tyr_arom_indices);
         break;
       case 'W':
-        add_aromatic_ring(trp_arom_indices5);
-        add_aromatic_ring(trp_arom_indices6, 1);
+        process_aromatic_ring(trp_arom_indices5);
+        process_aromatic_ring(trp_arom_indices6);
         break;
       case 'H':
-        add_aromatic_ring(his_arom_indices);
+        process_aromatic_ring(his_arom_indices);
         break;
       default:
         break;
@@ -132,7 +117,6 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     for (size_t j = 0; j < edges.size; ++j) {
 
       const auto &edge = edges.edges[j];
-      if (edge.order == BondType::AROMATIC) continue;
 
       int atom1_idx = residue_start_idx + edge.i;
       int atom2_idx = residue_start_idx + edge.j;
@@ -208,6 +192,30 @@ void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     mol->getAtomWithIdx(pair.first )->setCompAtomType(static_cast<int>(first_at  ^ AtomType::HbondDonor));
     mol->getAtomWithIdx(pair.second)->setCompAtomType(static_cast<int>(second_at ^ AtomType::HbondDonor));
   }
+  // Rebuild ring bond indices based on the final graph
+  aromatic_bond_indices.clear();
+  aromatic_bond_indices.reserve(aromatic_atom_indices.size());
+  for (const auto &ring_atoms : aromatic_atom_indices) {
+    std::vector<int> ring_bonds;
+    const size_t n = ring_atoms.size();
+    if (n < 3) {
+      aromatic_bond_indices.push_back(ring_bonds);
+      continue;
+    }
+    for (size_t i = 0; i < n; ++i) {
+      int u = ring_atoms[i];
+      int v = ring_atoms[(i + 1) % n];
+      const RDKit::Bond *b = mol->getBondBetweenAtoms(u, v);
+      if (b) {
+        ring_bonds.push_back(static_cast<int>(b->getIdx()));
+      } else {
+        Logger::get_logger()->warn("build_model_topology_def: No bond found between atoms {} and {} in ring", u, v);
+        ring_bonds.push_back(-1);
+      }
+    }
+    aromatic_bond_indices.push_back(std::move(ring_bonds));
+  }
+
   if (mol->getRingInfo()->isInitialized()) {
     mol->getRingInfo()->reset();
   }
@@ -248,11 +256,9 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   aromatic_bond_indices.reserve(num_residues / 7);
   sulphur_atom_indices.reserve(64);
 
-  // collect edges for the CSR builder
-  std::vector<std::pair<size_t, size_t>> edge_list;
-  std::vector<RDKit::Bond*> edge_props;
-  edge_list.reserve(expected_bond_count);
-  edge_props.reserve(expected_bond_count);
+  // collect bonds for the CSR builder
+  std::vector<RDKit::Bond*> bonds;
+  bonds.reserve(expected_bond_count);
 
   int atom_idx = 0;
   for (int residue_idx = 0; residue_idx < num_residues; ++residue_idx) {
@@ -300,9 +306,8 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
       int atom1_idx = residue_start_idx + edge.i;
       int atom2_idx = residue_start_idx + edge.j;
 
-      edge_list.emplace_back(static_cast<size_t>(atom1_idx), static_cast<size_t>(atom2_idx));
       auto bond = bond_pool->createBond(atom1_idx, atom2_idx, edge.order);
-      edge_props.push_back(bond);
+      bonds.push_back(bond);
     }
 
     auto process_ring = [&aromatic_atom_indices, &vertices, residue_start_idx]
@@ -349,10 +354,9 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
     int current_c_idx = residue_start_idx + 2;  // C is always at position 2
     int next_n_idx = residue_start_idx + entry.size;  // N of next residue (position 0)
 
-    edge_list.emplace_back(static_cast<size_t>(current_c_idx), static_cast<size_t>(next_n_idx));
     {
       auto bond = bond_pool->createBond(current_c_idx, next_n_idx, RDKit::Bond::SINGLE);
-      edge_props.push_back(bond);
+      bonds.push_back(bond);
     }
 
     residue_start_idx += entry.size;
@@ -381,10 +385,9 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
 
   // Add C-OXT bond (carbonyl carbon of last residue to OXT)
   int last_residue_c_idx = atom_idx - last_entry.size + 2;  // C is at position 2 in all AA
-  edge_list.emplace_back(static_cast<size_t>(last_residue_c_idx), static_cast<size_t>(atom_idx));
   {
     auto bond = bond_pool->createBond(last_residue_c_idx, atom_idx, RDKit::Bond::SINGLE);
-    edge_props.push_back(bond);
+    bonds.push_back(bond);
   }
 
   // for the first atom, set implicit Hs to 3
@@ -397,17 +400,16 @@ void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conform
   // Add disulfide bonds to edge list
   auto disulfide_pairs = find_disulfide_bonds(sulphur_atom_indices, conf.getPositions());
   for (const auto &pair : disulfide_pairs) {
-    edge_list.emplace_back(static_cast<size_t>(pair.first), static_cast<size_t>(pair.second));
     auto bond = bond_pool->createBond(pair.first, pair.second, RDKit::Bond::SINGLE);
-    edge_props.push_back(bond);
+    bonds.push_back(bond);
   }
 
   // Assign a single canonical index per logical bond before CSR build
-  for (size_t i = 0; i < edge_props.size(); ++i) {
-    if (edge_props[i]) edge_props[i]->setIdx(static_cast<unsigned int>(i));
+  for (size_t i = 0; i < bonds.size(); ++i) {
+    if (bonds[i]) bonds[i]->setIdx(static_cast<unsigned int>(i));
   }
 
-  mol = std::make_shared<RDKit::RWMol>(vertices, edge_list, edge_props, GraphType::CSRMolGraph);
+  mol = std::make_shared<RDKit::RWMol>(vertices, bonds, GraphType::CSRMolGraph);
   mol->addConformer(&conf, true);
 
   // Build ring bond indices against the final CSR graph order
