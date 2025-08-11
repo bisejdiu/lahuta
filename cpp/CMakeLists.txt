@@ -71,8 +71,8 @@ add_subdirectory(external/spdlog)
 # gemmi first to inherit its zlib configuration
 add_subdirectory(external/gemmi)
 add_subdirectory(external/rdkit)
-# add_subdirectory(external/foldseek)
-# add_dependencies(foldseek gemmi_cpp)
+add_subdirectory(external/foldseek)
+add_dependencies(foldseek gemmi_cpp)
 add_subdirectory(external/distopia)
 
 # set(CMAKE_BUILD_TYPE Debug)
@@ -95,6 +95,14 @@ add_library(lahuta_cpp STATIC
 
             src/models/topology.cpp
             src/models/parser.cpp
+            src/models/model_topology.cpp
+            src/models/topology/engine.cpp
+            src/models/topology/kernels/atoms.cpp
+            src/models/topology/kernels/bonds.cpp
+            src/models/topology/kernels/positions.cpp
+            src/models/topology/kernels/aromatics.cpp
+            src/models/topology/kernels/disulfides.cpp
+            src/models/topology/kernels/atom_typing.cpp
 
             external/mmap/MemoryMapped.cpp
             src/valence_model.cpp
@@ -151,13 +159,13 @@ add_library(lahuta_cpp STATIC
 )
 
 set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp rdkit libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only Boost::headers)
+target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp foldseek rdkit libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only Boost::headers)
 
 target_include_directories(lahuta_cpp PUBLIC
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/external
-  # ${CMAKE_SOURCE_DIR}/external/foldseek
-  # ${CMAKE_SOURCE_DIR}/external/foldseek/generated
+  ${CMAKE_SOURCE_DIR}/external/foldseek
+  ${CMAKE_SOURCE_DIR}/external/foldseek/generated
   ${CMAKE_SOURCE_DIR}/external/gemmi/include
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party
   ${CMAKE_SOURCE_DIR}/external/gemmi/third_party/zlib

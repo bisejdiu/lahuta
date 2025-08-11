@@ -196,28 +196,28 @@ public:
 
     initMol();
 
+    for (auto atom : atoms) atom->setOwningMol(this);
+    for (auto bond : bonds) bond->setOwningMol(this);
+
     switch (type) {
       case GraphType::MolGraph: {
         std::vector<std::tuple<size_t, size_t, Bond *>> bonds_list;
         bonds_list.reserve(bonds.size());
-        for (size_t i = 0; i < bonds.size(); ++i) {
-          bonds_list.emplace_back(bonds[i]->getBeginAtomIdx(), bonds[i]->getEndAtomIdx(), bonds[i]);
+        for (auto bond : bonds) {
+          bonds_list.emplace_back(bond->getBeginAtomIdx(), bond->getEndAtomIdx(), bond);
         }
 
         m_impl = std::make_unique<MolGraphImpl>();
-        dynamic_cast<MolGraphImpl *>(m_impl.get())->build(atoms, bonds_list);
-      } break;
+        auto *impl = dynamic_cast<MolGraphImpl *>(m_impl.get());
+        impl->build(atoms, bonds_list);
+        break;
+      }
       case GraphType::CSRMolGraph: {
         m_impl = std::make_unique<CSRMolGraphImpl>();
-        for (auto atom : atoms) {
-          atom->setOwningMol(this);
-        }
-        for (auto bond : bonds) {
-          bond->setOwningMol(this);
-        }
-        dynamic_cast<CSRMolGraphImpl *>(m_impl.get())->build(atoms, bonds);
-      } break;
-        return;
+        auto *impl = dynamic_cast<CSRMolGraphImpl *>(m_impl.get());
+        impl->build(atoms, bonds);
+        break;
+      }
     }
     should_delete_bonds = false;
     should_delete_atoms = false;

@@ -4,6 +4,7 @@
 #include "GraphMol/Conformer.h"
 #include "GraphMol/RWMol.h"
 #include "models/parser.hpp"
+#include "models/model_topology.hpp"
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 // clang-format off
@@ -34,22 +35,26 @@ namespace lahuta {
 // is in a "meaningful" state only as long as the assumptions are met.  - Besian, March 2025
 //
 
-enum class ModelTopologyMethod {
-  None,
-  Default,
-  CSR
-};
+inline void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P) {
+    models::build_model_topology_def(mol, conf, P);
+}
 
-void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P);
-void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P);
+inline void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P) {
+    models::build_model_topology_csr(mol, conf, P);
+}
 
-inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
-    auto conformer = std::make_unique<RDKit::Conformer>(mol->getNumAtoms());
-    if (method == ModelTopologyMethod::CSR) {
-       build_model_topology_csr(mol, *conformer.release(), P);
-    } else if (method == ModelTopologyMethod::Default) {
-       build_model_topology_def(mol, *conformer.release(), P);
+inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const ModelParserResult &P, models::ModelTopologyMethod method = models::ModelTopologyMethod::Default) {
+    models::ModelTopology topology(P);
+
+    models::ModelTopologyBuildingOptions options;
+    if (method == models::ModelTopologyMethod::CSR) {
+        options.graph_type = RDKit::GraphType::CSRMolGraph;
+    } else {
+        options.graph_type = RDKit::GraphType::MolGraph;
     }
+
+    topology.build(options);
+    mol = topology.get_molecule();
 }
 
 bool mock_build_model_topology(const ModelParserResult &P);
