@@ -14,6 +14,9 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <sstream>
+#include <variant>
+#include <vector>
 
 // clang-format off
 namespace lahuta::cli {
@@ -22,13 +25,37 @@ using namespace lahuta;
 using namespace lahuta::pipeline;
 
 struct CreateDbOptions {
+  enum class SourceMode { Directory, Vector, FileList };
+
+  SourceMode source_mode = SourceMode::Directory;
   std::string directory_path;
   std::string extension = ".cif.gz";
   bool recursive = true;
+  std::vector<std::string> file_vector;
+  std::string file_list_path;
+
   std::string database_path;
   size_t batch_size = 1000;
   int threads = 8;
 };
+
+using WriterRes = tasks::ModelWriteTask::result_type;
+using Payload = std::shared_ptr<const WriterRes>;
+using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
+
+using LMDBPolicy = DBSpillPolicy<fmt::binary, Payload, LMDBBackend>;
+
+static Source pick_source(const CreateDbOptions& cli) {
+  switch (cli.source_mode) {
+    case CreateDbOptions::SourceMode::Directory:
+      return sources::DirectorySource{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
+    case CreateDbOptions::SourceMode::Vector:
+      return sources::VectorSource{cli.file_vector};
+    case CreateDbOptions::SourceMode::FileList:
+      return sources::FileListSource{cli.file_list_path};
+  }
+  throw std::logic_error("Invalid source mode");
+}
 
 static void initialize_factories(int num_threads) {
   lahuta::InfoPoolFactory::initialize(num_threads);
@@ -41,17 +68,21 @@ const option::Descriptor usage[] = {
   {CreateDbOptionIndex::Unknown, 0, "", "", validate::Unknown,
    "Usage: lahuta createdb [options]\n\n"
    "Create a database from alphafold2 models.\n\n"
-   "Required Options:"},
+   "Input Options (choose one):"},
   {CreateDbOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help, -h                   \tPrint this help message and exit."},
   {CreateDbOptionIndex::SourceDirectory, 0, "d", "directory", validate::Required,
-   "  --directory, -d <path>       \tSource directory containing model files."},
+   "  --directory, -d <path>       \tProcess all files in directory."},
+  {CreateDbOptionIndex::SourceVector, 0, "f", "files", validate::Required,
+   "  --files, -f <file1,file2>    \tProcess specific files (comma-separated)."},
+  {CreateDbOptionIndex::SourceFileList, 0, "l", "file-list", validate::Required,
+   "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."},
+  {0, 0, "", "", option::Arg::None,
+   "\nDirectory Source Options:"},
   {CreateDbOptionIndex::DatabasePath, 0, "o", "output", validate::Required,
    "  --output, -o <path>          \tOutput database path."},
-  {0, 0, "", "", option::Arg::None,
-   "\nSource Options:"},
   {CreateDbOptionIndex::Extension, 0, "e", "extension", validate::Required,
-   "  --extension, -e <ext>        \tFile extension (default: .cif.gz)."},
+   "  --extension, -e <ext>        \tFile extension for directory mode (default: .cif.gz)."},
   {CreateDbOptionIndex::Recursive, 0, "r", "recursive", option::Arg::None,
    "  --recursive, -r              \tRecursively search subdirectories."},
   {0, 0, "", "", option::Arg::None,
@@ -84,12 +115,37 @@ int CreateDbCommand::run(int argc, char* argv[]) {
   try {
     CreateDbOptions cli;
 
-    // required options
-    if (!options[createdb_opts::CreateDbOptionIndex::SourceDirectory]) {
-      Logger::get_logger()->error("Directory path is required (--directory)");
+    // parse source options
+    int source_count = 0;
+    if (options[createdb_opts::CreateDbOptionIndex::SourceDirectory]) {
+      cli.source_mode = CreateDbOptions::SourceMode::Directory;
+      cli.directory_path = options[createdb_opts::CreateDbOptionIndex::SourceDirectory].arg;
+      source_count++;
+    }
+    if (options[createdb_opts::CreateDbOptionIndex::SourceVector]) {
+      cli.source_mode = CreateDbOptions::SourceMode::Vector;
+      std::string files_str = options[createdb_opts::CreateDbOptionIndex::SourceVector].arg;
+      std::stringstream ss(files_str);
+      std::string file;
+      while (std::getline(ss, file, ',')) {
+        if (!file.empty()) cli.file_vector.push_back(file);
+      }
+      source_count++;
+    }
+    if (options[createdb_opts::CreateDbOptionIndex::SourceFileList]) {
+      cli.source_mode = CreateDbOptions::SourceMode::FileList;
+      cli.file_list_path = options[createdb_opts::CreateDbOptionIndex::SourceFileList].arg;
+      source_count++;
+    }
+
+    if (source_count == 0) {
+      Logger::get_logger()->error("Must specify exactly one source option: --directory, --files, or --file-list");
       return 1;
     }
-    cli.directory_path = options[createdb_opts::CreateDbOptionIndex::SourceDirectory].arg;
+    if (source_count > 1) {
+      Logger::get_logger()->error("Cannot specify multiple source options");
+      return 1;
+    }
 
     if (!options[createdb_opts::CreateDbOptionIndex::DatabasePath]) {
       Logger::get_logger()->error("Database output path is required (--output)");
@@ -121,10 +177,20 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     }
 
     Logger::get_logger()->info("Creating database...");
-    Logger::get_logger()->info("Source directory: {}", cli.directory_path);
+    switch (cli.source_mode) {
+      case CreateDbOptions::SourceMode::Directory:
+        Logger::get_logger()->info("Source directory: {}", cli.directory_path);
+        Logger::get_logger()->info("Extension: {}", cli.extension);
+        Logger::get_logger()->info("Recursive: {}", cli.recursive ? "Yes" : "No");
+        break;
+      case CreateDbOptions::SourceMode::Vector:
+        Logger::get_logger()->info("Source files: {} file(s)", cli.file_vector.size());
+        break;
+      case CreateDbOptions::SourceMode::FileList:
+        Logger::get_logger()->info("Source file list: {}", cli.file_list_path);
+        break;
+    }
     Logger::get_logger()->info("Database path: {}", cli.database_path);
-    Logger::get_logger()->info("Extension: {}", cli.extension);
-    Logger::get_logger()->info("Recursive: {}", cli.recursive ? "Yes" : "No");
     Logger::get_logger()->info("Batch size: {}", cli.batch_size);
     Logger::get_logger()->info("Threads: {}", cli.threads);
 
@@ -136,23 +202,21 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     Logger::get_logger()->info("Processing files...");
     const auto t0 = std::chrono::high_resolution_clock::now();
 
-    using WriterRes = tasks::ModelWriteTask::result_type;
     tasks::ModelWriteTask db_task;
-
-    using Payload = std::shared_ptr<const WriterRes>;
-    using LMDBPolicy = DBSpillPolicy<fmt::binary, Payload, LMDBBackend>;
 
     // build pipeline
     Collector<Payload, LMDBPolicy> db_collector{cli.batch_size, writer};
-    auto pipe = dsl::directory(cli.directory_path, cli.extension, cli.recursive)
-        | stage(dsl::thread_safe,
-            [db_task](std::string path, IEmitter<Payload>& out) mutable {
-                 auto res = db_task(std::move(path));
-                 out.emit(std::make_shared<const WriterRes>(std::move(res)));
-            })
-        | db_collector;
+    auto compute_stage = stage(dsl::thread_safe,
+        [db_task](std::string path, IEmitter<Payload>& out) mutable {
+          auto res = db_task(std::move(path));
+          out.emit(std::make_shared<const WriterRes>(std::move(res)));
+        });
 
-    dsl::run(pipe, cli.threads);
+    Source source_variant = pick_source(cli);
+    std::visit([&](auto&& src) {
+      auto pipe = dsl::source_t{std::move(src)} | compute_stage | db_collector;
+      dsl::run(pipe, cli.threads);
+    }, source_variant);
     db_collector.finish();
 
     const auto t1 = std::chrono::high_resolution_clock::now();

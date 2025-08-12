@@ -13,6 +13,8 @@ enum CreateDbOptionIndex : unsigned {
 
   // Source options
   SourceDirectory,
+  SourceVector,
+  SourceFileList,
   Extension,
   Recursive,
 
