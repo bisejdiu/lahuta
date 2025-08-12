@@ -102,13 +102,8 @@ public:
 
     try {
 
-      auto start = std::chrono::high_resolution_clock::now();
       auto mol = std::make_shared<RDKit::RWMol>();
-      lahuta::build_model_topology(mol, model_data.data, models::ModelTopologyMethod::Default);
-      auto end = std::chrono::high_resolution_clock::now();
-      auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-      std::cout << "Building Default topology for model data: " << model_data.file_path << std::endl;
-      std::cout << "Duration: " << duration << " microseconds" << std::endl;
+      lahuta::build_model_topology(mol, model_data.data, ModelTopologyMethod::CSR);
 
       auto luni = Luni::create(mol);
 

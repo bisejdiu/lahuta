@@ -95,14 +95,14 @@ add_library(lahuta_cpp STATIC
 
             src/models/topology.cpp
             src/models/parser.cpp
-            src/models/model_topology.cpp
+            src/models/topology_impl.cpp
             src/models/topology/engine.cpp
             src/models/topology/kernels/atoms.cpp
             src/models/topology/kernels/bonds.cpp
             src/models/topology/kernels/positions.cpp
             src/models/topology/kernels/aromatics.cpp
             src/models/topology/kernels/disulfides.cpp
-            src/models/topology/kernels/atom_typing.cpp
+            src/models/topology/kernels/build.cpp
 
             external/mmap/MemoryMapped.cpp
             src/valence_model.cpp

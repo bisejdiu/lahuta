@@ -59,7 +59,7 @@ Luni::Luni(std::string file_name, bool test) : file_name_(file_name) {
 
       result = parse_model(data, size);
     }
-    models::build_model_topology(mol, result, models::ModelTopologyMethod::CSR);
+    build_model_topology(mol, result, ModelTopologyMethod::CSR);
   } catch (const std::exception &e) {
     Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
   } catch (...) {
