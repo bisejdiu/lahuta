@@ -30,7 +30,7 @@ private:
   bool auto_heal_ = false;
 
   void run_impl(ComputationLabel root) {
-    registry.seal();                 // idempotent – does nothing on 2nd call
+    registry.seal();                 // idempotent, does nothing on 2nd call
     enable_chain(root);              // auto-enable full dependency tree
     schedule_and_run(registry, ctx); // executes + memoises + cycle-check
   }

@@ -1,0 +1,36 @@
+#ifndef LAHUTA_MODELS_MODEL_TOPOLOGY_HPP
+#define LAHUTA_MODELS_MODEL_TOPOLOGY_HPP
+
+#include "models/topology/engine.hpp"
+#include <memory>
+
+// clang-format off
+namespace lahuta::models {
+
+class ModelTopology {
+public:
+  explicit ModelTopology(const ModelParserResult& input) 
+    : engine_(std::make_unique<topology::ModelTopologyEngine>(input)) {}
+
+  void build(const ModelTopologyBuildingOptions& options = {});
+
+  void enable_computation(ModelTopologyComputation comp, bool enabled);
+  void enable_only(ModelTopologyComputation comps);
+  bool is_computation_enabled(ModelTopologyComputation comp) const;
+
+  void run_computations(ModelTopologyComputation mask);    // Execute specific computations
+  bool execute_computation(ModelTopologyComputation comp); // Execute a specific computation
+
+  void set_graph_type(RDKit::GraphType type);
+
+  std::shared_ptr<RDKit::RWMol> get_molecule() const { return engine_->get_data().mol; }
+  topology::ModelTopologyEngine& get_engine() { return *engine_; }
+  const topology::ModelTopologyEngine& get_engine() const { return *engine_; }
+
+private:
+  std::unique_ptr<topology::ModelTopologyEngine> engine_;
+};
+
+} // namespace lahuta::models
+
+#endif // LAHUTA_MODELS_MODEL_TOPOLOGY_HPP

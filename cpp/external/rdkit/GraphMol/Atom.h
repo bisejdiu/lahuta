@@ -427,12 +427,12 @@ class Atom {
   // Reset so it can be repurposed
   void resetState();
 
- protected:
   //! sets our owning molecule
   void setOwningMol(ROMol *other);
   //! sets our owning molecule
   void setOwningMol(ROMol &other) { setOwningMol(&other); }
 
+ protected:
   bool df_isAromatic;
   bool df_noImplicit;
   std::uint8_t d_numExplicitHs;

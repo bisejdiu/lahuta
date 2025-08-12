@@ -48,8 +48,8 @@ struct AtomTypingKernel {
   static ComputationResult
   execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params);
 
-private:
   static std::vector<RingRec> populate_ring_entities(RDKit::RWMol &mol);
+private:
   static bool should_initialize_ringinfo(int mol_size);
 };
 

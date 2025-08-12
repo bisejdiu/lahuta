@@ -1,14 +1,12 @@
 #ifndef LAHUTA_MODEL_TOPOLOGY_HPP
 #define LAHUTA_MODEL_TOPOLOGY_HPP
 
-#include "GraphMol/Conformer.h"
 #include "GraphMol/RWMol.h"
 #include "models/parser.hpp"
+#include "models/topology_impl.hpp"
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 // clang-format off
-using namespace RDKit;
-
 namespace lahuta {
 
 //
@@ -33,23 +31,20 @@ namespace lahuta {
 // This also means that there are no, or very few, UB checks. The program from this point forward
 // is in a "meaningful" state only as long as the assumptions are met.  - Besian, March 2025
 //
-
-enum class ModelTopologyMethod {
-  None,
-  Default,
-  CSR
-};
-
-void build_model_topology_def(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P);
-void build_model_topology_csr(std::shared_ptr<RDKit::RWMol> &mol, RDKit::Conformer &conf, const ModelParserResult &P);
+enum class ModelTopologyMethod { None, Default, CSR };
 
 inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
-    auto conformer = std::make_unique<RDKit::Conformer>(mol->getNumAtoms());
+    models::ModelTopology topology(P);
+
+    models::ModelTopologyBuildingOptions options;
     if (method == ModelTopologyMethod::CSR) {
-       build_model_topology_csr(mol, *conformer.release(), P);
-    } else if (method == ModelTopologyMethod::Default) {
-       build_model_topology_def(mol, *conformer.release(), P);
+        options.graph_type = RDKit::GraphType::CSRMolGraph;
+    } else {
+        options.graph_type = RDKit::GraphType::MolGraph;
     }
+
+    topology.build(options);
+    mol = topology.get_molecule();
 }
 
 bool mock_build_model_topology(const ModelParserResult &P);

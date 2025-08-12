@@ -125,9 +125,14 @@ class Conformer : public RDProps {
     d_positions[atomId] = position;
   }
 
-  //! set's all atom positions at once   - Besian, March 2025
-  inline void setAllAtomPositions(const std::vector<RDGeom::Point3D> &&positions) {
+  //! set all atom positions at once - Besian, August 2025
+  inline void setAllAtomPositions(const RDGeom::POINT3D_VECT &positions) {
     d_positions = positions;
+  }
+
+  //! set all atom positions at once - Besian, August 2025
+  inline void setAllAtomPositions(RDGeom::POINT3D_VECT &&positions) noexcept {
+    d_positions = std::move(positions);
   }
 
   //! overload

@@ -73,7 +73,7 @@ inline RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol, std::vector<int> 
   filtered_mol.addConformer(filtered_conf, true);
   filtered_mol.updatePropertyCache(false);
 
-  Logger::get_logger()->warn(
+  Logger::get_logger()->debug(
       "Filtered molecule has {} atoms and {} bonds",
       filtered_mol.getNumAtoms(),
       filtered_mol.getNumBonds());

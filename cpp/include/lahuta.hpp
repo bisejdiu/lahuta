@@ -10,7 +10,7 @@
 #include "logging.hpp"
 #include "topology.hpp"
 
-constexpr const char *LAHUTA_VERSION = "0.70.0";
+constexpr const char *LAHUTA_VERSION = "0.75.0";
 
 // clang-format off
 namespace lahuta {
@@ -31,32 +31,39 @@ public:
   static Luni create(const gemmi::Structure &st);
   static Luni create(std::shared_ptr<RDKit::RWMol> mol) { return Luni(mol); }
 
+  // FIX: no need to use optional here
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
 
   std::string get_file_name() const { return file_name_; };
-  const Topology &get_topology() const { return *get_topology_ptr(); }
+  const Topology &get_topology() const {
+    if (!topology) {
+      throw std::logic_error("Topology not built");
+    }
+    return *topology;
+  }
+
+  std::unique_ptr<Topology> release_topology() {
+    if (!topology) {
+      Logger::get_logger()->error("Topology not initialized. Cannot release topology.");
+      return nullptr;
+    }
+    topology_built_ = false;
+    return std::move(topology);
+  }
+
   bool has_topology_built() const { return topology_built_; }
-
-  RDKit::RWMol &get_molecule() { return *mol; }
-  const RDKit::RWMol &get_molecule() const { return *mol; }
-
-  auto *get_info(int idx) { return static_cast<RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
-  const auto *get_info(int idx) const { return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo()); }
-
-  RDKit::Conformer &get_conformer(int id = -1) { return mol->getConformer(id); }
-  const RDKit::Conformer &get_conformer(int id = -1) const { return mol->getConformer(id); }
 
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
 
   /// Can be called using the topology
-  void assign_molstar_atom_types()  { 
-    if (topology) { topology->assign_molstar_typing(); } 
+  void assign_molstar_atom_types()  {
+    if (topology) { topology->assign_molstar_typing(); }
     else { Logger::get_logger()->error("Topology not initialized. Cannot assign Molstar atom types."); }
   }
 
   void assign_arpeggio_atom_types() {
-    if (topology) { topology->assign_arpeggio_atom_types(); } 
+    if (topology) { topology->assign_arpeggio_atom_types(); }
     else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
   }
 
@@ -78,8 +85,8 @@ public:
 
   /// Check if a specific computation is enabled
   bool is_topology_computation_enabled(TopologyComputation comp) const {
-    if (topology) { 
-      return topology->is_computation_enabled(comp); 
+    if (topology) {
+      return topology->is_computation_enabled(comp);
     }
     Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
     return false;
@@ -87,7 +94,7 @@ public:
 
   /// Execute a specific computation with its dependencies
   bool execute_topology_computation(TopologyComputation comp) {
-    if (topology) { 
+    if (topology) {
       return topology->execute_computation(comp); 
     }
     Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
@@ -110,38 +117,24 @@ public:
     }
   }
 
-  //! Returns the atoms of the molecule.
-  const auto atoms() const { return mol->atoms(); }
-
-  //! Returns the number of atoms in the molecule.
   const auto n_atoms() const { return mol->getNumAtoms(); }
-
-  //! Returns the names of the atoms.
-  const std::vector<std::string> names() const;
-
-  //! Returns the symbols of the atoms.
-  const std::vector<std::string> symbols() const;
-
-  //! Returns the residue indices of the atoms.
-  const std::vector<int> indices() const;
-
-  //! Returns the atomic numbers of the atoms.
-  const std::vector<int> atomic_numbers() const;
-
-  //! Returns the elements of the atoms.
-  const std::vector<std::string> elements() const;
-
-  //! Returns the residue names of the atoms.
-  const std::vector<std::string> resnames() const;
-
-  //! Returns the residue ids of the atoms.
-  const std::vector<int> resids() const;
-
-  //! Returns the residue indices of the atoms.
+  const std::vector<int> indices()    const;
+  const std::vector<int> resids()     const;
   const std::vector<int> resindices() const;
-
-  //! Returns the chain labels of the atoms.
+  const std::vector<int> atomic_numbers() const;
+  const std::vector<std::string> names()    const;
+  const std::vector<std::string> symbols()  const;
+  const std::vector<std::string> elements() const;
+  const std::vector<std::string> resnames() const;
   const std::vector<std::string> chainlabels() const;
+
+  const auto &get_molecule() const { return *mol; }
+  const auto &get_conformer(int id = -1) const { return mol->getConformer(id); }
+  const auto *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
+
+  const auto *get_info(int idx) const {
+    return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo());
+  }
 
   const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
     return get_conformer(confId).getPositions();
@@ -149,27 +142,21 @@ public:
 
   friend class Contacts;
 
-  // FIX: add helper functions to get topology information
-  const RDKit::Atom *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
-  RDKit::Atom *get_atom(int idx) { return mol->getAtomWithIdx(idx); }
-
   /// very rough estimate of the memory size
   size_t total_size() const;
 
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) 
-    : mol(valid_mol), topology(std::make_optional<Topology>(valid_mol)), topology_built_(false) {}
+    : mol(valid_mol), topology(std::make_unique<Topology>(valid_mol)), topology_built_(false) {}
 
-  // Ensure topology is initialized for configuration
   void ensure_topology_initialized() {
     if (!topology) {
       Logger::get_logger()->debug("Initializing topology for configuration");
-      topology = std::make_optional<Topology>(mol);
+      topology = std::make_unique<Topology>(mol);
     }
   }
 
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
-  const Topology* get_topology_ptr() const;
 
   template <typename T>
   std::vector<T> atom_attrs(std::function<T(const RDKit::Atom *)> func) const;
@@ -178,9 +165,9 @@ private:
   std::vector<std::reference_wrapper<const T>>
   atom_attrs_ref(std::function<const T &(const RDKit::Atom *)> func) const;
 
-
+  // FIX: It should not be necessary to have a default constructed RWMol here
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  std::optional<Topology> topology;
+  std::unique_ptr<Topology> topology;
   bool topology_built_ = false;
 
   std::string file_name_;

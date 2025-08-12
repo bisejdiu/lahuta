@@ -17,7 +17,7 @@ void TopologyEngine::initialize(const TopologyBuildingOptions &opts) {
   engine_->set_auto_heal(opts.auto_heal);
 
   // TODO: we need to rethink how parameters are set and handled
-  // Also, I notice, the syntax is a bit verbose.
+  // the syntax can also be made less verbose
 }
 
 } // namespace lahuta::topology

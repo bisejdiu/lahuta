@@ -11,7 +11,8 @@
 namespace lahuta {
 
 namespace json_detail {
-  template<typename> struct always_false : std::false_type {};
+  template<typename>
+  struct always_false : std::false_type {};
 
   // very minimal escaping
   inline void append_escaped(std::string& out, std::string_view sv) {
@@ -28,26 +29,16 @@ namespace json_detail {
   }
 } // namespace json_detail
 
-template <typename T, typename = void>
+template<typename T, typename = void>
 struct JsonWritable : std::false_type {};
 
 // built ins
-template <>
+template<>
 struct JsonWritable<bool> : std::true_type {
   static void write(std::string &out, bool v) { out += v ? "true" : "false"; }
 };
 
-template <typename I>
-struct JsonWritable<I, std::enable_if_t<std::is_integral_v<I>>> : std::true_type {
-  static void write(std::string &out, I v) { out += std::to_string(v); }
-};
-
-template <typename F>
-struct JsonWritable<F, std::enable_if_t<std::is_floating_point_v<F>>> : std::true_type {
-  static void write(std::string &out, F v) { out += std::to_string(v); }
-};
-
-template <>
+template<>
 struct JsonWritable<std::string_view> : std::true_type {
   static void write(std::string &out, std::string_view sv) {
     out.push_back('"');
@@ -56,10 +47,20 @@ struct JsonWritable<std::string_view> : std::true_type {
   }
 };
 
-template <>
-struct JsonWritable<std::string> : std::true_type {
-  static void write(std::string &out, const std::string &s) {
-    JsonWritable<std::string_view>::write(out, s);
+template<typename I>
+struct JsonWritable<I, std::enable_if_t<std::is_integral_v<I>>> : std::true_type {
+  static void write(std::string &out, I v) { out += std::to_string(v); }
+};
+
+template<typename F>
+struct JsonWritable<F, std::enable_if_t<std::is_floating_point_v<F>>> : std::true_type {
+  static void write(std::string &out, F v) { out += std::to_string(v); }
+};
+
+template<typename S>
+struct JsonWritable<S, std::enable_if_t<std::is_convertible_v<S, std::string_view>>> : std::true_type {
+  static void write(std::string &out, S s) {
+    JsonWritable<std::string_view>::write(out, std::string_view{s});
   }
 };
 
@@ -82,8 +83,8 @@ class JsonBuilder {
 
 public:
   explicit JsonBuilder(size_t reserve = 128) {
-    buf_.reserve(reserve);
-    buf_.push_back('{');
+    buf_  .reserve(reserve);
+    buf_  .push_back('{');
     stack_.push_back({Ctx::Object, true});
   }
 
@@ -96,43 +97,36 @@ public:
     return *this;
   }
 
-  template <typename T>
+  template<typename T>
   JsonBuilder &value(const T &v) {
-    auto &f = stack_.back();
-    if (f.ctx == Ctx::Array) {
-      insert_separetor();
-    }
+    if (stack_.back().ctx == Ctx::Array) insert_separetor();
     JsonWritable<T>::write(buf_, v);
     return *this;
   }
 
   // nested structures
   JsonBuilder &begin_object() {
-    if (stack_.back().ctx == Ctx::Array) {
-      insert_separetor();
-    }
-    buf_.push_back('{');
+    if (stack_.back().ctx == Ctx::Array) insert_separetor();
+    buf_  .push_back('{');
     stack_.push_back({Ctx::Object, true});
     return *this;
   }
   JsonBuilder &end_object() {
     if (stack_.empty() || stack_.back().ctx != Ctx::Object) throw std::logic_error("unbalanced end_object()");
-    buf_.push_back('}');
+    buf_  .push_back('}');
     stack_.pop_back();
     return *this;
   }
 
   JsonBuilder &begin_array() {
-    if (stack_.back().ctx == Ctx::Array) {
-      insert_separetor();
-    }
-    buf_.push_back('[');
+    if (stack_.back().ctx == Ctx::Array) insert_separetor();
+    buf_  .push_back('[');
     stack_.push_back({Ctx::Array, true});
     return *this;
   }
   JsonBuilder &end_array() {
     if (stack_.empty() || stack_.back().ctx != Ctx::Array) throw std::logic_error("unbalanced end_array()");
-    buf_.push_back(']');
+    buf_  .push_back(']');
     stack_.pop_back();
     return *this;
   }
@@ -140,7 +134,7 @@ public:
   // finish
   std::string str() {
     if (stack_.size() != 1 || stack_.back().ctx != Ctx::Object) throw std::logic_error("JsonBuilder::str(): JSON not closed");
-    buf_.push_back('}');
+    buf_  .push_back('}');
     stack_.pop_back();
     return std::move(buf_);
   }
@@ -151,15 +145,14 @@ class JsonReader {
 
 public:
   explicit JsonReader(std::string_view text)
-      : doc_(
-            sajson::parse(
-                sajson::dynamic_allocation(),
-                sajson::mutable_string_view(text.size(), const_cast<char *>(text.data())))) {
+      : doc_(sajson::parse(
+          sajson::dynamic_allocation(),
+          sajson::mutable_string_view(text.size(), const_cast<char *>(text.data())))) {
     if (!doc_.is_valid()) throw std::runtime_error(doc_.get_error_message_as_cstring());
     if (doc_.get_root().get_type() != sajson::TYPE_OBJECT) throw std::runtime_error("expected JSON object");
   }
 
-  template <typename T> T get(std::string_view key) const {
+  template<typename T> T get(std::string_view key) const {
     const sajson::string k{key.data(), key.size()};
     const sajson::value v = doc_.get_root().get_value_of_key(k);
 

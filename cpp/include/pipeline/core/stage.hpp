@@ -15,7 +15,7 @@ using StageFn = std::function<void(In, IEmitter<Out> &)>;
 template <typename In, typename Out>
 class Stage {
 public:
-  using input_type = In;
+  using input_type  = In;
   using output_type = Out;
 
   Stage(StageFn<In, Out> fn, bool thread_safe = false) : fn_(std::move(fn)), safe_(thread_safe) {

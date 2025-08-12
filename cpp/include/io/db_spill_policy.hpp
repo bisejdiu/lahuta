@@ -49,7 +49,7 @@ public:
     }
 
     std::size_t append_size(const Payload& p) const {
-      // key + serialized‑value
+      // key + serialized-value
       auto const& rec = *p;
       auto const  val = serializer_type::serialize(rec);
       return rec.file_path.size() + val.size();

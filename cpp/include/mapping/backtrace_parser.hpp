@@ -16,7 +16,7 @@ class BacktraceParser {
 public:
   explicit BacktraceParser(std::string_view bt) : backtrace_(bt) {}
 
-  /// start_q/_t = 0‑based qStartPos / dbStartPos from result_t
+  /// start_q/_t = 0-based qStartPos / dbStartPos from result_t
   std::vector<std::pair<ResidueIndex, ResidueIndex>> parse(ResidueIndex start_q, ResidueIndex start_t) const {
     std::vector<std::pair<ResidueIndex, ResidueIndex>> mappings;
     ResidueIndex q = start_q, t = start_t;

@@ -66,8 +66,8 @@ ContactSet find_contacts(const ContactContext& ctx, const PredA pred_a, const Pr
   using RecA = raw_predicate_arg_t<PredA>;
   using RecB = raw_predicate_arg_t<PredB>;
 
-  static_assert(is_predicate_on<PredA, RecA>::value, "1st param must be a unary predicate returning bool‑convertible");
-  static_assert(is_predicate_on<PredB, RecB>::value, "2nd param must be a unary predicate returning bool‑convertible");
+  static_assert(is_predicate_on<PredA, RecA>::value, "1st param must be a unary predicate returning a convertible to bool");
+  static_assert(is_predicate_on<PredB, RecB>::value, "2nd param must be a unary predicate returning a convertible to bool");
 
   const auto &recs_a = ctx.topology.records<RecA>();
   const auto &recs_b = ctx.topology.records<RecB>();

@@ -12,8 +12,8 @@ class DynamicEquivalenceForest { // DSU
 private:
   mutable std::mutex m_;
   mutable std::vector<u32> parent_; // mutable for path compression
-  std::vector<u32> rank_;           // union‑by‑rank
-  std::vector<u32> head_;           // head of singly‑linked member list
+  std::vector<u32> rank_;           // union by rank
+  std::vector<u32> head_;           // head of singly linked member list
   std::vector<u32> next_;           // next pointer for each element
   std::vector<u32> size_;           // size of each root
 

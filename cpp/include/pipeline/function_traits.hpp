@@ -31,7 +31,7 @@ struct function_traits<R(Args...)> {
 template<typename R, typename... Args> struct function_traits<R (*)(Args...)> : function_traits<R(Args...)> {};
 template<typename R, typename... Args> struct function_traits<R (&)(Args...)> : function_traits<R(Args...)> {};
 
-/// cv‑qualified fn ptr: R(*const/volatile/const volatile)(Args…) ⇒ ⟨R(Args…)⟩
+/// cv-qualified fn ptr: R(*const/volatile/const volatile)(Args…) ⇒ ⟨R(Args…)⟩
 template<typename R, typename... Args> struct function_traits<R (*const)(Args...)>          : function_traits<R(Args...)> {};
 template<typename R, typename... Args> struct function_traits<R (*volatile)(Args...)>       : function_traits<R(Args...)> {};
 template<typename R, typename... Args> struct function_traits<R (*const volatile)(Args...)> : function_traits<R(Args...)> {};

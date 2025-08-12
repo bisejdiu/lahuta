@@ -37,7 +37,7 @@ auto tap(Tag tag, F &&f) {
 
   // make a stage<T,T> that calls f(v) then forwards v
   return stage(tag, [fn = std::forward<F>(f)](T v, IEmitter<T> &out) mutable {
-    fn(v); // side‑effect
+    fn(v);
     out.emit(std::move(v));
   });
 }

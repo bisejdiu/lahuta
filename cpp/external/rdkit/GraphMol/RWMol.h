@@ -44,9 +44,9 @@ class RWMol : public ROMol {
   RWMol(const RWMol &other) : ROMol(other) {}
   RWMol(
       const std::vector<Atom *> &atoms,
-      const std::vector<std::pair<size_t, size_t>> &edge_list,
-      const std::vector<Bond *> &edge_props, GraphType type = GraphType::CSRMolGraph)
-      : ROMol(atoms, edge_list, edge_props, type) {}
+      const std::vector<Bond *> &bonds,
+      GraphType type = GraphType::CSRMolGraph)
+      : ROMol(atoms, bonds, type) {}
 
   RWMol &operator=(const RWMol &);
   RWMol(RWMol &&other) noexcept : ROMol(std::move(other)) {}

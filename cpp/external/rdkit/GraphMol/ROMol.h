@@ -191,29 +191,33 @@ public:
   // NOTE: Will not take ownership of the atoms or bonds
   ROMol(
       const std::vector<Atom *> &atoms,
-      const std::vector<std::pair<size_t, size_t>> &edge_list,
-      const std::vector<Bond *> &edge_props, GraphType type = GraphType::CSRMolGraph) {
+      const std::vector<Bond *> &bonds,
+      GraphType type = GraphType::CSRMolGraph) {
 
     initMol();
 
+    for (auto atom : atoms) atom->setOwningMol(this);
+    for (auto bond : bonds) bond->setOwningMol(this);
+
     switch (type) {
       case GraphType::MolGraph: {
-
-        std::vector<std::tuple<size_t, size_t, Bond *>> bonds;
-        bonds.reserve(edge_list.size());
-        for (size_t i = 0; i < edge_list.size(); ++i) {
-          bonds.emplace_back(edge_list[i].first, edge_list[i].second, edge_props[i]);
+        std::vector<std::tuple<size_t, size_t, Bond *>> bonds_list;
+        bonds_list.reserve(bonds.size());
+        for (auto bond : bonds) {
+          bonds_list.emplace_back(bond->getBeginAtomIdx(), bond->getEndAtomIdx(), bond);
         }
 
         m_impl = std::make_unique<MolGraphImpl>();
-        dynamic_cast<MolGraphImpl *>(m_impl.get())->build(atoms, bonds);
-
-      } break;
+        auto *impl = dynamic_cast<MolGraphImpl *>(m_impl.get());
+        impl->build(atoms, bonds_list);
+        break;
+      }
       case GraphType::CSRMolGraph: {
         m_impl = std::make_unique<CSRMolGraphImpl>();
-        dynamic_cast<CSRMolGraphImpl *>(m_impl.get())->build(atoms, edge_list, edge_props);
-      } break;
-        return;
+        auto *impl = dynamic_cast<CSRMolGraphImpl *>(m_impl.get());
+        impl->build(atoms, bonds);
+        break;
+      }
     }
     should_delete_bonds = false;
     should_delete_atoms = false;

@@ -7,23 +7,64 @@
 #include "records.hpp"
 #include "topology.hpp"
 #include <GraphMol/MonomerInfo.h>
-#include <iostream>
+#include <span.hpp>
 #include <vector>
+#include <algorithm>
+#include <iostream>
+#include <iomanip>
 
 // clang-format off
 namespace lahuta {
 
+namespace {
+// custom sorting for contacts
+static std::vector<Contact> sort_interactions(const ContactSet& contact_set) {
+  std::vector<Contact> sorted_contacts(contact_set.begin(), contact_set.end());
+
+  std::stable_sort(sorted_contacts.begin(), sorted_contacts.end(),
+    [](const Contact& a, const Contact& b) {
+      // compare by type (category only)
+      if (a.type.category != b.type.category) {
+        return static_cast<uint8_t>(a.type.category) < static_cast<uint8_t>(b.type.category);
+      }
+      return a < b; // if types are the same, we will use existing ordering
+    });
+
+  return sorted_contacts;
+}
+
+static std::vector<span<const Contact>> slice_by_type(const std::vector<Contact>& contacts) noexcept {
+  std::vector<span<const Contact>> slices;
+  const std::size_t n = contacts.size();
+  if (n == 0) return slices;
+
+  std::size_t start = 0;
+  auto        cur   = contacts[0].type;
+
+  for (std::size_t i = 1; i < n; ++i) {
+    if (contacts[i].type != cur) {
+      slices.emplace_back(contacts.data() + start, i - start);
+      start = i;
+      cur   = contacts[i].type;
+    }
+  }
+
+  slices.emplace_back(contacts.data() + start, n - start); // last slice
+  return slices;
+}
+} // namespace
+
 class ContactTableFormatter {
 private:
-  static constexpr size_t MAX_ATOM_NAME_LEN = 3;
-  static constexpr size_t MAX_RES_NAME_LEN = 4;
-  static constexpr size_t MAX_CHAIN_ID_LEN = 2;
-  static constexpr size_t MAX_RING_ATOMS = 8;
+  static constexpr size_t MAX_ATOM_NAME_LEN   = 3;
+  static constexpr size_t MAX_RES_NAME_LEN    = 4;
+  static constexpr size_t MAX_CHAIN_ID_LEN    = 2;
+  static constexpr size_t MAX_RING_ATOMS      = 8;
   static constexpr size_t FALLBACK_RING_ATOMS = 4;
 
-  static constexpr size_t SEPARATOR_WIDTH = 7; // "  -&-  "
-  static constexpr size_t DISTANCE_WIDTH = 8;  // "12.34567"
-  static constexpr size_t TYPE_WIDTH = 20;     // interaction type names
+  static constexpr size_t SEPARATOR_WIDTH = 7;  // "  -&-  "
+  static constexpr size_t DISTANCE_WIDTH  = 8;  // "12.34567"
+  static constexpr size_t TYPE_WIDTH      = 20; // interaction type names
 
 public:
   static std::string format_truncated_atoms(const std::vector<std::reference_wrapper<const RDKit::Atom>>& atoms) {
@@ -120,35 +161,36 @@ public:
 
   static void print_contact_table(const ContactSet& contact_set, const Topology& topology, const std::string& interaction_name = "") {
 
-    // Max width needed for each column
-    size_t max_entity1_width = 0;
-    size_t max_entity2_width = 0;
-    std::vector<std::pair<std::string, std::string>> formatted_entities;
-    formatted_entities.reserve(contact_set.size());
+    auto sorted = sort_interactions(contact_set);
+    auto spans  = slice_by_type(sorted);
 
-    for (const auto& contact : contact_set) {
-      std::string entity1_info = format_entity_compact(topology, contact.lhs);
-      std::string entity2_info = format_entity_compact(topology, contact.rhs);
+    for (auto s : spans) {
+      InteractionType type = s[0].type;
 
-      max_entity1_width = std::max(max_entity1_width, entity1_info.length());
-      max_entity2_width = std::max(max_entity2_width, entity2_info.length());
-      formatted_entities.emplace_back(std::move(entity1_info), std::move(entity2_info));
-    }
+      // 1) compute widths & buffer formatted entity strings
+      std::size_t w1 = 0, w2 = 0;
+      std::vector<std::pair<std::string,std::string>> buf;
+      buf.reserve(s.size());
 
-    // Print with calculated widths for each column
-    size_t contact_idx = 0;
-    for (const auto& contact : contact_set) {
-      const auto& [entity1_info, entity2_info] = formatted_entities[contact_idx++];
-      std::string type_str = interaction_type_to_string(contact.type);
+      for (auto const& c : s) {
+        auto e1 = format_entity_compact(topology, c.lhs);
+        auto e2 = format_entity_compact(topology, c.rhs);
+        w1 = std::max(w1, e1.size());
+        w2 = std::max(w2, e2.size());
+        buf.emplace_back(std::move(e1), std::move(e2));
+      }
 
-      std::cout << std::left
-                << std::setw(max_entity1_width) << entity1_info
-                << "  -&-  "
-                << std::setw(max_entity2_width) << entity2_info
-                << " "
-                << std::setw(DISTANCE_WIDTH) << std::fixed << std::setprecision(3) << contact.distance
-                << " "
-                << type_str << std::endl;
+      for (std::size_t i = 0; i < s.size(); ++i) {
+        const auto& [e1,e2] = buf[i];
+        const auto& c       = s[i];
+
+        std::cout << std::left
+                  << std::setw(w1) << e1 << "  -&-  "
+                  << std::setw(w2) << e2 << " "
+                  << std::setw(DISTANCE_WIDTH) << std::fixed << std::setprecision(3) << c.distance << " "
+                  << interaction_type_to_string(type)
+                  << "\n";
+      }
     }
 
     if (!interaction_name.empty()) {
