@@ -130,8 +130,8 @@ class Converter:
 
 
 if __name__ == "__main__":
-    file_name = "/Users/bsejdiu/projects/lahuta/cpp/data/1kx2_small.cif"
-    file_name = "/Users/bsejdiu/projects/lahuta/cpp/build/mod_1kx2.cif"
+    file_name = "/Users/bsejdiu/projects/lahuta/core/data/1kx2_small.cif"
+    file_name = "/Users/bsejdiu/projects/lahuta/core/build/mod_1kx2.cif"
 
     # fmt: off
     # 1. Load a file of type .cif

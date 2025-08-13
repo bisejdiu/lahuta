@@ -1,9 +1,9 @@
-[submodule "cpp/external/mimalloc"]
-	path = cpp/external/mimalloc
+[submodule "core/external/mimalloc"]
+	path = core/external/mimalloc
 	url = https://github.com/microsoft/mimalloc.git
-[submodule "cpp/external/distopia/highway"]
-	path = cpp/external/distopia/highway
+[submodule "core/external/distopia/highway"]
+	path = core/external/distopia/highway
 	url = https://github.com/google/highway.git
-[submodule "cpp/external/spdlog"]
-	path = cpp/external/spdlog
+[submodule "core/external/spdlog"]
+	path = core/external/spdlog
 	url = https://github.com/gabime/spdlog.git
