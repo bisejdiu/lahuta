@@ -61,7 +61,7 @@ public:
         return atoms;
       }
       case Kind::Atom: {
-        const auto atom_idx = luni_ptr->get_topology().records<AtomRec>()[entity.index()].atom.getIdx();
+        const auto atom_idx = luni_ptr->get_topology().records<AtomRec>()[entity.index()].atom.get().getIdx();
         return {luni_ptr->get_molecule().getAtomWithIdx(atom_idx)};
       }
       case Kind::Ring: {
