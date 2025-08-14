@@ -3,7 +3,7 @@
 
 #include "models/parser.hpp"
 #include "serialization/serializer_impl.hpp"
-#include "tasks/model_db_writer.hpp"
+#include "analysis/system/records.hpp"
 #include <cstring>
 #include <serialization/formats.hpp>
 
@@ -75,9 +75,10 @@ struct Serializer<fmt::binary, ModelParserResult> {
   static Record deserialize(const std::string &s) { return deserialize(s.data(), s.size()); }
 };
 
+// Binary serialization for analysis::system::ModelRecord
 template<>
-struct Serializer<fmt::binary, tasks::ModelWriteTask::result_type> {
-  using Rec = tasks::ModelWriteTask::result_type;
+struct Serializer<fmt::binary, analysis::system::ModelRecord> {
+  using Rec = analysis::system::ModelRecord;
   static std::string serialize(const Rec &r) {
     std::string out;
 

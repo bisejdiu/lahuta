@@ -2,7 +2,6 @@
 #define LAHUTA_COMMON_HPP
 
 #include "GraphMol/MonomerInfo.h"
-#include "GraphMol/PeriodicTable.h"
 #include "GraphMol/RWMol.h"
 #include "logging.hpp"
 
@@ -89,18 +88,6 @@ inline int count_unique(const std::vector<std::string> &vec) {
   }
 
   return unique_elements.size();
-}
-
-inline std::vector<std::string> find_elements(const std::vector<int> &atomic_numbers) {
-  const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
-  std::vector<std::string> elements;
-  elements.reserve(atomic_numbers.size());
-
-  for (int atomic_number : atomic_numbers) {
-    elements.push_back(tbl->getElementSymbol(atomic_number));
-  }
-
-  return elements;
 }
 
 inline void log_atom_info(const RDKit::Atom *atom) {

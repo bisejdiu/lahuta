@@ -7,11 +7,11 @@
 // clang-format off
 namespace util {
 
-/// fallback: T ⇒ traits<decltype(&T::operator())>
+/// fallback: T => traits<decltype(&T::operator())>
 template<typename T, typename = void>
 struct function_traits : function_traits<decltype(&T::operator())> {};
 
-/// plain fn: R(Args…) ⇒ result_type=R, arity=|Args|, arg_t<N>=Args[N]
+/// plain fn: R(Args...) => result_type=R, arity=|Args|, arg_t<N>=Args[N]
 template<typename R, typename... Args>
 struct function_traits<R(Args...)> {
   using result_type = R;
@@ -27,20 +27,20 @@ struct function_traits<R(Args...)> {
   using arg_t = typename arg<N>::type;
 };
 
-/// fn ptr/ref: R(*)(Args…)/R(&)(Args…) ⇒ ⟨R(Args…)⟩
+/// fn ptr/ref: R(*)(Args...)/R(&)(Args...) => ⟨R(Args...)⟩
 template<typename R, typename... Args> struct function_traits<R (*)(Args...)> : function_traits<R(Args...)> {};
 template<typename R, typename... Args> struct function_traits<R (&)(Args...)> : function_traits<R(Args...)> {};
 
-/// cv-qualified fn ptr: R(*const/volatile/const volatile)(Args…) ⇒ ⟨R(Args…)⟩
+/// cv-qualified fn ptr: R(*const/volatile/const volatile)(Args...) => ⟨R(Args...)⟩
 template<typename R, typename... Args> struct function_traits<R (*const)(Args...)>          : function_traits<R(Args...)> {};
 template<typename R, typename... Args> struct function_traits<R (*volatile)(Args...)>       : function_traits<R(Args...)> {};
 template<typename R, typename... Args> struct function_traits<R (*const volatile)(Args...)> : function_traits<R(Args...)> {};
 
-/// std::function: std::function<R(Args…)> ⇒ ⟨R(Args…)⟩
+/// std::function: std::function<R(Args...)> => ⟨R(Args...)⟩
 template<typename R, typename... Args>
 struct function_traits<std::function<R(Args...)>> : function_traits<R(Args...)> {};
 
-/// member‐fn ptr: R(C::*)(Args…)[cv][ref][noexcept] ⇒ ⟨R(Args…)⟩
+/// member‐fn ptr: R(C::*)(Args...)[cv][ref][noexcept] => ⟨R(Args...)⟩
 #define DEF_TRAITS_CVREF_NOEX(fn_qual)                                             \
 template<typename C, typename R, typename... Args>                                 \
 struct function_traits<R (C::*)(Args...) fn_qual> : function_traits<R(Args...)> {};

@@ -1,14 +1,16 @@
-#include "cli/global_options.hpp"
-#include "cli/arg_validation.hpp"
-#include "commands/contacts.hpp"
-#include "commands/createdb.hpp"
-#include "logging.hpp"
 #include <iostream>
 #include <string_view>
 
-namespace lahuta::cli {
+#include "cli/arg_validation.hpp"
+#include "cli/global_options.hpp"
+#include "commands/contacts.hpp"
+#include "commands/createdb.hpp"
+#include "logging.hpp"
 
+// clang-format off
+namespace lahuta::cli {
 namespace global_opts {
+
 const option::Descriptor usage[] = {
   {GlobalOptionIndex::Unknown, 0, "", "", validate::Ignore,
    "Usage: lahuta [global-options] [subcommand-options]\n\n"
@@ -23,8 +25,8 @@ const option::Descriptor usage[] = {
   {GlobalOptionIndex::Verbose, 0, "v", "verbose", validate::Verbosity,
    "  --verbose, -v <level>        \tSet verbosity level:\n"
    "                               \t  0 = errors only\n"
-   "                               \t  1 = warnings and errors (default)\n"
-   "                               \t  2 = info, warnings, errors, and debug"},
+   "                               \t  1 = info, warnings, and errors\n"
+   "                               \t  2 = debug, info, warnings, and errors"},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace global_opts
@@ -55,7 +57,7 @@ void print_global_help() {
     return {};
   }
 
-  // Default log level is Warn (level 1)
+  // Default log level is Warn unless overridden by -v
   log_level = lahuta::Logger::LogLevel::Warn;
   int subcommand_start = 0;
 
@@ -69,11 +71,11 @@ void print_global_help() {
         if (level == "0") {
           log_level = lahuta::Logger::LogLevel::Error;
         } else if (level == "1") {
-          log_level = lahuta::Logger::LogLevel::Warn;
+          log_level = lahuta::Logger::LogLevel::Info;
         } else if (level == "2") {
           log_level = lahuta::Logger::LogLevel::Debug;
         } else {
-          lahuta::Logger::get_logger()->error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (warnings+), or 2 (info+debug){}", level, validate::HELP_MSG_SUFFIX);
+          lahuta::Logger::get_logger()->error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (info+), or 2 (debug+){}", level, validate::HELP_MSG_SUFFIX);
           return {};
         }
         ++i; // Skip the verbosity level argument
@@ -108,6 +110,7 @@ void print_global_help() {
   // Check if this is actually a subcommand or just an option for the default contacts command
   const auto& registry = get_command_registry();
   if (registry.find(subcommand) == registry.end()) {
+    // TODO: re-evaluate if we want this behavior.
     // Not a recognized subcommand, treat as options for default "contacts" command
     sub_argc = argc;
     sub_argv = argv;

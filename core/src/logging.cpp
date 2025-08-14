@@ -22,8 +22,13 @@ Logger::LogLevel Logger::get_log_level() { return static_cast<LogLevel>(logger->
 
 void Logger::configure_for_spinner(indicators::MinimalProgressSpinner *spinner, std::mutex &spinner_mutex) {
   auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-  auto spinner_sink = std::make_shared<indicators::SpinnerAwareSink>(console_sink, spinner, spinner_mutex);
-  auto new_logger   = std::make_shared<spdlog::logger>("console", spinner_sink);
+  std::shared_ptr<spdlog::sinks::sink> sink;
+  if (spinner) {
+    sink = std::make_shared<indicators::SpinnerAwareSink>(console_sink, spinner, spinner_mutex);
+  } else {
+    sink = console_sink;
+  }
+  auto new_logger   = std::make_shared<spdlog::logger>("console", sink);
 
   new_logger->set_level(logger->level());
   logger = new_logger;

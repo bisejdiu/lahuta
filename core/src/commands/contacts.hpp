@@ -1,8 +1,9 @@
 #ifndef LAHUTA_CLI_CONTACTS_HPP
 #define LAHUTA_CLI_CONTACTS_HPP
 
-#include "commands/command.hpp"
 #include <memory>
+
+#include "commands/command.hpp"
 
 namespace lahuta::cli {
 
@@ -29,6 +30,9 @@ enum ContactsOptionIndex : unsigned {
   OutputLog,
   NoCompress,
 
+  // Experimental backend
+  Dynamic,
+
   // Runtime options
   Threads,
   BatchSize
@@ -38,7 +42,7 @@ enum ContactsOptionIndex : unsigned {
 class ContactsCommand final : public CliCommand {
 public:
   [[nodiscard]] static std::unique_ptr<CliCommand> create();
-  int run(int argc, char* argv[]) override;
+  int run(int argc, char *argv[]) override;
 
 private:
   ContactsCommand() = default;
@@ -46,4 +50,4 @@ private:
 
 } // namespace lahuta::cli
 
-#endif // LAHUTA_CLI_CONTACTS_HPP 
+#endif // LAHUTA_CLI_CONTACTS_HPP

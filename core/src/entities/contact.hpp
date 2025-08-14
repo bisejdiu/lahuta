@@ -3,7 +3,6 @@
 
 #include "entity_id.hpp"
 #include "interaction_types.hpp"
-#include <functional>
 #include <vector>
 
 // clang-format off
@@ -38,7 +37,7 @@ struct ContactHash { // FIX: used?
   std::size_t operator()(const Contact& c) const {
     std::size_t h1 = std::hash<uint64_t>{}(c.lhs.raw);
     std::size_t h2 = std::hash<uint64_t>{}(c.rhs.raw);
-    std::size_t h3 = std::hash<uint8_t>{}(static_cast<uint8_t>(c.type));
+    std::size_t h3 = std::hash<uint32_t>{}(static_cast<uint32_t>(c.type));
     return (h1 ^ (h2 << 1)) ^ (h3 << 2);
   }
 };

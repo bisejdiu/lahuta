@@ -37,4 +37,3 @@ struct ArpeggioContactProvider {
 } // namespace lahuta
 
 #endif // LAHUTA_CONTACTS_ARPEGGIO_PROVIDER_HPP
-

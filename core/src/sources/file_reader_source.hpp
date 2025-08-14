@@ -30,6 +30,13 @@ public:
     return current_batch_[current_index_++];
   }
 
+  void reset() {
+    current_index_ = 0;
+    current_batch_.clear();
+    if (reader_) reader_->reset();
+    load_next_batch();
+  }
+
 private:
   bool load_next_batch() {
     current_batch_.clear();

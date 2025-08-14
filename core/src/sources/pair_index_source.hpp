@@ -32,6 +32,11 @@ public:
     return std::nullopt;
   }
 
+  void reset() {
+    i_ = 0;
+    j_ = 0;
+  }
+
 private:
   const std::vector<SeqData> &seqs_;
   std::size_t i_ = 0, j_ = 0;

@@ -5,6 +5,7 @@
 #include "models/parser.hpp"
 #include "models/topology.hpp"
 #include "nsgrid.hpp"
+#include "models/factory.hpp"
 #include "selections/mol_filters.hpp"
 #include <string>
 
@@ -13,7 +14,7 @@
 namespace lahuta {
 
 Luni::Luni(std::string file_name) : file_name_(file_name) {
-  Logger::get_logger()->info("Processing file: {}", file_name_);
+  Logger::get_logger()->debug("Processing file: {}", file_name_);
   mol = read_and_make_molecule(gemmi::MaybeGzipped(file_name_));
 
   /*auto st = gemmi::read_structure_gz(file_name_);*/
@@ -35,7 +36,15 @@ Luni Luni::create(const IR &ir) {
   return Luni(mol);
 }
 
-Luni::Luni(std::string file_name, bool test) : file_name_(file_name) {
+Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
+  // Ensure model pools are initialized for single threaded use by default.
+  // The pipeline path will reinitialize with the correct thread count.
+  try {
+    // Pool initialization is idempotent
+    InfoPoolFactory::initialize(1);
+    BondPoolFactory::initialize(1);
+    AtomPoolFactory::initialize(1);
+  } catch (...) {}
 
   ModelParserResult result;
 
@@ -57,9 +66,21 @@ Luni::Luni(std::string file_name, bool test) : file_name_(file_name) {
       const char *data = reinterpret_cast<const char *>(mm.getData());
       size_t size = static_cast<size_t>(mm.size());
 
+
       result = parse_model(data, size);
     }
     build_model_topology(mol, result, ModelTopologyMethod::CSR);
+
+    // build topology in model mode
+    try {
+      topology = std::make_shared<Topology>(mol);
+      TopologyBuildingOptions opts;
+      opts.mode = TopologyBuildMode::Model;
+      topology->build(opts);
+      topology_built_ = true;
+    } catch (const std::exception &e) {
+      Logger::get_logger()->error("Failed to build topology in model mode: {}", e.what());
+    }
   } catch (const std::exception &e) {
     Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
   } catch (...) {
@@ -69,6 +90,11 @@ Luni::Luni(std::string file_name, bool test) : file_name_(file_name) {
 
 bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
   try {
+    if (topology_built_) {
+      Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
+      return true;
+    }
+
     ensure_topology_initialized();
 
     if (tops) { topology->build(*tops); }
@@ -78,7 +104,6 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
     return true;
   } catch (const std::exception &e) {
     Logger::get_logger()->error("Error building topology: {}", e.what());
-    topology_built_ = true;
     return false;
   }
 }

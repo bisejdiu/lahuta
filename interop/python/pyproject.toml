@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lahuta"
+version = "0.3.0"
+description = "C++ bindings for Lahuta"
+authors = [{name = "Besian I Sejdiu, PhD (bisejdiu)"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "orjson",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lahuta*"]
+
+[tool.setuptools.package-data]
+lahuta = [
+    "lib/lahutaxx*.so",
+    "lib/lahutaxx*.pyd",
+    "lib/lahutaxx*.dll",
+    "lib/mappingxx*.so",
+    "lib/mappingxx*.pyd",
+    "lib/mappingxx*.dll",
+    "lib/*.pyi",
+    "lib/lahuta/*.pyi",
+    "py.typed",
+]
+
+[tool.ruff]
+line-length = 120
+lint.isort = { known-first-party = ['lahuta'] }
+target-version = "py310"
+
+
+[tool.ruff.lint.per-file-ignores]
+"*.pyi" = ["ANN"]
+"tests/typecheck/*.py" = ["F401", "F841"]
+"*" = ["E701", "E702"]
+"lahuta/__init__.py" = ["F405"]
+"lahuta/mapping/__init__.py" = ["F405"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+minversion = 7.4
+addopts = "--maxfail=18"
+log_level = "INFO"

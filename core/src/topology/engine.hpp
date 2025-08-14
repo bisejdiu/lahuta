@@ -18,8 +18,8 @@ using namespace compute;
 class TopologyEngine {
 public:
   explicit TopologyEngine(std::shared_ptr<RDKit::RWMol> mol) {
-    data_   = std::make_unique<TopologyData>(mol);
-    engine_ = std::make_unique<ComputeEngine<TopologyData, Mut::ReadWrite>>(*data_);
+    data_   = std::make_unique<TopologyContext>(mol);
+    engine_ = std::make_unique<ComputeEngine<TopologyContext, Mut::ReadWrite>>(*data_);
 
     register_computation();
 
@@ -31,6 +31,7 @@ public:
     engine_->enable(ResidueComputation<>        ::label, true);
     engine_->enable(RingComputation<>           ::label, true);
     engine_->enable(AtomTypingComputation<>     ::label, true);
+    engine_->enable(SeedFromModelComputation<>  ::label, false);
   }
 
   void initialize(const TopologyBuildingOptions &opts);
@@ -39,6 +40,20 @@ public:
   bool execute() {
     try {
       auto results = engine_->w_execute_all();
+
+      // code block is just for logging
+      if (!results.empty()) {
+        int ok = 0;
+        for (const auto &r : results) ok += r.result.is_success() ? 1 : 0;
+        Logger::get_logger()->debug("TopologyEngine executed {} computations ({} ok)", (int)results.size(), ok);
+        for (const auto &r : results) {
+          if (!r.result.is_success()) {
+            Logger::get_logger()->debug("  - {}: failed", r.label.to_string_view());
+          }
+        }
+      } else {
+        Logger::get_logger()->debug("TopologyEngine executed 0 computations");
+      }
       auto is_success = [](const ResultEntry &entry) { return entry.result.is_success(); };
       bool success = !results.empty() && std::all_of(results.begin(), results.end(), is_success);
 
@@ -51,6 +66,7 @@ public:
 
   bool execute_computation(const ComputationLabel &label) {
     try {
+      Logger::get_logger()->debug("TopologyEngine run: {}", label.to_string_view());
       return engine_->run<void>(label);
     } catch (const std::exception &e) {
       Logger::get_logger()->error("Error executing computation {}: {}", label.to_string_view(), e.what());
@@ -58,8 +74,8 @@ public:
     }
   }
 
-  TopologyData &get_data() { return *data_; }
-  const TopologyData &get_data() const { return *data_; }
+  TopologyContext &get_data() { return *data_; }
+  const TopologyContext &get_data() const { return *data_; }
 
   void enable(const ComputationLabel &label, bool enabled) {
     engine_->enable(label, enabled);
@@ -75,8 +91,8 @@ public:
     return &(engine_->template get_parameters<P>(label));
   }
 
-  ComputeEngine<TopologyData, Mut::ReadWrite> *get_engine() {
-    return static_cast<ComputeEngine<TopologyData, Mut::ReadWrite> *>(engine_.get());
+  ComputeEngine<TopologyContext, Mut::ReadWrite> *get_engine() {
+    return static_cast<ComputeEngine<TopologyContext, Mut::ReadWrite> *>(engine_.get());
   }
 
 private:
@@ -87,11 +103,12 @@ private:
     engine_->add(std::make_unique<ResidueComputation<>>(ResidueComputationParams{}));
     engine_->add(std::make_unique<RingComputation<>>(RingComputationParams{}));
     engine_->add(std::make_unique<AtomTypingComputation<>>(AtomTypingParams{}));
+    engine_->add(std::make_unique<SeedFromModelComputation<>>(SeedFromModelParams{}));
   }
 
 private:
-  std::unique_ptr<TopologyData> data_;
-  std::unique_ptr<ComputeEngine<TopologyData, Mut::ReadWrite>> engine_;
+  std::unique_ptr<TopologyContext> data_;
+  std::unique_ptr<ComputeEngine<TopologyContext, Mut::ReadWrite>> engine_;
 };
 
 } // namespace lahuta::topology

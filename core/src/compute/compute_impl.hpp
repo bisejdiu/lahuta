@@ -22,7 +22,7 @@ public:
       auto lbl = std::string(Impl::label.to_string_view());
       return ComputationResult(ComputationError("Invalid parameter type for " + lbl));
     }
-    // RW → RO inlined cast
+
     const auto& typed = static_cast<const P&>(raw);
     return static_cast<Impl*>(this)->execute_typed(static_cast<DataContext<D, Mut::ReadOnly>>(ctx), typed);
   }

@@ -10,7 +10,6 @@ namespace lahuta::pipeline::dsl {
 template<typename L, typename R>
 struct pipe_t { L lhs; R rhs; };
 
-// “drop everything”
 struct drain_t {};
 inline constexpr drain_t drain{};
 

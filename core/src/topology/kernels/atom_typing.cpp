@@ -3,7 +3,7 @@
 #include "chemistry/atom_typing.hpp"
 #include "chemistry/group_typing.hpp"
 #include "logging.hpp"
-#include "topology/data.hpp"
+#include "topology/context.hpp"
 #include "topology/kernels.hpp"
 #include <rdkit/GraphMol/RWMol.h>
 #include <typing/flags.hpp>
@@ -28,8 +28,16 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
 
       data.atoms  = AtomTypeAnalysis()(*data.mol);
       data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
-      data.rings  = populate_ring_entities(*data.mol);
 
+      //
+      // Rings have been computed by the ring kernel which is a dependency of this computation
+      // so we don't need to recompute them here.
+      //
+      // if (data.rings.empty()) {
+      //   data.rings  = populate_ring_entities(*data.mol);
+      // }
+
+      Logger::get_logger()->debug("atom_typing: molstar, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
       return ComputationResult(true);
     } catch (const std::exception &e) {
       Logger::get_logger()->error("Exception in atom typing: {}", e.what());
@@ -37,7 +45,7 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
     }
   } else {
     try {
-      // FIX: should have a clear method on the TopologyData
+      // FIX: should have a clear method on the TopologyContext
       data.atoms.clear(); data.groups.clear(); data.rings.clear();
       data.atoms.reserve(data.mol->getNumAtoms());
       for (auto atom : data.mol->atoms()) {
@@ -76,7 +84,7 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
           }
         }
       }
-
+      Logger::get_logger()->debug("atom_typing: arpeggio, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
       return ComputationResult(true);
     } catch (const std::exception &e) {
       Logger::get_logger()->error("Exception in atom typing: {}", e.what());
@@ -167,6 +175,6 @@ bool AtomTypingKernel::should_initialize_ringinfo(int mol_size) {
   return false;
 }
 
-template ComputationResult AtomTypingKernel::execute<TopologyData>(DataContext<TopologyData, Mut::ReadWrite> &, const AtomTypingParams &);
+template ComputationResult AtomTypingKernel::execute<TopologyContext>(DataContext<TopologyContext, Mut::ReadWrite> &, const AtomTypingParams &);
 
 } // namespace lahuta::topology

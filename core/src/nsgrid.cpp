@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <stdexcept>
 #include <unordered_set>
 
 #include <rdkit/Geometry/point.h>
@@ -10,9 +11,11 @@
 
 namespace lahuta {
 
-static const int END = -1;
-static const int MAX_GRID_DIM = 1290;
-static const int SMALL_SYSTEM_THRESHOLD = 10'000; // upper cutoff for brute-force search
+namespace {
+constexpr int   END = -1;
+constexpr int   MAX_GRID_DIM = 1290;
+constexpr int   SMALL_SYSTEM_THRESHOLD = 10'000; // upper cutoff for brute-force search
+constexpr float CELL_EPSILON = 1e-3f;
 
 constexpr std::array<std::array<int, DIMENSIONS>, 13> NeighborCells = {{
   {1, 0,  0}, {1, 1,  0}, {0, 1,  0}, {-1, 1,  0},
@@ -20,6 +23,8 @@ constexpr std::array<std::array<int, DIMENSIONS>, 13> NeighborCells = {{
   {1, 0,  1}, {1, 1,  1}, {0, 1,  1}, {-1, 1,  1},
   {0, 0,  1}
 }};
+
+}
 
 FastNS::FastNS(const RDGeom::POINT3D_VECT &coords, float scale_factor) : _coords(coords), _scale_factor(scale_factor) {
 
@@ -56,76 +61,82 @@ FastNS::FastNS(const std::vector<std::vector<double>> &coords, float scale_facto
   }
 }
 
-
-
 bool FastNS::build(double cutoff) {
   this->cutoff = cutoff;
 
-  // compute box dimensions based on the current scale factor
-  for (int i = 0; i < DIMENSIONS; ++i) {
+  if (_coords.empty()) return false;
+
+  for (int i = 0; i < DIMENSIONS; ++i)
     box[i] = _scale_factor * static_cast<float>(_lmax[i] - _lmin[i]);
-  }
 
-  // validate box dimensions against cutoff
-  if (box[0] < cutoff || box[1] < cutoff || box[2] < cutoff) {
-
-    if (_coords.size() < SMALL_SYSTEM_THRESHOLD) { // fall back to brute-force search
-      return adaptive_build(cutoff);
+  const float min_cell = static_cast<float>(cutoff) + CELL_EPSILON;
+  for (int i = 0; i < DIMENSIONS; ++i) {
+    if (box[i] < min_cell) {
+      if (_coords.size() < SMALL_SYSTEM_THRESHOLD) return adaptive_build(cutoff);
+      Logger::get_logger()->critical("Failed to build grid: cutoff ({:.6f}) >= box dim {} ({:.6f}). Use a larger scale_factor.", cutoff, i, box[i]);
+      return false;
     }
-    Logger::get_logger()->critical("Failed to build grid: likely because the cutoff is larger than the box dimensions.");
-    return false;
   }
 
-  // shift coordinates
-  for (auto &coord : _coords) {
+  for (auto &c : _coords) {
     for (int i = 0; i < DIMENSIONS; ++i) {
-      coord[i] -= _lmin[i];
+      c[i] -= _lmin[i];
     }
   }
 
   coords_bbox = flatten_coordinates(_coords);
-  lmin = _lmin;
-  lmax = _lmax;
-  build_grid();
+  lmin = _lmin; lmax = _lmax;
 
+  try {
+    build_grid(); // may throw from prepare_box()
+  } catch (const std::exception &e) {
+    Logger::get_logger()->critical("Grid construction failed: {}", e.what());
+    return false;
+  }
   return true;
 }
 
-
-// An (unnecessarily?) complicated way to fall back to what is essentially a brute-force search.
-bool FastNS::adaptive_build(double cutoff, int max_retries) {
-
+bool FastNS::adaptive_build(double cutoff) {
   this->cutoff = cutoff;
-  float updated_scale_factor = _scale_factor;
+  const float min_cell = static_cast<float>(cutoff) + CELL_EPSILON;
 
-  // For box[i] to meet the cutoff, we require:
-  //   _scale_factor * ( _lmax[i] - _lmin[i] ) >= cutoff
-  //   _scale_factor >= cutoff / (_lmax[i] - _lmin[i])
+  //
+  // Our `hypothesis` tests were "stalling" unexpectedly on small test systems.
+  // This was caused by degenerate dimensions.  - Besian, September 2025
+  //
+  const float min_meaningful_extent = 1e-6f;  // 1 micrometer
+  bool has_degenerate_dimension = false;
 
-  const float epsilon = 1e-2f; // a smaller epsilon would be (technically) better, but less robust.
   float min_required_scale = 0.0f;
   for (int i = 0; i < DIMENSIONS; ++i) {
-    float delta = static_cast<float>(_lmax[i] - _lmin[i]); // we may need to check if delta > 0
-    float required_scale = static_cast<float>(cutoff) / delta;
+    const float delta = static_cast<float>(_lmax[i] - _lmin[i]);
+
+    if (delta <= min_meaningful_extent) {
+      has_degenerate_dimension = true;
+      continue;
+    }
+
+    float required_scale = min_cell / delta;
     min_required_scale = std::max(min_required_scale, required_scale);
   }
-  _scale_factor = min_required_scale + epsilon;
+
+  if (has_degenerate_dimension) return false;
+
+  // tiny bump to avoid borderline rounding
+  _scale_factor = std::nextafter(min_required_scale, std::numeric_limits<float>::infinity());
 
   for (int i = 0; i < DIMENSIONS; ++i) {
     box[i] = _scale_factor * static_cast<float>(_lmax[i] - _lmin[i]);
   }
 
-  // shift coordinates
-  for (auto &coord : _coords) {
-    for (int i = 0; i < DIMENSIONS; ++i) {
-      coord[i] -= _lmin[i];
-    }
+  for (auto &c : _coords) {
+    for (int i = 0; i < DIMENSIONS; ++i) c[i] -= _lmin[i];
   }
 
   coords_bbox = flatten_coordinates(_coords);
-  lmin = _lmin, lmax = _lmax;
-  build_grid();
+  lmin = _lmin; lmax = _lmax;
 
+  try { build_grid(); } catch (...) { return false; }
   return true;
 }
 
@@ -174,7 +185,6 @@ NSResults FastNS::self_search() const {
               j = next_id[j];
             }
           }
-
           i = next_id[i];
         }
       }
@@ -286,6 +296,14 @@ void FastNS::prepare_box() {
 
   for (int i = 0; i < 3; ++i) {
     ncells[i] = std::min(static_cast<int>(std::floor(box[i] / min_cellsize)), MAX_GRID_DIM);
+  }
+
+  for (int i = 0; i < 3; ++i) {
+    if (ncells[i] <= 0) {
+      throw std::runtime_error("Grid construction failed: cutoff (" + std::to_string(cutoff) +
+                               ") is too large relative to box dimension " + std::to_string(i) +
+                               " (" + std::to_string(box[i]) + "). Try a smaller cutoff or larger scale_factor.");
+    }
   }
 
   cellsize[0] = box[0] / ncells[0];

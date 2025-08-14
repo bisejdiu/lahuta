@@ -1,7 +1,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 cachedir/
-*.py[cod]
+*.py[codi]
 *$py.class
 
 # No easily downloadable PDB/CIF files in the testing directory
@@ -12,6 +12,9 @@ tests/data/*.cif
 
 # other
 core/external/Eigen/eigen
+.DS_Store
+design_docs/
+interop/python/notebooks/
 
 # IDEs and editors
 .vscode

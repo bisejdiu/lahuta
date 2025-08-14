@@ -13,8 +13,8 @@
 // clang-format off
 namespace lahuta::topology::compute {
 
-constexpr std::size_t MAX_N_COMPUTATIONS = 16;
-using Mask = std::uint16_t;
+constexpr std::size_t MAX_N_COMPUTATIONS = 64;
+using Mask = std::uint64_t;
 
 struct ExecOrder {
   std::array<u8, MAX_N_COMPUTATIONS> node_indices{};
@@ -33,6 +33,7 @@ struct ComputeNode {
   // these two cache the last run
   bool done     = false;             // if the computation was run
   ComputationResult res;             // the result of the last run
+  bool postprocessed = false;        // if on_complete was invoked on the result
 };
 
 } // namespace lahuta::topology::compute

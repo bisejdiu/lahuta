@@ -15,9 +15,9 @@ namespace lahuta::models::topology {
 struct ModelData {
   ModelData(const ModelParserResult& input)
     : input_data(&input),
-      info_pool(PoolFactory<InfoPool>::getFreshPoolForCurrentThread()),
-      atom_pool(PoolFactory<AtomPool>::getFreshPoolForCurrentThread()),
-      bond_pool(PoolFactory<BondPool>::getFreshPoolForCurrentThread()) {}
+      info_pool(PoolFactory<InfoPool>::get_fresh_pool_for_current_thread()),
+      atom_pool(PoolFactory<AtomPool>::get_fresh_pool_for_current_thread()),
+      bond_pool(PoolFactory<BondPool>::get_fresh_pool_for_current_thread()) {}
 
   const ModelParserResult* input_data;
 

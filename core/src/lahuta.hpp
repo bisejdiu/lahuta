@@ -25,7 +25,14 @@ public:
   Luni& operator=(Luni&&) = default;
 
   explicit Luni(std::string file_name);
-  explicit Luni(std::string file_name, bool test);
+
+  // Tag type for model-file input path
+  struct ModelFileTag { explicit ModelFileTag() = default; };
+  static inline constexpr ModelFileTag ModelFile{};
+  explicit Luni(std::string file_name, ModelFileTag);
+
+  // more covenient factory method for model path input
+  static Luni from_model_file(std::string file_name) { return Luni(std::move(file_name), ModelFile); }
 
   static Luni create(const IR &ir);
   static Luni create(const gemmi::Structure &st);
@@ -42,13 +49,12 @@ public:
     return *topology;
   }
 
-  std::unique_ptr<Topology> release_topology() {
+  std::shared_ptr<Topology> get_topology_shared() {
     if (!topology) {
-      Logger::get_logger()->error("Topology not initialized. Cannot release topology.");
+      Logger::get_logger()->error("Topology not initialized. Cannot get shared topology.");
       return nullptr;
     }
-    topology_built_ = false;
-    return std::move(topology);
+    return topology;
   }
 
   bool has_topology_built() const { return topology_built_; }
@@ -68,7 +74,7 @@ public:
   }
 
   /// Enable or disable a specific computation in the topology
-  void enable_topology_computation(TopologyComputation comp, bool enabled) {
+  void enable_computation(TopologyComputation comp, bool enabled) {
     ensure_topology_initialized();
     if (topology) {
       topology->enable_computation(comp, enabled);
@@ -76,7 +82,7 @@ public:
   }
 
   /// Enable only the specified computations (disabling all others)
-  void enable_topology_only(TopologyComputation comps) {
+  void enable_only(TopologyComputation comps) {
     ensure_topology_initialized();
     if (topology) {
       topology->enable_only(comps);
@@ -84,7 +90,7 @@ public:
   }
 
   /// Check if a specific computation is enabled
-  bool is_topology_computation_enabled(TopologyComputation comp) const {
+  bool is_computation_enabled(TopologyComputation comp) const {
     if (topology) {
       return topology->is_computation_enabled(comp);
     }
@@ -93,7 +99,7 @@ public:
   }
 
   /// Execute a specific computation with its dependencies
-  bool execute_topology_computation(TopologyComputation comp) {
+  bool execute_computation(TopologyComputation comp) {
     if (topology) {
       return topology->execute_computation(comp); 
     }
@@ -102,7 +108,7 @@ public:
   }
 
   /// Set the cutoff for neighbor search
-  void set_neighbor_search_cutoff(double cutoff) {
+  void set_search_cutoff_for_bonds(double cutoff) {
     ensure_topology_initialized();
     if (topology) {
       topology->set_cutoff(cutoff);
@@ -129,15 +135,13 @@ public:
   const std::vector<std::string> chainlabels() const;
 
   const auto &get_molecule() const { return *mol; }
+  const auto &get_molecule_ptr() const { return mol; }
   const auto &get_conformer(int id = -1) const { return mol->getConformer(id); }
+  const auto &get_positions(int confId = -1) const { return get_conformer(confId).getPositions(); }
   const auto *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
 
   const auto *get_info(int idx) const {
     return static_cast<const RDKit::AtomPDBResidueInfo *>(get_atom(idx)->getMonomerInfo());
-  }
-
-  const std::vector<RDGeom::Point3D> &positions(int confId = -1) const {
-    return get_conformer(confId).getPositions();
   }
 
   friend class Contacts;
@@ -147,12 +151,12 @@ public:
 
 private:
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) 
-    : mol(valid_mol), topology(std::make_unique<Topology>(valid_mol)), topology_built_(false) {}
+    : mol(valid_mol), topology(std::make_shared<Topology>(valid_mol)), topology_built_(false) {}
 
   void ensure_topology_initialized() {
     if (!topology) {
       Logger::get_logger()->debug("Initializing topology for configuration");
-      topology = std::make_unique<Topology>(mol);
+      topology = std::make_shared<Topology>(mol);
     }
   }
 
@@ -167,7 +171,7 @@ private:
 
   // FIX: It should not be necessary to have a default constructed RWMol here
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  std::unique_ptr<Topology> topology;
+  std::shared_ptr<Topology> topology;
   bool topology_built_ = false;
 
   std::string file_name_;

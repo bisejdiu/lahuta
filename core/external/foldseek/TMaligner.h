@@ -9,7 +9,8 @@
 #include "matcher.hpp"
 #include "tmalign/affineneedlemanwunsch.h"
 #include "tmalign/Coordinates.h"
-#include <ops.hpp>
+
+enum class TMScoreThrMode { alignment, query, target, min };
 
 class TMaligner{
 public:

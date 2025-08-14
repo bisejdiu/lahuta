@@ -1,6 +1,7 @@
+#include <string>
+
 #include "cli/arg_validation.hpp"
 #include "logging.hpp"
-#include <string>
 
 // clang-format off
 namespace lahuta::cli::validate {
@@ -65,13 +66,13 @@ option::ArgStatus Verbosity(const option::Option& option, bool msg) {
   const std::string_view level{option.arg};
   if (level == "0" || level == "1" || level == "2") return option::ARG_OK;
 
-  if (msg) log_error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (warnings+), or 2 (info+debug)", HELP_MSG_SUFFIX, level);
+  if (msg) log_error("Invalid verbosity level '{}'. Must be 0 (errors only), 1 (info+), or 2 (debug+)", HELP_MSG_SUFFIX, level);
   return option::ARG_ILLEGAL;
 }
 
 [[nodiscard]] const std::unordered_set<std::string>& get_valid_contact_types() noexcept {
   static const std::unordered_set<std::string> valid_types = {
-    "hbond", "hydrophobic", "ionic", // these three are common
+    "hbond", "hydrophobic", "ionic",
     "weak_hbond", "halogen", "metalic", "cationpi", "pistacking",
     "polar_hbond", "weak_polar_hbond", "aromatic", "carbonyl",
     "vdw", "donor_pi", "sulphur_pi", "carbon_pi"

@@ -1,22 +1,24 @@
-#include "commands/createdb.hpp"
-#include "cli/arg_validation.hpp"
-#include "logging.hpp"
+#include <chrono>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <variant>
+#include <vector>
 
+#include "analysis/system/records.hpp"
+#include "cli/arg_validation.hpp"
+#include "commands/createdb.hpp"
 #include "db/db.hpp"
+#include "gemmi/gz.hpp"
 #include "io/collector.hpp"
 #include "io/db_spill_policy.hpp"
 #include "io/lmdb_backend.hpp"
-#include "models/factory.hpp"
+#include "logging.hpp"
+#include "mmap/MemoryMapped.h"
+#include "runtime.hpp"
+#include "models/topology.hpp"
 #include "pipeline/dsl.hpp"
 #include "serialization/formats.hpp"
-#include "tasks/model_db_writer.hpp"
-
-#include <chrono>
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <variant>
-#include <vector>
 
 // clang-format off
 namespace lahuta::cli {
@@ -39,7 +41,7 @@ struct CreateDbOptions {
   int threads = 8;
 };
 
-using WriterRes = tasks::ModelWriteTask::result_type;
+using WriterRes = analysis::system::ModelRecord;
 using Payload = std::shared_ptr<const WriterRes>;
 using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
 
@@ -57,10 +59,8 @@ static Source pick_source(const CreateDbOptions& cli) {
   throw std::logic_error("Invalid source mode");
 }
 
-static void initialize_factories(int num_threads) {
-  lahuta::InfoPoolFactory::initialize(num_threads);
-  lahuta::BondPoolFactory::initialize(num_threads);
-  lahuta::AtomPoolFactory::initialize(num_threads);
+static void initialize_runtime(int num_threads) {
+  lahuta::LahutaRuntime::ensure_initialized(static_cast<std::size_t>(num_threads));
 }
 
 namespace createdb_opts {
@@ -194,22 +194,49 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     Logger::get_logger()->info("Batch size: {}", cli.batch_size);
     Logger::get_logger()->info("Threads: {}", cli.threads);
 
-    initialize_factories(cli.threads);
+    initialize_runtime(cli.threads);
 
     LMDBDatabase db(cli.database_path);
     auto writer = db.get_writer();
 
-    Logger::get_logger()->info("Processing files...");
+    Logger::get_logger()->debug("Processing files...");
     const auto t0 = std::chrono::high_resolution_clock::now();
-
-    tasks::ModelWriteTask db_task;
 
     // build pipeline
     Collector<Payload, LMDBPolicy> db_collector{cli.batch_size, writer};
     auto compute_stage = stage(dsl::thread_safe,
-        [db_task](std::string path, IEmitter<Payload>& out) mutable {
-          auto res = db_task(std::move(path));
-          out.emit(std::make_shared<const WriterRes>(std::move(res)));
+        [](std::string path, IEmitter<Payload>& out) {
+          WriterRes result;
+          result.file_path = std::move(path);
+          result.success = false;
+          try {
+            if (gemmi::iends_with(result.file_path, ".gz")) {
+              gemmi::CharArray buffer = gemmi::MaybeGzipped(result.file_path).uncompress_into_buffer();
+              result.data = parse_model(buffer.data(), buffer.size());
+              if (!mock_build_model_topology(result.data)) {
+                Logger::get_logger()->error("Failed to build topology for file: {}", result.file_path);
+              } else {
+                result.success = true;
+              }
+            } else {
+              MemoryMapped mm(result.file_path);
+              if (!mm.isValid()) {
+                Logger::get_logger()->critical("Error opening file: {}", result.file_path);
+              } else {
+                const char *data = reinterpret_cast<const char *>(mm.getData());
+                size_t size = static_cast<size_t>(mm.size());
+                result.data = parse_model(data, size);
+                if (!mock_build_model_topology(result.data)) {
+                  Logger::get_logger()->error("Failed to build topology for file: {}", result.file_path);
+                } else {
+                  result.success = true;
+                }
+              }
+            }
+          } catch (const std::exception &e) {
+            Logger::get_logger()->error("Error processing file {}: {}", result.file_path, e.what());
+          }
+          out.emit(std::make_shared<const WriterRes>(std::move(result)));
         });
 
     Source source_variant = pick_source(cli);

@@ -1,15 +1,18 @@
 #ifndef LAHUTA_CLI_GLOBAL_FLAGS_HPP
 #define LAHUTA_CLI_GLOBAL_FLAGS_HPP
 
-#include <vector>
-#include <string_view>
 #include <stdexcept>
+#include <string_view>
+#include <vector>
+
 #include "logging.hpp"
 
+// clang-format off
 namespace lahuta::cli {
 
 struct GlobalFlags {
-  lahuta::Logger::LogLevel log_level = lahuta::Logger::LogLevel::Warn; // default 1
+  // Default log level is Warn unless overridden by -v
+  lahuta::Logger::LogLevel log_level = lahuta::Logger::LogLevel::Warn;
   std::vector<char*> tail;                                             // argv sans globals
   bool help_requested = false;                                         // -h/--help flag
 };
@@ -35,7 +38,7 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
 
       std::string_view lvl{argv[++i]};
       if      (lvl == "0") g.log_level = lahuta::Logger::LogLevel::Error;
-      else if (lvl == "1") g.log_level = lahuta::Logger::LogLevel::Warn;
+      else if (lvl == "1") g.log_level = lahuta::Logger::LogLevel::Info;
       else if (lvl == "2") g.log_level = lahuta::Logger::LogLevel::Debug;
       else throw std::runtime_error("Invalid verbosity level '" + std::string(lvl) + "'. Must be 0, 1 or 2");
 

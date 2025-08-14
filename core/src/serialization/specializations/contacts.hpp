@@ -6,14 +6,15 @@
 #include "serialization/formats.hpp"
 #include "serialization/json.hpp"
 #include "serialization/serializer_impl.hpp"
-#include "tasks/contacts_task.hpp"
+#include "analysis/contacts/records.hpp"
+#include "analysis/contacts/provider.hpp"
 #include <sstream>
 
 // clang-format off
 namespace serialization {
 using namespace lahuta;
 
-using ContactsRes = tasks::ContactsTask::result_type;
+using ContactsRes = lahuta::analysis::contacts::ContactsRecord;
 
 template<>
 struct Serializer<fmt::json, ContactsRes> {
@@ -22,13 +23,13 @@ struct Serializer<fmt::json, ContactsRes> {
   static std::string serialize(const ContactsRes& v) {
     JsonBuilder builder;
 
-    std::string contact_type_str = (v.contact_type == InteractionType::None)
+    std::string contact_type_str = (v.contact_type == InteractionType::All)
       ? "All"
       : interaction_type_to_string(v.contact_type);
 
     builder.key("file_path")   .value(v.file_path)
            .key("success")     .value(v.success)
-           .key("provider")    .value(v.provider == tasks::ContactProvider::Arpeggio ? "arpeggio" : "molstar")
+           .key("provider")    .value(v.provider == analysis::contacts::ContactProvider::Arpeggio ? "arpeggio" : "molstar")
            .key("contact_type").value(contact_type_str)
            .key("num_contacts").value(v.num_contacts);
 
@@ -38,10 +39,12 @@ struct Serializer<fmt::json, ContactsRes> {
     }
 
     builder.key("contacts").begin_array();
+    EntityResolver resolver(*v.topology);
     for (const auto& contact : v.contacts) {
+      auto pair = resolver.resolve(contact);
       builder.begin_object()
-             .key("lhs")     .value(ContactTableFormatter::format_entity_compact(*v.topology, contact.lhs))
-             .key("rhs")     .value(ContactTableFormatter::format_entity_compact(*v.topology, contact.rhs))
+             .key("lhs")     .value(ContactTableFormatter::format_entity_compact(*v.topology, pair.first))
+             .key("rhs")     .value(ContactTableFormatter::format_entity_compact(*v.topology, pair.second))
              .key("distance").value(contact.distance)
              .key("type")    .value(interaction_type_to_string(contact.type))
              .end_object();
@@ -58,11 +61,11 @@ struct Serializer<fmt::json, ContactsRes> {
     out.success   = r.get<bool>("success");
 
     std::string provider_str = r.get<std::string>("provider");
-    out.provider = (provider_str == "arpeggio") ? tasks::ContactProvider::Arpeggio : tasks::ContactProvider::MolStar;
+    out.provider = (provider_str == "arpeggio") ? analysis::contacts::ContactProvider::Arpeggio : analysis::contacts::ContactProvider::MolStar;
 
     std::string contact_type_str = r.get<std::string>("contact_type");
     out.contact_type = (contact_type_str == "All")
-      ? InteractionType::None
+      ? InteractionType::All
       : get_interaction_type(contact_type_str);
 
     out.num_contacts = r.get<size_t>("num_contacts");
@@ -79,21 +82,23 @@ struct Serializer<fmt::text, ContactsRes> {
   static std::string serialize(const ContactsRes& v) {
     std::ostringstream oss;
 
-    std::string contact_type_str = (v.contact_type == InteractionType::None)
+    std::string contact_type_str = (v.contact_type == InteractionType::All)
       ? "All"
       : interaction_type_to_string(v.contact_type);
 
     oss << (v.success ? "1" : "0") << " "
         << v.file_path << " "
-        << (v.provider == tasks::ContactProvider::Arpeggio ? "arpeggio" : "molstar") << " "
+        << (v.provider == analysis::contacts::ContactProvider::Arpeggio ? "arpeggio" : "molstar") << " "
         << contact_type_str << " "
         << v.num_contacts << "\n";
 
     if (!v.topology) return oss.str();
 
+    EntityResolver resolver(*v.topology);
     for (const auto& contact : v.contacts) {
-      oss << ContactTableFormatter::format_entity_compact(*v.topology, contact.lhs)
-          << " -&- " << ContactTableFormatter::format_entity_compact(*v.topology, contact.rhs)
+      auto pair = resolver.resolve(contact);
+      oss << ContactTableFormatter::format_entity_compact(*v.topology, pair.first)
+          << " -&- " << ContactTableFormatter::format_entity_compact(*v.topology, pair.second)
           << " " << std::fixed << std::setprecision(3) << contact.distance
           << " (" << interaction_type_to_string(contact.type) << ")";
       oss << "\n";
@@ -116,9 +121,9 @@ struct Serializer<fmt::binary, ContactsRes> {
   static std::string serialize(const ContactsRes& v) {
     std::string buffer;
 
-    size_t size = sizeof(bool) + sizeof(uint8_t) * 2 + sizeof(size_t) * 2 +
+    size_t size = sizeof(bool) + sizeof(uint8_t) /*provider*/ + sizeof(uint32_t) /*contact_type*/ + sizeof(size_t) * 2 +
                   v.file_path.size() +
-                  v.num_contacts * (sizeof(uint64_t) * 2 + sizeof(float) + sizeof(uint8_t));
+                  v.num_contacts * (sizeof(uint64_t) * 2 + sizeof(float) + sizeof(uint32_t));
 
     buffer.reserve(size);
 
@@ -128,7 +133,7 @@ struct Serializer<fmt::binary, ContactsRes> {
     uint8_t provider = static_cast<uint8_t>(v.provider);
     buffer.append(reinterpret_cast<const char*>(&provider), sizeof(provider));
 
-    uint8_t contact_type = static_cast<uint8_t>(v.contact_type);
+    uint32_t contact_type = static_cast<uint32_t>(v.contact_type);
     buffer.append(reinterpret_cast<const char*>(&contact_type), sizeof(contact_type));
 
     size_t path_len = v.file_path.size();
@@ -141,7 +146,7 @@ struct Serializer<fmt::binary, ContactsRes> {
       buffer.append(reinterpret_cast<const char*>(&contact.lhs.raw),  sizeof(contact.lhs.raw));
       buffer.append(reinterpret_cast<const char*>(&contact.rhs.raw),  sizeof(contact.rhs.raw));
       buffer.append(reinterpret_cast<const char*>(&contact.distance), sizeof(contact.distance));
-      uint8_t type_raw = static_cast<uint8_t>(contact.type);
+      uint32_t type_raw = static_cast<uint32_t>(contact.type);
       buffer.append(reinterpret_cast<const char*>(&type_raw), sizeof(type_raw));
     }
 
@@ -158,14 +163,14 @@ struct Serializer<fmt::binary, ContactsRes> {
 
     uint8_t provider;
     std::memcpy(&provider, data + offset, sizeof(provider));
-    result.provider = static_cast<tasks::ContactProvider>(provider);
+    result.provider = static_cast<analysis::contacts::ContactProvider>(provider);
     offset += sizeof(provider);
 
     // Contact type
-    uint8_t contact_type;
+    uint32_t contact_type;
     std::memcpy(&contact_type, data + offset, sizeof(contact_type));
-    result.contact_type.category = static_cast<Category>(contact_type & 0x0F);
-    result.contact_type.flavor   = static_cast<Flavor>((contact_type >> 4) & 0x0F);
+    result.contact_type.category = static_cast<Category>(contact_type & 0xFFFFu);
+    result.contact_type.flavor   = static_cast<Flavor>((contact_type >> 16) & 0xFFFFu);
     offset += sizeof(contact_type);
 
     // File path
@@ -186,7 +191,7 @@ struct Serializer<fmt::binary, ContactsRes> {
     for (size_t i = 0; i < result.num_contacts; ++i) {
       EntityID lhs, rhs;
       float distance;
-      uint8_t type_raw;
+      uint32_t type_raw;
 
       std::memcpy(&lhs.raw, data  + offset, sizeof(lhs.raw));
       offset += sizeof(lhs.raw);
@@ -198,8 +203,8 @@ struct Serializer<fmt::binary, ContactsRes> {
       offset += sizeof(type_raw);
 
       InteractionType type;
-      type.category = static_cast<Category>(type_raw & 0x0F);
-      type.flavor   = static_cast<Flavor>((type_raw >> 4) & 0x0F);
+      type.category = static_cast<Category>(type_raw & 0xFFFFu);
+      type.flavor   = static_cast<Flavor>((type_raw >> 16) & 0xFFFFu);
 
       contacts.emplace_back(lhs, rhs, distance, type);
     }

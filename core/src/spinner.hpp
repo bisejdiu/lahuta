@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "spdlog/sinks/stdout_color_sinks.h"
 #include <spdlog/spdlog.h>
 
 // clang-format off
@@ -84,10 +83,14 @@ public:
       : sink_(std::move(sink)), spinner_(spinner), spinner_mutex_(spinner_mutex) {}
 
     void log(const spdlog::details::log_msg &msg) override {
-        std::lock_guard<std::mutex> lock(spinner_mutex_);   // lock the spinner: avoid log and spinner output mixing
-        std::cout << "\r\033[K";                            // clears the current spinner line
-        sink_->log(msg);                                    // pass the log message to the wrapped sink
-        if (spinner_) { spinner_->print_progress(); }       // reprint the spinner
+        if (spinner_) {
+            std::lock_guard<std::mutex> lock(spinner_mutex_);   // lock the spinner: avoid log and spinner output mixing
+            std::cout << "\r\033[K";                            // clears the current spinner line
+            sink_->log(msg);                                    // pass the log message to the wrapped sink
+            spinner_->print_progress();                         // reprint the spinner
+        } else {
+            sink_->log(msg);
+        }
     }
 
     void flush() override { sink_->flush(); }

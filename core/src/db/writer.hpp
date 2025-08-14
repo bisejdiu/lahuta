@@ -96,5 +96,3 @@ private:
 } // namespace lahuta
 
 #endif // LAHUTA_DB_WRITER_HPP
-
-

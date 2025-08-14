@@ -51,4 +51,3 @@ FactorizationResult Factorizer::factorize(const UnitData &data) {
 }
 
 } // namespace lahuta
-

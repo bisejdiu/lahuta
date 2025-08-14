@@ -153,4 +153,3 @@ inline PossiblyBonded getIntraBondOrder(AtomInfo a1, AtomInfo a2) {
 } // namespace lahuta
 
 #endif // LAHUTA_BBONDS_HPP
-

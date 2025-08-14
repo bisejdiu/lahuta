@@ -3,6 +3,7 @@
 #include "node.hpp"
 #include "registry.hpp"
 
+// clang-format off
 namespace lahuta::topology::compute {
 
 /// Represents a sequence of computations that respects dependency ordering.
@@ -22,13 +23,13 @@ public:
       // every dependency of this node must already be in 'satisfied_deps'
       Mask node_deps = registry[node_idx].deps;
       for (int dep_idx = 0; dep_idx < registry.size(); ++dep_idx) {
-        if (node_deps & (1 << dep_idx) && !(satisfied_deps & (1 << dep_idx))) {
+        if (node_deps & (Mask{1} << dep_idx) && !(satisfied_deps & (Mask{1} << dep_idx))) {
           throw std::runtime_error("pipeline order violates dependency for " + std::string(registry[node_idx].tag.to_string_view()));
         }
       }
 
       plan_.node_indices[plan_.size++] = static_cast<u8>(node_idx);
-      satisfied_deps |= (1 << node_idx);
+      satisfied_deps |= (Mask{1} << node_idx);
     }
   }
   const ExecOrder &plan() const noexcept { return plan_; }
