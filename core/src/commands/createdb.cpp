@@ -2,23 +2,20 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#include <variant>
-#include <vector>
 
 #include "analysis/system/records.hpp"
 #include "cli/arg_validation.hpp"
 #include "commands/createdb.hpp"
 #include "db/db.hpp"
 #include "gemmi/gz.hpp"
-#include "io/collector.hpp"
-#include "io/db_spill_policy.hpp"
-#include "io/lmdb_backend.hpp"
+#include "io/sinks/lmdb.hpp"
 #include "logging.hpp"
 #include "mmap/MemoryMapped.h"
-#include "runtime.hpp"
 #include "models/topology.hpp"
-#include "pipeline/dsl.hpp"
+#include "pipeline/dynamic/manager.hpp"
+#include "runtime.hpp"
 #include "serialization/formats.hpp"
+#include "serialization/serializer.hpp"
 
 // clang-format off
 namespace lahuta::cli {
@@ -42,10 +39,7 @@ struct CreateDbOptions {
 };
 
 using WriterRes = analysis::system::ModelRecord;
-using Payload = std::shared_ptr<const WriterRes>;
 using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
-
-using LMDBPolicy = DBSpillPolicy<fmt::binary, Payload, LMDBBackend>;
 
 static Source pick_source(const CreateDbOptions& cli) {
   switch (cli.source_mode) {
@@ -196,60 +190,69 @@ int CreateDbCommand::run(int argc, char* argv[]) {
 
     initialize_runtime(cli.threads);
 
-    LMDBDatabase db(cli.database_path);
-    auto writer = db.get_writer();
+    auto db = std::make_shared<LMDBDatabase>(cli.database_path);
 
-    Logger::get_logger()->debug("Processing files...");
+    Logger::get_logger()->debug("Processing files (dynamic pipeline)...");
     const auto t0 = std::chrono::high_resolution_clock::now();
 
-    // build pipeline
-    Collector<Payload, LMDBPolicy> db_collector{cli.batch_size, writer};
-    auto compute_stage = stage(dsl::thread_safe,
-        [](std::string path, IEmitter<Payload>& out) {
-          WriterRes result;
-          result.file_path = std::move(path);
-          result.success = false;
-          try {
-            if (gemmi::iends_with(result.file_path, ".gz")) {
-              gemmi::CharArray buffer = gemmi::MaybeGzipped(result.file_path).uncompress_into_buffer();
-              result.data = parse_model(buffer.data(), buffer.size());
-              if (!mock_build_model_topology(result.data)) {
-                Logger::get_logger()->error("Failed to build topology for file: {}", result.file_path);
-              } else {
-                result.success = true;
-              }
-            } else {
-              MemoryMapped mm(result.file_path);
-              if (!mm.isValid()) {
-                Logger::get_logger()->critical("Error opening file: {}", result.file_path);
-              } else {
-                const char *data = reinterpret_cast<const char *>(mm.getData());
-                size_t size = static_cast<size_t>(mm.size());
-                result.data = parse_model(data, size);
-                if (!mock_build_model_topology(result.data)) {
-                  Logger::get_logger()->error("Failed to build topology for file: {}", result.file_path);
-                } else {
-                  result.success = true;
-                }
-              }
-            }
-          } catch (const std::exception &e) {
-            Logger::get_logger()->error("Error processing file {}: {}", result.file_path, e.what());
-          }
-          out.emit(std::make_shared<const WriterRes>(std::move(result)));
-        });
-
+    // Build dynamic pipeline
     Source source_variant = pick_source(cli);
     std::visit([&](auto&& src) {
-      auto pipe = dsl::source_t{std::move(src)} | compute_stage | db_collector;
-      dsl::run(pipe, cli.threads);
+      using SrcT = std::decay_t<decltype(src)>;
+      dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<SrcT>, std::move(src)));
+
+      // Task: read file -> parse -> validate -> emit serialized ModelRecord on channel "db"
+      struct MakeRecordTask : public dynamic::ITask {
+        dynamic::TaskResult run(const std::string& item_path, dynamic::TaskContext& /*ctx*/) override {
+          WriterRes rec{};
+          rec.file_path = item_path;
+          rec.success = false;
+          try {
+            if (gemmi::iends_with(rec.file_path, ".gz")) {
+              gemmi::CharArray buffer = gemmi::MaybeGzipped(rec.file_path).uncompress_into_buffer();
+              rec.data = parse_model(buffer.data(), buffer.size());
+            } else {
+              MemoryMapped mm(rec.file_path);
+              if (!mm.isValid()) {
+                Logger::get_logger()->critical("Error opening file: {}", rec.file_path);
+                return {false, {}};
+              }
+              const char *data = reinterpret_cast<const char *>(mm.getData());
+              size_t size = static_cast<size_t>(mm.size());
+              rec.data = parse_model(data, size);
+            }
+
+            if (!mock_build_model_topology(rec.data)) {
+              Logger::get_logger()->error("Failed to build topology for file: {}", rec.file_path);
+              // Do not abort, still store record with success=false
+            } else {
+              rec.success = true;
+            }
+
+            std::string payload = serialization::Serializer<fmt::binary, WriterRes>::serialize(rec);
+            return dynamic::TaskResult{true, std::vector<dynamic::Emission>{{"db", std::move(payload)}}};
+
+          } catch (const std::exception& e) {
+            Logger::get_logger()->error("Error processing file {}: {}", rec.file_path, e.what());
+            return {false, {}};
+          }
+        }
+      };
+
+      auto task = std::make_shared<MakeRecordTask>();
+      mgr.add_task("createdb", /*deps*/{}, task, /*thread_safe=*/true);
+
+      // Sink: LMDB writer, batched by cli.batch_size
+      mgr.connect_sink("db", std::make_shared<dynamic::LmdbSink>(db, cli.batch_size));
+
+      mgr.compile();
+      mgr.run(static_cast<std::size_t>(cli.threads));
     }, source_variant);
-    db_collector.finish();
 
     const auto t1 = std::chrono::high_resolution_clock::now();
     const auto duration = std::chrono::duration<double>(t1 - t0).count();
 
-    Logger::get_logger()->info("Database creation completed in {:.2f} seconds!", duration);
+    Logger::get_logger()->info("Database creation (dynamic) completed in {:.2f} seconds!", duration);
     return 0;
 
   } catch (const std::exception& e) {
