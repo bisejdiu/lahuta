@@ -11,7 +11,7 @@ tests/data/*.pdb
 tests/data/*.cif
 
 # other
-cpp/external/Eigen/eigen
+core/external/Eigen/eigen
 
 # IDEs and editors
 .vscode

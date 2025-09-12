@@ -162,7 +162,7 @@ set_property(TARGET lahuta_cpp PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(lahuta_cpp PUBLIC gemmi_cpp foldseek rdkit libdistopia lmdb ZLIB::ZLIB spdlog::spdlog_header_only Boost::headers)
 
 target_include_directories(lahuta_cpp PUBLIC
-  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/external
   ${CMAKE_SOURCE_DIR}/external/foldseek
   ${CMAKE_SOURCE_DIR}/external/foldseek/generated
@@ -175,7 +175,7 @@ target_include_directories(lahuta_cpp PUBLIC
 
 add_library(lahuta_shared_headers INTERFACE)
 target_include_directories(lahuta_shared_headers INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/fseek
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/fseek
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
   ${CMAKE_CURRENT_SOURCE_DIR}/examples
 )
@@ -204,4 +204,4 @@ function(add_lahuta_executable target main_file)
   target_link_libraries(${target} PUBLIC lahuta_cpp ZLIB::ZLIB spdlog::spdlog_header_only)
 endfunction()
 
-add_lahuta_executable(lahuta main.cpp)
+add_lahuta_executable(lahuta apps/main.cpp)

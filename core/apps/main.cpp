@@ -7,7 +7,7 @@ using namespace lahuta::cli;
 // clang-format off
 int main(int argc, char* argv[]) {
   try {
-    // Extract global flags and get clean argv for subcommands
+    // get global flags and clean argv for subcommands
     auto g = extract_global_flags(argc, argv);
 
     lahuta::Logger::get_instance().set_log_level(g.log_level);
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
       return 1;
     }
 
-    // Should not contain global flags, only subcommand args
+    // subcommand args
     auto command = it->second();
     return command->run(static_cast<int>(g.tail.size() - 1), g.tail.data() + 1);
 
