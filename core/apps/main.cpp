@@ -35,5 +35,5 @@ int main(int argc, char* argv[]) {
     lahuta::Logger::get_logger()->error("{} (run lahuta -h for more information)", e.what());
     return 1;
   }
-} 
+}
 

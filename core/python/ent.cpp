@@ -1,72 +1,109 @@
-#include <pybind11/complex.h> // FIX: is this needed?
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include <rdkit/Geometry/point.h>
-#include <rdkit/GraphMol/RDKitBase.h>
+#include "entities/entity_id.hpp"
+#include "entities/find_contacts.hpp"
+#include "entities/interaction_types.hpp"
+#include "entities/records.hpp"
+#include "topology.hpp"
 
-#include "typing/types.hpp"
-#include "array.hpp"
-#include "contacts.hpp"
-#include "contacts/search.hpp"
-#include "entities.hpp"
-#include "lahuta.hpp"
-
-#define BIND_SEARCH_ONE(T)     .def("search", py::overload_cast<const T &,              double>(&EntityNeighborSearch::template search<T>))
-#define BIND_SEARCH_TWO(T1, T2).def("search", py::overload_cast<const T1 &, const T2 &, double>(&EntityNeighborSearch::template search<T1, T2>))
-
-using namespace lahuta;
 namespace py = pybind11;
+using namespace lahuta;
 
-template <typename Collection, typename Func>
-py::array_t<double> extract_vectors(const Collection &coll, Func extractor) {
-  const ssize_t n = coll.data.size();
-  const ssize_t dim = 3;
-  auto result = py::array_t<double>({n, dim});
-  auto buf = result.request();
-  double *ptr = static_cast<double *>(buf.ptr);
-  for (ssize_t i = 0; i < n; ++i) {
-    // extractor returns an object with members x, y, and z.
-    auto vec = extractor(coll.data[i]);
-    ptr[i * dim] = vec.x;
-    ptr[i * dim + 1] = vec.y;
-    ptr[i * dim + 2] = vec.z;
-  }
-  return result;
-}
+struct _PyEmptyParams final {}; // so we can create a ContactContext without requiring specific params
 
 // clang-format off
-void bind_entities(py::module &_lahuta) {
-  py::enum_<FeatureGroup> FeatureGroup_(_lahuta, "FeatureGroup");
+namespace {
 
-  py::class_<AtomEntity>  AtomEntity_ (_lahuta, "AtomEntity");
-  py::class_<RingEntity>  RingEntity_ (_lahuta, "RingData");
-  py::class_<GroupEntity> GroupEntity_(_lahuta, "GroupEntity");
-  py::class_<AtomEntityCollection>  AtomEntityCollection_ (_lahuta, "AtomEntityCollection");
-  py::class_<RingEntityCollection>  RingEntityCollection_ (_lahuta, "RingEntityCollection");
-  py::class_<GroupEntityCollection> GroupEntityCollection_(_lahuta, "GroupEntityCollection");
-  py::class_<EntityNeighborSearch>  EntityNeighborSearch_ (_lahuta, "EntityNeighborSearch");
+template <typename Rec> static inline auto make_predicate(py::function f) {
+  return [f](const Rec &rec) { return f(rec).template cast<bool>(); };
+}
 
-  EntityNeighborSearch_
-    BIND_SEARCH_TWO(AtomEntityCollection,  AtomEntityCollection)
-    BIND_SEARCH_TWO(AtomEntityCollection,  RingEntityCollection)
-    BIND_SEARCH_TWO(AtomEntityCollection,  GroupEntityCollection)
-    BIND_SEARCH_TWO(RingEntityCollection,  AtomEntityCollection)
-    BIND_SEARCH_TWO(RingEntityCollection,  RingEntityCollection)
-    BIND_SEARCH_TWO(RingEntityCollection,  GroupEntityCollection)
-    BIND_SEARCH_TWO(GroupEntityCollection, AtomEntityCollection)
-    BIND_SEARCH_TWO(GroupEntityCollection, RingEntityCollection)
-    BIND_SEARCH_TWO(GroupEntityCollection, GroupEntityCollection)
+static inline auto make_tester(py::function f) {
+  return [f](uint32_t i, uint32_t j, float d2, const ContactContext &) -> InteractionType {
+    if (!f || f.is_none()) return InteractionType::Generic;
 
-    BIND_SEARCH_ONE(AtomEntityCollection)
-    BIND_SEARCH_ONE(RingEntityCollection)
-    BIND_SEARCH_ONE(GroupEntityCollection)
-  ;
+    py::object obj = f(i, j, d2);
+    if (py::isinstance<py::bool_>(obj)) {
+      return obj.cast<bool>() ? InteractionType::Generic : InteractionType::None;
+    }
 
-  FeatureGroup_
+    return obj.cast<InteractionType>();
+  };
+}
+
+template <typename RecA, typename RecB>
+static inline ContactSet dispatch_dual(
+  const Topology &top,
+  py::function pred_a, py::function pred_b,
+  const search::SearchOptions &opts, py::function tester_py) {
+  auto pa     = make_predicate<RecA>(pred_a);
+  auto pb     = make_predicate<RecB>(pred_b);
+  auto tester = make_tester(tester_py);
+  _PyEmptyParams params;
+  ContactContext ctx(top, params);
+  return find_contacts(ctx, pa, pb, opts, tester);
+}
+
+template <typename Rec>
+static inline ContactSet dispatch_self(
+  const Topology &top,
+  py::function pred,
+  const search::SearchOptions &opts, py::function tester_py) {
+  auto p      = make_predicate<Rec>(pred);
+  auto tester = make_tester(tester_py);
+  _PyEmptyParams params;
+  ContactContext ctx(top, params);
+  return find_contacts(ctx, p, opts, tester);
+}
+
+static inline ContactSet route_dual(
+  const Topology &top,
+  Kind kind_a, py::function pred_a,
+  Kind kind_b, py::function pred_b,
+  const search::SearchOptions &opts, py::function tester_py) {
+  switch (kind_a) {
+    case Kind::Atom:
+      switch (kind_b) {
+        case Kind::Atom:  return dispatch_dual<AtomRec, AtomRec> (top, pred_a, pred_b, opts, tester_py);
+        case Kind::Ring:  return dispatch_dual<AtomRec, RingRec> (top, pred_a, pred_b, opts, tester_py);
+        case Kind::Group: return dispatch_dual<AtomRec, GroupRec>(top, pred_a, pred_b, opts, tester_py);
+      }
+      break;
+    case Kind::Ring:
+      switch (kind_b) {
+        case Kind::Atom:  return dispatch_dual<RingRec, AtomRec> (top, pred_a, pred_b, opts, tester_py);
+        case Kind::Ring:  return dispatch_dual<RingRec, RingRec> (top, pred_a, pred_b, opts, tester_py);
+        case Kind::Group: return dispatch_dual<RingRec, GroupRec>(top, pred_a, pred_b, opts, tester_py);
+      }
+      break;
+    case Kind::Group:
+      switch (kind_b) {
+        case Kind::Atom:  return dispatch_dual<GroupRec, AtomRec> (top, pred_a, pred_b, opts, tester_py);
+        case Kind::Ring:  return dispatch_dual<GroupRec, RingRec> (top, pred_a, pred_b, opts, tester_py);
+        case Kind::Group: return dispatch_dual<GroupRec, GroupRec>(top, pred_a, pred_b, opts, tester_py);
+      }
+      break;
+  }
+  throw std::invalid_argument("Invalid Kind combination for find_contacts");
+}
+
+static inline ContactSet route_self(const Topology &top, Kind kind, py::function pred, const search::SearchOptions &opts, py::function tester_py) {
+  switch (kind) {
+    case Kind::Atom:  return dispatch_self<AtomRec> (top, pred, opts, tester_py);
+    case Kind::Ring:  return dispatch_self<RingRec> (top, pred, opts, tester_py);
+    case Kind::Group: return dispatch_self<GroupRec>(top, pred, opts, tester_py);
+  }
+  throw std::invalid_argument("Invalid Kind for self find_contacts");
+}
+
+} // namespace
+
+void bind_entities(py::module &m) {
+  py::enum_<FeatureGroup>(m, "FeatureGroup")
     .value("None",            FeatureGroup::None)
     .value("QuaternaryAmine", FeatureGroup::QuaternaryAmine)
     .value("TertiaryAmine",   FeatureGroup::TertiaryAmine)
@@ -79,141 +116,38 @@ void bind_entities(py::module &_lahuta) {
     .value("Acetamidine",     FeatureGroup::Acetamidine)
     .value("Carboxylate",     FeatureGroup::Carboxylate);
 
-
-  AtomEntity_
-    .def(py::init([](const RDKit::Atom * atom, AtomType at, RDGeom::Point3D *center, size_t id) { return new AtomEntity(at, {atom}, center, id); }))
-    .def(py::init([](const class Luni& luni, int atom_idx, AtomType at, RDGeom::Point3D* center, size_t id) { 
-      return new AtomEntity(at, {luni.get_atom(atom_idx)}, center, id); 
-    }))
-
-    .def_property_readonly("id",     &AtomEntity::get_id)
-    .def_property_readonly("center", [](AtomEntity &ae) {return point3d_to_pyarray(*ae.center);})
-
-    .def_readwrite("type", &AtomEntity::type)
-    .def_readwrite("atom", &AtomEntity::atom)
-
-    .def("get_data", &AtomEntity::get_data, py::return_value_policy::reference)
-    .def("has_atom", &AtomEntity::has_atom)
-
-    .def("__str__", [](const AtomEntity &ae) { return "AtomEntity(ID: " + std::to_string(ae.get_id()) + ", " + atom_type_to_string(ae.type) + ")"; });
-
-
-  RingEntity_
-    .def(py::init([](const std::vector<const RDKit::Atom*> &atoms, RDGeom::Point3D &center, RDGeom::Point3D &normal, size_t id) {
-      return new RingEntity(center, normal, atoms, id);
-    }))
-    .def(py::init([](const class Luni& luni, const std::vector<int> &atom_ids, RDGeom::Point3D &center, RDGeom::Point3D &norm, size_t id) {
-      std::vector<const RDKit::Atom *> atoms;
-      for (const int &atom_idx : atom_ids) {
-        atoms.push_back(luni.get_atom(atom_idx));
-      }
-      return new RingEntity(center, norm, atoms, id);
-    }))
-
-    .def_property_readonly("id",     &RingEntity::get_id)
-    .def_property_readonly("center", [](RingEntity &re) {return point3d_to_pyarray(re.center);})
-    .def_property_readonly("normal", [](RingEntity &re) {return point3d_to_pyarray(re.normal);})
-
-    /*.def_readwrite("type", &RingEntity::type)*/
-    .def_readwrite("atoms", &RingEntity::atoms)
-
-    .def("get_data", &RingEntity::get_data, py::return_value_policy::reference)
-    .def("has_atom", &RingEntity::has_atom)
-
-    .def("get_atom_ids", [](RingEntity &rd) {
-      std::vector<int> ids;
-      ids.reserve(rd.atoms.size());
-      for (const auto *atom : rd.atoms) {
-        ids.push_back(atom->getIdx());
-      }
-      return ids;
-    })
-    .def("__str__", [](const RingEntity &re) { return "RingEntity(" + std::to_string(re.get_id()) + " >ring type not yet supported<)"; });
-
-
-  GroupEntity_
-    .def(py::init([](std::vector<const RDKit::Atom*> &atoms, RDGeom::Point3D &center, AtomType type, FeatureGroup group, size_t id) {
-      auto ge = new GroupEntity(type, group, atoms, center);
-      ge->set_id(id);
-      return ge;
-    }))
-    .def(py::init([](const class Luni &luni, const std::vector<int> &atom_ids, AtomType type, FeatureGroup group, const RDGeom::Point3D &center, size_t id) {
-      std::vector<const RDKit::Atom *> atoms;
-      for (const int &atom_idx : atom_ids) {
-        atoms.push_back(luni.get_molecule().getAtomWithIdx(atom_idx));
-      }
-      auto ge = new GroupEntity(type, group, atoms, center);
-      ge->set_id(id);
-      return ge;
-    }))
-
-    .def_property_readonly("id", &GroupEntity::get_id)
-    .def_property_readonly("center", [](GroupEntity &ge) {return point3d_to_pyarray(ge.center);})
-
-    .def_readwrite("type",  &GroupEntity::type)
-    .def_readwrite("group", &GroupEntity::group)
-    .def_readwrite("atoms", &GroupEntity::atoms)
-
-    .def("get_data", &GroupEntity::get_data, py::return_value_policy::reference)
-    .def("has_atom", &GroupEntity::has_atom)
-
-    .def("get_atom_ids", [](GroupEntity &ge) {
-      std::vector<int> ids;
-      ids.reserve(ge.atoms.size());
-      for (const auto *atom : ge.atoms) {
-        ids.push_back(atom->getIdx());
-      }
-      return ids;
-    })
-    .def("__str__", [](const GroupEntity &ge) { return "GroupEntity(ID: " + std::to_string(ge.get_id()) + ", " + atom_type_to_string(ge.type) + ")"; });
-
-
-  AtomEntityCollection_
+  py::class_<search::SearchOptions>(m, "SearchOptions")
     .def(py::init<>())
+    .def_readwrite("distance_max",        &search::SearchOptions::distance_max)
+    .def_readwrite("hit_reserve_factor",  &search::SearchOptions::hit_reserve_factor)
+    .def_readwrite("sel_reserve_factor_a",&search::SearchOptions::sel_reserve_factor_a)
+    .def_readwrite("sel_reserve_factor_b",&search::SearchOptions::sel_reserve_factor_b)
+    .def_static("for_category", [](Category c) { return search::make_search_opts(c); }, py::arg("category"));
 
-    .def("add_entity",    [](AtomEntityCollection &aec, AtomEntity &et) { aec.add_data(et);} )
-    .def("get_entities",  &AtomEntityCollection::get_data)
-    .def("get_size",      &AtomEntityCollection::size)
-    .def("get_positions", &AtomEntityCollection::positions) // FIX: should return a NumPy array
-    .def("get_atom_ids",  &AtomEntityCollection::atom_ids)
-    .def("get_atoms",     &AtomEntityCollection::atoms, py::return_value_policy::reference)
+  // High-level contact discovery
+  m.def("find_contacts",
+        [](const Topology &top,
+           Kind kind_a, py::function pred_a,
+           Kind kind_b, py::function pred_b,
+           const search::SearchOptions &opts,
+           py::function tester) {
+            return route_dual(top, kind_a, pred_a, kind_b, pred_b, opts, tester);
+        },
+        py::arg("topology"),
+        py::arg("kind_a"), py::arg("pred_a"),
+        py::arg("kind_b"), py::arg("pred_b"),
+        py::arg("opts") = search::SearchOptions{},
+        py::arg("tester") = py::none());
 
-    .def_static("filter", &AtomEntityCollection::filter, py::arg("luni"), py::arg("type"), py::arg("check_func") = static_cast<FeatureTypeCheckFunc>(AtomTypeFlags::has_any));
-
-
-  RingEntityCollection_
-    .def(py::init<>())
-    .def("add_entity",    [](RingEntityCollection &rec, RingEntity &re) { rec.add_data(re); })
-    .def("get_entities",  &RingEntityCollection::get_data)
-    .def("get_size",      &RingEntityCollection::size)
-    .def("get_positions", &RingEntityCollection::positions)
-    .def("get_atom_ids",  &RingEntityCollection::atom_ids)
-    .def("get_atoms",     &RingEntityCollection::atoms, py::return_value_policy::reference)
-
-    .def("compute_angles", &RingEntityCollection::compute_angles, py::arg("ring_indices"), py::arg("points"))
-    .def("compute_angle",  &RingEntityCollection::compute_angle,  py::arg("ring_entity"),  py::arg("point"))
-
-    // FIX: Should RingEntityCollection implement `filter`? Could we filter: RingEntityCollection.filter(luni, AtomType.AROMATIC)
-    .def_property_readonly("rings",   [](RingEntityCollection &rdc) { return rdc.get_data(); })
-    .def_property_readonly("centers", [](RingEntityCollection &rec) { return extract_vectors(rec, [](const auto &e) -> const auto& { return e.center; });})
-    .def_property_readonly("normal",  [](RingEntityCollection &rec) { return extract_vectors(rec, [](const auto &e) -> const auto& { return e.normal; });});
-
-
-  GroupEntityCollection_
-    .def(py::init<>())
-    .def(py::init<std::vector<GroupEntity>>())
-
-    .def_static("filter", &GroupEntityCollection::filter, py::arg("luni"), py::arg("type"), py::arg("check_func") = static_cast<FeatureTypeCheckFunc>(AtomTypeFlags::has_any))
-
-    .def("add_entity",    [](GroupEntityCollection &gec, GroupEntity &ge) { gec.add_data(ge); })
-    .def("get_entities",  &GroupEntityCollection::get_data)
-    .def("get_size",      &GroupEntityCollection::size)
-    .def("get_positions", &GroupEntityCollection::positions)
-    .def("get_atom_ids",  &GroupEntityCollection::atom_ids)
-    .def("get_atoms",     &GroupEntityCollection::atoms, py::return_value_policy::reference)
-
-    .def_static("filter", &GroupEntityCollection::filter, py::arg("luni"), py::arg("type"), py::arg("check_func") = static_cast<FeatureTypeCheckFunc>(AtomTypeFlags::has_any))
-    .def_property_readonly("centers", [](GroupEntityCollection &gec) { return extract_vectors(gec, [](const auto &entity) -> const auto& { return entity.center; }); });
-
+  m.def("find_contacts",
+        [](const Topology &top,
+           Kind kind, py::function pred,
+           const search::SearchOptions &opts,
+           py::function tester) {
+            return route_self(top, kind, pred, opts, tester);
+        },
+        py::arg("topology"),
+        py::arg("kind"), py::arg("pred"),
+        py::arg("opts") = search::SearchOptions{},
+        py::arg("tester") = py::none());
 }
-

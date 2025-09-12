@@ -1,5 +1,4 @@
 #include <optional>
-#include <pybind11/complex.h> // FIX: is this needed?
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/operators.h>
@@ -9,12 +8,12 @@
 #include <rdkit/GraphMol/RDKitBase.h>
 
 #include "array.hpp"
+#include "ent.hpp"
 #include "at.hpp"
 #include "common.hpp"
 #include "contacts.hpp"
 #include "distances.hpp"
 #include "distopia.h"
-#include "ent.hpp"
 #include "lahuta.hpp"
 #include "logger_py.hpp"
 #include "logging.hpp"
@@ -114,9 +113,9 @@ void bind(py::module &_lahuta) {
 
   AtomRec_
       .def_readwrite("type", &AtomRec::type)
-      .def("idx",  [](const AtomRec &self) { return self.atom.getIdx(); })
+      .def("idx",  [](const AtomRec &self) { return self.atom.get().getIdx(); })
       .def("__repr__", [](const AtomRec &self) {
-          return py::str("AtomRec(type={}, idx={})").format(self.type, self.atom.getIdx());
+          return py::str("AtomRec(type={}, idx={})").format(self.type, self.atom.get().getIdx());
       });
 
   RingRec_
@@ -379,7 +378,6 @@ void bind(py::module &_lahuta) {
        .def("get_topology", [](class Luni &luni) -> const Topology& { return luni.get_topology(); }, py::return_value_policy::reference)
        /*.def("at", [](class Luni &luni) -> auto { auto &v = luni.get_topology(); return v.atom_types; })*/
       .def("get_atom",  py::overload_cast<int>(&Luni::get_atom, py::const_), py::return_value_policy::reference_internal)
-      .def("get_atom",  py::overload_cast<int>(&Luni::get_atom),             py::return_value_policy::reference_internal)
 
       .def("count_unique", py::overload_cast<const std::vector<int> &>        (&common::count_unique))
       .def("count_unique", py::overload_cast<const std::vector<std::string> &>(&common::count_unique))
@@ -439,7 +437,7 @@ PYBIND11_MODULE(_lahuta, m) {
   bind_contacts(m);
   bind(m);
   bind_common(m);
-  // bind_entities(m);
+  bind_entities(m);
   bind_logger(m);
   bind_properties(m);
   bind_align(m);

@@ -222,6 +222,7 @@ add_library(foldseek SHARED
     TMaligner.cpp
     UngappedAlignment.cpp
     Util.cpp
+    GemmiWrapper.cpp
 
     ${CMAKE_CURRENT_LIST_DIR}/cacode/lambda_calculator.cpp
     ${CMAKE_CURRENT_LIST_DIR}/cacode/lubksb.cpp

@@ -205,3 +205,33 @@ function(add_lahuta_executable target main_file)
 endfunction()
 
 add_lahuta_executable(lahuta apps/main.cpp)
+
+find_package(pybind11 QUIET CONFIG)
+if(pybind11_FOUND)
+  message(STATUS "pybind11 found. Building Python bindings.")
+
+  find_package(Python3 COMPONENTS Interpreter Development.Module QUIET)
+
+  set(LAHUTA_PY_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/lahuta.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/contacts.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/ent.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/py_align.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/py_properties.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/py_te.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/array.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/at.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/python/logger_py.cpp
+  )
+
+  pybind11_add_module(_lahuta MODULE ${LAHUTA_PY_SOURCES})
+
+  target_include_directories(_lahuta PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/python)
+  target_link_libraries(_lahuta PRIVATE lahuta_cpp spdlog::spdlog_header_only ZLIB::ZLIB)
+
+  set_target_properties(_lahuta PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
+  set_target_properties(_lahuta PROPERTIES BUILD_RPATH "@loader_path;@loader_path/..")
+
+else()
+  message(STATUS "pybind11 not found. Skipping Python bindings build.")
+endif()

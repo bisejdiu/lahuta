@@ -3,42 +3,13 @@
 #include <pybind11/stl.h>
 
 #include "array.hpp"
-#include "contacts.hpp"
-#include "contacts/utils.hpp"
-#include "entities/contact.hpp"
 #include "mapper.hpp"
 #include "py_te.hpp"
 
 namespace py = pybind11;
 using namespace lahuta;
 
-ContactSet compute_neighbor_contacts(const Luni &luni, double cutoff) {
-  ContactSet contacts;
-  auto grid = FastNS(luni.get_conformer().getPositions());
-  auto ok = grid.build(cutoff);
-  if (!ok) {
-    throw std::runtime_error("Box dimension too small for the given cutoff.");
-  }
-  NSResults neighbors = grid.self_search();
-
-  for (const auto &[pair, dist] : neighbors) {
-    auto [i, j] = pair;
-    const RDKit::Atom *a1 = luni.get_molecule().getAtomWithIdx(i);
-    const RDKit::Atom *a2 = luni.get_molecule().getAtomWithIdx(j);
-    if (are_residueids_close(luni.get_molecule(), *a1, *a2, 4)) continue;
-
-    contacts.insert(Contact{
-      EntityID::make(Kind::Atom, a1->getIdx()),
-      EntityID::make(Kind::Atom, a2->getIdx()),
-      dist,
-      InteractionType::Generic
-    });
-
-  }
-
-  return contacts;
-};
-
+// clang-format off
 void bind_te(py::module &_lahuta) {
 
   py::class_<LahutaMapper>    lahuta_mapper   (_lahuta, "LahutaMapper");
@@ -96,9 +67,5 @@ void bind_te(py::module &_lahuta) {
     .def(py::init<SeqData&, SeqData&>(),      py::arg("query"), py::arg("target"))
     .def("map", &LahutaMapper::map,           py::arg("res"),   py::arg("config") = std::nullopt)
     .def("evaluate", &LahutaMapper::evaluate, py::arg("c1"),    py::arg("m1"), py::arg("c2"), py::arg("m2"))
-    .def("get_luni", &LahutaMapper::get_luni, py::arg("type"), py::return_value_policy::reference_internal);
-
-  _lahuta.def("compute_neighbor_contacts", &compute_neighbor_contacts, py::arg("luni"), py::arg("cutoff"));
-
-
+    ;
 }
