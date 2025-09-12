@@ -25,14 +25,13 @@ include = ["lahuta*"]
 
 [tool.setuptools.package-data]
 lahuta = [
-    "lib/lahutaxx*.so",
-    "lib/lahutaxx*.pyd",
-    "lib/lahutaxx*.dll",
-    "lib/mappingxx*.so",
-    "lib/mappingxx*.pyd",
-    "lib/mappingxx*.dll",
-    "lib/*.pyi",
-    "lib/lahuta/*.pyi",
+    "lib/lahuta*.so",
+    "lib/lahuta*.pyd",
+    "lib/lahuta*.dll",
+    "lib/mapping*.so",
+    "lib/mapping*.pyd",
+    "lib/mapping*.dll",
+    "lib/**/*.pyi",
     "py.typed",
 ]
 
