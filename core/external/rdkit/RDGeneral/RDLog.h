@@ -12,10 +12,7 @@
 #define RDLOG_H_29JUNE2005
 
 #if 1
-#include "BoostStartInclude.h"
-#include <boost/iostreams/tee.hpp>
-#include <boost/iostreams/stream.hpp>
-#include "BoostEndInclude.h"
+#include "SimpleTee.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -24,9 +21,6 @@
 namespace boost {
 namespace logging {
 
-typedef boost::iostreams::tee_device<std::ostream, std::ostream> RDTee;
-typedef boost::iostreams::stream<RDTee> RDTeeStream;
-
 class rdLogger {
  public:
   std::ostream *dp_dest;
@@ -34,23 +28,20 @@ class rdLogger {
   bool df_enabled;
 
   std::ofstream *dp_teeHelperStream;
-  RDTee *tee;
-  RDTeeStream *teestream;
+  TeeStream *teestream;
 
   rdLogger(std::ostream *dest, bool owner = false)
       : dp_dest(dest),
         df_owner(owner),
         df_enabled(true),
         dp_teeHelperStream(nullptr),
-        tee(nullptr),
         teestream(nullptr) {}
 
   //! Sets a stream to tee the output to.
   void SetTee(std::ostream &stream) {
     if (dp_dest) {
       ClearTee();
-      tee = new RDTee(*dp_dest, stream);
-      teestream = new RDTeeStream(*tee);
+      teestream = new TeeStream(*dp_dest, stream);
     }
   }
 
@@ -58,6 +49,10 @@ class rdLogger {
   void SetTee(const char *filename) {
     if (dp_dest) {
       auto s = new std::ofstream(filename);
+      if (!s->is_open()) {
+        delete s;
+        return;
+      }
       SetTee(*s);
       dp_teeHelperStream = s;
     }
@@ -70,8 +65,6 @@ class rdLogger {
   void ClearTee() {
     if (dp_dest) {
       delete teestream;
-      delete tee;
-      tee = nullptr;
       teestream = nullptr;
       if (dp_teeHelperStream) {
         dp_teeHelperStream->close();
@@ -134,7 +127,7 @@ namespace RDLog {
 void InitLogs();
 
 using RDLoggerList = std::vector<RDLogger>;
-class LogStateSetter : public boost::noncopyable {
+class LogStateSetter {
  public:
   //! enables only the logs in the list, the current state will be restored when
   //! this object is destroyed
@@ -143,6 +136,9 @@ class LogStateSetter : public boost::noncopyable {
   //! destroyed
   LogStateSetter();
   ~LogStateSetter();
+
+  LogStateSetter(const LogStateSetter&) = delete;
+  LogStateSetter& operator=(const LogStateSetter&) = delete;
 
  private:
   std::uint64_t d_origState = 0;
