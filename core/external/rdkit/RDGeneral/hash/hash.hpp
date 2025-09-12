@@ -12,11 +12,15 @@
 #if !defined(GBOOST_FUNCTIONAL_HASH_HASH_HPP)
 #define GBOOST_FUNCTIONAL_HASH_HASH_HPP
 
+#include <cstddef>   // std::ptrdiff_t
+#include <limits>    // std::numeric_limits
+#include <utility>   // std::pair
+#include <complex>   // std::complex
+
 #include <RDGeneral/hash/hash_fwd.hpp>
 #include <functional>
 #include <boost/functional.hpp>
 #include <RDGeneral/hash/detail/hash_float.hpp>
-#include <boost/detail/container_fwd.hpp>
 #include <string>
 
 #if defined(BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION)
