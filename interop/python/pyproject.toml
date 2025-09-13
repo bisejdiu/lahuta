@@ -1,6 +1,9 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = [
+  "scikit-build-core>=0.11",
+  "pybind11>=2.11",
+]
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "lahuta"
@@ -14,25 +17,29 @@ dependencies = [
     "orjson",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest",
+[tool.scikit-build]
+minimum-version = "0.8"
+
+[tool.scikit-build.cmake]
+version = ">=3.20"
+source-dir = "../../core"
+args = [
+  "-DLAHUTA_BUILD_CLI=OFF",
+  "-DLAHUTA_GENERATE_PY_STUBS=ON",
+  "-DLAHUTA_VENDOR_BOOST=ON",
 ]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["lahuta*"]
+[tool.scikit-build.wheel]
+packages = ["lahuta"]
 
-[tool.setuptools.package-data]
-lahuta = [
-    "lib/lahuta*.so",
-    "lib/lahuta*.pyd",
-    "lib/lahuta*.dll",
-    "lib/mapping*.so",
-    "lib/mapping*.pyd",
-    "lib/mapping*.dll",
-    "lib/**/*.pyi",
-    "py.typed",
+[tool.scikit-build.editable]
+mode = "redirect"
+
+[tool.scikit-build.sdist]
+include = [
+  "lahuta/**",
+  "README.md",
+  "external/pybind11_stubgen.py",
 ]
 
 [tool.ruff]

@@ -2,21 +2,30 @@
 
 namespace lahuta {
 
+Logger &Logger::get_instance() {
+  static Logger instance;
+  return instance;
+}
+
 void Logger::set_format(FormatStyle style) {
   current_style = style;
-  switch (style) {
-    case FormatStyle::Detailed:
-      spdlog::set_pattern("[%T] [thread %t] [%^%l%$] %t] %v");
-      break;
-    case FormatStyle::Simple:
-      spdlog::set_pattern("[%^%l%$] %v");
-      break;
+  if (logger) {
+    switch (style) {
+      case FormatStyle::Detailed:
+        logger->set_pattern("[%T] [thread %t] [%^%l%$] %t] %v");
+        break;
+      case FormatStyle::Simple:
+        logger->set_pattern("[%^%l%$] %v");
+        break;
+    }
   }
 }
 
 std::shared_ptr<spdlog::logger> Logger::get_logger() { return get_instance().logger; }
 
-void Logger::set_log_level(LogLevel level) { spdlog::set_level(convert_log_level(level)); }
+void Logger::set_log_level(LogLevel level) {
+  if (logger) logger->set_level(convert_log_level(level));
+}
 
 Logger::LogLevel Logger::get_log_level() { return static_cast<LogLevel>(logger->level()); }
 
@@ -36,7 +45,16 @@ void Logger::configure_for_spinner(indicators::MinimalProgressSpinner *spinner, 
 }
 
 Logger::Logger() {
-  logger = spdlog::stdout_color_mt("console");
+  auto existing = spdlog::get("console");
+  if (existing) {
+    logger = existing;
+  } else {
+    logger = spdlog::stdout_color_mt("console");
+  }
+  // Make this the default logger within this registry to keep free-function calls consistent in this TU
+  if (logger) {
+    spdlog::set_default_logger(logger);
+  }
   set_log_level(LogLevel::Info);
   set_format(FormatStyle::Simple);
 }
