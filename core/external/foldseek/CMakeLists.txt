@@ -236,6 +236,7 @@ add_library(foldseek SHARED
 
 target_include_directories(foldseek PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/..
     ${CMAKE_CURRENT_LIST_DIR}/3di
     ${CMAKE_CURRENT_LIST_DIR}/alp
     ${CMAKE_CURRENT_LIST_DIR}/cacode
@@ -256,4 +257,3 @@ target_link_libraries(foldseek PRIVATE block_aligner_c)
 target_link_libraries(foldseek PUBLIC lahuta_shared_headers)
 target_link_libraries(foldseek PUBLIC Boost::headers)
 set_property(TARGET foldseek PROPERTY POSITION_INDEPENDENT_CODE ON)
-

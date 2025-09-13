@@ -6,14 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Force Release build" FORCE)
 
-if(NOT DEFINED BOOST_ROOT)
-  if(DEFINED ENV{CONDA_PREFIX})
-    set(BOOST_ROOT $ENV{CONDA_PREFIX})
-    else()
-     message(FATAL_ERROR "BOOST_ROOT is not defined. Please set it to the RDKit installation directory.")
-    endif()
-endif()
-
 add_library(rdkit STATIC
             RDGeneral/Invariant.cpp RDGeneral/LocaleSwitcher.cpp
             RDGeneral/RDLog.cpp RDGeneral/types.cpp
@@ -101,8 +93,9 @@ add_library(rdkit STATIC
 )
 
 set_property(TARGET rdkit PROPERTY POSITION_INDEPENDENT_CODE ON)
-
 target_include_directories(rdkit PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR} # rdkit headers 
-  $ENV{CONDA_PREFIX}/include  # boost headers
+  ${CMAKE_CURRENT_SOURCE_DIR} # rdkit headers
 )
+# Consume Boost from parent: either vendored (Boost::headers created by parent)
+# or system (Boost::headers provided by find_package)
+target_link_libraries(rdkit PUBLIC Boost::headers)

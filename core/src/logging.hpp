@@ -16,10 +16,7 @@ public:
   enum class LogLevel    { Trace, Debug, Info, Warn, Error, Critical, Off };
   enum class FormatStyle { Simple, Detailed };
 
-  static Logger &get_instance() {
-      static Logger instance;
-      return instance;
-  }
+  static Logger &get_instance();
 
   void set_format(FormatStyle style);
   FormatStyle get_format_style() { return current_style; }
@@ -27,7 +24,9 @@ public:
   // Wrapper around spdlog log functions.
   template <typename... Args>
   void log(LogLevel level, spdlog::format_string_t<Args...> fmt, Args&&... args) {
-      spdlog::log(convert_log_level(level), fmt, std::forward<Args>(args)...);
+      if (logger) {
+        logger->log(convert_log_level(level), fmt, std::forward<Args>(args)...);
+      }
   }
 
   static std::shared_ptr<spdlog::logger> get_logger();
