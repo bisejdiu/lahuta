@@ -40,7 +40,7 @@ struct ResidueKernel {
 struct RingKernel {
   template <typename DataT>
   static ComputationResult
-  execute(const DataContext<DataT, Mut::ReadOnly> &context, const RingComputationParams &params);
+  execute(DataContext<DataT, Mut::ReadWrite> &context, const RingComputationParams &params);
 };
 
 struct AtomTypingKernel {
@@ -51,6 +51,12 @@ struct AtomTypingKernel {
   static std::vector<RingRec> populate_ring_entities(RDKit::RWMol &mol);
 private:
   static bool should_initialize_ringinfo(int mol_size);
+};
+
+struct SeedFromModelKernel {
+  template <typename DataT>
+  static ComputationResult
+  execute(DataContext<DataT, Mut::ReadWrite> &context, const SeedFromModelParams &params);
 };
 
 } // namespace lahuta::topology

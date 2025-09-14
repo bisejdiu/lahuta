@@ -2,9 +2,10 @@
 #include "bond_order.hpp"
 #include "compute/engine.hpp"
 #include "compute/result.hpp"
+#include "logging.hpp"
 #include "ob/clean_mol.hpp"
 #include "topology/compute.hpp"
-#include "topology/data.hpp"
+#include "topology/context.hpp"
 #include "topology/kernels.hpp"
 
 // clang-format off
@@ -24,10 +25,16 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
     auto maybe_neigh = engine->template result<std::shared_ptr<NSResults>>(NeighborSearchComputation<DataT>::label);
     if (!maybe_neigh)  return ComputationResult(ComputationError("Neighbor search results not available"));
     auto neighbors = *maybe_neigh;
+    Logger::get_logger()->debug("bonds: neighbors_ready, pairs={}", neighbors->size());
 
     BondAssignmentResult result = assign_bonds(mol, *neighbors);
 
-    // delete neibors to free memory and avoid large memory usage
+    //
+    // We delete neibors to free memory and avoid large memory usage. This is good from a memory standpoint, but
+    // this also means that if we need to recompute neighbors for any reason later with a cutoff equal or shorter
+    // than the bond cutoff, we'll have to redo the neighbor search. It's a performance vs memory tradeoff.
+    // Right now we prioritize memory. - Besian, August 2025
+    //
     neighbors->clear();
     neighbors.reset();
 
@@ -35,6 +42,7 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
     RDKit::MolOps::setHybridization(mol);
     fix_bonds(mol);
 
+    Logger::get_logger()->debug("bonds: assigned, nonstandard_pending={}", result.has_unlisted_resnames);
     return ComputationResult(result);
   } catch (const std::exception &e) {
     return ComputationResult(ComputationError(std::string("Error computing bonds: ") + e.what()));
@@ -68,6 +76,8 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
 
     if (!result.has_unlisted_resnames) return ComputationResult(true);
 
+    Logger::get_logger()->debug("nonstandard_bonds: processing subset size={}", result.atom_indices.size());
+
     // NOTE: unclear if these should be free functions, but merge_bonds and fix_bonds not
     clean_bonds(result.mol, result.mol.getConformer());
     perceive_bond_orders_obabel(result.mol);
@@ -80,6 +90,7 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
     // Merge into the original molecule
     merge_bonds(mol, result.mol, result.atom_indices);
 
+    Logger::get_logger()->debug("nonstandard_bonds: merged");
     return ComputationResult(true);
   } catch (const std::exception &e) {
     return ComputationResult(ComputationError(std::string("Error computing non-standard bonds: ") + e.what()));
@@ -105,7 +116,7 @@ void NonStandardBondKernel::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &sour
   }
 }
 
-template ComputationResult BondKernel           ::execute<TopologyData>(const DataContext<TopologyData, Mut::ReadOnly> &, const BondComputationParams &);
-template ComputationResult NonStandardBondKernel::execute<TopologyData>(const DataContext<TopologyData, Mut::ReadOnly> &, const NonStandardBondComputationParams &);
+template ComputationResult BondKernel           ::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const BondComputationParams &);
+template ComputationResult NonStandardBondKernel::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const NonStandardBondComputationParams &);
 
 } // namespace lahuta::topology

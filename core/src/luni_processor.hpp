@@ -290,7 +290,7 @@ private:
   template <typename OnTickCallback>
   void process_file(const std::string& file_path, OnTickCallback on_tick_callback) {
     try {
-      auto source = std::make_unique<SourceType>(file_path, /*is_model=*/true);
+      auto source = std::make_unique<SourceType>(file_path, typename SourceType::ModelFileTag{});
       Logger::get_logger()->info("Successfully processed file: {}", file_path);
     } catch (const std::exception& e) {
       Logger::get_logger()->error("Error processing file {}: {}", file_path, e.what());

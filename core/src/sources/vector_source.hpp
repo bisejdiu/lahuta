@@ -17,6 +17,10 @@ struct VectorSource {
     return std::nullopt;
   }
 
+  void reset() {
+    idx_ = 0;
+  }
+
 private:
   std::vector<std::string> items_;
   size_t idx_;

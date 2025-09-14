@@ -150,8 +150,32 @@ public:
     m_graph[result.first] = bond;
   }
 
+  //
+  // Removing a vertex from boost::adjacency_list (vecS) renumbers vertex indices
+  // to keep them contigous. Because RDKit Atom and Bond objects cache these indices,
+  // we must update Atom::idx and each Bond's begin/end atom indices to match the new
+  // vertex_index mapping after the remove. We also clear incident edges before erasing
+  // to maintain validity and avoid stale descriptors.  - Besian, September 2025
+  //
   void removeAtom(unsigned int idx) override {
-    boost::clear_vertex(static_cast<MolGraphTraits<MolGraph>::vertex_descriptor>(idx), m_graph);
+    auto v = static_cast<MolGraphTraits<MolGraph>::vertex_descriptor>(idx);
+    // Remove incident edges then erase the vertex to keep indices contiguous.
+    boost::clear_vertex(v, m_graph);
+    boost::remove_vertex(v, m_graph);
+
+    // Keep Atom::idx (and Bonds) aligned with new vertex indices.
+    auto index_map = get(boost::vertex_index, m_graph);
+    for (auto [vi, vi_end] = vertices(m_graph); vi != vi_end; ++vi) {
+      if (auto *a = m_graph[*vi]) {
+        a->setIdx(index_map[*vi]);
+      }
+    }
+    for (auto [ei, ei_end] = edges(m_graph); ei != ei_end; ++ei) {
+      if (auto *b = m_graph[*ei]) {
+        b->setBeginAtomIdx(index_map[source(*ei, m_graph)]);
+        b->setEndAtomIdx(index_map[target(*ei, m_graph)]);
+      }
+    }
   }
 
   void removeBond(unsigned int src, unsigned int dst) override { boost::remove_edge(src, dst, m_graph); }

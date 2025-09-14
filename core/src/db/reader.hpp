@@ -68,4 +68,3 @@ private:
 } // namespace lahuta
 
 #endif // LAHUTA_DB_READER_HPP
-

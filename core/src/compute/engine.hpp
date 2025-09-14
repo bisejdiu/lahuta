@@ -45,8 +45,8 @@ private:
     while (!queue.empty()) {
       int node_idx = queue.front();
       queue.pop_front();
-      if (visited & (1 << node_idx)) continue;
-      visited |= (1 << node_idx);
+      if (visited & (Mask{1} << node_idx)) continue;
+      visited |= (Mask{1} << node_idx);
 
       if (!registry[node_idx].forced_disabled) {
         if (!registry[node_idx].enabled) { // resurrect disabled nodes
@@ -57,7 +57,7 @@ private:
 
       Mask dep_mask = registry[node_idx].deps;
       for (int dep_idx = 0; dep_idx < registry.size(); ++dep_idx)
-        if (dep_mask & (1 << dep_idx)) queue.push_back(dep_idx);
+        if (dep_mask & (Mask{1} << dep_idx)) queue.push_back(dep_idx);
     }
   }
 
@@ -68,14 +68,14 @@ private:
     while (!queue.empty()) {
       int node_idx = queue.front();
       queue.pop_front();
-      if (visited & (1 << node_idx)) continue;
-      visited |= (1 << node_idx);
+      if (visited & (Mask{1} << node_idx)) continue;
+      visited |= (Mask{1} << node_idx);
 
       registry[node_idx].done = false; // invalidate cached result
 
       Mask rev_dep_mask = registry[node_idx].rdeps; // nodes that depend on this node
       for (int dep_idx = 0; dep_idx < registry.size(); ++dep_idx)
-        if (rev_dep_mask & (1 << dep_idx)) queue.push_back(dep_idx);
+        if (rev_dep_mask & (Mask{1} << dep_idx)) queue.push_back(dep_idx);
     }
   }
 
@@ -114,6 +114,27 @@ public:
     invalidate_downstream(idx);
   }
 
+  // Plan the subgraph from a root label (no execution). Applies auto-heal.
+  ExecOrder plan_from(ComputationLabel root) {
+    registry.seal();
+    enable_chain(root);
+    int idx = registry.find(root);
+    if (idx < 0) throw std::runtime_error("unknown label");
+    return lahuta::topology::compute::plan_from(registry, idx);
+  }
+
+  // Execute exactly the subgraph reachable from 'root'. Applies auto-heal.
+  template <typename R = void>
+  bool run_from(ComputationLabel root) {
+    registry.seal();
+    enable_chain(root);
+    int idx = registry.find(root);
+    if (idx < 0) throw std::runtime_error("unknown label");
+    (void) lahuta::topology::compute::schedule_and_run_from(registry, ctx, idx);
+    auto &node = registry[idx];
+    return node.done && node.res.is_success();
+  }
+
   /// Returns the result of a computation
   template <typename R>
   std::optional<R> result(ComputationLabel lbl) const {
@@ -126,13 +147,23 @@ public:
     catch (...) { return std::nullopt; }
   }
 
-  /// Get the result of a computation by label
-  ComputationResult get_computation_result(ComputationLabel label) const {
+  /// Get the result of a computation by label. Triggers on-complete hook once.
+  ComputationResult get_computation_result(ComputationLabel label) {
     int idx = registry.find(label);
     if (idx < 0 || !registry[idx].done) {
       return ComputationResult(ComputationError("Result not available"));
     }
-    return registry[idx].res;
+    // TODO: Is the on_complete hook worth having?
+    // Invoke per-computation on_complete exactly once
+    auto &node = registry[idx];
+    if (!node.postprocessed && node.impl) {
+      try {
+        node.impl->on_complete(ctx, node.res);
+      // hook failing is not an issue
+      } catch (...) {}
+      node.postprocessed = true;
+    }
+    return node.res;
   }
 
   /// Checks if a computation has completed successfully

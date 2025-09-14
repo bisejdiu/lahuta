@@ -67,4 +67,3 @@ private:
 } // namespace lahuta
 
 #endif // LAHUTA_SEARCH_AND_ALIGN_HPP
-

@@ -1,18 +1,15 @@
 #include "commands/contacts.hpp"
+#include "analysis/contacts/computation.hpp"
+#include "analysis/system/model_fetch.hpp"
 #include "cli/arg_validation.hpp"
-#include "logging.hpp"
-
 #include "db/db.hpp"
-#include "entities/formatter.hpp"
-#include "io/collector.hpp"
-#include "io/file_backend.hpp"
-#include "io/file_spill_policy.hpp"
-#include "io/gzip_file_spill_policy.hpp"
-#include "models/factory.hpp"
-#include "pipeline/dsl.hpp"
-#include "serialization/formats.hpp"
-#include "tasks/contacts_task.hpp"
-#include "tasks/model_db_writer.hpp"
+#include "io/sinks/logging.hpp"
+#include "io/sinks/ndjson.hpp"
+#include "logging.hpp"
+#include "runtime.hpp"
+#include "pipeline/compute/parameters.hpp"
+#include "pipeline/dynamic/manager.hpp"
+#include "topology.hpp"
 
 #define STB_SPRINTF_IMPLEMENTATION
 #include "gemmi/third_party/stb_sprintf.h"
@@ -22,14 +19,10 @@ namespace lahuta::cli {
 
 using namespace lahuta::pipeline;
 
-using ContactsRes = tasks::ContactsTask::result_type;
-using ptrT = std::shared_ptr<const ContactsRes>;
 using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
 
-static void initialize_factories(int num_threads) {
-  lahuta::InfoPoolFactory::initialize(num_threads);
-  lahuta::BondPoolFactory::initialize(num_threads);
-  lahuta::AtomPoolFactory::initialize(num_threads);
+static void initialize_runtime(int num_threads) {
+  lahuta::LahutaRuntime::ensure_initialized(static_cast<std::size_t>(num_threads));
 }
 
 struct ContactsOptions {
@@ -43,8 +36,8 @@ struct ContactsOptions {
   std::string file_list_path;
   std::string database_path;
 
-  tasks::ContactProvider provider = tasks::ContactProvider::MolStar;
-  InteractionType interaction_type = InteractionType::None;
+  analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
+  InteractionType interaction_type = InteractionType::All;
 
   bool want_json   = false;
   bool want_text   = false;
@@ -64,215 +57,6 @@ Source pick_source(const ContactsOptions& cli) {
     case ContactsOptions::SourceMode::Database:  break; // Handled separately
   }
   throw std::logic_error("Invalid source mode");
-}
-
-auto build_compute_stage(tasks::ContactProvider provider, InteractionType interaction_type) {
-  tasks::ContactsTask task{provider, interaction_type};
-  return stage(dsl::thread_safe, [task](std::string path, IEmitter<ptrT>& out) mutable {
-    auto result = task(std::move(path));
-    out.emit(std::make_shared<const ContactsRes>(std::move(result)));
-  });
-}
-
-// Database deserialize stage
-template<class Rec, class FormatTag>
-auto make_database_deserialize_stage(lahuta::LMDBReader& rdr) {
-    using Ptr = std::shared_ptr<const Rec>;
-    return stage(dsl::thread_safe,
-        [&rdr](std::string&& key, IEmitter<Ptr>& out)
-        {
-            std::string_view raw;
-            if (!rdr.fetch(key, raw)) {
-                 lahuta::Logger::get_logger()->error("missing key {}", key);
-                return;
-            }
-            Rec obj = serialization::Serializer<FormatTag,Rec>
-                          ::deserialize(raw.data(), raw.size());
-            out.emit(std::make_shared<const Rec>(std::move(obj)));
-        });
-}
-
-// Contacts computation stage that takes deserialized model data and uses ContactsTask
-auto build_contacts_from_model_stage(tasks::ContactProvider provider, InteractionType interaction_type) {
-  using WriterRes = tasks::ModelWriteTask::result_type;
-  using InputPtr = std::shared_ptr<const WriterRes>;
-
-  tasks::ContactsTask task{provider, interaction_type};
-  return stage(dsl::thread_safe, [task](InputPtr input, IEmitter<ptrT>& out) {
-    auto result = task(*input);
-    out.emit(std::make_shared<const ContactsRes>(std::move(result)));
-  });
-}
-
-// Output multiplexer components
-class ICollectorSink {
-public:
-  virtual ~ICollectorSink() = default;
-  virtual void emit(ptrT) = 0;
-};
-
-template<class CollectorT>
-class CollectorSink final : public ICollectorSink {
-public:
-  template<class... Args>
-  explicit CollectorSink(Args&&... args) : col_(std::forward<Args>(args)...) {}
-  void emit(ptrT p) override { col_.emit(std::move(p)); }
-  ~CollectorSink() override  { col_.finish(); }
-
-private:
-  CollectorT col_;
-};
-
-enum class OutFmt { Json, Text, Log };
-struct OutputOption {
-  OutFmt fmt;
-  bool   compress;
-};
-
-template<OutFmt Fmt, bool Compress> struct CollectorTraits;
-
-template<> struct CollectorTraits<OutFmt::Json, false> {
-  using type = Collector<ptrT, FileSpillPolicy<fmt::json, ptrT, FileBackend, std::string>>;
-  static constexpr std::string_view ext = ".json";
-};
-template<> struct CollectorTraits<OutFmt::Json, true>  {
-  using type = Collector<ptrT, GzipFileSpillPolicy<fmt::json, ptrT>>;
-  static constexpr std::string_view ext = ".json.gz";
-};
-template<> struct CollectorTraits<OutFmt::Text, false> {
-  using type = Collector<ptrT, FileSpillPolicy<fmt::text, ptrT, FileBackend, std::string>>;
-  static constexpr std::string_view ext = ".txt";
-};
-template<> struct CollectorTraits<OutFmt::Text, true>  {
-  using type = Collector<ptrT, GzipFileSpillPolicy<fmt::text, ptrT>>;
-  static constexpr std::string_view ext = ".txt.gz";
-};
-
-namespace {
-  std::string format_string(const char* format, ...) {
-    char buffer[2048];
-    va_list args;
-    va_start(args, format);
-    stbsp_vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-    return std::string(buffer);
-  }
-
-  std::string extract_filename(const std::string& filepath) {
-    size_t pos = filepath.find_last_of("/\\");
-    return (pos == std::string::npos) ? filepath : filepath.substr(pos + 1);
-  }
-}
-
-class LoggingSink final : public ICollectorSink {
-public:
-  void emit(ptrT p) override {
-    if (!p) return;
-
-    const auto& result = *p;
-    std::string filename = extract_filename(result.file_path);
-
-    std::string output;
-    std::string contact_type_str = (result.contact_type == InteractionType::None)
-      ? "All"
-      : interaction_type_to_string(result.contact_type);
-
-    output += format_string("Contact Results for %s", filename.c_str()) + "\n";
-    output += format_string("Provider: %s, Type: %s, Success: %s",
-                           result.provider == tasks::ContactProvider::Arpeggio ? "Arpeggio" : "MolStar",
-                           contact_type_str.c_str(),
-                           result.success ? "Yes" : "No") + "\n";
-
-    if (!result.success) {
-      output += format_string("%s: Processing failed", filename.c_str()) + "\n";
-    } else if (result.contacts.empty()) {
-      output += format_string("%s: No contacts found", filename.c_str()) + "\n";
-    } else {
-      output += format_string("%s: Found %zu contacts:", filename.c_str(), result.contacts.size()) + "\n";
-      for (const auto& contact : result.contacts) {
-        if (result.topology) {
-          std::string lhs_entity = ContactTableFormatter::format_entity_compact(*result.topology, contact.lhs);
-          std::string rhs_entity = ContactTableFormatter::format_entity_compact(*result.topology, contact.rhs);
-          output += format_string("%s:   %s <-> %s (distance: %.3f, type: %s)",
-                                 filename.c_str(), lhs_entity.c_str(), rhs_entity.c_str(),
-                                 contact.distance, interaction_type_to_string(contact.type).c_str()) + "\n";
-        } else {
-          output += format_string("%s:   %s <-> %s (distance: %.3f, type: %s)",
-                                 filename.c_str(), contact.lhs.to_string().c_str(),
-                                 contact.rhs.to_string().c_str(), contact.distance,
-                                 interaction_type_to_string(contact.type).c_str()) + "\n";
-        }
-      }
-    }
-    output += "\n";
-
-    std::cout << output << std::flush;
-  }
-
-  ~LoggingSink() override = default;
-};
-
-template<> struct CollectorTraits<OutFmt::Log, false> {
-  using type = LoggingSink;
-  static constexpr std::string_view ext = "";
-};
-template<> struct CollectorTraits<OutFmt::Log, true> {
-  using type = LoggingSink;
-  static constexpr std::string_view ext = "";
-};
-
-class OutputMultiplexer : public IEmitter<ptrT> {
-  std::vector<std::unique_ptr<ICollectorSink>> sinks_;
-public:
-  explicit OutputMultiplexer(std::vector<OutputOption> opts, std::size_t batch, std::string_view stem) {
-    if (opts.size() == 0) throw std::runtime_error("at least one output format required");
-
-    for (std::size_t i = 0; i < opts.size(); ++i) {
-      auto o = opts[i];
-      switch (o.fmt) {
-      case OutFmt::Json:
-        (o.compress)
-          ? add<OutFmt::Json, true >(batch, stem)
-          : add<OutFmt::Json, false>(batch, stem);
-        break;
-      case OutFmt::Text:
-        (o.compress)
-          ? add<OutFmt::Text, true >(batch, stem)
-          : add<OutFmt::Text, false>(batch, stem);
-        break;
-      case OutFmt::Log:
-        // Compression doesn't apply to logging output
-        add<OutFmt::Log, false>(batch, stem);
-        break;
-      }
-    }
-  }
-
-  void emit(ptrT p) override {
-    for (auto& s : sinks_) s->emit(p);
-  }
-
-private:
-  template<OutFmt Fmt, bool Compress>
-  void add(std::size_t batch, std::string_view stem) {
-    using ColT = typename CollectorTraits<Fmt, Compress>::type;
-
-    if constexpr (Fmt == OutFmt::Log) {
-      // LoggingSink doesn't need file parameters
-      sinks_.push_back(std::make_unique<LoggingSink>());
-    } else {
-      auto filename = std::string(stem).append(CollectorTraits<Fmt, Compress>::ext);
-      sinks_.push_back(std::make_unique<CollectorSink<ColT>>(batch, filename));
-    }
-  }
-};
-
-template<typename StageT, typename SinkT>
-void run_dispatch(Source& src_variant, StageT& stage, SinkT& sink, int threads) {
-  std::visit([&](auto&& src) {
-    auto pipeline = dsl::source_t{std::move(src)} | stage | dsl::collect(sink);
-    run(pipeline, threads);
-  }, src_variant);
 }
 
 namespace contacts_opts {
@@ -394,9 +178,9 @@ int ContactsCommand::run(int argc, char* argv[]) {
     if (options[contacts_opts::ContactsOptionIndex::Provider]) {
       std::string provider = options[contacts_opts::ContactsOptionIndex::Provider].arg;
       if (provider == "molstar") {
-        cli.provider = tasks::ContactProvider::MolStar;
+        cli.provider = analysis::contacts::ContactProvider::MolStar;
       } else if (provider == "arpeggio") {
-        cli.provider = tasks::ContactProvider::Arpeggio;
+        cli.provider = analysis::contacts::ContactProvider::Arpeggio;
       } else {
         Logger::get_logger()->error("Invalid provider '{}'. Must be 'molstar' or 'arpeggio'", provider);
         return 1;
@@ -434,37 +218,103 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
     }
 
-    // build and run pipeline
-    auto compute_stage = build_compute_stage(cli.provider, cli.interaction_type);
+    initialize_runtime(cli.threads);
 
-    // output multiplexer
-    std::vector<OutputOption> option_list;
-    if (cli.want_json) { option_list.push_back(OutputOption{OutFmt::Json, !cli.no_compress}); }
-    if (cli.want_text) { option_list.push_back(OutputOption{OutFmt::Text, !cli.no_compress}); }
-    if (cli.want_log)  { option_list.push_back(OutputOption{OutFmt::Log, false}); } // Compression n/a for logging
-    OutputMultiplexer output_emitter{std::move(option_list), cli.batch_size, "contacts"};
+    bool is_db = (cli.source_mode == ContactsOptions::SourceMode::Database);
+    if (is_db) {
+      auto db = std::make_shared<LMDBDatabase>(cli.database_path);
+      dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<dynamic::DBKeySourceHolder>, dynamic::DBKeySourceHolder(db, cli.batch_size)));
+      // Enable conditional built-ins injection for CLI ergonomics
+      mgr.set_auto_builtins(true);
 
-    if (cli.source_mode == ContactsOptions::SourceMode::Database) {
-      initialize_factories(cli.threads);
+      // Configure built-ins
+      mgr.get_system_params().is_model = true;
+      mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
+        ? ContactComputerType::Arpeggio
+        : ContactComputerType::Molstar;
 
-      // special handling for database sources
-      LMDBDatabase database(cli.database_path);
-      LMDBReader reader(database.get_env(), database.get_dbi());
+      // Tasks: fetch model -> ensure_typing -> contacts
+      {
+        pipeline::compute::ModelFetchParams p{};
+        p.db = db;
+        mgr.add_computation(
+          "model",
+          {},
+          [label = std::string("model"), p]() {
+            return std::make_unique<analysis::system::ModelFetchComputation>(label, p);
+          },
+          /*thread_safe=*/true
+        );
+      }
 
-      // we create the pipeline
-      auto key_source         = dsl::db_keys(database, cli.batch_size);
-      auto deserialize_stage  = make_database_deserialize_stage<tasks::ModelWriteTask::result_type, fmt::binary>(reader);
-      auto compute_stage      = build_contacts_from_model_stage(cli.provider, cli.interaction_type);
+      const bool json_out = (cli.want_json || !cli.want_text);
+      // Add contacts as a compute-backed task using ContactsKernel
+      {
+        pipeline::compute::ContactsParams p{};
+        p.provider = cli.provider;
+        p.type     = cli.interaction_type;
+        p.channel  = "contacts";
+        p.json     = json_out;
+        mgr.add_computation(
+          "contacts",
+          {},
+          [label = std::string("contacts"), p]() {
+            return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+          },
+          /*thread_safe=*/true
+        );
+      }
 
-      auto pipeline = key_source | deserialize_stage | compute_stage | output_emitter;
-      dsl::run(pipeline, cli.threads);
+      // Sinks
+      if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"));
+      if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"));
+      if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>());
+
+      mgr.compile();
+      mgr.run(static_cast<std::size_t>(cli.threads));
     } else {
-      // file-based sources
-      Source source_variant = pick_source(cli);
-      run_dispatch(source_variant, compute_stage, output_emitter, cli.threads);
+      Source src_variant = pick_source(cli);
+      std::visit([&](auto&& src) {
+        using SrcT = std::decay_t<decltype(src)>;
+        dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<SrcT>, std::move(src)));
+        // Enable conditional built-ins injection for CLI ergonomics
+        mgr.set_auto_builtins(true);
+
+        // Configure built-ins
+        mgr.get_system_params().is_model = false;
+        mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
+          ? ContactComputerType::Arpeggio
+          : ContactComputerType::Molstar;
+
+        // Tasks: ensure_typing -> contacts
+        const bool json_out = (cli.want_json || !cli.want_text);
+        {
+          pipeline::compute::ContactsParams p{};
+          p.provider = cli.provider;
+          p.type     = cli.interaction_type;
+          p.channel  = "contacts";
+          p.json     = json_out;
+          mgr.add_computation(
+            "contacts",
+            {},
+            [label = std::string("contacts"), p]() {
+              return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+            },
+            /*thread_safe=*/true
+          );
+        }
+
+        // Sinks
+        if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"));
+        if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"));
+        if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>());
+
+        mgr.compile();
+        mgr.run(static_cast<std::size_t>(cli.threads));
+      }, src_variant);
     }
 
-    Logger::get_logger()->info("Contact computation completed successfully!");
+    Logger::get_logger()->info("Contact computation (dynamic) completed successfully!");
     return 0;
 
   } catch (const std::exception& e) {

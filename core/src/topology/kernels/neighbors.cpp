@@ -1,5 +1,6 @@
+#include "logging.hpp"
 #include "nsgrid.hpp"
-#include "topology/data.hpp"
+#include "topology/context.hpp"
 #include "topology/kernels.hpp"
 
 // clang-format off
@@ -13,9 +14,10 @@ ComputationResult NeighborSearchKernel::execute(const DataContext<DataT, Mut::Re
   if (!ok) return ComputationResult(ComputationError("Failed to build the grid for neighbor search."));
 
   auto neighbors = std::make_shared<NSResults>(grid.self_search());
+  Logger::get_logger()->debug("neighbors: atoms={}, cutoff={}, pairs={}", data.mol->getNumAtoms(), params.cutoff, neighbors->size());
   return ComputationResult(neighbors);
 }
 
-template ComputationResult NeighborSearchKernel::execute<TopologyData>(const DataContext<TopologyData, Mut::ReadOnly> &, const NeighborSearchParams &);
+template ComputationResult NeighborSearchKernel::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const NeighborSearchParams &);
 
 } // namespace lahuta::topology

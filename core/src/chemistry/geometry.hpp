@@ -55,4 +55,3 @@ std::optional<double> compute_plane_angle(
 } // namespace lahuta::chemistry
 
 #endif // LAHUTA_CHEMISTRY_GEOMETRY_HPP
-

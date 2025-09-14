@@ -136,7 +136,7 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
   }
 
   if (mol->getNumConformers() != 0) {
-    Logger::get_logger()->info("Loaded {} models with {} atoms", mol->getNumConformers(), mol->getNumAtoms());
+    Logger::get_logger()->debug("Loaded {} models with {} atoms", mol->getNumConformers(), mol->getNumAtoms());
   }
 
   mol->updatePropertyCache(false);

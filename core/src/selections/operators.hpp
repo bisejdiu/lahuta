@@ -50,4 +50,3 @@ private:
 } // namespace lahuta
 
 #endif // OPERATOR_HANDLER_HPP
-

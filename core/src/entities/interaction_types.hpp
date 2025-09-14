@@ -8,7 +8,7 @@
 // clang-format off
 namespace lahuta {
 
-enum class Category : std::uint8_t {
+enum class Category : std::uint16_t {
   None,
   Generic,
   Hydrophobic,
@@ -29,10 +29,10 @@ enum class Category : std::uint8_t {
   CarbonPi
 };
 
-enum class Flavor : std::uint8_t {
+enum class Flavor : std::uint16_t {
   Default,
-  Parallel, // PiStacking “P”
-  TShape    // PiStacking “T”
+  Parallel, // PiStacking P
+  TShape    // PiStacking T
 };
 
 struct InteractionType {
@@ -42,7 +42,8 @@ struct InteractionType {
   constexpr InteractionType(Category c = Category::None, Flavor f = Flavor::Default) noexcept
     : category(c), flavor(f) {}
 
-  static const InteractionType None;
+  static const InteractionType None; // internal no-hit marker
+  static const InteractionType All;
   static const InteractionType Generic;
   static const InteractionType Hydrophobic;
   static const InteractionType Halogen;
@@ -64,8 +65,9 @@ struct InteractionType {
   static const InteractionType SulphurPi;
   static const InteractionType CarbonPi;
 
-  constexpr operator std::uint8_t() const noexcept {
-    return static_cast<std::uint8_t>(category) | (static_cast<std::uint8_t>(flavor) << 4);
+  // 32-bit packed code: [ flavor:16 | category:16 ]
+  constexpr operator std::uint32_t() const noexcept {
+    return static_cast<std::uint32_t>(category) | (static_cast<std::uint32_t>(flavor) << 16);
   }
 
   constexpr bool operator==(const InteractionType& o) const noexcept {
@@ -78,6 +80,7 @@ struct InteractionType {
 };
 
 inline constexpr InteractionType InteractionType::None        {Category::None,        Flavor::Default};
+inline constexpr InteractionType InteractionType::All         {Category::None,        Flavor::Parallel};
 inline constexpr InteractionType InteractionType::Generic     {Category::Generic,     Flavor::Default};
 inline constexpr InteractionType InteractionType::Hydrophobic {Category::Hydrophobic, Flavor::Default};
 inline constexpr InteractionType InteractionType::Halogen     {Category::Halogen,     Flavor::Default};
@@ -103,6 +106,7 @@ inline constexpr InteractionType InteractionType::CarbonPi    {Category::CarbonP
 
 
 [[nodiscard]] inline std::string interaction_type_to_string(const InteractionType& type) noexcept {
+  if (type == InteractionType::All) return "All";
   switch (type.category) {
     case Category::None:              return "None";
     case Category::Generic:           return "Generic";
@@ -131,6 +135,7 @@ inline constexpr InteractionType InteractionType::CarbonPi    {Category::CarbonP
 
 [[nodiscard]] inline InteractionType get_interaction_type(const std::string& type_str) noexcept {
   static const std::unordered_map<std::string, InteractionType> type_map = {
+    {"all",              InteractionType::All},
     {"hbond",            InteractionType::HydrogenBond},
     {"weak_hbond",       InteractionType::WeakHydrogenBond},
     {"polar_hbond",      InteractionType::PolarHydrogenBond},

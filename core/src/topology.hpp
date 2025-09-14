@@ -2,6 +2,7 @@
 #define LAHUTA_TOPOLOGY_HPP
 
 #include "residues.hpp"
+#include "logging.hpp"
 #include "topology/engine.hpp"
 #include "topology_flags.hpp"
 #include "entities/entity_id.hpp"
@@ -17,12 +18,16 @@ namespace lahuta {
 constexpr static float BONDED_NEIGHBOR_SEARCH_CUTOFF = 4.5;
 enum class ContactComputerType { None, Arpeggio, Molstar };
 
+enum class TopologyBuildMode { Generic, Model };
+
 // Options for configuring topology parameters
 struct TopologyBuildingOptions {
   ContactComputerType atom_typing_method = ContactComputerType::Molstar;
   double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
   bool auto_heal = true; // auto-healing of dependencies
+  // FIX: this is also handled via flags
   bool compute_nonstandard_bonds = true; // whether to compute bonds for non-standard atoms
+  TopologyBuildMode mode = TopologyBuildMode::Generic;
 };
 
 class Topology {
@@ -44,6 +49,7 @@ public:
   void run_mask(TopologyComputation mask) const {
     for (auto bit : BASE_COMPUTATION_FLAGS)
       if (has_flag(mask, bit)) {
+        Logger::get_logger()->debug("run_mask: {}", Topology::get_label(bit).to_string_view());
         engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
       }
   }
@@ -91,20 +97,19 @@ public:
     if (id.kind() != K) {
       throw std::runtime_error("EntityID kind mismatch");
     }
-    switch (K) {
-      case Kind::Atom:  return atom(id.index());
-      case Kind::Ring:  return ring(id.index());
-      case Kind::Group: return group(id.index());
-      default: throw std::runtime_error("Invalid EntityID kind");
-    }
+    const auto idx = id.index();
+    if constexpr (K == Kind::Atom)  { return check_size(engine_->get_data().atoms,  idx, "Atom"); }
+    if constexpr (K == Kind::Ring)  { return check_size(engine_->get_data().rings,  idx, "Ring"); }
+    if constexpr (K == Kind::Group) { return check_size(engine_->get_data().groups, idx, "Group"); }
+    throw std::runtime_error("Invalid EntityID kind");
   }
 
   template <typename Fn>
   decltype(auto) apply_to_entity(EntityID id, Fn&& fun) {
     switch (id.kind()) {
-      case Kind::Atom:  return fun(atom (id.index()));
-      case Kind::Ring:  return fun(ring (id.index()));
-      case Kind::Group: return fun(group(id.index()));
+      case Kind::Atom:  return std::forward<Fn>(fun)(resolve<Kind::Atom>(id));
+      case Kind::Ring:  return std::forward<Fn>(fun)(resolve<Kind::Ring>(id));
+      case Kind::Group: return std::forward<Fn>(fun)(resolve<Kind::Group>(id));
       default: throw std::runtime_error("Invalid EntityID kind");
     }
   }
@@ -121,6 +126,15 @@ private:
 private:
   std::shared_ptr<RDKit::RWMol> mol_;
   std::unique_ptr<topology::TopologyEngine> engine_;
+
+  template <typename T>
+  static inline const T& check_size(const std::vector<T>& vec, std::size_t idx, const char* kind_label) {
+    if (idx >= vec.size()) {
+      Logger::get_logger()->error("{} index {} is out of bounds for size {}", kind_label, idx, vec.size());
+      throw std::out_of_range(std::string(kind_label) + " index out of range");
+    }
+    return vec[idx];
+  }
 };
 
 template<> inline constexpr const std::vector<AtomRec>&  Topology::records<AtomRec>()  const noexcept { return engine_->get_data().atoms; }

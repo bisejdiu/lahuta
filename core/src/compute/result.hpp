@@ -24,7 +24,7 @@ private:
     explicit TypedResult(T value) : value_(std::move(value)) {}
     const std::type_info &get_type() const override { return typeid(T); }
     const T &get_value() const { return value_; }
-    T move_value() { return std::move(value_); } // NOTE: not tested, likely very dangerous
+    T move_value() { return std::move(value_); } // NOTE: not tested, likely dangerous
 
   private:
     T value_;
@@ -77,7 +77,6 @@ public:
   }
 
   /// Move the value out of the result. NOte that ComputationResult does not own the value.
-  /// So this is a dangerous operation. Use with caution.
   template <typename T>
   T move_value() {
     if (has_error()) throw std::runtime_error("Cannot move value from error result");

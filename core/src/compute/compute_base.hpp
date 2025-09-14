@@ -1,26 +1,27 @@
 #pragma once
 
-#include "context.hpp"
-#include "label.hpp"
-#include "parameters.hpp"
-#include "result.hpp"
 #include <cstddef>
 #include <memory>
 #include <type_traits>
 #include <vector>
 
+#include "context.hpp"
+#include "label.hpp"
+#include "parameters.hpp"
+#include "result.hpp"
+
+// clang-format off
 namespace lahuta::topology::compute {
 
 namespace detail {
 
-/// trait checks if a computation type has dependencies defined
 template <typename T, typename = void>
 struct has_dependencies : std::false_type {};
 
 template <typename T>
 struct has_dependencies<T, std::void_t<typename T::dependencies>> : std::true_type {};
 
-/// trait gets the dependencies of a computation type
+// trait gets the dependencies of a computation type
 template <typename T, typename = void>
 struct dependencies_of {
   static std::vector<ComputationLabel> labels() { return {}; }
@@ -45,6 +46,10 @@ public:
   virtual const ComputationLabel&              get_label()        const = 0;
   virtual std::vector<ComputationLabel>        get_dependencies() const = 0;
 
+  /// Optional post-completion hook. Default no-op. Implementations may
+  /// augment the result (e.g., append emissions) based on the current context.
+  virtual void on_complete(DataContext<DataT, M>&, ComputationResult&) {}
+
   // execution control
   bool is_enabled() const { return enabled_; }
   void set_enabled(bool enabled) { enabled_ = enabled; }
@@ -53,4 +58,4 @@ private:
   bool enabled_ = true;
 };
 
-} // namespace lahuta::topology::compute 
+} // namespace lahuta::topology::compute

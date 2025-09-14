@@ -49,7 +49,7 @@ public:
   bool is_conjugated_and_not_excluded(const RDKit::Atom &atom_b, const RDKit::ROMol &mol) const;
 
   /**
-   * Determines if the atom participates in a conjugated π-system, either through a double bond
+   * Determines if the atom participates in a conjugated pi-system, either through a double bond
    * or as N/O adjacent to a double bond, with the following exclusions:
    *
    * - N/O with degree 4 are not conjugated.

@@ -41,7 +41,6 @@ struct StructUnit {
 
 } // namespace lahuta
 
-// Hash function for StructUnit 
 namespace std {
 template <> struct hash<lahuta::StructUnit> {
   size_t operator()(const lahuta::StructUnit &res) const {

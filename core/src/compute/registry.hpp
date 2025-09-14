@@ -34,8 +34,8 @@ public:
         int dep_idx = find(dep_label);
         if (dep_idx < 0) throw std::runtime_error("missing dependency");
 
-        nodes[node_idx].deps  |= (1 << dep_idx);
-        nodes[dep_idx].rdeps  |= (1 << node_idx);
+        nodes[node_idx].deps  |= (Mask{1} << dep_idx);
+        nodes[dep_idx].rdeps  |= (Mask{1} << node_idx);
       }
   }
 

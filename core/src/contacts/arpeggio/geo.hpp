@@ -18,7 +18,7 @@ inline double compute_angle(const RingRec &rd, const RDGeom::Point3D &point) {
 }
 
 inline bool passes_angle_filter(double angle, double cutoff) {
-  if (angle > 90.0) angle = 180.0 - angle; // “fold” angles >90 back in [0,90]
+  if (angle > 90.0) angle = 180.0 - angle; // fold angles >90 back in [0,90]
   return angle <= cutoff;
 }
 

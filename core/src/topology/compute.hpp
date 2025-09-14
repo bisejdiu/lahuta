@@ -3,7 +3,7 @@
 #include "compute/compute_impl.hpp"
 #include "compute/dependency.hpp"
 #include "nsgrid.hpp"
-#include "topology/data.hpp"
+#include "topology/context.hpp"
 #include "topology/kernels.hpp"
 #include "bonds.hpp"
 
@@ -11,7 +11,7 @@
 namespace lahuta::topology {
 using namespace compute;
 
-template <typename DataT = TopologyData>
+template <typename DataT = TopologyContext>
 class NeighborSearchComputation : public KernelizedROComputation<
     DataT,
     NeighborSearchParams,
@@ -23,7 +23,7 @@ public:
     using NeighborSearchComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
-template <typename DataT = TopologyData>
+template <typename DataT = TopologyContext>
 class ResidueComputation : public KernelizedROComputation<
     DataT,
     ResidueComputationParams,
@@ -35,7 +35,7 @@ public:
     using ResidueComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
-template <typename DataT = TopologyData>
+template <typename DataT = TopologyContext>
 class BondComputation : public KernelizedROComputation<
     DataT,
     BondComputationParams,
@@ -47,7 +47,7 @@ public:
     using BondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
-template <typename DataT = TopologyData>
+template <typename DataT = TopologyContext>
 class NonStandardBondComputation : public KernelizedROComputation<
     DataT,
     NonStandardBondComputationParams,
@@ -59,8 +59,8 @@ public:
     using NonStandardBondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
 };
 
-template <typename DataT = TopologyData>
-class RingComputation : public KernelizedROComputation<
+template <typename DataT = TopologyContext>
+class RingComputation : public KernelizedRWComputation<
     DataT,
     RingComputationParams,
     RingKernel,
@@ -69,10 +69,10 @@ public:
     constexpr static const ComputationLabel label{"rings"};
     using dependencies = Dependencies<Dependency<BondComputation<DataT>,    bool>,
                                       Dependency<ResidueComputation<DataT>, bool>>;
-    using RingComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+    using RingComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
-template <typename DataT = TopologyData>
+template <typename DataT = TopologyContext>
 class AtomTypingComputation : public KernelizedRWComputation<
     DataT,
     AtomTypingParams,
@@ -82,6 +82,18 @@ public:
     constexpr static const ComputationLabel label{"atom_typing"};
     using dependencies = Dependencies<Dependency<RingComputation<DataT>, bool>>;
     using AtomTypingComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
+};
+
+template <typename DataT = TopologyContext>
+class SeedFromModelComputation : public KernelizedRWComputation<
+    DataT,
+    SeedFromModelParams,
+    SeedFromModelKernel,
+    SeedFromModelComputation<DataT>> {
+public:
+    constexpr static const ComputationLabel label{"seed_from_model"};
+    using dependencies = Dependencies<Dependency<ResidueComputation<DataT>, bool>>;
+    using SeedFromModelComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
 } // namespace lahuta::topology

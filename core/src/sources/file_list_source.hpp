@@ -26,6 +26,11 @@ public:
     return std::nullopt;
   }
 
+  void reset() {
+    in_.clear();
+    in_.seekg(0);
+  }
+
 private:
   std::ifstream in_;
 };

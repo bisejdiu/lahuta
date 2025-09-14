@@ -23,7 +23,6 @@ public:
   /// access to data with appropriate constness
   typename std::conditional<M == Mut::ReadOnly, const DataT&, DataT&>::type data() const { return data_; }
 
-  // covariant conversion (RW → RO)
   template <Mut MM = M>
   operator typename std::enable_if<MM == Mut::ReadWrite, DataContext<DataT, Mut::ReadOnly>>::type() const noexcept {
     // reinterpret_cast is safe because we're reading though the engine pointer

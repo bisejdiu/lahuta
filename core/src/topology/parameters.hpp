@@ -13,6 +13,7 @@ namespace param_ids {
   constexpr ParameterInterface::TypeId ATOM_TYPING         = 4;
   constexpr ParameterInterface::TypeId RING_COMPUTATION    = 5;
   constexpr ParameterInterface::TypeId NONSTANDARD_BOND_COMPUTATION = 6;
+  constexpr ParameterInterface::TypeId SEED_FROM_MODEL     = 7;
 }
 
 struct NeighborSearchParams : public ParameterBase<NeighborSearchParams> {
@@ -39,6 +40,10 @@ struct RingComputationParams : public ParameterBase<RingComputationParams> {
 struct AtomTypingParams : public ParameterBase<AtomTypingParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::ATOM_TYPING;
   bool use_molstar = true;
+};
+
+struct SeedFromModelParams : public ParameterBase<SeedFromModelParams> {
+  static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::SEED_FROM_MODEL;
 };
 
 } // namespace lahuta::topology

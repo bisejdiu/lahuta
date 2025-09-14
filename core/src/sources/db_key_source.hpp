@@ -29,6 +29,13 @@ public:
 
   [[nodiscard]] std::size_t size() const noexcept { return current_batch_.size(); }
 
+  void reset() {
+    current_index_ = 0;
+    last_key_.clear();
+    current_batch_.clear();
+    load_next_batch();
+  }
+
 private:
   bool load_next_batch() {
     current_batch_.clear();

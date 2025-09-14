@@ -5,6 +5,7 @@
 #include "entity_id.hpp"
 #include "interaction_types.hpp"
 #include "records.hpp"
+#include "resolver.hpp"
 #include "topology.hpp"
 #include <GraphMol/MonomerInfo.h>
 #include <span.hpp>
@@ -17,17 +18,16 @@
 namespace lahuta {
 
 namespace {
-// custom sorting for contacts
 static std::vector<Contact> sort_interactions(const ContactSet& contact_set) {
   std::vector<Contact> sorted_contacts(contact_set.begin(), contact_set.end());
 
   std::stable_sort(sorted_contacts.begin(), sorted_contacts.end(),
     [](const Contact& a, const Contact& b) {
-      // compare by type (category only)
+      // compare by type.category only
       if (a.type.category != b.type.category) {
         return static_cast<uint8_t>(a.type.category) < static_cast<uint8_t>(b.type.category);
       }
-      return a < b; // if types are the same, we will use existing ordering
+      return a < b; // if types are the same, use existing ordering
     });
 
   return sorted_contacts;
@@ -39,7 +39,7 @@ static std::vector<span<const Contact>> slice_by_type(const std::vector<Contact>
   if (n == 0) return slices;
 
   std::size_t start = 0;
-  auto        cur   = contacts[0].type;
+  auto cur = contacts[0].type;
 
   for (std::size_t i = 1; i < n; ++i) {
     if (contacts[i].type != cur) {
@@ -67,6 +67,68 @@ private:
   static constexpr size_t TYPE_WIDTH      = 20; // interaction type names
 
 public:
+  static std::string format_entity_compact(const Topology& topology, const AtomRec& atom_rec) {
+    const auto& atom = atom_rec.atom.get();
+    auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
+    if (!info) return std::to_string(atom.getIdx()) + "-UNK-0-UNK-X";
+
+    int         res_num   = info->getResidueNumber();
+    std::string atom_name = info->getName();
+    std::string res_name  = info->getResidueName();
+    std::string chain_id  = info->getChainId();
+
+    return std::to_string(atom.getIdx()) + "-" + atom_name + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
+  }
+
+  static std::string format_entity_compact(const Topology& topology, const RingRec& ring_rec) {
+    if (ring_rec.atoms.empty()) return "()-0-UNK-X";
+
+    std::string atom_info = format_truncated_atoms(ring_rec.atoms);
+    const auto& first_atom = ring_rec.atoms[0].get();
+    auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(first_atom.getMonomerInfo());
+    if (!info) return atom_info + "-0-UNK-X";
+
+    int         res_num  = info->getResidueNumber();
+    std::string res_name = info->getResidueName();
+    std::string chain_id = info->getChainId();
+
+    return atom_info + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
+  }
+
+  static std::string format_entity_compact(const Topology& topology, const GroupRec& group_rec) {
+    if (group_rec.atoms.empty()) return "()-0-UNK-X";
+
+    if (group_rec.atoms.size() == 1) {
+      return format_entity_compact(topology, AtomRec{group_rec.a_type, group_rec.atoms[0]});
+    }
+
+    std::string atom_info = format_truncated_atoms(group_rec.atoms);
+
+    const auto& first_atom = group_rec.atoms[0].get();
+    auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(first_atom.getMonomerInfo());
+    if (!info) return atom_info + "-0-UNK-X";
+
+    int         res_num  = info->getResidueNumber();
+    std::string res_name = info->getResidueName();
+    std::string chain_id = info->getChainId();
+
+    return atom_info + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
+  }
+
+  //
+  // Format any entity resolved via EntityResolver without copying.
+  // EntityRef is a std::variant of std::reference_wrapper<const AtomRec|RingRec|GroupRec>.
+  // We visit the variant and delegate to the corresponding overload of format_entity_compact
+  // that accepts a concrete record type. - Besian, August 2025
+  //
+  static std::string format_entity_compact(const Topology& topology, const EntityRef& ref) {
+    return std::visit([&](const auto& rref){
+      using RefT = std::decay_t<decltype(rref)>;
+      using T = typename RefT::type;
+      return format_entity_compact(topology, rref.get());
+    }, ref);
+  }
+
   static std::string format_truncated_atoms(const std::vector<std::reference_wrapper<const RDKit::Atom>>& atoms) {
     if (atoms.size() <= MAX_RING_ATOMS) {
       std::string result = "(";
@@ -96,66 +158,10 @@ public:
 
   static std::string format_entity_compact(const Topology& topology, EntityID entity_id) {
     switch (entity_id.kind()) {
-      case Kind::Atom: {
-        const auto& atom_rec = topology.atom(entity_id.index());
-        const auto& atom = atom_rec.atom.get();
-        auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
-        if (!info) return std::to_string(atom.getIdx()) + "-UNK-0-UNK-X";
-
-        int         res_num   = info->getResidueNumber();
-        std::string atom_name = info->getName();
-        std::string res_name  = info->getResidueName();
-        std::string chain_id  = info->getChainId();
-
-        return std::to_string(atom.getIdx()) + "-" + atom_name + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
-      }
-      case Kind::Ring: {
-        const auto& ring_rec = topology.ring(entity_id.index());
-        if (ring_rec.atoms.empty()) return "()-0-UNK-X";
-
-        std::string atom_info = format_truncated_atoms(ring_rec.atoms);
-        const auto& first_atom = ring_rec.atoms[0].get();
-        auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(first_atom.getMonomerInfo());
-        if (!info) return atom_info + "-0-UNK-X";
-
-                 int res_num = info->getResidueNumber();
-        std::string res_name = info->getResidueName();
-        std::string chain_id = info->getChainId();
-
-        return atom_info + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
-      }
-      case Kind::Group: {
-        const auto& group_rec = topology.group(entity_id.index());
-        if (group_rec.atoms.empty()) return "()-0-UNK-X";
-
-        if (group_rec.atoms.size() == 1) {
-          // if we only have one atom, we should treat it as an atom entity
-          const auto& atom = group_rec.atoms[0].get();
-          auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
-          if (!info) return std::to_string(atom.getIdx()) + "-UNK-0-UNK-X";
-
-                  int res_num   = info->getResidueNumber();
-          std::string atom_name = info->getName();
-          std::string res_name  = info->getResidueName();
-          std::string chain_id  = info->getChainId();
-
-          return std::to_string(atom.getIdx()) + "-" + atom_name + "-" +  std::to_string(res_num) + "-" + res_name + "-" + chain_id;
-        }
-
-        std::string atom_info = format_truncated_atoms(group_rec.atoms);
-
-        const auto& first_atom = group_rec.atoms[0].get();
-        auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(first_atom.getMonomerInfo());
-        if (!info) return atom_info + "-0-UNK-X";
-
-                 int res_num = info->getResidueNumber();
-        std::string res_name = info->getResidueName();
-        std::string chain_id = info->getChainId();
-
-        return atom_info + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
-      }
-      default:
-        return "UNKNOWN-ENTITY";
+      case Kind::Atom:  return format_entity_compact(topology, topology.resolve<Kind::Atom>(entity_id));
+      case Kind::Ring:  return format_entity_compact(topology, topology.resolve<Kind::Ring>(entity_id));
+      case Kind::Group: return format_entity_compact(topology, topology.resolve<Kind::Group>(entity_id));
+      default:          return "UNKNOWN-ENTITY";
     }
   }
 
@@ -167,7 +173,7 @@ public:
     for (auto s : spans) {
       InteractionType type = s[0].type;
 
-      // 1) compute widths & buffer formatted entity strings
+      // compute widths & buffer formatted entity strings
       std::size_t w1 = 0, w2 = 0;
       std::vector<std::pair<std::string,std::string>> buf;
       buf.reserve(s.size());

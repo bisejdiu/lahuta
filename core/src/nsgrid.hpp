@@ -61,11 +61,6 @@ struct NSResults {
   }
   ~NSResults() {}
 
-  void add(int i, int j, float d) {
-    m_pairs.push_back({i, j});
-    m_dists.push_back(d);
-  }
-
   void add_neighbors(int i, int j, float d2);
   void reserve_space(size_t input_size); // FIX: not accurate. should use a smarter estimate
 
@@ -97,9 +92,8 @@ public:
   FastNS(const RDGeom::POINT3D_VECT &coords, float scale_factor = 1.1f);
   FastNS(const std::vector<std::vector<double>> &coords, float scale_factor = 1.1f);
 
-  bool          build(double cutoff);
-  bool         update(double cutoff);
-  bool adaptive_build(double cutoff, int max_retries = 50);
+  bool build(double cutoff);
+  bool update(double cutoff);
 
   // find all neighbors among the input coordinates within the cutoff distance
   NSResults self_search() const;
@@ -110,12 +104,7 @@ public:
   double get_cutoff() const { return cutoff; }
 
   static std::vector<float> flatten_coordinates(const RDGeom::POINT3D_VECT &coords);
-  /*static inline float dist_sq(const float* __restrict a, const float* __restrict b) {*/
-  /*  float dx = a[0] - b[0];*/
-  /*  float dy = a[1] - b[1];*/
-  /*  float dz = a[2] - b[2];*/
-  /*  return dx * dx + dy * dy + dz * dz;*/
-  /*}*/
+
   template <typename T>
   static inline T dist_sq(const T* __restrict a, const T* __restrict b) {
       T dx = a[0] - b[0];
@@ -125,6 +114,7 @@ public:
   }
 
 private:
+  bool adaptive_build(double cutoff);
   void prepare_box();
   void pack_grid();
   void build_grid();

@@ -40,7 +40,7 @@ void LuniProperties::register_all() {
   PropertyRegistry::register_property<Luni, PropertyKey::Positions>(
       [](const Luni &L) -> std::vector<RDGeom::Point3D> {
         /*return std::move(l.positions());*/
-        return L.positions(); // FIX: Return a copy
+        return L.get_positions(); // FIX: Return a copy
       });
 }
 

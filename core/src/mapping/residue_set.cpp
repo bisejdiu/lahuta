@@ -104,7 +104,7 @@ inline ResidueSet rs_set_operation(const ResidueSet &first, const ResidueSet &se
 ResidueSet ResidueSet::operator|(const ResidueSet &other) const {
     detail::verify_mappings(mapping_, other.mapping_, "union");
 
-    // create a lookup map: StructureId → indices
+    // create a lookup map: StructureId to indices
     std::unordered_map<StructureId, std::vector<ResidueIndex>> result_map;
     result_map.reserve(residue_collections_.size() + other.residue_collections_.size());
 

@@ -100,4 +100,3 @@ private:
 } // namespace lahuta
 
 #endif // LAHUTA_SYMMETRIC_HPP
-

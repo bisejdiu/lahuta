@@ -50,6 +50,18 @@ public:
 
   [[nodiscard]] std::size_t size() const noexcept { return total_files_; }
 
+  void reset() {
+    current_index_ = 0;
+    total_files_ = 0;
+    exhausted_ = false;
+    current_batch_.clear();
+
+    // Recreate iterators from the beginning
+    if (recursive_) recursive_it_.emplace(directory_path_, fs::directory_options::skip_permission_denied);
+    else                  dir_it_.emplace(directory_path_, fs::directory_options::skip_permission_denied);
+    load_next_batch();
+  }
+
 private:
   bool load_next_batch() {
     current_batch_.clear();

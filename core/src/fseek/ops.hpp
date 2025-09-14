@@ -3,8 +3,8 @@
 
 #include "blosum62.out.h"
 #include "mat3di.out.h"
+#include "TMaligner.h"
 
-enum class TMScoreThrMode { alignment, query, target, min };
 enum class AlignType { AA, _3Di, AA_3Di };
 
 struct SubMatrixData {

@@ -665,4 +665,3 @@ GNU General Public License for more details.
 
 //! \file bitvec.cpp
 //! \brief Fast and efficient bitstring class
-

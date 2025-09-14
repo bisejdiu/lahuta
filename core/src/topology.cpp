@@ -11,19 +11,33 @@ void Topology::build(TopologyBuildingOptions tops) {
   }
 
   try {
+    Logger::get_logger()->debug("Topology build start");
+
     engine_->initialize(tops);
+
+    if (tops.mode == TopologyBuildMode::Model) {
+      bool conflicts = false;
+      conflicts |= engine_->is_computation_available(topology::NeighborSearchComputation<>::label);
+      conflicts |= engine_->is_computation_available(topology::BondComputation<>::label);
+      conflicts |= engine_->is_computation_available(topology::NonStandardBondComputation<>::label);
+      conflicts |= engine_->is_computation_available(topology::RingComputation<>::label);
+      conflicts |= engine_->is_computation_available(topology::AtomTypingComputation<>::label);
+      if (conflicts) {
+        Logger::get_logger()->error("Model mode requires only residues + seed_from_model to be enabled");
+        throw std::runtime_error("Invalid computation configuration for Model mode");
+      }
+    }
 
     bool success = engine_->execute();
     if (!success) {
       Logger::get_logger()->error("Failed to execute topology computations");
       throw std::runtime_error("Failed to execute topology computations. See logs for details.");
     }
-
+    Logger::get_logger()->debug("Topology build done");
   } catch (const std::exception &e) {
-    // FIX: I don't think we are properly propagating the error
     Logger::get_logger()->critical(
-        "Error creating topology! Exception caught: {}. Will not terminate, "
-        "but some topology-based features will be available.", e.what());
+        "Error creating topology! Exception caught: {} Will not terminate, "
+        "but some topology-based features will not be available.", e.what());
     throw;
   }
 }
@@ -35,6 +49,7 @@ void Topology::assign_molstar_typing() {
   if (params) {
     params->use_molstar = true;
     engine_->enable(label, true);
+    Logger::get_logger()->debug("Executing atom typing (molstar)");
     engine_->execute_computation(label);
 
   } else {
@@ -49,6 +64,7 @@ void Topology::assign_arpeggio_atom_types() {
   if (params) {
     params->use_molstar = false;
     engine_->enable(label, true);
+    Logger::get_logger()->debug("Executing atom typing (arpeggio)");
     engine_->execute_computation(label);
 
   } else {
@@ -60,12 +76,14 @@ void Topology::enable_computation(TopologyComputation comp, bool enabled) {
   if (!engine_) throw std::runtime_error("No engine available");
 
   if (is_base_flag(comp)) {
+    Logger::get_logger()->debug("{} computation {}", get_label(comp).to_string_view(), enabled ? "enabled" : "disabled");
     engine_->enable(get_label(comp), enabled);
     return;
   }
 
   for (auto flag : BASE_COMPUTATION_FLAGS) {
     if (has_flag(comp, flag)) {
+      Logger::get_logger()->debug("{} computation {}", get_label(flag).to_string_view(), enabled ? "enabled" : "disabled");
       engine_->enable(get_label(flag), enabled);
     }
   }
@@ -102,12 +120,14 @@ bool Topology::execute_computation(TopologyComputation comp) {
   if (!engine_) return false;
 
   if (is_base_flag(comp)) {
+    Logger::get_logger()->debug("Running computation: {}", get_label(comp).to_string_view());
     return engine_->execute_computation(get_label(comp));
   }
 
   bool success = true;
   for (auto flag : BASE_COMPUTATION_FLAGS) {
     if (has_flag(comp, flag)) {
+      Logger::get_logger()->debug("Running computation: {}", get_label(flag).to_string_view());
       success &= engine_->execute_computation(get_label(flag));
     }
   }
@@ -168,27 +188,15 @@ size_t Topology::total_size() const {
 }
 
 const AtomRec& Topology::atom(uint32_t idx) const {
-  if (idx >= engine_->get_data().atoms.size()) {
-    std::cerr << "ERROR: Atom index " << idx << " is out of bounds for size " << engine_->get_data().atoms.size() << std::endl;
-    throw std::out_of_range("Atom index out of range");
-  }
-  return engine_->get_data().atoms[idx];
+  return resolve<Kind::Atom>(EntityID::make(Kind::Atom, idx));
 }
 
 const RingRec& Topology::ring(uint32_t idx) const {
-  if (idx >= engine_->get_data().rings.size()) {
-    std::cerr << "ERROR: Ring index " << idx << " is out of bounds for size " << engine_->get_data().rings.size() << std::endl;
-    throw std::out_of_range("Ring index out of range");
-  }
-  return engine_->get_data().rings[idx];
+  return resolve<Kind::Ring>(EntityID::make(Kind::Ring, idx));
 }
 
 const GroupRec& Topology::group(uint32_t idx) const {
-  if (idx >= engine_->get_data().groups.size()) {
-    std::cerr << "ERROR: Group index " << idx << " is out of bounds for size " << engine_->get_data().groups.size() << std::endl;
-    throw std::out_of_range("Group index out of range");
-  }
-  return engine_->get_data().groups[idx];
+  return resolve<Kind::Group>(EntityID::make(Kind::Group, idx));
 }
 
 } // namespace lahuta
