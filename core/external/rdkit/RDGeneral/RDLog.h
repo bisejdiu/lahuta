@@ -16,6 +16,8 @@
 #include <fstream>
 #include <vector>
 #include <cstdint>
+#include <memory>
+#include <string>
 
 namespace boost {
 namespace logging {

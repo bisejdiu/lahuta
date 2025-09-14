@@ -94,6 +94,5 @@ set_property(TARGET rdkit PROPERTY POSITION_INDEPENDENT_CODE ON)
 target_include_directories(rdkit PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR} # rdkit headers
 )
-# Consume Boost from parent: either vendored (Boost::headers created by parent)
-# or system (Boost::headers provided by find_package)
+# Get Boost from parent
 target_link_libraries(rdkit PUBLIC Boost::headers)

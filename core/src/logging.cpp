@@ -68,6 +68,7 @@ spdlog::level::level_enum Logger::convert_log_level(LogLevel level) {
         case LogLevel::Error:    return spdlog::level::err;
         case LogLevel::Critical: return spdlog::level::critical;
         case LogLevel::Off:      return spdlog::level::off;
+        default:                 return spdlog::level::info;
     }
 }
 

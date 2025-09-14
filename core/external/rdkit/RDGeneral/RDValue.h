@@ -36,6 +36,7 @@
 #include "RDValue-doublemagic.h"
 #else
 #include "RDValue-taggedunion.h"
+#include <iterator>
 #endif
 
 namespace RDKit {
