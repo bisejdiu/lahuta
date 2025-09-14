@@ -59,8 +59,8 @@ endif()
 option(LAHUTA_BUILD_CLI            "Build CLI executables" ON)
 option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
 option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
-option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" ON)
-option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" OFF)
+option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" OFF)
+option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
 
 set(RDK_USE_BOOST_SERIALIZATION OFF CACHE BOOL "Disable rdkit boost serialization" FORCE)
 
@@ -77,6 +77,8 @@ set(HWY_ENABLE_EXAMPLES   OFF CACHE BOOL "Disable highway examples"        FORCE
 set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks"      FORCE)
 set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE)
 set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
+
+option(LAHUTA_DISTOPIA_ENABLE_SVE "Enable Highway SVE targets for distopia" OFF)
 
 find_package(ZLIB REQUIRED)
 
@@ -140,6 +142,17 @@ if(APPLE)
   set_target_properties(foldseek PROPERTIES INSTALL_NAME_DIR "@rpath")
 endif()
 add_subdirectory(external/distopia)
+
+#
+# Disable Highway SVE targets in distopia by default to avoid SVE compilation
+# issues, such as sizeless types as members. SVE can be enabled explicitly with
+# -DLAHUTA_DISTOPIA_ENABLE_SVE=ON
+#
+if(TARGET libdistopia AND NOT LAHUTA_DISTOPIA_ENABLE_SVE)
+  set(LAHUTA_HWY_DISABLE_SVE "(HWY_SVE|HWY_SVE2|HWY_SVE_256|HWY_SVE2_128)")
+  target_compile_definitions(libdistopia PRIVATE HWY_DISABLED_TARGETS=${LAHUTA_HWY_DISABLE_SVE})
+  message(STATUS "distopia: SVE targets disabled")
+endif()
 
 add_library(lmdb STATIC
   ${CMAKE_CURRENT_SOURCE_DIR}/external/lmdb/mdb.c

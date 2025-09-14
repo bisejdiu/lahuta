@@ -1,0 +1,57 @@
+name: Core CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    name: Build and Test C++ Core
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if command -v sudo >/dev/null 2>&1; then SUDO=sudo; else SUDO=""; fi
+          $SUDO apt-get update
+          $SUDO apt-get install -y --no-install-recommends build-essential \
+            cmake ninja-build zlib1g-dev ca-certificates git rustc cargo
+
+      - name: Configure
+        run: |
+          cmake -S core -B core/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLAHUTA_VENDOR_BOOST=ON \
+            -DLAHUTA_BUILD_PYTHON=OFF \
+            -DBUILD_TESTING=ON
+
+      - name: Build
+        run: cmake --build core/build -j
+
+      - name: Smoke test CLI
+        run: ./core/build/lahuta --help
+
+      - name: Run CLI, get contacts and verify
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ./core/build/lahuta -f data/ubi.cif -p molstar
+          test -f contacts.jsonl
+          n=$(grep -o '"num_contacts":[0-9]*' contacts.jsonl | grep -o '[0-9]*' | tail -n1 || echo 0)
+          echo "num_contacts=$n"
+          test "$n" = "153"
+
+          ./core/build/lahuta -f data/ubi.cif -p arpeggio
+          test -f contacts.jsonl
+          n=$(grep -o '"num_contacts":[0-9]*' contacts.jsonl | grep -o '[0-9]*' | tail -n1 || echo 0)
+          echo "num_contacts=$n"
+          test "$n" = "384"
+
+      - name: Run tests
+        run: ctest --test-dir core/build -j --output-on-failure

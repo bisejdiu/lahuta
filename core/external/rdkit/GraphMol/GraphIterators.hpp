@@ -79,10 +79,10 @@ private:
 
 public:
   using iterator_category = std::input_iterator_tag;
-  using value_type        = Atom*;               // deref returns Atom*
+  using value_type        = Atom*;
   using difference_type   = std::ptrdiff_t;
-  using pointer           = Atom*;               // match operator->()
-  using reference         = Atom*;               // deref returns by value (pointer)
+  using pointer           = Atom*;
+  using reference         = Atom*;
 
   explicit AtomIterator(IAtomIterator *impl) : m_impl(impl) {}
 
@@ -117,10 +117,10 @@ private:
 
 public:
   using iterator_category = std::input_iterator_tag;
-  using value_type        = Bond*;               // deref returns Bond*
+  using value_type        = Bond*;
   using difference_type   = std::ptrdiff_t;
-  using pointer           = Bond*;               // match operator->()
-  using reference         = Bond*;               // deref returns by value (pointer)
+  using pointer           = Bond*;
+  using reference         = Bond*;
 
   explicit BondIterator(IBondIterator *impl) : m_impl(impl) {}
 
