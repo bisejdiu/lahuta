@@ -12,6 +12,7 @@
 #include <string>
 #include <ctime>
 #include <iostream>
+#include <algorithm>
 #include <sstream>
 
 RDLogger rdAppLog = nullptr;

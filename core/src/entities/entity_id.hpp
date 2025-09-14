@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <string>
+#include <stdexcept>
 
 // clang-format off
 namespace lahuta {

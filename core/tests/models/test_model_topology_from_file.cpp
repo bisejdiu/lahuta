@@ -2,6 +2,7 @@
 
 #include "lahuta.hpp"
 #include "logging.hpp"
+#include <filesystem>
 
 // Exercises building a system and topology from a model file path using the explicit model file API.
 TEST(ModelTopologyFromFile, BuildTopologySucceeds) {

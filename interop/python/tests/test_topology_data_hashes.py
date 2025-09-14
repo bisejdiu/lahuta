@@ -26,41 +26,83 @@ def hash_atoms(atom_recs) -> str:
         h.update(struct.pack("<II", idx, at))
     return h.hexdigest()
 
-def _pack_point3d(h, pt) -> None:
-    h.update(struct.pack("<ddd", float(pt.x), float(pt.y), float(pt.z)))
+def _pack_point3d(h, pt, prec: int = 6) -> None:
+    # Quantize to improve determinism
+    h.update(
+        struct.pack(
+            "<ddd",
+            round(float(pt.x), prec),
+            round(float(pt.y), prec),
+            round(float(pt.z), prec),
+        )
+    )
+
+def _canonical_cycle(indices: list[int]) -> tuple[int, ...]:
+    """Make ring atom ordering deterministic across diff platforms & compilers."""
+    n = len(indices)
+    if n == 0:
+        return ()
+    m = min(indices)
+    positions = [i for i, v in enumerate(indices) if v == m]
+    best: tuple[int, ...] | None = None
+    for pos in positions:
+        rot = tuple(indices[pos:] + indices[:pos])
+        rrot = tuple(reversed(rot))
+        cand = rot if rot < rrot else rrot
+        if best is None or cand < best:
+            best = cand
+    assert best is not None
+    return best
 
 def hash_rings(ring_recs) -> str:
+    entries = []
+    for r in ring_recs:
+        idxs = [int(a.getIdx()) for a in r.atoms]
+        canon = _canonical_cycle(idxs)
+        entries.append(
+            {
+                "idxs":     canon,
+                "aromatic": bool(r.aromatic),
+                "center":   r.center,
+                "normal":   r.normal,
+            }
+        )
+    entries.sort(key=lambda e: e["idxs"])
+
     h = _sha()
     h.update(b"LHX2|rings|")
-    h.update(struct.pack("<Q", len(ring_recs)))
-    for r in ring_recs:
-        atoms = r.atoms  # list of RDKit Atom
-        n = len(atoms)
-        h.update(struct.pack("<I", n))
-        for a in atoms:
-            # RDKit Python Atom exposes getIdx()
-            h.update(struct.pack("<I", int(a.getIdx())))
-        h.update(struct.pack("<?", bool(r.aromatic)))
-        _pack_point3d(h, r.center)
-        _pack_point3d(h, r.normal)
+    h.update(struct.pack("<Q", len(entries)))
+    for e in entries:
+        idxs = e["idxs"]
+        h.update(struct.pack("<I", len(idxs)))
+        for idx in idxs:
+            h.update(struct.pack("<I", idx))
+        h.update(struct.pack("<?", e["aromatic"]))
+        _pack_point3d(h, e["center"], prec=6)
+        _pack_point3d(h, e["normal"], prec=6)
     return h.hexdigest()
 
 def hash_groups(group_recs) -> str:
-    h = _sha()
-    h.update(b"LHX2|groups|")
-    h.update(struct.pack("<Q", len(group_recs)))
+    entries = []
     for g in group_recs:
         fg = int(g.type)
         at = int(g.a_type)
-        h.update(struct.pack("<II", fg, at))
-        atoms = g.atoms  # list of RDKit Atom
-        n = len(atoms)
-        h.update(struct.pack("<I", n))
-        for a in atoms:
-            h.update(struct.pack("<I", int(a.getIdx())))
-        _pack_point3d(h, g.center)
-    return h.hexdigest()
+        idxs = [int(a.getIdx()) for a in g.atoms]
+        canon = _canonical_cycle(idxs)
+        entries.append({"fg": fg, "at": at, "idxs": canon, "center": g.center})
+    entries.sort(key=lambda e: (e["fg"], e["at"], e["idxs"]))
 
+    h = _sha()
+    h.update(b"LHX2|groups|")
+    h.update(struct.pack("<Q", len(entries)))
+    for e in entries:
+        h.update(struct.pack("<II", e["fg"], e["at"]))
+        idxs = e["idxs"]
+        h.update(struct.pack("<I", len(idxs)))
+        for idx in idxs:
+            h.update(struct.pack("<I", idx))
+        _pack_point3d(h, e["center"], prec=6)
+    return h.hexdigest()
 
 EXPECTED = {
     "atoms": {
@@ -69,14 +111,13 @@ EXPECTED = {
     },
     "rings": {
         "count": 10,
-        "sha256": "69ef8c86f68085e5ece89e5a0f865a46058d779e5105673e323be8be4470be3a",
+        "sha256": "330cb500049d8af2fb0c9d2331b8780bd3bdfd693e297c66edc15e8f3e0a61e7",
     },
     "groups": {
         "count": 35,
-        "sha256": "ef8a0dfc5b456566fb797f51a58592b9aba16bba199711d5b481d27fb6679a6a",
+        "sha256": "47513c25ea8d7934f522290114ad91c9bc369558572bd503a0ef711e72aafb9a",
     },
 }
-
 
 @pytest.fixture(scope="session")
 def luni(ubi_cif: Path) -> lxx.LahutaSystem:

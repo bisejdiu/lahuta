@@ -40,7 +40,7 @@ public:
   Residues &get_residues() { return *engine_->get_data().residues; }
 
   template<typename Rec>
-  constexpr const std::vector<Rec>& records() const noexcept;
+  const std::vector<Rec>& records() const noexcept;
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
 
@@ -137,9 +137,9 @@ private:
   }
 };
 
-template<> inline constexpr const std::vector<AtomRec>&  Topology::records<AtomRec>()  const noexcept { return engine_->get_data().atoms; }
-template<> inline constexpr const std::vector<RingRec>&  Topology::records<RingRec>()  const noexcept { return engine_->get_data().rings; }
-template<> inline constexpr const std::vector<GroupRec>& Topology::records<GroupRec>() const noexcept { return engine_->get_data().groups; }
+template<> inline const std::vector<AtomRec>&  Topology::records<AtomRec>()  const noexcept { return engine_->get_data().atoms; }
+template<> inline const std::vector<RingRec>&  Topology::records<RingRec>()  const noexcept { return engine_->get_data().rings; }
+template<> inline const std::vector<GroupRec>& Topology::records<GroupRec>() const noexcept { return engine_->get_data().groups; }
 
 } // namespace lahuta
 
