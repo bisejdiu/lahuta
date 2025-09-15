@@ -57,11 +57,17 @@ jobs:
 
       - name: Configure
         run: |
+          set -euo pipefail
+          RUST_FLAGS=""
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            RUST_FLAGS="-DRust_TOOLCHAIN=stable -DRust_COMPILER=$(rustup which rustc) -DRust_CARGO=$(rustup which cargo)"
+          fi
           cmake -S core -B core/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DLAHUTA_VENDOR_BOOST=ON \
             -DLAHUTA_BUILD_PYTHON=OFF \
-            -DBUILD_TESTING=ON
+            -DBUILD_TESTING=ON \
+            $RUST_FLAGS
 
       - name: Build
         run: cmake --build core/build --parallel
