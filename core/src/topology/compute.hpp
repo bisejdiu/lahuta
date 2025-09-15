@@ -96,4 +96,19 @@ public:
     using SeedFromModelComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
+template <typename DataT = TopologyContext>
+class ModelTopologyComputation : public KernelizedROComputation<
+    DataT,
+    ModelTopologyParams,
+    NoopKernel,
+    ModelTopologyComputation<DataT>> {
+public:
+    constexpr static const ComputationLabel label{"model_topology"};
+    using dependencies = Dependencies<
+        Dependency<ResidueComputation<DataT>, bool>,
+        Dependency<SeedFromModelComputation<DataT>, bool>
+    >;
+    using ModelTopologyComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+};
+
 } // namespace lahuta::topology

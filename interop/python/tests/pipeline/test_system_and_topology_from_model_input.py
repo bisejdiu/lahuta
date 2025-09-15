@@ -16,6 +16,8 @@ from lahuta.pipeline import Pipeline
 
 # Direct fast-path system
 sys = lxx.LahutaSystem.from_model_file({model!r})
+ok = sys.build_topology()
+assert ok is True
 assert sys.has_topology_built is True or sys.has_topology_built()
 
 # Pipeline fast-path in same process

@@ -33,7 +33,7 @@ public:
 
     result.sequence.assign(serialized->sequence_data(), serialized->sequence_length);
 
-    // float coords --> Point3D (double)
+    // float coords --> Point3D
     result.coords.resize(serialized->num_points);
     const float* float_coords = serialized->coords_data_float();
     for (uint32_t i = 0; i < serialized->num_points; ++i) {
@@ -45,20 +45,19 @@ public:
     return true;
   }
 
-    bool fetch(std::string_view key, std::string_view& value) {
-        auto txn = lmdb::txn::begin(m_env, nullptr, MDB_RDONLY);
-        if (!m_dbi.get(txn.handle(), key, value)) return false;
-        txn.abort();
-        return true;
-    }
+  bool fetch(std::string_view key, std::string_view &value) {
+    auto txn = lmdb::txn::begin(m_env, nullptr, MDB_RDONLY);
+    if (!m_dbi.get(txn.handle(), key, value)) return false;
+    txn.abort();
+    return true;
+  }
 
-    template<class Rec, class FormatTag>
-    bool fetch_typed(std::string_view key, Rec& out) {
-        std::string_view raw;
-        if (!fetch(key, raw)) return false;
-        out = serialization::Serializer<FormatTag,Rec>::deserialize(raw.data(), raw.size());
-        return true;
-    }
+  template <class Rec, class FormatTag> bool fetch_typed(std::string_view key, Rec &out) {
+    std::string_view raw;
+    if (!fetch(key, raw)) return false;
+    out = serialization::Serializer<FormatTag, Rec>::deserialize(raw.data(), raw.size());
+    return true;
+  }
 
 private:
   lmdb::env &m_env;

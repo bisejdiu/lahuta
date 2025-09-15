@@ -8,9 +8,9 @@ void TopologyEngine::initialize(const TopologyBuildingOptions &opts) {
   if (auto* params = get_parameters<NeighborSearchParams>(NeighborSearchComputation<>::label)) {
     params->cutoff = opts.cutoff;
   }
-  // if (auto* params = get_parameters<AtomTypingParams>(AtomTypingComputation<>::label)) {
-  //   params->use_molstar = (opts.atom_typing_method == ContactComputerType::Molstar);
-  // }
+  if (auto* params = get_parameters<AtomTypingParams>(AtomTypingComputation<>::label)) {
+    params->use_molstar = (opts.atom_typing_method == ContactComputerType::Molstar);
+  }
 
   enable(NonStandardBondComputation<>::label, opts.compute_nonstandard_bonds);
 
@@ -29,11 +29,20 @@ void TopologyEngine::initialize(const TopologyBuildingOptions &opts) {
     enable(RingComputation<>           ::label, false);
     enable(AtomTypingComputation<>     ::label, false);
 
+    // Virtual computation for the model-path topology
+    enable(ModelTopologyComputation<>  ::label, true);
     enable(ResidueComputation<>        ::label, true);
     enable(SeedFromModelComputation<>  ::label, true);
+
+    // Configure seeding method based on atom typing backend
+    if (auto* seed_params = get_parameters<SeedFromModelParams>(SeedFromModelComputation<>::label)) {
+      seed_params->use_molstar = (opts.atom_typing_method == lahuta::ContactComputerType::Molstar);
+      Logger::get_logger()->debug("SeedFromModel: use_molstar={}", seed_params->use_molstar ? "true" : "false");
+    }
   } else {
     // Ensure seed is off in generic mode
     enable(SeedFromModelComputation<>  ::label, false);
+    enable(ModelTopologyComputation<>  ::label, false);
   }
 }
 

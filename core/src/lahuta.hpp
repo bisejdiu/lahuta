@@ -173,6 +173,7 @@ private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::shared_ptr<Topology> topology;
   bool topology_built_ = false;
+  bool model_origin_ = false; // flag controlling model code path
 
   std::string file_name_;
   std::vector<int> filtered_indices;

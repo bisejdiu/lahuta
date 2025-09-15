@@ -46,6 +46,7 @@ Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
     AtomPoolFactory::initialize(1);
   } catch (...) {}
 
+  model_origin_ = true;
   ModelParserResult result;
 
   try {
@@ -70,17 +71,6 @@ Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
       result = parse_model(data, size);
     }
     build_model_topology(mol, result, ModelTopologyMethod::CSR);
-
-    // build topology in model mode
-    try {
-      topology = std::make_shared<Topology>(mol);
-      TopologyBuildingOptions opts;
-      opts.mode = TopologyBuildMode::Model;
-      topology->build(opts);
-      topology_built_ = true;
-    } catch (const std::exception &e) {
-      Logger::get_logger()->error("Failed to build topology in model mode: {}", e.what());
-    }
   } catch (const std::exception &e) {
     Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
   } catch (...) {
@@ -97,8 +87,13 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
 
     ensure_topology_initialized();
 
-    if (tops) { topology->build(*tops); }
-    else      { topology->build(TopologyBuildingOptions{}); }
+    if (tops) {
+      topology->build(*tops);
+    } else {
+      TopologyBuildingOptions opts;
+      if (model_origin_) opts.mode = TopologyBuildMode::Model;
+      topology->build(opts);
+    }
 
     topology_built_ = true;
     return true;

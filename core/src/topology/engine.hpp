@@ -104,6 +104,7 @@ private:
     engine_->add(std::make_unique<RingComputation<>>(RingComputationParams{}));
     engine_->add(std::make_unique<AtomTypingComputation<>>(AtomTypingParams{}));
     engine_->add(std::make_unique<SeedFromModelComputation<>>(SeedFromModelParams{}));
+    engine_->add(std::make_unique<ModelTopologyComputation<>>(ModelTopologyParams{}));
   }
 
 private:
