@@ -27,11 +27,11 @@ jobs:
           - os: macos-13
             arch: intel
             install_cmd: |
-              brew install cmake ninja jq rust
+              brew install cmake ninja jq
           - os: macos-15
             arch: arm64
             install_cmd: |
-              brew install cmake ninja jq rust
+              brew install cmake ninja jq
 
     steps:
       - name: Checkout
@@ -41,6 +41,19 @@ jobs:
 
       - name: Install system dependencies
         run: ${{ matrix.install_cmd }}
+
+      # Install Rust toolchain via rustup
+      - name: Install Rust (rustup)
+        if: runner.os == 'macOS'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify Rust installation
+        run: |
+          which rustc || echo "rustc not found in PATH"
+          which cargo || echo "cargo not found in PATH"
+          rustc --version || echo "rustc --version failed"
+          cargo --version || echo "cargo --version failed"
+          echo "PATH: $PATH"
 
       - name: Configure
         run: |
