@@ -103,6 +103,7 @@ endif()
 
 #
 # Quick check for Boost Graph headers, as without them lahuta cannot build.
+# Make sure the probe compiles as C++17 regardless of compiler defaults.
 #
 set(_LAHUTA_BGL_INCLUDE_DIRS "")
 if(LAHUTA_VENDOR_BOOST)
@@ -115,7 +116,14 @@ endif()
 if(_LAHUTA_BGL_INCLUDE_DIRS)
   set(CMAKE_REQUIRED_INCLUDES "${_LAHUTA_BGL_INCLUDE_DIRS}")
 endif()
+set(_LAHUTA_SAVE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+if(MSVC)
+  string(APPEND CMAKE_REQUIRED_FLAGS " /std:c++17")
+else()
+  string(APPEND CMAKE_REQUIRED_FLAGS " -std=c++17")
+endif()
 check_cxx_source_compiles("#include <boost/graph/adjacency_list.hpp>\nint main(){return 0;}" HAVE_BGL_HEADERS)
+set(CMAKE_REQUIRED_FLAGS "${_LAHUTA_SAVE_REQUIRED_FLAGS}")
 unset(CMAKE_REQUIRED_INCLUDES)
 if(NOT HAVE_BGL_HEADERS)
   message(FATAL_ERROR "Boost Graph headers not found or not visible to the compiler.\n"
