@@ -1,0 +1,98 @@
+name: Core CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core:
+    name: Build and Test C++ Core (${{ matrix.os }} - ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-13, macos-15]
+        include:
+          - os: ubuntu-latest
+            arch: x64
+            install_cmd: |
+              sudo apt-get update
+              sudo apt-get install -y --no-install-recommends \
+                build-essential cmake ninja-build zlib1g-dev ca-certificates git jq
+              sudo apt-get install -y --no-install-recommends rustc cargo
+          - os: macos-13
+            arch: intel
+            install_cmd: |
+              brew install cmake ninja jq
+          - os: macos-15
+            arch: arm64
+            install_cmd: |
+              brew install cmake ninja jq
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: ${{ matrix.install_cmd }}
+
+      # Install Rust toolchain via rustup
+      - name: Install Rust (rustup)
+        if: runner.os == 'macOS'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify Rust installation
+        run: |
+          which rustc || echo "rustc not found in PATH"
+          which cargo || echo "cargo not found in PATH"
+          rustc --version || echo "rustc --version failed"
+          cargo --version || echo "cargo --version failed"
+          if command -v rustup >/dev/null 2>&1; then
+            rustup show || true
+            rustup toolchain list --verbose || true
+          fi
+          echo "PATH: $PATH"
+
+      - name: Configure
+        run: |
+          set -euo pipefail
+          RUST_FLAGS=""
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            RUST_FLAGS="-DRust_COMPILER=$(rustup which rustc) -DRust_CARGO=$(rustup which cargo)"
+          fi
+          cmake -S core -B core/build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLAHUTA_VENDOR_BOOST=ON \
+            -DLAHUTA_BUILD_PYTHON=OFF \
+            -DBUILD_TESTING=ON \
+            $RUST_FLAGS
+
+      - name: Build
+        run: cmake --build core/build --parallel
+
+      - name: Test CLI runs
+        run: ./core/build/lahuta --help
+
+      - name: Run CLI, get contacts and verify
+        run: |
+          set -euxo pipefail
+          ./core/build/lahuta -f data/ubi.cif -p molstar
+          test -f contacts.jsonl
+          n=$(jq -r 'select(.num_contacts) | .num_contacts' contacts.jsonl | tail -n1 || echo 0)
+          echo "num_contacts=$n"
+          test "$n" = "153"
+
+          ./core/build/lahuta -f data/ubi.cif -p arpeggio
+          test -f contacts.jsonl
+          n=$(jq -r 'select(.num_contacts) | .num_contacts' contacts.jsonl | tail -n1 || echo 0)
+          echo "num_contacts=$n"
+          test "$n" = "384"
+
+      - name: Run tests
+        run: ctest --test-dir core/build --output-on-failure

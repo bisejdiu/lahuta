@@ -22,7 +22,7 @@
 #include <boost/smart_ptr.hpp>
 #include <map>
 
-#if BOOST_VERSION == 106400
+#if defined(RDK_USE_BOOST_SERIALIZATION) && (BOOST_VERSION == 106400)
 #include <boost/serialization/array_wrapper.hpp>
 #endif
 

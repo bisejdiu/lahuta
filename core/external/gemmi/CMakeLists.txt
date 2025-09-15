@@ -40,9 +40,6 @@ if (DEFINED ENV{CXXFLAGS})
   set(USING_ENV_CXXFLAGS ON CACHE BOOL "" FORCE)
 endif()
 
-# always build in Release mode
-set(CMAKE_BUILD_TYPE Release CACHE STRING "Force Release build" FORCE)
-
 if (FETCH_ZLIB_NG)
   message(STATUS " =============== fetching and building zlib-ng ===============")
   include(FetchContent)
@@ -143,4 +140,3 @@ else()
     target_compile_options(gemmi_cpp PUBLIC /wd4267)
   endif()
 endif()
-

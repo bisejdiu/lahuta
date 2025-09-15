@@ -1,9 +1,11 @@
 #ifndef LAHUTA_ENTITIES_CONTACT_HPP
 #define LAHUTA_ENTITIES_CONTACT_HPP
 
+#include <vector>
+#include <algorithm>
+
 #include "entity_id.hpp"
 #include "interaction_types.hpp"
-#include <vector>
 
 // clang-format off
 namespace lahuta {

@@ -7,3 +7,6 @@
 [submodule "core/external/spdlog"]
 	path = core/external/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "core/external/boost"]
+	path = core/external/boost
+	url = https://github.com/bisejdiu/lahuta-boost-headers

@@ -1,10 +1,14 @@
 #ifndef RDKIT_GRAPH_ITERATORS_H
 #define RDKIT_GRAPH_ITERATORS_H
 
+#include <iterator>
+#include <memory>
+#include <utility>
+
+#include "GraphDefs.hpp"
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/compressed_sparse_row_graph.hpp>
 #include <boost/graph/graph_traits.hpp>
-#include "GraphDefs.hpp"
 
 // clang-format off
 namespace RDKit {
@@ -41,7 +45,9 @@ public:
   Atom *dereference() const override { return MolGraphTraits<GraphType>::getAtom(*m_graph, *m_iter); }
   bool equal(const IAtomIterator *other) const override {
     auto *typed_other = dynamic_cast<const AtomIteratorImpl<GraphType, VertexIter> *>(other);
-    return typed_other && m_iter == typed_other->m_iter;
+    return typed_other &&
+           m_graph == typed_other->m_graph &&
+           m_iter  == typed_other->m_iter;
   }
 };
 
@@ -59,7 +65,9 @@ public:
   Bond *dereference() const override { return MolGraphTraits<GraphType>::getBond(*m_graph, *m_iter); }
   bool equal(const IBondIterator *other) const override {
     auto *typed_other = dynamic_cast<const BondIteratorImpl<GraphType, EdgeIter> *>(other);
-    return typed_other && m_iter == typed_other->m_iter;
+    return typed_other &&
+           m_graph == typed_other->m_graph &&
+           m_iter  == typed_other->m_iter;
   }
 };
 
@@ -70,6 +78,12 @@ private:
   std::unique_ptr<IAtomIterator> m_impl;
 
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type        = Atom*;
+  using difference_type   = std::ptrdiff_t;
+  using pointer           = Atom*;
+  using reference         = Atom*;
+
   explicit AtomIterator(IAtomIterator *impl) : m_impl(impl) {}
 
   AtomIterator(const AtomIterator &other) : m_impl(other.m_impl->clone()) {}
@@ -85,8 +99,14 @@ public:
     m_impl->increment();
     return *this;
   }
+  AtomIterator operator++(int) {
+    AtomIterator tmp(*this);
+    ++(*this);
+    return tmp;
+  }
 
   Atom *operator*() const { return m_impl->dereference(); }
+  Atom *operator->() const { return m_impl->dereference(); }
   bool operator==(const AtomIterator &other) const { return m_impl->equal(other.m_impl.get()); }
   bool operator!=(const AtomIterator &other) const { return !(*this == other); }
 };
@@ -96,6 +116,12 @@ private:
   std::unique_ptr<IBondIterator> m_impl;
 
 public:
+  using iterator_category = std::input_iterator_tag;
+  using value_type        = Bond*;
+  using difference_type   = std::ptrdiff_t;
+  using pointer           = Bond*;
+  using reference         = Bond*;
+
   explicit BondIterator(IBondIterator *impl) : m_impl(impl) {}
 
   BondIterator(const BondIterator &other) : m_impl(other.m_impl->clone()) {}
@@ -111,8 +137,14 @@ public:
     m_impl->increment();
     return *this;
   }
+  BondIterator operator++(int) {
+    BondIterator tmp(*this);
+    ++(*this);
+    return tmp;
+  }
 
   Bond *operator*() const { return m_impl->dereference(); }
+  Bond *operator->() const { return m_impl->dereference(); }
   bool operator==(const BondIterator &other) const { return m_impl->equal(other.m_impl.get()); }
   bool operator!=(const BondIterator &other) const { return !(*this == other); }
 };

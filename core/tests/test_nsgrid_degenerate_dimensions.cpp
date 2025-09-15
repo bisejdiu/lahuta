@@ -8,9 +8,9 @@
 namespace lahuta {
 
 // These tests verify that FastNS handles degenerate
-// dimensions gracefully without stalling or creating massive grids.
+// dimensions correctly without stalling or creating massive grids.
 
-// Test case that originally caused infinite stalls in property-based testing
+// Test data that originally caused infinite stalls in hypothesis tests
 TEST(NSGridDegenerateTest, PropertyBasedStallCase) {
   std::vector<std::vector<double>> coords = {
       {-3.47773801e-107, -3.47773801e-107, -3.47773801e-107},
@@ -65,13 +65,13 @@ TEST(NSGridDegenerateTest, CompletelyDegenerateData) {
 
 TEST(NSGridDegenerateTest, MixedNormalAndDegenerateDimensions) {
   std::vector<std::vector<double>> coords = {
-      {1.41544969e000,   -3.47773801e-107, -3.47773801e-107}, // Normal X, degenerate Y,Z
-      {-3.48044136e000,  -3.47773801e-107, -3.47773801e-107}, // Normal X, degenerate Y,Z
-      {-3.47773801e-107, -3.47773801e-107, -5.00000000e000},  // Degenerate X,Y, normal Z
-      {-9.07279265e-001, -3.47773801e-107, -3.47773801e-107}, // Normal X, degenerate Y,Z
-      {-3.47773801e-107,  1.34856373e-040, -3.47773801e-107}, // Degenerate X,Z, very small Y
-      {-4.38939717e-001, -3.47773801e-107, -3.47773801e-107}, // Normal X, degenerate Y,Z
-      {-1.50965892e-291, -3.47773801e-107, -3.47773801e-107}  // Extremely small X, degenerate Y,Z
+      {1.41544969e000,   -3.47773801e-107, -3.47773801e-107},
+      {-3.48044136e000,  -3.47773801e-107, -3.47773801e-107},
+      {-3.47773801e-107, -3.47773801e-107, -5.00000000e000},
+      {-9.07279265e-001, -3.47773801e-107, -3.47773801e-107},
+      {-3.47773801e-107,  1.34856373e-040, -3.47773801e-107},
+      {-4.38939717e-001, -3.47773801e-107, -3.47773801e-107},
+      {-1.50965892e-291, -3.47773801e-107, -3.47773801e-107}
   };
 
   double cutoff = 2.5;
@@ -87,7 +87,7 @@ TEST(NSGridDegenerateTest, MixedNormalAndDegenerateDimensions) {
     const size_t max_pairs = n * (n - 1) / 2;
     EXPECT_LE(results.size(), max_pairs);
 
-    // Distances are squared and must be <= cutoff^2, indices must be in range and not self-pairs
+    // Distances are squared and must be <= cutoff**2, indices must be in range and not self-pairs
     const float cutoff2 = static_cast<float>(cutoff * cutoff);
     const auto &pairs = results.get_pairs();
     const auto &dists = results.get_distances();
