@@ -2,8 +2,10 @@ name: Core CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - '**'
   pull_request:
+  workflow_dispatch:
 
 jobs:
   core:
@@ -53,6 +55,10 @@ jobs:
           which cargo || echo "cargo not found in PATH"
           rustc --version || echo "rustc --version failed"
           cargo --version || echo "cargo --version failed"
+          if command -v rustup >/dev/null 2>&1; then
+            rustup show || true
+            rustup toolchain list --verbose || true
+          fi
           echo "PATH: $PATH"
 
       - name: Configure
@@ -60,7 +66,7 @@ jobs:
           set -euo pipefail
           RUST_FLAGS=""
           if [ "$RUNNER_OS" = "macOS" ]; then
-            RUST_FLAGS="-DRust_TOOLCHAIN=stable -DRust_COMPILER=$(rustup which rustc) -DRust_CARGO=$(rustup which cargo)"
+            RUST_FLAGS="-DRust_COMPILER=$(rustup which rustc) -DRust_CARGO=$(rustup which cargo)"
           fi
           cmake -S core -B core/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
