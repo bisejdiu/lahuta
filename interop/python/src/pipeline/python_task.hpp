@@ -9,6 +9,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "pythoncapi_compat.h" // Backports public C-API to old Pythons
+
 #include "pipeline/context.hpp"
 #include "pipeline/dynamic/types.hpp"
 
@@ -50,7 +52,7 @@ public:
   }
 
   ~PyCallableTask() override {
-    if (!Py_IsInitialized() || _Py_IsFinalizing()) {
+    if (!Py_IsInitialized() || Py_IsFinalizing()) {
       try { (void) func_.release().ptr(); } catch (...) {}
       try { (void)dumps_.release().ptr(); } catch (...) {}
       return;

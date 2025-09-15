@@ -2,6 +2,9 @@
 
 import sys
 
+if sys.version_info < (3, 10):
+    raise RuntimeError(f"Lahuta requires Python >= 3.10 (found {sys.version.split()[0]}).")
+
 # fmt: off
 try:
     from .lib import lahuta as lxx

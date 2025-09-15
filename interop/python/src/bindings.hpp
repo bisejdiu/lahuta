@@ -3,6 +3,11 @@
 
 #include <pybind11/pybind11.h>
 
+#include <Python.h>
+#if PY_VERSION_HEX < 0x030A0000
+#error "Lahuta Python bindings require Python >= 3.10"
+#endif
+
 namespace py = pybind11;
 
 namespace lahuta::bindings {
