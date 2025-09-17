@@ -1,6 +1,7 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
+#include <exception>
 #include <memory>
 #include <vector>
 
@@ -46,13 +47,20 @@ public:
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
 
-  void build(TopologyBuildingOptions tops);
+  [[nodiscard]] bool build(TopologyBuildingOptions tops);
 
   void run_mask(TopologyComputation mask) const {
     for (auto bit : BASE_COMPUTATION_FLAGS)
       if (has_flag(mask, bit)) {
         Logger::get_logger()->debug("run_mask: {}", Topology::get_label(bit).to_string_view());
-        engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+        try {
+          auto ok = engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+          if (!ok) {
+            Logger::get_logger()->warn("run_mask: computation {} reported failure", Topology::get_label(bit).to_string_view());
+          }
+        } catch (const std::exception &e) {
+          Logger::get_logger()->error("run_mask: computation {} threw exception: {}", Topology::get_label(bit).to_string_view(), e.what());
+        }
       }
   }
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "models/parser.hpp"
 #include <string>
+
+#include "models/parser.hpp"
 
 namespace lahuta::analysis::system {
 

@@ -1,16 +1,18 @@
-#include "lahuta.hpp"
+#include <stdexcept>
+#include <string>
+
 #include "GraphMol/PeriodicTable.h"
 #include "gemmi/gz.hpp"
+#include "lahuta.hpp"
 #include "mmap/MemoryMapped.h"
+#include "models/factory.hpp"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
 #include "nsgrid.hpp"
-#include "models/factory.hpp"
-#include "selections/mol_filters.hpp"
-#include <string>
-
 #include "read_file.hpp"
+#include "selections/mol_filters.hpp"
 
+// clang-format off
 namespace lahuta {
 
 Luni::Luni(std::string file_name) : file_name_(file_name) {
@@ -70,7 +72,9 @@ Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
 
       result = parse_model(data, size);
     }
-    build_model_topology(mol, result, ModelTopologyMethod::CSR);
+    if (!build_model_topology(mol, result, ModelTopologyMethod::CSR)) {
+      throw std::runtime_error("Failed to build model topology from model file");
+    }
   } catch (const std::exception &e) {
     Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
   } catch (...) {
@@ -88,15 +92,14 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
     ensure_topology_initialized();
 
     if (tops) {
-      topology->build(*tops);
+      topology_built_ = topology->build(*tops);
     } else {
       TopologyBuildingOptions opts;
       if (model_origin_) opts.mode = TopologyBuildMode::Model;
-      topology->build(opts);
+      topology_built_ = topology->build(opts);
     }
 
-    topology_built_ = true;
-    return true;
+    return topology_built_;
   } catch (const std::exception &e) {
     Logger::get_logger()->error("Error building topology: {}", e.what());
     return false;

@@ -41,22 +41,38 @@ public:
     try {
       auto results = engine_->w_execute_all();
 
-      // code block is just for logging
-      if (!results.empty()) {
-        int ok = 0;
-        for (const auto &r : results) ok += r.result.is_success() ? 1 : 0;
-        Logger::get_logger()->debug("TopologyEngine executed {} computations ({} ok)", (int)results.size(), ok);
-        for (const auto &r : results) {
-          if (!r.result.is_success()) {
-            Logger::get_logger()->debug("  - {}: failed", r.label.to_string_view());
-          }
-        }
-      } else {
+      if (results.empty()) {
         Logger::get_logger()->debug("TopologyEngine executed 0 computations");
+        return true;
       }
-      auto is_success = [](const ResultEntry &entry) { return entry.result.is_success(); };
-      bool success = !results.empty() && std::all_of(results.begin(), results.end(), is_success);
 
+      int ok = 0;
+      bool success = true;
+      for (const auto &r : results) {
+
+        if (r.result.is_success()) ++ok; continue;
+
+        success = false;
+        if (r.result.has_error()) {
+          const auto &err  = r.result.error();
+          const auto label = r.label.to_string_view();
+          switch (err.get_severity()) {
+            case ComputationError::Severity::Warning:
+              Logger::get_logger()->warn("TopologyEngine computation {} failed: {}", label, err.get_message());
+              break;
+            case ComputationError::Severity::Error:
+              Logger::get_logger()->error("TopologyEngine computation {} failed: {}", label, err.get_message());
+              break;
+            case ComputationError::Severity::Critical:
+              Logger::get_logger()->critical("TopologyEngine computation {} failed: {}", label, err.get_message());
+              break;
+          }
+        } else {
+          Logger::get_logger()->error("TopologyEngine computation {} failed without diagnostic", r.label.to_string_view());
+        }
+      }
+
+      Logger::get_logger()->debug("TopologyEngine executed {} computations ({} ok)", static_cast<int>(results.size()), ok);
       return success;
     } catch (const std::exception &e) {
       Logger::get_logger()->error("Error executing topology computations: {}", e.what());

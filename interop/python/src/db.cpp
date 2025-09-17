@@ -1,4 +1,5 @@
 #include <memory>
+#include <stdexcept>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -41,7 +42,9 @@ void bind_db(py::module_ &m) {
           using lahuta::analysis::system::ModelRecord;
           auto rec = Serializer<fmt::binary, ModelRecord>::deserialize(raw.data(), raw.size());
           auto mol = std::make_shared<RDKit::RWMol>();
-          lahuta::build_model_topology(mol, rec.data, ModelTopologyMethod::CSR);
+          if (!lahuta::build_model_topology(mol, rec.data, ModelTopologyMethod::CSR)) {
+            throw std::runtime_error("Failed to build model topology");
+          }
           auto sys = Luni::create(mol);
           return std::make_shared<Luni>(std::move(sys));
         },

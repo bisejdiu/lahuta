@@ -12,7 +12,7 @@ public:
   explicit ModelTopology(const ModelParserResult& input) 
     : engine_(std::make_unique<topology::ModelTopologyEngine>(input)) {}
 
-  void build(const ModelTopologyBuildingOptions& options = {});
+  bool build(const ModelTopologyBuildingOptions& options = {});
 
   void enable_computation(ModelTopologyComputation comp, bool enabled);
   void enable_only(ModelTopologyComputation comps);

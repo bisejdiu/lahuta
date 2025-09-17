@@ -2,9 +2,9 @@
 #define LAHUTA_MODEL_TOPOLOGY_HPP
 
 #include "GraphMol/RWMol.h"
+
 #include "models/parser.hpp"
 #include "models/topology_impl.hpp"
-#include <rdkit/GraphMol/MonomerInfo.h>
 
 // clang-format off
 namespace lahuta {
@@ -33,7 +33,7 @@ namespace lahuta {
 //
 enum class ModelTopologyMethod { None, Default, CSR };
 
-inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
+inline bool build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const ModelParserResult &P, ModelTopologyMethod method = ModelTopologyMethod::Default) {
     models::ModelTopology topology(P);
 
     models::ModelTopologyBuildingOptions options;
@@ -43,8 +43,11 @@ inline void build_model_topology(std::shared_ptr<RDKit::RWMol> &mol, const Model
         options.graph_type = RDKit::GraphType::MolGraph;
     }
 
-    topology.build(options);
+    if (!topology.build(options)) {
+        return false;
+    }
     mol = topology.get_molecule();
+    return true;
 }
 
 bool mock_build_model_topology(const ModelParserResult &P);

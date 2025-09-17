@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <stdexcept>
 
 #include "analysis/system/records.hpp"
 #include "compute/result.hpp"
@@ -26,7 +27,9 @@ struct SystemReadKernel {
         std::shared_ptr<const ModelRecord> md = data.ctx ? data.ctx->get_object<ModelRecord>("model_data") : nullptr;
         if (md) {
           auto mol = std::make_shared<RDKit::RWMol>();
-          build_model_topology(mol, md->data, ModelTopologyMethod::CSR);
+          if (!build_model_topology(mol, md->data, ModelTopologyMethod::CSR)) {
+            throw std::runtime_error("Failed to build model topology");
+          }
           auto s = Luni::create(mol, TopologyBuildMode::Model);
           sys = std::make_shared<Luni>(std::move(s));
         } else {
