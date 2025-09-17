@@ -42,8 +42,7 @@ jobs:
       - name: Install system dependencies
         run: ${{ matrix.install_cmd }}
 
-      # Install Rust toolchain via rustup
-      - name: Install Rust (rustup)
+      - name: Install Rus
         if: runner.os == 'macOS'
         uses: dtolnay/rust-toolchain@stable
 
@@ -68,9 +67,9 @@ jobs:
           fi
           cmake -S core -B core/build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DLAHUTA_VENDOR_BOOST=ON \
-            -DLAHUTA_BUILD_PYTHON=OFF \
-            -DBUILD_TESTING=ON \
+            -DLAHUTA_VENDOR_BOOST=ON   \
+            -DLAHUTA_BUILD_PYTHON=OFF  \
+            -DBUILD_TESTING=ON         \
             $RUST_FLAGS
 
       - name: Build
@@ -95,4 +94,39 @@ jobs:
           test "$n" = "384"
 
       - name: Run tests
-        run: ctest --test-dir core/build --output-on-failure
+        run: |
+          set -euo pipefail
+
+          if command -v nproc >/dev/null 2>&1; then
+            JOBS=$(nproc)
+          else
+            JOBS=$(sysctl -n hw.logicalcpu)
+          fi
+
+          mkdir -p core/build/test-results core/build/gtest-results
+
+          export GTEST_OUTPUT="xml:core/build/gtest-results/"
+          ctest --test-dir core/build \
+                --output-on-failure   \
+                --no-tests=error      \
+                --parallel "${JOBS}"  \
+                --output-junit test-results/junit-${{ matrix.os }}-${{ matrix.arch }}.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            core/build/test-results/*.xml
+            core/build/gtest-results/*.xml
+          retention-days: 14
+
+      - name: Publish test report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: unit tests (${{ matrix.os }}-${{ matrix.arch }})
+          path: core/build/test-results/*.xml
+          reporter: java-junit
+          fail-on-empty: true
