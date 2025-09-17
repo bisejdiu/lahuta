@@ -1,16 +1,18 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
-#include "residues.hpp"
-#include "logging.hpp"
-#include "topology/engine.hpp"
-#include "topology_flags.hpp"
-#include "entities/entity_id.hpp"
-#include "entities/records.hpp"
-#include "entities/view.hpp"
 #include <memory>
 #include <vector>
 
+#include "entities/entity_id.hpp"
+#include "entities/records.hpp"
+#include "entities/view.hpp"
+#include "logging.hpp"
+#include "residues.hpp"
+#include "topology/engine.hpp"
+#include "topology_flags.hpp"
+
+// clang-format off
 namespace lahuta {
 
 // FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
@@ -27,7 +29,7 @@ struct TopologyBuildingOptions {
   bool auto_heal = true; // auto-healing of dependencies
   // FIX: this is also handled via flags
   bool compute_nonstandard_bonds = true; // whether to compute bonds for non-standard atoms
-  TopologyBuildMode mode = TopologyBuildMode::Generic;
+  TopologyBuildMode mode = TopologyBuildMode::Generic; // This is also stored in Luni
 };
 
 class Topology {

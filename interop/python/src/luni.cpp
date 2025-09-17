@@ -97,6 +97,7 @@ void bind_luni(py::module &m) {
   py::class_<Luni, std::shared_ptr<Luni>> (m, "LahutaSystem", "Main class storing the parsed molecular structure")
     .def(py::init<std::string>(), py::arg("file_name"), "Create a LahutaSystem object from a molecular structure file")
     .def_static("from_model_file", &Luni::from_model_file, py::arg("file_name"), "Create a LahutaSystem object from a model file (fast model pathway)")
+    .def_property_readonly("is_model", &Luni::is_model_origin, "Whether the system originated from a model input")
 
     .def_static("create", py::overload_cast<const IR &>(&Luni::create),                    py::arg("ir"),  "Create from an intermediate representation")
     .def_static("create", py::overload_cast<std::shared_ptr<RDKit::RWMol>>(&Luni::create), py::arg("mol"), "Create from an RDKit molecule")

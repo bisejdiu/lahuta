@@ -23,11 +23,11 @@ struct SystemReadKernel {
 
       if (p.is_model) {
         // Check if model data read from LMDB is available in the context
-        std::shared_ptr<const analysis::system::ModelRecord> md = data.ctx ? data.ctx->get_object<analysis::system::ModelRecord>("model_data") : nullptr;
+        std::shared_ptr<const ModelRecord> md = data.ctx ? data.ctx->get_object<ModelRecord>("model_data") : nullptr;
         if (md) {
           auto mol = std::make_shared<RDKit::RWMol>();
-          lahuta::build_model_topology(mol, md->data, ModelTopologyMethod::CSR);
-          auto s = Luni::create(mol);
+          build_model_topology(mol, md->data, ModelTopologyMethod::CSR);
+          auto s = Luni::create(mol, TopologyBuildMode::Model);
           sys = std::make_shared<Luni>(std::move(s));
         } else {
           auto s = Luni::from_model_file(data.item_path);
@@ -39,8 +39,6 @@ struct SystemReadKernel {
 
       if (data.ctx) {
         data.ctx->set_object<Luni>("system", sys);
-        // Propagate system construction method
-        data.ctx->set_text("system_mode", p.is_model ? std::string("model") : std::string("structure"));
       }
       return ComputationResult(true);
     } catch (const std::exception& e) {

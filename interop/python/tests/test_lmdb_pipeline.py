@@ -103,9 +103,10 @@ def test_db_pipeline_uses_model_fetch_dependency(tmp_path: Path) -> None:
     p_read = Pipeline.from_database_handle(db)
 
     def get_mode(ctx: Any) -> dict[str, str]:
-        return {"mode": ctx.get_text("system_mode")}
+        sys = ctx.get_system()
+        return {"mode": "model" if getattr(sys, "is_model", False) else "structure"}
 
-    p_read.add_task(name="mode", task=get_mode, depends=["system"], in_memory_policy=InMemoryPolicy.Keep)
+    p_read.add_task(name="mode", task=get_mode, in_memory_policy=InMemoryPolicy.Keep)
     out = p_read.run(threads=2)
     modes = [rec["mode"] for rec in out["mode"]]
     assert modes == ["model", "model"]

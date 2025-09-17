@@ -31,12 +31,15 @@ public:
   static inline constexpr ModelFileTag ModelFile{};
   explicit Luni(std::string file_name, ModelFileTag);
 
-  // more covenient factory method for model path input
-  static Luni from_model_file(std::string file_name) { return Luni(std::move(file_name), ModelFile); }
-
   static Luni create(const IR &ir);
   static Luni create(const gemmi::Structure &st);
   static Luni create(std::shared_ptr<RDKit::RWMol> mol) { return Luni(mol); }
+  static Luni create(std::shared_ptr<RDKit::RWMol> mol, TopologyBuildMode mode) {
+    Luni l(std::move(mol));
+    if (mode == TopologyBuildMode::Model) l.model_origin_ = true;
+    return l;
+  }
+  static Luni from_model_file(std::string file_name) { return Luni(std::move(file_name), ModelFile); }
 
   // FIX: no need to use optional here
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
@@ -97,6 +100,9 @@ public:
     Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
     return false;
   }
+
+  // Whether this system originated from a model input
+  bool is_model_origin() const { return model_origin_; }
 
   /// Execute a specific computation with its dependencies
   bool execute_computation(TopologyComputation comp) {
