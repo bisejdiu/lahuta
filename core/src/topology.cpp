@@ -47,7 +47,7 @@ void Topology::assign_molstar_typing() {
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
 
   if (params) {
-    params->use_molstar = true;
+    params->mode = ContactComputerType::Molstar;
     engine_->enable(label, true);
     Logger::get_logger()->debug("Executing atom typing (molstar)");
     engine_->execute_computation(label);
@@ -62,7 +62,7 @@ void Topology::assign_arpeggio_atom_types() {
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
 
   if (params) {
-    params->use_molstar = false;
+    params->mode = ContactComputerType::Arpeggio;
     engine_->enable(label, true);
     Logger::get_logger()->debug("Executing atom typing (arpeggio)");
     engine_->execute_computation(label);
@@ -144,7 +144,7 @@ void Topology::set_cutoff(double cutoff) {
 void Topology::set_atom_typing_method(ContactComputerType method) {
   if (!engine_) throw std::runtime_error("No engine available");
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(topology::AtomTypingComputation<>::label);
-  if (params) params->use_molstar = (method == ContactComputerType::Molstar);
+  if (params) params->mode = method;
 }
 
 void Topology::set_compute_nonstandard_bonds(bool compute) {

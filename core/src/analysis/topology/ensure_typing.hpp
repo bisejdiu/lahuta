@@ -52,17 +52,17 @@ struct EnsureTypingKernel {
       auto top_c = data.ctx->get_object<Topology>("topology");
       if (!top_c) return ComputationResult(ComputationError("EnsureTyping requires topology in context"));
 
-      bool use_molstar = true; // default to MolStar when unknown
+      ContactComputerType current_mode = ContactComputerType::Molstar; // default
       {
         using namespace lahuta::topology;
         const auto& label  = AtomTypingComputation<>::label;
         auto& eng = const_cast<Topology&>(*top_c).get_engine();
         auto* params = eng.get_parameters<AtomTypingParams>(label);
-        if (params) use_molstar = params->use_molstar;
+        if (params) current_mode = params->mode;
       }
 
       const std::string* sentinel = data.ctx->get_text("atom_typing_mode");
-      auto desired_label = (p.desired == ContactComputerType::Molstar) ? std::string("molstar") : std::string("arpeggio");
+      auto desired_label = std::string(contact_computer_name(p.desired));
 
       auto ensure_now = [&](std::shared_ptr<Topology> top_mut) {
         if (p.desired == ContactComputerType::Molstar) {
@@ -77,8 +77,7 @@ struct EnsureTypingKernel {
       // First-touch semantics via sentinel
       if (!sentinel) {
         data.ctx->set_text("atom_typing_mode", desired_label);
-        bool desired_is_mol = (p.desired == ContactComputerType::Molstar);
-        if (use_molstar != desired_is_mol) {
+        if (current_mode != p.desired) {
           auto top_mut = std::const_pointer_cast<Topology>(top_c);
           ensure_now(std::move(top_mut));
         } else {
@@ -89,8 +88,7 @@ struct EnsureTypingKernel {
 
       // If sentinel matches our desired mode, enforce consistency, else no-op
       if (*sentinel == desired_label) {
-        bool desired_is_mol = (p.desired == ContactComputerType::Molstar);
-        if (use_molstar != desired_is_mol) {
+        if (current_mode != p.desired) {
           auto top_mut = std::const_pointer_cast<Topology>(top_c);
           ensure_now(std::move(top_mut));
         } else {

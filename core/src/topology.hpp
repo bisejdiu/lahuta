@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 
+#include "contact_types.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/records.hpp"
 #include "entities/view.hpp"
@@ -18,7 +19,6 @@ namespace lahuta {
 // FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
 // atoms we'd use a larger cutoff but only around them.
 constexpr static float BONDED_NEIGHBOR_SEARCH_CUTOFF = 4.5;
-enum class ContactComputerType { None, Arpeggio, Molstar };
 
 enum class TopologyBuildMode { Generic, Model };
 

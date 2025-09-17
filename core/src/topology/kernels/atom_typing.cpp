@@ -21,7 +21,15 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
-  if (params.use_molstar) {
+  if (params.mode == ContactComputerType::None) {
+    data.atoms.clear();
+    data.groups.clear();
+    data.rings.clear();
+    Logger::get_logger()->debug("atom_typing: disabled (mode={})", contact_computer_name(params.mode));
+    return ComputationResult(true);
+  }
+
+  if (params.mode == ContactComputerType::Molstar) {
     try {
       ValenceModel valence_model;
       valence_model.apply(*data.mol);

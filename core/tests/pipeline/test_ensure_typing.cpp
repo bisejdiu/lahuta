@@ -38,7 +38,7 @@ static bool current_is_molstar(const Topology& top) {
   auto& eng = const_cast<Topology&>(top).get_engine();
   const auto& lbl = ::lahuta::topology::AtomTypingComputation<>::label;
   auto* p = eng.get_parameters<::lahuta::topology::AtomTypingParams>(lbl);
-  return p ? p->use_molstar : true;
+  return p ? (p->mode == ContactComputerType::Molstar) : true;
 }
 
 TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {

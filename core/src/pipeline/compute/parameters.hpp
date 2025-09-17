@@ -40,8 +40,6 @@ struct ContactsParams : public ParameterBase<ContactsParams> {
   InteractionType type = InteractionType::All;
   std::string channel = "contacts";
   bool json = true; // true -> JSON, false -> TEXT
-  // arpeggio requests may switch typing.
-  ContactComputerType desired_typing = ContactComputerType::None; // default/None means follow provider convention
 };
 
 // Ensure that the topology's atom typing matches desired mode. desired = None means no preference

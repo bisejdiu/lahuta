@@ -1,6 +1,7 @@
 #pragma once
 
 #include "compute/parameters.hpp"
+#include "contact_types.hpp"
 
 // clang-format off
 namespace lahuta::topology {
@@ -40,12 +41,12 @@ struct RingComputationParams : public ParameterBase<RingComputationParams> {
 
 struct AtomTypingParams : public ParameterBase<AtomTypingParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::ATOM_TYPING;
-  bool use_molstar = true;
+  ContactComputerType mode = ContactComputerType::Molstar;
 };
 
 struct SeedFromModelParams : public ParameterBase<SeedFromModelParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::SEED_FROM_MODEL;
-  bool use_molstar = true;
+  ContactComputerType mode = ContactComputerType::Molstar;
 };
 
 struct ModelTopologyParams : public ParameterBase<ModelTopologyParams> {
