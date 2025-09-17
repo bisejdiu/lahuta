@@ -64,13 +64,8 @@ struct EnsureTypingKernel {
       auto desired_label = contact_computer_name(desired_mode);
 
       auto ensure_now = [&](std::shared_ptr<Topology> top_mut) {
-        if (desired_mode == AtomTypingMethod::Molstar) {
-          Logger::get_logger()->info("EnsureTyping: retyping to molstar");
-          top_mut->assign_molstar_typing();
-        } else {
-          Logger::get_logger()->info("EnsureTyping: retyping to arpeggio");
-          top_mut->assign_arpeggio_atom_types();
-        }
+        Logger::get_logger()->info("EnsureTyping: retyping to {}", contact_computer_name(desired_mode));
+        top_mut->assign_typing(desired_mode);
       };
 
       // First-touch semantics

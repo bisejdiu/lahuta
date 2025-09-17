@@ -42,29 +42,15 @@ void Topology::build(TopologyBuildingOptions tops) {
   }
 }
 
-void Topology::assign_molstar_typing() {
+void Topology::assign_typing(AtomTypingMethod method) {
   auto& label  = topology::AtomTypingComputation<>::label;
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
 
   if (params) {
-    params->mode = AtomTypingMethod::Molstar;
+    params->mode = method;
     engine_->enable(label, true);
-    Logger::get_logger()->debug("Executing atom typing (molstar)");
-    engine_->execute_computation(label);
 
-  } else {
-    Logger::get_logger()->error("Could not get parameters for atom typing computation");
-  }
-}
-
-void Topology::assign_arpeggio_atom_types() {
-  auto& label  = topology::AtomTypingComputation<>::label;
-  auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
-
-  if (params) {
-    params->mode = AtomTypingMethod::Arpeggio;
-    engine_->enable(label, true);
-    Logger::get_logger()->debug("Executing atom typing (arpeggio)");
+    Logger::get_logger()->debug("Executing atom typing ({})", contact_computer_name(method));
     engine_->execute_computation(label);
 
   } else {

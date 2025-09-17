@@ -51,8 +51,7 @@ struct ContactsKernel {
           Logger::get_logger()->info("ContactsKernel: switching atom typing to {} for contacts computation", contact_provider_name(p.provider));
           auto& topo_mut = const_cast<Topology&>(*top);
 
-          if      (required_mode == AtomTypingMethod::Molstar)  topo_mut.assign_molstar_typing();
-          else if (required_mode == AtomTypingMethod::Arpeggio) topo_mut.assign_arpeggio_atom_types();
+          topo_mut.assign_typing(required_mode);
         }
       } catch (const std::exception& e) {
         Logger::get_logger()->error("ContactsKernel: typing guard failed: {}", e.what());

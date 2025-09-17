@@ -42,11 +42,11 @@ def typing_compare(sys: lxx.LahutaSystem) -> None:
     top = sys.get_topology()
 
     top.set_atom_typing_method(lxx.AtomTypingMethod.Molstar)
-    top.assign_molstar_typing()
+    top.assign_typing(lxx.AtomTypingMethod.Molstar)
     mol_types = [rec.type for rec in top.atom_types]
 
     top.set_atom_typing_method(lxx.AtomTypingMethod.Arpeggio)
-    top.assign_arpeggio_atom_types()
+    top.assign_typing(lxx.AtomTypingMethod.Arpeggio)
     arp_types = [rec.type for rec in top.atom_types]
 
     diffs = sum(m != a for m, a in zip(mol_types, arp_types))

@@ -56,8 +56,7 @@ public:
       }
   }
 
-  void assign_molstar_typing();
-  void assign_arpeggio_atom_types();
+  void assign_typing(AtomTypingMethod method);
 
   /// Enable/disable a specific computation
   void enable_computation(TopologyComputation comp, bool enabled);

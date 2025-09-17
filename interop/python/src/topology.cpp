@@ -176,9 +176,7 @@ void bind_topology(py::module &m) {
     .def("build",     &Topology::build, py::arg("options"), "Build all enabled stages. Returns a boolean")
 
     .def("run_mask",  &Topology::run_mask, py::arg("mask"), "Run stages specified by a bitmask of TopologyComputers")
-
-    .def("assign_molstar_typing",      &Topology::assign_molstar_typing,      "Assign per-atom types using Mol* rules; populates atom_types")
-    .def("assign_arpeggio_atom_types", &Topology::assign_arpeggio_atom_types, "Assign per-atom types using Arpeggio rules; populates atom_types")
+    .def("assign_typing", &Topology::assign_typing, py::arg("method"), "Assign per-atom types using specified method; populates atom_types")
 
     .def("enable_computation",     &Topology::enable_computation,     py::arg("comp"), py::arg("enabled"), "Enable/disable a specific stage")
     .def("enable_only",            &Topology::enable_only,            py::arg("comps"),   "Enable only the provided bitmask; disables all others")

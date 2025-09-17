@@ -67,11 +67,11 @@ def test_atom_typing_and_records(luni_built: lxx.LahutaSystem) -> None:
 
     # Assign types using both backends, lists must have size N_atoms
     topo.set_atom_typing_method(lxx.AtomTypingMethod.Molstar)
-    topo.assign_molstar_typing()
+    topo.assign_typing(lxx.AtomTypingMethod.Molstar)
     types_molstar = topo.atom_types
 
     topo.set_atom_typing_method(lxx.AtomTypingMethod.Arpeggio)
-    topo.assign_arpeggio_atom_types()
+    topo.assign_typing(lxx.AtomTypingMethod.Arpeggio)
     types_arpeggio = topo.atom_types
 
     assert isinstance(types_molstar, list) and isinstance(types_arpeggio, list)
