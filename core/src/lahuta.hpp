@@ -65,17 +65,6 @@ public:
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
 
-  /// Can be called using the topology
-  void assign_molstar_atom_types()  {
-    if (topology) { topology->assign_molstar_typing(); }
-    else { Logger::get_logger()->error("Topology not initialized. Cannot assign Molstar atom types."); }
-  }
-
-  void assign_arpeggio_atom_types() {
-    if (topology) { topology->assign_arpeggio_atom_types(); }
-    else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
-  }
-
   /// Enable or disable a specific computation in the topology
   void enable_computation(TopologyComputation comp, bool enabled) {
     ensure_topology_initialized();
