@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <string>
+
 #include "analysis/system/records.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
@@ -7,9 +10,6 @@
 #include "pipeline/compute/parameters.hpp"
 #include <logging.hpp>
 #include <models/topology.hpp>
-
-#include <memory>
-#include <string>
 
 // clang-format off
 namespace lahuta::analysis::system {

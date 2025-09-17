@@ -24,6 +24,9 @@ SeedFromModelKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const 
         auto atom_type = static_cast<AtomType>(atom->getCompAtomType());
         data.atoms.push_back(AtomRec{atom_type, *atom});
       }
+
+      // FIX: these are not fast. I'm working on alternatives.
+      data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
     } else {
       for (const auto atom : data.mol->atoms()) {
         AtomType atom_type = get_atom_type(atom);
@@ -31,8 +34,6 @@ SeedFromModelKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const 
       }
     }
 
-    // FIX: these are not fast. I'm working on alternatives.
-    data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
     data.rings  = AtomTypingKernel::populate_ring_entities(*data.mol);
 
     Logger::get_logger()->debug("seed_from_model: atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
