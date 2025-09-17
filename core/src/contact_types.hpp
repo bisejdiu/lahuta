@@ -5,11 +5,10 @@
 // clang-format off
 namespace lahuta {
 
-enum class ContactComputerType { None, Arpeggio, Molstar };
+enum class ContactComputerType { Arpeggio, Molstar };
 
 inline constexpr std::string_view contact_computer_name(ContactComputerType type) noexcept {
   switch (type) {
-    case ContactComputerType::None:     return "none";
     case ContactComputerType::Arpeggio: return "arpeggio";
     case ContactComputerType::Molstar:  return "molstar";
   }

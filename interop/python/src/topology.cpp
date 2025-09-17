@@ -17,7 +17,6 @@ namespace lahuta::bindings {
 void bind_topology(py::module &m) {
 
   py::enum_<ContactComputerType>(m, "ContactComputerType", "Atom typing backends used when classifying atoms for contacts.")
-    .value("None_",    ContactComputerType::None,     "Disable atom typing (no classification)")
     .value("Arpeggio", ContactComputerType::Arpeggio, "Use Arpeggio-style atom typing")
     .value("Molstar",  ContactComputerType::Molstar,  "Use Mol* atom typing");
 

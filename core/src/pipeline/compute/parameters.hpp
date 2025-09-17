@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "analysis/contacts/provider.hpp"
@@ -42,10 +43,10 @@ struct ContactsParams : public ParameterBase<ContactsParams> {
   bool json = true; // true -> JSON, false -> TEXT
 };
 
-// Ensure that the topology's atom typing matches desired mode. desired = None means no preference
+// Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference
 struct EnsureTypingParams : public ParameterBase<EnsureTypingParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::ENSURE_TYPING;
-  ContactComputerType desired = ContactComputerType::None;
+  std::optional<ContactComputerType> desired = std::nullopt;
 };
 
 struct DynamicTaskParams : public ParameterBase<DynamicTaskParams> {

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include <string_view>
 
 #include "contact_types.hpp"
@@ -19,24 +18,9 @@ inline constexpr std::string_view contact_provider_name(ContactProvider provider
 }
 
 inline constexpr ContactComputerType typing_for_provider(ContactProvider provider) noexcept {
-  switch (provider) {
-    case ContactProvider::MolStar:  return ContactComputerType::Molstar;
-    case ContactProvider::Arpeggio: return ContactComputerType::Arpeggio;
-  }
-  return ContactComputerType::None;
-}
-
-inline constexpr bool provider_matches(ContactProvider provider, ContactComputerType type) noexcept {
-  return typing_for_provider(provider) == type;
-}
-
-inline constexpr std::optional<ContactProvider> provider_for(ContactComputerType type) noexcept {
-  switch (type) {
-    case ContactComputerType::Molstar:  return ContactProvider::MolStar;
-    case ContactComputerType::Arpeggio: return ContactProvider::Arpeggio;
-    case ContactComputerType::None:     return std::nullopt;
-  }
-  return std::nullopt;
+  return (provider == ContactProvider::MolStar)
+    ? ContactComputerType::Molstar
+    : ContactComputerType::Arpeggio;
 }
 
 } // namespace lahuta::analysis::contacts
