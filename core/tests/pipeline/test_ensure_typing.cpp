@@ -75,7 +75,7 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
   EXPECT_FALSE(current_is_molstar(*topo));
   const std::string* s = tctx.get_text("atom_typing_mode");
   ASSERT_NE(s, nullptr);
-  EXPECT_EQ(*s, "arpeggio");
+  EXPECT_EQ(*s, "Arpeggio");
 }
 
 TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
@@ -106,7 +106,7 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   EXPECT_TRUE(current_is_molstar(*topo));
   const std::string* s = tctx.get_text("atom_typing_mode");
   ASSERT_NE(s, nullptr);
-  EXPECT_EQ(*s, "molstar");
+  EXPECT_EQ(*s, "MolStar");
 }
 
 } // namespace
