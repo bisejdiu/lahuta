@@ -16,9 +16,9 @@ namespace lahuta::bindings {
 
 void bind_topology(py::module &m) {
 
-  py::enum_<ContactComputerType>(m, "ContactComputerType", "Atom typing backends used when classifying atoms for contacts.")
-    .value("Arpeggio", ContactComputerType::Arpeggio, "Use Arpeggio-style atom typing")
-    .value("Molstar",  ContactComputerType::Molstar,  "Use Mol* atom typing");
+  py::enum_<AtomTypingMethod>(m, "AtomTypingMethod", "Atom typing backends used when classifying atoms for contacts.")
+    .value("Arpeggio", AtomTypingMethod::Arpeggio, "Use Arpeggio-style atom typing")
+    .value("Molstar",  AtomTypingMethod::Molstar,  "Use Mol* atom typing");
 
   py::class_<TopologyBuildingOptions>(m, "TopologyBuildingOptions", "Options controlling topology construction.")
     .def(py::init<>(), "Create default options")
@@ -34,7 +34,7 @@ void bind_topology(py::module &m) {
     .value("NonStandardBonds", TopologyComputation::NonStandardBonds, "Include non-standard bonds/coordination where supported")
     .value("Residues",         TopologyComputation::Residues,         "Assemble residue/group membership")
     .value("Rings",            TopologyComputation::Rings,            "Detect cycles and annotate aromatic rings")
-    .value("AtomTyping",       TopologyComputation::AtomTyping,       "Assign atom types (per ContactComputerType)")
+    .value("AtomTyping",       TopologyComputation::AtomTyping,       "Assign atom types (per AtomTypingMethod)")
     .value("Basic",            TopologyComputation::Basic,            "Neighbors + Bonds")
     .value("Standard",         TopologyComputation::Standard,         "Basic + Residues")
     .value("Extended",         TopologyComputation::Extended,         "Standard + Rings")

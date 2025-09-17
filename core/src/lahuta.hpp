@@ -122,7 +122,7 @@ public:
   }
 
   /// Set the atom typing method
-  void set_atom_typing_method(ContactComputerType method) {
+  void set_atom_typing_method(AtomTypingMethod method) {
     ensure_topology_initialized();
     if (topology) {
       topology->set_atom_typing_method(method);

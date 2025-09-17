@@ -5,7 +5,7 @@ from typing import Any, Callable
 
 import pytest
 
-from lahuta import ContactComputerType, TopologyBuildingOptions
+from lahuta import AtomTypingMethod, TopologyBuildingOptions
 from lahuta.db import LahutaDB
 from lahuta.lib import lahuta as lxx
 from lahuta.pipeline import InMemoryPolicy
@@ -140,7 +140,7 @@ def test_arpeggio_contacts_lahuta_system() -> None:
     assert data_file.exists(), "Test file missing"
 
     opts = TopologyBuildingOptions()
-    opts.atom_typing_method = ContactComputerType.Arpeggio
+    opts.atom_typing_method = AtomTypingMethod.Arpeggio
     sys = lxx.LahutaSystem(str(data_file))
     if not sys.build_topology(opts):
         raise RuntimeError("Failed to build topology")

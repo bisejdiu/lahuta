@@ -5,12 +5,12 @@
 // clang-format off
 namespace lahuta {
 
-enum class ContactComputerType { Arpeggio, Molstar };
+enum class AtomTypingMethod { Arpeggio, Molstar };
 
-inline constexpr std::string_view contact_computer_name(ContactComputerType type) noexcept {
+inline constexpr std::string_view contact_computer_name(AtomTypingMethod type) noexcept {
   switch (type) {
-    case ContactComputerType::Arpeggio: return "arpeggio";
-    case ContactComputerType::Molstar:  return "molstar";
+    case AtomTypingMethod::Arpeggio: return "Arpeggio";
+    case AtomTypingMethod::Molstar:  return "MolStar";
   }
   return "unknown";
 }

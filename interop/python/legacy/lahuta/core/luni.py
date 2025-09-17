@@ -29,7 +29,7 @@ from lahuta.core import loader as L
 from lahuta.core.neighbors import NeighborPairs
 from lahuta.core.topology import LahutaSystemLoader, TopologyLoader
 from lahuta.core.topology.loaders import load_file
-from lahuta.lib._lahuta import ContactComputerType, LahutaSystem, TopologyBuildingOptions
+from lahuta.lib._lahuta import AtomTypingMethod, LahutaSystem, TopologyBuildingOptions
 from lahuta.utils.array_utils import cross_interaction_indices
 
 IntArray, StrArray, FloatArray, AnyArray = list[int], list[str], list[float], list[Any]
@@ -99,7 +99,7 @@ class Luni:
                     # print("-> to bench")
                     self._data = LahutaSystemLoader(s).luni
                     top = TopologyBuildingOptions()
-                    top.atom_typing_method = ContactComputerType.Molstar
+                    top.atom_typing_method = AtomTypingMethod.Molstar
                     self._data.build_topology(top)
                     self._fd = L.LoaderFactory.load(s, file_format)
                     print("->", self._fd.to_ir())

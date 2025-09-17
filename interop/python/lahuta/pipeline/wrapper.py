@@ -204,9 +204,9 @@ class Pipeline:
 
             # Set atom typing method based on provider before adding contacts
             if task.provider == _lib.ContactProvider.Arpeggio:
-                self._topology_params.atom_typing_method = _lib.ContactComputerType.Arpeggio
+                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Arpeggio
             else:  # MolStar
-                self._topology_params.atom_typing_method = _lib.ContactComputerType.Molstar
+                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
 
             # JSON is the default out format
             self._mgr.add_contacts(

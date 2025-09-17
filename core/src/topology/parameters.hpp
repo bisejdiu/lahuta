@@ -41,12 +41,12 @@ struct RingComputationParams : public ParameterBase<RingComputationParams> {
 
 struct AtomTypingParams : public ParameterBase<AtomTypingParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::ATOM_TYPING;
-  ContactComputerType mode = ContactComputerType::Molstar;
+  AtomTypingMethod mode = AtomTypingMethod::Molstar;
 };
 
 struct SeedFromModelParams : public ParameterBase<SeedFromModelParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::SEED_FROM_MODEL;
-  ContactComputerType mode = ContactComputerType::Molstar;
+  AtomTypingMethod mode = AtomTypingMethod::Molstar;
 };
 
 struct ModelTopologyParams : public ParameterBase<ModelTopologyParams> {

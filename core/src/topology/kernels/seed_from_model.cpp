@@ -19,7 +19,7 @@ SeedFromModelKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const 
 
     data.atoms.clear();
     data.atoms.reserve(data.mol->getNumAtoms());
-    if (params.mode == ContactComputerType::Molstar) {
+    if (params.mode == AtomTypingMethod::Molstar) {
       for (const auto atom : data.mol->atoms()) {
         auto atom_type = static_cast<AtomType>(atom->getCompAtomType());
         data.atoms.push_back(AtomRec{atom_type, *atom});

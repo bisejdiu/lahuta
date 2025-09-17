@@ -32,7 +32,7 @@ struct SystemReadParams : public ParameterBase<SystemReadParams> {
 struct BuildTopologyParams : public ParameterBase<BuildTopologyParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::BUILD_TOPOLOGY;
   TopologyComputation flags = TopologyComputation::All;
-  ContactComputerType atom_typing_method = ContactComputerType::Molstar;
+  AtomTypingMethod atom_typing_method = AtomTypingMethod::Molstar;
 };
 
 struct ContactsParams : public ParameterBase<ContactsParams> {
@@ -46,7 +46,7 @@ struct ContactsParams : public ParameterBase<ContactsParams> {
 // Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference
 struct EnsureTypingParams : public ParameterBase<EnsureTypingParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::ENSURE_TYPING;
-  std::optional<ContactComputerType> desired = std::nullopt;
+  std::optional<AtomTypingMethod> desired = std::nullopt;
 };
 
 struct DynamicTaskParams : public ParameterBase<DynamicTaskParams> {

@@ -25,7 +25,7 @@ def test_topology_build_with_options_and_flags(luni: lxx.LahutaSystem) -> None:
     opts.cutoff = 4.5
     opts.auto_heal = True # we may decide to also test auto_heal=False, or not expose this option at all
     opts.compute_nonstandard_bonds = True
-    opts.atom_typing_method = lxx.ContactComputerType.Molstar
+    opts.atom_typing_method = lxx.AtomTypingMethod.Molstar
 
     # Start with no stages, then selectively enable
     luni.enable_only(lxx.TopologyComputers.None_)
@@ -66,11 +66,11 @@ def test_atom_typing_and_records(luni_built: lxx.LahutaSystem) -> None:
     topo = luni_built.get_topology()
 
     # Assign types using both backends, lists must have size N_atoms
-    topo.set_atom_typing_method(lxx.ContactComputerType.Molstar)
+    topo.set_atom_typing_method(lxx.AtomTypingMethod.Molstar)
     topo.assign_molstar_typing()
     types_molstar = topo.atom_types
 
-    topo.set_atom_typing_method(lxx.ContactComputerType.Arpeggio)
+    topo.set_atom_typing_method(lxx.AtomTypingMethod.Arpeggio)
     topo.assign_arpeggio_atom_types()
     types_arpeggio = topo.atom_types
 

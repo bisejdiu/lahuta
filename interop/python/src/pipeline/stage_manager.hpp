@@ -194,9 +194,9 @@ inline void bind_stage_manager(py::module_ &md) {
           }
           if (d.contains("atom_typing_method")) {
             if (py::isinstance<py::int_>(d["atom_typing_method"])) {
-              params.atom_typing_method = static_cast<ContactComputerType>(d["atom_typing_method"].cast<int>());
+              params.atom_typing_method = static_cast<AtomTypingMethod>(d["atom_typing_method"].cast<int>());
             } else {
-              params.atom_typing_method = d["atom_typing_method"].cast<ContactComputerType>();
+              params.atom_typing_method = d["atom_typing_method"].cast<AtomTypingMethod>();
             }
           }
           mgr.invalidate_compilation();

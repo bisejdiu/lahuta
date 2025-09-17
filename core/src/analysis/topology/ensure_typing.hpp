@@ -17,7 +17,7 @@
 // EnsureTypingKernel: Makes sure that the current Topology's atom typing mode matches a desired
 // provider-specific mode before downstream analyses run.
 //
-// - desired:  the requested atom typing mode (ContactComputerType::{Molstar, Arpeggio}).
+// - desired:  the requested atom typing mode (AtomTypingMethod::{Molstar, Arpeggio}).
 //             When desired==std::nullopt, the kernel does nothing.
 // - sentinel: a TaskContext text key ("atom_typing_mode") used as a per-item
 //             first-touch marker. The first EnsureTyping that runs sets it to the
@@ -50,7 +50,7 @@ struct EnsureTypingKernel {
       auto top_c = data.ctx->get_object<Topology>("topology");
       if (!top_c) return ComputationResult(ComputationError("EnsureTyping requires topology in context"));
 
-      ContactComputerType current_mode = ContactComputerType::Molstar; // default
+      AtomTypingMethod current_mode = AtomTypingMethod::Molstar; // default
 
       {
         using namespace lahuta::topology;
@@ -64,7 +64,7 @@ struct EnsureTypingKernel {
       auto desired_label = contact_computer_name(desired_mode);
 
       auto ensure_now = [&](std::shared_ptr<Topology> top_mut) {
-        if (desired_mode == ContactComputerType::Molstar) {
+        if (desired_mode == AtomTypingMethod::Molstar) {
           Logger::get_logger()->info("EnsureTyping: retyping to molstar");
           top_mut->assign_molstar_typing();
         } else {

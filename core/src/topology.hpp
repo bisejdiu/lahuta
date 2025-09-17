@@ -24,7 +24,7 @@ enum class TopologyBuildMode { Generic, Model };
 
 // Options for configuring topology parameters
 struct TopologyBuildingOptions {
-  ContactComputerType atom_typing_method = ContactComputerType::Molstar;
+  AtomTypingMethod atom_typing_method = AtomTypingMethod::Molstar;
   double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
   bool auto_heal = true; // auto-healing of dependencies
   // FIX: this is also handled via flags
@@ -75,7 +75,7 @@ public:
   void set_cutoff(double cutoff);
 
   // FIX: this is bad, because it gives us two sources of truth for setting the compute method
-  void set_atom_typing_method(ContactComputerType method);
+  void set_atom_typing_method(AtomTypingMethod method);
 
   /// Set whether to compute non-standard bonds
   void set_compute_nonstandard_bonds(bool compute);

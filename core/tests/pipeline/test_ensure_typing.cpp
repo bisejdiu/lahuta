@@ -38,7 +38,7 @@ static bool current_is_molstar(const Topology& top) {
   auto& eng = const_cast<Topology&>(top).get_engine();
   const auto& lbl = ::lahuta::topology::AtomTypingComputation<>::label;
   auto* p = eng.get_parameters<::lahuta::topology::AtomTypingParams>(lbl);
-  return p ? (p->mode == ContactComputerType::Molstar) : true;
+  return p ? (p->mode == AtomTypingMethod::Molstar) : true;
 }
 
 TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
@@ -59,10 +59,10 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
   SystemReadParams sp{}; sp.is_model = false;
   eng.add(std::make_unique<analysis::system::SystemReadComputation>(sp));
   // topology (default typing = Molstar)
-  BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = ContactComputerType::Molstar;
+  BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = AtomTypingMethod::Molstar;
   eng.add(std::make_unique<analysis::topology::BuildTopologyComputation>(tp));
   // ensure arpeggio
-  EnsureTypingParams ep{}; ep.desired = ContactComputerType::Arpeggio;
+  EnsureTypingParams ep{}; ep.desired = AtomTypingMethod::Arpeggio;
   eng.add(std::make_unique<analysis::topology::EnsureTypingComputation>(std::string("ensure_typing_arpeggio"), ep));
 
   // Execute in order
@@ -92,9 +92,9 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   eng.set_auto_heal(true);
   SystemReadParams sp{}; sp.is_model = false;
   eng.add(std::make_unique<analysis::system::SystemReadComputation>(sp));
-  BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = ContactComputerType::Molstar;
+  BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = AtomTypingMethod::Molstar;
   eng.add(std::make_unique<analysis::topology::BuildTopologyComputation>(tp));
-  EnsureTypingParams ep{}; ep.desired = ContactComputerType::Molstar;
+  EnsureTypingParams ep{}; ep.desired = AtomTypingMethod::Molstar;
   eng.add(std::make_unique<analysis::topology::EnsureTypingComputation>(std::string("ensure_typing_molstar"), ep));
 
   run_ok(eng, analysis::system::SystemReadComputation::label);

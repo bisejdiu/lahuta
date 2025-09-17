@@ -74,7 +74,7 @@ static std::shared_ptr<CollectorSink> run_contacts_pipeline_over_db(const fs::pa
 
   mgr.set_auto_builtins(true);
   mgr.get_system_params().is_model = true;
-  mgr.get_topology_params().atom_typing_method = ContactComputerType::Arpeggio;
+  mgr.get_topology_params().atom_typing_method = AtomTypingMethod::Arpeggio;
 
   auto db = std::make_shared<LMDBDatabase>(db_path.string());
 
@@ -203,7 +203,7 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
 
   mgr.set_auto_builtins(true);
   mgr.get_system_params().is_model = true;
-  mgr.get_topology_params().atom_typing_method = ContactComputerType::Arpeggio;
+  mgr.get_topology_params().atom_typing_method = AtomTypingMethod::Arpeggio;
 
   {
     pipeline::compute::ModelFetchParams mf{};

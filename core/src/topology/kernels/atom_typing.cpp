@@ -21,7 +21,7 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
-  if (params.mode == ContactComputerType::Molstar) {
+  if (params.mode == AtomTypingMethod::Molstar) {
     try {
       ValenceModel valence_model;
       valence_model.apply(*data.mol);

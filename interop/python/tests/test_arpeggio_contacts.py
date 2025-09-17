@@ -74,7 +74,7 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
     p_db = Pipeline.from_database_handle(ldb._db, batch=64)
 
     # Ensure Arpeggio atom typing is selected before building topology in model mode
-    p_db.params("topology").atom_typing_method = lxx.ContactComputerType.Arpeggio
+    p_db.params("topology").atom_typing_method = lxx.AtomTypingMethod.Arpeggio
     p_db.add_task(name="contacts_db", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
     out_db = p_db.run(threads=1)
     recs_db = out_db.get("contacts_db", [])

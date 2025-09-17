@@ -17,10 +17,10 @@ inline constexpr std::string_view contact_provider_name(ContactProvider provider
   return "unknown";
 }
 
-inline constexpr ContactComputerType typing_for_provider(ContactProvider provider) noexcept {
+inline constexpr AtomTypingMethod typing_for_provider(ContactProvider provider) noexcept {
   return (provider == ContactProvider::MolStar)
-    ? ContactComputerType::Molstar
-    : ContactComputerType::Arpeggio;
+    ? AtomTypingMethod::Molstar
+    : AtomTypingMethod::Arpeggio;
 }
 
 } // namespace lahuta::analysis::contacts

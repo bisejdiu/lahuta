@@ -45,14 +45,14 @@ struct ContactsKernel {
         auto& eng    = const_cast<Topology&>(*top).get_engine();
         auto* params = eng.get_parameters<::lahuta::topology::AtomTypingParams>(label);
 
-        auto current_mode = params ? params->mode : ContactComputerType::Molstar;
+        auto current_mode = params ? params->mode : AtomTypingMethod::Molstar;
         auto required_mode = typing_for_provider(p.provider);
         if (current_mode != required_mode) {
           Logger::get_logger()->info("ContactsKernel: switching atom typing to {} for contacts computation", contact_provider_name(p.provider));
           auto& topo_mut = const_cast<Topology&>(*top);
 
-          if      (required_mode == ContactComputerType::Molstar)  topo_mut.assign_molstar_typing();
-          else if (required_mode == ContactComputerType::Arpeggio) topo_mut.assign_arpeggio_atom_types();
+          if      (required_mode == AtomTypingMethod::Molstar)  topo_mut.assign_molstar_typing();
+          else if (required_mode == AtomTypingMethod::Arpeggio) topo_mut.assign_arpeggio_atom_types();
         }
       } catch (const std::exception& e) {
         Logger::get_logger()->error("ContactsKernel: typing guard failed: {}", e.what());

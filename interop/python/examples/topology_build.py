@@ -41,11 +41,11 @@ def topology_counts_and_rings(path: str | Path) -> lxx.LahutaSystem:
 def typing_compare(sys: lxx.LahutaSystem) -> None:
     top = sys.get_topology()
 
-    top.set_atom_typing_method(lxx.ContactComputerType.Molstar)
+    top.set_atom_typing_method(lxx.AtomTypingMethod.Molstar)
     top.assign_molstar_typing()
     mol_types = [rec.type for rec in top.atom_types]
 
-    top.set_atom_typing_method(lxx.ContactComputerType.Arpeggio)
+    top.set_atom_typing_method(lxx.AtomTypingMethod.Arpeggio)
     top.assign_arpeggio_atom_types()
     arp_types = [rec.type for rec in top.atom_types]
 
