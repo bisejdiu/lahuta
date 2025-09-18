@@ -38,7 +38,7 @@ if(NOT MSVC)
 
   set(_LAHUTA_OFLAG "")
   if(LAHUTA_OPT_LEVEL STREQUAL "fast")
-    set(_LAHUTA_OFLAG "-Ofast")
+    set(_LAHUTA_OFLAG "-ffast-math")
   else()
     set(_LAHUTA_OFLAG "-O${LAHUTA_OPT_LEVEL}")
   endif()
@@ -173,6 +173,8 @@ add_library(lahuta_core SHARED
   src/bonds.cpp
   src/bond_order.cpp
   src/convert.cpp
+  src/kd_tree.cpp
+  src/kd_index.cpp
   src/nsgrid.cpp
   src/lahuta.cpp
   src/visitor.cpp
@@ -182,6 +184,7 @@ add_library(lahuta_core SHARED
   src/aromatics.cpp
   src/luni_props.cpp
   src/logging.cpp
+
 
   src/models/topology.cpp
   src/models/parser.cpp
@@ -221,6 +224,11 @@ add_library(lahuta_core SHARED
   src/chemistry/neighbors.cpp
   src/chemistry/geometry.cpp
   src/chemistry/predicates.cpp
+
+  src/distances/api.cpp
+  src/distances/kernels.cpp
+  src/distances/matrix.cpp
+  src/distances/neighbors.cpp
 
   src/entities/contact.cpp
 

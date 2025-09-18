@@ -3,13 +3,13 @@ import math
 import numpy as np
 import pytest
 
-from lahuta import FastNS, NSResults
+from lahuta import FastNS, KDIndex, NSResults
 
 
 # fmt: off
 def test_fastns_build_and_self_search_basic(coords_simple: np.ndarray):
     coords = coords_simple
-    ns = FastNS(coords, scale_factor=1.1)
+    ns = FastNS(coords)
     ok = ns.build(1.1)
     assert ok is True
     res = ns.self_search()
@@ -27,7 +27,7 @@ def test_fastns_build_and_self_search_basic(coords_simple: np.ndarray):
 
 def test_iteration_protocol_matches_pairs_and_distances(coords_simple: np.ndarray):
     coords = coords_simple
-    ns = FastNS(coords, scale_factor=1.1)
+    ns = FastNS(coords)
     ns.build(5.0)
     res = ns.self_search()
 
@@ -49,13 +49,15 @@ def test_search_numpy_overload_equivalence():
     rng = np.random.default_rng(0)
     coords = rng.normal(size=(50, 3)).astype(np.float64)
 
-    ns = FastNS(coords, scale_factor=1.1)
+    ns = FastNS(coords)
     assert ns.build(2.0)
 
     res_self = ns.self_search()
-    res_np   = ns.search(coords)
+    kd = KDIndex()
+    assert kd.build(coords.tolist())
+    res_np   = kd.radius_search(coords, 2.0)
 
-    # self_search returns unique pairs among stored coords; search(coords) returns
+    # self_search returns unique pairs among stored coords, search(coords) returns
     # (query_idx, stored_idx), including identity pairs (i, i) and mirrored pairs.
     # Canonicalize: drop identity and map both to unordered pairs.
     def canon_pairs(pairs: np.ndarray, d2: np.ndarray) -> dict[tuple[int, int], float]:
@@ -66,7 +68,7 @@ def test_search_numpy_overload_equivalence():
             a, b = (int(i), int(j))
             key  = (a, b) if a < b else (b, a)
 
-            # distances should be consistent for mirrored pairs; last write wins
+            # distances should be consistent for mirrored pairs, last write wins
             out[key] = float(v)
         return out
 
@@ -80,10 +82,12 @@ def test_search_numpy_overload_equivalence():
 def test_search_numpy_bad_shape_errors():
     rng = np.random.default_rng(1)
     coords = rng.normal(size=(10, 3)).astype(np.float64)
-    ns = FastNS(coords, scale_factor=1.1)
+    ns = FastNS(coords)
     assert ns.build(1.0)
 
     bad = np.ones((10, 2), dtype=np.float64)
 
+    kd = KDIndex()
+    assert kd.build(coords)
     with pytest.raises((ValueError, TypeError)):
-        ns.search(bad)
+        kd.radius_search(bad, 1.0)

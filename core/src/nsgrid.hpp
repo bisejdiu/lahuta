@@ -2,6 +2,7 @@
 #define LAHUTA_NSGRID_HPP
 
 #include <array>
+#include <limits>
 #include <vector>
 #include <rdkit/Geometry/point.h>
 
@@ -16,7 +17,6 @@ constexpr double MAX_VAL = std::numeric_limits<double>::max();
 
 using Pairs     = std::vector<std::pair<int, int>>;
 using Distances = std::vector<float>;
-
 
 struct NSResults {
   struct Iterator {
@@ -89,21 +89,23 @@ private:
 class FastNS {
 public:
   FastNS() = default; // used by Luni, for performance reasons, to store the grid
-  FastNS(const RDGeom::POINT3D_VECT &coords, float scale_factor = 1.1f);
-  FastNS(const std::vector<std::vector<double>> &coords, float scale_factor = 1.1f);
+  FastNS(const RDGeom::POINT3D_VECT &coords);
+  FastNS(const std::vector<std::vector<double>> &coords);
+  FastNS(const double *coords_ptr, std::size_t n_points);
+  ~FastNS() = default;
 
-  bool build(double cutoff);
-  bool update(double cutoff);
+  bool build(double cutoff, bool brute_force_fallback = true);
 
   // find all neighbors among the input coordinates within the cutoff distance
   NSResults self_search() const;
-  // find all neighbors among the input coordinates for each of the provided coordinates within the cutoff distance
-  NSResults search(const RDGeom::POINT3D_VECT &search_coords) const;
-  NSResults search(const std::vector<std::vector<double>> &search_coords) const;
 
   double get_cutoff() const { return cutoff; }
 
-  static std::vector<float> flatten_coordinates(const RDGeom::POINT3D_VECT &coords);
+  // accessors useful for debugging and testing
+  std::array<int,   DIMENSIONS> get_ncells()   const { return ncells; }
+  std::array<float, DIMENSIONS> get_cellsize() const { return cellsize; }
+  std::array<float, DIMENSIONS> get_box()      const { return box; }
+  bool is_grid_ready() const { return grid_ready; }
 
   template <typename T>
   static inline T dist_sq(const T* __restrict a, const T* __restrict b) {
@@ -114,17 +116,19 @@ public:
   }
 
 private:
-  bool adaptive_build(double cutoff);
-  void prepare_box();
+  bool configure_grid(const std::array<float, DIMENSIONS> &extents, float padding, float min_cell);
+  void reset_state();
   void pack_grid();
   void build_grid();
+  void log_occupancy_stats() const;
+
+  NSResults brute_force_self(double cutoff_sq) const;
 
   inline int  coord_to_cell_id (const float *__restrict coord) const;
   inline void coord_to_cell_xyz(const float *__restrict coord, std::array<int, 3> &xyz) const;
   inline int  cell_xyz_to_cell_id(int cx, int cy, int cz) const;
 
-  std::vector<double> lmin = {MAX_VAL, MAX_VAL, MAX_VAL};
-  std::vector<double> lmax = {MIN_VAL, MIN_VAL, MIN_VAL};
+  // Note: only internal bounds (_lmin/_lmax) are kept for packing and grid setup
 
   std::array<float, DIMENSIONS> box          = {0.0f, 0.0f, 0.0f};
   std::array<float, DIMENSIONS> cellsize     = {0.0f, 0.0f, 0.0f};
@@ -137,10 +141,13 @@ private:
   std::vector<int>    next_id;
 
   std::vector<float>  coords_bbox;
-  RDGeom::POINT3D_VECT _coords; // FIX: avoid copying?
+  std::size_t n_points = 0;
 
-  float _scale_factor = 1.1f;
   double cutoff = 0.0;
+  bool grid_ready = false;
+  bool brute_force_mode = false;
+  NSResults brute_force_results;
+
 };
 
 class Luni;
@@ -149,7 +156,6 @@ namespace ns_utils {
 NSResults remove_adjascent_residueid_pairs(const Luni &luni, NSResults &results, int res_diff);
 
 } // namespace ns_utils
-
 
 } // namespace lahuta
 

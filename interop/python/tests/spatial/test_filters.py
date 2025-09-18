@@ -6,7 +6,7 @@ from lahuta import FastNS
 
 def test_filter_overloads_consistency(coords_simple: np.ndarray):
     coords = coords_simple
-    ns = FastNS(coords, scale_factor=1.1)
+    ns = FastNS(coords)
     ns.build(5.0)
     res = ns.self_search()
 

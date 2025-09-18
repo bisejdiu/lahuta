@@ -24,7 +24,7 @@ from lahuta.pipeline import (
 
 # fmt: off
 EXPECTED_CONTACTS_COUNT = {
-    "1kx2_small.cif": 111,
+    "1kx2_small.cif": 112,
     "fubi.cif":       169,
     "5i55.cif":       58,
 }

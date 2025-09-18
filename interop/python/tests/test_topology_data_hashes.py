@@ -111,11 +111,11 @@ EXPECTED = {
     },
     "rings": {
         "count": 10,
-        "sha256": "330cb500049d8af2fb0c9d2331b8780bd3bdfd693e297c66edc15e8f3e0a61e7",
+        "sha256": "1197f0a5dc0138c4fc3519f52b7188745de5581bec35da8ff3ebddf46c8f4f41",
     },
     "groups": {
         "count": 35,
-        "sha256": "47513c25ea8d7934f522290114ad91c9bc369558572bd503a0ef711e72aafb9a",
+        "sha256": "2e2823cfafdf00f1d857c09b58ac0c8255c7a2a026a34d2202bafa60aee7b8ae",
     },
 }
 

@@ -23,6 +23,7 @@ minimum-version = "0.8"
 [tool.scikit-build.cmake]
 version = ">=3.20"
 source-dir = "../../core"
+build-type = "Release"
 args = [
   "-DLAHUTA_BUILD_CLI=OFF",
   "-DLAHUTA_GENERATE_PY_STUBS=ON",

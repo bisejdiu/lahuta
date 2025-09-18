@@ -41,9 +41,9 @@ coords_arrays = hnp.arrays(
 def test_constructors_equivalence_and_view_copy_consistency(coords: np.ndarray, cutoff: float):
     from lahuta import rdkit as lrdkit
 
-    ns_np   = FastNS(coords, scale_factor=1.1)
-    ns_list = FastNS(coords.tolist(), scale_factor=1.1)
-    ns_pts  = FastNS([lrdkit.Point3D(*row) for row in coords.tolist()], scale_factor=1.1)
+    ns_np   = FastNS(coords)
+    ns_list = FastNS(coords.tolist())
+    ns_pts  = FastNS([lrdkit.Point3D(*row) for row in coords.tolist()])
 
     ok_np   = ns_np  .build(cutoff)
     ok_list = ns_list.build(cutoff)

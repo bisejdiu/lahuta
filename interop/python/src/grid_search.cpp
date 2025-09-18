@@ -2,7 +2,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "kd_index.hpp"
 #include "nsgrid.hpp"
+#include "nsresults_python.hpp"
 #include "numpy_utils.hpp"
 #include "rdkit/Geometry/point.h"
 
@@ -10,6 +12,8 @@ namespace py = pybind11;
 
 // clang-format off
 namespace lahuta::bindings {
+
+namespace nb = lahuta::bindings::neighbors;
 void bind_grid_search(py::module_ &m) {
 
   py::class_<NSResults>(m, "NSResults")
@@ -58,7 +62,7 @@ Args:
 )doc")
     .def("filter", py::overload_cast<double>                       (&NSResults::filter, py::const_), py::arg("cutoff"),
       R"doc(
-Return a new NSResults containing only pairs with squared distance <= cutoff^2.
+Return a new NSResults containing only pairs with squared distance <= cutoff**2.
 
 Args:
     cutoff: Distance threshold.
@@ -118,6 +122,15 @@ Raises:
         return out;
     }, "Squared distances as a new (n,) float array (copy)")
 
+    .def_property_readonly("distances_sq", [](const NSResults &self) {
+        const auto &d = self.get_distances();
+        const py::ssize_t n = static_cast<py::ssize_t>(d.size());
+        auto out = py::array_t<float>(n);
+        if (n == 0) return out;
+        std::memcpy(out.mutable_data(), d.data(), static_cast<size_t>(n) * sizeof(float));
+        return out;
+    }, "Alias of 'distances': squared distances (copy)")
+
     // no-copy views must be read-only
     .def_property_readonly("pairs_view", [](NSResults &self) {
         auto &pairs = self.get_pairs();
@@ -125,7 +138,7 @@ Raises:
         // even if empty, we need to return the correct (n, 2) shape but we cannot touch &pairs[0]
         if (n == 0) {
           auto empty = py::array(py::dtype::of<int>(), std::vector<py::ssize_t>{0, 2});
-          lahuta::numpy::set_readonly(empty);
+          numpy::set_readonly(empty);
           return empty;
         }
 
@@ -152,7 +165,7 @@ Raises:
             base_ptr,
             base
         );
-        lahuta::numpy::set_readonly(arr);
+        numpy::set_readonly(arr);
         return arr;
     }, "Zero-copy read-only view of pairs with shape (n,2) and custom strides")
 
@@ -161,7 +174,7 @@ Raises:
         const py::ssize_t n = static_cast<py::ssize_t>(d.size());
         if (n == 0) {
           auto empty = py::array(py::dtype::of<float>(), std::vector<py::ssize_t>{0});
-          lahuta::numpy::set_readonly(empty);
+          numpy::set_readonly(empty);
           return empty;
         }
         auto arr = py::array(
@@ -171,7 +184,7 @@ Raises:
             const_cast<float *>(d.data()),
             py::cast(self)
         );
-        lahuta::numpy::set_readonly(arr);
+        numpy::set_readonly(arr);
         return arr;
     }, "Zero-copy read-only view of squared distances with shape (n,)")
 
@@ -199,76 +212,81 @@ Notes:
   - Very small negative values (< -1e-8f) caused by floating-point round-off are clamped to 0.
 )doc")
 
+    .def("get_distances", [](const NSResults &self) {
+        const auto &d = self.get_distances();
+        const py::ssize_t n = static_cast<py::ssize_t>(d.size());
+        auto out = py::array_t<float>(n);
+        if (n == 0) return out;
+
+        auto *dst = static_cast<float *>(out.mutable_data());
+        const float *src = d.data();
+        for (py::ssize_t i = 0; i < n; ++i) {
+          float v = src[i];
+          if (v < 0.0f) v = (v > -1e-8f) ? 0.0f : 0.0f;
+          dst[i] = std::sqrt(v);
+        }
+        return out;
+    }, "Alias of 'get_sqrt_distances': Euclidean distances (copy)")
+
     .def("__len__", &NSResults::size, "Number of stored neighbor pairs.")
     .def("__iter__", [](const NSResults &self) { return py::make_iterator(self.begin(), self.end()); },
          "Iterate over ((i, j), distance_sq) tuples.", py::keep_alive<0, 1>());
 
   py::class_<FastNS>(m, "FastNS")
     .def(py::init<>(), "Create an empty FastNS instance. Typically use a coordinate-taking constructor instead.")
-    .def(py::init<const std::vector<RDGeom::Point3D>&,     float>(),
-         py::arg("coords"), py::arg("scale_factor") = 1.1f,
+    .def(py::init<const std::vector<RDGeom::Point3D>&>(),
+         py::arg("coords"),
          R"doc(
 Construct from a sequence of 3D points.
 
 Args:
     coords: Sequence[Point3D]
-    scale_factor: Padding factor used to size the internal grid (default 1.1).
 )doc")
-    .def(py::init([](const std::vector<std::vector<double>> &coords, float scale_factor) {
+    .def(py::init([](const std::vector<std::vector<double>> &coords) {
            // Validate inner length == 3 for all rows
            for (const auto &row : coords) {
              if (row.size() != 3) {
                throw std::invalid_argument("Input coords must be a sequence of length-3 sequences (n, 3)");
              }
            }
-           return new FastNS(coords, scale_factor);
+           return new FastNS(coords);
          }),
-         py::arg("coords"), py::arg("scale_factor") = 1.1f,
+         py::arg("coords"),
          R"doc(
 Construct from an iterable of (x, y, z) triples.
 
 Args:
     coords: Sequence[Sequence[float]]
-    scale_factor: Padding factor used to size the internal grid (default 1.1).
 
 Raises:
     ValueError: If any inner sequence does not have length 3.
 )doc")
-    .def(py::init([](lahuta::numpy::np_f64 coords_np, float scale_factor) {
-      lahuta::numpy::require_shape_2d_cols(coords_np, 3, "Input numpy array must have shape (n, 3)");
-      auto points = lahuta::numpy::to_point3d_vect(coords_np);
-      return new FastNS(points, scale_factor);
-    }), py::arg("coords"), py::arg("scale_factor") = 1.1f,
+    .def(py::init([](numpy::np_f64 coords_np) {
+      numpy::require_shape_2d_cols(coords_np, 3, "Input numpy array must have shape (n, 3)");
+      const auto n = static_cast<std::size_t>(coords_np.shape(0));
+      const double *ptr = static_cast<const double *>(coords_np.request().ptr);
+      return new FastNS(ptr, n);
+    }), py::arg("coords"),
          R"doc(
 Construct from a NumPy array of 3D coordinates.
 
 Args:
     coords: ndarray of shape (n, 3), dtype=float64. Input coordinates.
-    scale_factor: Padding factor used to size the internal grid (default 1.1).
 
 Raises:
     ValueError: If coords does not have shape (n, 3).
 )doc")
 
-    .def("build", &FastNS::build, py::arg("cutoff"),
+    .def("build", &FastNS::build, py::arg("cutoff"), py::arg("brute_force_fallback") = true,
          R"doc(
 Build the neighbor-search grid with the given cutoff.
 
 Args:
     cutoff: Distance threshold used for neighbor detection.
+    brute_force_fallback: When True (default), fall back to an internal brute-force search for small systems if the grid cannot be configured.
 
 Returns:
-    bool: True if the grid was successfully built, False otherwise.
-)doc")
-    .def("update", &FastNS::update, py::arg("cutoff"),
-         R"doc(
-Update the grid for a new cutoff without changing coordinates.
-
-Args:
-    cutoff: New distance threshold.
-
-Returns:
-    bool: True if updated successfully; False if the cutoff exceeds grid limits.
+    bool: True if the grid (or fallback) was successfully prepared, False otherwise.
 )doc")
 
     .def("self_search",    &FastNS::self_search,
@@ -278,57 +296,6 @@ Find all neighbor pairs within the cutoff among the stored coordinates.
 Returns:
     NSResults: Neighbor pairs with squared distances.
 )doc")
-    .def("search",         py::overload_cast<const RDGeom::POINT3D_VECT &>(&FastNS::search, py::const_),
-         py::arg("search_coords"),
-         R"doc(
-For each query coordinate, find neighbors within the cutoff among the stored coordinates.
-
-Args:
-    search_coords: Sequence[Point3D]
-
-Returns:
-    NSResults: Neighbor pairs (query_index, stored_index) with squared distances.
-)doc")
-    .def("search",
-         [](const FastNS &self, const std::vector<std::vector<double>> &search_coords) {
-           for (const auto &row : search_coords) {
-             if (row.size() != 3) {
-               throw std::invalid_argument("Input search_coords must be a sequence of length-3 sequences (n, 3)");
-             }
-           }
-           return self.search(search_coords);
-         },
-         py::arg("search_coords"),
-         R"doc(
-For each query coordinate, find neighbors within the cutoff among the stored coordinates.
-
-Args:
-    search_coords: Sequence[Sequence[float]]
-
-Returns:
-    NSResults: Neighbor pairs (query_index, stored_index) with squared distances.
-
-Raises:
-    ValueError: If any inner sequence does not have length 3.
-)doc")
-    .def("search", [](const FastNS &self, lahuta::numpy::np_f64 coords_np) {
-         lahuta::numpy::require_shape_2d_cols(coords_np, 3, "Input numpy array must have shape (n, 3)");
-         auto points = lahuta::numpy::to_point3d_vect(coords_np);
-         return self.search(points);
-       },
-       py::arg("search_coords"),
-       R"doc(
-For each query coordinate, find neighbors within the cutoff among the stored coordinates.
-
-Args:
-    search_coords: ndarray of shape (n, 3), dtype=float64. Query coordinates.
-
-Returns:
-    NSResults: Neighbor pairs (query_index, stored_index) with squared distances.
-
-Raises:
-    ValueError: If search_coords does not have shape (n, 3).
-)doc")
     .def("get_cutoff",     &FastNS::get_cutoff,
          "Return the current cutoff distance used for neighbor searches.")
 
@@ -336,5 +303,103 @@ Raises:
          "Return the squared Euclidean distance between two contiguous float[3] coordinates.")
     .def_static("dist",    [](const float *a, const float *b) { return sqrt(FastNS::dist_sq(a, b)); },
          "Return the Euclidean distance between two contiguous float[3] coordinates.");
+
+  // KD index for cross search
+  py::class_<KDTreeIndex>(m, "KDIndex")
+    .def(py::init<>(), "Create an empty KDIndex. Call build() before searching.")
+    .def("build", [](KDTreeIndex &self, const std::vector<RDGeom::Point3D> &pts) {
+        return self.build(pts);
+      }, py::arg("coords"), R"doc(Build KD index from a sequence of Point3D.)doc")
+    .def("build", [](KDTreeIndex &self, const std::vector<std::vector<double>> &coords) {
+        for (const auto &row : coords) if (row.size() != 3) throw std::invalid_argument("coords must be (n,3)");
+        RDGeom::POINT3D_VECT pts;
+        pts.reserve(coords.size());
+        for (const auto &r : coords) pts.emplace_back(r[0], r[1], r[2]);
+        return self.build(pts);
+      }, py::arg("coords"), R"doc(Build KD index from a sequence of (x,y,z) triples.)doc")
+    .def("build", [](KDTreeIndex &self, numpy::np_f64 coords_np) {
+        numpy::require_shape_2d_cols(coords_np, 3, "coords must have shape (n, 3)");
+        const auto n = static_cast<std::size_t>(coords_np.shape(0));
+        const double *ptr = static_cast<const double *>(coords_np.request().ptr);
+        py::gil_scoped_release nogil;
+        return self.build(ptr, n);
+      }, py::arg("coords"), R"doc(Build KD index from an ndarray of shape (n, 3), dtype=float64.)doc")
+    .def("build_view", [](KDTreeIndex &self, py::array_t<float, py::array::c_style> coords_np, int leaf_size) {
+        // Zero-copy view build: requires dtype=float32, C-contiguous (n,3)
+        py::buffer_info buf = coords_np.request();
+        if (buf.ndim != 2 || buf.shape[1] != 3) throw std::invalid_argument("coords must have shape (n, 3)");
+        const auto n = static_cast<std::size_t>(buf.shape[0]);
+        const float *ptr = static_cast<const float *>(buf.ptr);
+        // Build from view and retain owner to keep memory alive
+        bool ok = false;
+        {
+          py::gil_scoped_release nogil;
+          ok = self.build_view_f32(ptr, n, leaf_size);
+        }
+        // Retain a reference to the NumPy array memory by storing an owning shared_ptr<void>
+        if (ok) {
+          auto holder = std::shared_ptr<const void>(new py::object(coords_np), [](const void *p){ delete static_cast<const py::object*>(p); });
+          self.set_external_owner(std::move(holder));
+        }
+        return ok;
+      }, py::arg("coords"), py::arg("leaf_size") = 40,
+      R"doc(Build KD index by viewing a float32 NumPy array (n,3) without copying. The array must remain alive.)doc")
+    .def("build_view_f64", [](KDTreeIndex &self, py::array_t<double, py::array::c_style> coords_np, int leaf_size) {
+        // Zero-copy view build for float64 (n,3)
+        py::buffer_info buf = coords_np.request();
+        if (buf.ndim != 2 || buf.shape[1] != 3) throw std::invalid_argument("coords must have shape (n, 3)");
+        const auto n = static_cast<std::size_t>(buf.shape[0]);
+        const double *ptr = static_cast<const double *>(buf.ptr);
+        bool ok = false;
+        {
+          py::gil_scoped_release nogil;
+          ok = self.build_view_f64(ptr, n, leaf_size);
+        }
+        if (ok) {
+          auto holder = std::shared_ptr<const void>(new py::object(coords_np), [](const void *p){ delete static_cast<const py::object*>(p); });
+          self.set_external_owner(std::move(holder));
+        }
+        return ok;
+      }, py::arg("coords"), py::arg("leaf_size") = 40,
+      R"doc(Build KD index by viewing a float64 NumPy array (n,3) without copying. The array must remain alive.)doc")
+    .def_property_readonly("ready", &KDTreeIndex::ready, "Return True if the KD index is built and ready.")
+    .def("radius_search", [](const KDTreeIndex &self, const std::vector<RDGeom::Point3D> &queries, double radius) {
+        return self.radius_search(queries, radius);
+      }, py::arg("queries"), py::arg("radius"), R"doc(Return neighbors as NSResults.)doc")
+    .def("radius_search", [](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius) {
+        numpy::require_shape_2d_cols(queries_np, 3, "queries must have shape (n, 3)");
+        auto q = numpy::to_point3d_vect(queries_np);
+        py::gil_scoped_release nogil;
+        return self.radius_search(q, radius);
+      }, py::arg("queries"), py::arg("radius"), R"doc(Return neighbors as NSResults.)doc")
+    .def("radius_neighbors", [](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius, bool return_distance, bool sort_results) {
+        numpy::require_shape_2d_cols(queries_np, 3, "queries must have shape (n, 3)");
+        auto q = numpy::to_point3d_vect(queries_np);
+        NSResults res;
+        {
+          py::gil_scoped_release nogil;
+          res = self.radius_search(q, radius);
+        }
+
+        const int n_queries = static_cast<int>(queries_np.shape(0));
+        auto [indices_list, distances_list] = nb::build_ragged_cross(res, n_queries, return_distance, sort_results);
+        return return_distance ? py::make_tuple(distances_list, indices_list) : py::object(indices_list);
+      }, py::arg("queries"), py::arg("radius"), py::arg("return_distance") = false, py::arg("sort_results") = false,
+      R"doc(Grouped neighbors for each query, like sklearn's radius_neighbors.)doc")
+    .def("radius_neighbors_flat", [](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius, bool return_distance, bool sort_results) {
+        numpy::require_shape_2d_cols(queries_np, 3, "queries must have shape (n, 3)");
+        auto q = numpy::to_point3d_vect(queries_np);
+        NSResults res;
+        {
+          py::gil_scoped_release nogil;
+          res = self.radius_search(q, radius);
+        }
+        const int n_queries = static_cast<int>(queries_np.shape(0));
+        auto [distances_arr, indices_arr, indptr_arr] = nb::flatten_cross(res, n_queries, return_distance, sort_results);
+        if (return_distance) return py::make_tuple(distances_arr, indices_arr, indptr_arr);
+        return py::make_tuple(indices_arr, indptr_arr);
+      }, py::arg("queries"), py::arg("radius"), py::arg("return_distance") = false, py::arg("sort_results") = false,
+      R"doc(Return neighbors in CSR-like flat arrays: (indices, indptr) or (distances, indices, indptr).)doc")
+  ;
 }
 } // namespace lahuta::bindings

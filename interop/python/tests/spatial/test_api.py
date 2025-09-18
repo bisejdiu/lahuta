@@ -6,17 +6,17 @@ from lahuta import FastNS, NSResults
 
 def test_fastns_build_empty_coords_returns_false():
     coords = np.empty((0, 3), dtype=np.float64)
-    ns = FastNS(coords, scale_factor=1.1)
+    ns = FastNS(coords)
     assert ns.build(1.0) is False
 
 
 def test_fastns_constructor_shape_errors():
     # wrong ndim
     with pytest.raises((ValueError, TypeError)):
-        FastNS(np.ones((3,), dtype=np.float64), scale_factor=1.1)
+        FastNS(np.ones((3,), dtype=np.float64))
     # wrong columns
     with pytest.raises((ValueError, TypeError)):
-        FastNS(np.ones((4, 2), dtype=np.float64), scale_factor=1.1)
+        FastNS(np.ones((4, 2), dtype=np.float64))
 
 
 def test_nsresults_constructor_roundtrip_and_errors():

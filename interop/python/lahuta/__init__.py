@@ -10,10 +10,13 @@ try:
     from .lib import lahuta as lxx
     from .lib.lahuta import *  # noqa: F403
 
-    rdkit = lxx.rdkit
+    rdkit     = lxx.rdkit
+    metrics   = lxx.metrics
+    neighbors = lxx.neighbors
 
     # must be kept here after the above import to not mess up cold access times
     from .config import logging as logging
+    from .neighbors import NearestNeighbors
 
     # So `import lahuta.logging` and `from lahuta.logging import LogLevel` work
     sys.modules.setdefault(__name__ + ".logging", logging)
@@ -43,15 +46,15 @@ def get_import_error():
 if _cpp_bindings_available:
     __all__ = [
         'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
-        'AtomTypingMethod', 'ContactProvider', 'ContactSet', 'ContiguousMatrix',
-        'DistanceComputation', 'EntityID', 'EntityResolver', 'FastNS', 'FeatureGroup',
+        'AtomTypingMethod', 'ContactProvider', 'ContactSet',
+        'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
         'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'Kind',
         'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
         'LuniPropertyResult', 'MolStarContactsEngine', 'NSResults',
         'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',
         'Residue', 'Residues', 'RingRec', 'SearchOptions', 'Topology',
         'TopologyBuildingOptions', 'TopologyComputers', 'compute_angles',
-        'factorize', 'find_contacts', 'process_files',
+        'factorize', 'find_contacts', 'metrics', 'neighbors', 'process_files', 'NearestNeighbors',
         "verify_bindings", "get_import_error", "logging", "rdkit",
     ]
 else:
