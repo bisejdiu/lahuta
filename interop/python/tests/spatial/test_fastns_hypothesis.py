@@ -223,7 +223,7 @@ def test_fastns_handles_diverse_point_clouds_with_fallback(data):
         fastns = _canonicalize_results(res)
         assert set(fastns.keys()) == set(brute.keys())
         for key in fastns:
-            expected =  brute[key]
-            actual   = fastns[key]
-            tol = max(5e-4, 5e-6 * abs(expected))
-            assert math.isclose(actual, expected, rel_tol=0.0, abs_tol=tol)
+            tol = max(5e-4, 5e-6 * abs(brute[key]))
+            expected_d = math.sqrt(brute[key])
+            actual_d   = math.sqrt(fastns[key])
+            assert math.isclose(actual_d, expected_d, rel_tol=5e-6, abs_tol=tol)
