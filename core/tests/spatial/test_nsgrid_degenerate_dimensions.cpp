@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cmath>
+#include <tuple>
 #include <vector>
 
 #include "nsgrid.hpp"
@@ -9,6 +12,60 @@ namespace lahuta {
 
 // These tests verify that FastNS handles degenerate
 // dimensions correctly without stalling or creating massive grids.
+namespace {
+
+using Triplet = std::tuple<int, int, float>;
+
+std::vector<Triplet> brute_force_pairs(const std::vector<std::vector<double>> &coords, double cutoff) {
+  const int n = static_cast<int>(coords.size());
+  const float cutoff_sq = static_cast<float>(cutoff * cutoff);
+  std::vector<Triplet> out;
+  out.reserve(static_cast<std::size_t>(n) * static_cast<std::size_t>(n - 1) / 2);
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      const double dx = coords[i][0] - coords[j][0];
+      const double dy = coords[i][1] - coords[j][1];
+      const double dz = coords[i][2] - coords[j][2];
+      const float d2 = static_cast<float>(dx * dx + dy * dy + dz * dz);
+      if (d2 <= cutoff_sq) out.emplace_back(i, j, d2);
+    }
+  }
+  std::sort(out.begin(), out.end());
+  return out;
+}
+
+std::vector<Triplet> canonicalize(const NSResults &results) {
+  std::vector<Triplet> out;
+  const auto &pairs = results.get_pairs();
+  const auto &dists = results.get_distances();
+  out.reserve(pairs.size());
+  for (std::size_t k = 0; k < pairs.size(); ++k) {
+    int i = pairs[k].first;
+    int j = pairs[k].second;
+    if (j < i) std::swap(i, j);
+    out.emplace_back(i, j, dists[k]);
+  }
+  std::sort(out.begin(), out.end());
+  return out;
+}
+
+void expect_fastns_matches_brute(const std::vector<std::vector<double>> &coords, double cutoff) {
+  FastNS ns(coords);
+  ASSERT_TRUE(ns.build(cutoff)) << "FastNS build should succeed";
+  auto actual   = canonicalize(ns.self_search());
+  auto expected = brute_force_pairs(coords, cutoff);
+  ASSERT_EQ(actual.size(), expected.size());
+  for (std::size_t k = 0; k < expected.size(); ++k) {
+    EXPECT_EQ(std::get<0>(actual[k]), std::get<0>(expected[k])) << k;
+    EXPECT_EQ(std::get<1>(actual[k]), std::get<1>(expected[k])) << k;
+    const float exp = std::get<2>(expected[k]);
+    const float act = std::get<2>(actual[k]);
+    const float tol = 1e-3f + 1e-5f * std::fabs(exp);
+    EXPECT_NEAR(act, exp, tol) << k;
+  }
+}
+
+} // namespace
 
 // Test data that originally caused infinite stalls in hypothesis tests
 TEST(NSGridDegenerateTest, PropertyBasedStallCase) {
@@ -40,12 +97,7 @@ TEST(NSGridDegenerateTest, PropertyBasedStallCase) {
       {-3.47773801e-107, -3.47773801e-107, -3.47773801e-107}};
 
   double cutoff = 2.4956705026482906;
-  float scale_factor = 1.1f;
-
-  FastNS ns(coords, scale_factor);
-
-  bool build_ok = ns.build(cutoff);
-  EXPECT_FALSE(build_ok) << "Build should fail for degenerate data";
+  expect_fastns_matches_brute(coords, cutoff);
 }
 
 TEST(NSGridDegenerateTest, CompletelyDegenerateData) {
@@ -57,10 +109,7 @@ TEST(NSGridDegenerateTest, CompletelyDegenerateData) {
       {-3.47773801e-107, -3.47773801e-107, -3.47773801e-107}};
 
   double cutoff = 1.0;
-  FastNS ns(coords, 1.1f);
-
-  bool build_ok = ns.build(cutoff);
-  EXPECT_FALSE(build_ok) << "Should fail for completely degenerate data";
+  expect_fastns_matches_brute(coords, cutoff);
 }
 
 TEST(NSGridDegenerateTest, MixedNormalAndDegenerateDimensions) {
@@ -75,34 +124,7 @@ TEST(NSGridDegenerateTest, MixedNormalAndDegenerateDimensions) {
   };
 
   double cutoff = 2.5;
-  FastNS ns(coords, 1.1f);
-
-  bool build_ok = ns.build(cutoff);
-
-  if (build_ok) {
-    auto results = ns.self_search();
-
-    // Results cannot exceed n*(n-1)/2 pairs
-    const size_t n = coords.size();
-    const size_t max_pairs = n * (n - 1) / 2;
-    EXPECT_LE(results.size(), max_pairs);
-
-    // Distances are squared and must be <= cutoff**2, indices must be in range and not self-pairs
-    const float cutoff2 = static_cast<float>(cutoff * cutoff);
-    const auto &pairs = results.get_pairs();
-    const auto &dists = results.get_distances();
-    ASSERT_EQ(pairs.size(), dists.size());
-    for (size_t k = 0; k < dists.size(); ++k) {
-      EXPECT_LE(dists[k], cutoff2);
-      int i = pairs[k].first;
-      int j = pairs[k].second;
-      EXPECT_NE(i, j);
-      EXPECT_GE(i, 0);
-      EXPECT_GE(j, 0);
-      EXPECT_LT(i, static_cast<int>(n));
-      EXPECT_LT(j, static_cast<int>(n));
-    }
-  }
+  expect_fastns_matches_brute(coords, cutoff);
 }
 
 TEST(NSGridDegenerateTest, NumericalEdgeCases) {
@@ -115,32 +137,7 @@ TEST(NSGridDegenerateTest, NumericalEdgeCases) {
       {0.0, 0.0, 1e-200}};
 
   double cutoff = 1.0;
-  FastNS ns(coords, 1.1f);
-
-  bool build_ok = ns.build(cutoff);
-
-  if (build_ok) {
-    auto results = ns.self_search();
-
-    const size_t n = coords.size();
-    const size_t max_pairs = n * (n - 1) / 2;
-    EXPECT_LE(results.size(), max_pairs);
-
-    const float cutoff2 = static_cast<float>(cutoff * cutoff);
-    const auto &pairs = results.get_pairs();
-    const auto &dists = results.get_distances();
-    ASSERT_EQ(pairs.size(), dists.size());
-    for (size_t k = 0; k < dists.size(); ++k) {
-      EXPECT_LE(dists[k], cutoff2);
-      int i = pairs[k].first;
-      int j = pairs[k].second;
-      EXPECT_NE(i, j);
-      EXPECT_GE(i, 0);
-      EXPECT_GE(j, 0);
-      EXPECT_LT(i, static_cast<int>(n));
-      EXPECT_LT(j, static_cast<int>(n));
-    }
-  }
+  expect_fastns_matches_brute(coords, cutoff);
 }
 
 } // namespace lahuta

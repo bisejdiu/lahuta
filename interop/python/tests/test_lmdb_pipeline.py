@@ -23,10 +23,10 @@ EXPECTED_ARPEGGIO_CONTACT_COUNTS: dict[str, int] = {
     "Aromatic": 20,
     "Hydrophobic": 150,
     "VanDerWaals": 56,
-    "HydrogenBond": 62,
+    "HydrogenBond": 64,
     "WeakHydrogenBond": 44,
     "PolarHydrogenBond": 100,
-    "WeakPolarHydrogenBond": 92,
+    "WeakPolarHydrogenBond": 93,
 }
 
 
@@ -73,12 +73,12 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
 
     if provider == lxx.ContactProvider.MolStar:
         expected = {
-            "AF-P0CL56-F1-model_v4.cif.gz": 56,
+            "AF-P0CL56-F1-model_v4.cif.gz": 57,
             "AF-Q57552-F1-model_v4.cif.gz": 687,
         }
     else:
         expected = {
-            "AF-P0CL56-F1-model_v4.cif.gz": 185,
+            "AF-P0CL56-F1-model_v4.cif.gz": 186,
             "AF-Q57552-F1-model_v4.cif.gz": 2243,
         }
 

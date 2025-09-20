@@ -1,11 +1,13 @@
 #ifndef LAHUTA_ENTITIES_SEARCH_IMPL_HPP
 #define LAHUTA_ENTITIES_SEARCH_IMPL_HPP
 
+#include <vector>
+
+#include "distances/neighbors.hpp"
 #include "entities/context.hpp"
 #include "entities/search/hit_buffer.hpp"
 #include "entities/search/provider.hpp"
 #include "nsgrid.hpp"
-#include <vector>
 
 // clang-format off
 namespace lahuta::search {
@@ -68,9 +70,9 @@ private:
   template <typename Span, typename Tester>
   bool self_search(const Span &idxs, Buffer &hits, Tester &&f, const ContactContext& ctx) const {
 
-    FastNS grid(build_pts);
-    if (!grid.build(radius)) return false;
-    NSResults results = grid.self_search();
+    dist::NeighborSearchOptions opts;
+    opts.cutoff = radius;
+    NSResults results = dist::neighbors_within_radius_self(build_pts, opts);
 
     for (size_t res = 0; res < results.size(); ++res) {
       auto [i, j] = results.get_pairs()[res];
@@ -92,9 +94,9 @@ private:
       q_points.push_back(coord.get_a(idx));
     }
 
-    FastNS grid(build_pts);
-    if (!grid.build(radius)) return false;
-    NSResults results = grid.search(q_points);
+    dist::NeighborSearchOptions opts;
+    opts.cutoff = radius;
+    NSResults results = dist::neighbors_within_radius_cross(q_points, build_pts, opts);
 
     for (size_t res = 0; res < results.size(); ++res) {
       auto [qi, bi] = results.get_pairs()[res]; // query, build

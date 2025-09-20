@@ -3,8 +3,9 @@
 
 #include "Geometry/point.h"
 #include "bonds/table.hpp"
-#include "distances.hpp"
+#include "distances/api.hpp"
 
+// clang-format off
 namespace lahuta {
 
 inline std::vector<std::pair<int, int>> find_disulfide_bonds(const std::vector<int> &indices, const RDGeom::POINT3D_VECT &coords) {

@@ -7,7 +7,7 @@ from lahuta import FastNS
 # fmt: off
 def test_nsresults_views_match_copies_and_are_readonly(coords_simple: np.ndarray):
     coords = coords_simple
-    ns = FastNS(coords.tolist(), scale_factor=1.1)
+    ns = FastNS(coords.tolist())
     ns.build(5.0)
     res = ns.self_search()
 

@@ -1,21 +1,28 @@
 #include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <stdexcept>
 #include <unordered_set>
 
 #include <rdkit/Geometry/point.h>
 
-#include "nsgrid.hpp"
 #include "definitions.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"
+#include "nsgrid.hpp"
 
+// clang-format off
 namespace lahuta {
 
 namespace {
+
 constexpr int   END = -1;
 constexpr int   MAX_GRID_DIM = 1290;
-constexpr int   SMALL_SYSTEM_THRESHOLD = 10'000; // upper cutoff for brute-force search
+constexpr std::size_t BRUTE_FORCE_THRESHOLD = 5'000; // upper cutoff for internal brute-force fallback
 constexpr float CELL_EPSILON = 1e-3f;
+constexpr std::int64_t MAX_TOTAL_CELLS = static_cast<std::int64_t>(64) * 1024 * 1024; // 64M cells
 
 constexpr std::array<std::array<int, DIMENSIONS>, 13> NeighborCells = {{
   {1, 0,  0}, {1, 1,  0}, {0, 1,  0}, {-1, 1,  0},
@@ -26,131 +33,248 @@ constexpr std::array<std::array<int, DIMENSIONS>, 13> NeighborCells = {{
 
 }
 
-FastNS::FastNS(const RDGeom::POINT3D_VECT &coords, float scale_factor) : _coords(coords), _scale_factor(scale_factor) {
+FastNS::FastNS(const RDGeom::POINT3D_VECT &coords) {
 
-  // initialize min/max bounds
+  // min/max bounds
   _lmin.resize(DIMENSIONS, MAX_VAL);
   _lmax.resize(DIMENSIONS, MIN_VAL);
 
-  // calculate bounds
-  for (const auto &coord : _coords) {
-    for (int i = 0; i < DIMENSIONS; ++i) {
-      _lmax[i] = std::max(_lmax[i], coord[i]);
-      _lmin[i] = std::min(_lmin[i], coord[i]);
-    }
-  }
-}
-
-FastNS::FastNS(const std::vector<std::vector<double>> &coords, float scale_factor) : _scale_factor(scale_factor) {
-
-  _coords.reserve(coords.size());
   for (const auto &coord : coords) {
-    _coords.emplace_back(coord[0], coord[1], coord[2]);
-  }
-
-  // initialize min/max bounds
-  _lmin.resize(DIMENSIONS, MAX_VAL);
-  _lmax.resize(DIMENSIONS, MIN_VAL);
-
-  // calculate bounds
-  for (const auto &coord : _coords) {
     for (int i = 0; i < DIMENSIONS; ++i) {
       _lmax[i] = std::max(_lmax[i], coord[i]);
       _lmin[i] = std::min(_lmin[i], coord[i]);
     }
   }
+
+  // pack into coords_bbox
+  coords_bbox.reserve(coords.size() * 3);
+  for (const auto &c : coords) {
+    coords_bbox.push_back(static_cast<float>(c.x - _lmin[0]));
+    coords_bbox.push_back(static_cast<float>(c.y - _lmin[1]));
+    coords_bbox.push_back(static_cast<float>(c.z - _lmin[2]));
+  }
+  n_points = coords.size();
+  assert(coords_bbox.size() == 3 * n_points);
 }
 
-bool FastNS::build(double cutoff) {
-  this->cutoff = cutoff;
+FastNS::FastNS(const std::vector<std::vector<double>> &coords) {
 
-  if (_coords.empty()) return false;
+  // min/max bounds
+  _lmin.resize(DIMENSIONS, MAX_VAL);
+  _lmax.resize(DIMENSIONS, MIN_VAL);
 
-  for (int i = 0; i < DIMENSIONS; ++i)
-    box[i] = _scale_factor * static_cast<float>(_lmax[i] - _lmin[i]);
-
-  const float min_cell = static_cast<float>(cutoff) + CELL_EPSILON;
-  for (int i = 0; i < DIMENSIONS; ++i) {
-    if (box[i] < min_cell) {
-      if (_coords.size() < SMALL_SYSTEM_THRESHOLD) return adaptive_build(cutoff);
-      Logger::get_logger()->critical("Failed to build grid: cutoff ({:.6f}) >= box dim {} ({:.6f}). Use a larger scale_factor.", cutoff, i, box[i]);
-      return false;
-    }
-  }
-
-  for (auto &c : _coords) {
+  for (const auto &coord : coords) {
     for (int i = 0; i < DIMENSIONS; ++i) {
-      c[i] -= _lmin[i];
+      _lmax[i] = std::max(_lmax[i], coord[i]);
+      _lmin[i] = std::min(_lmin[i], coord[i]);
     }
   }
 
-  coords_bbox = flatten_coordinates(_coords);
-  lmin = _lmin; lmax = _lmax;
+  // pack into coords_bbox
+  coords_bbox.reserve(coords.size() * 3);
+  for (const auto &c : coords) {
+    coords_bbox.push_back(static_cast<float>(c[0] - _lmin[0]));
+    coords_bbox.push_back(static_cast<float>(c[1] - _lmin[1]));
+    coords_bbox.push_back(static_cast<float>(c[2] - _lmin[2]));
+  }
+  n_points = coords.size();
+  assert(coords_bbox.size() == 3 * n_points);
+}
 
-  try {
-    build_grid(); // may throw from prepare_box()
-  } catch (const std::exception &e) {
-    Logger::get_logger()->critical("Grid construction failed: {}", e.what());
+FastNS::FastNS(const double *coords_ptr, std::size_t npts) {
+  if (!coords_ptr || npts == 0) return;
+
+  _lmin.assign(DIMENSIONS, MAX_VAL);
+  _lmax.assign(DIMENSIONS, MIN_VAL);
+
+  // pass 1: bounds
+  const double *p = coords_ptr;
+  for (std::size_t i = 0; i < npts; ++i, p += DIMENSIONS) {
+    const double x = p[0];
+    const double y = p[1];
+    const double z = p[2];
+    if (x < _lmin[0]) _lmin[0] = x; if (x > _lmax[0]) _lmax[0] = x;
+    if (y < _lmin[1]) _lmin[1] = y; if (y > _lmax[1]) _lmax[1] = y;
+    if (z < _lmin[2]) _lmin[2] = z; if (z > _lmax[2]) _lmax[2] = z;
+  }
+
+  // pass 2: pack into coords_bbox
+  coords_bbox.reserve(npts * 3);
+  p = coords_ptr;
+  for (std::size_t i = 0; i < npts; ++i, p += DIMENSIONS) {
+    coords_bbox.push_back(static_cast<float>(p[0] - _lmin[0]));
+    coords_bbox.push_back(static_cast<float>(p[1] - _lmin[1]));
+    coords_bbox.push_back(static_cast<float>(p[2] - _lmin[2]));
+  }
+  n_points = npts;
+  assert(coords_bbox.size() == 3 * n_points);
+}
+
+void FastNS::reset_state() {
+  grid_ready = false;
+  brute_force_mode = false;
+  brute_force_results.clear();
+  head_id.clear();
+  next_id.clear();
+  ncells = {0, 0, 0};
+  cell_offsets = {0, 0, 0};
+  cellsize = {0.0f, 0.0f, 0.0f};
+}
+
+bool FastNS::build(double cutoff, bool brute_force_fallback) {
+  this->cutoff = cutoff;
+  reset_state();
+
+  // invalid cutoff must fail regardless of fallback
+  if (!std::isfinite(cutoff)) {
+    Logger::get_logger()->warn("FastNS.build: invalid cutoff ({}). Must be finite.", cutoff);
     return false;
   }
-  return true;
-}
 
-bool FastNS::adaptive_build(double cutoff) {
-  this->cutoff = cutoff;
-  const float min_cell = static_cast<float>(cutoff) + CELL_EPSILON;
+  // coordinates must already be packed by a constructor
+  if (coords_bbox.empty()) return false;
 
-  //
-  // Our `hypothesis` tests were "stalling" unexpectedly on small test systems.
-  // This was caused by degenerate dimensions.  - Besian, September 2025
-  //
-  const float min_meaningful_extent = 1e-6f;  // 1 micrometer
-  bool has_degenerate_dimension = false;
-
-  float min_required_scale = 0.0f;
+  std::array<float, DIMENSIONS> extents{};
   for (int i = 0; i < DIMENSIONS; ++i) {
-    const float delta = static_cast<float>(_lmax[i] - _lmin[i]);
+    extents[i] = static_cast<float>(_lmax[i] - _lmin[i]);
+  }
 
-    if (delta <= min_meaningful_extent) {
-      has_degenerate_dimension = true;
-      continue;
+  const float min_cell = static_cast<float>(cutoff) + CELL_EPSILON;
+  constexpr std::array<float, 4> padding_attempts = {1.05f, 1.25f, 1.5f, 2.0f};
+
+  bool configured = false;
+  for (float padding : padding_attempts) {
+    if (configure_grid(extents, padding, min_cell)) {
+      configured = true;
+      break;
+    }
+  }
+
+  if (!configured) {
+    if (brute_force_fallback && n_points <= BRUTE_FORCE_THRESHOLD) {
+      brute_force_mode = true;
+      const double cutoff_sq = cutoff * cutoff;
+      brute_force_results = brute_force_self(cutoff_sq);
+      Logger::get_logger()->debug(
+          "FastNS.build: n={} cutoff={:.6f} using brute-force fallback ({} pairs)",
+          n_points, cutoff, brute_force_results.size());
+      return true;
     }
 
-    float required_scale = min_cell / delta;
-    min_required_scale = std::max(min_required_scale, required_scale);
+    Logger::get_logger()->warn(
+        "FastNS.build: failed to configure grid for n={} cutoff={:.6f} (fallback disabled or too large)",
+        n_points, cutoff);
+    return false;
   }
 
-  if (has_degenerate_dimension) return false;
+  Logger::get_logger()->debug(
+      "FastNS.build: n={} cutoff={:.6f} box=({:.6f}, {:.6f}, {:.6f}) ncells=({}, {}, {})",
+      n_points, cutoff, box[0], box[1], box[2], ncells[0], ncells[1], ncells[2]);
 
-  // tiny bump to avoid borderline rounding
-  _scale_factor = std::nextafter(min_required_scale, std::numeric_limits<float>::infinity());
+  grid_ready = true;
+  return true; // self_search() will lazily build the grid when needed
+}
+
+bool FastNS::configure_grid(const std::array<float, DIMENSIONS> &extents, float padding, float min_cell) {
+  if (!(padding > 0.0f) || !(min_cell > 0.0f)) return false;
+
+  std::array<float, DIMENSIONS> candidate_box{};
+  std::array<int,   DIMENSIONS> candidate_ncells{};
+
+  const float min_cellsize = std::max(min_cell, CELL_EPSILON);
+
+  double total_cells = 1.0;
+  for (int i = 0; i < DIMENSIONS; ++i) {
+    float extent = extents[i];
+    if (!std::isfinite(extent) || extent < 0.0f) extent = 0.0f;
+
+    float candidate = extent * padding;
+    if (!std::isfinite(candidate) || candidate < min_cellsize) candidate = min_cellsize;
+
+    candidate_box[i] = candidate;
+
+    double cells_d = std::floor(static_cast<double>(candidate) / static_cast<double>(min_cellsize));
+    if (!std::isfinite(cells_d) || cells_d < 1.0) cells_d = 1.0;
+    if (cells_d > static_cast<double>(MAX_GRID_DIM)) cells_d = static_cast<double>(MAX_GRID_DIM);
+
+    candidate_ncells[i] = static_cast<int>(cells_d);
+    total_cells *= cells_d;
+    if (!std::isfinite(total_cells) || total_cells <= 0.0) return false;
+  }
+
+  if (total_cells > static_cast<double>(MAX_TOTAL_CELLS)) {
+    const double scale = std::cbrt(total_cells / static_cast<double>(MAX_TOTAL_CELLS));
+    for (int i = 0; i < DIMENSIONS; ++i) {
+      double reduced = static_cast<double>(candidate_ncells[i]) / scale;
+      if (reduced < 1.0) reduced = 1.0;
+      candidate_ncells[i] = static_cast<int>(std::floor(reduced));
+      if (candidate_ncells[i] < 1) candidate_ncells[i] = 1;
+    }
+
+    total_cells = 1.0;
+    for (int i = 0; i < DIMENSIONS; ++i) total_cells *= static_cast<double>(candidate_ncells[i]);
+
+    // If still above the cap, greedily reduce the largest dimension until acceptable
+    int guard = 0;
+    while (total_cells > static_cast<double>(MAX_TOTAL_CELLS) && guard < 1024) {
+      int max_dim = 0;
+      for (int i = 1; i < DIMENSIONS; ++i) {
+        if (candidate_ncells[i] > candidate_ncells[max_dim]) max_dim = i;
+      }
+      if (candidate_ncells[max_dim] == 1) break;
+      --candidate_ncells[max_dim];
+      total_cells = 1.0;
+      for (int i = 0; i < DIMENSIONS; ++i) {
+        total_cells *= static_cast<double>(candidate_ncells[i]);
+      }
+      ++guard;
+    }
+
+    if (total_cells > static_cast<double>(MAX_TOTAL_CELLS)) return false;
+  }
 
   for (int i = 0; i < DIMENSIONS; ++i) {
-    box[i] = _scale_factor * static_cast<float>(_lmax[i] - _lmin[i]);
+    if (candidate_ncells[i] <= 0) return false;
+
+    float size = candidate_box[i] / static_cast<float>(candidate_ncells[i]);
+    if (!std::isfinite(size) || size <= 0.0f) return false;
+    cellsize[i] = size;
   }
 
-  for (auto &c : _coords) {
-    for (int i = 0; i < DIMENSIONS; ++i) c[i] -= _lmin[i];
-  }
+  box = candidate_box;
+  ncells = candidate_ncells;
+  cell_offsets[0] = 0;
+  cell_offsets[1] = ncells[0];
+  cell_offsets[2] = ncells[0] * ncells[1];
 
-  coords_bbox = flatten_coordinates(_coords);
-  lmin = _lmin; lmax = _lmax;
-
-  try { build_grid(); } catch (...) { return false; }
   return true;
 }
 
-
 void FastNS::build_grid() {
-  prepare_box();
+  if (!grid_ready) {
+    throw std::runtime_error("FastNS grid configuration missing. Call build() before self_search().");
+  }
+  if (brute_force_mode) return;
+
   pack_grid();
+  log_occupancy_stats();
 }
 
 NSResults FastNS::self_search() const {
-  NSResults results;
-  results.reserve_space(coords_bbox.size() / 3);
+  if (brute_force_mode) {
+    return brute_force_results;
+  }
+  if (!grid_ready) {
+    throw std::runtime_error("FastNS grid not built. Call build() before self_search().");
+  }
 
-  float cutoff2 = cutoff * cutoff;
+  NSResults results;
+  if (head_id.empty() || next_id.empty()) {
+    const_cast<FastNS*>(this)->build_grid();
+  }
+  results.reserve_space(n_points);
+
+  const double cutoff_sq = cutoff * cutoff;
   for (int cx = 0; cx < ncells[0]; ++cx) {
     for (int cy = 0; cy < ncells[1]; ++cy) {
       for (int cz = 0; cz < ncells[2]; ++cz) {
@@ -161,9 +285,13 @@ NSResults FastNS::self_search() const {
           int j = next_id[i];
           const float *coord_i = &coords_bbox[3 * i];
           while (j != END) {
-            float d2 = dist_sq(coord_i, &coords_bbox[3 * j]);
-            if (d2 <= cutoff2) {
-              results.add_neighbors(i, j, d2);
+            const float *coord_j = &coords_bbox[3 * j];
+            const double dx = static_cast<double>(coord_i[0]) - coord_j[0];
+            const double dy = static_cast<double>(coord_i[1]) - coord_j[1];
+            const double dz = static_cast<double>(coord_i[2]) - coord_j[2];
+            const double d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= cutoff_sq) {
+              results.add_neighbors(i, j, static_cast<float>(d2));
             }
             j = next_id[j];
           }
@@ -178,9 +306,13 @@ NSResults FastNS::self_search() const {
 
             j = head_id[cj];
             while (j != END) {
-              float d2 = dist_sq(coord_i, &coords_bbox[3 * j]);
-              if (d2 <= cutoff2) {
-                results.add_neighbors(i, j, d2);
+              const float *coord_j = &coords_bbox[3 * j];
+              const double dx = static_cast<double>(coord_i[0]) - coord_j[0];
+              const double dy = static_cast<double>(coord_i[1]) - coord_j[1];
+              const double dz = static_cast<double>(coord_i[2]) - coord_j[2];
+              const double d2 = dx * dx + dy * dy + dz * dz;
+              if (d2 <= cutoff_sq) {
+                results.add_neighbors(i, j, static_cast<float>(d2));
               }
               j = next_id[j];
             }
@@ -193,128 +325,6 @@ NSResults FastNS::self_search() const {
   return results;
 }
 
-NSResults FastNS::search(const RDGeom::POINT3D_VECT &search_coords) const {
-  NSResults results;
-  results.reserve_space(search_coords.size());
-
-  float cutoff_sq = cutoff * cutoff;
-
-  if (search_coords.empty()) {
-    return results;
-  }
-
-  RDGeom::POINT3D_VECT scoords(search_coords);
-  for (auto it = scoords.begin(); it != scoords.end(); ++it) {
-    for (int i = 0; i < 3; ++i) {
-      (*it)[i] -= lmin[i];
-    }
-  }
-
-  for (size_t i = 0; i < search_coords.size(); ++i) {
-    std::array<float, 3> tmpcoord = {
-        static_cast<float>(scoords[i].x),
-        static_cast<float>(scoords[i].y),
-        static_cast<float>(scoords[i].z)};
-
-    std::array<int, 3> cellcoord;
-    coord_to_cell_xyz(tmpcoord.data(), cellcoord);
-    for (int xi = 0; xi < 3; ++xi) {
-      for (int yi = 0; yi < 3; ++yi) {
-        for (int zi = 0; zi < 3; ++zi) {
-          int cx = cellcoord[0] - 1 + xi;
-          int cy = cellcoord[1] - 1 + yi;
-          int cz = cellcoord[2] - 1 + zi;
-
-          int cellid = cell_xyz_to_cell_id(cx, cy, cz);
-          if (cellid == END) {
-            continue;
-          }
-
-          int j = head_id[cellid];
-          while (j != END) {
-            float d2 = dist_sq(tmpcoord.data(), &coords_bbox[3 * j]);
-            if (d2 <= cutoff_sq) {
-              results.add_neighbors(i, j, d2);
-            }
-            j = next_id[j];
-          }
-        }
-      }
-    }
-  }
-
-  return results;
-}
-
-NSResults FastNS::search(const std::vector<std::vector<double>> &search_coords) const {
-  RDGeom::POINT3D_VECT scoords;
-  scoords.reserve(search_coords.size());
-  for (const auto &coord : search_coords) {
-    scoords.emplace_back(coord[0], coord[1], coord[2]);
-  }
-
-  return search(scoords);
-}
-
-
-std::vector<float> FastNS::flatten_coordinates(const RDGeom::POINT3D_VECT &coords) {
-    std::vector<float> flat_coords;
-    flat_coords.reserve(coords.size() * 3);
-    for (const auto &coord : coords) {
-      flat_coords.insert(
-          flat_coords.end(),
-          {static_cast<float>(coord.x), static_cast<float>(coord.y), static_cast<float>(coord.z)});
-    }
-    return flat_coords;
-}
-
-bool FastNS::update(double cutoff) {
-  if (cutoff == this->cutoff) {
-    return true;
-  }
-
-  if (box[0] < cutoff || box[1] < cutoff || box[2] < cutoff) {
-    return false;
-  }
-
-  ncells       = {0, 0, 0};
-  cellsize     = {0.0f, 0.0f, 0.0f};
-  cell_offsets = {0, 0, 0};
-
-  head_id.clear();
-  next_id.clear();
-
-  this->cutoff = cutoff;
-
-  build_grid();
-
-  return true;
-};
-
-void FastNS::prepare_box() {
-  double min_cellsize = cutoff + 0.001; // TODO: test the stability if we use no offset
-
-  for (int i = 0; i < 3; ++i) {
-    ncells[i] = std::min(static_cast<int>(std::floor(box[i] / min_cellsize)), MAX_GRID_DIM);
-  }
-
-  for (int i = 0; i < 3; ++i) {
-    if (ncells[i] <= 0) {
-      throw std::runtime_error("Grid construction failed: cutoff (" + std::to_string(cutoff) +
-                               ") is too large relative to box dimension " + std::to_string(i) +
-                               " (" + std::to_string(box[i]) + "). Try a smaller cutoff or larger scale_factor.");
-    }
-  }
-
-  cellsize[0] = box[0] / ncells[0];
-  cellsize[1] = box[1] / ncells[1];
-  cellsize[2] = box[2] / ncells[2];
-
-  cell_offsets[0] = 0;
-  cell_offsets[1] = ncells[0];
-  cell_offsets[2] = ncells[0] * ncells[1];
-};
-
 void FastNS::pack_grid() {
   head_id.assign(cell_offsets[2] * ncells[2], END);
   next_id.assign(coords_bbox.size() / 3, END);
@@ -326,17 +336,20 @@ void FastNS::pack_grid() {
   }
 };
 
-inline int FastNS::coord_to_cell_id(const float *__restrict coord) const {
+int FastNS::coord_to_cell_id(const float *__restrict coord) const {
   std::array<int, DIMENSIONS> xyz;
   coord_to_cell_xyz(coord, xyz);
   return xyz[0] + xyz[1] * cell_offsets[1] + xyz[2] * cell_offsets[2];
 }
 
-inline void
-FastNS::coord_to_cell_xyz(const float *__restrict coord, std::array<int, DIMENSIONS> &xyz) const {
-  xyz[2] = static_cast<int>(coord[2] / cellsize[2]) % ncells[2];
-  xyz[1] = static_cast<int>(coord[1] / cellsize[1]) % ncells[1];
-  xyz[0] = static_cast<int>(coord[0] / cellsize[0]) % ncells[0];
+void FastNS::coord_to_cell_xyz(const float *__restrict coord, std::array<int, DIMENSIONS> &xyz) const {
+  if (ncells[0] <= 0 || ncells[1] <= 0 || ncells[2] <= 0) {
+    throw std::runtime_error("FastNS grid dimensions invalid (ncells <= 0).");
+  }
+
+  xyz[0] = std::clamp(static_cast<int>(coord[0] / cellsize[0]), 0, ncells[0] - 1);
+  xyz[1] = std::clamp(static_cast<int>(coord[1] / cellsize[1]), 0, ncells[1] - 1);
+  xyz[2] = std::clamp(static_cast<int>(coord[2] / cellsize[2]), 0, ncells[2] - 1);
 }
 
 int FastNS::cell_xyz_to_cell_id(int cx, int cy, int cz) const {
@@ -344,6 +357,28 @@ int FastNS::cell_xyz_to_cell_id(int cx, int cy, int cz) const {
     return END;
   }
   return cx + cy * cell_offsets[1] + cz * cell_offsets[2];
+}
+
+NSResults FastNS::brute_force_self(double cutoff_sq) const {
+  NSResults results;
+  results.reserve_space(n_points);
+
+  const int n = static_cast<int>(n_points);
+  for (int i = 0; i < n; ++i) {
+    const float *ai = &coords_bbox[3 * i];
+    for (int j = i + 1; j < n; ++j) {
+      const float *aj = &coords_bbox[3 * j];
+      const double dx = static_cast<double>(ai[0]) - static_cast<double>(aj[0]);
+      const double dy = static_cast<double>(ai[1]) - static_cast<double>(aj[1]);
+      const double dz = static_cast<double>(ai[2]) - static_cast<double>(aj[2]);
+      const double d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 <= cutoff_sq) {
+        results.add_neighbors(i, j, static_cast<float>(d2));
+      }
+    }
+  }
+
+  return results;
 }
 
 void NSResults::add_neighbors(int i, int j, float d2) {
@@ -357,7 +392,7 @@ void NSResults::reserve_space(size_t input_size) {
 }
 
 NSResults NSResults::filter(const double dist) const {
-  NSResults filtered; // we'll not reserve space
+  NSResults filtered;
   auto dist_sq = dist * dist;
   for (size_t i = 0; i < m_dists.size(); ++i) {
     if (m_dists[i] <= dist_sq) {
@@ -399,6 +434,26 @@ NSResults NSResults::filter(const std::vector<int> &atom_indices, int col) const
   return filtered;
 }
 
+void FastNS::log_occupancy_stats() const {
+  // Occupancy stats
+  const int ncell_total = ncells[0] * ncells[1] * ncells[2];
+  int max_occ = 0;
+  long long sum_occ = 0;
+  if (ncell_total > 0) {
+    for (int cid = 0; cid < ncell_total; ++cid) {
+      int cnt = 0;
+      int j = head_id[cid];
+      while (j != END) { ++cnt; j = next_id[j]; }
+      sum_occ += cnt; if (cnt > max_occ) max_occ = cnt;
+    }
+  }
+  const double mean_occ = ncell_total > 0 ? static_cast<double>(sum_occ) / static_cast<double>(ncell_total) : 0.0;
+
+  Logger::get_logger()->debug(
+      "FastNS.grid: ncells=({}, {}, {}), cellsize=({:.6f}, {:.6f}, {:.6f}), mean_occ={:.3f}, max_occ={}",
+      ncells[0], ncells[1], ncells[2], cellsize[0], cellsize[1], cellsize[2], mean_occ, max_occ);
+}
+
 namespace ns_utils {
 
 NSResults remove_adjascent_residueid_pairs(const Luni &luni, NSResults &results, int res_diff) {
@@ -428,6 +483,5 @@ NSResults remove_adjascent_residueid_pairs(const Luni &luni, NSResults &results,
 }
 
 } // namespace ns_utils
-
 
 } // namespace lahuta

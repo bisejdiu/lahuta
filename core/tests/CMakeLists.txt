@@ -25,6 +25,14 @@ list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/${LAHUTA_TEST_MAI
 add_executable(lahuta_tests ${LAHUTA_TEST_MAIN} ${LAHUTA_TEST_UNITS})
 target_compile_features(lahuta_tests PRIVATE cxx_std_17)
 
+target_include_directories(lahuta_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(MSVC)
+  target_compile_options(lahuta_tests PRIVATE /fp:precise)
+else()
+  target_compile_options(lahuta_tests PRIVATE -fno-fast-math -fexcess-precision=standard -ffp-contract=off)
+endif()
+
 target_link_libraries(lahuta_tests
   PRIVATE
     lahuta_core

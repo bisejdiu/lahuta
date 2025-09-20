@@ -4,21 +4,19 @@ from pathlib import Path
 
 import numpy as np
 
-from lahuta import FastNS, LahutaSystem, NSResults, logging
+from lahuta import NearestNeighbors, LahutaSystem, logging
 
 DATA = Path(__file__).resolve().parents[3] / "data" / "ubi.cif"
 
 
 # fmt: off
-def neighbors_search(sys: LahutaSystem) -> NSResults:
+def neighbors_search(sys: LahutaSystem):
     cutoff  = 4.0
     res_dif = 0
 
+    # Directly from the read-in system
     ns = sys.find_neighbors(cutoff=cutoff, res_dif=res_dif).filter(cutoff)
-    logging.info(f"neighbors: shape0={ns.pairs.shape[0]}, cutoff={cutoff}, res_dif={res_dif}")
-    if not ns.pairs.shape[0]:
-        pairs = ns.pairs[:5].tolist()
-        logging.debug(f"pairs_head={pairs}")
+    logging.info(f"sys.find_neighbors: n_pairs={len(ns)}, cutoff={cutoff}, res_dif={res_dif}")
     return ns
 
 
@@ -34,10 +32,14 @@ def search_with_filters(ns: NSResults) -> tuple[int, int, int]:
 
 
 def construct_and_search(sys: LahutaSystem) -> bool:
-    ns = FastNS(sys.props.positions)
-    ns.build(5)  # Build grid with a cutoff of 5.0 Angstroms
-    res = ns.self_search()  # Self-search for neighbors
-    logging.info(f"self_search: shape0={res.pairs.shape[0]}, cutoff=5.0")
+    positions = sys.props.positions
+    radius = 5.0
+    nn = NearestNeighbors(radius=radius, algorithm="kd_tree").fit(positions)
+
+    # Self neighbors
+    idxs_self = nn.radius_neighbors(return_distance=False)
+    n_pairs_est = (sum(map(len, idxs_self))) // 2
+    logging.info(f"self radius_neighbors: approx unique_pairs={n_pairs_est}, radius={radius}")
 
     queries = np.array(
         [
@@ -46,8 +48,8 @@ def construct_and_search(sys: LahutaSystem) -> bool:
         ],
         dtype=np.float64,
     )
-    res = ns.search(queries)  # Search for neighbors of the queries
-    logging.info(f"search: shape0={res.pairs.shape[0]}, queries={queries.shape}")
+    idxs = nn.radius_neighbors(queries, return_distance=False)
+    logging.info(f"cross radius_neighbors: n_queries={len(idxs)}, radius={radius}")
 
     return True
 

@@ -1,135 +1,185 @@
+#include <vector>
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "distances.hpp"
-#include "distopia.h"
-#include "py_conversions.hpp"
+#include "distances/kernels.hpp"
+#include "distances/neighbors.hpp"
+#include "nsresults_python.hpp"
+#include "numpy_utils.hpp"
 
 namespace py = pybind11;
-
 // clang-format off
+namespace lahuta::bindings {
+
+namespace nb = lahuta::bindings::neighbors;
+
 namespace {
-template <typename T>
-static py::array_t<T> distance(const std::vector<std::vector<T>> &points1, const std::vector<std::vector<T>> &points2) {
-  const int na = static_cast<int>(points1.size());
-  const int nb = static_cast<int>(points2.size());
+using namespace lahuta::numpy;
 
-  if (na == 0 || nb == 0) return py::array_t<T>();
-
-  std::vector<T> a(3 * na);
-  for (int i = 0; i < na; ++i) {
-    a[3 * i + 0] = points1[i][0];
-    a[3 * i + 1] = points1[i][1];
-    a[3 * i + 2] = points1[i][2];
+inline void fill_symmetric_from_upper(double *out, int n, const double *upper, bool squared) {
+  // zero diagonal
+  for (int i = 0; i < n; ++i) {
+    out[static_cast<size_t>(i) * n + i] = 0.0;
   }
 
-  std::vector<T> b(3 * nb);
-  for (int i = 0; i < nb; ++i) {
-    b[3 * i + 0] = points2[i][0];
-    b[3 * i + 1] = points2[i][1];
-    b[3 * i + 2] = points2[i][2];
+  size_t off = 0;
+  for (int i = 0; i < n; ++i) {
+    for (int j = i + 1; j < n; ++j) {
+      const double d = upper[off++];
+      const double v = squared ? (d * d) : d;
+      out[static_cast<size_t>(i) * n + j] = v;
+      out[static_cast<size_t>(j) * n + i] = v;
+    }
   }
-
-  auto result = py::array_t<T>({na, nb});
-  auto buf = result.request();
-  T* ptr = static_cast<T*>(buf.ptr);
-
-  distopia::DistanceArrayNoBox(a.data(), b.data(), na, nb, ptr);
-
-  return result;
 }
 
-template <typename T>
-static py::array_t<T> distance(const std::vector<std::vector<T>> &points) {
-  return distance(points, points);
-}
 } // namespace
 
-namespace lahuta::bindings {
 void bind_distance(py::module_ &m) {
+  // Submodule: metrics (pdist/cdist/pairwise_distances)
+  py::module_ metrics = m.def_submodule("metrics", "Distance metrics for 3D coordinates.");
 
-  py::class_<lahuta::ContiguousMatrix<double>>(m, "ContiguousMatrix", py::buffer_protocol())
-    .def(py::init<int, int>(), py::arg("rows"), py::arg("cols"))
-    .def("rows", &lahuta::ContiguousMatrix<double>::rows)
-    .def("cols", &lahuta::ContiguousMatrix<double>::cols)
+  metrics.def("pairwise_distances", [](np_f64 X, std::optional<np_f64> Y, bool squared) {
+        require_shape_2d_cols(X, 3, "X must have shape (n, 3)");
+        const int na = static_cast<int>(X.shape(0));
+        const double *xa = static_cast<const double *>(X.request().ptr);
 
-    .def("to_numpy", [](const lahuta::ContiguousMatrix<double>&m) -> py::array_t<double> { return lahuta::numpy::matrix_to_numpy(m); })
-    .def("to_numpy_view", [](lahuta::ContiguousMatrix<double> &m) -> py::array_t<double> {
-      // zero-copy view tied to the lifetime of this C++ instance
-      return py::array_t<double>({m.rows(), m.cols()},
-                                 {m.cols() * (py::ssize_t)sizeof(double), (py::ssize_t)sizeof(double)},
-                                 m.data(), py::cast(m));
-    })
-    .def("__call__", [](lahuta::ContiguousMatrix<double>&m, int i, int j) -> double { return m(i, j); }, py::arg("i"), py::arg("j"))
-    .def("__getitem__", [](lahuta::ContiguousMatrix<double> &m, py::tuple index) -> double& {
-      if (index.size() != 2) 
-        throw py::index_error("ContiguousMatrix index must be a 2-tuple");
-      int i = py::cast<int>(index[0]);
-      int j = py::cast<int>(index[1]);
-      return m(i, j);
-    }, py::return_value_policy::reference_internal)
-    .def("__setitem__", [](lahuta::ContiguousMatrix<double> &m, py::tuple index, double value) {
-      if (index.size() != 2) 
-        throw py::index_error("ContiguousMatrix index must be a 2-tuple");
-      int i = py::cast<int>(index[0]);
-      int j = py::cast<int>(index[1]);
-      m(i, j) = value;
-    })
-    .def("__repr__", [](const lahuta::ContiguousMatrix<double> &m) {
-      return "ContiguousMatrix(" + std::to_string(m.rows()) + ", " + std::to_string(m.cols()) + ")";
-    })
-    .def_buffer([](lahuta::ContiguousMatrix<double> &m) -> py::buffer_info {
-      return py::buffer_info(
-        m.data(),
-        sizeof(double),
-        py::format_descriptor<double>::format(),
-        2,
-        { (py::ssize_t)m.rows(), (py::ssize_t)m.cols() },
-        { (py::ssize_t)(m.cols() * sizeof(double)), (py::ssize_t)sizeof(double) }
-      );
-    });
+        if (Y.has_value()) {
+          require_shape_2d_cols(*Y, 3, "Y must have shape (m, 3)");
+          const int nb = static_cast<int>(Y->shape(0));
+          const double *yb = static_cast<const double *>(Y->request().ptr);
 
-  py::class_<lahuta::DistanceComputation>(m, "DistanceComputation")
-    .def_static("distance", [](const std::vector<double> &p1, const std::vector<double> &p2) -> double {
-      return lahuta::DistanceComputation::distance(p1, p2);
-    }, py::arg("p1"), py::arg("p2"))
-    .def_static("distance", [](const std::vector<std::vector<double>> &points1, const std::vector<std::vector<double>> &points2) -> lahuta::ContiguousMatrix<double> {
-      return lahuta::DistanceComputation::distance(points1, points2);
-    }, py::arg("points1"), py::arg("points2"))
-    .def_static("distance", [](const std::vector<std::vector<double>> &points) -> lahuta::ContiguousMatrix<double> {
-      return lahuta::DistanceComputation::distance(points);
-    }, py::arg("points"))
-    .def_static("distance_matrix", [](py::array_t<double, py::array::c_style | py::array::forcecast> points1_np,
-                                      py::array_t<double, py::array::c_style | py::array::forcecast> points2_np) -> py::array_t<double> {
-      auto points1 = lahuta::numpy::array2vv_double(points1_np);
-      auto points2 = lahuta::numpy::array2vv_double(points2_np);
-      auto result_matrix = lahuta::DistanceComputation::distance(points1, points2);
-      return lahuta::numpy::matrix_to_numpy(result_matrix);
-    }, py::arg("points1"), py::arg("points2"))
-    .def_static("distance_matrix", [](py::array_t<double, py::array::c_style | py::array::forcecast> points_np) -> py::array_t<double> {
-      auto points = lahuta::numpy::array2vv_double(points_np);
-      auto result_matrix = lahuta::DistanceComputation::distance(points);
-      return lahuta::numpy::matrix_to_numpy(result_matrix);
-    }, py::arg("points"))
-    .def_static("search", [](const std::vector<std::vector<double>> &points1, const std::vector<std::vector<double>> &points2, double cutoff) -> NSResults {
-      return lahuta::DistanceComputation::search(points1, points2, cutoff);
-    }, py::arg("points1"), py::arg("points2"), py::arg("cutoff"))
-    .def_static("search", [](const std::vector<std::vector<double>> &points, double cutoff) -> NSResults {
-      return lahuta::DistanceComputation::search(points, cutoff);
-    }, py::arg("points"), py::arg("cutoff"))
-    .def_static("search_numpy", [](py::array_t<double, py::array::c_style | py::array::forcecast> points1_np,
-                                   py::array_t<double, py::array::c_style | py::array::forcecast> points2_np,
-                                   double cutoff) -> NSResults {
-      auto points1 = lahuta::numpy::array2vv_double(points1_np);
-      auto points2 = lahuta::numpy::array2vv_double(points2_np);
-      return lahuta::DistanceComputation::search(points1, points2, cutoff);
-    }, py::arg("points1"), py::arg("points2"), py::arg("cutoff"))
-    .def_static("search_numpy", [](py::array_t<double, py::array::c_style | py::array::forcecast> points_np,
-                                   double cutoff) -> NSResults {
-      auto points = lahuta::numpy::array2vv_double(points_np);
-      return lahuta::DistanceComputation::search(points, cutoff);
-    }, py::arg("points"), py::arg("cutoff"));
+          py::array_t<double> out({na, nb});
+          double *dst = static_cast<double *>(out.request().ptr);
+          dist::distance_array(xa, na, yb, nb, dist::Box<double>::None(), dst);
 
+          if (squared) {
+            const size_t n = static_cast<size_t>(na) * static_cast<size_t>(nb);
+            for (size_t i = 0; i < n; ++i) {
+              dst[i] = dst[i] * dst[i];
+            }
+          }
+
+          return out;
+        } else {
+          py::array_t<double> out({na, na});
+          double *dst = static_cast<double *>(out.request().ptr);
+
+          if (na == 0) return out;
+          if (na == 1) { dst[0] = 0.0; return out; }
+
+          const size_t tri = static_cast<size_t>(na) * static_cast<size_t>(na - 1) / 2;
+          std::vector<double> upper(tri);
+          dist::self_distance_upper(xa, na, dist::Box<double>::None(), upper.data());
+          fill_symmetric_from_upper(dst, na, upper.data(), squared);
+
+          return out;
+        }
+      },
+      py::arg("X"), py::arg("Y") = py::none(), py::arg("squared") = false, "Compute pairwise Euclidean distances."
+  );
+
+  metrics.def("cdist", [](np_f64 XA, np_f64 XB, bool squared) {
+        require_shape_2d_cols(XA, 3, "XA must have shape (n, 3)");
+        require_shape_2d_cols(XB, 3, "XB must have shape (m, 3)");
+        const int na = static_cast<int>(XA.shape(0));
+        const int nb = static_cast<int>(XB.shape(0));
+        const double *a = static_cast<const double *>(XA.request().ptr);
+        const double *b = static_cast<const double *>(XB.request().ptr);
+
+        py::array_t<double> out({na, nb});
+        double *dst = static_cast<double *>(out.request().ptr);
+        dist::distance_array(a, na, b, nb, dist::Box<double>::None(), dst);
+
+        if (squared) {
+          const size_t n = static_cast<size_t>(na) * static_cast<size_t>(nb);
+          for (size_t i = 0; i < n; ++i) {
+            dst[i] = dst[i] * dst[i];
+          }
+        }
+
+        return out;
+      },
+      py::arg("XA"), py::arg("XB"), py::arg("squared") = false, "Compute distances between two sets of 3D points."
+  );
+
+  metrics.def("pdist", [](np_f64 X, bool squared) {
+        require_shape_2d_cols(X, 3, "X must have shape (n, 3)");
+        const int n = static_cast<int>(X.shape(0));
+        const double *a = static_cast<const double *>(X.request().ptr);
+        const size_t tri = (n <= 1) ? 0 : static_cast<size_t>(n) * static_cast<size_t>(n - 1) / 2;
+
+        py::array_t<double> out(static_cast<py::ssize_t>(tri));
+        if (tri == 0) return out;
+        double *dst = static_cast<double *>(out.request().ptr);
+        dist::self_distance_upper(a, n, dist::Box<double>::None(), dst);
+
+        if (squared) {
+          for (size_t i = 0; i < tri; ++i) {
+            dst[i] = dst[i] * dst[i];
+          }
+        }
+
+        return out;
+      },
+      py::arg("X"), py::arg("squared") = false, "Pairwise distances for one set in condensed form."
+  );
+
+  // Submodule: neighbors (radius_neighbors)
+  py::module_ neighbors = m.def_submodule("neighbors", "Radius-based neighbor search.");
+
+  neighbors.def("radius_neighbors", [](np_f64 X, double radius, std::optional<np_f64> Y, bool return_distance, bool sort_results) {
+        require_shape_2d_cols(X, 3, "X must have shape (n, 3)");
+        const int n = static_cast<int>(X.shape(0));
+
+        dist::NeighborSearchOptions opts;
+        opts.cutoff = radius;
+        opts.sort_output = false; // sorting is applied after grouping
+
+        if (Y.has_value()) {
+          require_shape_2d_cols(*Y, 3, "Y must have shape (m, 3)");
+          const int msize = static_cast<int>(Y->shape(0));
+          auto q = to_point3d_vect(X);
+          auto t = to_point3d_vect(*Y);
+          NSResults res = dist::neighbors_within_radius_cross(q, t, opts);
+          auto [idx_list, dist_list] = nb::build_ragged_cross(res, n, return_distance, sort_results);
+          return return_distance ? py::make_tuple(dist_list, idx_list) : py::object(idx_list);
+        } else {
+          auto pts = to_point3d_vect(X);
+          NSResults res = dist::neighbors_within_radius_self(pts, opts);
+          auto [idx_list, dist_list] = nb::build_ragged_self(res, n, return_distance, sort_results);
+          return return_distance ? py::make_tuple(dist_list, idx_list) : py::object(idx_list);
+        }
+      },
+      py::arg("X"), py::arg("radius"), py::arg("Y") = py::none(), py::arg("return_distance") = false, py::arg("sort_results") = false,
+      "Neighbors within radius. Returns lists per sample."
+  );
+
+  neighbors.def("radius_neighbors_flat", [](np_f64 X, double radius, std::optional<np_f64> Y, bool return_distance, bool sort_results) {
+        require_shape_2d_cols(X, 3, "X must have shape (n, 3)");
+        const int n = static_cast<int>(X.shape(0));
+        dist::NeighborSearchOptions opts;
+        opts.cutoff = radius;
+        opts.sort_output = false;
+
+        if (Y.has_value()) {
+          require_shape_2d_cols(*Y, 3, "Y must have shape (m, 3)");
+          auto q = to_point3d_vect(X);
+          auto t = to_point3d_vect(*Y);
+          NSResults res = dist::neighbors_within_radius_cross(q, t, opts);
+          auto [d, i, p] = nb::flatten_cross(res, n, return_distance, sort_results);
+          return return_distance ? py::make_tuple(d, i, p) : py::make_tuple(i, p);
+        } else {
+          auto pts = to_point3d_vect(X);
+          NSResults res = dist::neighbors_within_radius_self(pts, opts);
+          auto [d, i, p] = nb::flatten_self(res, n, return_distance, sort_results);
+          return return_distance ? py::make_tuple(d, i, p) : py::make_tuple(i, p);
+        }
+      },
+      py::arg("X"), py::arg("radius"), py::arg("Y") = py::none(), py::arg("return_distance") = false, py::arg("sort_results") = false,
+      "Neighbors within radius. Returns CSR-like flat arrays: (indices, indptr) or (distances, indices, indptr).");
 }
+
 } // namespace lahuta::bindings
