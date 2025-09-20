@@ -1,17 +1,16 @@
 #pragma once
 
+#include <memory>
+
 #include "analysis/system/records.hpp"
-#include "compute/dependency.hpp"
 #include "db/reader.hpp"
 #include "pipeline/compute/context.hpp"
-#include "pipeline/compute/dynamic_computation.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "serialization/formats.hpp"
 #include "serialization/serializer.hpp"
 
 // clang-format off
 namespace lahuta::analysis::system {
-using namespace lahuta::topology::compute;
 using namespace lahuta::pipeline::compute;
 
 // Fetches a model record from LMDB
@@ -22,15 +21,25 @@ struct ModelFetchKernel {
       auto& data = context.data();
       if (!data.ctx) return ComputationResult(ComputationError("ModelFetch: TaskContext is null"));
 
-      // The input item is the key for LMDB mode
       const std::string& key = data.item_path;
       std::string_view raw;
 
-      // Reuse a thread-local reader per worker
-      struct TLReader { std::unique_ptr<LMDBReader> rdr; };
+      // Reuse a thread-local reader per worker, rebinding when the database changes.
+      // `bound_db` keeps a weak reference to the LMDBDatabase currently backing the reader so
+      //   we can detect when the shared handle expires or a different database is provided.
+      // `rdr` owns the actual LMDBReader instance that is reused until bound_db no longer
+      //   matches the requested database, at which point it is recreated against the new env/DBI.
+      struct TLReader {
+        std::weak_ptr<LMDBDatabase> bound_db;
+        std::unique_ptr<LMDBReader> rdr;
+      };
       static thread_local TLReader tls;
-      if (!tls.rdr) {
-        tls.rdr = std::make_unique<LMDBReader>(p.db->get_env(), p.db->get_dbi());
+
+      auto db = p.db;
+      auto locked = tls.bound_db.lock();
+      if (!tls.rdr || locked.get() != db.get()) {
+        tls.rdr = std::make_unique<LMDBReader>(db->get_env(), db->get_dbi());
+        tls.bound_db = db;
       }
 
       if (!tls.rdr->fetch(key, raw)) {
@@ -47,14 +56,6 @@ struct ModelFetchKernel {
       return ComputationResult(ComputationError("ModelFetch failed"));
     }
   }
-};
-
-// Dynamic label computation with no dependencies
-class ModelFetchComputation : public DynamicLabelComputation<ModelFetchParams, ModelFetchKernel, ModelFetchComputation> {
-public:
-  using Base = DynamicLabelComputation<ModelFetchParams, ModelFetchKernel, ModelFetchComputation>;
-  using Base::DynamicLabelComputation;
-  using dependencies = UnitComputation;
 };
 
 } // namespace lahuta::analysis::system

@@ -70,6 +70,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+Testing/
 
 # Translations
 *.mo

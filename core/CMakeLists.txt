@@ -71,7 +71,7 @@ set(SPDLOG_BUILD_EXTRAS      OFF CACHE BOOL "" )
 set(SPDLOG_BUILD_PERF_TESTS  OFF CACHE BOOL "" )
 set(SPDLOG_BUILD_HEADER_ONLY ON  CACHE BOOL "" )
 
-# Highway (used by distopia). Do not build extras/tests.
+# Do not build extras/tests for Highway
 set(HWY_ENABLE_TESTS      OFF CACHE BOOL "Disable highway tests"           FORCE)
 set(HWY_ENABLE_EXAMPLES   OFF CACHE BOOL "Disable highway examples"        FORCE)
 set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks"      FORCE)
@@ -375,6 +375,7 @@ if(LAHUTA_BUILD_PYTHON)
       ${PY_SRC_DIR}/rdkit.cpp
 
       ${PY_SRC_DIR}/pipeline_dynamic.cpp
+      ${PY_SRC_DIR}/db.cpp
     )
 
     pybind11_add_module(lahuta_ext MODULE ${LAHUTA_PY_SOURCES})

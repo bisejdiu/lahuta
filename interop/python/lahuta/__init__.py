@@ -43,7 +43,7 @@ def get_import_error():
 if _cpp_bindings_available:
     __all__ = [
         'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
-        'ContactComputerType', 'ContactProvider', 'ContactSet', 'ContiguousMatrix',
+        'AtomTypingMethod', 'ContactProvider', 'ContactSet', 'ContiguousMatrix',
         'DistanceComputation', 'EntityID', 'EntityResolver', 'FastNS', 'FeatureGroup',
         'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'Kind',
         'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',

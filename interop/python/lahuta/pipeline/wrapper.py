@@ -91,15 +91,25 @@ class Pipeline:
 
     @staticmethod
     def from_database(path: str | Path, batch: int = 1024) -> "Pipeline":
-        """Create a pipeline reading item keys from an LMDB database.
+        """Create a pipeline reading item keys from an LMDB database."""
+        db = _lib.db.Database(str(path))
+        return Pipeline.from_database_handle(db, int(batch))
 
-        Notes:
-            This is a low-level hook to the dynamic pipeline. Semantics like
-            resume/snapshot are not implemented yet. The source resets between
-            runs to enable multi-run parameter changes.
-        """
-        mgr = _lib.pipeline.StageManager.from_database(str(path), int(batch))
-        return Pipeline(mgr)
+    @staticmethod
+    def from_database_handle(db: "_lib.db.Database", batch: int = 1024) -> "Pipeline":
+        """Create a pipeline reading item keys from an LMDB database handle."""
+        mgr = _lib.pipeline.StageManager.from_database_handle(db, int(batch))
+        p = Pipeline(mgr)
+        # Auto-inject fetch and model system mode
+        try:
+            p._mgr.add_model_fetch("fetch", [], db)
+        except Exception:
+            pass
+        try:
+            p.params("system").is_model = True
+        except Exception:
+            pass
+        return p
 
     @overload
     def params(self, builtin_name: Literal["system"]) -> SystemParams: ...
@@ -192,6 +202,12 @@ class Pipeline:
             if not self._topology_params.enabled:
                 raise ValueError("Topology is disabled. Cannot add ContactsTask which requires 'topology'.")
 
+            # Set atom typing method based on provider before adding contacts
+            if task.provider == _lib.ContactProvider.Arpeggio:
+                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Arpeggio
+            else:  # MolStar
+                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
+
             # JSON is the default out format
             self._mgr.add_contacts(
                 name, deps, task.provider, task.interaction_type, ch, "json", bool(thread_safe)
@@ -224,14 +240,14 @@ class Pipeline:
         json_channel: bool,
     ) -> None:
         """Simplified sink attachment logic."""
-        # Memory sink
-        if in_memory_policy == InMemoryPolicy.Keep:
+        # Memory sink only for text/JSON channels. Binary channels (e.g., LMDB payloads)
+        # must not attach a MemorySink, as pybind11 decodes std::string to str (utf-8).
+        if json_channel and in_memory_policy == InMemoryPolicy.Keep:
             if channel not in self._memory_sinks:
                 ms = _lib.pipeline.MemorySink()
                 self._mgr.connect_sink(channel, ms)
                 self._memory_sinks[channel] = [ms]
-                if json_channel:
-                    self._json_memory_channels.add(channel)
+                self._json_memory_channels.add(channel)
 
         if not out:
             return

@@ -25,18 +25,7 @@ struct BuildTopologyKernel {
 
       sys->set_atom_typing_method(p.atom_typing_method);
 
-      // Decide if we're in model fast-path mode
-      bool is_model_mode = false;
-      if (data.ctx) {
-        if (auto mode = data.ctx->get_text("system_mode"); mode && *mode == "model") {
-          is_model_mode = true;
-        } else {
-          // presence of model_data (read from LMDB) implies model mode
-          // NOTE: we should not hit this anymore
-          auto md = data.ctx->get_object<analysis::system::ModelRecord>("model_data");
-          if (md) is_model_mode = true;
-        }
-      }
+      bool is_model_mode = sys->is_model_origin();
 
       if (is_model_mode) {
         // Ensure topology built via model pathway if not already built

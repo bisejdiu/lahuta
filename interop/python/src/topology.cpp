@@ -16,10 +16,9 @@ namespace lahuta::bindings {
 
 void bind_topology(py::module &m) {
 
-  py::enum_<ContactComputerType>(m, "ContactComputerType", "Atom typing backends used when classifying atoms for contacts.")
-    .value("None_",    ContactComputerType::None,     "Disable atom typing (no classification)")
-    .value("Arpeggio", ContactComputerType::Arpeggio, "Use Arpeggio-style atom typing")
-    .value("Molstar",  ContactComputerType::Molstar,  "Use Mol* atom typing");
+  py::enum_<AtomTypingMethod>(m, "AtomTypingMethod", "Atom typing backends used when classifying atoms for contacts.")
+    .value("Arpeggio", AtomTypingMethod::Arpeggio, "Use Arpeggio-style atom typing")
+    .value("Molstar",  AtomTypingMethod::Molstar,  "Use Mol* atom typing");
 
   py::class_<TopologyBuildingOptions>(m, "TopologyBuildingOptions", "Options controlling topology construction.")
     .def(py::init<>(), "Create default options")
@@ -35,7 +34,7 @@ void bind_topology(py::module &m) {
     .value("NonStandardBonds", TopologyComputation::NonStandardBonds, "Include non-standard bonds/coordination where supported")
     .value("Residues",         TopologyComputation::Residues,         "Assemble residue/group membership")
     .value("Rings",            TopologyComputation::Rings,            "Detect cycles and annotate aromatic rings")
-    .value("AtomTyping",       TopologyComputation::AtomTyping,       "Assign atom types (per ContactComputerType)")
+    .value("AtomTyping",       TopologyComputation::AtomTyping,       "Assign atom types (per AtomTypingMethod)")
     .value("Basic",            TopologyComputation::Basic,            "Neighbors + Bonds")
     .value("Standard",         TopologyComputation::Standard,         "Basic + Residues")
     .value("Extended",         TopologyComputation::Extended,         "Standard + Rings")
@@ -177,9 +176,7 @@ void bind_topology(py::module &m) {
     .def("build",     &Topology::build, py::arg("options"), "Build all enabled stages. Returns a boolean")
 
     .def("run_mask",  &Topology::run_mask, py::arg("mask"), "Run stages specified by a bitmask of TopologyComputers")
-
-    .def("assign_molstar_typing",      &Topology::assign_molstar_typing,      "Assign per-atom types using Mol* rules; populates atom_types")
-    .def("assign_arpeggio_atom_types", &Topology::assign_arpeggio_atom_types, "Assign per-atom types using Arpeggio rules; populates atom_types")
+    .def("assign_typing", &Topology::assign_typing, py::arg("method"), "Assign per-atom types using specified method; populates atom_types")
 
     .def("enable_computation",     &Topology::enable_computation,     py::arg("comp"), py::arg("enabled"), "Enable/disable a specific stage")
     .def("enable_only",            &Topology::enable_only,            py::arg("comps"),   "Enable only the provided bitmask; disables all others")

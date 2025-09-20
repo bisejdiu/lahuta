@@ -40,4 +40,5 @@ PYBIND11_MODULE(lahuta, m) {
   lahuta::bindings::bind_properties(m);
 
   lahuta::bindings::bind_pipeline_dynamic(m);
+  lahuta::bindings::bind_db(m);
 }

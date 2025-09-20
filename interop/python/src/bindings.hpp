@@ -34,6 +34,7 @@ void bind_rdkit(py::module_ &m);
 void bind_logger(py::module_ &m);
 
 void bind_pipeline_dynamic(py::module_ &m);
+void bind_db(py::module_ &m);
 
 } // namespace lahuta::bindings
 

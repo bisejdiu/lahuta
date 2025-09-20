@@ -5,7 +5,7 @@ and access various properties and perform neighbor searches.
 
 from pathlib import Path
 
-from lahuta import ContactComputerType, LahutaSystem, TopologyBuildingOptions, logging
+from lahuta import AtomTypingMethod, LahutaSystem, TopologyBuildingOptions, logging
 
 
 # fmt: off
@@ -23,7 +23,7 @@ def read_with_options(path: str | Path) -> LahutaSystem:
     opts = TopologyBuildingOptions()
     opts.cutoff = 4.5  # this is the cutoff for bond perception (4.5 is default)
     opts.compute_nonstandard_bonds = True
-    opts.atom_typing_method = ContactComputerType.Molstar  # the default
+    opts.atom_typing_method = AtomTypingMethod.Molstar  # the default
     if not sys.build_topology(opts):
         raise RuntimeError("Failed to build topology with options from the system.")
     logging.info("Successfully built topology with options.")

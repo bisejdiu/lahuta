@@ -4,6 +4,7 @@
 #include "logging.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
+#include "typing/types.hpp"
 
 // clang-format off
 namespace lahuta::topology {
@@ -16,16 +17,23 @@ SeedFromModelKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const 
   try {
     data.residues->build();
 
-    // CompAtomType is set by ModelTopology path
     data.atoms.clear();
     data.atoms.reserve(data.mol->getNumAtoms());
-    for (const auto atom : data.mol->atoms()) {
-      auto atom_type = static_cast<AtomType>(atom->getCompAtomType());
-      data.atoms.push_back(AtomRec{atom_type, *atom});
+    if (params.mode == AtomTypingMethod::Molstar) {
+      for (const auto atom : data.mol->atoms()) {
+        auto atom_type = static_cast<AtomType>(atom->getCompAtomType());
+        data.atoms.push_back(AtomRec{atom_type, *atom});
+      }
+
+      // FIX: these are not fast. I'm working on alternatives.
+      data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
+    } else {
+      for (const auto atom : data.mol->atoms()) {
+        AtomType atom_type = get_atom_type(atom);
+        data.atoms.push_back(AtomRec{atom_type, *atom});
+      }
     }
 
-    // FIX: these are not fast. I'm working on alternatives.
-    data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
     data.rings  = AtomTypingKernel::populate_ring_entities(*data.mol);
 
     Logger::get_logger()->debug("seed_from_model: atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());

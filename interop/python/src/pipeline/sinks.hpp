@@ -7,6 +7,8 @@
 #include "io/sinks/memory.hpp"
 #include "io/sinks/ndjson.hpp"
 #include "io/sinks/sharded_ndjson.hpp"
+#include "io/sinks/lmdb.hpp"
+#include "db/db.hpp"
 
 namespace py = pybind11;
 namespace lahuta::bindings {
@@ -29,6 +31,12 @@ inline void bind_sinks(py::module_& md) {
     .def(py::init<std::string, std::size_t>(), py::arg("out_dir"), py::arg("shard_size"))
     .def(py::init<std::string, std::size_t, std::size_t>(), py::arg("out_dir"), py::arg("shard_size"), py::arg("max_shard_bytes"))
     .def("files", &ShardedNdjsonSink::files);
+
+  py::class_<LmdbSink, IDynamicSink, std::shared_ptr<LmdbSink>>(md, "LmdbSink")
+    .def(py::init<
+           std::shared_ptr<lahuta::LMDBDatabase>, std::size_t
+         >(),
+         py::arg("db"), py::arg("batch_size") = 1024u);
 }
 
 } // namespace lahuta::bindings

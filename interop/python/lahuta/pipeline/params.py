@@ -48,6 +48,14 @@ class TopologyParams:
         self._mgr.set_topology_params({"flags": value})
 
     @property
+    def atom_typing_method(self) -> int:
+        return int(self._mgr.get_topology_params().get("atom_typing_method", -1))
+
+    @atom_typing_method.setter
+    def atom_typing_method(self, value: int) -> None:
+        self._mgr.set_topology_params({"atom_typing_method": int(value)})
+
+    @property
     def enabled(self) -> bool:
         """Whether the topology built-in is allowed to run.
 

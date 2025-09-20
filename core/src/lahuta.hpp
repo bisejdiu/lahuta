@@ -31,12 +31,15 @@ public:
   static inline constexpr ModelFileTag ModelFile{};
   explicit Luni(std::string file_name, ModelFileTag);
 
-  // more covenient factory method for model path input
-  static Luni from_model_file(std::string file_name) { return Luni(std::move(file_name), ModelFile); }
-
   static Luni create(const IR &ir);
   static Luni create(const gemmi::Structure &st);
   static Luni create(std::shared_ptr<RDKit::RWMol> mol) { return Luni(mol); }
+  static Luni create(std::shared_ptr<RDKit::RWMol> mol, TopologyBuildMode mode) {
+    Luni l(std::move(mol));
+    if (mode == TopologyBuildMode::Model) l.model_origin_ = true;
+    return l;
+  }
+  static Luni from_model_file(std::string file_name) { return Luni(std::move(file_name), ModelFile); }
 
   // FIX: no need to use optional here
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
@@ -61,17 +64,6 @@ public:
 
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
-
-  /// Can be called using the topology
-  void assign_molstar_atom_types()  {
-    if (topology) { topology->assign_molstar_typing(); }
-    else { Logger::get_logger()->error("Topology not initialized. Cannot assign Molstar atom types."); }
-  }
-
-  void assign_arpeggio_atom_types() {
-    if (topology) { topology->assign_arpeggio_atom_types(); }
-    else { Logger::get_logger()->error("Topology not initialized. Cannot assign Arpeggio atom types."); }
-  }
 
   /// Enable or disable a specific computation in the topology
   void enable_computation(TopologyComputation comp, bool enabled) {
@@ -98,6 +90,9 @@ public:
     return false;
   }
 
+  // Whether this system originated from a model input
+  bool is_model_origin() const { return model_origin_; }
+
   /// Execute a specific computation with its dependencies
   bool execute_computation(TopologyComputation comp) {
     if (topology) {
@@ -116,7 +111,7 @@ public:
   }
 
   /// Set the atom typing method
-  void set_atom_typing_method(ContactComputerType method) {
+  void set_atom_typing_method(AtomTypingMethod method) {
     ensure_topology_initialized();
     if (topology) {
       topology->set_atom_typing_method(method);
@@ -173,6 +168,7 @@ private:
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
   std::shared_ptr<Topology> topology;
   bool topology_built_ = false;
+  bool model_origin_ = false; // flag controlling model code path
 
   std::string file_name_;
   std::vector<int> filtered_indices;

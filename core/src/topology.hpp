@@ -1,33 +1,36 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
-#include "residues.hpp"
-#include "logging.hpp"
-#include "topology/engine.hpp"
-#include "topology_flags.hpp"
-#include "entities/entity_id.hpp"
-#include "entities/records.hpp"
-#include "entities/view.hpp"
+#include <exception>
 #include <memory>
 #include <vector>
 
+#include "contact_types.hpp"
+#include "entities/entity_id.hpp"
+#include "entities/records.hpp"
+#include "entities/view.hpp"
+#include "logging.hpp"
+#include "residues.hpp"
+#include "topology/engine.hpp"
+#include "topology_flags.hpp"
+
+// clang-format off
 namespace lahuta {
 
 // FIX: using a "dynamic" cutoff might be better. For common atoms use a small cutoff. For other 
 // atoms we'd use a larger cutoff but only around them.
 constexpr static float BONDED_NEIGHBOR_SEARCH_CUTOFF = 4.5;
-enum class ContactComputerType { None, Arpeggio, Molstar };
 
 enum class TopologyBuildMode { Generic, Model };
 
 // Options for configuring topology parameters
 struct TopologyBuildingOptions {
-  ContactComputerType atom_typing_method = ContactComputerType::Molstar;
+  AtomTypingMethod atom_typing_method = AtomTypingMethod::Molstar;
   double cutoff = BONDED_NEIGHBOR_SEARCH_CUTOFF;
   bool auto_heal = true; // auto-healing of dependencies
   // FIX: this is also handled via flags
   bool compute_nonstandard_bonds = true; // whether to compute bonds for non-standard atoms
-  TopologyBuildMode mode = TopologyBuildMode::Generic;
+  TopologyBuildMode mode = TopologyBuildMode::Generic; // This is also stored in Luni
 };
 
 class Topology {
@@ -44,18 +47,24 @@ public:
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
 
-  void build(TopologyBuildingOptions tops);
+  [[nodiscard]] bool build(TopologyBuildingOptions tops);
 
   void run_mask(TopologyComputation mask) const {
     for (auto bit : BASE_COMPUTATION_FLAGS)
       if (has_flag(mask, bit)) {
         Logger::get_logger()->debug("run_mask: {}", Topology::get_label(bit).to_string_view());
-        engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+        try {
+          auto ok = engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
+          if (!ok) {
+            Logger::get_logger()->warn("run_mask: computation {} reported failure", Topology::get_label(bit).to_string_view());
+          }
+        } catch (const std::exception &e) {
+          Logger::get_logger()->error("run_mask: computation {} threw exception: {}", Topology::get_label(bit).to_string_view(), e.what());
+        }
       }
   }
 
-  void assign_molstar_typing();
-  void assign_arpeggio_atom_types();
+  void assign_typing(AtomTypingMethod method);
 
   /// Enable/disable a specific computation
   void enable_computation(TopologyComputation comp, bool enabled);
@@ -73,7 +82,7 @@ public:
   void set_cutoff(double cutoff);
 
   // FIX: this is bad, because it gives us two sources of truth for setting the compute method
-  void set_atom_typing_method(ContactComputerType method);
+  void set_atom_typing_method(AtomTypingMethod method);
 
   /// Set whether to compute non-standard bonds
   void set_compute_nonstandard_bonds(bool compute);

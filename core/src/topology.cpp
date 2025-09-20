@@ -4,10 +4,10 @@
 // clang-format off
 namespace lahuta {
 
-void Topology::build(TopologyBuildingOptions tops) {
+bool Topology::build(TopologyBuildingOptions tops) {
   if (!mol_) {
     Logger::get_logger()->critical("Cannot build topology without a molecule.");
-    throw std::runtime_error("Make sure to provide a molecule before building the topology.");
+    return false;
   }
 
   try {
@@ -24,48 +24,41 @@ void Topology::build(TopologyBuildingOptions tops) {
       conflicts |= engine_->is_computation_available(topology::AtomTypingComputation<>::label);
       if (conflicts) {
         Logger::get_logger()->error("Model mode requires only residues + seed_from_model to be enabled");
-        throw std::runtime_error("Invalid computation configuration for Model mode");
+        return false;
       }
     }
 
     bool success = engine_->execute();
     if (!success) {
       Logger::get_logger()->error("Failed to execute topology computations");
-      throw std::runtime_error("Failed to execute topology computations. See logs for details.");
+      return false;
     }
     Logger::get_logger()->debug("Topology build done");
+    return true;
   } catch (const std::exception &e) {
     Logger::get_logger()->critical(
         "Error creating topology! Exception caught: {} Will not terminate, "
         "but some topology-based features will not be available.", e.what());
-    throw;
+  } catch (...) {
+    Logger::get_logger()->critical(
+        "Error creating topology! Unknown exception caught. Some topology-based features will not be available.");
   }
+
+  return false;
 }
 
-void Topology::assign_molstar_typing() {
+void Topology::assign_typing(AtomTypingMethod method) {
   auto& label  = topology::AtomTypingComputation<>::label;
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
 
   if (params) {
-    params->use_molstar = true;
+    params->mode = method;
     engine_->enable(label, true);
-    Logger::get_logger()->debug("Executing atom typing (molstar)");
-    engine_->execute_computation(label);
 
-  } else {
-    Logger::get_logger()->error("Could not get parameters for atom typing computation");
-  }
-}
-
-void Topology::assign_arpeggio_atom_types() {
-  auto& label  = topology::AtomTypingComputation<>::label;
-  auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
-
-  if (params) {
-    params->use_molstar = false;
-    engine_->enable(label, true);
-    Logger::get_logger()->debug("Executing atom typing (arpeggio)");
-    engine_->execute_computation(label);
+    Logger::get_logger()->debug("Executing atom typing ({})", contact_computer_name(method));
+    if (!engine_->execute_computation(label)) {
+      Logger::get_logger()->error("Atom typing computation {} failed", label.to_string_view());
+    }
 
   } else {
     Logger::get_logger()->error("Could not get parameters for atom typing computation");
@@ -141,10 +134,10 @@ void Topology::set_cutoff(double cutoff) {
   if (params) params->cutoff = cutoff;
 }
 
-void Topology::set_atom_typing_method(ContactComputerType method) {
+void Topology::set_atom_typing_method(AtomTypingMethod method) {
   if (!engine_) throw std::runtime_error("No engine available");
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(topology::AtomTypingComputation<>::label);
-  if (params) params->use_molstar = (method == ContactComputerType::Molstar);
+  if (params) params->mode = method;
 }
 
 void Topology::set_compute_nonstandard_bonds(bool compute) {

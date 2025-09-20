@@ -9,6 +9,15 @@
 namespace lahuta::topology {
 using namespace compute;
 
+// For virtual/aggregate computations whose execution is represented purely by dependencies in the compute graph.
+struct NoopKernel {
+  template <typename DataT, typename ParamT>
+  static ComputationResult
+  execute(const DataContext<DataT, Mut::ReadOnly> &/*context*/, const ParamT &/*params*/) {
+    return ComputationResult(true);
+  }
+};
+
 struct NeighborSearchKernel {
   template <typename DataT>
   static ComputationResult

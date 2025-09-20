@@ -230,8 +230,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
       // Configure built-ins
       mgr.get_system_params().is_model = true;
       mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
-        ? ContactComputerType::Arpeggio
-        : ContactComputerType::Molstar;
+        ? AtomTypingMethod::Arpeggio
+        : AtomTypingMethod::Molstar;
 
       // Tasks: fetch model -> ensure_typing -> contacts
       {
@@ -283,8 +283,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
         // Configure built-ins
         mgr.get_system_params().is_model = false;
         mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
-          ? ContactComputerType::Arpeggio
-          : ContactComputerType::Molstar;
+          ? AtomTypingMethod::Arpeggio
+          : AtomTypingMethod::Molstar;
 
         // Tasks: ensure_typing -> contacts
         const bool json_out = (cli.want_json || !cli.want_text);

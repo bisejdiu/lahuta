@@ -28,6 +28,7 @@ TEST(PoolsReinitLifetime, DirectThenDirectModelFastPath) {
   // Direct fast-path system
   {
     lahuta::Luni sys = lahuta::Luni::from_model_file(model_path.string());
+    ASSERT_TRUE(sys.build_topology());
     ASSERT_TRUE(sys.has_topology_built());
     EXPECT_GT(sys.n_atoms(), 10);
   }
@@ -40,6 +41,7 @@ TEST(PoolsReinitLifetime, DirectThenDirectModelFastPath) {
   // Another direct fast-path system in the same process
   {
     lahuta::Luni sys = lahuta::Luni::from_model_file(model_path.string());
+    ASSERT_TRUE(sys.build_topology());
     ASSERT_TRUE(sys.has_topology_built());
     EXPECT_GT(sys.n_atoms(), 10);
   }

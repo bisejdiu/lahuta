@@ -13,15 +13,22 @@
 #include "analysis/contacts/provider.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "analysis/system/model_pack_task.hpp"
 #include "pipeline/python_task.hpp"
+#include "analysis/system/model_fetch.hpp"
 
 // clang-format off
 namespace py = pybind11;
 namespace lahuta::bindings {
 using namespace lahuta::sources;
+using namespace lahuta::pipeline::dynamic;
 
 inline void bind_stage_manager(py::module_ &md) {
   py::class_<ITask, std::shared_ptr<ITask>> task(md, "Task");
+
+  // Bind reusable C++ task that serializes models to ModelRecord payloads
+  py::class_<analysis::system::ModelPackTask, ITask, std::shared_ptr<analysis::system::ModelPackTask>>(md, "ModelPackTask")
+    .def(py::init<std::string>(), py::arg("channel") = std::string("db"));
 
   py::class_<StageManager, std::shared_ptr<StageManager>>(md, "StageManager")
     // sources
@@ -49,6 +56,13 @@ inline void bind_stage_manager(py::module_ &md) {
                           db_path, batch));
                 },
                 py::arg("path"), py::arg("batch") = 1024)
+    .def_static("from_database_handle", [](std::shared_ptr<LMDBDatabase> db, std::size_t batch) {
+                  return std::make_shared<StageManager>(
+                      StageManager::SourceVariant(
+                          std::in_place_type<DBKeySourceHolder>,
+                          std::move(db), batch));
+                },
+                py::arg("db"), py::arg("batch") = 1024)
     // Generic task registration
     .def("add_task", [](StageManager& mgr, const std::string& name,
                          const std::vector<std::string>& deps,
@@ -111,6 +125,24 @@ inline void bind_stage_manager(py::module_ &md) {
         py::arg("serialize") = true,
         py::arg("store") = true)
 
+    // Fetch model payload from LMDB into context as "model_data" for SystemRead(is_model=True)
+    .def("add_model_fetch", [](StageManager &mgr,
+                               const std::string &name,
+                               const std::vector<std::string> &deps,
+                               std::shared_ptr<LMDBDatabase> db,
+                               bool thread_safe) {
+          pipeline::compute::ModelFetchParams p{};
+          p.db = std::move(db);
+          std::string label_copy = name;
+          mgr.add_computation(name, deps, [p, label_copy]() {
+            return std::make_unique<analysis::system::ModelFetchComputation>(label_copy, p);
+          }, thread_safe);
+        },
+        py::arg("name") = std::string("fetch"),
+        py::arg("depends") = std::vector<std::string>{},
+        py::arg("db"),
+        py::arg("thread_safe") = true)
+
     // sinks
     .def("connect_sink", [](StageManager &mgr, const std::string &channel, std::shared_ptr<IDynamicSink> sink) {
           mgr.connect_sink(channel, std::move(sink));
@@ -147,6 +179,7 @@ inline void bind_stage_manager(py::module_ &md) {
           const auto& params = mgr.get_topology_params();
           py::dict result;
           result["flags"] = static_cast<int>(params.flags);
+          result["atom_typing_method"] = static_cast<int>(params.atom_typing_method);
           return result;
         })
     .def("set_topology_params", [](StageManager &mgr, py::dict d) {
@@ -157,6 +190,13 @@ inline void bind_stage_manager(py::module_ &md) {
               params.flags = static_cast<TopologyComputation>(d["flags"].cast<int>());
             } else {
               params.flags = d["flags"].cast<TopologyComputation>();
+            }
+          }
+          if (d.contains("atom_typing_method")) {
+            if (py::isinstance<py::int_>(d["atom_typing_method"])) {
+              params.atom_typing_method = static_cast<AtomTypingMethod>(d["atom_typing_method"].cast<int>());
+            } else {
+              params.atom_typing_method = d["atom_typing_method"].cast<AtomTypingMethod>();
             }
           }
           mgr.invalidate_compilation();

@@ -1,15 +1,19 @@
 #include "models/topology_impl.hpp"
+#include "logging.hpp"
 #include "models/topology/compute.hpp"
 
 // clang-format off
 namespace lahuta::models {
 
-void ModelTopology::build(const ModelTopologyBuildingOptions& options) {
+bool ModelTopology::build(const ModelTopologyBuildingOptions& options) {
   engine_->initialize(options);
 
-  if (!engine_->execute()) {
-    throw std::runtime_error("Failed to build model topology");
+  const bool success = engine_->execute();
+  if (!success) {
+    Logger::get_logger()->error("Failed to build model topology");
   }
+
+  return success;
 }
 
 void ModelTopology::run_computations(ModelTopologyComputation mask) {
