@@ -157,6 +157,37 @@ TEST(DynamicBackpressure, DropPoliciesBehaveAsExpected) {
   }
 }
 
+TEST(DynamicBackpressure, DefaultConfigSetterAppliesToNewConnections) {
+  auto original = get_default_backpressure_config();
+  struct Reset {
+    BackpressureConfig cfg;
+    ~Reset() { set_default_backpressure_config(cfg); }
+  } guard{original};
+
+  BackpressureConfig custom = original;
+  custom.max_queue_bytes = 512;
+  custom.max_batch_bytes = 512;
+  custom.on_full = OnFull::DropLatest;
+  custom.required = false;
+  set_default_backpressure_config(custom);
+
+  ChannelMultiplexer mux;
+  auto sink = std::make_shared<MemorySink>();
+  mux.connect("test", sink);
+
+  Emission e;
+  e.channel = "test";
+  e.payload.assign(2048, 'x');
+  mux.emit(std::move(e));
+
+  mux.close_and_flush(std::chrono::milliseconds(100));
+
+  auto stats = mux.stats();
+  ASSERT_EQ(stats.size(), 1u);
+  EXPECT_EQ(stats[0].drops, 1u);
+  EXPECT_TRUE(sink->result().empty());
+}
+
 // Fairness (isolation): slow sink must not block fast sink, and fast sink should receive all items.
 // Connect a slow sink (sleeping writer) and a fast sink to the same channel.
 // Emit many records and confirm the fast sink receives all while the slow sink
@@ -196,6 +227,36 @@ TEST(DynamicBackpressure, MaxQueueBytesEnforced) {
   // Another big entry would exceed 100 bytes
   EXPECT_FALSE(q.offer(make_node(1, big), cfg, &stall, &drops));
   EXPECT_EQ(drops.load(), 1u);
+}
+
+// Oversize relative to batch budget should still drain in a single pop_batch() iteration.
+TEST(DynamicBackpressure, PopBatchMakesProgressForOversizedEntry) {
+  BoundedQueue q(/*max_msgs=*/8, /*max_bytes=*/1024);
+  BackpressureConfig cfg;
+  cfg.max_batch_msgs = 4;
+  cfg.max_batch_bytes = 64;
+  std::atomic<uint64_t> stall{0}, drops{0};
+
+  std::string big(128, 'Z');
+  ASSERT_TRUE(q.offer(make_node(1, big), cfg, &stall, &drops));
+
+  std::vector<QueueNode> batch;
+  ASSERT_TRUE(q.pop_batch(batch, cfg.max_batch_msgs, cfg.max_batch_bytes));
+  ASSERT_EQ(batch.size(), 1u);
+  EXPECT_EQ(batch.front().size, big.size());
+}
+
+// Items larger than the queue byte budget must be rejected immediately to avoid blocking forever.
+TEST(DynamicBackpressure, OversizedItemRejectedWhenExceedingQueueBytes) {
+  BoundedQueue q(/*max_msgs=*/4, /*max_bytes=*/32);
+  BackpressureConfig cfg; cfg.on_full = OnFull::Block;
+  std::atomic<uint64_t> stall{0}, drops{0};
+
+  std::string huge(64, 'H');
+  EXPECT_FALSE(q.offer(make_node(1, huge), cfg, &stall, &drops));
+  EXPECT_EQ(drops.load(), 1u);
+  EXPECT_EQ(stall.load(), 0u);
+  EXPECT_EQ(q.size_msgs(), 0u);
 }
 
 // Clean shutdown drains and matches counts

@@ -144,12 +144,33 @@ inline void bind_stage_manager(py::module_ &md) {
         py::arg("thread_safe") = true)
 
     // sinks
-    .def("connect_sink", [](StageManager &mgr, const std::string &channel, std::shared_ptr<IDynamicSink> sink) {
-          mgr.connect_sink(channel, std::move(sink));
+    .def("connect_sink", [](StageManager &mgr,
+                             const std::string &channel,
+                             std::shared_ptr<IDynamicSink> sink,
+                             std::optional<BackpressureConfig> cfg) {
+          mgr.connect_sink(channel, std::move(sink), std::move(cfg));
         },
-        py::arg("channel"), py::arg("sink"))
+        py::arg("channel"), py::arg("sink"), py::arg("backpressure") = std::nullopt)
     .def("sorted_tasks", &StageManager::sorted_tasks)
     .def("compile",      &StageManager::compile)
+    .def("stats", [](StageManager &mgr) {
+          py::list out;
+          auto v = mgr.stats();
+          for (const auto &s : v) {
+            py::dict d;
+            d["sink_name"]     = s.sink_name;
+            d["enqueued_msgs"] = s.enqueued_msgs;
+            d["enqueued_bytes"]= s.enqueued_bytes;
+            d["written_msgs"]  = s.written_msgs;
+            d["written_bytes"] = s.written_bytes;
+            d["stalled_ns"]    = s.stalled_ns;
+            d["drops"]         = s.drops;
+            d["queue_msgs"]    = s.queue_msgs;
+            d["queue_bytes"]   = s.queue_bytes;
+            out.append(std::move(d));
+          }
+          return out;
+        })
     .def("run", [](StageManager &mgr, int threads) {
           {
             py::gil_scoped_release release;

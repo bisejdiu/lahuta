@@ -4,11 +4,67 @@ import tempfile
 import time
 from pathlib import Path
 
-from lahuta.pipeline import InMemoryPolicy, OutputFormat, Pipeline, PipelineContext
+from lahuta.pipeline import (
+    BackpressureConfig,
+    InMemoryPolicy,
+    OnFull,
+    OutputFormat,
+    Pipeline,
+    PipelineContext,
+    get_default_backpressure_config,
+    set_default_backpressure_config,
+    set_default_max_queue_bytes,
+)
 
 
 def _items(n: int) -> list[str]:
     return [f"item_{i}" for i in range(n)]
+
+
+def test_backpressure_config_roundtrip_binding() -> None:
+    original = get_default_backpressure_config()
+    try:
+        cfg = BackpressureConfig()
+        cfg.max_queue_msgs = 1234
+        cfg.max_queue_bytes = 4 * 1024 * 1024
+        cfg.max_batch_msgs = 32
+        cfg.max_batch_bytes = 512 * 1024
+        cfg.on_full = OnFull.DropOldest
+        cfg.required = False
+        set_default_backpressure_config(cfg)
+
+        updated = get_default_backpressure_config()
+        assert updated.max_queue_msgs == cfg.max_queue_msgs
+        assert updated.max_queue_bytes == cfg.max_queue_bytes
+        assert updated.max_batch_msgs == cfg.max_batch_msgs
+        assert updated.max_batch_bytes == cfg.max_batch_bytes
+        assert updated.on_full == cfg.on_full
+        assert updated.required is False
+    finally:
+        set_default_backpressure_config(original)
+
+
+def test_default_max_queue_bytes_limits_large_payloads() -> None:
+    original = get_default_backpressure_config()
+    payload = "Z" * 2048
+
+    try:
+        pipeline = Pipeline.from_files(["item"])
+
+        def emit(ctx: PipelineContext) -> str:  # noqa: ARG001
+            return payload
+
+        pipeline.add_task(name="emit", task=emit, in_memory_policy=InMemoryPolicy.Keep)
+        out = pipeline.run(threads=1)
+        assert out.get("emit") == [payload]
+
+        set_default_max_queue_bytes(512)
+        pipeline_small = Pipeline.from_files(["item"])
+        pipeline_small.add_task(name="emit", task=emit, in_memory_policy=InMemoryPolicy.Keep)
+        out_small = pipeline_small.run(threads=1)
+        assert out_small.get("emit") == []
+    finally:
+        set_default_backpressure_config(original)
 
 
 def test_memory_and_sharded_file_sinks_produce_expected_outputs() -> None:

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -19,16 +20,23 @@ namespace lahuta::pipeline::dynamic {
 class ChannelMultiplexer {
 public:
   // Connect a sink to a channel with an optional backpressure config.
-  void connect(const std::string& channel, std::shared_ptr<IDynamicSink> sink, BackpressureConfig cfg = BackpressureConfig{}) {
+  void connect(const std::string& channel,
+               std::shared_ptr<IDynamicSink> sink,
+               std::optional<BackpressureConfig> cfg = std::nullopt) {
     std::lock_guard<std::mutex> lk(m_);
     const auto ch_id = intern_channel_locked(channel);
+
+    // Defaults are applied at ingress construction time. If the same sink instance
+    // is connected again later -even after defaults change - the existing ingress
+    // and its captured config are reused.
+    BackpressureConfig effective = cfg.has_value() ? *cfg : get_default_backpressure_config();
 
     // one ingress per sink instance
     std::size_t idx;
     auto it = sink_to_ingress_.find(sink.get());
     if (it == sink_to_ingress_.end()) {
       idx = ingresses_.size();
-      auto ing = std::make_unique<SinkIngress>(std::move(sink), cfg);
+      auto ing = std::make_unique<SinkIngress>(std::move(sink), effective);
       ing->start();
       ingresses_.push_back(std::move(ing));
       sink_to_ingress_[ingresses_.back()->sink_.get()] = idx;
@@ -57,11 +65,7 @@ public:
       auto buf = std::make_shared<std::string>(std::move(e.payload));
       const auto sz = buf->size();
       auto& ing = *ingresses_[subs[0]];
-      const bool ok = ing.offer(ch_id, std::move(buf), sz);
-      if (ok) {
-        ++ing.enq_msgs_;
-        ing.enq_bytes_ += sz;
-      }
+      (void)ing.offer(ch_id, std::move(buf), sz);
       return;
     }
 
@@ -69,11 +73,7 @@ public:
     const auto sz = buf->size();
     for (auto idx : subs) {
       auto& ing = *ingresses_[idx];
-      const bool ok = ing.offer(ch_id, buf, sz);
-      if (ok) {
-        ++ing.enq_msgs_;
-        ing.enq_bytes_ += sz;
-      }
+      (void)ing.offer(ch_id, buf, sz);
     }
   }
 

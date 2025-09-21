@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <optional>
 #include <functional>
 #include <memory>
 #include <stdexcept>
@@ -158,8 +159,10 @@ public:
 
   // Subscribe a sink to a channel. Multiple sinks may subscribe to the same
   // channel. Multiple tasks may emit to the same channel.
-  void connect_sink(const std::string& channel, std::shared_ptr<IDynamicSink> sink) {
-    mux_.connect(channel, std::move(sink));
+  void connect_sink(const std::string& channel,
+                    std::shared_ptr<IDynamicSink> sink,
+                    std::optional<BackpressureConfig> cfg = std::nullopt) {
+    mux_.connect(channel, std::move(sink), std::move(cfg));
   }
 
   // Add a compute-backed task via a factory producing a compute::Computation.
@@ -298,6 +301,9 @@ public:
   }
 
   const std::vector<std::string>& sorted_tasks() const { return targets_; }
+
+  // Expose current sink stats snapshot for diagnostics/observability.
+  std::vector<ChannelMultiplexer::SinkStatsSnapshot> stats() const { return mux_.stats(); }
 
   // Parameter access for builtins
   compute::SystemReadParams& get_system_params() { return sys_params_; }
