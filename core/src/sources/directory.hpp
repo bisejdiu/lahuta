@@ -1,38 +1,36 @@
-#ifndef LAHUTA_PIPELINE_SOURCES_DIRECTORY_SOURCE_HPP
-#define LAHUTA_PIPELINE_SOURCES_DIRECTORY_SOURCE_HPP
+#ifndef LAHUTA_SOURCES_DIRECTORY_HPP
+#define LAHUTA_SOURCES_DIRECTORY_HPP
 
-#include "logging.hpp"
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "logging.hpp"
+
 // clang-format off
 namespace lahuta::sources {
 namespace fs = std::filesystem;
 
 // batch-oriented directory iterator.
-class DirectorySource {
+class Directory {
 public:
   using value_type = std::string;
 
-  explicit DirectorySource(
+  explicit Directory(
       std::string_view directory_path, std::string_view extension = "", bool recursive = true, std::size_t batch_size = 1024)
       : directory_path_(directory_path), extension_(extension), recursive_(recursive), batch_size_(batch_size) {
 
     if (!fs::exists(directory_path_) || !fs::is_directory(directory_path_)) {
-      throw fs::filesystem_error(
-          "Directory does not exist",
-          std::make_error_code(std::errc::no_such_file_or_directory));
+      throw fs::filesystem_error( "Directory does not exist", std::make_error_code(std::errc::no_such_file_or_directory));
     }
 
-    // correct iterator
     if (recursive_) recursive_it_.emplace(directory_path_, fs::directory_options::skip_permission_denied);
     else                  dir_it_.emplace(directory_path_, fs::directory_options::skip_permission_denied);
 
     Logger::get_logger()->info(
-        "DirectorySource: scanning directory '{}'{}; batch_size={} (recursive={})",
+        "Directory: scanning directory '{}'{}; batch_size={} (recursive={})",
         directory_path_,
         extension_.empty() ? "" : fmt::format(", filter='*{}'", extension_),
         batch_size_,
@@ -52,8 +50,8 @@ public:
 
   void reset() {
     current_index_ = 0;
-    total_files_ = 0;
-    exhausted_ = false;
+    total_files_   = 0;
+    exhausted_     = false;
     current_batch_.clear();
 
     // Recreate iterators from the beginning
@@ -138,4 +136,4 @@ private:
 
 } // namespace lahuta::sources
 
-#endif // LAHUTA_PIPELINE_SOURCES_DIRECTORY_SOURCE_HPP
+#endif // LAHUTA_SOURCES_DIRECTORY_HPP

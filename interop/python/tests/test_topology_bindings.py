@@ -23,7 +23,6 @@ def test_topology_build_with_options_and_flags(luni: lxx.LahutaSystem) -> None:
     # Configure explicit options
     opts = lxx.TopologyBuildingOptions()
     opts.cutoff = 4.5
-    opts.auto_heal = True # we may decide to also test auto_heal=False, or not expose this option at all
     opts.compute_nonstandard_bonds = True
     opts.atom_typing_method = lxx.AtomTypingMethod.Molstar
 

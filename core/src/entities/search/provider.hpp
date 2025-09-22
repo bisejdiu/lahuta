@@ -1,11 +1,15 @@
 #ifndef LAHUTA_ENTITIES_SEARCH_PROVIDER_HPP
 #define LAHUTA_ENTITIES_SEARCH_PROVIDER_HPP
 
-#include <Geometry/point.h>
-#include <topology.hpp>
 #include <type_traits>
-#include "entities/records.hpp"
 
+#include <Geometry/point.h>
+
+#include "compute/topology_snapshot.hpp"
+#include "entities/records.hpp"
+#include "topology.hpp"
+
+// clang-format off
 namespace lahuta::search {
 
 template<typename T, typename = void>
@@ -27,18 +31,17 @@ constexpr bool is_coord_provider_v = is_coord_provider<T>::value;
 
 template<typename RecA, typename RecB>
 struct CoordProvider {
-  const Topology& topo;
+  const compute::TopologySnapshot& ts;
 
-  const RDGeom::Point3D& get_a(uint32_t idx) const noexcept { return get_position<RecA>(topo, idx); }
-  const RDGeom::Point3D& get_b(uint32_t idx) const noexcept { return get_position<RecB>(topo, idx); }
+  RDGeom::Point3D get_a(uint32_t idx) const noexcept { return get_position<RecA>(idx); }
+  RDGeom::Point3D get_b(uint32_t idx) const noexcept { return get_position<RecB>(idx); }
 
 private:
   template<typename Rec>
-  static const RDGeom::Point3D& get_position(const Topology& t, uint32_t idx) noexcept {
-    // if      constexpr (std::is_same_v<Rec, AtomRec >) { return t.conformer().getAtomPos(t.records<AtomRec>()[idx].atom.getIdx()); }
-    if      constexpr (std::is_same_v<Rec, AtomRec >) { return t.conformer().getAtomPos(idx); }
-    else if constexpr (std::is_same_v<Rec, RingRec >) { return t.records<RingRec >()[idx].center; }
-    else if constexpr (std::is_same_v<Rec, GroupRec>) { return t.records<GroupRec>()[idx].center; }
+  RDGeom::Point3D get_position(uint32_t idx) const noexcept {
+    if      constexpr (std::is_same_v<Rec, AtomRec >) { return ts.conf.getAtomPos(idx); }
+    else if constexpr (std::is_same_v<Rec, RingRec >) { return ts.topo.records<RingRec >()[idx].center(ts.conf); }
+    else if constexpr (std::is_same_v<Rec, GroupRec>) { return ts.topo.records<GroupRec>()[idx].center(ts.conf); }
     else {
       static_assert(sizeof(Rec)==0, "Unsupported record type in CoordProvider");
     }

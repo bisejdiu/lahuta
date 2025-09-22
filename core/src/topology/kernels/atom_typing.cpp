@@ -116,26 +116,6 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
       atoms.push_back(std::ref(*mol.getAtomWithIdx(atom_idx)));
     }
 
-    // center of the ring
-    RDGeom::Point3D center{0.0, 0.0, 0.0};
-    for (int atom_idx : ring) {
-      center += conf.getAtomPos(atom_idx);
-    }
-    center /= ring.size();
-
-    // FIX: bad impl normal vector
-    RDGeom::Point3D normal{0.0, 0.0, 1.0};
-    if (ring.size() >= 3) {
-      auto p1 = conf.getAtomPos(ring[0]);
-      auto p2 = conf.getAtomPos(ring[1]);
-      auto p3 = conf.getAtomPos(ring[2]);
-
-      auto v1 = p2 - p1;
-      auto v2 = p3 - p1;
-      normal = v1.crossProduct(v2);
-      normal.normalize();
-    }
-
     // aromaticity check
     bool is_aromatic = false;
     for (int idx : ring) {
@@ -147,8 +127,6 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
 
     ring_recs.push_back(RingRec{
       /*.atoms    =*/ std::move(atoms),
-      /*.center   =*/ center,
-      /*.normal   =*/ normal,
       /*.aromatic =*/ is_aromatic
     });
   }

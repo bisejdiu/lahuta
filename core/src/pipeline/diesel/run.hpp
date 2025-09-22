@@ -87,7 +87,7 @@ private:
 
 /// Run the pipeline
 template<typename Pipeline, typename FinalSink>
-void run(pipe_t<Pipeline,FinalSink>& pl, std::size_t threads = 1) {
+void run(pipe_t<Pipeline, FinalSink>& pl, std::size_t threads = 1) {
   auto& src    = find_source(pl.lhs);
   auto  stages = stages_tuple<Pipeline>::get(pl.lhs);
   Chain chain{stages};

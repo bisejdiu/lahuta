@@ -10,13 +10,15 @@
 #ifndef _RD_CONFORMER_H
 #define _RD_CONFORMER_H
 
+#include <memory>
+#include <cmath>
+#include <limits>
+#include <utility>
+
 #include <Geometry/point.h>
 #include <RDGeneral/types.h>
 #include <boost/smart_ptr.hpp>
 #include <RDGeneral/RDProps.h>
-#include <cmath>
-#include <limits>
-#include <utility>
 
 namespace RDKit {
 class ROMol;
@@ -148,10 +150,25 @@ class Conformer : public RDProps {
 
   //! Get the number of atoms
   inline unsigned int getNumAtoms() const {
-    return rdcast<unsigned int>(d_positions.size());
+    const auto &pos = d_external_positions ? *d_external_positions : d_positions;
+    return rdcast<unsigned int>(pos.size());
   }
   inline bool is3D() const { return df_is3D; }
   inline void set3D(bool v) { df_is3D = v; }
+
+  //
+  // Added lightweight external coordinate binding
+  // If bound, read-only accessors use the external view instead of internal storage.
+  // Mutation APIs remain available only for internal storage and will throw when an external view is bound.
+  //
+  void bindExternalPositions(std::shared_ptr<RDGeom::POINT3D_VECT> positions) {
+    d_external_positions = std::static_pointer_cast<const RDGeom::POINT3D_VECT>(std::move(positions));
+  }
+  void bindExternalPositions(std::shared_ptr<const RDGeom::POINT3D_VECT> positions) {
+    d_external_positions = std::move(positions);
+  }
+  void clearExternalPositions() { d_external_positions.reset(); }
+  bool hasExternalPositions() const noexcept { return static_cast<bool>(d_external_positions); }
 
  protected:
   //! Set owning molecule
@@ -165,6 +182,7 @@ class Conformer : public RDProps {
   unsigned int d_id{0};              // id is the conformation
   ROMol *dp_mol{nullptr};            // owning molecule
   RDGeom::POINT3D_VECT d_positions;  // positions of the atoms
+  std::shared_ptr<const RDGeom::POINT3D_VECT> d_external_positions; // optional external view
 };
 
 typedef boost::shared_ptr<Conformer> CONFORMER_SPTR;

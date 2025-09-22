@@ -5,7 +5,7 @@
 #include <string_view>
 
 #include "GraphMol/Bond.h"
-#include "bonds/token.h"
+#include "token.h"
 #include "rules.hpp"
 #include "token-gperf-generated.hpp"
 

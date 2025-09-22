@@ -1,5 +1,5 @@
-#ifndef LAHUTA_PIPELINE_PAIR_INDEX_SOURCE_HPP
-#define LAHUTA_PIPELINE_PAIR_INDEX_SOURCE_HPP
+#ifndef LAHUTA_SOURCES_PAIR_INDEX_HPP
+#define LAHUTA_SOURCES_PAIR_INDEX_HPP
 
 #include <seq.hpp>
 #include <string>
@@ -12,18 +12,18 @@ struct PairRef {
   const SeqData *b;
 };
 
-class PairIndexSource {
+class PairIndex {
 public:
   using value_type = PairRef;
 
-  PairIndexSource(const SeqCollection &s, bool include_same_file = false)
+  PairIndex(const SeqCollection &s, bool include_same_file = false)
       : seqs_(s.get_data()), allow_same_file_(include_same_file) {}
 
   std::optional<value_type> next() {
     while (i_ < seqs_.size()) {
       if (++j_ >= seqs_.size()) {
         ++i_;
-        j_ = i_; // FIX: there is an important subtlety here. Document!
+        j_ = i_;
         continue;
       }
       if (!allow_same_file_ && seqs_[i_].file_name == seqs_[j_].file_name) continue;
@@ -45,4 +45,4 @@ private:
 
 } // namespace lahuta::sources
 
-#endif // LAHUTA_PIPELINE_PAIR_INDEX_SOURCE_HPP
+#endif // LAHUTA_SOURCES_PAIR_INDEX_HPP

@@ -117,7 +117,7 @@ void bind_luni(py::module &m) {
     .def("filter", &Luni::filter, py::arg("atom_indices"), "Create a filtered copy of the molecule with specified atom indices")
 
     .def("get_topology",
-       [](Luni &self) -> const Topology& { return self.get_topology(); },
+       [](Luni &self) -> const Topology& { return *self.get_topology(); },
        py::return_value_policy::reference_internal,
        "Get the topology object (keeps the parent LahutaSystem alive)")
 

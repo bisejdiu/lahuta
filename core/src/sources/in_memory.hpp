@@ -1,34 +1,34 @@
-#ifndef LAHUTA_PIPELINE_SOURCES_TEST_DATA_SOURCE_HPP
-#define LAHUTA_PIPELINE_SOURCES_TEST_DATA_SOURCE_HPP
+#ifndef LAHUTA_SOURCES_IN_MEMORY_HPP
+#define LAHUTA_SOURCES_IN_MEMORY_HPP
 
 #include "logging.hpp"
 #include <memory>
 #include <optional>
 #include <vector>
 
+// clang-format off
 namespace lahuta::sources {
 
-// Source for emitting in-memory test data objects.
+//
+// Source for emitting in-memory data objects.
 // Useful for tests and examples to feed generated data into a pipeline without writing to disk.
-template <typename T> class TestDataSource {
+//
+template <typename T>
+class InMemory {
 public:
   using value_type = std::shared_ptr<const T>;
 
   // vector of raw data items.
-  explicit TestDataSource(std::vector<T> data, std::size_t batch_size = 1024)
+  explicit InMemory(std::vector<T> data, std::size_t batch_size = 1024)
       : data_(std::move(data)), batch_size_(batch_size) {
 
-    Logger::get_logger()->info(
-        "TestDataSource: created with {} items; batch_size={}",
-        data_.size(),
-        batch_size_);
+    Logger::get_logger()->info("InMemory: created with {} items; batch_size={}", data_.size(), batch_size_);
 
     load_next_batch();
   }
 
   [[nodiscard]] std::optional<value_type> next() {
-    if (current_index_ == current_batch_.size() && !load_next_batch())
-      return std::nullopt;
+    if (current_index_ == current_batch_.size() && !load_next_batch()) return std::nullopt;
 
     return current_batch_[current_index_++];
   }
@@ -64,10 +64,10 @@ private:
 
   // Iteration state
   std::size_t current_index_ = 0;
-  std::size_t data_index_    = 0;
+  std::size_t data_index_ = 0;
   std::vector<value_type> current_batch_;
 };
 
 } // namespace lahuta::sources
 
-#endif // LAHUTA_PIPELINE_SOURCES_TEST_DATA_SOURCE_HPP
+#endif // LAHUTA_SOURCES_IN_MEMORY_HPP

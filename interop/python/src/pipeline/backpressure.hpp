@@ -20,14 +20,13 @@ inline void bind_backpressure(py::module_& md) {
 
   py::class_<BackpressureConfig>(md, "BackpressureConfig", "Sink backpressure configuration")
       .def(py::init<>())
-      .def_readwrite("max_queue_msgs",  &BackpressureConfig::max_queue_msgs)
-      .def_readwrite("max_queue_bytes", &BackpressureConfig::max_queue_bytes)
-      .def_readwrite("max_batch_msgs",  &BackpressureConfig::max_batch_msgs)
-      .def_readwrite("max_batch_bytes", &BackpressureConfig::max_batch_bytes)
-      .def_readwrite("offer_timeout",   &BackpressureConfig::offer_timeout,
-          "Producer wait slice between retries when the sink queue is full. It's nnot a hard timeout.")
-      .def_readwrite("on_full",         &BackpressureConfig::on_full)
-      .def_readwrite("required",        &BackpressureConfig::required)
+      .def_readwrite("max_queue_msgs",   &BackpressureConfig::max_queue_msgs)
+      .def_readwrite("max_queue_bytes",  &BackpressureConfig::max_queue_bytes)
+      .def_readwrite("max_batch_msgs",   &BackpressureConfig::max_batch_msgs)
+      .def_readwrite("max_batch_bytes",  &BackpressureConfig::max_batch_bytes)
+      .def_readwrite("offer_wait_slice", &BackpressureConfig::offer_wait_slice)
+      .def_readwrite("on_full",          &BackpressureConfig::on_full)
+      .def_readwrite("required",         &BackpressureConfig::required)
       .def("validate", [](const BackpressureConfig& cfg) { validate_config(cfg); });
 
   md.def(

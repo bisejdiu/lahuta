@@ -15,7 +15,7 @@ ContactRecipe<AtomRec, AtomRec, HbondParams> make_hbond_recipe() {
     +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist_sq, const ContactContext& ctx) -> InteractionType {
 
       const auto &mol = ctx.topology.molecule();
-      const auto &conformer = ctx.topology.conformer();
+      const auto &conformer = ctx.conformer();
 
       const auto &rec_a = ctx.topology.atom(rec_idx_a);
       const auto &rec_b = ctx.topology.atom(rec_idx_b);
@@ -36,7 +36,7 @@ ContactRecipe<AtomRec, AtomRec, WeakHbondParams> make_weak_hbond_recipe() {
     +[](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist_sq, const ContactContext& ctx) -> InteractionType {
 
       const auto &mol       = ctx.topology.molecule();
-      const auto &conformer = ctx.topology.conformer();
+      const auto &conformer = ctx.conformer();
 
       const auto &rec_a = ctx.topology.atom(rec_idx_a);
       const auto &rec_b = ctx.topology.atom(rec_idx_b);

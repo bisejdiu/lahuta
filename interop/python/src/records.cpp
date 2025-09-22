@@ -35,22 +35,16 @@ void bind_records(py::module &m) {
         return py::str("AtomRec(type={}, idx={})").format(static_cast<uint32_t>(self.type), self.atom.get().getIdx() );
     });
 
-  py::class_<RingRec>(m, "RingRec", "Ring record with atom membership and geometry")
+  py::class_<RingRec>(m, "RingRec", "Ring record with atom membership")
     .def(py::init<>(), "Create empty ring record")
     .def_readwrite("atoms",    &RingRec::atoms,    "Atoms participating in the ring")
-    .def_readwrite("center",   &RingRec::center,   "Ring geometric center (Å)")
-    .def_readwrite("normal",   &RingRec::normal,   "Normal vector to ring plane")
     .def_readwrite("aromatic", &RingRec::aromatic, "Whether the ring is aromatic")
     .def_property_readonly("size", [](const RingRec &self) { return static_cast<std::size_t>(self.atoms.size()); }, "Number of atoms in the ring")
     .def("__repr__", [](const RingRec &self) {
-        return py::str("RingRec(atoms={}, center=({}, {}, {}), aromatic={})").format(
-            self.atoms.size(),
-            self.center.x, self.center.y, self.center.z,
-            self.aromatic
-        );
+        return py::str("RingRec(atoms={}, aromatic={})").format(self.atoms.size(), self.aromatic);
     });
 
-  py::class_<GroupRec>(m, "GroupRec", "Functional group record with atoms and geometric center")
+  py::class_<GroupRec>(m, "GroupRec", "Functional group record with atoms")
     .def(py::init<>(), "Create empty group record")
     .def_property(
       "a_type", // FIX: a_type vs type naming inconsistency
@@ -65,13 +59,11 @@ void bind_records(py::module &m) {
       "Functional group classification"
     )
     .def_readwrite("atoms",  &GroupRec::atoms,  "Atoms participating in the group")
-    .def_readwrite("center", &GroupRec::center, "Geometric center of the group (Å)")
     .def("__repr__", [](const GroupRec &self) {
-        return py::str("GroupRec(a_type={}, type={}, atoms={}, center=({}, {}, {}))").format(
+        return py::str("GroupRec(a_type={}, type={}, atoms={})").format(
             static_cast<uint32_t>(self.a_type),
             static_cast<int>(self.type),
-            self.atoms.size(),
-            self.center.x, self.center.y, self.center.z
+            self.atoms.size()
         );
     });
 }

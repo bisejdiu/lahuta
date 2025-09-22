@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 
 #include "analysis/system/model_pack_task.hpp"
 #include "analysis/system/records.hpp"
@@ -11,6 +12,7 @@
 #include "io/sinks/lmdb.hpp"
 #include "logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
 
 // clang-format off
@@ -35,16 +37,16 @@ struct CreateDbOptions {
 };
 
 using WriterRes = analysis::system::ModelRecord;
-using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
+using Source = std::variant<sources::Directory, std::vector<std::string>, sources::FileList>;
 
 static Source pick_source(const CreateDbOptions& cli) {
   switch (cli.source_mode) {
     case CreateDbOptions::SourceMode::Directory:
-      return sources::DirectorySource{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
+      return sources::Directory{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
     case CreateDbOptions::SourceMode::Vector:
-      return sources::VectorSource{cli.file_vector};
+      return cli.file_vector;
     case CreateDbOptions::SourceMode::FileList:
-      return sources::FileListSource{cli.file_list_path};
+      return sources::FileList{cli.file_list_path};
   }
   throw std::logic_error("Invalid source mode");
 }
@@ -194,7 +196,17 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     Source source_variant = pick_source(cli);
     std::visit([&](auto&& src) {
       using SrcT = std::decay_t<decltype(src)>;
-      dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<SrcT>, std::move(src)));
+      auto source_ptr = std::unique_ptr<sources::IDescriptor>{};
+      if constexpr (std::is_same_v<SrcT, sources::Directory>) {
+        source_ptr = dynamic::sources_factory::from_directory(std::move(src));
+      } else if constexpr (std::is_same_v<SrcT, std::vector<std::string>>) {
+        source_ptr = dynamic::sources_factory::from_vector(std::move(src));
+      } else if constexpr (std::is_same_v<SrcT, sources::FileList>) {
+        source_ptr = dynamic::sources_factory::from_filelist(std::move(src));
+      } else {
+        static_assert(sizeof(SrcT) == 0, "Unsupported source type");
+      }
+      dynamic::StageManager mgr(std::move(source_ptr));
 
       auto task = std::make_shared<analysis::system::ModelPackTask>("db");
       mgr.add_task("createdb", /*deps*/{}, task, /*thread_safe=*/true);

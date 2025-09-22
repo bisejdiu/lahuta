@@ -1,6 +1,6 @@
 #include "chemistry/geometry.hpp"
-#include "contacts/molstar/contacts.hpp"
 #include "chemistry/utils.hpp"
+#include "contacts/molstar/contacts.hpp"
 #include "entities/context.hpp"
 
 // clang-format off
@@ -20,14 +20,16 @@ ContactRecipe<RingRec, RingRec, PiStackingParams> make_pistacking_recipe() {
       // e.g. trp
       if (is_same_residue(context.molecule(), ra.atoms.front(), rb.atoms.front())) return InteractionType::None;
 
-      auto dot_product = ra.normal.dotProduct(rb.normal);
+      const auto &conf = context.conformer();
+      auto dot_product = ra.normal(conf).dotProduct(rb.normal(conf));
       auto angle = std::acos(std::clamp(dot_product, -1.0, 1.0));
       if (angle > M_PI / 2) angle = M_PI - angle; // obtuse -> acute
 
-      double offset_a = chemistry::compute_in_plane_offset(ra.center, rb.center, ra.normal);
-      double offset_b = chemistry::compute_in_plane_offset(rb.center, ra.center, rb.normal);
+      double offset_a = chemistry::compute_in_plane_offset(ra.center(conf), rb.center(conf), ra.normal(conf));
+      double offset_b = chemistry::compute_in_plane_offset(rb.center(conf), ra.center(conf), rb.normal(conf));
 
       if (std::min(offset_a, offset_b) > params.offset_max) return InteractionType::None;
+
       if (angle <= params.angle_dev_max)                    return InteractionType::PiStackingP;
       if (std::abs(angle - M_PI/2) <= params.angle_dev_max) return InteractionType::PiStackingT;
 

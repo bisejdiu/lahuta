@@ -50,7 +50,7 @@ public:
   std::vector<const RDKit::Atom *> get_entity_atoms(const EntityID &entity) const {
     switch (entity.kind()) {
       case Kind::Group: {
-        const auto &group = luni_ptr->get_topology().records<GroupRec>()[entity.index()];
+        const auto &group = luni_ptr->get_topology()->records<GroupRec>()[entity.index()];
         auto atom_indices = group.atoms;
         std::vector<const RDKit::Atom *> atoms;
         atoms.reserve(atom_indices.size());
@@ -61,11 +61,11 @@ public:
         return atoms;
       }
       case Kind::Atom: {
-        const auto atom_idx = luni_ptr->get_topology().records<AtomRec>()[entity.index()].atom.get().getIdx();
+        const auto atom_idx = luni_ptr->get_topology()->records<AtomRec>()[entity.index()].atom.get().getIdx();
         return {luni_ptr->get_molecule().getAtomWithIdx(atom_idx)};
       }
       case Kind::Ring: {
-        const auto &ring = luni_ptr->get_topology().records<RingRec>()[entity.index()];
+        const auto &ring = luni_ptr->get_topology()->records<RingRec>()[entity.index()];
         std::vector<const RDKit::Atom *> atoms;
         atoms.reserve(ring.atoms.size());
         for (const auto atom_index : ring.atoms) {
@@ -90,7 +90,7 @@ private:
     BacktraceParser parser{res.backtrace};
 
     int residue_index = 0;
-    for (const auto &residue : luni_ptr->get_topology().get_residues()) {
+    for (const auto &residue : luni_ptr->get_topology()->get_residues()) {
       if (residue.chain_id != sd.chain_name) continue;
 
       if (residue_index < start || residue_index > end) {

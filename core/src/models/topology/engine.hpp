@@ -50,8 +50,6 @@ public:
 
     register_computations();
 
-    engine_->set_auto_heal(true);
-
     engine_->enable(ModelAtomsComputation<>::label,        true);  // required
     engine_->enable(ModelPositionsComputation<>::label,    true);  // required
     engine_->enable(ModelBuildComputation<>::label,        true);  // required

@@ -22,7 +22,7 @@ inline RDKit::RWMol filter_with_conf(RDKit::RWMol &mol, std::vector<int> &indice
     new_conf->setAtomPos(newAtom->getIdx(), pos);
   }
   new_mol.addConformer(new_conf, true);
-  new_mol.updatePropertyCache(false);
+  // new_mol.updatePropertyCache(false);
 
   return new_mol;
 }

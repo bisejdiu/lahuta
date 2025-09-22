@@ -30,7 +30,11 @@ struct BackpressureConfig {
   std::size_t max_batch_msgs  = 256;
   std::size_t max_batch_bytes = 50 * 1024 * 1024;          // = 50 MiB
   // Producer wait-slice while blocking on full queue. Not a hard timeout.
-  std::chrono::milliseconds offer_timeout{500};
+  // Total blocking under OnFull::Block is not bounded. This is the maximum duration
+  // of a single wait before re-checking capacity. With correct (?) condition-variable
+  // notifications, producers wake immediately when space is freed.
+  // Low-latency 5-20 ms, balanced default 100 ms, background 200-500 ms.
+  std::chrono::milliseconds offer_wait_slice{100};
   OnFull on_full = OnFull::Block;
   bool required = true; // failure aborts pipeline
 };
@@ -119,7 +123,7 @@ public:
           [[fallthrough]];
         case OnFull::Block: {
           auto t0 = std::chrono::steady_clock::now();
-          cv_not_full_.wait_for(lk, cfg.offer_timeout, [&]{
+          cv_not_full_.wait_for(lk, cfg.offer_wait_slice, [&]{
             return closed_ || ((q_.size() < max_msgs_) && (bytes_ + need <= max_bytes_));
           });
           if (closed_) return false;
@@ -227,15 +231,19 @@ struct SinkIngress {
       error_ = "unknown error in sink writer";
     }
     finished_ = true;
+    // Notify waiters immediately to avoid polling delays
+    finished_cv_.notify_all();
   }
 
   void close_queue() { queue_.close(); }
 
   bool join_until(std::chrono::steady_clock::time_point deadline) {
-    // Poll finished_ to avoid blocking join beyond deadline
-    while (!finished_) {
-      if (std::chrono::steady_clock::now() >= deadline) return false;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    // block until finished_ or deadline
+    if (!finished_) {
+      std::unique_lock<std::mutex> lk(finished_m_);
+      if (!finished_cv_.wait_until(lk, deadline, [&]{ return finished_.load(std::memory_order_acquire); })) {
+        return false; // deadline reached
+      }
     }
     if (writer_.joinable()) writer_.join();
     return true;
@@ -271,6 +279,13 @@ struct SinkIngress {
   // error_ is written by the writer thread and only read after join_until() observes finished_ true
   // and joins the thread.
   std::string           error_;
+
+  std::condition_variable finished_cv_;
+  mutable std::mutex finished_m_;
+
+  // For observability
+  uint64_t drops()      const { return drops_counter_ .load(std::memory_order_relaxed); }
+  uint64_t stalled_ns() const { return stall_ns_accum_.load(std::memory_order_relaxed); }
 };
 
 } // namespace lahuta::pipeline::dynamic

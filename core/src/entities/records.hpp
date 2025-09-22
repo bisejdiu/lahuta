@@ -1,10 +1,18 @@
 #ifndef LAHUTA_ENTITIES_RECORDS_HPP
 #define LAHUTA_ENTITIES_RECORDS_HPP
 
-#include "Geometry/point.h"
-#include "typing/types.hpp"
-#include <entities/entity_id.hpp>
+//
+// Previously, we were storing geometrical data here. This was changed when we enabled
+// multi-conformer support to avoid stale geometry in these records. Now, geometry is
+// computed on-the-fly via accessors that take a Conformer reference. - Besian, October 2025
+//
 #include <vector>
+
+#include <Geometry/point.h>
+#include <rdkit/GraphMol/Conformer.h>
+
+#include "entities/entity_id.hpp"
+#include "typing/types.hpp"
 
 // clang-format off
 namespace lahuta {
@@ -31,16 +39,48 @@ struct AtomRec {
 
 struct RingRec {
   std::vector<std::reference_wrapper<const RDKit::Atom>> atoms;
-  RDGeom::Point3D       center;
-  RDGeom::Point3D       normal;
   bool aromatic;
+
+  RDGeom::Point3D center(const RDKit::Conformer &conf) const {
+    RDGeom::Point3D c{0.0, 0.0, 0.0};
+    const auto n = atoms.size();
+    if (n == 0) return c;
+    for (const auto &a : atoms) c += conf.getAtomPos(a.get().getIdx());
+    c /= static_cast<double>(n);
+    return c;
+  }
+
+  RDGeom::Point3D normal(const RDKit::Conformer &conf) const {
+    RDGeom::Point3D nrm{0.0, 0.0, 0.0};
+    if (atoms.size() < 3) return nrm;
+    const auto &a0 = atoms[0].get();
+    const auto &a1 = atoms[1].get();
+    const auto &a2 = atoms[2].get();
+    auto p0 = conf.getAtomPos(a0.getIdx());
+    auto p1 = conf.getAtomPos(a1.getIdx());
+    auto p2 = conf.getAtomPos(a2.getIdx());
+    auto v1 = p1 - p0;
+    auto v2 = p2 - p0;
+    nrm = v1.crossProduct(v2);
+    const double len_sq = nrm.lengthSq();
+    if (len_sq > 0.0) nrm /= std::sqrt(len_sq);
+    return nrm;
+  }
 };
 
 struct GroupRec {
   AtomType              a_type;
   FeatureGroup          type;
   std::vector<std::reference_wrapper<const RDKit::Atom>> atoms;
-  RDGeom::Point3D       center;
+
+  RDGeom::Point3D center(const RDKit::Conformer &conf) const {
+    RDGeom::Point3D c{0.0, 0.0, 0.0};
+    const auto n = atoms.size();
+    if (n == 0) return c;
+    for (const auto &a : atoms) c += conf.getAtomPos(a.get().getIdx());
+    c /= static_cast<double>(n);
+    return c;
+  }
 };
 
 template<typename T> struct KindOf;

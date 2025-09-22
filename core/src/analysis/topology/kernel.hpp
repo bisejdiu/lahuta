@@ -3,13 +3,11 @@
 #include <memory>
 #include <string>
 
-#include "analysis/system/records.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "topology.hpp"
-#include <logging.hpp>
 
 // clang-format off
 namespace lahuta::analysis::topology {
@@ -19,8 +17,15 @@ struct BuildTopologyKernel {
   static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const BuildTopologyParams& p) {
     try {
       auto& data = context.data();
-      std::shared_ptr<Luni> sys;
-      if (data.ctx) sys = std::const_pointer_cast<Luni>(data.ctx->get_object<Luni>("system"));
+      std::shared_ptr<const Luni> sys;
+      if (data.ctx) sys = data.ctx->get_object<const Luni>(pipeline::CTX_SYSTEM_KEY);
+      if (!sys && data.session) {
+        auto shared = data.session->get_or_load_system();
+        if (shared) {
+          sys = shared;
+          if (data.ctx) data.ctx->set_object<const Luni>(pipeline::CTX_SYSTEM_KEY, shared);
+        }
+      }
       if (!sys) return ComputationResult(ComputationError("BuildTopology requires system in context"));
 
       sys->set_atom_typing_method(p.atom_typing_method);
@@ -34,22 +39,23 @@ struct BuildTopologyKernel {
         opts.atom_typing_method = p.atom_typing_method;
         (void)sys->build_topology(opts); // idempotent if already built
         sys->enable_only(p.flags);
-        auto topo = sys->get_topology_shared();
-        if (data.ctx && topo) data.ctx->set_object<Topology>("topology", topo);
+        auto topo = sys->get_topology();
+        if (data.ctx && topo) data.ctx->set_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY, topo);
         return ComputationResult(true);
       }
 
       // exec full topology comp
       sys->enable_only(p.flags);
 
-      // edge case: allow disabling all computations while still materializing a Topology object in context.
+      // edge case
+      // allow disabling all computations while still materializing a Topology object in context.
       if (p.flags == TopologyComputation::None) {
-        auto topo0 = sys->get_topology_shared();
+        auto topo0 = sys->get_topology();
         if (!topo0) {
           sys->enable_only(TopologyComputation::None);
-          topo0 = sys->get_topology_shared();
+          topo0 = sys->get_topology();
         }
-        if (data.ctx && topo0) data.ctx->set_object<Topology>("topology", topo0);
+        if (data.ctx && topo0) data.ctx->set_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY, topo0);
         return ComputationResult(true);
       }
 
@@ -59,8 +65,8 @@ struct BuildTopologyKernel {
       opts.atom_typing_method = p.atom_typing_method;
       if (!sys->build_topology(opts)) return ComputationResult(ComputationError("BuildTopology failed"));
       sys->enable_only(p.flags);
-      auto topo = sys->get_topology_shared();
-      if (data.ctx && topo) data.ctx->set_object<Topology>("topology", topo);
+      auto topo = sys->get_topology();
+      if (data.ctx && topo) data.ctx->set_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY, topo);
       return ComputationResult(true);
     } catch (const std::exception& e) {
       return ComputationResult(ComputationError(std::string("BuildTopology failed: ") + e.what()));

@@ -1,5 +1,3 @@
-// Exercise the compute engine behaviors we rely on for the dynamic pipeline integration.
-
 #include <gtest/gtest.h>
 
 #include "compute/compute_base.hpp"
@@ -22,7 +20,7 @@ struct DummyParams : public ParameterBase<DummyParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = 250;
 };
 
-// A simple dynamically-labeled computation that increments a counter
+// Increments a counter
 class DummyComputation : public Computation<DummyData, Mut::ReadWrite> {
 public:
   DummyComputation(std::string label) : label_store_(std::move(label)), label_(label_store_) {}
@@ -85,7 +83,6 @@ TEST(ComputeEngineExt, RegistryCapacityAtLeast64) {
   DummyData data{};
   ComputeEngine<DummyData, Mut::ReadWrite> eng(data);
 
-  // Add more than 16 computations
   const int N = 32;
   for (int i = 0; i < N; ++i) {
     eng.add(std::make_unique<DummyComputation>("c" + std::to_string(i)));
@@ -124,7 +121,6 @@ TEST(ComputeEngineExt, ParameterInvalidationDownstreamRecomputes) {
 TEST(ComputeEngineExt, AutoHealEnablesPrereqs) {
   DummyData data{};
   ComputeEngine<DummyData, Mut::ReadWrite> eng(data);
-  eng.set_auto_heal(true);
 
   const ComputationLabel A{"A"};
   const ComputationLabel B{"B"};
@@ -139,7 +135,6 @@ TEST(ComputeEngineExt, AutoHealEnablesPrereqs) {
   eng.enable(B, false);
 
   EXPECT_TRUE(eng.run<void>(C));
-  // All should have completed
   EXPECT_TRUE(eng.has_completed(A));
   EXPECT_TRUE(eng.has_completed(B));
   EXPECT_TRUE(eng.has_completed(C));

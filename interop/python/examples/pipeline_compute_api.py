@@ -258,8 +258,7 @@ def ex_mixed_provider_comparison() -> None:
     files = _get_test_files(1)
     p = Pipeline.from_files(files)
 
-    # Configure for optimal contact detection
-    p.params("topology").flags = TopologyComputers.Complete  # Full topology for best contacts
+    p.params("topology").flags = TopologyComputers.Complete
 
     # Add multiple contact providers
     p.add_task(

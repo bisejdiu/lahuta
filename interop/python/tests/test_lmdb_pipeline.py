@@ -92,7 +92,7 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
     assert got == expected
 
 
-def test_db_pipeline_uses_model_fetch_dependency(tmp_path: Path) -> None:
+def test_db_pipeline_exposes_model_mode(tmp_path: Path) -> None:
     data_dir = Path("core/data/models")
     assert data_dir.exists(), "Test models directory missing"
 

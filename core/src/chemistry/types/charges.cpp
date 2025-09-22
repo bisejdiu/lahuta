@@ -69,8 +69,7 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
         features.push_back(GroupRec{
           /*.a_type =*/ AtomType::PositiveCharge,
           /*.type   =*/ FeatureGroup::None,
-          /*.atoms  =*/ std::move(member_atoms),
-          /*.center =*/ RDGeom::Point3D(0,0,0)
+          /*.atoms  =*/ std::move(member_atoms)
         });
       }
     } else if (!definitions::is_polymer(residue.name)) {
@@ -95,8 +94,7 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::PositiveCharge,
             /*.type   =*/ it->second,
-            /*.atoms  =*/ std::move(nitrogen_atoms),
-            /*.center =*/ RDGeom::Point3D(0,0,0)
+            /*.atoms  =*/ std::move(nitrogen_atoms)
           });
         } else {
           // Add remaining positively charged atoms not already added
@@ -105,8 +103,7 @@ std::vector<GroupRec> add_positive_charges(const RDKit::RWMol &mol, const Residu
             features.push_back(GroupRec{
               /*.a_type =*/ AtomType::PositiveCharge,
               /*.type   =*/ FeatureGroup::None,
-              /*.atoms  =*/ std::move(atom_refs),
-              /*.center =*/ RDGeom::Point3D(0,0,0)
+              /*.atoms  =*/ std::move(atom_refs)
             });
             added_atoms.insert(atom);
           }
@@ -138,12 +135,11 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
       }
 
       if (member_atoms.empty()) continue;
-      
+
       features.push_back(GroupRec{
         /*.a_type =*/ AtomType::NegativeCharge,
         /*.type   =*/ FeatureGroup::None,
-        /*.atoms  =*/ std::move(member_atoms),
-        /*.center =*/ RDGeom::Point3D(0,0,0)
+        /*.atoms  =*/ std::move(member_atoms)
       });
     } else if (definitions::is_base(residue.name)) {
       // Handle nucleic acid bases (DNA/RNA)
@@ -162,8 +158,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ FeatureGroup::Phosphate,
-            /*.atoms  =*/ std::move(oxygen_atoms),
-            /*.center =*/ RDGeom::Point3D(0,0,0)
+            /*.atoms  =*/ std::move(oxygen_atoms)
           });
         }
       }
@@ -188,8 +183,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ it->second,
-            /*.atoms  =*/ std::move(oxygen_atoms),
-            /*.center =*/ RDGeom::Point3D(0,0,0)
+            /*.atoms  =*/ std::move(oxygen_atoms)
           });
         } else {
           // Collect non-backbone nitrogen atoms
@@ -201,8 +195,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
             features.push_back(GroupRec{
               /*.a_type =*/ AtomType::NegativeCharge,
               /*.type   =*/ FeatureGroup::None,
-              /*.atoms  =*/ std::move(atom_refs),
-              /*.center =*/ RDGeom::Point3D(0,0,0)
+              /*.atoms  =*/ std::move(atom_refs)
             });
             added_atoms.insert(atom);
           }
@@ -214,8 +207,7 @@ std::vector<GroupRec> add_negative_charges(const RDKit::RWMol &mol, const Residu
           features.push_back(GroupRec{
             /*.a_type =*/ AtomType::NegativeCharge,
             /*.type   =*/ FeatureGroup::None,
-            /*.atoms  =*/ std::move(atom_refs),
-            /*.center =*/ RDGeom::Point3D(0,0,0)
+            /*.atoms  =*/ std::move(atom_refs)
           });
           added_atoms.insert(atom);
         }

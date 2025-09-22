@@ -197,8 +197,8 @@ public:
     auto [begin, end] = boost::out_edges(vertex, m_graph);
 
     return {
-        lt::BondIterator(new BondIteratorImpl<MolGraph, decltype(begin)>(&m_graph, begin)),
-        lt::BondIterator(new BondIteratorImpl<MolGraph, decltype(end)>(&m_graph, end))};
+        lt::BondIterator::molOutEdges(&m_graph, begin),
+        lt::BondIterator::molOutEdges(&m_graph, end)};
   }
 
   std::pair<lt::AtomIterator, lt::AtomIterator> getAtomNeighbors(unsigned int atom_idx) const override {
@@ -206,8 +206,8 @@ public:
     auto [begin, end] = boost::adjacent_vertices(vertex, m_graph);
 
     return {
-        lt::AtomIterator(new AtomIteratorImpl<MolGraph, decltype(begin)>(&m_graph, begin)),
-        lt::AtomIterator(new AtomIteratorImpl<MolGraph, decltype(end)>(&m_graph, end))};
+        lt::AtomIterator::molNeighbors(&m_graph, begin),
+        lt::AtomIterator::molNeighbors(&m_graph, end)};
   }
 
   std::pair<
@@ -330,8 +330,8 @@ public:
     auto [begin, end] = boost::out_edges(vertex, m_graph);
 
     return {
-        lt::BondIterator(new BondIteratorImpl<CSRMolGraph, decltype(begin)>(&m_graph, begin)),
-        lt::BondIterator(new BondIteratorImpl<CSRMolGraph, decltype(end)>(&m_graph, end))};
+        lt::BondIterator::csrOutEdges(&m_graph, begin),
+        lt::BondIterator::csrOutEdges(&m_graph, end)};
   }
 
   std::pair<lt::AtomIterator, lt::AtomIterator> getAtomNeighbors(unsigned int atom_idx) const override {
@@ -339,8 +339,8 @@ public:
     auto [begin, end] = boost::adjacent_vertices(vertex, m_graph);
 
     return {
-        lt::AtomIterator(new AtomIteratorImpl<CSRMolGraph, decltype(begin)>(&m_graph, begin)),
-        lt::AtomIterator(new AtomIteratorImpl<CSRMolGraph, decltype(end)>(&m_graph, end))};
+        lt::AtomIterator::csrNeighbors(&m_graph, begin),
+        lt::AtomIterator::csrNeighbors(&m_graph, end)};
   }
 
   std::pair<Bond *, bool> getBondBetweenAtoms(unsigned int src, unsigned int dst) const override {

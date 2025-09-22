@@ -2,7 +2,7 @@
 #define LAHUTA_MODEL_SSBONDS_HPP
 
 #include "Geometry/point.h"
-#include "bonds/table.hpp"
+#include "bonds/rules/table.hpp"
 #include "distances/api.hpp"
 
 // clang-format off

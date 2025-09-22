@@ -5,6 +5,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/typing.h>
 
+#include "compute/topology_snapshot.hpp"
 #include "entities/contact.hpp"
 #include "entities/context.hpp"
 #include "entities/entity_id.hpp"
@@ -59,8 +60,9 @@ static inline L::ContactSet dispatch_dual(
   auto pb     = make_predicate<RecB>(pred_b);
   auto tester = make_tester(tester_py);
   _PyEmptyParams params;
-  L::ContactContext ctx(top, params);
-  return find_contacts(ctx, pa, pb, opts, tester);
+  auto tf = L::compute::snapshot_of(top, top.conformer());
+  L::ContactContext ctx(tf, params);
+  return L::find_contacts(ctx, pa, pb, opts, tester);
 }
 
 template <typename Rec>
@@ -71,7 +73,8 @@ static inline L::ContactSet dispatch_self(
   auto p      = make_predicate<Rec>(pred);
   auto tester = make_tester(tester_py);
   _PyEmptyParams params;
-  L::ContactContext ctx(top, params);
+  auto tf = L::compute::snapshot_of(top, top.conformer());
+  L::ContactContext ctx(tf, params);
   return L::find_contacts(ctx, p, opts, tester);
 }
 

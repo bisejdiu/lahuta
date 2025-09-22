@@ -4,6 +4,7 @@
 #include "entities/records.hpp"
 #include "numpy_utils.hpp"
 #include "struct_unit.hpp"
+#include "topology.hpp"
 
 namespace py = pybind11;
 
@@ -16,23 +17,31 @@ namespace {
 //
 
 using lahuta::RingRec;
-double compute_angle(const RingRec &rd, const std::vector<double> &_point) {
+
+double compute_angle(const RingRec &rd, const RDKit::Conformer &conf, const std::vector<double> &_point) {
   RDGeom::Point3D point(_point[0], _point[1], _point[2]);
-  auto vector_point_to_plane = point - rd.center;
+  auto center = rd.center(conf);
+  auto normal = rd.normal(conf);
+
+  auto vector_point_to_plane = point - center;
   vector_point_to_plane.normalize();
 
-  double cos_theta = vector_point_to_plane.dotProduct(rd.normal);
+  double cos_theta = vector_point_to_plane.dotProduct(normal);
   cos_theta = std::max(-1.0, std::min(1.0, cos_theta));
 
   double theta_radians = std::acos(cos_theta); // in radians
   return theta_radians * (180.0 / M_PI);
 }
 
-std::vector<double> compute_angles(const std::vector<RingRec> &data, const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) {
+std::vector<double> compute_angles(const lahuta::Topology &top, const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) {
+  const auto &rings = top.records<RingRec>();
+  const auto &conf  = top.conformer();
   std::vector<double> angles;
   angles.reserve(ring_indices.size());
   for (size_t i = 0; i < ring_indices.size(); ++i) {
-    auto angle = compute_angle(data[ring_indices[i]], points[i]);
+    int ri = ring_indices[i];
+    if (ri < 0 || static_cast<size_t>(ri) >= rings.size()) { angles.push_back(0.0); continue; }
+    auto angle = compute_angle(rings[ri], conf, points[i]);
     angles.push_back(angle);
   }
   return angles;
@@ -51,9 +60,9 @@ inline py::tuple factorize(const std::vector<std::string> &resnames, const std::
 
 namespace lahuta::bindings {
 void bind_utilities(py::module_ &m) {
-  m.def("compute_angles", [](const std::vector<RingRec> &data, const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) {
-    return compute_angles(data, ring_indices, points);
-  }, py::arg("ring_rec_list"), py::arg("ring_indices"), py::arg("points"));
+  m.def("compute_angles", [](const lahuta::Topology &top, const std::vector<int> &ring_indices, const std::vector<std::vector<double>> &points) {
+    return compute_angles(top, ring_indices, points);
+  }, py::arg("topology"), py::arg("ring_indices"), py::arg("points"));
 
   m.def("factorize", &factorize, "Factorize");
 }

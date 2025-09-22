@@ -1,6 +1,7 @@
 #ifndef LAHUTA_CONTACTS_ENGINE_HPP
 #define LAHUTA_CONTACTS_ENGINE_HPP
 
+#include "compute/topology_snapshot.hpp"
 #include "entities/context.hpp"
 #include "entities/find_contacts.hpp"
 #include "recipe.hpp"
@@ -36,19 +37,18 @@ class InteractionEngine : public Provider {
 public:
   using Provider::Provider;
 
-  [[nodiscard]] ContactSet compute(const Topology& topo) const {
-    return compute(topo, /*no tag filter*/ std::nullopt);
+  [[nodiscard]] ContactSet compute(const compute::TopologySnapshot& ts) const {
+    return compute(ts, /*no tag filter*/ std::nullopt);
   }
 
-  [[nodiscard]] ContactSet compute(const Topology& topo, std::optional<InteractionType> only) const {
-
+  [[nodiscard]] ContactSet compute(const compute::TopologySnapshot& ts, std::optional<InteractionType> only) const {
     ContactSet out;
     auto run_spec = [&](auto& spec){
       if (!spec.enabled) return;
       if (only && spec.tag != *only) return;
 
       auto& R   = spec.recipe;
-      auto ctx  = ContactContext{topo, R.params};
+      auto ctx  = ContactContext{ts, R.params};
       auto opts = search::make_search_opts(spec.tag.category);
       opts.distance_max = R.params.distance_max; // we need to override the default distance_max, which is not guaranteed to be set or correct
 

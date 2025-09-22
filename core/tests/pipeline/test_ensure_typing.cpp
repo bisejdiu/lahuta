@@ -54,7 +54,6 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
 
   // Build engine and register computations
   ComputeEngine<PipelineContext, Mut::ReadWrite> eng(pcx);
-  eng.set_auto_heal(true);
   // system
   SystemReadParams sp{}; sp.is_model = false;
   eng.add(std::make_unique<analysis::system::SystemReadComputation>(sp));
@@ -70,7 +69,7 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
   run_ok(eng, analysis::topology::BuildTopologyComputation::label);
   run_ok(eng, ComputationLabel{"ensure_typing_arpeggio"});
 
-  auto topo = tctx.get_object<Topology>("topology");
+  auto topo = tctx.get_object<const Topology>("topology");
   ASSERT_TRUE(topo);
   EXPECT_FALSE(current_is_molstar(*topo));
   const std::string* s = tctx.get_text("atom_typing_mode");
@@ -89,7 +88,6 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   lahuta::pipeline::dynamic::TaskContext tctx; pcx.ctx = &tctx;
 
   ComputeEngine<PipelineContext, Mut::ReadWrite> eng(pcx);
-  eng.set_auto_heal(true);
   SystemReadParams sp{}; sp.is_model = false;
   eng.add(std::make_unique<analysis::system::SystemReadComputation>(sp));
   BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = AtomTypingMethod::Molstar;
@@ -101,7 +99,7 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   run_ok(eng, analysis::topology::BuildTopologyComputation::label);
   run_ok(eng, ComputationLabel{"ensure_typing_molstar"});
 
-  auto topo = tctx.get_object<Topology>("topology");
+  auto topo = tctx.get_object<const Topology>("topology");
   ASSERT_TRUE(topo);
   EXPECT_TRUE(current_is_molstar(*topo));
   const std::string* s = tctx.get_text("atom_typing_mode");

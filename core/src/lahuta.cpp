@@ -1,10 +1,12 @@
 #include <stdexcept>
 #include <string>
 
-#include "GraphMol/PeriodicTable.h"
-#include "gemmi/gz.hpp"
+#include <gemmi/gz.hpp>
+#include <rdkit/GraphMol/Conformer.h>
+
+#include "analysis/system/model_loader.hpp"
+#include "convert.hpp"
 #include "lahuta.hpp"
-#include "mmap/MemoryMapped.h"
 #include "models/factory.hpp"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
@@ -14,6 +16,32 @@
 
 // clang-format off
 namespace lahuta {
+
+Luni::Luni(Luni&& other) noexcept
+  : mol             (std::move(other.mol)),
+    topology        (std::move(other.topology)),
+    model_origin_   (other.model_origin_),
+    topology_state_ (std::move(other.topology_state_)),
+    file_name_      (std::move(other.file_name_)),
+    filtered_indices(std::move(other.filtered_indices)),
+    is_in_filtered_state(other.is_in_filtered_state) {
+
+    topology_built_.store(other.topology_built_.load(std::memory_order_acquire), std::memory_order_release);
+}
+
+Luni& Luni::operator=(Luni&& other) noexcept {
+  if (this == &other) return *this;
+  mol              = std::move(other.mol);
+  topology         = std::move(other.topology);
+  model_origin_    = other.model_origin_;
+  topology_state_  = std::move(other.topology_state_);
+  file_name_       = std::move(other.file_name_);
+  filtered_indices = std::move(other.filtered_indices);
+  is_in_filtered_state = other.is_in_filtered_state;
+
+  topology_built_.store(other.topology_built_.load(std::memory_order_acquire), std::memory_order_release);
+  return *this;
+}
 
 Luni::Luni(std::string file_name) : file_name_(file_name) {
   Logger::get_logger()->debug("Processing file: {}", file_name_);
@@ -39,7 +67,7 @@ Luni Luni::create(const IR &ir) {
 }
 
 Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
-  // Ensure model pools are initialized for single threaded use by default.
+  // Makes sure model pools are initialized for single threaded use by default.
   // The pipeline path will reinitialize with the correct thread count.
   try {
     // Pool initialization is idempotent
@@ -49,32 +77,9 @@ Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
   } catch (...) {}
 
   model_origin_ = true;
-  ModelParserResult result;
-
   try {
-    gemmi::MaybeGzipped input_file(file_name_);
-
-    if (input_file.is_compressed()) {
-      gemmi::CharArray buffer = input_file.uncompress_into_buffer();
-      result = parse_model(buffer.data(), buffer.size());
-
-    } else {
-      MemoryMapped mm(file_name_.c_str());
-
-      if (!mm.isValid()) {
-        Logger::get_logger()->critical("Error opening file: {}", file_name_);
-        return;
-      }
-
-      const char *data = reinterpret_cast<const char *>(mm.getData());
-      size_t size = static_cast<size_t>(mm.size());
-
-
-      result = parse_model(data, size);
-    }
-    if (!build_model_topology(mol, result, ModelTopologyMethod::CSR)) {
-      throw std::runtime_error("Failed to build model topology from model file");
-    }
+    auto parsed = analysis::system::load_model_parser_result(file_name_);
+    mol = analysis::system::build_model_molecule(parsed, ModelTopologyMethod::CSR);
   } catch (const std::exception &e) {
     Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
   } catch (...) {
@@ -82,28 +87,66 @@ Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
   }
 }
 
-bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) {
-  try {
-    if (topology_built_) {
+Luni Luni::from_model_data(const ModelParserResult &data) {
+  return Luni::from_model_data(data, ModelTopologyMethod::CSR);
+}
+
+Luni Luni::from_model_data(const ModelParserResult &data, ModelTopologyMethod method) {
+  auto mol = std::make_shared<RDKit::RWMol>();
+  if (!build_model_topology(mol, data, method)) {
+    throw std::runtime_error("Failed to build model topology");
+  }
+  return Luni::create(mol, TopologyBuildMode::Model);
+}
+
+bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
+  if (!topology_state_) {
+    topology_state_ = std::make_shared<TopologyBuildState>();
+  }
+
+  auto state = topology_state_;
+  std::unique_lock<std::mutex> lk(state->mutex);
+  if (topology_built_.load(std::memory_order_acquire)) {
+    Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
+    return true;
+  }
+
+  while (state->building) {
+    state->cv.wait(lk, [state]() { return !state->building; });
+    if (topology_built_.load(std::memory_order_acquire)) {
       Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
       return true;
     }
+  }
 
+  state->building = true;
+  lk.unlock();
+
+  bool built = false;
+  try {
     ensure_topology_initialized();
 
     if (tops) {
-      topology_built_ = topology->build(*tops);
+      built = topology->build(*tops);
     } else {
       TopologyBuildingOptions opts;
       if (model_origin_) opts.mode = TopologyBuildMode::Model;
-      topology_built_ = topology->build(opts);
+      built = topology->build(opts);
     }
-
-    return topology_built_;
   } catch (const std::exception &e) {
     Logger::get_logger()->error("Error building topology: {}", e.what());
-    return false;
+    built = false;
   }
+
+  lk.lock();
+  if (built) {
+    topology_built_.store(true, std::memory_order_release);
+  }
+  state->building = false;
+  lk.unlock();
+  state->cv.notify_all();
+
+  return built;
 }
 
 size_t Luni::total_size() const {

@@ -3,10 +3,10 @@
 #include <pybind11/stl.h>
 
 #include "analysis/contacts/provider.hpp"
+#include "compute/topology_snapshot.hpp"
 #include "contacts/arpeggio/provider.hpp"
 #include "contacts/engine.hpp"
 #include "contacts/molstar/provider.hpp"
-
 #include "entities/contact.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/interaction_types.hpp"
@@ -206,12 +206,24 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
 
   py::class_<MsEngine>(m, "MolStarContactsEngine")
     .def(py::init<>())
-    .def("compute", py::overload_cast<const Topology&>(&MsEngine::compute, py::const_), py::arg("topology"))
-    .def("compute", py::overload_cast<const Topology&, std::optional<InteractionType>>(&MsEngine::compute, py::const_), py::arg("topology"), py::arg("only"));
+    .def("compute", [](const MsEngine& eng, const Topology& topo) {
+        auto ts = compute::snapshot_of(topo, topo.conformer());
+        return eng.compute(ts);
+      }, py::arg("topology"))
+    .def("compute", [](const MsEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
+        auto ts = compute::snapshot_of(topo, topo.conformer());
+        return eng.compute(ts, std::move(only));
+      }, py::arg("topology"), py::arg("only"));
 
   py::class_<AgEngine>(m, "ArpeggioContactsEngine")
     .def(py::init<>())
-    .def("compute", py::overload_cast<const Topology&>(&AgEngine::compute, py::const_), py::arg("topology"))
-    .def("compute", py::overload_cast<const Topology&, std::optional<InteractionType>>(&AgEngine::compute, py::const_), py::arg("topology"), py::arg("only"));
+    .def("compute", [](const AgEngine& eng, const Topology& topo) {
+        auto ts = compute::snapshot_of(topo, topo.conformer());
+        return eng.compute(ts);
+      }, py::arg("topology"))
+    .def("compute", [](const AgEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
+        auto ts = compute::snapshot_of(topo, topo.conformer());
+        return eng.compute(ts, std::move(only));
+      }, py::arg("topology"), py::arg("only"));
 }
 } // namespace lahuta::bindings

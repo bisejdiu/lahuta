@@ -1,21 +1,22 @@
-#ifndef LAHUTA_PIPELINE_SOURCES_DB_KEY_SOURCE_HPP
-#define LAHUTA_PIPELINE_SOURCES_DB_KEY_SOURCE_HPP
+#ifndef LAHUTA_SOURCES_DB_KEYS_HPP
+#define LAHUTA_SOURCES_DB_KEYS_HPP
 
-#include "db/db.hpp"
-#include "logging.hpp"
 #include <optional>
 #include <string>
 #include <vector>
+
+#include "db/db.hpp"
+#include "logging.hpp"
 
 // clang-format off
 namespace lahuta::sources {
 
 /// provides keys from an LMDB database
-class DBKeySource {
+class DBKeys {
 public:
   using value_type = std::string;
 
-  explicit DBKeySource(LMDBDatabase &database, std::size_t batch_size = 1024)
+  explicit DBKeys(LMDBDatabase &database, std::size_t batch_size = 1024)
     : db_(database), batch_size_(batch_size) {
     load_next_batch();
   }
@@ -112,4 +113,4 @@ private:
 
 } // namespace lahuta::sources
 
-#endif // LAHUTA_PIPELINE_SOURCES_DB_KEY_SOURCE_HPP
+#endif // LAHUTA_SOURCES_DB_KEYS_HPP
