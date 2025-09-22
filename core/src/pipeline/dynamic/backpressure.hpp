@@ -8,6 +8,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -25,13 +26,54 @@ enum class OnFull { Block, DropLatest, DropOldest };
 
 struct BackpressureConfig {
   std::size_t max_queue_msgs  = 65536;
-  std::size_t max_queue_bytes = 256 * 1024 * 1024;
+  std::size_t max_queue_bytes = 1ull * 1024 * 1024 * 1024; // = 1 GiB
   std::size_t max_batch_msgs  = 256;
-  std::size_t max_batch_bytes = 1 * 1024 * 1024;
+  std::size_t max_batch_bytes = 50 * 1024 * 1024;          // = 50 MiB
+  // Producer wait-slice while blocking on full queue. Not a hard timeout.
   std::chrono::milliseconds offer_timeout{500};
   OnFull on_full = OnFull::Block;
   bool required = true; // failure aborts pipeline
 };
+
+inline void validate_config(const BackpressureConfig& cfg) {
+  if (cfg.max_queue_msgs  == 0) throw std::invalid_argument("max_queue_msgs  must be > 0");
+  if (cfg.max_queue_bytes == 0) throw std::invalid_argument("max_queue_bytes must be > 0");
+  if (cfg.max_batch_msgs  == 0) throw std::invalid_argument("max_batch_msgs  must be > 0");
+  if (cfg.max_batch_bytes == 0) throw std::invalid_argument("max_batch_bytes must be > 0");
+  if (cfg.max_batch_bytes > cfg.max_queue_bytes) {
+    throw std::invalid_argument("max_batch_bytes cannot exceed max_queue_bytes");
+  }
+}
+
+namespace detail {
+inline std::mutex& default_cfg_mutex() {
+  static std::mutex m;
+  return m;
+}
+
+inline BackpressureConfig& default_cfg_ref() {
+  static BackpressureConfig cfg;
+  return cfg;
+}
+} // namespace detail
+
+inline BackpressureConfig get_default_backpressure_config() {
+  std::lock_guard<std::mutex> lk(detail::default_cfg_mutex());
+  return detail::default_cfg_ref();
+}
+
+inline void set_default_backpressure_config(const BackpressureConfig& cfg) {
+  validate_config(cfg);
+  std::lock_guard<std::mutex> lk(detail::default_cfg_mutex());
+  detail::default_cfg_ref() = cfg;
+}
+
+inline void set_default_max_queue_bytes(std::size_t bytes) {
+  auto cfg = get_default_backpressure_config();
+  cfg.max_queue_bytes = bytes;
+  if (cfg.max_batch_bytes > bytes) cfg.max_batch_bytes = bytes;
+  set_default_backpressure_config(cfg);
+}
 
 // Node stored in per-sink queue
 struct QueueNode {
@@ -49,6 +91,10 @@ public:
              std::atomic<uint64_t>* stall_ns_accum,
              std::atomic<uint64_t>* drops_counter) {
     const auto need = n.size;
+    if (need > max_bytes_) {
+      if (drops_counter) ++(*drops_counter);
+      return false;
+    }
     std::unique_lock<std::mutex> lk(m_);
     for (;;) {
       if (closed_) return false;
@@ -91,16 +137,24 @@ public:
     if (q_.empty() && closed_) return false;
     std::size_t taken_msgs = 0, taken_bytes = 0;
     while (!q_.empty() && taken_msgs < max_msgs) {
-      const auto& front = q_.front();
-      if (taken_bytes + front.size > max_bytes) break;
-      taken_bytes += front.size;
-      ++taken_msgs;
-      out.push_back(front);
-      bytes_ -= front.size;
+      const auto front_size = q_.front().size;
+      // Guarantee forward progress: always take the first item even if it exceeds max_bytes.
+      if (taken_msgs > 0 && taken_bytes + front_size > max_bytes) break;
+      QueueNode node = std::move(q_.front());
       q_.pop_front();
+      bytes_ -= node.size;
+      taken_bytes += node.size;
+      ++taken_msgs;
+      out.push_back(std::move(node));
     }
+    const auto freed_msgs = taken_msgs;
     lk.unlock();
-    cv_not_full_.notify_all();
+    // Selective wake-up: notify_one for a single freed slot, notify_all for multiple.
+    if (freed_msgs > 1) {
+      cv_not_full_.notify_all();
+    } else if (freed_msgs == 1) {
+      cv_not_full_.notify_one();
+    }
     return !out.empty();
   }
 
@@ -134,7 +188,9 @@ private:
 
 struct SinkIngress {
   explicit SinkIngress(std::shared_ptr<IDynamicSink> sink, BackpressureConfig cfg)
-      : sink_(std::move(sink)), cfg_(cfg), queue_(cfg_.max_queue_msgs, cfg_.max_queue_bytes) {}
+      : sink_(std::move(sink)), cfg_(cfg), queue_(cfg_.max_queue_msgs, cfg_.max_queue_bytes) {
+    validate_config(cfg_);
+  }
 
   ~SinkIngress() {
     // Handle orderly shutdown to avoid std::terminate on joinable threads
@@ -143,11 +199,13 @@ struct SinkIngress {
   }
 
   void start() {
+    if (writer_.joinable()) throw std::logic_error("SinkIngress::start called twice");
     writer_ = std::thread([this]{ this->run(); });
   }
 
   void run() {
     std::vector<QueueNode> batch;
+    batch.reserve(cfg_.max_batch_msgs);
     try {
       for (;;) {
         batch.clear();
@@ -185,24 +243,33 @@ struct SinkIngress {
 
   bool offer(uint32_t ch_id, std::shared_ptr<const std::string> buf, std::size_t sz) {
     QueueNode n{ch_id, std::move(buf), sz};
-    return queue_.offer(std::move(n), cfg_, &stall_ns_accum_, &drops_counter_);
+    const bool ok = queue_.offer(std::move(n), cfg_, &stall_ns_accum_, &drops_counter_);
+    if (ok) {
+      enq_msgs_.fetch_add(1, std::memory_order_relaxed);
+      enq_bytes_.fetch_add(sz, std::memory_order_relaxed);
+    }
+    return ok;
   }
 
   // ingress state
   std::shared_ptr<IDynamicSink> sink_;
+  // Config is captured at construction time and remains fixed for the sink's lifetime.
+  // Subsequent default changes do not affect existing ingresses.
   BackpressureConfig cfg_{};
   BoundedQueue queue_;
   std::thread writer_;
 
   // metrics/state
-  std::atomic<uint64_t> enq_msgs_      {0};
-  std::atomic<uint64_t> enq_bytes_     {0};
-  std::atomic<uint64_t> written_msgs_  {0};
-  std::atomic<uint64_t> written_bytes_ {0};
-  std::atomic<uint64_t> stall_ns_accum_{0};
-  std::atomic<uint64_t> drops_counter_ {0};
-  std::atomic<bool>     finished_  {false};
-  std::atomic<bool>     failed_    {false};
+  alignas(64) std::atomic<uint64_t> enq_msgs_      {0};
+  alignas(64) std::atomic<uint64_t> enq_bytes_     {0};
+  alignas(64) std::atomic<uint64_t> written_msgs_  {0};
+  alignas(64) std::atomic<uint64_t> written_bytes_ {0};
+  alignas(64) std::atomic<uint64_t> stall_ns_accum_{0};
+  alignas(64) std::atomic<uint64_t> drops_counter_ {0};
+  alignas(64) std::atomic<bool>     finished_  {false};
+  alignas(64) std::atomic<bool>     failed_    {false};
+  // error_ is written by the writer thread and only read after join_until() observes finished_ true
+  // and joins the thread.
   std::string           error_;
 };
 
