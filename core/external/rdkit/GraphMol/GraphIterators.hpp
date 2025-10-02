@@ -2,10 +2,11 @@
 #define RDKIT_GRAPH_ITERATORS_H
 
 #include <cassert>
+#include <cstdint>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 #include <utility>
-#include <variant>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/compressed_sparse_row_graph.hpp>
@@ -66,13 +67,6 @@ public:
   using CSRPrimaryIterator   = typename Traits::CSRPrimaryIterator;
   using CSRSecondaryIterator = typename Traits::CSRSecondaryIterator;
 
-  using IterVariant = std::variant<std::monostate,
-                                   MolPrimaryIterator,
-                                   MolSecondaryIterator,
-                                   CSRPrimaryIterator,
-                                   CSRSecondaryIterator>;
-  using GraphVariant = std::variant<std::monostate, const MolGraph*, const CSRMolGraph*>;
-
   using iterator_category = std::input_iterator_tag;
   using difference_type   = std::ptrdiff_t;
   using value_type        = ElementPtr;
@@ -86,26 +80,70 @@ public:
       noexcept(++std::declval<CSRPrimaryIterator&>())   &&
       noexcept(++std::declval<CSRSecondaryIterator&>());
   static constexpr bool NoexceptEq =
-      noexcept(std::declval<const GraphVariant&>() == std::declval<const GraphVariant&>()) &&
-      noexcept(std::declval<const IterVariant&>()  == std::declval<const IterVariant&>());
+      noexcept(std::declval<const MolPrimaryIterator&>()   == std::declval<const MolPrimaryIterator&>())   &&
+      noexcept(std::declval<const MolSecondaryIterator&>() == std::declval<const MolSecondaryIterator&>()) &&
+      noexcept(std::declval<const CSRPrimaryIterator&>()   == std::declval<const CSRPrimaryIterator&>())   &&
+      noexcept(std::declval<const CSRSecondaryIterator&>() == std::declval<const CSRSecondaryIterator&>());
+
+  enum class IteratorKind : std::uint8_t {
+    None = 0,
+    MolPrimary,
+    MolSecondary,
+    CSRPrimary,
+    CSRSecondary,
+  };
+
+  union IteratorStorage {
+    MolPrimaryIterator   molPrimary;
+    MolSecondaryIterator molSecondary;
+    CSRPrimaryIterator   csrPrimary;
+    CSRSecondaryIterator csrSecondary;
+
+    IteratorStorage() {}
+    ~IteratorStorage() {}
+  };
 
   GraphElementIterator() = default;
-  GraphElementIterator(const GraphElementIterator &) = default;
-  GraphElementIterator(GraphElementIterator &&) noexcept = default;
-  GraphElementIterator &operator=(const GraphElementIterator &) = default;
-  GraphElementIterator &operator=(GraphElementIterator &&) noexcept = default;
+  ~GraphElementIterator() { reset(); }
+
+  GraphElementIterator(const GraphElementIterator &other) { copyFrom(other); }
+  GraphElementIterator(GraphElementIterator &&other) noexcept { moveFrom(std::move(other)); }
+
+  GraphElementIterator &operator=(const GraphElementIterator &other) {
+    if (this != &other) {
+      reset();
+      copyFrom(other);
+    }
+    return *this;
+  }
+
+  GraphElementIterator &operator=(GraphElementIterator &&other) noexcept {
+    if (this != &other) {
+      reset();
+      moveFrom(std::move(other));
+    }
+    return *this;
+  }
 
   GraphElementIterator &operator++() noexcept(NoexceptInc) {
-    assert(!std::holds_alternative<std::monostate>(m_graph) && "incrementing iterator with null graph");
-    assert(!std::holds_alternative<std::monostate>(m_iter) && "invalid iterator");
-    std::visit([&](auto &it) {
-      using T = std::decay_t<decltype(it)>;
-      if constexpr (!std::is_same_v<T, std::monostate>) {
-        ++it;
-      } else {
+    assert(m_kind != IteratorKind::None && "incrementing invalid iterator");
+    switch (m_kind) {
+      case IteratorKind::MolPrimary:
+        ++m_iter.molPrimary;
+        break;
+      case IteratorKind::MolSecondary:
+        ++m_iter.molSecondary;
+        break;
+      case IteratorKind::CSRPrimary:
+        ++m_iter.csrPrimary;
+        break;
+      case IteratorKind::CSRSecondary:
+        ++m_iter.csrSecondary;
+        break;
+      case IteratorKind::None:
         assert(false && "incrementing invalid iterator");
-      }
-    }, m_iter);
+        break;
+    }
     return *this;
   }
 
@@ -116,31 +154,32 @@ public:
   }
 
   ElementPtr operator*() const {
-    assert(!std::holds_alternative<std::monostate>(m_graph) && "dereferencing iterator with null graph");
-    assert(!std::holds_alternative<std::monostate>(m_iter)  && "invalid iterator");
-    ElementPtr result = nullptr;
-    std::visit(
-        [&](auto gptr, auto &it) {
-          using GPtr = std::decay_t<decltype(gptr)>;
-          using ItT  = std::decay_t<decltype(it)>;
-          if constexpr (std::is_same_v<GPtr, const MolGraph*> &&
-                       (std::is_same_v<ItT, MolPrimaryIterator> || std::is_same_v<ItT, MolSecondaryIterator>)) {
-            result = Traits::getElement(*gptr, it);
-          } else if constexpr (std::is_same_v<GPtr, const CSRMolGraph*> &&
-                              (std::is_same_v<ItT, CSRPrimaryIterator> || std::is_same_v<ItT, CSRSecondaryIterator>)) {
-            result = Traits::getElement(*gptr, it);
-          } else {
-            assert(false && "iterator type does not match graph");
-          }
-        },
-        m_graph, m_iter);
-    return result;
+    assert(m_kind != IteratorKind::None && "dereferencing invalid iterator");
+    switch (m_kind) {
+      case IteratorKind::MolPrimary:   return Traits::getElement(*static_cast<const MolGraph*>(m_graph), m_iter.molPrimary);
+      case IteratorKind::MolSecondary: return Traits::getElement(*static_cast<const MolGraph*>(m_graph), m_iter.molSecondary);
+      case IteratorKind::CSRPrimary:   return Traits::getElement(*static_cast<const CSRMolGraph*>(m_graph), m_iter.csrPrimary);
+      case IteratorKind::CSRSecondary: return Traits::getElement(*static_cast<const CSRMolGraph*>(m_graph), m_iter.csrSecondary);
+      case IteratorKind::None:
+        assert(false && "dereferencing invalid iterator");
+        return nullptr;
+    }
+    return nullptr;
   }
 
   ElementPtr operator->() const { return operator*(); }
 
   bool operator==(const GraphElementIterator &other) const noexcept(NoexceptEq) {
-    return m_graph == other.m_graph && m_iter == other.m_iter;
+    if (m_kind != other.m_kind || m_graph != other.m_graph) return false;
+    switch (m_kind) {
+      case IteratorKind::None:
+        return true;
+      case IteratorKind::MolPrimary:   return m_iter.molPrimary == other.m_iter.molPrimary;
+      case IteratorKind::MolSecondary: return m_iter.molSecondary == other.m_iter.molSecondary;
+      case IteratorKind::CSRPrimary:   return m_iter.csrPrimary == other.m_iter.csrPrimary;
+      case IteratorKind::CSRSecondary: return m_iter.csrSecondary == other.m_iter.csrSecondary;
+    }
+    return false;
   }
 
   bool operator!=(const GraphElementIterator &other) const noexcept(NoexceptEq) { return !(*this == other); }
@@ -149,28 +188,32 @@ public:
   static GraphElementIterator molPrimary(const MolGraph *graph, MolPrimaryIterator iter) noexcept {
     GraphElementIterator result;
     result.m_graph = graph;
-    result.m_iter  = iter;
+    result.m_kind  = IteratorKind::MolPrimary;
+    ::new (&result.m_iter.molPrimary) MolPrimaryIterator(std::move(iter));
     return result;
   }
 
   static GraphElementIterator molSecondary(const MolGraph *graph, MolSecondaryIterator iter) noexcept {
     GraphElementIterator result;
     result.m_graph = graph;
-    result.m_iter  = iter;
+    result.m_kind  = IteratorKind::MolSecondary;
+    ::new (&result.m_iter.molSecondary) MolSecondaryIterator(std::move(iter));
     return result;
   }
 
   static GraphElementIterator csrPrimary(const CSRMolGraph *graph, CSRPrimaryIterator iter) noexcept {
     GraphElementIterator result;
     result.m_graph = graph;
-    result.m_iter  = iter;
+    result.m_kind  = IteratorKind::CSRPrimary;
+    ::new (&result.m_iter.csrPrimary) CSRPrimaryIterator(std::move(iter));
     return result;
   }
 
   static GraphElementIterator csrSecondary(const CSRMolGraph *graph, CSRSecondaryIterator iter) noexcept {
     GraphElementIterator result;
     result.m_graph = graph;
-    result.m_iter  = iter;
+    result.m_kind  = IteratorKind::CSRSecondary;
+    ::new (&result.m_iter.csrSecondary) CSRSecondaryIterator(std::move(iter));
     return result;
   }
 
@@ -225,8 +268,73 @@ public:
   }
 
 private:
-  IterVariant  m_iter{};
-  GraphVariant m_graph{};
+  void reset() noexcept {
+    switch (m_kind) {
+      case IteratorKind::MolPrimary:
+        std::destroy_at(std::addressof(m_iter.molPrimary));
+        break;
+      case IteratorKind::MolSecondary:
+        std::destroy_at(std::addressof(m_iter.molSecondary));
+        break;
+      case IteratorKind::CSRPrimary:
+        std::destroy_at(std::addressof(m_iter.csrPrimary));
+        break;
+      case IteratorKind::CSRSecondary:
+        std::destroy_at(std::addressof(m_iter.csrSecondary));
+        break;
+      case IteratorKind::None:
+        break;
+    }
+    m_kind  = IteratorKind::None;
+    m_graph = nullptr;
+  }
+
+  void copyFrom(const GraphElementIterator &other) {
+    m_kind  = other.m_kind;
+    m_graph = other.m_graph;
+    switch (m_kind) {
+      case IteratorKind::MolPrimary:
+        ::new (&m_iter.molPrimary) MolPrimaryIterator(other.m_iter.molPrimary);
+        break;
+      case IteratorKind::MolSecondary:
+        ::new (&m_iter.molSecondary) MolSecondaryIterator(other.m_iter.molSecondary);
+        break;
+      case IteratorKind::CSRPrimary:
+        ::new (&m_iter.csrPrimary) CSRPrimaryIterator(other.m_iter.csrPrimary);
+        break;
+      case IteratorKind::CSRSecondary:
+        ::new (&m_iter.csrSecondary) CSRSecondaryIterator(other.m_iter.csrSecondary);
+        break;
+      case IteratorKind::None:
+        break;
+    }
+  }
+
+  void moveFrom(GraphElementIterator &&other) noexcept {
+    m_kind  = other.m_kind;
+    m_graph = other.m_graph;
+    switch (m_kind) {
+      case IteratorKind::MolPrimary:
+        ::new (&m_iter.molPrimary) MolPrimaryIterator(std::move(other.m_iter.molPrimary));
+        break;
+      case IteratorKind::MolSecondary:
+        ::new (&m_iter.molSecondary) MolSecondaryIterator(std::move(other.m_iter.molSecondary));
+        break;
+      case IteratorKind::CSRPrimary:
+        ::new (&m_iter.csrPrimary) CSRPrimaryIterator(std::move(other.m_iter.csrPrimary));
+        break;
+      case IteratorKind::CSRSecondary:
+        ::new (&m_iter.csrSecondary) CSRSecondaryIterator(std::move(other.m_iter.csrSecondary));
+        break;
+      case IteratorKind::None:
+        break;
+    }
+    other.reset();
+  }
+
+  const void *m_graph = nullptr;
+  IteratorKind m_kind = IteratorKind::None;
+  IteratorStorage m_iter;
 };
 
 } // namespace detail
