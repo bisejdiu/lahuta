@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "chemistry/geometry.hpp"
 #include "chemistry/neighbors.hpp"
 
@@ -16,35 +18,6 @@ double compute_in_plane_offset(const RDGeom::Point3D &pos_a, const RDGeom::Point
   return projected_vec.length();
 }
 
-std::pair<std::vector<double>, std::vector<double>>
-calculate_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, bool ignore_hydrogens) {
-
-  std::vector<double> angles;
-  std::vector<double> angles_h;
-
-  const auto &conf = mol.getConformer();
-
-  auto &atom_a_pos = conf.getAtomPos(atom_a.getIdx());
-  auto &atom_b_pos = conf.getAtomPos(atom_b.getIdx());
-  auto ab_vec = atom_b_pos - atom_a_pos;
-
-  for (const auto bond : mol.atomBonds(&atom_a)) {
-    auto *other_atom = bond->getOtherAtom(&atom_a);
-
-    if (other_atom->getAtomicNum() == 1 && ignore_hydrogens) continue;
-
-    auto other_atom_pos = conf.getAtomPos(other_atom->getIdx());
-    auto ax_vec = other_atom_pos - atom_a_pos;
-
-    double angle = ab_vec.angleTo(ax_vec); // angle between the two vectors (atom_b-atom_a-other_atom)
-
-    (other_atom->getAtomicNum() == 1 ? angles_h : angles).push_back(angle);
-  }
-
-  // Return both heavy atom and hydrogen angles
-  return std::make_pair(angles, angles_h);
-}
-
 double compute_plane_angle(const RDGeom::Point3D &atom_a_pos, const RDGeom::Point3D &n1_pos, const RDGeom::Point3D &n2_pos, const RDGeom::Point3D &atom_b_pos) {
 
   auto ab_vec = atom_b_pos - atom_a_pos;
@@ -52,10 +25,12 @@ double compute_plane_angle(const RDGeom::Point3D &atom_a_pos, const RDGeom::Poin
   auto neighbor_vec1 = n1_pos - atom_a_pos;
   auto neighbor_vec2 = n2_pos - atom_a_pos;
 
-  auto plane_normal = neighbor_vec1.crossProduct(neighbor_vec2);
-  double angle = plane_normal.angleTo(ab_vec);
+  auto plane_normal      = neighbor_vec1.crossProduct(neighbor_vec2);
+  const double dot       = plane_normal.dotProduct(ab_vec);
+  const double cross_len = plane_normal.crossProduct(ab_vec).length();
+  const double deviation = std::abs(std::atan2(dot, cross_len));
 
-  return std::abs((M_PI / 2) - angle); // returning the deviation from 90 degrees
+  return deviation; // returning the deviation from 90 degrees
 }
 
 std::optional<double> compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {

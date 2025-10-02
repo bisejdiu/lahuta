@@ -29,14 +29,6 @@ double compute_in_plane_offset(
   const RDGeom::Point3D &normal
 );
 
-/// Calculate the angles x-a1-a2 for all x where x is a heavy atom (not H) bonded to atom_a
-std::pair<std::vector<double>, std::vector<double>> calculate_angle(
-  const RDKit::RWMol &mol,
-  const RDKit::Atom &atom_a,
-  const RDKit::Atom &atom_b,
-  bool ignore_hydrogens = true
-);
-
 /// Calculate the angle out of the plane defined by two bonded neighbors of atom_a
 double compute_plane_angle(
   const RDGeom::Point3D &atom_a_pos,
