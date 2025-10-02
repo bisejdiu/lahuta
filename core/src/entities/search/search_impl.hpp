@@ -96,7 +96,7 @@ private:
 
     dist::NeighborSearchOptions opts;
     opts.cutoff = radius;
-    NSResults results = dist::neighbors_within_radius_cross(q_points, build_pts, opts);
+    NSResults results = dist::neighbors_within_radius_cross_fastns(q_points, build_pts, opts);
 
     for (size_t res = 0; res < results.size(); ++res) {
       auto [qi, bi] = results.get_pairs()[res]; // query, build

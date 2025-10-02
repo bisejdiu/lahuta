@@ -325,6 +325,94 @@ NSResults FastNS::self_search() const {
   return results;
 }
 
+NSResults FastNS::search(const RDGeom::POINT3D_VECT &search_coords) const {
+  NSResults results;
+  results.reserve_space(search_coords.size());
+
+  if (search_coords.empty()) {
+    return results;
+  }
+
+  const double cutoff_sq = cutoff * cutoff;
+
+  if (brute_force_mode) {
+    for (std::size_t i = 0; i < search_coords.size(); ++i) {
+      const double sx = static_cast<double>(search_coords[i].x) - _lmin[0];
+      const double sy = static_cast<double>(search_coords[i].y) - _lmin[1];
+      const double sz = static_cast<double>(search_coords[i].z) - _lmin[2];
+
+      for (std::size_t j = 0; j < n_points; ++j) {
+        const float *coord_j = &coords_bbox[3 * j];
+        const double dx = sx - static_cast<double>(coord_j[0]);
+        const double dy = sy - static_cast<double>(coord_j[1]);
+        const double dz = sz - static_cast<double>(coord_j[2]);
+        const double d2 = dx * dx + dy * dy + dz * dz;
+        if (d2 <= cutoff_sq) {
+          results.add_neighbors(static_cast<int>(i), static_cast<int>(j), static_cast<float>(d2));
+        }
+      }
+    }
+    return results;
+  }
+
+  if (!grid_ready) {
+    throw std::runtime_error("FastNS grid not built. Call build() before search().");
+  }
+
+  if (head_id.empty() || next_id.empty()) {
+    const_cast<FastNS*>(this)->build_grid();
+  }
+
+  for (std::size_t i = 0; i < search_coords.size(); ++i) {
+    std::array<float, 3> tmpcoord = {
+        static_cast<float>(search_coords[i].x - _lmin[0]),
+        static_cast<float>(search_coords[i].y - _lmin[1]),
+        static_cast<float>(search_coords[i].z - _lmin[2])};
+
+    std::array<int, 3> cellcoord;
+    coord_to_cell_xyz(tmpcoord.data(), cellcoord);
+
+    for (int xi = -1; xi <= 1; ++xi) {
+      const int cx = cellcoord[0] + xi;
+      for (int yi = -1; yi <= 1; ++yi) {
+        const int cy = cellcoord[1] + yi;
+        for (int zi = -1; zi <= 1; ++zi) {
+          const int cz = cellcoord[2] + zi;
+
+          const int cellid = cell_xyz_to_cell_id(cx, cy, cz);
+          if (cellid == END) {
+            continue;
+          }
+
+          int j = head_id[cellid];
+          while (j != END) {
+            const float *coord_j = &coords_bbox[3 * j];
+            const double dx = static_cast<double>(tmpcoord[0]) - static_cast<double>(coord_j[0]);
+            const double dy = static_cast<double>(tmpcoord[1]) - static_cast<double>(coord_j[1]);
+            const double dz = static_cast<double>(tmpcoord[2]) - static_cast<double>(coord_j[2]);
+            const double d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= cutoff_sq) {
+              results.add_neighbors(static_cast<int>(i), j, static_cast<float>(d2));
+            }
+            j = next_id[j];
+          }
+        }
+      }
+    }
+  }
+
+  return results;
+}
+
+NSResults FastNS::search(const std::vector<std::vector<double>> &search_coords) const {
+  RDGeom::POINT3D_VECT scoords;
+  scoords.reserve(search_coords.size());
+  for (const auto &c : search_coords) {
+    scoords.emplace_back(c[0], c[1], c[2]);
+  }
+  return search(scoords);
+}
+
 void FastNS::pack_grid() {
   head_id.assign(cell_offsets[2] * ncells[2], END);
   next_id.assign(coords_bbox.size() / 3, END);
