@@ -51,10 +51,10 @@ def neighbor_search(sys: LahutaSystem, cutoff: float = 4.5, res_dif: int = 1) ->
     dij = ns.get_sqrt_distances()
 
     if not dij.shape[0]:
-        logging.info(f"No pairs within {cutoff:.2f} Å\n")
+        logging.info(f"No pairs within {cutoff:.2f} A\n")
         return
 
-    logging.info(f"pairs within {cutoff:.2f} Å: {dij.shape[0]}  (mean={float(dij.mean()):.3f}  min={float(dij.min()):.3f}  max={float(dij.max()):.3f})\n")
+    logging.info(f"pairs within {cutoff:.2f} A: {dij.shape[0]}  (mean={float(dij.mean()):.3f}  min={float(dij.min()):.3f}  max={float(dij.max()):.3f})\n")
 
 
 if __name__ == "__main__":

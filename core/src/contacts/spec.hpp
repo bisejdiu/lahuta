@@ -12,8 +12,7 @@ struct ContactSpec {
   bool enabled = true;
   ContactRecipe<RecA,RecB,Params> recipe;
 
-  constexpr ContactSpec(InteractionType t, ContactRecipe<RecA,RecB,Params> r ) noexcept
-    : tag(t), recipe(r) {}
+  constexpr ContactSpec(InteractionType t, ContactRecipe<RecA,RecB,Params> r ) noexcept : tag(t), recipe(r) {}
 };
 
 } // namespace lahuta

@@ -8,8 +8,7 @@
 #include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 #include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 
-#include "bonds/rules/token-gperf-generated.hpp"
-#include "bonds/rules/token.h"
+#include "bonds/rules/token_lookup.hpp"
 
 namespace lahuta {
 
@@ -213,7 +212,7 @@ static AtomType get_atom_type(RDKit::Atom *at) {
   auto *info = static_cast<RDKit::AtomPDBResidueInfo *>(at->getMonomerInfo());
   auto resname = info->getResidueName();
 
-  resTokenType entry = lahuta::res_name_table(resname.c_str(), resname.length());
+  resTokenType entry = res_name_table(resname.c_str(), resname.length());
 
   // only standard amino acids
   if (static_cast<int>(entry) >= 20) {

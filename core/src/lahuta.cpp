@@ -10,7 +10,6 @@
 #include "models/factory.hpp"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
-#include "nsgrid.hpp"
 #include "read_file.hpp"
 #include "selections/mol_filters.hpp"
 

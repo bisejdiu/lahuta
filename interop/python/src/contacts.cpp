@@ -126,7 +126,7 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
       .def_property("distance_sq",
         [](const Contact &self) { return self.distance; },
         [](Contact &self, float value) { self.distance = value; },
-        "Distance squared between entities (Å^2)" )
+        "Distance squared between entities (A^2)" )
       .def_property("type", 
         [](const Contact &self) { return self.type; },
         [](Contact &self, const InteractionType &value) { self.type = value; },

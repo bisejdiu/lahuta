@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "distances/contiguous_matrix.hpp"
-#include "nsgrid.hpp"
+#include "spatial/nsresults.hpp"
 
 // clang-format off
 namespace lahuta {

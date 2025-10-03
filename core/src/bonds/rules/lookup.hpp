@@ -4,12 +4,9 @@
 #include <string>
 #include <string_view>
 
-#include "GraphMol/Bond.h"
-#include "token.h"
+#include "token_lookup.hpp"
 #include "rules.hpp"
-#include "token-gperf-generated.hpp"
 
-#include "GraphMol/Atom.h"
 #include "GraphMol/MonomerInfo.h"
 #include "common.hpp"
 

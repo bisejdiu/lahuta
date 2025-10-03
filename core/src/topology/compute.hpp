@@ -3,7 +3,7 @@
 #include "bonds/bonds.hpp"
 #include "compute/compute_impl.hpp"
 #include "compute/dependency.hpp"
-#include "nsgrid.hpp"
+#include "spatial/nsresults.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
 

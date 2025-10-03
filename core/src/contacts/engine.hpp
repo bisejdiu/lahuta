@@ -1,6 +1,11 @@
 #ifndef LAHUTA_CONTACTS_ENGINE_HPP
 #define LAHUTA_CONTACTS_ENGINE_HPP
 
+#include <optional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+
 #include "compute/topology_snapshot.hpp"
 #include "entities/context.hpp"
 #include "entities/find_contacts.hpp"

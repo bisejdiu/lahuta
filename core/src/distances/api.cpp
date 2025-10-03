@@ -6,7 +6,7 @@
 #include "distances/contiguous_matrix.hpp"
 #include "distopia.h"
 #include "kd_index.hpp"
-#include "nsgrid.hpp"
+#include "spatial/fastns.hpp"
 
 // clang-format off
 namespace lahuta {

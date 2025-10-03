@@ -59,7 +59,7 @@ endif()
 option(LAHUTA_BUILD_CLI            "Build CLI executables" ON)
 option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
 option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
-option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" OFF)
+option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" ON)
 option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
 option(LAHUTA_ENABLE_EXPENSIVE_TESTS "Enable expensive tests that require large datasets" OFF)
 
@@ -176,7 +176,6 @@ add_library(lahuta_core SHARED
   src/convert.cpp
   src/kd_tree.cpp
   src/kd_index.cpp
-  src/nsgrid.cpp
   src/lahuta.cpp
   src/visitor.cpp
   src/struct_unit.cpp
@@ -233,6 +232,10 @@ add_library(lahuta_core SHARED
   src/chemistry/neighbors.cpp
   src/chemistry/geometry.cpp
   src/chemistry/predicates.cpp
+
+  src/spatial/nsresults.cpp
+  src/spatial/fastns.cpp
+  src/spatial/nsutils.cpp
 
   src/distances/api.cpp
   src/distances/kernels.cpp
@@ -341,6 +344,7 @@ if(LAHUTA_BUILD_CLI)
   add_lahuta_executable(lahuta_cli apps/main.cpp)
   set_target_properties(lahuta_cli PROPERTIES OUTPUT_NAME "lahuta")
   add_lahuta_executable(resolver apps/use_resolver.cpp)
+  add_lahuta_executable(md_stage_manager_example apps/md_stage_manager_example.cpp)
 endif()
 
 if(LAHUTA_BUILD_PYTHON)

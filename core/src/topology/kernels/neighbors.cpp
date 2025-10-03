@@ -1,6 +1,6 @@
 #include "distances/neighbors.hpp"
 #include "logging.hpp"
-#include "nsgrid.hpp"
+#include "spatial/nsresults.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
 

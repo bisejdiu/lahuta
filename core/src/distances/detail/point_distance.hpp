@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include "nsgrid.hpp"
+#include "spatial/fastns.hpp"
 
 // clang-format off
 namespace lahuta::dist {

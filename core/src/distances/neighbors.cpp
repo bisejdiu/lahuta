@@ -7,6 +7,8 @@
 #include "convert.hpp"
 #include "kd_index.hpp"
 #include "neighbors.hpp"
+#include "nsresults_tls.hpp"
+#include "spatial/fastns.hpp"
 
 // clang-format off
 namespace lahuta::dist {
@@ -56,11 +58,13 @@ NSResults neighbors_within_radius_cross_fastns(const RDGeom::POINT3D_VECT &queri
 }
 
 NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT &coords, double cutoff) {
+  if (coords.empty()) return {};
   const float cutoff_sq = static_cast<float>(cutoff * cutoff);
   auto interleaved = to_interleaved_xyz(coords);
 
-  NSResults results;
-  results.reserve_space(coords.size());
+  TlsResultsScope scope;
+  NSResults &results = scope.results();
+  results.reserve(coords.size());
 
   std::vector<double> buffer;
   buffer.reserve(BlockCols);
@@ -86,12 +90,14 @@ NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT &coords, d
 }
 
 NSResults brute_force_radius_cross_streamed(const RDGeom::POINT3D_VECT &queries, const RDGeom::POINT3D_VECT &targets, double cutoff) {
+  if (queries.empty() || targets.empty()) return {};
   const float cutoff_sq = static_cast<float>(cutoff * cutoff);
   auto query_xyz  = to_interleaved_xyz(queries);
   auto target_xyz = to_interleaved_xyz(targets);
 
-  NSResults results;
-  results.reserve_space(queries.size());
+  TlsResultsScope scope;
+  NSResults &results = scope.results();
+  results.reserve(queries.size());
 
   std::vector<double> buffer;
   buffer.reserve(BlockCols);
