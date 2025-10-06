@@ -4,7 +4,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "analysis/contacts/computation.hpp"
@@ -14,6 +13,7 @@
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"
+#include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
 
 using namespace lahuta;
@@ -55,8 +55,9 @@ static void build_database_from_directory(const fs::path &data_dir, const fs::pa
 
   auto db = std::make_shared<LMDBDatabase>(db_path.string());
 
-  sources::DirectorySource dir_src{data_dir.string(), ".cif.gz", /*recursive=*/false, /*batch_size=*/50};
-  dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<sources::DirectorySource>, std::move(dir_src)));
+  auto src = dynamic::sources_factory::from_directory(
+      data_dir.string(), ".cif.gz", /*recursive=*/false, /*batch_size=*/50);
+  dynamic::StageManager mgr(std::move(src));
 
   auto task = std::make_shared<analysis::system::ModelPackTask>("db");
   mgr.add_task("createdb", /*deps*/{}, task, /*thread_safe=*/true);
@@ -69,29 +70,15 @@ static void build_database_from_directory(const fs::path &data_dir, const fs::pa
 
 // Run the compute pipeline over ALL keys in the LMDB at db_path, and collect contacts.
 static std::shared_ptr<CollectorSink> run_contacts_pipeline_over_db(const fs::path &db_path, int threads) {
-  dynamic::DBKeySourceHolder db_src{db_path.string(), 64};
-  dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<dynamic::DBKeySourceHolder>, std::move(db_src)));
+  auto src = dynamic::sources_factory::from_lmdb(db_path.string(), std::string{}, 64);
+  dynamic::StageManager mgr(std::move(src));
 
   mgr.set_auto_builtins(true);
   mgr.get_system_params().is_model = true;
   mgr.get_topology_params().atom_typing_method = AtomTypingMethod::Arpeggio;
 
-  auto db = std::make_shared<LMDBDatabase>(db_path.string());
-
   {
-    compute::ModelFetchParams mf{};
-    mf.db = db;
-    mgr.add_computation(
-        "model",
-        {},
-        [label = std::string("model"), mf]() {
-          return std::make_unique<analysis::system::ModelFetchComputation>(label, mf);
-        },
-        /*thread_safe=*/true);
-  }
-
-  {
-    compute::ContactsParams p{};
+    pipeline::compute::ContactsParams p{};
     p.provider = analysis::contacts::ContactProvider::Arpeggio;
     p.type = InteractionType::All;
     p.channel = "contacts";
@@ -197,25 +184,12 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
 
   ASSERT_NO_THROW(build_database_from_directory(data_dir, base, threads));
 
-  auto db = std::make_shared<LMDBDatabase>(base.string());
-  sources::VectorSource src{std::vector<std::string>{target.string()}};
-  dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<sources::VectorSource>, std::move(src)));
+  auto src2 = dynamic::sources_factory::from_vector(std::vector<std::string>{target.string()});
+  dynamic::StageManager mgr(std::move(src2));
 
   mgr.set_auto_builtins(true);
   mgr.get_system_params().is_model = true;
   mgr.get_topology_params().atom_typing_method = AtomTypingMethod::Arpeggio;
-
-  {
-    pipeline::compute::ModelFetchParams mf{};
-    mf.db = db;
-    mgr.add_computation(
-        "model",
-        {},
-        [label = std::string("model"), mf]() {
-          return std::make_unique<analysis::system::ModelFetchComputation>(label, mf);
-        },
-        /*thread_safe=*/true);
-  }
 
   {
     pipeline::compute::ContactsParams p{};

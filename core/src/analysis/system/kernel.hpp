@@ -1,16 +1,13 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_SYSTEM_KERNEL_HPP
+#define LAHUTA_ANALYSIS_SYSTEM_KERNEL_HPP
 
 #include <memory>
 #include <string>
-#include <stdexcept>
 
-#include "analysis/system/records.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
-#include <logging.hpp>
-#include <models/topology.hpp>
 
 // clang-format off
 namespace lahuta::analysis::system {
@@ -20,28 +17,20 @@ struct SystemReadKernel {
   static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const SystemReadParams& p) {
     try {
       auto& data = context.data();
-      std::shared_ptr<Luni> sys;
 
-      if (p.is_model) {
-        // Check if model data read from LMDB is available in the context
-        std::shared_ptr<const ModelRecord> md = data.ctx ? data.ctx->get_object<ModelRecord>("model_data") : nullptr;
-        if (md) {
-          auto mol = std::make_shared<RDKit::RWMol>();
-          if (!build_model_topology(mol, md->data, ModelTopologyMethod::CSR)) {
-            throw std::runtime_error("Failed to build model topology");
-          }
-          auto s = Luni::create(mol, TopologyBuildMode::Model);
-          sys = std::make_shared<Luni>(std::move(s));
-        } else {
-          auto s = Luni::from_model_file(data.item_path);
-          sys = std::make_shared<Luni>(std::move(s));
-        }
-      } else {
-        sys = std::make_shared<Luni>(data.item_path);
-      }
+      auto sys = [&data, &p]() -> std::shared_ptr<const Luni> {
+
+        if (data.session) return data.session->get_or_load_system();
+        if (!p.is_model)  return std::make_shared<Luni>(data.item_path);
+
+        auto s = Luni::from_model_file(data.item_path);
+        return std::make_shared<Luni>(std::move(s));
+      }();
+
+      if (!sys) return ComputationResult(ComputationError("SystemRead failed: null system"));
 
       if (data.ctx) {
-        data.ctx->set_object<Luni>("system", sys);
+        data.ctx->set_object<const Luni>(pipeline::CTX_SYSTEM_KEY, sys);
       }
       return ComputationResult(true);
     } catch (const std::exception& e) {
@@ -53,3 +42,5 @@ struct SystemReadKernel {
 };
 
 } // namespace lahuta::analysis::system
+
+#endif // LAHUTA_ANALYSIS_SYSTEM_KERNEL_HPP

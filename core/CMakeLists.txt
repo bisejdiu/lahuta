@@ -61,6 +61,7 @@ option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
 option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
 option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" OFF)
 option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
+option(LAHUTA_ENABLE_EXPENSIVE_TESTS "Enable expensive tests that require large datasets" OFF)
 
 set(RDK_USE_BOOST_SERIALIZATION OFF CACHE BOOL "Disable rdkit boost serialization" FORCE)
 
@@ -170,8 +171,8 @@ set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(lmdb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
 add_library(lahuta_core SHARED
-  src/bonds.cpp
-  src/bond_order.cpp
+  src/bonds/bonds.cpp
+  src/bonds/bond_order.cpp
   src/convert.cpp
   src/kd_tree.cpp
   src/kd_index.cpp
@@ -184,7 +185,10 @@ add_library(lahuta_core SHARED
   src/aromatics.cpp
   src/luni_props.cpp
   src/logging.cpp
-
+  src/md/element_utils.cpp
+  src/md/gro_reader.cpp
+  src/md/xdr.cpp
+  src/md/xtc_reader.cpp
 
   src/models/topology.cpp
   src/models/parser.cpp
@@ -206,7 +210,6 @@ add_library(lahuta_core SHARED
 
   src/contacts/aromaticity.cpp
 
-  src/chemistry/group_typing.cpp
   src/chemistry/types/charges.cpp
   src/chemistry/types/metalics.cpp
   src/chemistry/types/hydrophobic.cpp
@@ -220,6 +223,12 @@ add_library(lahuta_core SHARED
   src/topology/kernels/residues.cpp
   src/topology/kernels/atom_typing.cpp
   src/topology/kernels/seed_from_model.cpp
+
+  src/bonds/perception/consistency.cpp
+  src/bonds/perception/template.cpp
+  src/bonds/perception/subgraph.cpp
+  src/bonds/perception/nonstandard_bonds.cpp
+  src/bonds/perception/subset_merge.cpp
 
   src/chemistry/neighbors.cpp
   src/chemistry/geometry.cpp
@@ -406,7 +415,6 @@ if(LAHUTA_BUILD_PYTHON)
     )
     pybind11_add_module(mapping_ext MODULE ${LAHUTA_MAPPING_SOURCES})
     target_include_directories(mapping_ext PRIVATE ${PY_SRC_DIR})
-    # Link mapping extension against the mapping library so we pull foldseek (which we should only need here)
     target_link_libraries(mapping_ext PRIVATE lahuta_mapping spdlog::spdlog_header_only ZLIB::ZLIB)
     target_compile_features(mapping_ext PRIVATE cxx_std_17)
     set_target_properties(mapping_ext PROPERTIES OUTPUT_NAME "mapping")

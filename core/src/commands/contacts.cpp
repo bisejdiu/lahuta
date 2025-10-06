@@ -1,15 +1,16 @@
-#include "commands/contacts.hpp"
+#include <type_traits>
+
 #include "analysis/contacts/computation.hpp"
-#include "analysis/system/model_fetch.hpp"
 #include "cli/arg_validation.hpp"
+#include "commands/contacts.hpp"
 #include "db/db.hpp"
 #include "io/sinks/logging.hpp"
 #include "io/sinks/ndjson.hpp"
 #include "logging.hpp"
-#include "runtime.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
-#include "topology.hpp"
+#include "pipeline/dynamic/sources.hpp"
+#include "runtime.hpp"
 
 #define STB_SPRINTF_IMPLEMENTATION
 #include "gemmi/third_party/stb_sprintf.h"
@@ -19,7 +20,7 @@ namespace lahuta::cli {
 
 using namespace lahuta::pipeline;
 
-using Source = std::variant<sources::DirectorySource, sources::VectorSource, sources::FileListSource>;
+using Source = std::variant<sources::Directory, std::vector<std::string>, sources::FileList>;
 
 static void initialize_runtime(int num_threads) {
   lahuta::LahutaRuntime::ensure_initialized(static_cast<std::size_t>(num_threads));
@@ -51,9 +52,9 @@ struct ContactsOptions {
 
 Source pick_source(const ContactsOptions& cli) {
   switch (cli.source_mode) {
-    case ContactsOptions::SourceMode::Directory: return sources::DirectorySource{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
-    case ContactsOptions::SourceMode::Vector:    return sources::VectorSource   {cli.file_vector};
-    case ContactsOptions::SourceMode::FileList:  return sources::FileListSource {cli.file_list_path};
+    case ContactsOptions::SourceMode::Directory: return sources::Directory{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
+    case ContactsOptions::SourceMode::Vector:    return cli.file_vector;
+    case ContactsOptions::SourceMode::FileList:  return sources::FileList {cli.file_list_path};
     case ContactsOptions::SourceMode::Database:  break; // Handled separately
   }
   throw std::logic_error("Invalid source mode");
@@ -223,7 +224,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
     bool is_db = (cli.source_mode == ContactsOptions::SourceMode::Database);
     if (is_db) {
       auto db = std::make_shared<LMDBDatabase>(cli.database_path);
-      dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<dynamic::DBKeySourceHolder>, dynamic::DBKeySourceHolder(db, cli.batch_size)));
+      auto src = dynamic::sources_factory::from_lmdb(db, std::string{}, cli.batch_size);
+      dynamic::StageManager mgr(std::move(src));
       // Enable conditional built-ins injection for CLI ergonomics
       mgr.set_auto_builtins(true);
 
@@ -232,20 +234,6 @@ int ContactsCommand::run(int argc, char* argv[]) {
       mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
         ? AtomTypingMethod::Arpeggio
         : AtomTypingMethod::Molstar;
-
-      // Tasks: fetch model -> ensure_typing -> contacts
-      {
-        pipeline::compute::ModelFetchParams p{};
-        p.db = db;
-        mgr.add_computation(
-          "model",
-          {},
-          [label = std::string("model"), p]() {
-            return std::make_unique<analysis::system::ModelFetchComputation>(label, p);
-          },
-          /*thread_safe=*/true
-        );
-      }
 
       const bool json_out = (cli.want_json || !cli.want_text);
       // Add contacts as a compute-backed task using ContactsKernel
@@ -276,7 +264,17 @@ int ContactsCommand::run(int argc, char* argv[]) {
       Source src_variant = pick_source(cli);
       std::visit([&](auto&& src) {
         using SrcT = std::decay_t<decltype(src)>;
-        dynamic::StageManager mgr(dynamic::StageManager::SourceVariant(std::in_place_type<SrcT>, std::move(src)));
+        auto source_ptr = std::unique_ptr<lahuta::sources::IDescriptor>{};
+        if constexpr (std::is_same_v<SrcT, sources::Directory>) {
+          source_ptr = dynamic::sources_factory::from_directory(std::move(src));
+        } else if constexpr (std::is_same_v<SrcT, std::vector<std::string>>) {
+          source_ptr = dynamic::sources_factory::from_vector(std::move(src));
+        } else if constexpr (std::is_same_v<SrcT, sources::FileList>) {
+          source_ptr = dynamic::sources_factory::from_filelist(std::move(src));
+        } else {
+          static_assert(sizeof(SrcT) == 0, "Unsupported source type");
+        }
+        dynamic::StageManager mgr(std::move(source_ptr));
         // Enable conditional built-ins injection for CLI ergonomics
         mgr.set_auto_builtins(true);
 

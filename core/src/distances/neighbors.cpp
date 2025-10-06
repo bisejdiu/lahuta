@@ -40,6 +40,21 @@ NSResults neighbors_within_radius_cross(const RDGeom::POINT3D_VECT &queries, con
   return results;
 }
 
+NSResults neighbors_within_radius_cross_fastns(const RDGeom::POINT3D_VECT &queries, const RDGeom::POINT3D_VECT &targets, const NeighborSearchOptions &options) {
+  if (queries.empty() || targets.empty()) return {};
+
+  FastNS grid(targets);
+  if (!grid.build(options.cutoff, options.brute_force_fallback)) {
+    if (options.brute_force_fallback) {
+      return brute_force_radius_cross_streamed(queries, targets, options.cutoff);
+    }
+    throw std::runtime_error("FastNS grid build failed and brute-force fallback is disabled.");
+  }
+
+  auto results = grid.search(queries);
+  return results;
+}
+
 NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT &coords, double cutoff) {
   const float cutoff_sq = static_cast<float>(cutoff * cutoff);
   auto interleaved = to_interleaved_xyz(coords);

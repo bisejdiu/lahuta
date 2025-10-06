@@ -17,7 +17,7 @@ TEST(ModelTopologyFromFile, BuildTopologySucceeds) {
   bool ok = sys.build_topology();
 
   ASSERT_TRUE(ok) << "Failed to build topology from model file: " << model_path.string();
-  auto top = sys.get_topology_shared();
+  auto top = sys.get_topology();
   ASSERT_TRUE(top != nullptr);
   EXPECT_GT(sys.n_atoms(), 0);
 }

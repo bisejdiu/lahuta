@@ -208,13 +208,13 @@ public:
         }
 
         m_impl = std::make_unique<MolGraphImpl>();
-        auto *impl = dynamic_cast<MolGraphImpl *>(m_impl.get());
+        auto *impl = static_cast<MolGraphImpl *>(m_impl.get());
         impl->build(atoms, bonds_list);
         break;
       }
       case GraphType::CSRMolGraph: {
         m_impl = std::make_unique<CSRMolGraphImpl>();
-        auto *impl = dynamic_cast<CSRMolGraphImpl *>(m_impl.get());
+        auto *impl = static_cast<CSRMolGraphImpl *>(m_impl.get());
         impl->build(atoms, bonds);
         break;
       }
@@ -557,9 +557,9 @@ public:
   RingInfo *getRingInfo() const { return dp_ringInfo; }
 
   std::pair<ADJ_ITER, ADJ_ITER> getAtomNeighbors(const Atom *at) const {
-    if (auto *molGraphImpl = dynamic_cast<MolGraphImpl *>(m_impl.get())) {
+    if (auto *molGraphImpl = static_cast<MolGraphImpl *>(m_impl.get())) {
       return molGraphImpl->getMolGraphAtomNeighbors(at->getIdx());
-    } else if (auto *csrGraphImpl = dynamic_cast<CSRMolGraphImpl *>(m_impl.get())) {
+    } else if (auto *csrGraphImpl = static_cast<CSRMolGraphImpl *>(m_impl.get())) {
       // we need to throw because we can't (don't want to) convert iterators
       throw std::runtime_error("CSR graph not supported in getAtomNeighbors");
     }
@@ -569,9 +569,9 @@ public:
   std::pair<OEDGE_ITER, OEDGE_ITER> getAtomBonds(const Atom *at) const {
     unsigned int idx = static_cast<unsigned int>(at->getIdx());
 
-    if (auto *molGraphImpl = dynamic_cast<MolGraphImpl *>(m_impl.get())) {
+    if (auto *molGraphImpl = static_cast<MolGraphImpl *>(m_impl.get())) {
       return molGraphImpl->getMolGraphAtomBonds(idx);
-    } else if (auto *csrGraphImpl = dynamic_cast<CSRMolGraphImpl *>(m_impl.get())) {
+    } else if (auto *csrGraphImpl = static_cast<CSRMolGraphImpl *>(m_impl.get())) {
       // we need to throw because we can't (don't want to) convert iterators
       throw std::runtime_error("CSR graph not supported in getAtomBonds");
     } else {
@@ -580,21 +580,21 @@ public:
   }
 
   BOND_ITER_PAIR getEdges() {
-    if (auto *molGraphImpl = dynamic_cast<MolGraphImpl *>(m_impl.get())) {
+    if (auto *molGraphImpl = static_cast<MolGraphImpl *>(m_impl.get())) {
       return boost::edges(molGraphImpl->getGraph());
     }
     throw std::runtime_error("Unknown graph implementation");
   }
 
   BOND_ITER_PAIR getEdges() const {
-    if (auto *molGraphImpl = dynamic_cast<MolGraphImpl *>(m_impl.get())) {
+    if (auto *molGraphImpl = static_cast<MolGraphImpl *>(m_impl.get())) {
       return boost::edges(molGraphImpl->getGraph());
     }
     throw std::runtime_error("Unknown graph implementation");
   }
 
   const MolGraph &getTopology() const {
-    if (auto *molGraphImpl = dynamic_cast<MolGraphImpl *>(m_impl.get())) {
+    if (auto *molGraphImpl = static_cast<MolGraphImpl *>(m_impl.get())) {
       return molGraphImpl->getGraph();
     }
     throw std::runtime_error("Unknown graph implementation");

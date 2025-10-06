@@ -7,10 +7,10 @@
 #include <vector>
 
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/dynamic/sources.hpp"
 #include "pipeline/dynamic/types.hpp"
 
 using namespace lahuta::pipeline::dynamic;
-using VectorSource = lahuta::sources::VectorSource;
 
 namespace {
 
@@ -65,8 +65,8 @@ TEST(DynamicPipelineParallelism, RunsInParallelAcrossItems) {
   const int items = threads;
 
   // Source with N items
-  auto src = VectorSource(make_items(items));
-  StageManager mgr(StageManager::SourceVariant(std::in_place_type<VectorSource>, std::move(src)));
+  auto src = sources_factory::from_vector(make_items(items));
+  StageManager mgr(std::move(src));
   mgr.set_auto_builtins(false); // keep graph minimal
 
   // Task: thread-safe, uses barrier to ensure all threads arrive before proceeding
@@ -86,8 +86,8 @@ TEST(DynamicPipelineParallelism, CollapsesWhenTaskMarkedUnsafe) {
   const int threads = 4;
   const int items = threads * 2;
 
-  auto src = VectorSource(make_items(items));
-  StageManager mgr(StageManager::SourceVariant(std::in_place_type<VectorSource>, std::move(src)));
+  auto src2 = sources_factory::from_vector(make_items(items));
+  StageManager mgr(std::move(src2));
   mgr.set_auto_builtins(false);
 
   auto probe = std::make_shared<Probe>();
@@ -142,8 +142,8 @@ TEST(DynamicPipelineParallelism, MemoizationAcrossTargetsRunsOncePerItem) {
   const int threads = 3;
   const int items = 7;
 
-  auto src = VectorSource(make_items(items));
-  StageManager mgr(StageManager::SourceVariant(std::in_place_type<VectorSource>, std::move(src)));
+  auto src3 = sources_factory::from_vector(make_items(items));
+  StageManager mgr(std::move(src3));
   mgr.set_auto_builtins(false);
 
   auto cntA = std::make_shared<std::atomic<int>>(0);

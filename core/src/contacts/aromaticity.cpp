@@ -30,8 +30,7 @@ std::vector<GroupRec> add_aromatic_rings(const RDKit::RWMol &mol, const Residues
       groups.push_back(GroupRec{
         /*.a_type =*/ AtomType::Aromatic,
         /*.type   =*/ FeatureGroup::None,
-        /*.atoms  =*/ std::move(atoms),
-        /*.center =*/ RDGeom::Point3D(0,0,0)
+        /*.atoms  =*/ std::move(atoms)
       });
     }
   }

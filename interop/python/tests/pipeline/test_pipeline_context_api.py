@@ -83,3 +83,36 @@ def test_return_none_skips_emission(data_path) -> None:
     p.add_task(name="n", task=noop)
     out = p.run(threads=1)
     assert out.get("n", []) == []
+
+
+def test_context_frame_metadata_defaults(data_path) -> None:
+    data = str(data_path("ubi.cif"))
+
+    captured: dict[str, object] = {}
+
+    def capture(ctx: PipelineContext) -> str:
+        captured["conformer_id"] = ctx.conformer_id
+        captured["session_id"] = ctx.session_id
+        captured["timestamp_ps"] = ctx.timestamp_ps
+        captured["meta"] = ctx.frame_metadata()
+        return "ok"
+
+    p = Pipeline.from_files([data])
+    p.add_task(
+        name="capture",
+        task=capture,
+        depends=["system"],
+        in_memory_policy=InMemoryPolicy.Keep,
+    )
+    out = p.run(threads=1)
+
+    assert out["capture"] == ["ok"]
+    assert captured["conformer_id"] == 0
+    assert captured["session_id"] == data
+    assert captured["timestamp_ps"] is None
+
+    meta = captured["meta"]
+    assert isinstance(meta, dict)
+    assert meta["session_id"] == data
+    assert meta["conformer_id"] == 0
+    assert meta["timestamp_ps"] is None

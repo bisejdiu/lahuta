@@ -97,7 +97,7 @@ TEST(DynamicBackpressure, BoundedQueueBlocksWhenFullUntilDrained) {
   BoundedQueue q(/*max_msgs=*/1, /*max_bytes=*/1024 * 1024);
   BackpressureConfig cfg;
   cfg.on_full = OnFull::Block;
-  cfg.offer_timeout = std::chrono::milliseconds(10);
+  cfg.offer_wait_slice = std::chrono::milliseconds(10);
 
   std::atomic<uint64_t> stall_ns{0};
   std::atomic<uint64_t> drops{0};

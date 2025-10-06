@@ -1,21 +1,22 @@
 #pragma once
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "analysis/contacts/records.hpp"
 #include "compute/result.hpp"
+#include "compute/topology_snapshot.hpp"
+#include "contacts/arpeggio/provider.hpp"
+#include "contacts/engine.hpp"
+#include "contacts/molstar/provider.hpp"
+#include "logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "serialization/formats.hpp"
 #include "serialization/serializer.hpp"
 #include "topology.hpp"
-
-#include <contacts/arpeggio/provider.hpp>
-#include <contacts/engine.hpp>
-#include <contacts/molstar/provider.hpp>
-#include <logging.hpp>
-#include <memory>
-#include <string>
-#include <vector>
 
 // clang-format off
 namespace lahuta::analysis::contacts {
@@ -36,14 +37,14 @@ struct ContactsKernel {
       res.topology     = nullptr;
 
       std::shared_ptr<const Topology> top;
-      if (data.ctx) top = data.ctx->get_object<Topology>("topology");
+      if (data.ctx) top = data.ctx->get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
       if (!top) return ComputationResult(ComputationError("Contacts requires topology in context"));
 
       // Correctness guard: ensure atom typing matches provider before computing
       try {
-        auto& label  = ::lahuta::topology::AtomTypingComputation<>::label;
+        auto& label  = topology::AtomTypingComputation<>::label;
         auto& eng    = const_cast<Topology&>(*top).get_engine();
-        auto* params = eng.get_parameters<::lahuta::topology::AtomTypingParams>(label);
+        auto* params = eng.get_parameters<topology::AtomTypingParams>(label);
 
         auto current_mode = params ? params->mode : AtomTypingMethod::Molstar;
         auto required_mode = typing_for_provider(p.provider);
@@ -57,17 +58,19 @@ struct ContactsKernel {
         Logger::get_logger()->error("ContactsKernel: typing guard failed: {}", e.what());
       }
 
-      // Compute using selected provider
+      auto ts = data.ctx ? compute::require_topology_snapshot(*data.ctx)
+                         : compute::snapshot_of(*top);
+
       if (p.provider == ContactProvider::Arpeggio) {
         InteractionEngine<ArpeggioContactProvider> engine;
         res.contacts = (p.type == InteractionType::All)
-          ? engine.compute(*top)
-          : engine.compute(*top, p.type);
+          ? engine.compute(ts)
+          : engine.compute(ts, p.type);
       } else {
         InteractionEngine<MolStarContactProvider> engine;
         res.contacts = (p.type == InteractionType::All)
-          ? engine.compute(*top)
-          : engine.compute(*top, p.type);
+          ? engine.compute(ts)
+          : engine.compute(ts, p.type);
       }
       res.num_contacts = res.contacts.size();
       res.success  = true;

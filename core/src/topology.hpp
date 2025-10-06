@@ -96,6 +96,7 @@ public:
 
   RDKit::RWMol& molecule() { return *mol_; }
   const RDKit::RWMol& molecule() const { return *mol_; }
+  std::shared_ptr<RDKit::RWMol> molecule_ptr() const { return mol_; }
   const RDKit::Conformer& conformer() const { return mol_->getConformer(); }
 
   auto& get_engine() { return *engine_; }

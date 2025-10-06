@@ -19,7 +19,8 @@ ContactRecipe<GroupRec, RingRec, CationPiParams> make_cationpi_recipe() {
 
       if (is_same_residue(ctx.molecule(), ri.atoms.front(), ci.atoms.front())) return InteractionType::None;
 
-      auto offset = chemistry::compute_in_plane_offset(ci.center, ri.center, ri.normal);
+      const auto &conf = ctx.conformer();
+      auto offset = chemistry::compute_in_plane_offset(ci.center(conf), ri.center(conf), ri.normal(conf));
       if (offset > params.offset_max) return InteractionType::None;
       return InteractionType::CationPi;
     }

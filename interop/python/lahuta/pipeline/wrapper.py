@@ -90,6 +90,17 @@ class Pipeline:
         return Pipeline(mgr)
 
     @staticmethod
+    def from_nmr_files(files: str | Path | Sequence[str | Path]) -> "Pipeline":
+        """Create a pipeline that streams multi-model NMR structures."""
+
+        if isinstance(files, (str, Path)):
+            paths = [str(files)]
+        else:
+            paths = [str(p) for p in files]
+        mgr = _lib.pipeline.StageManager.from_nmr_files(paths)
+        return Pipeline(mgr)
+
+    @staticmethod
     def from_database(path: str | Path, batch: int = 1024) -> "Pipeline":
         """Create a pipeline reading item keys from an LMDB database."""
         db = _lib.db.Database(str(path))
@@ -100,16 +111,52 @@ class Pipeline:
         """Create a pipeline reading item keys from an LMDB database handle."""
         mgr = _lib.pipeline.StageManager.from_database_handle(db, int(batch))
         p = Pipeline(mgr)
-        # Auto-inject fetch and model system mode
-        try:
-            p._mgr.add_model_fetch("fetch", [], db)
-        except Exception:
-            pass
+        # SystemRead needs to run in model mode for LMDB-backed sessions
         try:
             p.params("system").is_model = True
         except Exception:
             pass
         return p
+
+    @staticmethod
+    def from_md_trajectories(trajectories: Iterable[Mapping[str, Any] | Sequence[Any]]) -> "Pipeline":
+        """Create a pipeline that streams MD trajectories (structure + XTC)."""
+
+        def _coerce_xtc_paths(value: Any) -> list[str]:
+            if isinstance(value, (str, Path)):
+                return [str(value)]
+            return [str(v) for v in value]
+
+        specs: list[dict[str, Any]] = []
+        for entry in trajectories:
+            if isinstance(entry, Mapping):
+                structure_value = entry.get("structure", entry.get("gro"))
+                if structure_value is None:
+                    raise ValueError(
+                        "trajectory mapping must include a 'structure' (or 'gro') key"
+                    )
+                structure = str(structure_value)
+                xtc_value = entry.get("xtc", entry.get("xtcs"))
+                if xtc_value is None:
+                    raise ValueError("trajectory mapping must include 'xtc' or 'xtcs'")
+                xtc_paths = _coerce_xtc_paths(xtc_value)
+                session_id = entry.get("id", entry.get("session_id", structure))
+                ident = str(session_id)
+            else:
+                seq = list(entry)
+                if len(seq) < 2:
+                    raise ValueError(
+                        "trajectory tuple must provide structure and xtc paths"
+                    )
+                structure = str(seq[0])
+                xtc_paths = _coerce_xtc_paths(seq[1])
+                ident = str(seq[2]) if len(seq) > 2 else structure
+            if not xtc_paths:
+                raise ValueError("each trajectory requires at least one XTC path")
+            specs.append({"structure": structure, "xtc": xtc_paths, "id": ident})
+
+        mgr = _lib.pipeline.StageManager.from_md_trajectories(specs)
+        return Pipeline(mgr)
 
     @overload
     def params(self, builtin_name: Literal["system"]) -> SystemParams: ...

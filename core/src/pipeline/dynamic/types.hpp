@@ -13,7 +13,7 @@ namespace lahuta::pipeline::dynamic {
 
 //
 // DynObject: Type-erased holder used by TaskContext to store typed C++ objects.
-// - Ownership: stores a std::shared_ptr<void>. Prefer storing shared ownership
+// - Ownership: stores a std::shared_ptr<const void>. Prefer storing shared ownership
 //   of immutable data across tasks. Avoid raw pointers or borrowed references.
 // - Type checking: captures a pointer to the std::type_info of the stored type
 //   at construction. as<T>() verifies the exact type match before casting.
@@ -25,15 +25,15 @@ namespace lahuta::pipeline::dynamic {
 //   access from multiple threads.
 //
 struct DynObject {
-  std::shared_ptr<void> ptr;
+  std::shared_ptr<const void> ptr;
   const std::type_info* type = nullptr;
 
   DynObject() = default;
-  DynObject(std::shared_ptr<void> p, const std::type_info& ti) : ptr(std::move(p)), type(&ti) {}
+  DynObject(std::shared_ptr<const void> p, const std::type_info& ti) : ptr(std::move(p)), type(&ti) {}
 
   template<typename T>
   static DynObject make(std::shared_ptr<T> p) {
-    return DynObject{std::move(p), typeid(T)};
+    return DynObject{std::static_pointer_cast<const void>(std::move(p)), typeid(T)};
   }
 
   template<typename T>

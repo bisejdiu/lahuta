@@ -20,7 +20,7 @@ ContactRecipe<AtomRec, RingRec, DonorPiParams> make_donor_pi_recipe() {
 
       if (rec_a.atom.get().getIsAromatic()) return InteractionType::None; // FIX: ???
 
-      auto angle = compute_angle(rec_b, ctx.topology.conformer().getAtomPos(rec_a.atom.get().getIdx()));
+      auto angle = compute_angle(rec_b, ctx.conformer(), ctx.conformer().getAtomPos(rec_a.atom.get().getIdx()));
       if (!passes_angle_filter(angle, params.angle_cutoff)) return InteractionType::None;
 
       return InteractionType::DonorPi;
@@ -65,7 +65,7 @@ ContactRecipe<AtomRec, RingRec, CarbonPiParams> make_carbon_pi_recipe() {
 
       if (rec_a.atom.get().getIsAromatic()) return InteractionType::None; // FIX: ???
 
-      auto angle = compute_angle(rec_b, ctx.topology.conformer().getAtomPos(rec_a.atom.get().getIdx()));
+      auto angle = compute_angle(rec_b, ctx.conformer(), ctx.conformer().getAtomPos(rec_a.atom.get().getIdx()));
       if (!passes_angle_filter(angle, params.angle_cutoff)) return InteractionType::None;
 
       // FIX: need to make sure we remove metals here
@@ -87,7 +87,7 @@ ContactRecipe<AtomRec, RingRec, CationPiParams> make_cation_pi_recipe() {
 
       if (rec_a.atom.get().getIsAromatic()) return InteractionType::None; // FIX: ???
 
-      auto angle = compute_angle(rec_b, ctx.topology.conformer().getAtomPos(rec_a.atom.get().getIdx()));
+      auto angle = compute_angle(rec_b, ctx.conformer(), ctx.conformer().getAtomPos(rec_a.atom.get().getIdx()));
       if (!passes_angle_filter(angle, params.angle_cutoff)) return InteractionType::None;
 
       return InteractionType::CationPi;

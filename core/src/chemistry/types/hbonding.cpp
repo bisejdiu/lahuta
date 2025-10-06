@@ -71,49 +71,4 @@ AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &ato
   return AtomType::None;
 }
 
-// ContactSet find_hydrogen_bonds(const Topology &topology, const HBondParameters &opts) {
-//   return find_contacts(
-//     {topology, opts},
-//     [](const AtomRec& rec) { return (rec.type & AtomType::HbondDonor)    == AtomType::HbondDonor; },
-//     [](const AtomRec& rec) { return (rec.type & AtomType::HbondAcceptor) == AtomType::HbondAcceptor; },
-//     {std::max(opts.max_dist, opts.max_sulfur_dist), 0.7},
-//     [](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
-//       const auto& opts = ctx.get_params<HBondParameters>();
-//       const auto &donor    = ctx.topology.atom(rec_idx_a).atom;
-//       const auto &acceptor = ctx.topology.atom(rec_idx_b).atom;
-// 
-//       double max_dist = (donor.getAtomicNum() == Element::S || acceptor.getAtomicNum() == Element::S)
-//                             ? opts.max_sulfur_dist
-//                             : opts.max_dist;
-// 
-//       if (dist < 2.0 || dist > max_dist * max_dist)        return InteractionType::None;
-//       if (are_residueids_close(ctx.molecule(), donor, acceptor, 0)) return InteractionType::None;
-//       if (!opts.include_water && is_water_hbond(donor, acceptor))        return InteractionType::None;
-//       if (!hb_geo::are_geometrically_viable(ctx.molecule(), donor, acceptor, opts)) return InteractionType::None;
-// 
-//       return InteractionType::HydrogenBond;
-//     }
-//   );
-// }
-// 
-// ContactSet find_weak_hydrogen_bonds(const Topology &topology, HBondParameters params) {
-//   return find_contacts(
-//     {topology, params},
-//     [](const AtomRec& rec) { return (rec.type & AtomType::WeakHbondDonor) == AtomType::WeakHbondDonor; },
-//     [](const AtomRec& rec) { return (rec.type & AtomType::HbondAcceptor)   == AtomType::HbondAcceptor; },
-//     {params.max_dist, 0.10},
-//     [](std::uint32_t rec_idx_a, std::uint32_t rec_idx_b, float dist, const ContactContext& ctx) -> InteractionType {
-//       const auto& params = ctx.get_params<HBondParameters>();
-//       const auto &wdonor   = ctx.topology.atom(rec_idx_a).atom;
-//       const auto &acceptor = ctx.topology.atom(rec_idx_b).atom;
-// 
-//       if (are_residueids_close(ctx.molecule(), wdonor, acceptor, 1))                   return InteractionType::None;
-//       if (!params.include_water && is_water_hbond(wdonor, acceptor))        return InteractionType::None;
-//       if (!hb_geo::are_geometrically_viable(ctx.molecule(), wdonor, acceptor, params)) return InteractionType::None;
-// 
-//       return InteractionType::WeakHydrogenBond;
-//     }
-//   );
-// }
-
 } // namespace lahuta

@@ -1,12 +1,10 @@
 #pragma once
 
-#include <memory>
 #include <optional>
 #include <string>
 
 #include "analysis/contacts/provider.hpp"
 #include "compute/parameters.hpp"
-#include "db/db.hpp"
 #include "entities/interaction_types.hpp"
 #include "topology_flags.hpp"
 
@@ -20,8 +18,7 @@ namespace param_ids {
   constexpr ParameterInterface::TypeId BUILD_TOPOLOGY   = 31;
   constexpr ParameterInterface::TypeId CONTACTS         = 32;
   constexpr ParameterInterface::TypeId DYNAMIC_TASK     = 33;
-  constexpr ParameterInterface::TypeId MODEL_FETCH      = 34;
-  constexpr ParameterInterface::TypeId ENSURE_TYPING    = 35;
+  constexpr ParameterInterface::TypeId ENSURE_TYPING    = 34;
 }
 
 struct SystemReadParams : public ParameterBase<SystemReadParams> {
@@ -51,11 +48,6 @@ struct EnsureTypingParams : public ParameterBase<EnsureTypingParams> {
 
 struct DynamicTaskParams : public ParameterBase<DynamicTaskParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::DYNAMIC_TASK;
-};
-
-struct ModelFetchParams : public ParameterBase<ModelFetchParams> {
-  static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::MODEL_FETCH;
-  std::shared_ptr<LMDBDatabase> db; // shared LMDB handle. Reader will be thread_local inside kernel
 };
 
 } // namespace lahuta::pipeline::compute

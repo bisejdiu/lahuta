@@ -15,6 +15,7 @@ core/external/Eigen/eigen
 .DS_Store
 design_docs/
 interop/python/notebooks/
+core/data/simulationdatabase/
 
 # IDEs and editors
 .vscode

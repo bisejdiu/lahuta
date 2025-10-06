@@ -20,23 +20,33 @@ void Conformer::setOwningMol(ROMol *mol) {
 void Conformer::setOwningMol(ROMol &mol) { setOwningMol(&mol); }
 
 const RDGeom::POINT3D_VECT &Conformer::getPositions() const {
+  const auto &pos = d_external_positions ? *d_external_positions : d_positions;
   if (dp_mol) {
-    PRECONDITION(dp_mol->getNumAtoms() == d_positions.size(), "");
+    PRECONDITION(dp_mol->getNumAtoms() == pos.size(), "");
+  }
+  return pos;
+}
+
+RDGeom::POINT3D_VECT &Conformer::getPositions() {
+  if (d_external_positions) {
+    throw ConformerException("getPositions(): Mutation is not allowed when external coordinate view is bound");
   }
   return d_positions;
 }
 
-RDGeom::POINT3D_VECT &Conformer::getPositions() { return d_positions; }
-
 const RDGeom::Point3D &Conformer::getAtomPos(unsigned int atomId) const {
+  const auto &pos = d_external_positions ? *d_external_positions : d_positions;
   if (dp_mol) {
-    PRECONDITION(dp_mol->getNumAtoms() == d_positions.size(), "");
+    PRECONDITION(dp_mol->getNumAtoms() == pos.size(), "");
   }
-  URANGE_CHECK(atomId, d_positions.size());
-  return d_positions.at(atomId);
+  URANGE_CHECK(atomId, pos.size());
+  return pos.at(atomId);
 }
 
 RDGeom::Point3D &Conformer::getAtomPos(unsigned int atomId) {
+  if (d_external_positions) {
+    throw ConformerException("getAtomPos(): Mutation is not allowed when external coordinate view is bound");
+  }
   if (dp_mol) {
     PRECONDITION(dp_mol->getNumAtoms() == d_positions.size(), "");
   }

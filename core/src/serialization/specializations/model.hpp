@@ -1,11 +1,12 @@
 #ifndef LAHUTA_SERIALIZATION_MODEL_SERIALIZER_HPP
 #define LAHUTA_SERIALIZATION_MODEL_SERIALIZER_HPP
 
-#include "models/parser.hpp"
-#include "serialization/serializer_impl.hpp"
-#include "analysis/system/records.hpp"
 #include <cstring>
-#include <serialization/formats.hpp>
+
+#include "analysis/system/records.hpp"
+#include "models/parser.hpp"
+#include "serialization/formats.hpp"
+#include "serialization/serializer_impl.hpp"
 
 // clang-format off
 namespace serialization {
@@ -79,19 +80,55 @@ struct Serializer<fmt::binary, ModelParserResult> {
 template<>
 struct Serializer<fmt::binary, analysis::system::ModelRecord> {
   using Rec = analysis::system::ModelRecord;
+
+  // Serialize into an existing buffer, resizing it exactly once, no intermmediate allocations.
+  static void serialize_into(const Rec& r, std::string& out) {
+    const uint32_t path_len  = static_cast<uint32_t>(r.file_path.size());
+    const uint32_t seq_len   = static_cast<uint32_t>(r.data.sequence.size());
+    const uint32_t n_points  = static_cast<uint32_t>(r.data.coords.size());
+    const uint32_t blob_len  = static_cast<uint32_t>(sizeof(uint32_t) + sizeof(uint32_t) + seq_len + n_points * 3 * sizeof(float));
+
+    const std::size_t total = 1 + sizeof(uint32_t) + path_len + sizeof(uint32_t) + blob_len;
+    out.resize(total);
+
+    char* p = out.data();
+    // success byte
+    *p++ = static_cast<char>(r.success ? 1 : 0);
+    // path length
+    std::memcpy(p, &path_len, sizeof(path_len));
+    p += sizeof(path_len);
+    // path
+    if (path_len) {
+      std::memcpy(p, r.file_path.data(), path_len);
+      p += path_len;
+    }
+    // blob length
+    std::memcpy(p, &blob_len, sizeof(blob_len));
+    p += sizeof(blob_len);
+    // ModelParserResult blob = [seq_len][n_points][sequence][coords(float3)*n]
+    std::memcpy(p, &seq_len, sizeof(seq_len));
+    p += sizeof(seq_len);
+    std::memcpy(p, &n_points, sizeof(n_points));
+    p += sizeof(n_points);
+    if (seq_len) {
+      std::memcpy(p, r.data.sequence.data(), seq_len);
+      p += seq_len;
+    }
+    // coordinates as floats
+    for (uint32_t i = 0; i < n_points; ++i) {
+      float f[3] = {
+        static_cast<float>(r.data.coords[i].x),
+        static_cast<float>(r.data.coords[i].y),
+        static_cast<float>(r.data.coords[i].z)
+      };
+      std::memcpy(p, f, sizeof(f));
+      p += sizeof(f);
+    }
+  }
+
   static std::string serialize(const Rec &r) {
     std::string out;
-
-    auto model_blob = Serializer<fmt::binary, ModelParserResult>::serialize(r.data);
-    uint32_t path_len = static_cast<uint32_t>(r.file_path.size());
-    uint32_t blob_len = static_cast<uint32_t>(model_blob.size());
-    out.reserve(1 + sizeof(path_len) + path_len + sizeof(blob_len) + blob_len);
-
-    out.push_back(r.success ? 1 : 0);
-    out.append(reinterpret_cast<const char *>(&path_len), sizeof(path_len));
-    out.append(r.file_path);
-    out.append(reinterpret_cast<const char *>(&blob_len), sizeof(blob_len));
-    out.append(model_blob);
+    serialize_into(r, out);
     return out;
   }
 

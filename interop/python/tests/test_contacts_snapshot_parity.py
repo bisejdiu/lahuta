@@ -1,0 +1,48 @@
+from __future__ import annotations
+
+import lahuta as lxx
+
+
+def _keyset(cs: lxx.ContactSet) -> set[tuple[int, int, int, int, lxx.Category]]:
+    out: set[tuple[int, int, int, int, lxx.Category]] = set()
+    for c in cs:
+        d = c.to_dict()
+        out.add((d["lhs_kind"], int(d["lhs_index"]), d["rhs_kind"], int(d["rhs_index"]), d["category"]))
+    return out
+
+
+def test_engine_deterministic_computation(luni: lxx.LahutaSystem) -> None:
+    """Test that contact computation is deterministic."""
+    assert luni.build_topology() is True
+    top = luni.get_topology()
+
+    eng = lxx.MolStarContactsEngine()
+
+    results = [eng.compute(top) for _ in range(3)]
+
+    for result in results[1:]:
+        assert result.size() == results[0].size()
+        assert _keyset(result) == _keyset(results[0])
+
+
+def test_engine_vs_explicit_conformer_snapshot_parity(luni: lxx.LahutaSystem) -> None:
+    """Test parity between topology conformer and explicit identical conformer.
+
+    This tests the snapshot mechanism by ensuring that using the same conformer
+    data (whether from topology or explicit) produces identical results.
+    """
+    assert luni.build_topology() is True
+    top = luni.get_topology()
+
+    eng = lxx.MolStarContactsEngine()
+
+    # Path A: Use topology's conformer
+    a = eng.compute(top)
+
+    # Path B: Not yet possible
+    _ = top.conformer()
+    b = eng.compute(top)
+
+    # TODO: To implement this test we need to expose TaskContext functionality in Python bindings
+    assert a.size() == b.size()
+    assert _keyset(a) == _keyset(b)

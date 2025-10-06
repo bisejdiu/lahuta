@@ -1,83 +1,70 @@
-#pragma once
-#include "serialization/serializer.hpp"
-#include <fstream>
-#include <functional>
-#include <stdexcept>
-#include <string>
-#include <vector>
+#ifndef LAHUTA_SOURCES_FILE_READER_HPP
+#define LAHUTA_SOURCES_FILE_READER_HPP
 
+#include <memory>
+#include <optional>
+#include <string>
+
+#include "file_reader_util.hpp"
+#include "logging.hpp"
+
+// clang-format off
 namespace lahuta::sources {
 
+// reading serialized objects from a file.
 template <typename FormatTag, typename T>
 class FileReader {
 public:
-  using value_type = T;
-  using deserializer = serialization::Serializer<FormatTag, T>;
+  using value_type = std::shared_ptr<const T>;
 
-  explicit FileReader(const std::string &path) : path_(path) {
-    file_.open(path, std::ios::in | std::ios::binary);
-    if (!file_.is_open()) {
-      throw std::runtime_error("Failed to open file: " + path);
-    }
+  explicit FileReader(const std::string &file_path, std::size_t batch_size = 1024)
+      : file_path_(file_path), batch_size_(batch_size), reader_(std::make_shared<FileReaderUtil<FormatTag, T>>(file_path)), current_index_(0) {
+    Logger::get_logger()->info("FileReader: reading from {}; batch_size={}", file_path_, batch_size_);
+    load_next_batch();
   }
 
-  ~FileReader() {
-    if (file_.is_open()) {
-      file_.close();
-    }
-  }
+  FileReader(const FileReader &) = default;
+  FileReader &operator=(const FileReader &) = default;
 
-  // Read next item from file
-  bool read_next(T &item) {
-    if constexpr (std::is_same_v<FormatTag, fmt::binary>) {
-      std::string len_line;
-      if (!std::getline(file_, len_line)) return false;
-      size_t len = std::stoul(len_line);
-
-      std::vector<char> buf(len);
-      file_.read(buf.data(), len);
-      if (file_.gcount() != static_cast<std::streamsize>(len)) throw std::runtime_error("truncated");
-
-      if (file_.peek() == '\n') file_.ignore(1);
-      item = deserializer::deserialize(buf.data(), buf.size());
-      return true;
-    } else {
-      std::string line;
-      if (!std::getline(file_, line)) return false;
-      item = deserializer::deserialize(line);
-      return true;
-    }
-  }
-
-  // Read up to n items from file
-  std::vector<T> read_batch(size_t n) {
-    std::vector<T> results;
-    std::string line;
-
-    while (results.size() < n && std::getline(file_, line)) {
-      results.push_back(deserializer::deserialize(line));
-    }
-
-    return results;
-  }
-
-  void process_all(std::function<void(const T &)> callback) {
-    std::string line;
-    while (std::getline(file_, line)) {
-      callback(deserializer::deserialize(line));
-    }
+  [[nodiscard]] std::optional<value_type> next() {
+    if (!reader_ || (current_index_ >= current_batch_.size() && !load_next_batch())) return std::nullopt;
+    return current_batch_[current_index_++];
   }
 
   void reset() {
-    file_.clear();
-    file_.seekg(0);
+    current_index_ = 0;
+    current_batch_.clear();
+    if (reader_) reader_->reset();
+    load_next_batch();
   }
 
-  bool eof() const { return file_.eof(); }
-
 private:
-  std::string path_;
-  std::ifstream file_;
+  bool load_next_batch() {
+    current_batch_.clear();
+    current_index_ = 0;
+
+    if (!reader_ || reader_->eof()) return false;
+
+    std::size_t count = 0;
+    while (count < batch_size_) {
+      T item;
+      if (!reader_->read_next(item)) break;
+      current_batch_.push_back(std::make_shared<const T>(std::move(item)));
+      ++count;
+    }
+    return !current_batch_.empty();
+  }
+
+  // config stuff
+  std::string file_path_;
+  std::size_t batch_size_;
+  std::shared_ptr<FileReaderUtil<FormatTag, T>> reader_;
+
+  // batching
+  std::vector<value_type> current_batch_;
+  std::size_t current_index_;
 };
 
 } // namespace lahuta::sources
+
+#endif // LAHUTA_SOURCES_FILE_READER_HPP

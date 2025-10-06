@@ -4,6 +4,12 @@ endif()
 
 include(FetchContent)
 
+option(FETCH_TESTDATA "Fetch external testdata (GROMACS simulationdatabase) when building tests" ON)
+if(FETCH_TESTDATA)
+  include(cmake/FetchGMXData.cmake)
+  fetch_gmx_test_data()
+endif()
+
 set(INSTALL_GTEST OFF CACHE BOOL "Disable install for gtest" FORCE)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
@@ -21,6 +27,19 @@ file(GLOB_RECURSE LAHUTA_TEST_UNITS CONFIGURE_DEPENDS
   *.cpp
 )
 list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/${LAHUTA_TEST_MAIN})
+
+# Requires large manual data downloads
+if(NOT FETCH_TESTDATA)
+  list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/md/test_gmx_compat_xtc_gro.cpp)
+  message(WARNING "FETCH_TESTDATA is disabled. GROMACS compatibility tests will be skipped. Set -DFETCH_TESTDATA=ON to enable them.")
+endif()
+
+# Exclude expensive & local-data dependent tests
+if(NOT LAHUTA_ENABLE_EXPENSIVE_TESTS)
+  list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_topology_cache_validation.cpp)
+  list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_xtc_parallel_coordinates.cpp)
+  # message(STATUS "Excluding expensive tests. Set -DLAHUTA_ENABLE_EXPENSIVE_TESTS=ON to include them.")
+endif()
 
 add_executable(lahuta_tests ${LAHUTA_TEST_MAIN} ${LAHUTA_TEST_UNITS})
 target_compile_features(lahuta_tests PRIVATE cxx_std_17)

@@ -99,6 +99,10 @@ public:
   // find all neighbors among the input coordinates within the cutoff distance
   NSResults self_search() const;
 
+  // find all neighbors between provided search coords and the input coordinates within the cutoff distance
+  NSResults search(const RDGeom::POINT3D_VECT &search_coords) const;
+  NSResults search(const std::vector<std::vector<double>> &search_coords) const;
+
   double get_cutoff() const { return cutoff; }
 
   // accessors useful for debugging and testing

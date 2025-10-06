@@ -1,16 +1,21 @@
 #ifndef LAHUTA_ARPEGGIO_GEO_HPP
 #define LAHUTA_ARPEGGIO_GEO_HPP
 
-#include <entities/records.hpp>
+#include <rdkit/GraphMol/Conformer.h>
+
+#include "entities/records.hpp"
 
 // clang-format off
 namespace lahuta::arpeggio {
 
-inline double compute_angle(const RingRec &rd, const RDGeom::Point3D &point) {
-  auto vector_point_to_plane = point - rd.center;
+inline double compute_angle(const RingRec &rd, const RDKit::Conformer &conf, const RDGeom::Point3D &point) {
+  auto center = rd.center(conf);
+  auto normal = rd.normal(conf);
+
+  auto vector_point_to_plane = point - center;
   vector_point_to_plane.normalize();
 
-  double cos_theta = vector_point_to_plane.dotProduct(rd.normal);
+  double cos_theta = vector_point_to_plane.dotProduct(normal);
   cos_theta = std::max(-1.0, std::min(1.0, cos_theta));
 
   double theta_radians = std::acos(cos_theta); // in radians

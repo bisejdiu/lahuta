@@ -14,7 +14,95 @@ namespace py = pybind11;
 // clang-format off
 namespace lahuta::bindings {
 
+// Dynamic views that compute geometry from the owning molecule
+// and keep it alive independently of the Topology via shared_ptr.
+struct RingView {
+  std::shared_ptr<RDKit::RWMol> mol;
+  std::vector<unsigned int> atom_idxs;
+  bool aromatic_flag;
+
+  std::size_t size() const { return atom_idxs.size(); }
+  bool aromatic() const { return aromatic_flag; }
+
+  RDGeom::Point3D center() const {
+    const RDKit::Conformer &conf = mol->getConformer();
+    RDGeom::Point3D c{0.0, 0.0, 0.0};
+    if (atom_idxs.empty()) return c;
+    for (auto idx : atom_idxs) c += conf.getAtomPos(idx);
+    c /= static_cast<double>(atom_idxs.size());
+    return c;
+  }
+
+  RDGeom::Point3D normal() const {
+    RDGeom::Point3D nrm{0.0, 0.0, 0.0};
+    if (atom_idxs.size() < 3) return nrm;
+    const RDKit::Conformer &conf = mol->getConformer();
+    auto p0 = conf.getAtomPos(atom_idxs[0]);
+    auto p1 = conf.getAtomPos(atom_idxs[1]);
+    auto p2 = conf.getAtomPos(atom_idxs[2]);
+    auto v1 = p1 - p0;
+    auto v2 = p2 - p0;
+    nrm = v1.crossProduct(v2);
+    const double len_sq = nrm.lengthSq();
+    if (len_sq > 0.0) nrm /= std::sqrt(len_sq);
+    return nrm;
+  }
+
+  py::list atoms() const {
+    py::list out;
+    for (auto idx : atom_idxs) {
+      out.append(py::cast(mol->getAtomWithIdx(idx), py::return_value_policy::reference));
+    }
+    return out;
+  }
+};
+
+struct GroupView {
+  std::shared_ptr<RDKit::RWMol> mol;
+  std::vector<unsigned int> atom_idxs;
+  AtomType a_type_val;
+  FeatureGroup type_val;
+
+  AtomType a_type() const { return a_type_val; }
+  FeatureGroup type() const { return type_val; }
+  py::list atoms() const {
+    py::list out;
+    for (auto idx : atom_idxs) {
+      out.append(py::cast(mol->getAtomWithIdx(idx), py::return_value_policy::reference));
+    }
+    return out;
+  }
+  RDGeom::Point3D center() const {
+    const RDKit::Conformer &conf = mol->getConformer();
+    RDGeom::Point3D c{0.0, 0.0, 0.0};
+    if (atom_idxs.empty()) return c;
+    for (auto idx : atom_idxs) c += conf.getAtomPos(idx);
+    c /= static_cast<double>(atom_idxs.size());
+    return c;
+  }
+};
+
 void bind_topology(py::module &m) {
+  // Bind dynamic views first
+  py::class_<RingView>(m, "RingView", "Ring view with dynamic geometry accessors")
+    .def_property_readonly("size",    &RingView::size,     "Number of atoms in the ring")
+    .def_property_readonly("atoms",   &RingView::atoms,    "Atoms participating in the ring")
+    .def_property_readonly("aromatic",&RingView::aromatic, "Whether the ring is aromatic")
+    .def_property_readonly("center",  &RingView::center,   "Ring geometric center (Å)")
+    .def_property_readonly("normal",  &RingView::normal,   "Normal vector to ring plane")
+    .def("__repr__", [](const RingView &self) {
+      return py::str("RingView(atoms={}, aromatic={})").format(self.size(), self.aromatic());
+    });
+
+  py::class_<GroupView>(m, "GroupView", "Functional group view with dynamic geometry accessors")
+    .def_property_readonly("a_type", &GroupView::a_type, "Atom type associated with this group")
+    .def_property_readonly("type",   &GroupView::type,   "Functional group classification")
+    .def_property_readonly("atoms",  &GroupView::atoms,  "Atoms participating in the group")
+    .def_property_readonly("center", &GroupView::center, "Geometric center of the group (Å)")
+    .def("__repr__", [](const GroupView &self) {
+      return py::str("GroupView(a_type={}, type={}, atoms={})").format(
+        static_cast<uint32_t>(self.a_type()), static_cast<int>(self.type()), self.atoms().size());
+    });
 
   py::enum_<AtomTypingMethod>(m, "AtomTypingMethod", "Atom typing backends used when classifying atoms for contacts.")
     .value("Arpeggio", AtomTypingMethod::Arpeggio, "Use Arpeggio-style atom typing")
@@ -129,30 +217,32 @@ void bind_topology(py::module &m) {
       },
       py::keep_alive<0, 1>(),
       "Per-atom typing records (size N_atoms)")
-    .def_property_readonly("rings", [](Topology &self) -> py::typing::List<RingRec> {
+    .def_property_readonly("rings", [](Topology &self) -> py::typing::List<RingView> {
         const auto &recs = self.records<RingRec>();
+        auto mol_ptr = self.molecule_ptr();
         py::list out;
         for (const auto &rec : recs) {
-          out.append(py::cast(&rec,
-                              py::return_value_policy::reference_internal,
-                              py::cast(&self, py::return_value_policy::reference)));
+          std::vector<unsigned int> idxs;
+          idxs.reserve(rec.atoms.size());
+          for (const auto &a : rec.atoms) idxs.push_back(static_cast<unsigned int>(a.get().getIdx()));
+          out.append(RingView{mol_ptr, std::move(idxs), rec.aromatic});
         }
         return out;
-      },
-      py::keep_alive<0, 1>(),
-      "Detected rings (may be empty)")
-    .def_property_readonly("groups", [](Topology &self) -> py::typing::List<GroupRec> {
+      }, py::keep_alive<0, 1>(),
+      "Detected rings as dynamic views")
+    .def_property_readonly("groups", [](Topology &self) -> py::typing::List<GroupView> {
         const auto &recs = self.records<GroupRec>();
+        auto mol_ptr = self.molecule_ptr();
         py::list out;
         for (const auto &rec : recs) {
-          out.append(py::cast(&rec,
-                              py::return_value_policy::reference_internal,
-                              py::cast(&self, py::return_value_policy::reference)));
+          std::vector<unsigned int> idxs;
+          idxs.reserve(rec.atoms.size());
+          for (const auto &a : rec.atoms) idxs.push_back(static_cast<unsigned int>(a.get().getIdx()));
+          out.append(GroupView{mol_ptr, std::move(idxs), rec.a_type, rec.type});
         }
         return out;
-      },
-      py::keep_alive<0, 1>(),
-      "Detected functional groups (may be empty)")
+      }, py::keep_alive<0, 1>(),
+      "Detected functional groups as dynamic views")
 
     .def_property_readonly("residues",
         [](Topology &top) -> const Residues& { return top.get_residues(); },

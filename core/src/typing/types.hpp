@@ -8,8 +8,8 @@
 #include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
 #include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 
-#include "bonds/token-gperf-generated.hpp"
-#include "bonds/token.h"
+#include "bonds/rules/token-gperf-generated.hpp"
+#include "bonds/rules/token.h"
 
 namespace lahuta {
 

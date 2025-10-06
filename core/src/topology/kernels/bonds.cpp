@@ -1,9 +1,11 @@
-#include "bonds.hpp"
-#include "bond_order.hpp"
+#include <rdkit/GraphMol/MolOps.h>
+
+#include "bonds/bonds.hpp"
+#include "bonds/perception/nonstandard_bonds.hpp"
+#include "bonds/perception/subset_merge.hpp"
 #include "compute/engine.hpp"
 #include "compute/result.hpp"
 #include "logging.hpp"
-#include "ob/clean_mol.hpp"
 #include "topology/compute.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
@@ -13,6 +15,7 @@ namespace lahuta::topology {
 
 template <typename DataT>
 ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const BondComputationParams &params) {
+
   auto &data = context.data();
   auto &mol  = *data.mol;
 
@@ -49,10 +52,11 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
   }
 }
 
+// NOTE: this is not cheap and I doubt worth it to run calcExplicitValence
 void BondKernel::fix_bonds(RDKit::RWMol &mol) {
   for (auto atom : mol.atoms()) {
     atom->calcExplicitValence(false);
-    // correct four-valent neutral N -> N+
+    // Correct four-valent neutral N -> N+
     if (atom->getAtomicNum() == 7 && atom->getFormalCharge() == 0 && atom->getExplicitValence() == 4) {
       atom->setFormalCharge(1);
     }
@@ -78,17 +82,36 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
 
     Logger::get_logger()->debug("nonstandard_bonds: processing subset size={}", result.atom_indices.size());
 
-    // NOTE: unclear if these should be free functions, but merge_bonds and fix_bonds not
-    clean_bonds(result.mol, result.mol.getConformer());
-    perceive_bond_orders_obabel(result.mol);
+    // Try residue-level cached perception
+    bonds::PerceptionStats stats;
+    bool used_cache = false;
+    try {
+      used_cache = bonds::apply_residue_level_bond_orders(result, &stats);
+    } catch (const std::exception &e) {
+      Logger::get_logger()->warn("nonstandard_bonds: residue-level perception failed: {}", e.what());
+      used_cache = false;
+    }
+
+    if (!used_cache) {
+      // Whole-subset perception. This can become expensive for large systems.
+      if (!bonds::apply_whole_subset_perception(result, &stats)) {
+        return ComputationResult(ComputationError("Fallback bond perception failed"));
+      }
+    }
+
     BondKernel::fix_bonds(result.mol);
 
-    bool include_dative_bonds = true;
-    RDKit::MolOps::symmetrizeSSSR(result.mol, include_dative_bonds);
-    RDKit::MolOps::setAromaticity(result.mol);
+    // This should not be needed anymore, but kept temporarily in case we regress somehow
+    // bool include_dative_bonds = true;
+    // RDKit::MolOps::symmetrizeSSSR(result.mol, include_dative_bonds);
+    // if (!used_cache) {
+    //   // Only recompute aromaticity for the fallback path; the cached path
+    //   // preserves per-residue template aromatic flags.
+    //   RDKit::MolOps::setAromaticity(result.mol);
+    // }
 
-    // Merge into the original molecule
-    merge_bonds(mol, result.mol, result.atom_indices);
+    // Merge results back into the original molecule
+    bonds::subset_merge::merge_bonds(mol, result.mol, result.atom_indices);
 
     Logger::get_logger()->debug("nonstandard_bonds: merged");
     return ComputationResult(true);
@@ -98,22 +121,7 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
 }
 
 void NonStandardBondKernel::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
-  for (const auto &bond : source.bonds()) {
-    int b_idx = index_map[bond->getBeginAtomIdx()];
-    int e_idx = index_map[bond->getEndAtomIdx()];
-    if (target.getBondBetweenAtoms(b_idx, e_idx) == nullptr) {
-      auto a = target.getAtomWithIdx(b_idx);
-      auto b = target.getAtomWithIdx(e_idx);
-      int is_a_h = a->getAtomicNum() == 1;
-      int is_b_h = b->getAtomicNum() == 1;
-
-      if (is_a_h ^ is_b_h) {
-        auto non_h_atom = a->getAtomicNum() == 1 ? b : a;
-        non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
-      }
-      target.addBond(b_idx, e_idx, bond->getBondType());
-    }
-  }
+  bonds::subset_merge::merge_bonds(target, source, index_map);
 }
 
 template ComputationResult BondKernel           ::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const BondComputationParams &);

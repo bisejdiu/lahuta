@@ -23,8 +23,6 @@ public:
 
     register_computation();
 
-    engine_->set_auto_heal(true); // TODO: replace with TopologyBuildingOptions parameter
-
     engine_->enable(NeighborSearchComputation<> ::label, true);
     engine_->enable(BondComputation<>           ::label, true);
     engine_->enable(NonStandardBondComputation<>::label, true);

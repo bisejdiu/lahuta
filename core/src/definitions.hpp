@@ -1,12 +1,13 @@
 #ifndef LAHUTA_DEFINITIONS_HPP
 #define LAHUTA_DEFINITIONS_HPP
 
-#include "bonds/rules.hpp"
-#include "bonds/token.h"
 #include <array>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include "bonds/rules/rules.hpp"
+#include "bonds/rules/token.h"
 
 namespace std {
 template <> struct hash<lahuta::resTokenType> {

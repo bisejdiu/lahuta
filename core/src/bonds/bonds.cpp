@@ -1,6 +1,6 @@
 #include "bonds.hpp"
-#include "bonds/lookup.hpp"
-#include "bonds/table.hpp"
+#include "bonds/rules/lookup.hpp"
+#include "bonds/rules/table.hpp"
 #include "common.hpp"
 #include "selections/mol_filters.hpp"
 #include <rdkit/GraphMol/PeriodicTable.h>

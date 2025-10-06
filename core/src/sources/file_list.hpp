@@ -1,21 +1,21 @@
-#ifndef LAHUTA_PIPELINE_SOURCES_FILE_LIST_SOURCE_HPP
-#define LAHUTA_PIPELINE_SOURCES_FILE_LIST_SOURCE_HPP
+#ifndef LAHUTA_SOURCES_FILE_LIST_HPP
+#define LAHUTA_SOURCES_FILE_LIST_HPP
 
 #include <fstream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
 namespace lahuta::sources {
 
 // reads a newline-delimited list of file paths
-class FileListSource {
+class FileList {
 public:
   using value_type = std::string;
 
-  explicit FileListSource(std::string_view list_file)
-    : in_(std::string(list_file)) {
-    if (!in_) throw std::runtime_error("FileListSource: cannot open list file " + std::string(list_file));
+  explicit FileList(std::string_view list_file) : in_(std::string(list_file)) {
+    if (!in_) throw std::runtime_error("FileList: cannot open list file " + std::string(list_file));
   }
 
   [[nodiscard]] std::optional<value_type> next() {
@@ -37,4 +37,4 @@ private:
 
 } // namespace lahuta::sources
 
-#endif // LAHUTA_PIPELINE_SOURCES_FILE_LIST_SOURCE_HPP
+#endif // LAHUTA_SOURCES_FILE_LIST_HPP

@@ -5,12 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "analysis/system/model_loader.hpp"
 #include "analysis/system/records.hpp"
-#include "gemmi/gz.hpp"
 #include "logging.hpp"
-#include "mmap/MemoryMapped.h"
-#include "models/parser.hpp"
-#include "models/topology.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "serialization/formats.hpp"
 #include "serialization/serializer.hpp"
@@ -27,37 +24,16 @@ public:
 
   TaskResult run(const std::string& item_path, TaskContext& /*ctx*/) override {
     using WriterRes = analysis::system::ModelRecord;
-    WriterRes rec{};
-    rec.file_path = item_path;
-    rec.success = false;
-
     try {
-      if (gemmi::iends_with(rec.file_path, ".gz")) {
-        gemmi::CharArray buffer = gemmi::MaybeGzipped(rec.file_path).uncompress_into_buffer();
-        rec.data = parse_model(buffer.data(), buffer.size());
-      } else {
-        MemoryMapped mm(rec.file_path);
-        if (!mm.isValid()) {
-          Logger::get_logger()->critical("Error opening file: {}", rec.file_path);
-          return {false, {}};
-        }
-        const char* data = reinterpret_cast<const char*>(mm.getData());
-        size_t size = static_cast<size_t>(mm.size());
-        rec.data = parse_model(data, size);
-      }
-
-      if (!mock_build_model_topology(rec.data)) {
-        Logger::get_logger()->error("Failed to build topology for file: {}", rec.file_path);
-        // Do not abort, still store record with success=false
-      } else {
-        rec.success = true;
-      }
-
-      std::string payload = serialization::Serializer<fmt::binary, WriterRes>::serialize(rec);
+      WriterRes rec = build_model_record(item_path);
+      // Thread-local payload buffer to reduce repeated allocations.
+      static thread_local std::string tls_payload;
+      serialization::Serializer<fmt::binary, WriterRes>::serialize_into(rec, tls_payload);
+      std::string payload;
+      payload.swap(tls_payload);
       return TaskResult{true, std::vector<Emission>{{channel_, std::move(payload)}}};
-
     } catch (const std::exception& e) {
-      Logger::get_logger()->error("Error processing file {}: {}", rec.file_path, e.what());
+      Logger::get_logger()->error("Error processing file {}: {}", item_path, e.what());
       return {false, {}};
     }
   }

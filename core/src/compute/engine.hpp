@@ -27,7 +27,7 @@ class ComputeEngine {
 private:
   DataContext<DataT, M> ctx;
   Registry<DataT, M>    registry;
-  bool auto_heal_ = false;
+  bool auto_heal_ = true;
 
   void run_impl(ComputationLabel root) {
     registry.seal();                 // idempotent, does nothing on 2nd call

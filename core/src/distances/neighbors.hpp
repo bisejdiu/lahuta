@@ -17,6 +17,7 @@ struct NeighborSearchOptions {
 
 NSResults neighbors_within_radius_self(const RDGeom::POINT3D_VECT &coords, const NeighborSearchOptions &options);
 NSResults neighbors_within_radius_cross(const RDGeom::POINT3D_VECT &queries, const RDGeom::POINT3D_VECT &targets, const NeighborSearchOptions &options);
+NSResults neighbors_within_radius_cross_fastns(const RDGeom::POINT3D_VECT &queries, const RDGeom::POINT3D_VECT &targets, const NeighborSearchOptions &options);
 
 NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT &coords, double cutoff);
 

@@ -1,5 +1,6 @@
 #include <contacts/engine.hpp>
 #include <contacts/molstar/provider.hpp>
+#include "compute/topology_snapshot.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -70,12 +71,13 @@ int main(int argc, char **argv) {
     std::cerr << "Failed to build topology from " << argv[1] << "\n";
     return 1;
   }
-  const Topology &top = luni.get_topology();
+  const auto &top = luni.get_topology();
 
   InteractionEngine<MolStarContactProvider> engine;
-  ContactSet contacts = engine.compute(top);
+  auto ts = compute::snapshot_of(*top, top->conformer());
+  ContactSet contacts = engine.compute(ts);
 
-  EntityResolver resolver(top);
+  EntityResolver resolver(*top);
   const auto resolved = resolver.resolve_all(contacts);
 
   const std::size_t limit = std::min<std::size_t>(resolved.size(), 10000);

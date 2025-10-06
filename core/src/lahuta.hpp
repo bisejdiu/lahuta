@@ -1,19 +1,28 @@
 #ifndef LAHUTA_HPP
 #define LAHUTA_HPP
 
+#include <atomic>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <vector>
 
-#include "convert.hpp"
+#include <gemmi/model.hpp>
+#include <rdkit/Geometry/point.h>
+
 #include "logging.hpp"
 #include "topology.hpp"
 
-constexpr const char *LAHUTA_VERSION = "0.75.0";
+constexpr const char *LAHUTA_VERSION = "0.10.0";
 
 // clang-format off
 namespace lahuta {
+
+struct ModelParserResult;
+struct IR;
+enum class ModelTopologyMethod;
 
 // NOTE: rename to Lahuta?
 class Luni {
@@ -21,8 +30,8 @@ public:
   Luni(const Luni&)            = delete;
   Luni& operator=(const Luni&) = delete;
 
-  Luni(Luni&&)            = default;
-  Luni& operator=(Luni&&) = default;
+  Luni(Luni&&)            noexcept;
+  Luni& operator=(Luni&&) noexcept;
 
   explicit Luni(std::string file_name);
 
@@ -40,19 +49,16 @@ public:
     return l;
   }
   static Luni from_model_file(std::string file_name) { return Luni(std::move(file_name), ModelFile); }
+  static Luni from_model_data(const ModelParserResult &data);
+  static Luni from_model_data(const ModelParserResult &data, ModelTopologyMethod method);
 
-  // FIX: no need to use optional here
-  bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt); 
+  // Concurrency: serialized per Luni instance. If multiple threads call concurrently
+  // with different TopologyBuildingOptions, the first successful one wins
+  bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt) const;
 
   std::string get_file_name() const { return file_name_; };
-  const Topology &get_topology() const {
-    if (!topology) {
-      throw std::logic_error("Topology not built");
-    }
-    return *topology;
-  }
 
-  std::shared_ptr<Topology> get_topology_shared() {
+  std::shared_ptr<const Topology> get_topology() const {
     if (!topology) {
       Logger::get_logger()->error("Topology not initialized. Cannot get shared topology.");
       return nullptr;
@@ -60,13 +66,21 @@ public:
     return topology;
   }
 
-  bool has_topology_built() const { return topology_built_; }
+  std::shared_ptr<Topology> get_topology() {
+    if (!topology) {
+      Logger::get_logger()->error("Topology not initialized. Cannot get shared topology.");
+      return nullptr;
+    }
+    return topology;
+  }
+
+  bool has_topology_built() const { return topology_built_.load(std::memory_order_acquire); }
 
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
 
   /// Enable or disable a specific computation in the topology
-  void enable_computation(TopologyComputation comp, bool enabled) {
+  void enable_computation(TopologyComputation comp, bool enabled) const {
     ensure_topology_initialized();
     if (topology) {
       topology->enable_computation(comp, enabled);
@@ -74,7 +88,7 @@ public:
   }
 
   /// Enable only the specified computations (disabling all others)
-  void enable_only(TopologyComputation comps) {
+  void enable_only(TopologyComputation comps) const {
     ensure_topology_initialized();
     if (topology) {
       topology->enable_only(comps);
@@ -103,7 +117,7 @@ public:
   }
 
   /// Set the cutoff for neighbor search
-  void set_search_cutoff_for_bonds(double cutoff) {
+  void set_search_cutoff_for_bonds(double cutoff) const {
     ensure_topology_initialized();
     if (topology) {
       topology->set_cutoff(cutoff);
@@ -111,7 +125,7 @@ public:
   }
 
   /// Set the atom typing method
-  void set_atom_typing_method(AtomTypingMethod method) {
+  void set_atom_typing_method(AtomTypingMethod method) const {
     ensure_topology_initialized();
     if (topology) {
       topology->set_atom_typing_method(method);
@@ -130,7 +144,6 @@ public:
   const std::vector<std::string> chainlabels() const;
 
   const auto &get_molecule() const { return *mol; }
-  const auto &get_molecule_ptr() const { return mol; }
   const auto &get_conformer(int id = -1) const { return mol->getConformer(id); }
   const auto &get_positions(int confId = -1) const { return get_conformer(confId).getPositions(); }
   const auto *get_atom(int idx) const { return mol->getAtomWithIdx(idx); }
@@ -145,14 +158,23 @@ public:
   size_t total_size() const;
 
 private:
-  explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol) 
-    : mol(valid_mol), topology(std::make_shared<Topology>(valid_mol)), topology_built_(false) {}
+  struct TopologyBuildState {
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool building = false;
+  };
 
-  void ensure_topology_initialized() {
-    if (!topology) {
-      Logger::get_logger()->debug("Initializing topology for configuration");
-      topology = std::make_shared<Topology>(mol);
-    }
+  explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol)
+    : mol(valid_mol), topology(std::make_shared<Topology>(valid_mol)), topology_built_(false),
+      topology_state_(std::make_shared<TopologyBuildState>()) {}
+
+  void ensure_topology_initialized() const {
+    std::call_once(topology_init_once_, [this]() {
+      if (!topology) {
+        Logger::get_logger()->debug("Initializing topology for configuration");
+        topology = std::make_shared<Topology>(mol);
+      }
+    });
   }
 
   auto match_smarts_string(std::string sm, std::string atype = "", bool log_values = false) const;
@@ -166,13 +188,16 @@ private:
 
   // FIX: It should not be necessary to have a default constructed RWMol here
   std::shared_ptr<RDKit::RWMol> mol = std::make_shared<RDKit::RWMol>();
-  std::shared_ptr<Topology> topology;
-  bool topology_built_ = false;
+  mutable std::shared_ptr<Topology> topology;
+  mutable std::atomic<bool> topology_built_{false};
   bool model_origin_ = false; // flag controlling model code path
+
+  mutable std::shared_ptr<TopologyBuildState> topology_state_ = std::make_shared<TopologyBuildState>();
+  mutable std::once_flag topology_init_once_;
 
   std::string file_name_;
   std::vector<int> filtered_indices;
-  bool is_in_filtered_state = false; // ambitious name, for know it's just a flag
+  bool is_in_filtered_state = false;
 };
 
 } // namespace lahuta
