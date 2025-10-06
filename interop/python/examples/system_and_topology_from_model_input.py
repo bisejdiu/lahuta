@@ -5,7 +5,7 @@ from pathlib import Path
 import lahuta as lxx
 from lahuta import logging
 from lahuta.pipeline import InMemoryPolicy, Pipeline, PipelineContext
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 
 # fmt: off
@@ -18,7 +18,7 @@ def system_from_model_file(path: str | Path) -> lxx.LahutaSystem:
 
 
 def pipeline_with_model_files(paths: list[str | Path]) -> None:
-    p = Pipeline(FilesSource([str(p) for p in paths]))
+    p = Pipeline(FileSource([str(p) for p in paths]))
     p.params("system").is_model = True
 
     # Add a simple Python task that depends on the built-in 'system' node

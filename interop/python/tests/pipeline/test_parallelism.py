@@ -6,7 +6,7 @@ from typing import Any, Callable
 import pytest
 
 from lahuta.pipeline import InMemoryPolicy, Pipeline
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 
 # fmt: off
@@ -55,7 +55,7 @@ def items(n: int) -> list[str]:
 @pytest.mark.parametrize("threads", [2, 4])
 def test_python_callable_serialize_true_limits_concurrency(threads: int) -> None:
     # serialize=True -> only one call to the Python function at a time, but pipeline remains parallel
-    p = Pipeline(FilesSource(items(threads * 2)))
+    p = Pipeline(FileSource(items(threads * 2)))
 
     shared = SharedProbe(target=1)  # no barrier, expect max==1
     fn = make_probe_fn(shared)
@@ -76,7 +76,7 @@ def test_python_callable_serialize_true_limits_concurrency(threads: int) -> None
 @pytest.mark.parametrize("threads", [2, 4])
 def test_python_callable_serialize_false_allows_concurrency(threads: int) -> None:
     # serialize=False -> allow concurrent invocations (subject to GIL). Our barrier should ensure all arrive
-    p = Pipeline(FilesSource(items(threads)))
+    p = Pipeline(FileSource(items(threads)))
 
     shared = SharedProbe(target=threads)
     fn = make_probe_fn(shared)
@@ -98,7 +98,7 @@ def test_python_callable_serialize_false_allows_concurrency(threads: int) -> Non
 @pytest.mark.parametrize("threads", [2, 4])
 def test_two_python_tasks_both_concurrent(threads: int) -> None:
     # Two concurrent Python tasks should both observe full concurrency when no earlier bottleneck exists
-    p = Pipeline(FilesSource(items(threads)))
+    p = Pipeline(FileSource(items(threads)))
 
     shared1 = SharedProbe(target=threads)
     shared2 = SharedProbe(target=threads)
@@ -118,7 +118,7 @@ def test_two_python_tasks_both_concurrent(threads: int) -> None:
 def test_serial_upstream_does_not_collapse_downstream_parallelism(threads: int) -> None:
     # A serialized upstream Python task does not collapse overall pipeline parallelism.
     # It serializes only that callable. Downstream can still overlap across items.
-    p = Pipeline(FilesSource(items(threads * 3)))
+    p = Pipeline(FileSource(items(threads * 3)))
 
     serial_probe = SharedProbe(target=1)
     # No barrier for downstream. We observe natural overlap without forcing it

@@ -11,7 +11,7 @@ from lahuta.lib import lahuta as lxx
 from lahuta.pipeline import InMemoryPolicy
 from lahuta.pipeline.tasks import ContactTask
 from lahuta.pipeline.wrapper import Pipeline
-from lahuta.sources import DatabaseHandleSource, FilesSource
+from lahuta.sources import DatabaseHandleSource, FileSource
 
 # Expected contact counts for 1kx2_small.cif using Arpeggio
 EXPECTED_ARPEGGIO_CONTACT_COUNTS: dict[str, int] = {
@@ -119,7 +119,7 @@ def test_arpeggio_contacts_file_pipeline() -> None:
     data_file = Path("core/data/1kx2_small.cif")
     assert data_file.exists(), "Test file missing"
 
-    p = Pipeline(FilesSource(str(data_file)))
+    p = Pipeline(FileSource(str(data_file)))
     p.add_task(name="contacts", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
 
     out = p.run(threads=1)

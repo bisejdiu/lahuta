@@ -17,7 +17,7 @@ class DirectorySource(_lib.pipeline.sources.DirectorySource):
         super().__init__(str(path), str(ext), bool(recursive), int(batch))
 
 
-class FilesSource(_lib.pipeline.sources.FilesSource):
+class FileSource(_lib.pipeline.sources.FileSource):
     def __init__(self, files: Sequence[str | Path] | str | Path) -> None:
         if isinstance(files, (str, Path)):
             payload = [str(files)]
@@ -58,7 +58,7 @@ class MdTrajectoriesSource(_lib.pipeline.sources.MdTrajectoriesSource):
 __all__ = [
     "Source",
     "DirectorySource",
-    "FilesSource",
+    "FileSource",
     "FileListSource",
     "DatabaseSource",
     "DatabaseHandleSource",

@@ -21,7 +21,7 @@ from lahuta.pipeline import (
     PipelineContext,
     ShardedOutput,
 )
-from lahuta.sources import DirectorySource, FileListSource, FilesSource
+from lahuta.sources import DirectorySource, FileListSource, FileSource
 
 # fmt: off
 EXPECTED_CONTACTS_COUNT = {
@@ -110,7 +110,7 @@ class TestPipelineFromFiles:
 
     def test_contacts_memory_from_files(self, minimal_test_files: list[str]):
         """Test contacts generation from explicit file list."""
-        p = Pipeline(FilesSource(minimal_test_files))
+        p = Pipeline(FileSource(minimal_test_files))
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -152,7 +152,7 @@ class TestContactProviders:
     def test_multiple_contact_providers(self, minimal_test_files: list[str]):
         """Test MolStar and Arpeggio providers with different interaction types."""
         files = minimal_test_files  # already limited to 2 files
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
 
         p.add_task(
             name="contacts_molstar_hbond",
@@ -195,7 +195,7 @@ class TestFileOutputs:
         files = minimal_test_files
         out_path = temp_dir / "contacts.ndjson"
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -240,7 +240,7 @@ class TestFileOutputs:
         out_dir = temp_dir / "contacts_shards"
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        p = Pipeline(FilesSource(minimal_test_files))  # Use explicit files instead of directory scan
+        p = Pipeline(FileSource(minimal_test_files))  # Use explicit files instead of directory scan
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -292,7 +292,7 @@ class TestPythonTasks:
         files = minimal_test_files
         out_path = temp_dir / "names.txt"
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
         p.add_task(
             name="names",
             task=basename_with_prefix,
@@ -341,7 +341,7 @@ class TestPythonTasks:
         files = minimal_test_files
         out_path = temp_dir / "desc.json"
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
         p.add_task(
             name="desc",
             task=describe_file,
@@ -397,7 +397,7 @@ class TestPythonTasks:
         def return_text(ctx: PipelineContext) -> str:
             return f"processed: {os.path.basename(ctx.path)}"
 
-        p = Pipeline(FilesSource([single_test_file]))
+        p = Pipeline(FileSource([single_test_file]))
         p.add_task(name="dict_task", task=return_dict, in_memory_policy=InMemoryPolicy.Keep)
         p.add_task(name="text_task", task=return_text, in_memory_policy=InMemoryPolicy.Keep)
 
@@ -430,7 +430,7 @@ class TestChannelFanIn:
         files = minimal_test_files
         out_path = temp_dir / "contacts_all.ndjson"
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
 
         # Two different contacts tasks, same output channel
         p.add_task(
@@ -477,7 +477,7 @@ class TestChannelFanIn:
         files = minimal_test_files
         out_path = temp_dir / "meta.ndjson"
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
         p.add_task(name="path_meta", task=file_meta, channel="meta", in_memory_policy=InMemoryPolicy.Keep)
         p.add_task(name="size_meta", task=size_meta, channel="meta", in_memory_policy=InMemoryPolicy.Keep)
         p.to_files("meta", path=out_path, fmt=OutputFormat.JSON)
@@ -522,7 +522,7 @@ class TestPipelineIntegration:
         def annotate_with_contacts(ctx: PipelineContext) -> dict[str, Any]:
             return {"file": os.path.basename(ctx.path), "has_contacts": True, "processed": True}
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
 
         p.add_task(
             name="contacts",
@@ -566,7 +566,7 @@ class TestPipelineIntegration:
         shards_dir = temp_dir / "contacts_shards"
         shards_dir.mkdir(exist_ok=True)
 
-        p = Pipeline(FilesSource(files))
+        p = Pipeline(FileSource(files))
         p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All))
 
         # Attach multiple sinks

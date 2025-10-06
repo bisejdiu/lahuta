@@ -11,7 +11,7 @@ import lahuta as lxx
 from lahuta.db import LahutaDB
 from lahuta.pipeline import Pipeline
 from lahuta.pipeline.tasks import ContactTask
-from lahuta.sources import DatabaseHandleSource, FilesSource
+from lahuta.sources import DatabaseHandleSource, FileSource
 
 
 def type_counts(rec: dict) -> Counter:
@@ -63,7 +63,7 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
     model_path = data_dir / model_basename
     assert model_path.exists(), f"Missing model file: {model_path}"
 
-    p_file = Pipeline(FilesSource(str(model_path)))
+    p_file = Pipeline(FileSource(str(model_path)))
     p_file.add_task(name="contacts_file", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
     out_file = p_file.run(threads=1)
     recs_file = out_file.get("contacts_file", [])

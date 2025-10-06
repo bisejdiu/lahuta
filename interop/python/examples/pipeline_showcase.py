@@ -23,7 +23,7 @@ from lahuta.pipeline import (
     PipelineContext,
     ShardedOutput,
 )
-from lahuta.sources import DirectorySource, FilesSource
+from lahuta.sources import DirectorySource, FileSource
 
 DATA_DIR = Path(__file__).resolve().parents[3] / "core" / "data"
 
@@ -52,7 +52,7 @@ def ex_contacts_memory_dir() -> None:
 
 def ex_custom_system_stage() -> None:
     """Customize system stage: rename and depend on it"""
-    p = Pipeline(FilesSource(_pick_some_files(1)))
+    p = Pipeline(FileSource(_pick_some_files(1)))
 
     # defaults to MolStar + All
     p.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
@@ -63,7 +63,7 @@ def ex_custom_system_stage() -> None:
 def ex_contacts_providers() -> None:
     """Contacts with different providers and interaction filters"""
     files = _pick_some_files(1)
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
     p.add_task(name="molstar_hbond", task=ContactTask(provider=ContactProvider.MolStar,  interaction_type=InteractionType.HydrogenBond), in_memory_policy=InMemoryPolicy.Keep)
     p.add_task(name="arpeggio_vdw",  task=ContactTask(provider=ContactProvider.Arpeggio, interaction_type=InteractionType.VanDerWaals),  in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
@@ -78,7 +78,7 @@ def ex_contacts_to_file_and_memory() -> None:
     out_path = Path("contacts.ndjson")
     if out_path.exists():
         out_path.unlink()
-    p = Pipeline(FilesSource(_pick_some_files(2)))
+    p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="contacts",
                task=ContactTask(),
                out=[FileOutput(out_path, fmt=OutputFormat.JSON)], in_memory_policy=InMemoryPolicy.Keep)
@@ -113,7 +113,7 @@ def ex_python_path_text() -> None:
     def basename(ctx: PipelineContext) -> str:
         return os.path.basename(ctx.path)
 
-    p = Pipeline(FilesSource(_pick_some_files(2)))
+    p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="names", task=basename, in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4) # can use multiple threads even with Python tasks
     print(f"python(path->text): {out.get('names', [])}")
@@ -124,7 +124,7 @@ def ex_python_path_json_parsed() -> None:
     def describe(ctx: PipelineContext) -> dict:
         return {"file": os.path.basename(ctx.path), "ext": os.path.splitext(ctx.path)[1]}
 
-    p = Pipeline(FilesSource(_pick_some_files(2)))
+    p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="desc", task=describe, in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
     print(f"python(path->json, parsed): {out.get('desc', [])}")
@@ -142,7 +142,7 @@ def ex_python_system_topology_input() -> None:
         except Exception:
             return {"ok": False}
 
-    p = Pipeline(FilesSource(_pick_some_files(1)))
+    p = Pipeline(FileSource(_pick_some_files(1)))
     # We specify explicitly that we depend on `topology` (which itself depends on `system`)
     # This is the default behavior, and we could omit `depends` here.
     p.add_task(name="summary", task=summarize, depends=["topology"], in_memory_policy=InMemoryPolicy.Keep)
@@ -168,7 +168,7 @@ def ex_thread_safety_single_thread() -> None:
     def f(ctx: PipelineContext) -> str:
         return os.path.basename(ctx.path)
 
-    p = Pipeline(FilesSource(_pick_some_files(5)))
+    p = Pipeline(FileSource(_pick_some_files(5)))
 
     # can still run with multiple threads, but this stage runs serially
     p.add_task(name="names", task=f, in_memory_policy=InMemoryPolicy.Keep, thread_safe=False)
@@ -182,7 +182,7 @@ def ex_thread_safety_multi_thread() -> None:
         # Pure function, safe to run concurrently
         return os.path.basename(ctx.path)
 
-    p = Pipeline(FilesSource(_pick_some_files(5)))
+    p = Pipeline(FileSource(_pick_some_files(5)))
     p.add_task(name="names", task=f, in_memory_policy=InMemoryPolicy.Keep, thread_safe=True) # NOTE: thread_safe=True
     out = p.run(threads=8)
     print(f"thread_safe=True: processed={len(out.get('names', []))}")
@@ -191,7 +191,7 @@ def ex_thread_safety_multi_thread() -> None:
 def ex_mixed_dag() -> None:
     """Mix multiple tasks in a small DAG"""
     files = _pick_some_files(2)
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
     p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All), in_memory_policy=InMemoryPolicy.Keep)
 
     def base(ctx: PipelineContext) -> str:
@@ -214,7 +214,7 @@ def ex_mixed_dag() -> None:
 
 def ex_convenience_sinks() -> None:
     """Attach sinks via convenience methods"""
-    p = Pipeline(FilesSource(_pick_some_files(2)))
+    p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All))
     p.to_memory("contacts")
     p.to_files("contacts", path="contacts2.ndjson", fmt=OutputFormat.JSON)
@@ -227,7 +227,7 @@ def ex_convenience_sinks() -> None:
 def ex_multiple_channels_mixed_sinks() -> None:
     """Multiple channels from multiple tasks, mixed sinks"""
     files = _pick_some_files(2)
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
     p.add_task(name="c_json",
                task=ContactTask(),
                out=[FileOutput("c.jsonl", fmt=OutputFormat.JSON)],
@@ -252,7 +252,7 @@ def ex_channel_fanin_contacts() -> None:
     the same channel name "contacts", so memory results and sinks aggregate there.
     """
     files = _pick_some_files(2)
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
 
     # Two different contacts tasks, same output channel
     p.add_task(
@@ -287,7 +287,7 @@ def ex_channel_rename_python() -> None:
         n = len(list(top.get_atom_ids())) if top is not None else 0
         return {"atoms": n}
 
-    p = Pipeline(FilesSource(_pick_some_files(1)))
+    p = Pipeline(FileSource(_pick_some_files(1)))
     p.add_task(name="py_summarize_task", task=summarize, channel="summary", in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
     print("channels:", list(out.keys()))  # ['summary'] (not 'py_summarize_task')
@@ -307,7 +307,7 @@ def ex_channel_fanin_python_mix() -> None:
         size = os.path.getsize(ctx.path)
         return {"size": int(size)}
 
-    p = Pipeline(FilesSource(_pick_some_files(2)))
+    p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="path_meta", task=base,  channel="meta", in_memory_policy=InMemoryPolicy.Keep)
     p.add_task(name="size_meta", task=extra, channel="meta", in_memory_policy=InMemoryPolicy.Keep)
     p.to_files("meta", path="meta.ndjson", fmt=OutputFormat.JSON)

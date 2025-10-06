@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from lahuta.pipeline import InMemoryPolicy, Pipeline, PipelineContext
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 
 # fmt: off
@@ -13,7 +13,7 @@ def test_context_path_and_emit_text(data_path) -> None:
     def basename(ctx: PipelineContext) -> str:
         return Path(ctx.path).name
 
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     p.add_task(name="names", task=basename, depends=["system"], in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
     assert out["names"] == [Path(data).name]
@@ -27,7 +27,7 @@ def test_context_system_topology_and_emit_json(data_path) -> None:
         top = ctx.get_topology()
         return {"have_sys": sys is not None, "have_top": top is not None}
 
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     # Depend on 'topology' to make sure a topology is present before running
     p.add_task(name="chk", task=check, depends=["topology"], in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
@@ -58,7 +58,7 @@ def test_context_read_upstream_text_and_skip_on_missing(data_path) -> None:
             return None
         return f"B:{s}"
 
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     p.add_task(name="a", task=a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=False)
     p.add_task(name="b", task=b, depends=["a"],      in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
@@ -66,7 +66,7 @@ def test_context_read_upstream_text_and_skip_on_missing(data_path) -> None:
     assert out.get("b", []) == []
 
     # Now enable store to allow B to read A's payload
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     p.add_task(name="a", task=a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=True)
     p.add_task(name="b", task=b, depends=["a"],      in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
@@ -80,7 +80,7 @@ def test_return_none_skips_emission(data_path) -> None:
     def noop(_: PipelineContext):
         return None
 
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     p.add_task(name="n", task=noop)
     out = p.run(threads=1)
     assert out.get("n", []) == []
@@ -98,7 +98,7 @@ def test_context_frame_metadata_defaults(data_path) -> None:
         captured["meta"] = ctx.frame_metadata()
         return "ok"
 
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     p.add_task(
         name="capture",
         task=capture,

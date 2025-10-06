@@ -8,7 +8,7 @@ from lahuta.lib import lahuta as _lib
 def test_stall_accumulates_under_blocking_policy() -> None:
     # Many items + large payload + queue size 1 under Block policy to induce producer waits
     items = ["x" for _ in range(200)]
-    src = _lib.pipeline.sources.FilesSource(items)
+    src = _lib.pipeline.sources.FileSource(items)
     sm = _lib.pipeline.StageManager(src)
 
     big = "Z" * (512 * 1024)  # = 512 KiB

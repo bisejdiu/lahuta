@@ -11,7 +11,7 @@ from lahuta.pipeline import (
     ShardedOutput,
 )
 from lahuta.pipeline.types import PipelineContext
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 
 # fmt: off
@@ -33,7 +33,7 @@ def fn_topology(ctx: PipelineContext) -> lxx.Topology:
         raise RuntimeError("Topology not built")
     return topology
 
-p: Pipeline = Pipeline(FilesSource(["/tmp/a.cif", "/tmp/b.cif"]))
+p: Pipeline = Pipeline(FileSource(["/tmp/a.cif", "/tmp/b.cif"]))
 
 ret1: None = p.add_task(name="p_path_text", task=pyfn, in_memory_policy=InMemoryPolicy.Keep)
 v = p.run()

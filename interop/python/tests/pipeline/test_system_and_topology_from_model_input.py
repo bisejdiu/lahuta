@@ -13,7 +13,7 @@ def test_direct_model_then_pipeline_fast_path(data_dir, run_child) -> None:
     child = f"""
 import lahuta as lxx
 from lahuta.pipeline import Pipeline
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 # Direct fast-path system
 sys = lxx.LahutaSystem.from_model_file({model!r})
@@ -22,7 +22,7 @@ assert ok is True
 assert sys.has_topology_built is True or sys.has_topology_built()
 
 # Pipeline fast-path in same process
-p = Pipeline(FilesSource({model!r}))
+p = Pipeline(FileSource({model!r}))
 p.params("system").is_model = True
 
 def inspect(ctx):

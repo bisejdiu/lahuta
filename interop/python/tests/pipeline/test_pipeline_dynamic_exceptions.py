@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TypedDict
 
 from lahuta.pipeline import ErrorRecord, Pipeline, PipelineContext
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 
 def test_python_task_exception_does_not_abort_pipeline_run(data_path) -> None:
@@ -12,7 +12,7 @@ def test_python_task_exception_does_not_abort_pipeline_run(data_path) -> None:
     def boom(_: PipelineContext) -> None:
         raise RuntimeError("boom from python task")
 
-    p = Pipeline(FilesSource([data]))
+    p = Pipeline(FileSource([data]))
     p.add_task(name="boom", task=boom, depends=["system"], thread_safe=False)
 
     class Schema(TypedDict):

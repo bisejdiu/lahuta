@@ -13,7 +13,6 @@
 
 #include "db/db.hpp"
 #include "pipeline/dynamic/sources.hpp"
-#include "sources/adapters/directory.hpp"
 #include "sources/descriptor.hpp"
 
 namespace py = pybind11;
@@ -26,16 +25,12 @@ class PySource {
 public:
   explicit PySource(std::unique_ptr<sources::IDescriptor> descriptor)
       : descriptor_(std::move(descriptor)) {
-    if (!descriptor_) {
-      throw std::invalid_argument("Pipeline source requires a descriptor");
-    }
+    if (!descriptor_) throw std::invalid_argument("Pipeline source requires a descriptor");
   }
   virtual ~PySource() = default;
 
   std::unique_ptr<sources::IDescriptor> release() {
-    if (!descriptor_) {
-      throw std::runtime_error("Pipeline source has already been consumed");
-    }
+    if (!descriptor_) throw std::runtime_error("Pipeline source has already been consumed");
     return std::move(descriptor_);
   }
 
@@ -56,9 +51,9 @@ public:
       : PySource(sources_factory::from_directory(path, ext, recursive, batch)) {}
 };
 
-class FilesSource final : public PySource {
+class FileSource final : public PySource {
 public:
-  explicit FilesSource(std::vector<std::string> files)
+  explicit FileSource(std::vector<std::string> files)
       : PySource(sources_factory::from_vector(std::move(files))) {}
 };
 
@@ -225,7 +220,7 @@ inline void bind_sources(py::module_ &md) {
       .def(py::init<const std::string &, const std::string &, bool, std::size_t>(),
            py::arg("path"), py::arg("ext") = std::string(""), py::arg("recursive") = true, py::arg("batch") = 200);
 
-  py::class_<FilesSource, PySource, std::shared_ptr<FilesSource>>(ms, "FilesSource")
+  py::class_<FileSource, PySource, std::shared_ptr<FileSource>>(ms, "FileSource")
       .def(py::init<std::vector<std::string>>(), py::arg("files"));
 
   py::class_<FileListSource, PySource, std::shared_ptr<FileListSource>>(ms, "FileListSource")

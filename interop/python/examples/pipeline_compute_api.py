@@ -21,7 +21,7 @@ from lahuta.pipeline import (
     Pipeline,
     PipelineContext,
 )
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 DATA_DIR = Path(__file__).resolve().parents[3] / "core" / "data"
 
@@ -38,7 +38,7 @@ def _get_test_files(n: int = 2) -> list[str]:
 def ex_basic_parameter_access() -> None:
     """Demonstrate basic parameter access and modification."""
 
-    p = Pipeline(FilesSource(_get_test_files(1)))
+    p = Pipeline(FileSource(_get_test_files(1)))
 
     # Access current parameter values
     sys_params  = p.params("system")
@@ -64,7 +64,7 @@ def ex_basic_parameter_access() -> None:
 def ex_graph_introspection() -> None:
     """Demonstrate pipeline graph introspection."""
 
-    p = Pipeline(FilesSource(_get_test_files(1)))
+    p = Pipeline(FileSource(_get_test_files(1)))
 
     # Graph before adding any user tasks
     print("Graph with builtins only:")
@@ -105,7 +105,7 @@ def ex_parameter_driven_compute() -> None:
 
     # First run: minimal topology computation
     print("Run 1: Minimal topology (Bonds only)")
-    p1 = Pipeline(FilesSource(files))
+    p1 = Pipeline(FileSource(files))
     p1.params("topology").flags = TopologyComputers.Bonds
     p1.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
 
@@ -117,7 +117,7 @@ def ex_parameter_driven_compute() -> None:
 
     # Second run: full topology computation
     print("\nRun 2: Complete topology (All computations)")
-    p2 = Pipeline(FilesSource(files))
+    p2 = Pipeline(FileSource(files))
     p2.params("topology").flags = TopologyComputers.All  # Include atom typing, rings, etc.
     p2.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
 
@@ -138,7 +138,7 @@ def ex_high_level_vs_low_level() -> None:
 
     # High level: Use defaults, simple configuration
     print("High level approach (using defaults):")
-    p_high = Pipeline(FilesSource(files))
+    p_high = Pipeline(FileSource(files))
 
     # Just add tasks, let the system handle dependencies
     p_high.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
@@ -150,7 +150,7 @@ def ex_high_level_vs_low_level() -> None:
 
     # Low-level: Explicit parameter control and task configuration
     print("\nLow level approach (explicit control):")
-    p_low = Pipeline(FilesSource(files))
+    p_low = Pipeline(FileSource(files))
 
     # Explicit parameter configuration
     p_low.params("system").is_model = False
@@ -218,7 +218,7 @@ def ex_parameter_invalidation_demo() -> None:
     """Demonstrate that parameter changes invalidate computation."""
 
     files = _get_test_files(1)
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
 
     # Pipeline that's sensitive to topology parameters
     def atom_counter(ctx: PipelineContext) -> dict:
@@ -257,7 +257,7 @@ def ex_mixed_provider_comparison() -> None:
     """Compare different contact providers with parameter control."""
 
     files = _get_test_files(1)
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
 
     p.params("topology").flags = TopologyComputers.Complete
 

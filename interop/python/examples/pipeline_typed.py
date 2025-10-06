@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from lahuta.pipeline import Pipeline, PipelineContext
-from lahuta.sources import FilesSource
+from lahuta.sources import FileSource
 
 
 # fmt: off
@@ -40,7 +40,7 @@ class ResultsSchema(TypedDict):
 
 
 def main(files: list[str]) -> ResultsSchema:
-    p = Pipeline(FilesSource(files))
+    p = Pipeline(FileSource(files))
 
     p.add_task(name="info",  task=file_info)
     p.add_task(name="sizes", task=file_size)
