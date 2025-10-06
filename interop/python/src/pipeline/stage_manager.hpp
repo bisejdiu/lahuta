@@ -33,8 +33,8 @@ inline void bind_stage_manager(py::module_ &md) {
     .def(py::init<std::string>(), py::arg("channel") = std::string("db"));
 
   py::class_<StageManager, std::shared_ptr<StageManager>>(md, "StageManager")
-    .def(py::init([](PySource &source) {
-          return std::make_shared<StageManager>(source.release());
+    .def(py::init([](std::shared_ptr<sources::IDescriptor> source) {
+          return std::make_shared<StageManager>(source);
         }),
         py::arg("source"))
     // Generic task registration

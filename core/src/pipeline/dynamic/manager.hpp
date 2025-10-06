@@ -90,7 +90,7 @@ Overloaded(Ts...)->Overloaded<Ts...>;
 
 class StageManager {
 public:
-  using SourcePtr = std::unique_ptr<sources::IDescriptor>;
+  using SourcePtr = std::shared_ptr<sources::IDescriptor>;
 
   explicit StageManager(SourcePtr src)
       : src_(std::move(src)) {
