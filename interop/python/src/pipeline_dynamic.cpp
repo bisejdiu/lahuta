@@ -3,6 +3,7 @@
 #include "pipeline/backpressure.hpp"
 #include "pipeline/context.hpp"
 #include "pipeline/sinks.hpp"
+#include "pipeline/sources.hpp"
 #include "pipeline/stage_manager.hpp"
 
 namespace py = pybind11;
@@ -13,6 +14,7 @@ void bind_pipeline_dynamic(py::module_ &m) {
   bind_backpressure(md);
   bind_pipeline_context(md);
   bind_sinks(md);
+  bind_sources(md);
   bind_stage_manager(md);
 }
 

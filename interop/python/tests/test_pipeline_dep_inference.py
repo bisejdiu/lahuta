@@ -6,6 +6,7 @@ from typing import cast
 import pytest
 
 from lahuta.pipeline import Pipeline, PipelineContext, PyTaskFn
+from lahuta.sources import FilesSource
 
 DATA_FILE = Path(__file__).resolve().parents[3] / "core" / "data" / "1kx2_small.cif"
 
@@ -20,7 +21,7 @@ def _extract_task_deps(p: Pipeline, task_name: str) -> list[str]:
 
 
 def _pipeline_for_test() -> Pipeline:
-    return Pipeline.from_files([str(DATA_FILE)])
+    return Pipeline(FilesSource([str(DATA_FILE)]))
 
 
 def test_infer_system_direct_call() -> None:

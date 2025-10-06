@@ -11,6 +11,7 @@ from lahuta.lib import lahuta as lxx
 from lahuta.pipeline import InMemoryPolicy
 from lahuta.pipeline.tasks import ContactTask
 from lahuta.pipeline.wrapper import Pipeline
+from lahuta.sources import DatabaseHandleSource, FilesSource
 
 # Expected contact counts for 1kx2_small.cif using Arpeggio
 EXPECTED_ARPEGGIO_CONTACT_COUNTS: dict[str, int] = {
@@ -61,7 +62,8 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
     keys = db.keys()
     assert len(keys) == 2
 
-    p_read = Pipeline.from_database_handle(db)
+    p_read = Pipeline(DatabaseHandleSource(db))
+    p_read.params("system").is_model = True
 
     task_name = "contacts_molstar" if provider == lxx.ContactProvider.MolStar else "contacts_arpeggio"
     p_read.add_task(name=task_name, task=ContactTask(provider=provider))
@@ -100,7 +102,8 @@ def test_db_pipeline_exposes_model_mode(tmp_path: Path) -> None:
     dbw = LahutaDB.create_from_directory(data_dir, db_path, ext=".cif.gz", recursive=False, batch=50, threads=2)
     db = dbw._db
 
-    p_read = Pipeline.from_database_handle(db)
+    p_read = Pipeline(DatabaseHandleSource(db))
+    p_read.params("system").is_model = True
 
     def get_mode(ctx: Any) -> dict[str, str]:
         sys = ctx.get_system()
@@ -116,7 +119,7 @@ def test_arpeggio_contacts_file_pipeline() -> None:
     data_file = Path("core/data/1kx2_small.cif")
     assert data_file.exists(), "Test file missing"
 
-    p = Pipeline.from_files(str(data_file))
+    p = Pipeline(FilesSource(str(data_file)))
     p.add_task(name="contacts", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
 
     out = p.run(threads=1)

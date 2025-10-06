@@ -23,6 +23,7 @@ from ._discovery import _ast_infer_builtins_for_callable, _discover_builtins_for
 from .params import SystemParams, TopologyParams
 from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
+from lahuta.sources import Source as PipelineSource
 
 # fmt: off
 StageManager = _lib.pipeline.StageManager
@@ -47,12 +48,12 @@ class PyTaskFn(Protocol[R_co]):
 class Pipeline:
     """Pipeline builder and executor.
 
-    - Users add builtin tasks and Python tasks that accept PipelineContext
     - Each task emits to a channel. Sinks subscribe to channels
-    - run() returns memory results keyed by channel. JSON channels auto-parse per item
+    - run() returns memory results keyed by channel.
     """
 
-    def __init__(self, mgr: StageManager) -> None:
+    def __init__(self, source: PipelineSource) -> None:
+        mgr = _lib.pipeline.StageManager(source)
         self._mgr = mgr
         # Let Python own the default policy - auto-inject built-ins only when referenced
         try:
@@ -68,95 +69,6 @@ class Pipeline:
         # Parameter proxies
         self._system_params   = SystemParams(self._mgr)
         self._topology_params = TopologyParams(self._mgr)
-
-    # Sources
-    @staticmethod
-    def from_directory(path: str | Path, ext: str = "", recursive: bool = True, batch: int = 200) -> "Pipeline":
-        mgr = _lib.pipeline.StageManager.from_directory(str(path), ext, recursive, int(batch))
-        return Pipeline(mgr)
-
-    @staticmethod
-    def from_files(files: str | Path | Sequence[str | Path]) -> "Pipeline":
-        if isinstance(files, (str, Path)):
-            paths = [str(files)]
-        else:
-            paths = [str(p) for p in files]
-        mgr = _lib.pipeline.StageManager.from_files(paths)
-        return Pipeline(mgr)
-
-    @staticmethod
-    def from_filelist(path: str | Path) -> "Pipeline":
-        mgr = _lib.pipeline.StageManager.from_filelist(str(path))
-        return Pipeline(mgr)
-
-    @staticmethod
-    def from_nmr_files(files: str | Path | Sequence[str | Path]) -> "Pipeline":
-        """Create a pipeline that streams multi-model NMR structures."""
-
-        if isinstance(files, (str, Path)):
-            paths = [str(files)]
-        else:
-            paths = [str(p) for p in files]
-        mgr = _lib.pipeline.StageManager.from_nmr_files(paths)
-        return Pipeline(mgr)
-
-    @staticmethod
-    def from_database(path: str | Path, batch: int = 1024) -> "Pipeline":
-        """Create a pipeline reading item keys from an LMDB database."""
-        db = _lib.db.Database(str(path))
-        return Pipeline.from_database_handle(db, int(batch))
-
-    @staticmethod
-    def from_database_handle(db: "_lib.db.Database", batch: int = 1024) -> "Pipeline":
-        """Create a pipeline reading item keys from an LMDB database handle."""
-        mgr = _lib.pipeline.StageManager.from_database_handle(db, int(batch))
-        p = Pipeline(mgr)
-        # SystemRead needs to run in model mode for LMDB-backed sessions
-        try:
-            p.params("system").is_model = True
-        except Exception:
-            pass
-        return p
-
-    @staticmethod
-    def from_md_trajectories(trajectories: Iterable[Mapping[str, Any] | Sequence[Any]]) -> "Pipeline":
-        """Create a pipeline that streams MD trajectories (structure + XTC)."""
-
-        def _coerce_xtc_paths(value: Any) -> list[str]:
-            if isinstance(value, (str, Path)):
-                return [str(value)]
-            return [str(v) for v in value]
-
-        specs: list[dict[str, Any]] = []
-        for entry in trajectories:
-            if isinstance(entry, Mapping):
-                structure_value = entry.get("structure", entry.get("gro"))
-                if structure_value is None:
-                    raise ValueError(
-                        "trajectory mapping must include a 'structure' (or 'gro') key"
-                    )
-                structure = str(structure_value)
-                xtc_value = entry.get("xtc", entry.get("xtcs"))
-                if xtc_value is None:
-                    raise ValueError("trajectory mapping must include 'xtc' or 'xtcs'")
-                xtc_paths = _coerce_xtc_paths(xtc_value)
-                session_id = entry.get("id", entry.get("session_id", structure))
-                ident = str(session_id)
-            else:
-                seq = list(entry)
-                if len(seq) < 2:
-                    raise ValueError(
-                        "trajectory tuple must provide structure and xtc paths"
-                    )
-                structure = str(seq[0])
-                xtc_paths = _coerce_xtc_paths(seq[1])
-                ident = str(seq[2]) if len(seq) > 2 else structure
-            if not xtc_paths:
-                raise ValueError("each trajectory requires at least one XTC path")
-            specs.append({"structure": structure, "xtc": xtc_paths, "id": ident})
-
-        mgr = _lib.pipeline.StageManager.from_md_trajectories(specs)
-        return Pipeline(mgr)
 
     @overload
     def params(self, builtin_name: Literal["system"]) -> SystemParams: ...
@@ -213,7 +125,7 @@ class Pipeline:
         store: bool | None = None,
         in_memory_policy: InMemoryPolicy = InMemoryPolicy.Keep,
         out: Iterable[FileOutput | ShardedOutput] | None = None,
-    ) -> "Pipeline":
+    ) -> None:
         ch = channel or name
         explicit_depends_provided = depends is not None
         deps = list(depends) if explicit_depends_provided else []
@@ -260,7 +172,7 @@ class Pipeline:
                 name, deps, task.provider, task.interaction_type, ch, "json", bool(thread_safe)
             )
             self._attach_sinks(ch, in_memory_policy, out, json_channel=True)
-            return self
+            return
 
         # Python callable task
         if callable(task):
@@ -269,13 +181,13 @@ class Pipeline:
             serialize = not bool(thread_safe)
             self._mgr.add_python(name, deps, task, ch, serialize=serialize, store=do_store)
             self._attach_sinks(ch, in_memory_policy, out, json_channel=True)
-            return self
+            return
 
         # Raw C++ task
         if isinstance(task, _lib.pipeline.Task):
             self._mgr.add_task(name, deps, task, bool(thread_safe))
             self._attach_sinks(ch, in_memory_policy, out, json_channel=False)
-            return self
+            return
 
         raise TypeError("task must be a callable, ContactTask spec, or pipeline.Task instance")
 
@@ -311,20 +223,20 @@ class Pipeline:
                 self._sharded_sinks.setdefault(channel, []).append(sink)
 
     # Sinks
-    def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON) -> "Pipeline":
+    def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
         sink = _lib.pipeline.NdjsonSink(str(path))
         self._mgr.connect_sink(task_or_channel, sink)
         self._file_sinks.setdefault(task_or_channel, []).append(sink)
-        return self
+        return
 
-    def to_memory(self, task_or_channel: str) -> "Pipeline":
+    def to_memory(self, task_or_channel: str) -> None:
         if task_or_channel not in self._memory_sinks:
             ms = _lib.pipeline.MemorySink()
             self._mgr.connect_sink(task_or_channel, ms)
             self._memory_sinks[task_or_channel] = [ms]
-        return self
+        return
 
     def to_sharded_files(
         self,
@@ -333,13 +245,13 @@ class Pipeline:
         out_dir: str | Path,
         fmt: OutputFormat = OutputFormat.JSON,
         shard_size: int = 1000,
-    ) -> "Pipeline":
+    ) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
         sink = _lib.pipeline.ShardedNdjsonSink(str(out_dir), int(shard_size))
         self._mgr.connect_sink(task_or_channel, sink)
         self._sharded_sinks.setdefault(task_or_channel, []).append(sink)
-        return self
+        return
 
     def run(self, threads: int = 8) -> dict[str, list[Any]]:
         #
