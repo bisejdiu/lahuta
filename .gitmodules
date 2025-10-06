@@ -1,12 +1,15 @@
 [submodule "core/external/mimalloc"]
-	path = core/external/mimalloc
-	url = https://github.com/microsoft/mimalloc.git
+ path = core/external/mimalloc
+ jrl = https://github.com/microsoft/mimalloc.git
 [submodule "core/external/distopia/highway"]
-	path = core/external/distopia/highway
-	url = https://github.com/google/highway.git
+ path = core/external/distopia/highway
+ url = https://github.com/google/highway.git
 [submodule "core/external/spdlog"]
-	path = core/external/spdlog
-	url = https://github.com/gabime/spdlog.git
+ path = core/external/spdlog
+ url = https://github.com/gabime/spdlog.git
 [submodule "core/external/boost"]
-	path = core/external/boost
-	url = https://github.com/bisejdiu/lahuta-boost-headers
+ path = core/external/boost
+ url = https://github.com/bisejdiu/lahuta-boost-headers
+[submodule "core/external/Eigen/eigen"]
+ path = core/external/Eigen/eigen
+ url = https://gitlab.com/libeigen/eigen.git
