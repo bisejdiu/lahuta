@@ -49,6 +49,8 @@ class DirectorySource final : public PySource {
 public:
   DirectorySource(const std::string &path, const std::string &ext, bool recursive, std::size_t batch)
       : PySource(sources_factory::from_directory(path, ext, recursive, batch)) {}
+  DirectorySource(const std::string &path, std::vector<std::string> extensions, bool recursive, std::size_t batch)
+      : PySource(sources_factory::from_directory(path, std::move(extensions), recursive, batch)) {}
 };
 
 class FileSource final : public PySource {
@@ -218,7 +220,9 @@ inline void bind_sources(py::module_ &md) {
 
   py::class_<DirectorySource, PySource, std::shared_ptr<DirectorySource>>(ms, "DirectorySource")
       .def(py::init<const std::string &, const std::string &, bool, std::size_t>(),
-           py::arg("path"), py::arg("ext") = std::string(""), py::arg("recursive") = true, py::arg("batch") = 200);
+           py::arg("path"), py::arg("ext") = std::string(""), py::arg("recursive") = true, py::arg("batch") = 200)
+      .def(py::init<const std::string &, std::vector<std::string>, bool, std::size_t>(),
+           py::arg("path"), py::arg("extensions"), py::arg("recursive") = true, py::arg("batch") = 200);
 
   py::class_<FileSource, PySource, std::shared_ptr<FileSource>>(ms, "FileSource")
       .def(py::init<std::vector<std::string>>(), py::arg("files"));

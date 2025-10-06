@@ -38,7 +38,7 @@ def _pick_some_files(n: int = 3) -> list[str]:
 
 def ex_contacts_memory_dir() -> None:
     """Contacts over a directory, parsed JSON kept in memory"""
-    source = DirectorySource(DATA_DIR, ext=".cif", recursive=False, batch=64)
+    source = DirectorySource(DATA_DIR, recursive=False, extensions=[".cif"], batch=64)
     p = Pipeline(source)
     p.add_task(
         name="contacts",
@@ -96,7 +96,7 @@ def ex_contacts_sharded_files() -> None:
     for pth in out_dir.glob("part-*.ndjson"):
         pth.unlink()
 
-    p = Pipeline(DirectorySource(DATA_DIR, ext=".cif"))
+    p = Pipeline(DirectorySource(DATA_DIR, extensions=[".cif"]))
     p.add_task(
         name="contacts",
         task=ContactTask(),
@@ -152,7 +152,7 @@ def ex_python_system_topology_input() -> None:
 
 def ex_custom_channel_multi_sinks() -> None:
     """Route a task to a custom channel and attach multiple sinks."""
-    p = Pipeline(DirectorySource(DATA_DIR, ext=".cif", recursive=False))
+    p = Pipeline(DirectorySource(DATA_DIR, recursive=False, extensions=[".cif"]))
 
     def meta(ctx: PipelineContext) -> dict[str, int | str]:
         return {"base": os.path.basename(ctx.path), "size": os.path.getsize(ctx.path)}

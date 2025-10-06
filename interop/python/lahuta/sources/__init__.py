@@ -13,8 +13,21 @@ class Source(_lib.pipeline.sources.Source):
 
 
 class DirectorySource(_lib.pipeline.sources.DirectorySource):
-    def __init__(self, path: str | Path, *, ext: str = "", recursive: bool = True, batch: int = 200) -> None:
-        super().__init__(str(path), str(ext), bool(recursive), int(batch))
+    def __init__(
+        self,
+        path: str | Path,
+        *,
+        recursive: bool = True,
+        extensions: Sequence[str | Path] | str | Path | None = None,
+        batch: int = 200,
+    ) -> None:
+        if extensions is None:
+            ext_arg: object = ""
+        elif isinstance(extensions, (str, Path)):
+            ext_arg = [str(extensions)]
+        else:
+            ext_arg = [str(ext) for ext in extensions]
+        super().__init__(str(path), ext_arg, bool(recursive), int(batch))
 
 
 class FileSource(_lib.pipeline.sources.FileSource):
@@ -41,6 +54,21 @@ class DatabaseHandleSource(_lib.pipeline.sources.DatabaseHandleSource):
         super().__init__(db, str(database), int(batch))
 
 
+class LmdbSource(_lib.pipeline.sources.DatabaseSource):
+    def __init__(
+        self,
+        db: str | Path | Database,
+        *,
+        database: str = "",
+        batch: int = 1024,
+    ) -> None:
+        if isinstance(db, (str, Path)):
+            super().__init__(str(db), str(database), int(batch))
+        else:
+            # Delegate to DatabaseHandleSource binding when a handle is provided
+            _lib.pipeline.sources.DatabaseHandleSource.__init__(self, db, str(database), int(batch))
+
+
 class NmrSource(_lib.pipeline.sources.NmrSource):
     def __init__(self, files: Sequence[str | Path] | str | Path) -> None:
         if isinstance(files, (str, Path)):
@@ -62,6 +90,7 @@ __all__ = [
     "FileListSource",
     "DatabaseSource",
     "DatabaseHandleSource",
+    "LmdbSource",
     "NmrSource",
     "MdTrajectoriesSource",
 ]

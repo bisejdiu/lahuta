@@ -1,7 +1,9 @@
 #ifndef LAHUTA_SOURCES_DIRECTORY_HPP
 #define LAHUTA_SOURCES_DIRECTORY_HPP
 
+#include <algorithm>
 #include <filesystem>
+#include <cstring>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -19,8 +21,24 @@ public:
   using value_type = std::string;
 
   explicit Directory(
-      std::string_view directory_path, std::string_view extension = "", bool recursive = true, std::size_t batch_size = 1024)
-      : directory_path_(directory_path), extension_(extension), recursive_(recursive), batch_size_(batch_size) {
+      std::string_view directory_path,
+      std::string_view extension = "",
+      bool recursive = true,
+      std::size_t batch_size = 1024)
+      : Directory(directory_path,
+                  extension.empty() ? std::vector<std::string>{}
+                                     : std::vector<std::string>{std::string(extension)},
+                  recursive,
+                  batch_size) {}
+
+  Directory(std::string_view directory_path,
+            std::vector<std::string> extensions,
+            bool recursive = true,
+            std::size_t batch_size = 1024)
+      : directory_path_(directory_path),
+        extensions_(normalize_extensions(std::move(extensions))),
+        recursive_(recursive),
+        batch_size_(batch_size) {
 
     if (!fs::exists(directory_path_) || !fs::is_directory(directory_path_)) {
       throw fs::filesystem_error( "Directory does not exist", std::make_error_code(std::errc::no_such_file_or_directory));
@@ -29,10 +47,11 @@ public:
     if (recursive_) recursive_it_.emplace(directory_path_, fs::directory_options::skip_permission_denied);
     else                  dir_it_.emplace(directory_path_, fs::directory_options::skip_permission_denied);
 
+    const auto filters = describe_filters();
     Logger::get_logger()->info(
         "Directory: scanning directory '{}'{}; batch_size={} (recursive={})",
         directory_path_,
-        extension_.empty() ? "" : fmt::format(", filter='*{}'", extension_),
+        filters.empty() ? std::string{} : fmt::format(", filter='{}'", filters),
         batch_size_,
         recursive_ ? "yes" : "no");
 
@@ -68,7 +87,7 @@ private:
 
     const auto push_if_match = [&](const fs::path &p) {
       if (!fs::is_regular_file(p)) return;
-      if (!suffix_matches(p, extension_)) return;
+      if (!suffix_matches(p, extensions_)) return;
       current_batch_.push_back(p.string());
       ++total_files_;
     };
@@ -100,23 +119,47 @@ private:
     return !current_batch_.empty();
   }
 
-  static bool suffix_matches(const fs::path &p, std::string_view ext) noexcept {
-      if (ext.empty()) return true;
+  static std::vector<std::string> normalize_extensions(std::vector<std::string> exts) {
+    std::vector<std::string> filtered;
+    filtered.reserve(exts.size());
+    for (auto &ext : exts) {
+      if (ext.empty()) continue;
+      filtered.emplace_back(std::move(ext));
+    }
+    std::sort(filtered.begin(), filtered.end());
+    filtered.erase(std::unique(filtered.begin(), filtered.end()), filtered.end());
+    return filtered;
+  }
 
-      fs::path fn_path = p.filename();
+  [[nodiscard]] std::string describe_filters() const {
+    if (extensions_.empty()) return {};
+    std::string buf;
+    for (std::size_t i = 0; i < extensions_.size(); ++i) {
+      if (i > 0) buf.append(", ");
+      buf.push_back('*');
+      buf.append(extensions_[i]);
+    }
+    return buf;
+  }
 
-      auto* cstr = fn_path.c_str();
-      auto  len  = std::char_traits<char>::length(cstr);
+  static bool suffix_matches(const fs::path &p, const std::vector<std::string>& exts) noexcept {
+      if (exts.empty()) return true;
 
-      if (len < ext.size()) return false;
-      return std::memcmp(cstr + len - ext.size(), ext.data(), ext.size()) == 0;
+      const auto filename = p.filename().string();
+      for (const auto &ext : exts) {
+        if (filename.size() < ext.size()) continue;
+        if (std::memcmp(filename.data() + filename.size() - ext.size(), ext.data(), ext.size()) == 0) {
+          return true;
+        }
+      }
+      return false;
   }
 
 
   // config stuff
-  bool        recursive_;
   std::string directory_path_;
-  std::string extension_;
+  std::vector<std::string> extensions_;
+  bool        recursive_;
   std::size_t batch_size_;
 
   //

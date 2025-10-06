@@ -54,7 +54,7 @@ class TestPipelineFromDirectory:
     def test_contacts_memory_from_directory(self, data_dir: Path):
         """Test contacts generation from directory with results kept in memory."""
         # Limit to smaller files for faster testing
-        source = DirectorySource(data_dir, ext=".cif", recursive=False, batch=64)
+        source = DirectorySource(data_dir, recursive=False, extensions=[".cif"], batch=64)
         p = Pipeline(source)
         p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All), in_memory_policy=InMemoryPolicy.Keep)
 

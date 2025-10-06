@@ -42,7 +42,7 @@ class LahutaDB:
         threads: int = 4,
     ) -> "LahutaDB":
         """Create a model database from a directory of inputs."""
-        source = DirectorySource(directory, ext=str(ext), recursive=bool(recursive), batch=int(batch))
+        source = DirectorySource(directory, extensions=[str(ext)] if str(ext) else None, recursive=bool(recursive), batch=int(batch))
         mgr = _lib.pipeline.StageManager(source)
 
         # Emit serialized ModelRecord on channel 'db'

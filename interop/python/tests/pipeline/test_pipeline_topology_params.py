@@ -182,7 +182,7 @@ def test_toggle_topology_flags_invalidation_directory_source() -> None:
         temp_path = Path(temp_dir)
         _ = create_test_files_in_temp_dir(temp_path, count=2)
 
-        source = DirectorySource(str(temp_path), ext=".cif", recursive=False)
+        source = DirectorySource(str(temp_path), extensions=[".cif"], recursive=False)
         p = Pipeline(source)
 
         def inspect(ctx) -> InspectRecFull:
@@ -297,7 +297,7 @@ def test_all_sources_multi_run_parameter_changes(source_type: str) -> None:
         if source_type == "vector":
             p = Pipeline(FileSource(test_files))
         elif source_type == "directory":
-            p = Pipeline(DirectorySource(str(temp_path), ext=".cif", recursive=False))
+            p = Pipeline(DirectorySource(str(temp_path), extensions=[".cif"], recursive=False))
         elif source_type == "filelist":
             file_list = create_file_list(temp_path, test_files)
             p = Pipeline(FileListSource(file_list))
