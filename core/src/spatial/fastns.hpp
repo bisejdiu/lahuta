@@ -40,6 +40,11 @@ public:
   std::array<float, DIMENSIONS> get_box()      const { return box; }
   bool is_grid_ready() const { return grid_ready; }
 
+  double get_scale_ratio()   const { return scale_ratio_; }
+  bool   has_mixed_scales()  const { return has_mixed_scales_; }
+  double get_min_abs_coord() const { return min_abs_coord_; }
+  double get_max_abs_coord() const { return max_abs_coord_; }
+
   template <typename T>
   static inline T dist_sq(const T* __restrict a, const T* __restrict b) {
       T dx = a[0] - b[0];
@@ -90,6 +95,11 @@ private:
 
   std::vector<float>  coords_bbox;
   std::size_t n_points = 0;
+
+  double min_abs_coord_ = std::numeric_limits<double>::max();
+  double max_abs_coord_ = 0.0;
+  double scale_ratio_   = 1.0;
+  bool   has_mixed_scales_ = false;
 
   using MatX3f = Eigen::Matrix<float, Eigen::Dynamic, 3>;  // Column-major by default for optimal GEMM
   using VecXf  = Eigen::VectorXf;
