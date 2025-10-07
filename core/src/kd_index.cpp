@@ -1,4 +1,5 @@
 #include "kd_index.hpp"
+#include "nsresults_tls.hpp"
 
 namespace lahuta {
 
@@ -34,10 +35,12 @@ bool KDTreeIndex::build(const double *coords_f64, std::size_t n_points, int leaf
 }
 
 NSResults KDTreeIndex::radius_search(const RDGeom::POINT3D_VECT &queries, double radius) const {
-  NSResults results;
-  if (!ready() || queries.empty()) return results;
+  if (!ready() || queries.empty()) return {};
 
-  results.reserve_space(queries.size());
+  TlsResultsScope scope;
+  NSResults &results = scope.results();
+  results.reserve(queries.size());
+
   if (kd_.ready()) {
     const float r2 = static_cast<float>(radius * radius);
     std::array<float, 3> q{0.0f, 0.0f, 0.0f};

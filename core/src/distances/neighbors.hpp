@@ -2,9 +2,8 @@
 #define LAHUTA_DISTANCES_NEIGHBORS_HPP
 
 #include <vector>
-
-#include "nsgrid.hpp"
 #include <rdkit/Geometry/point.h>
+#include "spatial/nsresults.hpp"
 
 // clang-format off
 namespace lahuta::dist {

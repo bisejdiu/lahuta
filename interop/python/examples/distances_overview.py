@@ -28,15 +28,15 @@ def load_ca_atoms(structure_path: Path) -> CoordinateSelection:
     mask = names == "CA"
     ca_positions = props.positions[mask]
     if ca_positions.size == 0:
-        raise RuntimeError("No Cα atoms found in the structure.")
+        raise RuntimeError("No Ca atoms found in the structure.")
 
     logging.info(
-        "Loaded %d Cα atoms from %s (centroid=%s A)",
+        "Loaded %d Ca atoms from %s (centroid=%s A)",
         ca_positions.shape[0],
         structure_path.name,
         np.round(ca_positions.mean(axis=0), 2),
     )
-    return CoordinateSelection("Cα", ca_positions.astype(np.float64, copy=False))
+    return CoordinateSelection("Ca", ca_positions.astype(np.float64, copy=False))
 
 
 def summarize_distribution(distances: np.ndarray, label: str) -> None:
@@ -59,7 +59,7 @@ def demo_pairwise_metrics(selection: CoordinateSelection) -> None:
     logging.info("Computing pairwise distances for %d %s atoms", coords.shape[0], selection.name)
 
     condensed = metrics.pdist(coords, squared=False)
-    summarize_distribution(condensed, "metrics.pdist (Cα excerpt)")
+    summarize_distribution(condensed, "metrics.pdist (Ca excerpt)")
 
     matrix = metrics.pairwise_distances(coords)
     logging.info("pairwise_distances matrix shape: %s", matrix.shape)
@@ -67,7 +67,7 @@ def demo_pairwise_metrics(selection: CoordinateSelection) -> None:
 
 
 def demo_cross_distances(selection: CoordinateSelection) -> None:
-    # Split the Cα cloud into two chunks and compute cross distances with cdist.
+    # Split the Ca cloud into two chunks and compute cross distances with cdist.
     coords = selection.positions
     mid = coords.shape[0] // 2
     ref = coords[:mid]

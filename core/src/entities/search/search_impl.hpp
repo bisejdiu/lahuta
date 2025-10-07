@@ -7,7 +7,7 @@
 #include "entities/context.hpp"
 #include "entities/search/hit_buffer.hpp"
 #include "entities/search/provider.hpp"
-#include "nsgrid.hpp"
+#include "spatial/nsresults.hpp"
 
 // clang-format off
 namespace lahuta::search {

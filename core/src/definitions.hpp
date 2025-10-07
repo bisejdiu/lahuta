@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "bonds/rules/rules.hpp"
-#include "bonds/rules/token.h"
+#include "bonds/rules/token_lookup.hpp"
 
 namespace std {
 template <> struct hash<lahuta::resTokenType> {
@@ -22,7 +22,7 @@ template <size_t N>
 inline std::function<bool(const std::string &)> //
 make_tester(const std::array<resTokenType, N> &values) {
   return [values](const std::string &res_name) {
-    auto entry = lahuta::res_name_table(res_name.c_str(), res_name.length());
+    auto entry = res_name_table(res_name.c_str(), res_name.length());
     return std::find(values.begin(), values.end(), entry) != values.end();
   };
 }
@@ -30,7 +30,7 @@ make_tester(const std::array<resTokenType, N> &values) {
 inline std::function<bool(const std::string &)>
 make_tester(resTokenType range_start, resTokenType range_end) {
   return [range_start, range_end](const std::string &res_name) {
-    auto entry = lahuta::res_name_table(res_name.c_str(), res_name.length());
+    auto entry = res_name_table(res_name.c_str(), res_name.length());
     return entry >= range_start && entry <= range_end;
   };
 }
@@ -39,7 +39,7 @@ template <size_t N>
 inline std::function<bool(const std::string &)>
 make_tester(const std::array<std::pair<resTokenType, resTokenType>, N> &ranges) {
   return [ranges](const std::string &res_name) {
-    auto entry = lahuta::res_name_table(res_name.c_str(), res_name.length());
+    auto entry = res_name_table(res_name.c_str(), res_name.length());
     for (const auto &[start, end] : ranges) {
       if (entry >= start && entry <= end) {
         return true;

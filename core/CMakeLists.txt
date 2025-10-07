@@ -59,9 +59,10 @@ endif()
 option(LAHUTA_BUILD_CLI            "Build CLI executables" ON)
 option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
 option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
-option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" OFF)
+option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" ON)
 option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
 option(LAHUTA_ENABLE_EXPENSIVE_TESTS "Enable expensive tests that require large datasets" OFF)
+option(LAHUTA_BUILD_FOLDSEEK       "Build foldseek and mapping components" OFF)
 
 set(RDK_USE_BOOST_SERIALIZATION OFF CACHE BOOL "Disable rdkit boost serialization" FORCE)
 
@@ -143,12 +144,15 @@ target_include_directories(lahuta_shared_headers INTERFACE
 add_subdirectory(external/spdlog)
 add_subdirectory(external/gemmi)    # Build gemmi first (zlib alignment)
 add_subdirectory(external/rdkit)
-add_subdirectory(external/foldseek)
-add_dependencies(foldseek gemmi_cpp)
 
-# Set install name for foldseek on macOS
-if(APPLE)
-  set_target_properties(foldseek PROPERTIES INSTALL_NAME_DIR "@rpath")
+if(LAHUTA_BUILD_FOLDSEEK)
+  add_subdirectory(external/foldseek)
+  add_dependencies(foldseek gemmi_cpp)
+
+  # Set install name for foldseek on macOS
+  if(APPLE)
+    set_target_properties(foldseek PROPERTIES INSTALL_NAME_DIR "@rpath")
+  endif()
 endif()
 add_subdirectory(external/distopia)
 
@@ -176,7 +180,6 @@ add_library(lahuta_core SHARED
   src/convert.cpp
   src/kd_tree.cpp
   src/kd_index.cpp
-  src/nsgrid.cpp
   src/lahuta.cpp
   src/visitor.cpp
   src/struct_unit.cpp
@@ -234,6 +237,10 @@ add_library(lahuta_core SHARED
   src/chemistry/geometry.cpp
   src/chemistry/predicates.cpp
 
+  src/spatial/nsresults.cpp
+  src/spatial/fastns.cpp
+  src/spatial/nsutils.cpp
+
   src/distances/api.cpp
   src/distances/kernels.cpp
   src/distances/matrix.cpp
@@ -288,34 +295,36 @@ target_link_libraries(lahuta_core PUBLIC
 )
 
 # Mapping library
-add_library(lahuta_mapping STATIC
-  src/mapping/bitset_mapping.cpp
-  src/mapping/mapping_matrix.cpp
-  src/mapping/residue_set.cpp
-)
-target_compile_features(lahuta_mapping PUBLIC cxx_std_17)
-set_property(TARGET lahuta_mapping PROPERTY POSITION_INDEPENDENT_CODE ON)
-target_include_directories(lahuta_mapping PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}/external
-)
-# SIMDe headers for mapping and dependent code
-target_include_directories(lahuta_mapping PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/simde
-)
-# Foldseek headers needed by mapping
-target_include_directories(lahuta_mapping PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek/simd
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek/generated
-)
-target_link_libraries(lahuta_mapping PUBLIC
-  lahuta_core
-  foldseek
-  ZLIB::ZLIB
-  spdlog::spdlog_header_only
-  Boost::headers
-)
+if(LAHUTA_BUILD_FOLDSEEK)
+  add_library(lahuta_mapping STATIC
+    src/mapping/bitset_mapping.cpp
+    src/mapping/mapping_matrix.cpp
+    src/mapping/residue_set.cpp
+  )
+  target_compile_features(lahuta_mapping PUBLIC cxx_std_17)
+  set_property(TARGET lahuta_mapping PROPERTY POSITION_INDEPENDENT_CODE ON)
+  target_include_directories(lahuta_mapping PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/external
+  )
+  # SIMDe headers for mapping and dependent code
+  target_include_directories(lahuta_mapping PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/simde
+  )
+  # Foldseek headers needed by mapping
+  target_include_directories(lahuta_mapping PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek/simd
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek/generated
+  )
+  target_link_libraries(lahuta_mapping PUBLIC
+    lahuta_core
+    foldseek
+    ZLIB::ZLIB
+    spdlog::spdlog_header_only
+    Boost::headers
+  )
+endif()
 
 # Eigen, system first, bundled fallback
 if(LAHUTA_WITH_EIGEN)
@@ -341,6 +350,7 @@ if(LAHUTA_BUILD_CLI)
   add_lahuta_executable(lahuta_cli apps/main.cpp)
   set_target_properties(lahuta_cli PROPERTIES OUTPUT_NAME "lahuta")
   add_lahuta_executable(resolver apps/use_resolver.cpp)
+  add_lahuta_executable(md_stage_manager_example apps/md_stage_manager_example.cpp)
 endif()
 
 if(LAHUTA_BUILD_PYTHON)
@@ -407,21 +417,23 @@ if(LAHUTA_BUILD_PYTHON)
     )
 
     # mapping submodule, depends at Python-import level on lahuta
-    set(LAHUTA_MAPPING_SOURCES
-      ${PY_SRC_DIR}/mapping/mapping.cpp
-      ${PY_SRC_DIR}/mapping/fseek.cpp
-      ${PY_SRC_DIR}/mapping/align.cpp
-      ${PY_SRC_DIR}/mapping/te.cpp
-    )
-    pybind11_add_module(mapping_ext MODULE ${LAHUTA_MAPPING_SOURCES})
-    target_include_directories(mapping_ext PRIVATE ${PY_SRC_DIR})
-    target_link_libraries(mapping_ext PRIVATE lahuta_mapping spdlog::spdlog_header_only ZLIB::ZLIB)
-    target_compile_features(mapping_ext PRIVATE cxx_std_17)
-    set_target_properties(mapping_ext PROPERTIES OUTPUT_NAME "mapping")
-    set_target_properties(mapping_ext PROPERTIES
-      BUILD_RPATH   "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
-      INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path>$<$<PLATFORM_ID:Linux>:$ORIGIN>"
-    )
+    if(LAHUTA_BUILD_FOLDSEEK)
+      set(LAHUTA_MAPPING_SOURCES
+        ${PY_SRC_DIR}/mapping/mapping.cpp
+        ${PY_SRC_DIR}/mapping/fseek.cpp
+        ${PY_SRC_DIR}/mapping/align.cpp
+        ${PY_SRC_DIR}/mapping/te.cpp
+      )
+      pybind11_add_module(mapping_ext MODULE ${LAHUTA_MAPPING_SOURCES})
+      target_include_directories(mapping_ext PRIVATE ${PY_SRC_DIR})
+      target_link_libraries(mapping_ext PRIVATE lahuta_mapping spdlog::spdlog_header_only ZLIB::ZLIB)
+      target_compile_features(mapping_ext PRIVATE cxx_std_17)
+      set_target_properties(mapping_ext PROPERTIES OUTPUT_NAME "mapping")
+      set_target_properties(mapping_ext PROPERTIES
+        BUILD_RPATH   "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
+        INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path>$<$<PLATFORM_ID:Linux>:$ORIGIN>"
+      )
+    endif()
 
     # Install compiled extensions and runtime libraries into the Python package tree
     # These are relative to the CMAKE_INSTALL_PREFIX (which could be set to sitepackages above)
@@ -432,16 +444,25 @@ if(LAHUTA_BUILD_PYTHON)
       COMPONENT python
     )
 
-    install(TARGETS mapping_ext
-      LIBRARY DESTINATION "lahuta/lib"
-      COMPONENT python
-    )
+    if(LAHUTA_BUILD_FOLDSEEK)
+      install(TARGETS mapping_ext
+        LIBRARY DESTINATION "lahuta/lib"
+        COMPONENT python
+      )
+    endif()
 
     # runtime shared libraries needed by Python extensions
-    install(TARGETS lahuta_core foldseek
-      LIBRARY DESTINATION "lahuta/lib"
-      COMPONENT python
-    )
+    if(LAHUTA_BUILD_FOLDSEEK)
+      install(TARGETS lahuta_core foldseek
+        LIBRARY DESTINATION "lahuta/lib"
+        COMPONENT python
+      )
+    else()
+      install(TARGETS lahuta_core
+        LIBRARY DESTINATION "lahuta/lib"
+        COMPONENT python
+      )
+    endif()
 
     # Python file installation depends on build context
     if(NOT DEFINED SKBUILD)

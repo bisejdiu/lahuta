@@ -121,28 +121,28 @@ public:
       std::cout << "Printing positions of first 5 atoms for each frame." << std::endl;
     });
 
-    std::ostringstream oss;
-    oss << "Frame " << data.conformer_id;
-    if (frame_meta) {
-      oss << " session='" << frame_meta->session_id << "'";
-      if (frame_meta->timestamp_ps) {
-        oss << " time_ps=" << *frame_meta->timestamp_ps;
-      }
-    }
-    oss << " system_ptr=" << static_cast<const void *>(system.get());
-    if (topology_ptr) {
-      oss << " topology_ptr=" << static_cast<const void *>(topology_ptr.get());
-    } else {
-      oss << " topology_ptr=<none>";
-    }
-    oss << " first_5_atoms=[";
-    for (size_t i = 0; i < first_5_atoms.size(); ++i) {
-      if (i > 0) oss << ", ";
-      oss << "(" << first_5_atoms[i].x << ", " << first_5_atoms[i].y << ", " << first_5_atoms[i].z << ")";
-    }
-    oss << "]";
+    // std::ostringstream oss;
+    // oss << "Frame " << data.conformer_id;
+    // if (frame_meta) {
+    //   oss << " session='" << frame_meta->session_id << "'";
+    //   if (frame_meta->timestamp_ps) {
+    //     oss << " time_ps=" << *frame_meta->timestamp_ps;
+    //   }
+    // }
+    // oss << " system_ptr=" << static_cast<const void *>(system.get());
+    // if (topology_ptr) {
+    //   oss << " topology_ptr=" << static_cast<const void *>(topology_ptr.get());
+    // } else {
+    //   oss << " topology_ptr=<none>";
+    // }
+    // oss << " first_5_atoms=[";
+    // for (size_t i = 0; i < first_5_atoms.size(); ++i) {
+    //   if (i > 0) oss << ", ";
+    //   oss << "(" << first_5_atoms[i].x << ", " << first_5_atoms[i].y << ", " << first_5_atoms[i].z << ")";
+    // }
+    // oss << "]";
 
-    std::cout << oss.str() << std::endl;
+    // std::cout << oss.str() << std::endl;
     return ComputationResult(true);
   }
 };
@@ -150,7 +150,7 @@ public:
 } // namespace
 
 int main() {
-  Logger::get_instance().set_log_level(Logger::LogLevel::Debug);
+  Logger::get_instance().set_log_level(Logger::LogLevel::Warn);
   auto source = std::make_unique<SingleTrajectoryDescriptor>(kStructurePath, std::vector<std::string>{kXtcPath});
   StageManager manager(std::move(source));
   manager.set_auto_builtins(true);

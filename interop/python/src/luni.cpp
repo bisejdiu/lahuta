@@ -9,9 +9,15 @@
 #include "convert.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"
-#include "nsgrid.hpp"
+#include "spatial/fastns.hpp"
+#include "spatial/nsresults.hpp"
 #include "numpy_utils.hpp"
 #include "topology.hpp"
+#include "spatial/nsutils.hpp"
+#include "definitions.hpp"
+
+#include "GraphMol/Atom.h"
+#include "GraphMol/RWMol.h"
 
 namespace py = pybind11;
 
@@ -62,6 +68,31 @@ public:
   auto chainlabels() { return numpy::string_array_1d(luni_.chainlabels()); }
 };
 
+NSResults remove_adjascent_residueid_pairs(const Luni &luni, NSResults &results, int res_diff) {
+  Pairs     f_pairs;
+  Distances distances;
+
+  for (const auto &[pair, dist] : results) {
+    auto *fatom = luni.get_molecule().getAtomWithIdx(pair.first);
+    auto *satom = luni.get_molecule().getAtomWithIdx(pair.second);
+
+    auto *finfo = static_cast<const RDKit::AtomPDBResidueInfo *>(fatom->getMonomerInfo());
+    auto *sinfo = static_cast<const RDKit::AtomPDBResidueInfo *>(satom->getMonomerInfo());
+
+    if (fatom->getAtomicNum() == 1 || satom->getAtomicNum() == 1) continue;
+
+    auto f_resid = finfo->getResidueNumber();
+    auto s_resid = sinfo->getResidueNumber();
+
+    auto is_either_nonprotein = !definitions::is_polymer(finfo->getResidueName()) || !definitions::is_polymer(sinfo->getResidueName());
+    if (std::abs(f_resid - s_resid) > res_diff || is_either_nonprotein) {
+      f_pairs.push_back(pair);
+      distances.push_back(dist);
+    }
+  }
+  return NSResults(f_pairs, distances);
+}
+
 void bind_luni(py::module &m) {
 
   py::class_<IR>(m, "IR", "Intermediate representation for molecular data. All arrays must be 0-based and aligned by atom index.")
@@ -78,7 +109,7 @@ void bind_luni(py::module &m) {
     .def_readwrite("resids",         &IR::resids,         "Residue sequence identifiers")
     .def_readwrite("resnames",       &IR::resnames,       "Residue names (e.g., 'ALA')")
     .def_readwrite("chainlabels",    &IR::chainlabels,    "Chain labels (e.g., 'A')")
-    .def_readwrite("positions",      &IR::positions,      "Cartesian coordinates in Å, shape (N, 3)");
+    .def_readwrite("positions",      &IR::positions,      "Cartesian coordinates in A, shape (N, 3)");
 
   py::class_<LuniProperties>(m, "LahutaSystemProperties", "Wrapper for accessing molecular properties")
     .def_property_readonly("positions",       &LuniProperties::positions,      "Atom coordinates (copy, float64, shape (n,3))")
@@ -144,7 +175,7 @@ void bind_luni(py::module &m) {
         }
         auto ns = grid.self_search();
         if (res_dif > 0) {
-          ns = ns_utils::remove_adjascent_residueid_pairs(luni, ns, res_dif);
+          ns = remove_adjascent_residueid_pairs(luni, ns, res_dif);
         }
         return ns;
     }, py::arg("cutoff"), py::arg("res_dif") = 0,

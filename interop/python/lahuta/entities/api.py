@@ -99,7 +99,7 @@ def find_contacts(
         topology: Molecular topology containing entity information
         a: Primary entity selector (atoms, rings, or groups)
         b: Secondary entity selector. If None, finds contacts within 'a'
-        tester: Optional custom interaction tester function. Takes (index1, index2, distance²)
+        tester: Optional custom interaction tester function. Takes (index1, index2, distance^2)
                and returns InteractionType or bool
         distance_max: Maximum distance for contact detection (Angstroms)
         opts: Advanced search options. If provided, distance_max is ignored
@@ -112,7 +112,7 @@ def find_contacts(
         ValueError: If distance_max is not positive
 
     Examples:
-        >>> # Find all atom-atom contacts within 5Å
+        >>> # Find all atom-atom contacts within 5A
         >>> contacts = find_contacts(topology, atoms(), distance_max=5.0)
 
         >>> # Find hydrogen bonds between donors and acceptors

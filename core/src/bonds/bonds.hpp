@@ -1,10 +1,12 @@
 #ifndef LAHUTA_BONDS_HPP
 #define LAHUTA_BONDS_HPP
 
-#include "nsgrid.hpp"
+#include <vector>
+
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include <rdkit/GraphMol/RWMol.h>
-#include <vector>
+
+#include "spatial/nsresults.hpp"
 
 namespace lahuta {
 

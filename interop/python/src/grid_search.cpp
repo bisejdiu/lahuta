@@ -3,7 +3,8 @@
 #include <pybind11/stl.h>
 
 #include "kd_index.hpp"
-#include "nsgrid.hpp"
+#include "spatial/fastns.hpp"
+#include "spatial/nsresults.hpp"
 #include "nsresults_python.hpp"
 #include "numpy_utils.hpp"
 #include "rdkit/Geometry/point.h"
@@ -233,7 +234,6 @@ Notes:
          "Iterate over ((i, j), distance_sq) tuples.", py::keep_alive<0, 1>());
 
   py::class_<FastNS>(m, "FastNS")
-    .def(py::init<>(), "Create an empty FastNS instance. Typically use a coordinate-taking constructor instead.")
     .def(py::init<const std::vector<RDGeom::Point3D>&>(),
          py::arg("coords"),
          R"doc(

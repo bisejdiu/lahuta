@@ -5,7 +5,8 @@
 #include <tuple>
 #include <vector>
 
-#include "nsgrid.hpp"
+#include "spatial/fastns.hpp"
+#include "spatial/nsresults.hpp"
 
 // clang-format off
 namespace lahuta {

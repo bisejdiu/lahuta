@@ -11,7 +11,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
-#include "nsgrid.hpp"
+#include "spatial/nsresults.hpp"
 
 // clang-format off
 namespace py = pybind11;

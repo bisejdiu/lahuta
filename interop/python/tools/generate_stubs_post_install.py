@@ -37,7 +37,12 @@ def main() -> int:
     env["PYTHONPATH"] = prefix + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env.pop("PYTHONHOME", None)
 
-    modules = ["lahuta.lib.lahuta", "lahuta.lib.mapping"]
+    modules = ["lahuta.lib.lahuta"]
+
+    mapping_module_path = lahuta_pkg_dir / "lib" / "mapping"
+    if mapping_module_path.exists():
+        modules.append("lahuta.lib.mapping")
+
     for module in modules:
         print(f"{pkg_name_fmt} Generating stubs for {module}", file=sys.stderr)
         try:

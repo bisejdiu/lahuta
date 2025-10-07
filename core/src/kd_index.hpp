@@ -7,7 +7,7 @@
 #include <rdkit/Geometry/point.h>
 
 #include "kd_tree.hpp"
-#include "nsgrid.hpp" // for NSResults
+#include "spatial/nsresults.hpp"
 
 // clang-format off
 namespace lahuta {

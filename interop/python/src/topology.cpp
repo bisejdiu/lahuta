@@ -88,7 +88,7 @@ void bind_topology(py::module &m) {
     .def_property_readonly("size",    &RingView::size,     "Number of atoms in the ring")
     .def_property_readonly("atoms",   &RingView::atoms,    "Atoms participating in the ring")
     .def_property_readonly("aromatic",&RingView::aromatic, "Whether the ring is aromatic")
-    .def_property_readonly("center",  &RingView::center,   "Ring geometric center (Å)")
+    .def_property_readonly("center",  &RingView::center,   "Ring geometric center (A)")
     .def_property_readonly("normal",  &RingView::normal,   "Normal vector to ring plane")
     .def("__repr__", [](const RingView &self) {
       return py::str("RingView(atoms={}, aromatic={})").format(self.size(), self.aromatic());
@@ -98,7 +98,7 @@ void bind_topology(py::module &m) {
     .def_property_readonly("a_type", &GroupView::a_type, "Atom type associated with this group")
     .def_property_readonly("type",   &GroupView::type,   "Functional group classification")
     .def_property_readonly("atoms",  &GroupView::atoms,  "Atoms participating in the group")
-    .def_property_readonly("center", &GroupView::center, "Geometric center of the group (Å)")
+    .def_property_readonly("center", &GroupView::center, "Geometric center of the group (A)")
     .def("__repr__", [](const GroupView &self) {
       return py::str("GroupView(a_type={}, type={}, atoms={})").format(
         static_cast<uint32_t>(self.a_type()), static_cast<int>(self.type()), self.atoms().size());
@@ -110,7 +110,7 @@ void bind_topology(py::module &m) {
 
   py::class_<TopologyBuildingOptions>(m, "TopologyBuildingOptions", "Options controlling topology construction.")
     .def(py::init<>(), "Create default options")
-    .def_readwrite("cutoff",    &TopologyBuildingOptions::cutoff,    "Neighbor-search cutoff used in bond perception and neighbors (Å)")
+    .def_readwrite("cutoff",    &TopologyBuildingOptions::cutoff,    "Neighbor-search cutoff used in bond perception and neighbors (A)")
     .def_readwrite("auto_heal", &TopologyBuildingOptions::auto_heal, "Resolve required dependencies automatically during execution")
     .def_readwrite("atom_typing_method",        &TopologyBuildingOptions::atom_typing_method,        "Backend used for atom typing")
     .def_readwrite("compute_nonstandard_bonds", &TopologyBuildingOptions::compute_nonstandard_bonds, "Include non-standard/metal coordination where applicable");
@@ -272,7 +272,7 @@ void bind_topology(py::module &m) {
     .def("enable_only",            &Topology::enable_only,            py::arg("comps"),   "Enable only the provided bitmask; disables all others")
     .def("is_computation_enabled", &Topology::is_computation_enabled, py::arg("comp"),    "Whether a stage is enabled")
     .def("execute_computation",    &Topology::execute_computation,    py::arg("comp"),    "Run a single stage, resolving dependencies")
-    .def("set_cutoff",             &Topology::set_cutoff,             py::arg("cutoff"),  "Neighbor cutoff used by bond perception (Å)")
+    .def("set_cutoff",             &Topology::set_cutoff,             py::arg("cutoff"),  "Neighbor cutoff used by bond perception (A)")
     .def("set_atom_typing_method", &Topology::set_atom_typing_method, py::arg("method"),  "Set atom typing backend for future typing")
     .def("set_compute_nonstandard_bonds", &Topology::set_compute_nonstandard_bonds, py::arg("compute"), "Include metal/coordination bonds if True")
 
