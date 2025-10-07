@@ -50,9 +50,20 @@ FastNS::FastNS(const RDGeom::POINT3D_VECT &coords) {
 
   for (const auto &coord : coords) {
     for (int i = 0; i < DIMENSIONS; ++i) {
-      _lmax[i] = std::max(_lmax[i], coord[i]);
-      _lmin[i] = std::min(_lmin[i], coord[i]);
+      const double val = coord[i];
+      const double abs_val = std::abs(val);
+      _lmax[i] = std::max(_lmax[i], val);
+      _lmin[i] = std::min(_lmin[i], val);
+      if (abs_val > 0.0) {
+        if (abs_val < min_abs_coord_) min_abs_coord_ = abs_val;
+        if (abs_val > max_abs_coord_) max_abs_coord_ = abs_val;
+      }
     }
+  }
+
+  if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
+    scale_ratio_ = max_abs_coord_ / min_abs_coord_;
+    has_mixed_scales_ = scale_ratio_ > 1e6;
   }
 
   // pack into coords_bbox
@@ -76,9 +87,20 @@ FastNS::FastNS(const std::vector<std::vector<double>> &coords) {
 
   for (const auto &coord : coords) {
     for (int i = 0; i < DIMENSIONS; ++i) {
-      _lmax[i] = std::max(_lmax[i], coord[i]);
-      _lmin[i] = std::min(_lmin[i], coord[i]);
+      const double val = coord[i];
+      const double abs_val = std::abs(val);
+      _lmax[i] = std::max(_lmax[i], val);
+      _lmin[i] = std::min(_lmin[i], val);
+      if (abs_val > 0.0) {
+        if (abs_val < min_abs_coord_) min_abs_coord_ = abs_val;
+        if (abs_val > max_abs_coord_) max_abs_coord_ = abs_val;
+      }
     }
+  }
+
+  if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
+    scale_ratio_ = max_abs_coord_ / min_abs_coord_;
+    has_mixed_scales_ = scale_ratio_ > 1e6;
   }
 
   // pack into coords_bbox
@@ -108,6 +130,17 @@ FastNS::FastNS(const double *coords_ptr, std::size_t npts) {
     if (x < _lmin[0]) _lmin[0] = x; if (x > _lmax[0]) _lmax[0] = x;
     if (y < _lmin[1]) _lmin[1] = y; if (y > _lmax[1]) _lmax[1] = y;
     if (z < _lmin[2]) _lmin[2] = z; if (z > _lmax[2]) _lmax[2] = z;
+    const double ax = std::abs(x);
+    const double ay = std::abs(y);
+    const double az = std::abs(z);
+    if (ax > 0.0) { if (ax < min_abs_coord_) min_abs_coord_ = ax; if (ax > max_abs_coord_) max_abs_coord_ = ax; }
+    if (ay > 0.0) { if (ay < min_abs_coord_) min_abs_coord_ = ay; if (ay > max_abs_coord_) max_abs_coord_ = ay; }
+    if (az > 0.0) { if (az < min_abs_coord_) min_abs_coord_ = az; if (az > max_abs_coord_) max_abs_coord_ = az; }
+  }
+
+  if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
+    scale_ratio_ = max_abs_coord_ / min_abs_coord_;
+    has_mixed_scales_ = scale_ratio_ > 1e6;
   }
 
   coords_bbox.reserve(npts * 3);
@@ -196,6 +229,12 @@ bool FastNS::build(double cutoff, bool brute_force_fallback) {
         "FastNS.build: failed to configure grid for n={} cutoff={:.6f} (fallback disabled or too large)",
         n_points, cutoff);
     return false;
+  }
+
+  if (has_mixed_scales_) {
+    Logger::get_logger()->warn(
+        "FastNS.build: mixed-scale coordinates detected (ratio={:.2e}, orders~{:.1f}). Small distances may underflow to 0.0 with float precision.",
+        scale_ratio_, std::log10(scale_ratio_));
   }
 
   Logger::get_logger()->trace(
