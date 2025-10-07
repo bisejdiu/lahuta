@@ -27,7 +27,7 @@ public:
       std::size_t batch_size = 1024)
       : Directory(directory_path,
                   extension.empty() ? std::vector<std::string>{}
-                                     : std::vector<std::string>{std::string(extension)},
+                                    : std::vector<std::string>{std::string(extension)},
                   recursive,
                   batch_size) {}
 

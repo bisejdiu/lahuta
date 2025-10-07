@@ -124,8 +124,7 @@ def test_database_handle_source_auto_sets_model_mode(tmp_path: Path) -> None:
 
     # Create pipeline with DatabaseHandleSource - should auto-set is_model=True
     p = Pipeline(DatabaseHandleSource(db))
-    
-    # Verify that is_model is automatically set to True
+
     assert p.params("system").is_model is True, "DatabaseHandleSource should automatically set is_model=True"
 
 

@@ -48,8 +48,10 @@ class PyTaskFn(Protocol[R_co]):
 class Pipeline:
     """Pipeline builder and executor.
 
-    - Each task emits to a channel. Sinks subscribe to channels
-    - run() returns memory results keyed by channel.
+    A Pipeline orchestrates computational tasks for analyzing molecular structures
+    and trajectories. Tasks emit results to channels, which can be consumed by
+    various sinks (memory, files, sharded outputs).
+
     """
 
     def __init__(self, source: PipelineSource) -> None:
@@ -69,7 +71,7 @@ class Pipeline:
         # Parameter proxies
         self._system_params   = SystemParams(self._mgr)
         self._topology_params = TopologyParams(self._mgr)
-        
+
         # DatabaseHandleSource is only valid for is_model=True
         if isinstance(source, _lib.pipeline.sources.DatabaseHandleSource):
             try:
