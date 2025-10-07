@@ -116,9 +116,8 @@ public:
 
     static std::once_flag header_once;
     std::call_once(header_once, []() {
-      std::cout << "StageManager-driven MD streaming example" << std::endl;
+      std::cout << "StageManager driven MD streaming example" << std::endl;
       std::cout << "System/topology are reused per session. Coordinates update for each frame." << std::endl;
-      std::cout << "Printing positions of first 5 atoms for each frame." << std::endl;
     });
 
     // std::ostringstream oss;

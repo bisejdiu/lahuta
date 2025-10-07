@@ -69,10 +69,6 @@ class LahutaDB:
         """Create a Pipeline reading from this DB with model mode auto configured."""
         source = DatabaseHandleSource(self._db, batch=int(batch))
         p = Pipeline(source)
-        try:
-            p.params("system").is_model = True
-        except Exception:
-            pass
         return p
 
     @property

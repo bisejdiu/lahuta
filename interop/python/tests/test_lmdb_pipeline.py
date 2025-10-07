@@ -63,7 +63,6 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
     assert len(keys) == 2
 
     p_read = Pipeline(DatabaseHandleSource(db))
-    p_read.params("system").is_model = True
 
     task_name = "contacts_molstar" if provider == lxx.ContactProvider.MolStar else "contacts_arpeggio"
     p_read.add_task(name=task_name, task=ContactTask(provider=provider))
@@ -103,7 +102,6 @@ def test_db_pipeline_exposes_model_mode(tmp_path: Path) -> None:
     db = dbw._db
 
     p_read = Pipeline(DatabaseHandleSource(db))
-    p_read.params("system").is_model = True
 
     def get_mode(ctx: Any) -> dict[str, str]:
         sys = ctx.get_system()
@@ -113,6 +111,22 @@ def test_db_pipeline_exposes_model_mode(tmp_path: Path) -> None:
     out = p_read.run(threads=2)
     modes = [rec["mode"] for rec in out["mode"]]
     assert modes == ["model", "model"]
+
+
+def test_database_handle_source_auto_sets_model_mode(tmp_path: Path) -> None:
+    """Test that DatabaseHandleSource automatically sets is_model=True."""
+    data_dir = Path("core/data/models")
+    assert data_dir.exists(), "Test models directory missing"
+
+    db_path = tmp_path / "models_lmdb"
+    dbw = LahutaDB.create_from_directory(data_dir, db_path, ext=".cif.gz", recursive=False, batch=50, threads=2)
+    db = dbw._db
+
+    # Create pipeline with DatabaseHandleSource - should auto-set is_model=True
+    p = Pipeline(DatabaseHandleSource(db))
+    
+    # Verify that is_model is automatically set to True
+    assert p.params("system").is_model is True, "DatabaseHandleSource should automatically set is_model=True"
 
 
 def test_arpeggio_contacts_file_pipeline() -> None:

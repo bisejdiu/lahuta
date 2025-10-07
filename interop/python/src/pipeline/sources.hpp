@@ -175,8 +175,6 @@ inline void bind_sources(py::module_ &md) {
   py::class_<sources::FileListAdapter, sources::IDescriptor, std::shared_ptr<sources::FileListAdapter>>(ms, "FileListSource")
       .def(py::init<const std::string &>(), py::arg("path"));
 
-  // FIX: Unify these two
-
   // LMDB sources with env-path variant
   py::class_<sources::LMDBAdapter, sources::IDescriptor, std::shared_ptr<sources::LMDBAdapter>>(ms, "DatabaseSource")
       .def(py::init<const std::string &, const std::string &, std::size_t>(),

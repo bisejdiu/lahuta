@@ -73,7 +73,6 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
     db_path = tmp_path / "models_lmdb"
     ldb = LahutaDB.create_from_directory(data_dir, db_path, ext=".cif.gz", recursive=False, batch=50, threads=1)
     p_db = Pipeline(DatabaseHandleSource(ldb._db, batch=64))
-    p_db.params("system").is_model = True
 
     # Ensure Arpeggio atom typing is selected before building topology in model mode
     p_db.params("topology").atom_typing_method = lxx.AtomTypingMethod.Arpeggio

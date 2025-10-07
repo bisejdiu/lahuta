@@ -69,6 +69,13 @@ class Pipeline:
         # Parameter proxies
         self._system_params   = SystemParams(self._mgr)
         self._topology_params = TopologyParams(self._mgr)
+        
+        # DatabaseHandleSource is only valid for is_model=True
+        if isinstance(source, _lib.pipeline.sources.DatabaseHandleSource):
+            try:
+                self._system_params.is_model = True
+            except Exception:
+                pass
 
     @overload
     def params(self, builtin_name: Literal["system"]) -> SystemParams: ...
