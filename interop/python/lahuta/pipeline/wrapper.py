@@ -23,7 +23,7 @@ from ._discovery import _ast_infer_builtins_for_callable, _discover_builtins_for
 from .params import SystemParams, TopologyParams
 from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
-from lahuta.sources import Source as PipelineSource
+from lahuta.sources import PipelineSource
 
 # fmt: off
 StageManager = _lib.pipeline.StageManager

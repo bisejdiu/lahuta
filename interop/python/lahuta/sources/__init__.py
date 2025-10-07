@@ -8,10 +8,6 @@ from lahuta.lib import lahuta as _lib
 Database = _lib.db.Database
 
 
-class Source(_lib.pipeline.sources.Source):
-    """Base class for all pipeline sources."""
-
-
 class DirectorySource(_lib.pipeline.sources.DirectorySource):
     def __init__(
         self,
@@ -83,8 +79,20 @@ class MdTrajectoriesSource(_lib.pipeline.sources.MdTrajectoriesSource):
         super().__init__(trajectories)
 
 
+PipelineSource = (
+    DirectorySource
+    | FileSource
+    | FileListSource
+    | DatabaseSource
+    | DatabaseHandleSource
+    | LmdbSource
+    | NmrSource
+    | MdTrajectoriesSource
+)
+
+
 __all__ = [
-    "Source",
+    "PipelineSource",
     "DirectorySource",
     "FileSource",
     "FileListSource",
