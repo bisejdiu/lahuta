@@ -22,6 +22,14 @@ inline DescriptorPtr from_directory(const std::string& path, const std::string& 
   return std::make_unique<sources::DirectoryAdapter>(path, ext, recursive, batch);
 }
 
+inline DescriptorPtr from_directory(const std::string& path,
+                                    std::vector<std::string> extensions,
+                                    bool recursive,
+                                    std::size_t batch) {
+  return std::make_unique<sources::DirectoryAdapter>(
+      sources::Directory(path, std::move(extensions), recursive, batch));
+}
+
 inline DescriptorPtr from_directory(sources::Directory src) {
   return std::make_unique<sources::DirectoryAdapter>(std::move(src));
 }

@@ -15,6 +15,7 @@ def test_dynamic_pipeline_python_task_topology_lifetime_detection(data_path, run
     child = f"""
 import sys
 from lahuta.pipeline import Pipeline
+from lahuta.sources import FileSource
 from lahuta import Topology
 
 # Capture a Topology object retrieved via ctx.topology() and use it after run()
@@ -26,7 +27,7 @@ def grab_top(ctx) -> str:
         _KEEP.append(top)
     return "ok"
 
-p = Pipeline.from_files({ubi!r})
+p = Pipeline(FileSource({ubi!r}))
 p.add_task(name="py_top", task=grab_top, depends=["topology"], thread_safe=False)
 
 p.run(threads=1)

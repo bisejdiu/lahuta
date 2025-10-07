@@ -21,6 +21,7 @@ from lahuta.pipeline import (
     PipelineContext,
     ShardedOutput,
 )
+from lahuta.sources import DirectorySource, FileListSource, FileSource
 
 # fmt: off
 EXPECTED_CONTACTS_COUNT = {
@@ -53,7 +54,8 @@ class TestPipelineFromDirectory:
     def test_contacts_memory_from_directory(self, data_dir: Path):
         """Test contacts generation from directory with results kept in memory."""
         # Limit to smaller files for faster testing
-        p = Pipeline.from_directory(data_dir, ext=".cif", recursive=False, batch=64)
+        source = DirectorySource(data_dir, recursive=False, extensions=[".cif"], batch=64)
+        p = Pipeline(source)
         p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All), in_memory_policy=InMemoryPolicy.Keep)
 
         # Contact recors are too complex for static typing (just not worth it)
@@ -108,7 +110,7 @@ class TestPipelineFromFiles:
 
     def test_contacts_memory_from_files(self, minimal_test_files: list[str]):
         """Test contacts generation from explicit file list."""
-        p = Pipeline.from_files(minimal_test_files)
+        p = Pipeline(FileSource(minimal_test_files))
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -131,7 +133,7 @@ class TestPipelineFromFiles:
         filelist_path = temp_dir / "inputs.lst"
         filelist_path.write_text("\n".join(minimal_test_files))
 
-        p = Pipeline.from_filelist(filelist_path)
+        p = Pipeline(FileListSource(filelist_path))
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -150,7 +152,7 @@ class TestContactProviders:
     def test_multiple_contact_providers(self, minimal_test_files: list[str]):
         """Test MolStar and Arpeggio providers with different interaction types."""
         files = minimal_test_files  # already limited to 2 files
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
 
         p.add_task(
             name="contacts_molstar_hbond",
@@ -193,7 +195,7 @@ class TestFileOutputs:
         files = minimal_test_files
         out_path = temp_dir / "contacts.ndjson"
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -238,7 +240,7 @@ class TestFileOutputs:
         out_dir = temp_dir / "contacts_shards"
         out_dir.mkdir(parents=True, exist_ok=True)
 
-        p = Pipeline.from_files(minimal_test_files)  # Use explicit files instead of directory scan
+        p = Pipeline(FileSource(minimal_test_files))  # Use explicit files instead of directory scan
         p.add_task(
             name="contacts",
             task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All),
@@ -290,7 +292,7 @@ class TestPythonTasks:
         files = minimal_test_files
         out_path = temp_dir / "names.txt"
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
         p.add_task(
             name="names",
             task=basename_with_prefix,
@@ -339,7 +341,7 @@ class TestPythonTasks:
         files = minimal_test_files
         out_path = temp_dir / "desc.json"
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
         p.add_task(
             name="desc",
             task=describe_file,
@@ -395,7 +397,7 @@ class TestPythonTasks:
         def return_text(ctx: PipelineContext) -> str:
             return f"processed: {os.path.basename(ctx.path)}"
 
-        p = Pipeline.from_files([single_test_file])
+        p = Pipeline(FileSource([single_test_file]))
         p.add_task(name="dict_task", task=return_dict, in_memory_policy=InMemoryPolicy.Keep)
         p.add_task(name="text_task", task=return_text, in_memory_policy=InMemoryPolicy.Keep)
 
@@ -428,7 +430,7 @@ class TestChannelFanIn:
         files = minimal_test_files
         out_path = temp_dir / "contacts_all.ndjson"
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
 
         # Two different contacts tasks, same output channel
         p.add_task(
@@ -475,7 +477,7 @@ class TestChannelFanIn:
         files = minimal_test_files
         out_path = temp_dir / "meta.ndjson"
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
         p.add_task(name="path_meta", task=file_meta, channel="meta", in_memory_policy=InMemoryPolicy.Keep)
         p.add_task(name="size_meta", task=size_meta, channel="meta", in_memory_policy=InMemoryPolicy.Keep)
         p.to_files("meta", path=out_path, fmt=OutputFormat.JSON)
@@ -520,7 +522,7 @@ class TestPipelineIntegration:
         def annotate_with_contacts(ctx: PipelineContext) -> dict[str, Any]:
             return {"file": os.path.basename(ctx.path), "has_contacts": True, "processed": True}
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
 
         p.add_task(
             name="contacts",
@@ -564,13 +566,13 @@ class TestPipelineIntegration:
         shards_dir = temp_dir / "contacts_shards"
         shards_dir.mkdir(exist_ok=True)
 
-        p = Pipeline.from_files(files)
+        p = Pipeline(FileSource(files))
         p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All))
 
         # Attach multiple sinks
-        p.to_memory("contacts").to_files("contacts", path=contacts_file, fmt=OutputFormat.JSON).to_sharded_files(
-            "contacts", out_dir=shards_dir, fmt=OutputFormat.JSON, shard_size=1
-        )
+        p.to_memory("contacts")
+        p.to_files("contacts", path=contacts_file, fmt=OutputFormat.JSON)
+        p.to_sharded_files("contacts", out_dir=shards_dir, fmt=OutputFormat.JSON, shard_size=1)
 
         results = p.run(threads=4)
         file_outputs = p.file_outputs()

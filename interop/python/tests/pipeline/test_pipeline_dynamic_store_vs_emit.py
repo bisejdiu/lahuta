@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from lahuta.pipeline import PipelineContext
+from lahuta.sources import FileSource
 
 
 def test_store_false_skips_context_but_still_emits(data_path) -> None:
@@ -25,7 +26,7 @@ def test_store_false_skips_context_but_still_emits(data_path) -> None:
             return None
         return f"B:{s}"
 
-    p = Pipeline.from_files([data])
+    p = Pipeline(FileSource([data]))
 
     # Add A: no storing, collect emissions in memory on channel 'a'
     p.add_task(name="a", task=task_a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=False)
@@ -63,7 +64,7 @@ def test_store_true_allows_context_read(data_path) -> None:
             return None
         return f"B:{s}"
 
-    p = Pipeline.from_files([data])
+    p = Pipeline(FileSource([data]))
 
     # Store=True: payload for 'a' is stashed into TaskContext under key "a"
     p.add_task(name="a", task=task_a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=True)

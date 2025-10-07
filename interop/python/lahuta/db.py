@@ -5,6 +5,7 @@ from typing import TypeAlias
 
 from .lib import lahuta as _lib
 from .pipeline.wrapper import Pipeline
+from .sources import DatabaseHandleSource, DirectorySource
 
 Database: TypeAlias = _lib.db.Database
 
@@ -41,7 +42,8 @@ class LahutaDB:
         threads: int = 4,
     ) -> "LahutaDB":
         """Create a model database from a directory of inputs."""
-        mgr = _lib.pipeline.StageManager.from_directory(str(directory), str(ext), bool(recursive), int(batch))
+        source = DirectorySource(directory, extensions=[str(ext)] if str(ext) else None, recursive=bool(recursive), batch=int(batch))
+        mgr = _lib.pipeline.StageManager(source)
 
         # Emit serialized ModelRecord on channel 'db'
         pack = _lib.pipeline.ModelPackTask("db")
@@ -65,7 +67,8 @@ class LahutaDB:
 
     def to_pipeline(self, *, batch: int = 256) -> Pipeline:
         """Create a Pipeline reading from this DB with model mode auto configured."""
-        p = Pipeline.from_database_handle(self._db, batch=int(batch))
+        source = DatabaseHandleSource(self._db, batch=int(batch))
+        p = Pipeline(source)
         return p
 
     @property

@@ -11,6 +11,7 @@ import lahuta as lxx
 from lahuta.db import LahutaDB
 from lahuta.pipeline import Pipeline
 from lahuta.pipeline.tasks import ContactTask
+from lahuta.sources import DatabaseHandleSource, FileSource
 
 
 def type_counts(rec: dict) -> Counter:
@@ -62,7 +63,7 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
     model_path = data_dir / model_basename
     assert model_path.exists(), f"Missing model file: {model_path}"
 
-    p_file = Pipeline.from_files(str(model_path))
+    p_file = Pipeline(FileSource(str(model_path)))
     p_file.add_task(name="contacts_file", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
     out_file = p_file.run(threads=1)
     recs_file = out_file.get("contacts_file", [])
@@ -71,7 +72,7 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
 
     db_path = tmp_path / "models_lmdb"
     ldb = LahutaDB.create_from_directory(data_dir, db_path, ext=".cif.gz", recursive=False, batch=50, threads=1)
-    p_db = Pipeline.from_database_handle(ldb._db, batch=64)
+    p_db = Pipeline(DatabaseHandleSource(ldb._db, batch=64))
 
     # Ensure Arpeggio atom typing is selected before building topology in model mode
     p_db.params("topology").atom_typing_method = lxx.AtomTypingMethod.Arpeggio

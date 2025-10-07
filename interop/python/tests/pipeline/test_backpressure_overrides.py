@@ -8,7 +8,8 @@ def test_per_sink_backpressure_override_drops_large_payloads() -> None:
     # Default allows large payloads, and per-sink override enforces small queue budget
     original = get_default_backpressure_config()
     try:
-        sm = _lib.pipeline.StageManager.from_files(["item"])
+        src = _lib.pipeline.sources.FileSource(["item"])
+        sm = _lib.pipeline.StageManager(src)
 
         payload = "X" * 2048  # = 2 KiB
 
@@ -34,7 +35,8 @@ def test_sink_reuse_keeps_original_config() -> None:
     # Reusing the same sink instance must keep the config captured at first connect
     original = get_default_backpressure_config()
     try:
-        sm = _lib.pipeline.StageManager.from_files(["x"])
+        src = _lib.pipeline.sources.FileSource(["x"])
+        sm = _lib.pipeline.StageManager(src)
 
         big = "Z" * 4096  # = 4 KiB
 

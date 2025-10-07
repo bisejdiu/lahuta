@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from lahuta import NearestNeighbors, LahutaSystem, logging
+from lahuta import NearestNeighbors, LahutaSystem, logging, NSResults
 
 DATA = Path(__file__).resolve().parents[3] / "data" / "ubi.cif"
 

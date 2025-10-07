@@ -8,6 +8,7 @@ import pytest
 
 from lahuta.lib.lahuta import TopologyComputers as TopologyComputation
 from lahuta.pipeline import Pipeline
+from lahuta.sources import DirectorySource, FileListSource, FileSource
 
 
 class ProbeRec(TypedDict):
@@ -26,6 +27,7 @@ class InspectRecFull(InspectRec):
 
 class NeedsRec(TypedDict):
     has_system: bool
+
 
 DATA_FILE = Path(__file__).resolve().parents[4] / "core" / "data" / "1kx2_small.cif"
 
@@ -56,7 +58,7 @@ def create_file_list(temp_dir: Path, files: list[str]) -> str:
 def test_builtins_not_run_when_not_required(single_test_file: str) -> None:
     """If no task depends on built-ins, they are not executed."""
 
-    p = Pipeline.from_files([single_test_file])
+    p = Pipeline(FileSource([single_test_file]))
 
     def probe(ctx) -> ProbeRec:
         sys = ctx.get_system()
@@ -79,7 +81,7 @@ def test_builtins_not_run_when_not_required(single_test_file: str) -> None:
 def test_topology_flags_neighbors_only(minimal_test_files: list[str]) -> None:
     """Users can restrict topology via flags; only requested computations are enabled."""
 
-    p = Pipeline.from_files(minimal_test_files)
+    p = Pipeline(FileSource(minimal_test_files))
     p.params("topology").flags = TopologyComputation.Neighbors
 
     def inspect(ctx) -> InspectRec:
@@ -105,7 +107,7 @@ def test_topology_flags_neighbors_only(minimal_test_files: list[str]) -> None:
 def test_disable_topology_guard(minimal_test_files: list[str]) -> None:
     """Disabling topology prevents adding tasks that require it (wrapper-level guard)."""
 
-    p = Pipeline.from_files(minimal_test_files)
+    p = Pipeline(FileSource(minimal_test_files))
     p.params("topology").enabled = False
 
     # Explicit dependency on 'topology' should be rejected
@@ -123,7 +125,7 @@ def test_disable_topology_guard(minimal_test_files: list[str]) -> None:
 def test_implicit_system_dependency(single_test_file: str) -> None:
     """Depending on 'system' works without registering a task; engine provides it on-demand."""
 
-    p = Pipeline.from_files([single_test_file])
+    p = Pipeline(FileSource([single_test_file]))
 
     def needs_system(ctx) -> NeedsRec:
         return {"has_system": bool(ctx.get_system())}
@@ -140,7 +142,7 @@ def test_implicit_system_dependency(single_test_file: str) -> None:
 def test_toggle_topology_flags_invalidation_vector_source(single_test_file: str) -> None:
     """Test VectorSource (from_files) - toggling flags between runs should update enabled computations."""
 
-    p = Pipeline.from_files([single_test_file])
+    p = Pipeline(FileSource([single_test_file]))
 
     def inspect(ctx) -> InspectRec:
         top = ctx.get_topology()
@@ -154,6 +156,7 @@ def test_toggle_topology_flags_invalidation_vector_source(single_test_file: str)
 
     # First run: neighbors only
     p.params("topology").flags = TopologyComputation.Neighbors
+
     class Schema(TypedDict):
         inspect: list[InspectRec]
 
@@ -179,7 +182,8 @@ def test_toggle_topology_flags_invalidation_directory_source() -> None:
         temp_path = Path(temp_dir)
         _ = create_test_files_in_temp_dir(temp_path, count=2)
 
-        p = Pipeline.from_directory(str(temp_path), ext=".cif", recursive=False)
+        source = DirectorySource(str(temp_path), extensions=[".cif"], recursive=False)
+        p = Pipeline(source)
 
         def inspect(ctx) -> InspectRecFull:
             top = ctx.get_topology()
@@ -194,6 +198,7 @@ def test_toggle_topology_flags_invalidation_directory_source() -> None:
 
         # First run: Neighbors only
         p.params("topology").flags = TopologyComputation.Neighbors
+
         class Schema(TypedDict):
             inspect: list[InspectRecFull]
 
@@ -234,7 +239,7 @@ def test_toggle_topology_flags_invalidation_filelist_source() -> None:
         test_files = create_test_files_in_temp_dir(temp_path, count=2)
         file_list_path = create_file_list(temp_path, test_files)
 
-        p = Pipeline.from_filelist(file_list_path)
+        p = Pipeline(FileListSource(file_list_path))
 
         def inspect(ctx) -> InspectRecFull:
             top = ctx.get_topology()
@@ -249,6 +254,7 @@ def test_toggle_topology_flags_invalidation_filelist_source() -> None:
 
         # First run: Neighbors only
         p.params("topology").flags = TopologyComputation.Neighbors
+
         class Schema(TypedDict):
             inspect: list[InspectRecFull]
 
@@ -289,12 +295,12 @@ def test_all_sources_multi_run_parameter_changes(source_type: str) -> None:
 
         # Create pipeline based on source type
         if source_type == "vector":
-            p = Pipeline.from_files(test_files)
+            p = Pipeline(FileSource(test_files))
         elif source_type == "directory":
-            p = Pipeline.from_directory(str(temp_path), ext=".cif", recursive=False)
+            p = Pipeline(DirectorySource(str(temp_path), extensions=[".cif"], recursive=False))
         elif source_type == "filelist":
             file_list = create_file_list(temp_path, test_files)
-            p = Pipeline.from_filelist(file_list)
+            p = Pipeline(FileListSource(file_list))
         else:
             pytest.skip(f"Unknown source type: {source_type}")
 
@@ -310,6 +316,7 @@ def test_all_sources_multi_run_parameter_changes(source_type: str) -> None:
 
         # First run: neighbors only
         p.params("topology").flags = TopologyComputation.Neighbors
+
         class Schema(TypedDict):
             inspect: list[InspectRec]
 

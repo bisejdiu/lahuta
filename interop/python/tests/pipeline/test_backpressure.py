@@ -15,6 +15,7 @@ from lahuta.pipeline import (
     set_default_backpressure_config,
     set_default_max_queue_bytes,
 )
+from lahuta.sources import FileSource
 
 
 # fmt: off
@@ -50,7 +51,7 @@ def test_default_max_queue_bytes_limits_large_payloads() -> None:
     payload = "Z" * 2048
 
     try:
-        pipeline = Pipeline.from_files(["item"])
+        pipeline = Pipeline(FileSource(["item"]))
 
         def emit(_: PipelineContext) -> str:
             return payload
@@ -60,7 +61,7 @@ def test_default_max_queue_bytes_limits_large_payloads() -> None:
         assert out.get("emit") == [payload]
 
         set_default_max_queue_bytes(512)
-        pipeline_small = Pipeline.from_files(["item"])
+        pipeline_small = Pipeline(FileSource(["item"]))
         pipeline_small.add_task(name="emit", task=emit, in_memory_policy=InMemoryPolicy.Keep)
         out_small = pipeline_small.run(threads=1)
         assert out_small.get("emit") == []
@@ -75,7 +76,7 @@ def test_memory_and_sharded_file_sinks_produce_expected_outputs() -> None:
     a small shard_size produces multiple shards with the expected total lines.
     This exercises the Python wrapper -> StageManager -> async sinks path.
     """
-    p = Pipeline.from_files(_items(7))
+    p = Pipeline(FileSource(_items(7)))
 
     def make_payload(ctx: PipelineContext):
         return f"rec:{ctx.path}"
@@ -108,7 +109,7 @@ def test_large_payloads_do_not_crash_and_are_collected() -> None:
     loss. This does not aim to saturate C++ byte queues (those knobs are not
     exposed in Python) - it's a safety/robustness check for the Python-facing API.
     """
-    p = Pipeline.from_files(_items(20))
+    p = Pipeline(FileSource(_items(20)))
 
     big = "X" * (256 * 1024)  # 256 KiB per record
 
@@ -128,7 +129,7 @@ def test_two_channels_with_file_and_memory_isolation() -> None:
     Validates the Python wrapper wires two channels correctly and that having a
     file-backed sink on one channel doesn't impact the memory-only channel.
     """
-    p = Pipeline.from_files(_items(9))
+    p = Pipeline(FileSource(_items(9)))
 
     def emit_a(ctx: PipelineContext):
         return f"A:{ctx.path}"
@@ -157,7 +158,7 @@ def test_slow_file_sink_heavy_output_does_not_starve_memory_channel() -> None:
     all items and total runtime remains within a generous bound.
     """
     N = 60
-    p = Pipeline.from_files(_items(N))
+    p = Pipeline(FileSource(_items(N)))
 
     small = "ok"
     large = "L" * (128 * 1024)  # 128 KiB per record
@@ -193,7 +194,7 @@ def test_slow_python_callable_in_second_task_allows_fast_first_task() -> None:
     import time as _t
 
     N = 80
-    p = Pipeline.from_files(_items(N))
+    p = Pipeline(FileSource(_items(N)))
 
     def fast(ctx: PipelineContext):
         return f"F:{ctx.path}"
