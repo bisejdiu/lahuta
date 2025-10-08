@@ -1,7 +1,7 @@
 #pragma once
 
-#include "analysis/contacts/kernel.hpp"
 #include "analysis/contacts/hooks.hpp"
+#include "analysis/contacts/kernel.hpp"
 #include "analysis/topology/computation.hpp"
 #include "compute/dependency.hpp"
 #include "pipeline/compute/dynamic_computation.hpp"

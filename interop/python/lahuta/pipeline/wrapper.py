@@ -136,12 +136,11 @@ class Pipeline:
         out: Iterable[FileOutput | ShardedOutput] | None = None,
     ) -> None:
         ch = channel or name
-        explicit_depends_provided = depends is not None
-        deps = list(depends) if explicit_depends_provided else []
+        deps = list(depends) if depends is not None else []
 
         # Default behavior: AST to validate arity and infer builtins. If topology
         # is not found via AST, augment with a single probe run. Then union.
-        if callable(task) and not explicit_depends_provided:
+        if callable(task) and depends is None:
             ast_found: set[str] = set()
             try:
                 ast_found = _ast_infer_builtins_for_callable(task)
@@ -177,9 +176,7 @@ class Pipeline:
                 self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
 
             # JSON is the default out format
-            self._mgr.add_contacts(
-                name, deps, task.provider, task.interaction_type, ch, "json", bool(thread_safe)
-            )
+            self._mgr.add_contacts(name, deps, task.provider, task.interaction_type, ch, "json", bool(thread_safe))
             self._attach_sinks(ch, in_memory_policy, out, json_channel=True)
             return
 
