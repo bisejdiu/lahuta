@@ -54,16 +54,18 @@ inline void bind_stage_manager(py::module_ &md) {
                             const std::string &out_fmt,
                             bool thread_safe) {
           std::string ch = channel.has_value() ? *channel : name;
-          bool json = true;
-          if      (out_fmt == "json") json = true;
-          else if (out_fmt == "text") json = false;
-          else throw std::invalid_argument("out_fmt must be 'json' or 'text'");
+
+          pipeline::compute::ContactsOutputFormat format;
+          if      (out_fmt == "json")   format = pipeline::compute::ContactsOutputFormat::Json;
+          else if (out_fmt == "text")   format = pipeline::compute::ContactsOutputFormat::Text;
+          else if (out_fmt == "binary") format = pipeline::compute::ContactsOutputFormat::Binary;
+          else throw std::invalid_argument("out_fmt must be 'json', 'text', or 'binary'");
 
           pipeline::compute::ContactsParams p{};
           p.provider = provider;
           p.type     = interaction_type;
           p.channel  = ch;
-          p.json     = json;
+          p.format   = format;
 
           mgr.add_computation(name, deps, [label = name, p]() {
             return std::make_unique<analysis::contacts::ContactsComputation>(label, p);

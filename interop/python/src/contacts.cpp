@@ -2,6 +2,14 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
+
 #include "analysis/contacts/provider.hpp"
 #include "compute/topology_snapshot.hpp"
 #include "contacts/arpeggio/provider.hpp"
@@ -10,6 +18,7 @@
 #include "entities/contact.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/interaction_types.hpp"
+#include "numpy_utils.hpp"
 #include "topology.hpp"
 
 namespace py = pybind11;
@@ -17,7 +26,369 @@ namespace py = pybind11;
 // clang-format off
 namespace lahuta::bindings {
 
+namespace {
+
+constexpr uint8_t ContactsBinaryVersion = 1;
+
+struct ContactsRecordColumns {
+  bool success = false;
+  std::string file_path;
+  analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
+  InteractionType contact_type = InteractionType::All;
+  std::vector<std::uint64_t> lhs_ids;
+  std::vector<std::uint64_t> rhs_ids;
+  std::vector<float> distances;
+  std::vector<std::uint32_t> type_codes;
+  std::vector<std::string> lhs_names;
+  std::vector<std::string> rhs_names;
+};
+
+inline void ensure_available(std::size_t offset, std::size_t need, std::size_t size) {
+  if (offset + need > size) {
+    throw std::runtime_error("decode_contacts_binary: truncated payload");
+  }
+}
+
+ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size_t size) {
+  ContactsRecordColumns decoded;
+  std::size_t offset = 0;
+
+  auto read_u8 = [&](void) -> uint8_t {
+    ensure_available(offset, sizeof(uint8_t), size);
+    uint8_t value = static_cast<uint8_t>(data[offset]);
+    offset += sizeof(uint8_t);
+    return value;
+  };
+
+  auto read_u32 = [&](void) -> uint32_t {
+    ensure_available(offset, sizeof(uint32_t), size);
+    uint32_t value;
+    std::memcpy(&value, data + offset, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    return value;
+  };
+
+  auto read_u64 = [&](void) -> uint64_t {
+    ensure_available(offset, sizeof(uint64_t), size);
+    uint64_t value;
+    std::memcpy(&value, data + offset, sizeof(uint64_t));
+    offset += sizeof(uint64_t);
+    return value;
+  };
+
+  auto read_f32 = [&](void) -> float {
+    ensure_available(offset, sizeof(float), size);
+    float value;
+    std::memcpy(&value, data + offset, sizeof(float));
+    offset += sizeof(float);
+    return value;
+  };
+
+  auto read_string = [&](std::string &out) {
+    const uint32_t len = read_u32();
+    ensure_available(offset, len, size);
+    out.assign(data + offset, len);
+    offset += len;
+  };
+
+  const uint8_t version = read_u8();
+  if (version != ContactsBinaryVersion) {
+    throw std::runtime_error("decode_contacts_binary: unsupported version");
+  }
+
+  decoded.success = read_u8() != 0;
+  decoded.provider = static_cast<analysis::contacts::ContactProvider>(read_u8());
+
+  const uint32_t contact_type = read_u32();
+  decoded.contact_type.category = static_cast<Category>(contact_type & 0xFFFFu);
+  decoded.contact_type.flavor   = static_cast<Flavor>((contact_type >> 16) & 0xFFFFu);
+
+  std::string file_path;
+  read_string(file_path);
+  decoded.file_path = std::move(file_path);
+
+  const uint32_t num_contacts = read_u32();
+  decoded.lhs_ids   .reserve(num_contacts);
+  decoded.rhs_ids   .reserve(num_contacts);
+  decoded.distances .reserve(num_contacts);
+  decoded.type_codes.reserve(num_contacts);
+  decoded.lhs_names .reserve(num_contacts);
+  decoded.rhs_names .reserve(num_contacts);
+
+  for (uint32_t i = 0; i < num_contacts; ++i) {
+    const uint64_t lhs_raw = read_u64();
+    const uint64_t rhs_raw = read_u64();
+    const float dist = read_f32();
+    const uint32_t type_code = read_u32();
+
+    decoded.lhs_ids   .push_back(lhs_raw);
+    decoded.rhs_ids   .push_back(rhs_raw);
+    decoded.distances .push_back(dist);
+    decoded.type_codes.push_back(type_code);
+
+    std::string lhs_name;
+    std::string rhs_name;
+    read_string(lhs_name);
+    read_string(rhs_name);
+    decoded.lhs_names.emplace_back(std::move(lhs_name));
+    decoded.rhs_names.emplace_back(std::move(rhs_name));
+  }
+
+  return decoded;
+}
+
+py::dict make_contacts_numpy(ContactsRecordColumns decoded) {
+  using namespace lahuta::numpy;
+
+  std::vector<std::string> type_strings;
+  type_strings.reserve(decoded.type_codes.size());
+  for (auto code : decoded.type_codes) {
+    InteractionType type{};
+    type.category = static_cast<Category>(code & 0xFFFFu);
+    type.flavor   = static_cast<Flavor>((code >> 16) & 0xFFFFu);
+    type_strings.emplace_back(interaction_type_to_string(type));
+  }
+
+  const std::size_t num_contacts = decoded.lhs_ids.size();
+
+  py::dict contacts;
+  contacts["lhs"]      = string_array_1d(decoded.lhs_names);
+  contacts["rhs"]      = string_array_1d(decoded.rhs_names);
+  contacts["distance"] = move_to_numpy_owning<float>(std::move(decoded.distances));
+  contacts["type"]     = string_array_1d(type_strings);
+
+  py::dict out;
+  out["success"]      = decoded.success;
+  out["file_path"]    = decoded.file_path;
+  out["provider"]     = std::string(contact_provider_name(decoded.provider));
+  out["contact_type"] = interaction_type_to_string(decoded.contact_type);
+  out["num_contacts"] = static_cast<uint32_t>(num_contacts);
+  out["contacts"]     = std::move(contacts);
+  return out;
+}
+
+py::dict decode_contacts_to_dict_direct(ContactsRecordColumns decoded) {
+  const std::size_t num_contacts = decoded.lhs_ids.size();
+
+  // Build contacts list - one dict per contact (matches JSON structure)
+  py::list contacts_list(num_contacts);
+
+  for (std::size_t i = 0; i < num_contacts; ++i) {
+    // Decode interaction type
+    InteractionType type{};
+    type.category = static_cast<Category>(decoded.type_codes[i] & 0xFFFFu);
+    type.flavor   = static_cast<Flavor>((decoded.type_codes[i] >> 16) & 0xFFFFu);
+
+    // Build contact dict
+    py::dict contact;
+    contact["lhs"]      = py::str(decoded.lhs_names[i]);
+    contact["rhs"]      = py::str(decoded.rhs_names[i]);
+    contact["distance"] = py::float_(decoded.distances[i]);
+    contact["type"]     = py::str(interaction_type_to_string(type));
+
+    contacts_list[i] = std::move(contact);
+  }
+
+  // Build result dict with metadata
+  py::dict result;
+  result["success"]      = decoded.success;
+  result["file_path"]    = decoded.file_path;
+  result["provider"]     = std::string(contact_provider_name(decoded.provider));
+  result["contact_type"] = interaction_type_to_string(decoded.contact_type);
+  result["num_contacts"] = static_cast<uint32_t>(num_contacts);
+  result["contacts"]     = std::move(contacts_list);
+
+  return result;
+}
+
+py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
+  const std::size_t num_contacts = decoded.lhs_ids.size();
+
+  // Pre-allocate columnar lists
+  py::list lhs_list(num_contacts);
+  py::list rhs_list(num_contacts);
+  py::list dist_list(num_contacts);
+  py::list type_list(num_contacts);
+
+  for (std::size_t i = 0; i < num_contacts; ++i) {
+    InteractionType type{};
+    type.category = static_cast<Category>(decoded.type_codes[i] & 0xFFFFu);
+    type.flavor   = static_cast<Flavor>((decoded.type_codes[i] >> 16) & 0xFFFFu);
+
+    lhs_list[i]  = py::str(decoded.lhs_names[i]);
+    rhs_list[i]  = py::str(decoded.rhs_names[i]);
+    dist_list[i] = py::float_(decoded.distances[i]);
+    type_list[i] = py::str(interaction_type_to_string(type));
+  }
+
+  py::dict contacts;
+  contacts["lhs"]      = std::move(lhs_list);
+  contacts["rhs"]      = std::move(rhs_list);
+  contacts["distance"] = std::move(dist_list);
+  contacts["type"]     = std::move(type_list);
+
+  py::dict result;
+  result["success"]      = decoded.success;
+  result["file_path"]    = decoded.file_path;
+  result["provider"]     = std::string(contact_provider_name(decoded.provider));
+  result["contact_type"] = interaction_type_to_string(decoded.contact_type);
+  result["num_contacts"] = static_cast<uint32_t>(num_contacts);
+  result["contacts"]     = std::move(contacts);
+
+  return result;
+}
+
+py::dict decode_contacts_binary(py::bytes payload) {
+  char* data = nullptr;
+  Py_ssize_t len = 0;
+  if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
+    throw py::value_error("decode_contacts_binary: expected bytes");
+  }
+  if (len <= 0) {
+    py::dict empty;
+    empty["success"]      = false;
+    empty["file_path"]    = "";
+    empty["provider"]     = "unknown";
+    empty["contact_type"] = "";
+    empty["num_contacts"] = 0;
+    empty["contacts"]     = py::dict();
+    return empty;
+  }
+
+  ContactsRecordColumns decoded = decode_contacts_binary_payload(data, static_cast<std::size_t>(len));
+  return make_contacts_numpy(std::move(decoded));
+}
+
+py::dict decode_contacts_binary_direct(py::bytes payload) {
+  char* data = nullptr;
+  Py_ssize_t len = 0;
+  if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
+    throw py::value_error("decode_contacts_binary_direct: expected bytes");
+  }
+
+  if (len <= 0) {
+    py::dict empty;
+    empty["success"]      = false;
+    empty["file_path"]    = "";
+    empty["provider"]     = "unknown";
+    empty["contact_type"] = "";
+    empty["num_contacts"] = 0;
+    empty["contacts"]     = py::list();
+    return empty;
+  }
+
+  ContactsRecordColumns decoded = decode_contacts_binary_payload(data, static_cast<std::size_t>(len));
+  return decode_contacts_to_dict_direct(std::move(decoded));
+}
+
+py::dict decode_contacts_binary_columnar(py::bytes payload) {
+  char* data = nullptr;
+  Py_ssize_t len = 0;
+  if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
+    throw py::value_error("decode_contacts_binary_columnar: expected bytes");
+  }
+
+  if (len <= 0) {
+    py::dict empty;
+    empty["success"]      = false;
+    empty["file_path"]    = "";
+    empty["provider"]     = "unknown";
+    empty["contact_type"] = "";
+    empty["num_contacts"] = 0;
+    py::dict contacts;
+    contacts["lhs"]      = py::list();
+    contacts["rhs"]      = py::list();
+    contacts["distance"] = py::list();
+    contacts["type"]     = py::list();
+    empty["contacts"]    = std::move(contacts);
+    return empty;
+  }
+
+  ContactsRecordColumns decoded = decode_contacts_binary_payload(
+    data, static_cast<std::size_t>(len)
+  );
+
+  return decode_contacts_to_dict_columnar(std::move(decoded));
+}
+
+py::list decode_contacts_batch_parallel(py::list payloads, bool columnar) {
+  const std::size_t num_payloads = payloads.size();
+
+  if (num_payloads == 0) {
+    return py::list();
+  }
+
+  py::list results(num_payloads);
+
+  struct PayloadInfo {
+    const char* data;
+    std::size_t size;
+  };
+
+  std::vector<PayloadInfo> payload_infos(num_payloads);
+
+  for (std::size_t i = 0; i < num_payloads; ++i) {
+    py::bytes payload = py::cast<py::bytes>(payloads[i]);
+    char* data = nullptr;
+    Py_ssize_t len = 0;
+
+    if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
+      throw py::value_error("decode_contacts_batch_parallel: expected bytes in list");
+    }
+
+    payload_infos[i] = {data, static_cast<std::size_t>(len)};
+  }
+
+  const unsigned int num_threads = std::min(std::max(1u, std::thread::hardware_concurrency()), static_cast<unsigned int>(num_payloads));
+
+  py::gil_scoped_release release;
+
+  std::vector<ContactsRecordColumns> decoded_batch(num_payloads);
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+
+  const std::size_t chunk_size = (num_payloads + num_threads - 1) / num_threads;
+
+  for (unsigned int t = 0; t < num_threads; ++t) {
+    const std::size_t start_idx = t * chunk_size;
+    const std::size_t end_idx = std::min(start_idx + chunk_size, num_payloads);
+
+    if (start_idx >= num_payloads) break;
+
+    threads.emplace_back([&payload_infos, &decoded_batch, start_idx, end_idx]() {
+      for (std::size_t i = start_idx; i < end_idx; ++i) {
+        decoded_batch[i] = decode_contacts_binary_payload(
+          payload_infos[i].data,
+          payload_infos[i].size
+        );
+      }
+    });
+  }
+
+  for (auto& thread : threads) {
+    thread.join();
+  }
+
+  py::gil_scoped_acquire acquire;
+  for (std::size_t i = 0; i < num_payloads; ++i) {
+    if (columnar) {
+      results[i] = decode_contacts_to_dict_columnar(std::move(decoded_batch[i]));
+    } else {
+      results[i] = decode_contacts_to_dict_direct(std::move(decoded_batch[i]));
+    }
+  }
+
+  return results;
+}
+
+} // namespace
+
 void bind_contacts(py::module_ &m) {
+
+  m.def("decode_contacts_binary",          &decode_contacts_binary,          py::arg("payload")); // numpy output
+  m.def("decode_contacts_binary_direct",   &decode_contacts_binary_direct,   py::arg("payload")); // list of dicts output, columnar=False
+  m.def("decode_contacts_binary_columnar", &decode_contacts_binary_columnar, py::arg("payload")); // dict of lists output, columnar=True
+  m.def("decode_contacts_batch_parallel",  &decode_contacts_batch_parallel,  py::arg("payloads"), py::arg("columnar") = true); // parallel batch decode
 
   py::enum_<analysis::contacts::ContactProvider>(m, "ContactProvider")
     .value("MolStar",  analysis::contacts::ContactProvider::MolStar)
@@ -48,7 +419,6 @@ void bind_contacts(py::module_ &m) {
     .value("Parallel", Flavor::Parallel)
     .value("TShape",   Flavor::TShape);
 
-  // A concret type of molecular interaction with category and flavor
   py::class_<InteractionType>(m, "InteractionType")
     .def(py::init<Category, Flavor>(),
          py::arg_v("category", Category::None, "Category.None_"),

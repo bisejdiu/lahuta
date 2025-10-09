@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from lahuta.lib.lahuta import ContactProvider, InteractionType
 
+from .types import OutputFormat
+
 
 @dataclass
 class ContactTask:
@@ -11,6 +13,7 @@ class ContactTask:
 
     provider: ContactProvider = ContactProvider.MolStar
     interaction_type: InteractionType = InteractionType.All
+    fmt: OutputFormat = OutputFormat.BINARY
 
 
 __all__ = ["ContactTask"]

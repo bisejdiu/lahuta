@@ -87,6 +87,9 @@ public:
   size_t size() const { return contacts_.size(); }
   const auto& data() const { return contacts_; }
 
+  const Contact& operator[](size_t index) const { return contacts_[index]; }
+  Contact& operator[](size_t index) { return contacts_[index]; }
+
 private:
     std::vector<Contact> contacts_;
 

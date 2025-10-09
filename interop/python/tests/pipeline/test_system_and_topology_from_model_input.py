@@ -25,7 +25,7 @@ assert sys.has_topology_built is True or sys.has_topology_built()
 p = Pipeline(FileSource({model!r}))
 p.params("system").is_model = True
 
-def inspect(ctx):
+def inspect(ctx) -> str: # our type inference cannot infer str in this context
     s = ctx.get_system()
     return f"ok {{ctx.path}} {{int(s.n_atoms)}}"
 

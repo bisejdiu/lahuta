@@ -36,7 +36,14 @@ EXPECTED_FILE_EXTENSIONS = {
     "5i55.cif":       ".cif",
 }
 
-EXPECTED_CONTACT_KEYS = ["file_path", "success", "provider", "contact_type", "num_contacts", "contacts"]
+EXPECTED_CONTACT_KEYS = [
+    "file_path",
+    "success",
+    "provider",
+    "contact_type",
+    "num_contacts",
+    "contacts",
+]
 EXPECTED_INDIVIDUAL_CONTACT_KEYS = ["lhs", "rhs", "distance", "type"]
 
 
@@ -58,11 +65,11 @@ class TestPipelineFromDirectory:
         p = Pipeline(source)
         p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.MolStar, interaction_type=InteractionType.All), in_memory_policy=InMemoryPolicy.Keep)
 
-        # Contact recors are too complex for static typing (just not worth it)
+        # Contact records are decoded lazily; convert for validation
         results = p.run(threads=4)
 
         assert "contacts" in results
-        contacts = results["contacts"]
+        contacts = results.to_dict("contacts")
         assert isinstance(contacts, list)
         assert len(contacts) >= 1  # Reduced from 3 for faster testing
 
@@ -118,7 +125,7 @@ class TestPipelineFromFiles:
         )
 
         results = p.run(threads=4)
-        contacts = results["contacts"]
+        contacts = results.to_dict("contacts")
 
         assert len(contacts) == len(minimal_test_files)
 
@@ -141,7 +148,7 @@ class TestPipelineFromFiles:
         )
 
         results = p.run(threads=4)
-        contacts = results["contacts"]
+        contacts = results.to_dict("contacts")
 
         assert len(contacts) == len(minimal_test_files)
 
@@ -171,8 +178,8 @@ class TestContactProviders:
         assert "contacts_molstar_hbond" in results
         assert "contacts_arpeggio_vdw"  in results
 
-        molstar_results  = results["contacts_molstar_hbond"]
-        arpeggio_results = results["contacts_arpeggio_vdw"]
+        molstar_results  = results.to_dict("contacts_molstar_hbond")
+        arpeggio_results = results.to_dict("contacts_arpeggio_vdw")
 
         assert len(molstar_results)  == len(files)
         assert len(arpeggio_results) == len(files)
@@ -454,7 +461,7 @@ class TestChannelFanIn:
 
         # Should have aggregated results from both providers
         assert "contacts" in results
-        contacts = results["contacts"]
+        contacts = results.to_dict("contacts")
         assert len(contacts) == 2 * len(files)  # Results from both providers
 
         # Validate we have results from both providers

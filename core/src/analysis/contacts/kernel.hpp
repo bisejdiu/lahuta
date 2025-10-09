@@ -77,8 +77,19 @@ struct ContactsKernel {
       res.topology = top;
 
       std::string payload;
-      if (p.json) payload = serialization::Serializer<fmt::json, ContactsRecord>::serialize(res);
-      else        payload = serialization::Serializer<fmt::text, ContactsRecord>::serialize(res);
+      switch (p.format) {
+        case ContactsOutputFormat::Binary:
+          payload = serialization::Serializer<fmt::binary, ContactsRecord>::serialize(res);
+          break;
+        case ContactsOutputFormat::Json:
+          payload = serialization::Serializer<fmt::json, ContactsRecord>::serialize(res);
+          break;
+        case ContactsOutputFormat::Text:
+          payload = serialization::Serializer<fmt::text, ContactsRecord>::serialize(res);
+          break;
+        default:
+          throw std::runtime_error("ContactsKernel: unsupported output format");
+      }
 
       pipeline::dynamic::EmissionList out;
       out.push_back({p.channel, std::move(payload)});

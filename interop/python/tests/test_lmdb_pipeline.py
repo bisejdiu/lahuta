@@ -49,6 +49,7 @@ def _validate_contact_counts(
     assert total_actual == total_expected, f"Total contacts: expected {total_expected}, got {total_actual}"
 
 
+
 @pytest.mark.parametrize("provider", [lxx.ContactProvider.MolStar, lxx.ContactProvider.Arpeggio])
 def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactProvider) -> None:
     """Test creating a database from directory and computing contacts using different providers."""
@@ -69,7 +70,7 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
 
     out = p_read.run(threads=2)
     assert task_name in out
-    recs = out[task_name]
+    recs = out.to_dict(task_name)
     assert len(recs) == 2
 
     if provider == lxx.ContactProvider.MolStar:
@@ -137,7 +138,7 @@ def test_arpeggio_contacts_file_pipeline() -> None:
 
     out = p.run(threads=1)
     assert "contacts" in out
-    recs = out["contacts"]
+    recs = out.to_dict("contacts")
     assert len(recs) == 1
 
     rec = recs[0]

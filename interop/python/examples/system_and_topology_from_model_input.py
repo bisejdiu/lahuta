@@ -29,7 +29,7 @@ def pipeline_with_model_files(paths: list[str | Path]) -> None:
     p.add_task(name="inspect", task=inspect, depends=["system"], in_memory_policy=InMemoryPolicy.Keep)
 
     out = p.run(threads=1)
-    for payload in out.get("inspect", []):
+    for payload in out.raw("inspect"):
         logging.info(payload)
 
 

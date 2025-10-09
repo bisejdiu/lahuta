@@ -16,7 +16,7 @@ def test_context_path_and_emit_text(data_path) -> None:
     p = Pipeline(FileSource([data]))
     p.add_task(name="names", task=basename, depends=["system"], in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
-    assert out["names"] == [Path(data).name]
+    assert list(out["names"]) == [Path(data).name]
 
 
 def test_context_system_topology_and_emit_json(data_path) -> None:
@@ -31,7 +31,7 @@ def test_context_system_topology_and_emit_json(data_path) -> None:
     # Depend on 'topology' to make sure a topology is present before running
     p.add_task(name="chk", task=check, depends=["topology"], in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
-    assert out["chk"] == [{"have_sys": True, "have_top": True}]
+    assert list(out.json("chk")) == [{"have_sys": True, "have_top": True}]
 
 
 def test_context_read_upstream_text_and_skip_on_missing(data_path) -> None:
@@ -62,7 +62,7 @@ def test_context_read_upstream_text_and_skip_on_missing(data_path) -> None:
     p.add_task(name="a", task=a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=False)
     p.add_task(name="b", task=b, depends=["a"],      in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
-    assert out["a"] == ["A"]
+    assert list(out["a"]) == ["A"]
     assert out.get("b", []) == []
 
     # Now enable store to allow B to read A's payload
@@ -70,8 +70,8 @@ def test_context_read_upstream_text_and_skip_on_missing(data_path) -> None:
     p.add_task(name="a", task=a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=True)
     p.add_task(name="b", task=b, depends=["a"],      in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
-    assert out["a"] == ["A"]
-    assert out["b"] == ["B:A"]
+    assert list(out["a"]) == ["A"]
+    assert list(out["b"]) == ["B:A"]
 
 
 def test_return_none_skips_emission(data_path) -> None:
@@ -107,7 +107,7 @@ def test_context_frame_metadata_defaults(data_path) -> None:
     )
     out = p.run(threads=1)
 
-    assert out["capture"] == ["ok"]
+    assert list(out["capture"]) == ["ok"]
     assert captured["conformer_id"] == 0
     assert captured["session_id"] == data
     assert captured["timestamp_ps"] is None

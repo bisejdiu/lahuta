@@ -21,6 +21,13 @@ inline void bind_sinks(py::module_& md) {
   py::class_<MemorySink, IDynamicSink, std::shared_ptr<MemorySink>>(md, "MemorySink")
     .def(py::init<>())
     .def("result", &MemorySink::result, R"doc(Return collected payloads.)doc")
+    .def("result_bytes", [](const MemorySink& s) {
+          py::list out;
+          for (const auto& buf : s.result_bytes()) {
+            out.append(py::bytes(buf));
+          }
+          return out;
+        }, R"doc(Return collected payloads as bytes.)doc")
     .def("clear",  &MemorySink::clear,  R"doc(Clear collected payloads.)doc");
 
   py::class_<NdjsonFileSink, IDynamicSink, std::shared_ptr<NdjsonFileSink>>(md, "NdjsonSink")

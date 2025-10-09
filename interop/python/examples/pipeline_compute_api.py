@@ -56,7 +56,7 @@ def ex_basic_parameter_access() -> None:
     # Parameters affect the underlying compute engine
     p.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
 
-    results = p.run(threads=2)
+    results = dict(p.run(threads=2).items())
     print(f"Results with modified parameters: {len(results.get('contacts', []))} contacts")
     print()
 
@@ -109,7 +109,7 @@ def ex_parameter_driven_compute() -> None:
     p1.params("topology").flags = TopologyComputers.Bonds
     p1.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
 
-    results1 = p1.run(threads=1)
+    results1 = dict(p1.run(threads=1).items())
     contacts1 = results1.get("contacts", [])
     print(f"  Contacts found: {len(contacts1)}")
     if contacts1 and isinstance(contacts1[0], dict):
@@ -121,7 +121,7 @@ def ex_parameter_driven_compute() -> None:
     p2.params("topology").flags = TopologyComputers.All  # Include atom typing, rings, etc.
     p2.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
 
-    results2 = p2.run(threads=1)
+    results2 = dict(p2.run(threads=1).items())
     contacts2 = results2.get("contacts", [])
     print(f"  Contacts found: {len(contacts2)}")
     if contacts2 and isinstance(contacts2[0], dict):
@@ -198,10 +198,10 @@ def ex_high_level_vs_low_level() -> None:
 
     # Run both and compare
     print("\n Running high level pipeline...")
-    results_high = p_high.run(threads=2)
+    results_high = dict(p_high.run(threads=2).items())
 
     print("Running low level pipeline...")
-    results_low = p_low.run(threads=2)
+    results_low = dict(p_low.run(threads=2).items())
 
     print(f"High level results: {list(results_high.keys())}")
     print(f"Low level results:  {list(results_low.keys())}")
@@ -238,14 +238,14 @@ def ex_parameter_invalidation_demo() -> None:
     # First run with minimal topology
     print("Run 1: Basic topology computation")
     p.params("topology").flags = TopologyComputers.Basic
-    results1 = p.run(threads=1)
+    results1 = dict(p.run(threads=1).items())
     count1 = results1.get("atom_count", [{}])[0]
     print(f"  Result: {count1}")
 
     # Change parameters and run again - should recompute
     print("\nRun 2: Complete topology computation (after parameter change)")
     p.params("topology").flags = TopologyComputers.Complete
-    results2 = p.run(threads=1)
+    results2 = dict(p.run(threads=1).items())
     count2 = results2.get("atom_count", [{}])[0]
     print(f"  Result: {count2}")
 
@@ -290,7 +290,7 @@ def ex_mixed_provider_comparison() -> None:
     print("Pipeline graph:")
     print(p.describe())
 
-    results = p.run(threads=2)
+    results = dict(p.run(threads=2).items())
 
     molstar_count  = len(results.get("molstar_contacts",  []))
     arpeggio_count = len(results.get("arpeggio_contacts", []))

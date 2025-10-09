@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -21,6 +22,12 @@ namespace param_ids {
   constexpr ParameterInterface::TypeId ENSURE_TYPING    = 34;
 }
 
+enum class ContactsOutputFormat : uint8_t {
+  Json,
+  Text,
+  Binary,
+};
+
 struct SystemReadParams : public ParameterBase<SystemReadParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::SYSTEM_READ;
   bool is_model = false;
@@ -37,7 +44,7 @@ struct ContactsParams : public ParameterBase<ContactsParams> {
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
   InteractionType type = InteractionType::All;
   std::string channel = "contacts";
-  bool json = true; // true -> JSON, false -> TEXT
+  ContactsOutputFormat format = ContactsOutputFormat::Json;
 };
 
 // Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference

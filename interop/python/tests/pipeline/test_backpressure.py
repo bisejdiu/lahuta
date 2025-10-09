@@ -58,13 +58,13 @@ def test_default_max_queue_bytes_limits_large_payloads() -> None:
 
         pipeline.add_task(name="emit", task=emit, in_memory_policy=InMemoryPolicy.Keep)
         out = pipeline.run(threads=1)
-        assert out.get("emit") == [payload]
+        assert out.get("emit") == payload
 
         set_default_max_queue_bytes(512)
         pipeline_small = Pipeline(FileSource(["item"]))
         pipeline_small.add_task(name="emit", task=emit, in_memory_policy=InMemoryPolicy.Keep)
         out_small = pipeline_small.run(threads=1)
-        assert out_small.get("emit") == []
+        assert out_small.get("emit", []) == []
     finally:
         set_default_backpressure_config(original)
 

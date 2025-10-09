@@ -29,7 +29,13 @@ def test_store_false_skips_context_but_still_emits(data_path) -> None:
     p = Pipeline(FileSource([data]))
 
     # Add A: no storing, collect emissions in memory on channel 'a'
-    p.add_task(name="a", task=task_a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=False)
+    p.add_task(
+        name="a",
+        task=task_a,
+        depends=["system"],
+        in_memory_policy=InMemoryPolicy.Keep,
+        store=False,
+    )
 
     # Add B: depends on A and tries to read payload from A via context
     p.add_task(name="b", task=task_b, depends=["a"], in_memory_policy=InMemoryPolicy.Keep)
@@ -38,7 +44,7 @@ def test_store_false_skips_context_but_still_emits(data_path) -> None:
 
     # A should have emitted exactly one value "A"
     assert "a" in out
-    assert out["a"] == ["A"]
+    assert list(out["a"]) == ["A"]
 
     # B should have no outputs because it could not read A's payload from context
     # (PyCallableTask returns ok=false in that case, and no emission is produced)
@@ -67,13 +73,19 @@ def test_store_true_allows_context_read(data_path) -> None:
     p = Pipeline(FileSource([data]))
 
     # Store=True: payload for 'a' is stashed into TaskContext under key "a"
-    p.add_task(name="a", task=task_a, depends=["system"], in_memory_policy=InMemoryPolicy.Keep, store=True)
+    p.add_task(
+        name="a",
+        task=task_a,
+        depends=["system"],
+        in_memory_policy=InMemoryPolicy.Keep,
+        store=True,
+    )
 
     # B explicitly reads from context via ctx.get_text('a')
     p.add_task(name="b", task=task_b, depends=["a"], in_memory_policy=InMemoryPolicy.Keep)
 
     out = p.run(threads=1)
 
-    assert out["a"] == ["A"]
+    assert list(out["a"]) == ["A"]
     # A returned "A" as text -> B reads text and prefixes with 'B:'
-    assert out.get("b") == ["B:A"]
+    assert out.get("b") == "B:A"

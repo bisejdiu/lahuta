@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from .params import SystemParams, TopologyParams
+from .result import PipelineResult
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 from .wrapper import Pipeline, PyTaskFn
 
@@ -23,6 +24,7 @@ class ErrorRecord(TypedDict):
 
 __all__ = [
     "Pipeline",
+    "PipelineResult",
     "PipelineContext",
     "OutputFormat",
     "InMemoryPolicy",

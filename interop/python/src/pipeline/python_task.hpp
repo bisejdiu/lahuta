@@ -25,7 +25,7 @@ public:
   // Return value handling:
   // - None   : no emission
   // - str    : emit as text
-  // - other  : serialize with json.dumps(..., ensure_ascii=False) and emit as text
+  // - other  : serialize with orjson.dumps and emit as text
   PyCallableTask(py::object fn, std::string store_key, std::optional<std::string> emit_channel, bool store, bool serialize)
     : func_(std::move(fn)), store_key_(std::move(store_key)), emit_channel_(std::move(emit_channel)),
       store_(store), serialize_(serialize) {
@@ -33,22 +33,9 @@ public:
     if (!func_ || func_.is_none() || !PyCallable_Check(func_.ptr()))
       throw std::invalid_argument("PyCallableTask: fn must be callable");
 
-    // Preload a fast JSON dumper once
-    // try orjson before falling back to stdlib json
-    try {
-      py::gil_scoped_acquire gil;
-      try {
-        auto mod = py::module_::import("orjson");
-        dumps_ = mod.attr("dumps");
-        dumps_returns_bytes_ = true;
-      } catch (...) {
-        auto mod = py::module_::import("json");
-        dumps_ = mod.attr("dumps");
-        dumps_returns_bytes_ = false;
-      }
-    } catch (...) {
-      // leave dumps_ empty. We'll lazy-import in run() if needed
-    }
+    py::gil_scoped_acquire gil;
+    auto mod = py::module_::import("orjson");
+    dumps_ = mod.attr("dumps");
   }
 
   ~PyCallableTask() override {
@@ -96,18 +83,9 @@ public:
       if (py::isinstance<py::str>(resp)) {
         payload = resp.cast<std::string>();
       } else {
-        if (!dumps_) {
-          // extremely rare - constructor failed - lazy import
-          auto mod = py::module_::import("json");
-          dumps_ = mod.attr("dumps");
-          dumps_returns_bytes_ = false;
-        }
-        if (dumps_returns_bytes_) {
-          py::bytes b = dumps_(resp);
-          payload = b.cast<std::string>();
-        } else {
-          payload = dumps_(resp, py::arg("ensure_ascii") = false).cast<std::string>();
-        }
+        // orjson.dumps returns bytes
+        py::bytes b = dumps_(resp);
+        payload = b.cast<std::string>();
       }
       if (store_) ctx.set_text(store_key_, payload);
 
@@ -191,7 +169,6 @@ private:
 
   py::object func_;
   py::object dumps_;
-  bool dumps_returns_bytes_ = false;
   std::string store_key_;
   std::optional<std::string> emit_channel_;
   bool store_;
