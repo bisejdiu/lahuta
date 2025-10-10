@@ -351,6 +351,7 @@ if(LAHUTA_BUILD_CLI)
   set_target_properties(lahuta_cli PROPERTIES OUTPUT_NAME "lahuta")
   add_lahuta_executable(resolver apps/use_resolver.cpp)
   add_lahuta_executable(md_stage_manager_example apps/md_stage_manager_example.cpp)
+  add_lahuta_executable(nmr_stage_manager_example apps/nmr_stage_manager_example.cpp)
 endif()
 
 if(LAHUTA_BUILD_PYTHON)

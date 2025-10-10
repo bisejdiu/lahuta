@@ -129,7 +129,7 @@ class PipelineResult:
             )
         return self._contacts_numpy(name)
 
-    def to_dict(self, channel: str | None = None, columnar: bool = True) -> list[Any]:
+    def to_dict(self, channel: str | None = None, columnar: bool = False) -> list[Any]:
         """
         Return pure-Python contact or JSON/text payloads for the selected channel.
 

@@ -35,6 +35,7 @@ struct ContactsRecordColumns {
   std::string file_path;
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
   InteractionType contact_type = InteractionType::All;
+  std::uint64_t frame_index = 0;
   std::vector<std::uint64_t> lhs_ids;
   std::vector<std::uint64_t> rhs_ids;
   std::vector<float> distances;
@@ -107,6 +108,8 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
   read_string(file_path);
   decoded.file_path = std::move(file_path);
 
+  decoded.frame_index = read_u64();
+
   const uint32_t num_contacts = read_u32();
   decoded.lhs_ids   .reserve(num_contacts);
   decoded.rhs_ids   .reserve(num_contacts);
@@ -163,6 +166,7 @@ py::dict make_contacts_numpy(ContactsRecordColumns decoded) {
   out["provider"]     = std::string(contact_provider_name(decoded.provider));
   out["contact_type"] = interaction_type_to_string(decoded.contact_type);
   out["num_contacts"] = static_cast<uint32_t>(num_contacts);
+  out["frame_index"]  = py::int_(decoded.frame_index);
   out["contacts"]     = std::move(contacts);
   return out;
 }
@@ -196,6 +200,7 @@ py::dict decode_contacts_to_dict_direct(ContactsRecordColumns decoded) {
   result["provider"]     = std::string(contact_provider_name(decoded.provider));
   result["contact_type"] = interaction_type_to_string(decoded.contact_type);
   result["num_contacts"] = static_cast<uint32_t>(num_contacts);
+  result["frame_index"]  = py::int_(decoded.frame_index);
   result["contacts"]     = std::move(contacts_list);
 
   return result;
@@ -233,6 +238,7 @@ py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
   result["provider"]     = std::string(contact_provider_name(decoded.provider));
   result["contact_type"] = interaction_type_to_string(decoded.contact_type);
   result["num_contacts"] = static_cast<uint32_t>(num_contacts);
+  result["frame_index"]  = py::int_(decoded.frame_index);
   result["contacts"]     = std::move(contacts);
 
   return result;
@@ -251,6 +257,7 @@ py::dict decode_contacts_binary(py::bytes payload) {
     empty["provider"]     = "unknown";
     empty["contact_type"] = "";
     empty["num_contacts"] = 0;
+    empty["frame_index"]  = 0;
     empty["contacts"]     = py::dict();
     return empty;
   }
@@ -273,6 +280,7 @@ py::dict decode_contacts_binary_direct(py::bytes payload) {
     empty["provider"]     = "unknown";
     empty["contact_type"] = "";
     empty["num_contacts"] = 0;
+    empty["frame_index"]  = 0;
     empty["contacts"]     = py::list();
     return empty;
   }
@@ -295,6 +303,7 @@ py::dict decode_contacts_binary_columnar(py::bytes payload) {
     empty["provider"]     = "unknown";
     empty["contact_type"] = "";
     empty["num_contacts"] = 0;
+    empty["frame_index"]  = 0;
     py::dict contacts;
     contacts["lhs"]      = py::list();
     contacts["rhs"]      = py::list();

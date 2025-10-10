@@ -16,6 +16,7 @@ struct ContactsRecord {
   InteractionType contact_type;
   ContactSet contacts;
   std::size_t num_contacts;
+  std::size_t frame_index = 0;
   std::shared_ptr<const Topology> topology;
 };
 

@@ -36,7 +36,8 @@ struct Serializer<fmt::json, ContactsRes> {
            .key("success")     .value(v.success)
            .key("provider")    .value(v.provider == analysis::contacts::ContactProvider::Arpeggio ? "arpeggio" : "molstar")
            .key("contact_type").value(contact_type_str)
-           .key("num_contacts").value(v.num_contacts);
+           .key("num_contacts").value(v.num_contacts)
+           .key("frame_index") .value(v.frame_index);
 
     if (!v.topology) {
       Logger::get_logger()->warn("ContactsRes serialization: topology is null, cannot serialize contacts.");
@@ -74,6 +75,7 @@ struct Serializer<fmt::json, ContactsRes> {
       : get_interaction_type(contact_type_str);
 
     out.num_contacts = r.get<size_t>("num_contacts");
+    out.frame_index  = r.get_or<std::size_t>("frame_index", 0);
     out.topology = nullptr; // we cannot restore the topology from the serialized contact data
 
     return out;
@@ -95,7 +97,8 @@ struct Serializer<fmt::text, ContactsRes> {
         << v.file_path << " "
         << (v.provider == analysis::contacts::ContactProvider::Arpeggio ? "arpeggio" : "molstar") << " "
         << contact_type_str << " "
-        << v.num_contacts << "\n";
+        << v.num_contacts << " "
+        << v.frame_index  << "\n";
 
     if (!v.topology) return oss.str();
 
@@ -149,6 +152,7 @@ struct Serializer<fmt::binary, ContactsRes> {
 
     std::size_t size = sizeof(uint8_t)  * 3  /*version, success, provider*/ +
                        sizeof(uint32_t) * 3  /*contact_type, path_len, num_contacts*/ +
+                       sizeof(uint64_t)      /*frame_index*/ +
                        v.file_path.size() +
                        v.contacts.size() * (sizeof(uint64_t) * 2 + sizeof(float) + sizeof(uint32_t)) +
                        sizeof(uint32_t) * 2 * v.contacts.size(); /* name lengths */
@@ -175,6 +179,9 @@ struct Serializer<fmt::binary, ContactsRes> {
     const uint32_t path_len = checked_len(v.file_path.size());
     append_pod(path_len);
     buffer.append(v.file_path.data(), v.file_path.size());
+
+    const uint64_t frame_index = static_cast<uint64_t>(v.frame_index);
+    append_pod(frame_index);
 
     const uint32_t num_contacts = checked_len(v.contacts.size());
     append_pod(num_contacts);
@@ -263,6 +270,8 @@ struct Serializer<fmt::binary, ContactsRes> {
     require(offset, path_len);
     result.file_path.assign(data + offset, path_len);
     offset += path_len;
+
+    result.frame_index = static_cast<std::size_t>(read_u64(offset));
 
     const uint32_t num_contacts = read_u32(offset);
     result.num_contacts = num_contacts;

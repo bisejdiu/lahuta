@@ -34,6 +34,7 @@ struct ContactsKernel {
       res.contact_type = p.type;
       res.success      = false;
       res.num_contacts = 0;
+      res.frame_index  = static_cast<std::size_t>(data.conformer_id);
       res.topology     = nullptr;
 
       std::shared_ptr<const Topology> top;
@@ -75,6 +76,7 @@ struct ContactsKernel {
       res.num_contacts = res.contacts.size();
       res.success  = true;
       res.topology = top;
+      if (data.frame) res.frame_index = data.frame->index();
 
       std::string payload;
       switch (p.format) {

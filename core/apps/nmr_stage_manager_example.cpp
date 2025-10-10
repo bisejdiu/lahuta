@@ -1,3 +1,5 @@
+#include <analysis/contacts/computation.hpp>
+#include <io/sinks/ndjson.hpp>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -160,10 +162,22 @@ int main(int argc, char **argv) {
   pipeline::dynamic::StageManager manager(std::move(source));
   manager.set_auto_builtins(true);
 
+  ContactsParams p{};
+  manager.add_computation(
+      "contacts",
+      {},
+      [label = std::string("contacts"), p]() {
+        return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+      },
+      /*thread_safe=*/true);
+
+  auto contacts_data_sink = std::make_shared<lahuta::pipeline::dynamic::NdjsonFileSink>("contacts_data.json");
+  manager.connect_sink("contacts", contacts_data_sink);
+
   manager.add_computation("frame_summary", {"topology"}, [] {
     return std::make_unique<FrameSummaryComputation>();
   });
 
-  manager.run(1);
+  manager.run(16);
   return 0;
 }
