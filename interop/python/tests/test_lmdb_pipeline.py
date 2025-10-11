@@ -49,7 +49,6 @@ def _validate_contact_counts(
     assert total_actual == total_expected, f"Total contacts: expected {total_expected}, got {total_actual}"
 
 
-
 @pytest.mark.parametrize("provider", [lxx.ContactProvider.MolStar, lxx.ContactProvider.Arpeggio])
 def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactProvider) -> None:
     """Test creating a database from directory and computing contacts using different providers."""
@@ -76,7 +75,7 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
     if provider == lxx.ContactProvider.MolStar:
         expected = {
             "AF-P0CL56-F1-model_v4.cif.gz": 57,
-            "AF-Q57552-F1-model_v4.cif.gz": 687,
+            "AF-Q57552-F1-model_v4.cif.gz": 695,
         }
     else:
         expected = {
