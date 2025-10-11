@@ -1,6 +1,7 @@
 #include <type_traits>
 
 #include "analysis/contacts/computation.hpp"
+#include "analysis/contacts/provider.hpp"
 #include "cli/arg_validation.hpp"
 #include "commands/contacts.hpp"
 #include "db/db.hpp"
@@ -83,7 +84,7 @@ const option::Descriptor usage[] = {
   {0, 0, "", "", option::Arg::None,
    "\nCompute Options:"},
   {ContactsOptionIndex::Provider, 0, "p", "provider", validate::Provider,
-   "  --provider, -p <provider>    \tContact provider: 'molstar' or 'arpeggio' (default: molstar)."},
+   "  --provider, -p <provider>    \tContact provider: 'molstar', 'arpeggio', or 'getcontacts' (default: molstar)."},
   {ContactsOptionIndex::InteractionType, 0, "i", "interaction", validate::ContactType,
    "  --interaction, -i <type>     \tInteraction type: 'hbond', 'hydrophobic', 'ionic', etc.\n"},
   {0, 0, "", "", option::Arg::None,
@@ -182,8 +183,10 @@ int ContactsCommand::run(int argc, char* argv[]) {
         cli.provider = analysis::contacts::ContactProvider::MolStar;
       } else if (provider == "arpeggio") {
         cli.provider = analysis::contacts::ContactProvider::Arpeggio;
+      } else if (provider == "getcontacts") {
+        cli.provider = analysis::contacts::ContactProvider::GetContacts;
       } else {
-        Logger::get_logger()->error("Invalid provider '{}'. Must be 'molstar' or 'arpeggio'", provider);
+        Logger::get_logger()->error("Invalid provider '{}'. Must be 'molstar', 'arpeggio', or 'getcontacts'", provider);
         return 1;
       }
     }
@@ -231,9 +234,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
 
       // Configure built-ins
       mgr.get_system_params().is_model = true;
-      mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
-        ? AtomTypingMethod::Arpeggio
-        : AtomTypingMethod::Molstar;
+      mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
 
       const bool json_out = (cli.want_json || !cli.want_text);
       // Add contacts as a compute-backed task using ContactsKernel
@@ -281,9 +282,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
 
         // Configure built-ins
         mgr.get_system_params().is_model = false;
-        mgr.get_topology_params().atom_typing_method = (cli.provider == analysis::contacts::ContactProvider::Arpeggio)
-          ? AtomTypingMethod::Arpeggio
-          : AtomTypingMethod::Molstar;
+        mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
 
         // Tasks: ensure_typing -> contacts
         const bool json_out = (cli.want_json || !cli.want_text);

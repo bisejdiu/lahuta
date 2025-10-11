@@ -218,6 +218,7 @@ add_library(lahuta_core SHARED
   src/chemistry/types/hydrophobic.cpp
   src/chemistry/types/halogens.cpp
   src/chemistry/types/hbonding.cpp
+  src/typing/getcontacts/atom_typing.cpp
 
   src/topology/engine.cpp
   src/topology/kernels/neighbors.cpp
@@ -262,6 +263,13 @@ add_library(lahuta_core SHARED
   src/contacts/arpeggio/aromatic.cpp
   src/contacts/arpeggio/carbonyl.cpp
   src/contacts/arpeggio/atom_plane.cpp
+
+  src/contacts/getcontacts/hbonds.cpp
+  src/contacts/getcontacts/hydrophobic.cpp
+  src/contacts/getcontacts/salt_bridges.cpp
+  src/contacts/getcontacts/vanderwaals.cpp
+  src/contacts/getcontacts/pi_cation.cpp
+  src/contacts/getcontacts/pistacking.cpp
 
   src/cli/arg_validation.cpp
   src/cli/global_options.cpp
@@ -352,6 +360,7 @@ if(LAHUTA_BUILD_CLI)
   add_lahuta_executable(resolver apps/use_resolver.cpp)
   add_lahuta_executable(md_stage_manager_example apps/md_stage_manager_example.cpp)
   add_lahuta_executable(nmr_stage_manager_example apps/nmr_stage_manager_example.cpp)
+  add_lahuta_executable(getcontacts_example apps/getcontacts_example.cpp)
 endif()
 
 if(LAHUTA_BUILD_PYTHON)
@@ -393,6 +402,7 @@ if(LAHUTA_BUILD_PYTHON)
       ${PY_SRC_DIR}/entity_id.cpp
       ${PY_SRC_DIR}/entities.cpp
       ${PY_SRC_DIR}/atom_types.cpp
+      ${PY_SRC_DIR}/elements.cpp
       ${PY_SRC_DIR}/records.cpp
       ${PY_SRC_DIR}/properties.cpp
 

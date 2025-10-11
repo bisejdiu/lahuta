@@ -164,7 +164,9 @@ class Pipeline:
             # Set atom typing method based on provider before adding contacts
             if task.provider == _lib.ContactProvider.Arpeggio:
                 self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Arpeggio
-            else:  # MolStar
+            elif task.provider == _lib.ContactProvider.GetContacts:
+                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.GetContacts
+            else:
                 self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
 
             emission_fmt = task.fmt if isinstance(task.fmt, OutputFormat) else OutputFormat(task.fmt)

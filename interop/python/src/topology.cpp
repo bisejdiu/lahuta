@@ -105,8 +105,9 @@ void bind_topology(py::module &m) {
     });
 
   py::enum_<AtomTypingMethod>(m, "AtomTypingMethod", "Atom typing backends used when classifying atoms for contacts.")
-    .value("Arpeggio", AtomTypingMethod::Arpeggio, "Use Arpeggio-style atom typing")
-    .value("Molstar",  AtomTypingMethod::Molstar,  "Use Mol* atom typing");
+    .value("Arpeggio",    AtomTypingMethod::Arpeggio,    "Use Arpeggio-style atom typing")
+    .value("Molstar",     AtomTypingMethod::Molstar,     "Use Mol* atom typing")
+    .value("GetContacts", AtomTypingMethod::GetContacts, "Use getcontacts-style atom typing");
 
   py::class_<TopologyBuildingOptions>(m, "TopologyBuildingOptions", "Options controlling topology construction.")
     .def(py::init<>(), "Create default options")

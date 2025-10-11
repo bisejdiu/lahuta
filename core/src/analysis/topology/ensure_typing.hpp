@@ -17,7 +17,7 @@
 // EnsureTypingKernel: Makes sure that the current Topology's atom typing mode matches a desired
 // provider-specific mode before downstream analyses run.
 //
-// - desired:  the requested atom typing mode (AtomTypingMethod::{Molstar, Arpeggio}).
+// - desired:  the requested atom typing mode (AtomTypingMethod::{Molstar, Arpeggio, GetContacts}).
 //             When desired==std::nullopt, the kernel does nothing.
 // - sentinel: a TaskContext text key ("atom_typing_mode") used as a per-item
 //             first-touch marker. The first EnsureTyping that runs sets it to the

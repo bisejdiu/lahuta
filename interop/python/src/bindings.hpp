@@ -18,6 +18,7 @@ void bind_luni(py::module_ &m);
 void bind_topology(py::module_ &m);
 void bind_records(py::module_ &m);
 void bind_atom_types(py::module_ &m);
+void bind_elements(py::module_ &m);
 void bind_entity_id(py::module_ &m);
 void bind_entities(py::module_ &m);
 

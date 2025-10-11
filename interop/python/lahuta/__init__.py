@@ -50,7 +50,7 @@ if _cpp_bindings_available:
         'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
         'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'Kind',
         'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
-        'LuniPropertyResult', 'MolStarContactsEngine', 'NSResults',
+        'LuniPropertyResult', 'MolStarContactsEngine', 'GetContactsEngine', 'NSResults',
         'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',
         'Residue', 'Residues', 'RingRec', 'SearchOptions', 'Topology',
         'TopologyBuildingOptions', 'TopologyComputers', 'compute_angles',
