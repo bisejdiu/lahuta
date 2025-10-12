@@ -34,7 +34,7 @@ else:
             LahutaSystem, LahutaSystemProperties, Logger, LuniFileProcessor, LuniPropertyResult, \
             MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
             PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
-            TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, process_files
+            TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, process_files, vdw_radius
 
         rdkit     = lxx.rdkit
         metrics   = lxx.metrics
@@ -80,7 +80,7 @@ if _cpp_bindings_available:
         'Residue', 'Residues', 'RingRec', 'SearchOptions', 'Topology',
         'TopologyBuildingOptions', 'TopologyComputers', 'compute_angles',
         'factorize', 'find_contacts', 'metrics', 'neighbors', 'process_files', 'NearestNeighbors',
-        "verify_bindings", "get_import_error", "logging", "rdkit",
+        "vdw_radius", "verify_bindings", "get_import_error", "logging", "rdkit",
     ]
 else:
     # Fallback if C++ bindings are not available
