@@ -45,8 +45,34 @@ struct CompiledStage {
 // Per-run executor. Reuse a thread-local ComputeEngine within a single run() and resets it per item.
 class StageExecutor {
 public:
+  using EngineT = ComputeEngine<compute::PipelineContext, Mut::ReadWrite>;
+
+  struct ThreadLocalState {
+    std::unique_ptr<EngineT> engine;
+    compute::PipelineContext data;
+    std::size_t run_seen = 0;
+
+    ~ThreadLocalState() {
+      StageExecutor::cleanup_hook_(*this);
+    }
+  };
+
+  using TlsCleanupHook = void(*)(ThreadLocalState&);
+
   StageExecutor(const CompiledStage& stage, ChannelMultiplexer& mux, std::size_t run_token)
     : stage_(stage), mux_(mux), run_token_(run_token) {}
+
+  static void set_tls_cleanup_hook(TlsCleanupHook hook) {
+    cleanup_hook_ = hook ? hook : &StageExecutor::default_tls_cleanup;
+  }
+
+  static void reset_tls_cleanup_hook() {
+    cleanup_hook_ = &StageExecutor::default_tls_cleanup;
+  }
+
+  static void clear_thread_local_state(ThreadLocalState& state) {
+    clear_tls_state(state);
+  }
 
   template <typename Source>
   void run(Source& src, std::size_t threads) {
@@ -58,10 +84,7 @@ public:
     // Worker stage: process each PipelineItem end-to-end on a worker thread
     Stage<PipelineItem, void> process_stage(
       [this](PipelineItem item, IEmitter<void>&) {
-        using EngineT = ComputeEngine<compute::PipelineContext, Mut::ReadWrite>;
-        static thread_local std::unique_ptr<EngineT> tls_engine;
-        static thread_local compute::PipelineContext tls_data;
-        static thread_local std::size_t tls_run_seen = 0;
+        auto& tls_state = get_tls_state();
 
         auto logger = Logger::get_logger();
         const char* session_label = item.session_id.empty() ? "<none>" : item.session_id.c_str();
@@ -70,16 +93,18 @@ public:
           run_token_, session_label, item.conformer_id, item.item_path);
 
         // Rebuild the worker-local engine once per run() based on the run token.
-        if (!tls_engine || tls_run_seen != run_token_) {
-          tls_engine = std::make_unique<EngineT>(tls_data);
+        // Clear the engine first to release any held resources before rebuilding.
+        if (!tls_state.engine || tls_state.run_seen != run_token_) {
+          tls_state.engine.reset();  // Explicitly destroy old engine before creating new one
+          tls_state.engine = std::make_unique<EngineT>(tls_state.data);
           for (const auto& make : *stage_.factories) {
-            tls_engine->add(make());
+            tls_state.engine->add(make());
           }
-          tls_run_seen = run_token_;
+          tls_state.run_seen = run_token_;
         }
 
         TaskContext ctx;
-        tls_engine->reset();
+        tls_state.engine->reset();
 
         // Per-item temporaries, lifetimes are scoped to this item, and retained by ctx
         std::unique_ptr<StreamSession::Permit> permit;
@@ -87,7 +112,7 @@ public:
         std::shared_ptr<RDKit::Conformer>      conformer;
 
         // Prepare per-item state and publish well-known objects into TaskContext
-        if (!prepare_item_state(item, ctx, tls_data, permit, shared_coords, conformer)) {
+        if (!prepare_item_state(item, ctx, tls_state.data, permit, shared_coords, conformer)) {
           logger->warn(
             "StageExecutor[run_token={}]: skipping item session='{}' conformer={} due to coordinate/setup failure",
             run_token_, session_label, item.conformer_id);
@@ -95,11 +120,11 @@ public:
         }
 
         for (const auto& lbl : stage_.labels) {
-          (void)tls_engine->run_from<void>(lbl);
-          auto res = tls_engine->get_computation_result(lbl);
+          (void)tls_state.engine->template run_from<void>(lbl);
+          auto res = tls_state.engine->get_computation_result(lbl);
           if (res.has_error()) break;
           if (res.has_value() && res.get_type() == typeid(EmissionList)) {
-            auto emits = res.move_value<EmissionList>();
+            auto emits = res.template move_value<EmissionList>();
             for (auto &e : emits) mux_.emit(std::move(e));
           }
         }
@@ -108,12 +133,37 @@ public:
     );
 
     struct Done : IEmitter<void> { void emit() override {} } done;
-
     PipelineEngine{threads}.run(src, process_stage, done);
+
+    //
+    // TLS cleanup: always clear the caller-thread cache so any held resources (including
+    // Python objects) release while the embedding runtime is still alive. The registered
+    // hook may acquire the GIL when Lahuta is driven from Python. - Besian, October 2025
+    //
+    cleanup_hook_(get_tls_state());
     logger->debug("StageExecutor[run_token={}]: finished run", run_token_);
   }
 
 private:
+  friend struct ThreadLocalState;
+
+  static ThreadLocalState& get_tls_state() {
+    static thread_local ThreadLocalState state;
+    return state;
+  }
+
+  static void clear_tls_state(ThreadLocalState& state) {
+    state.engine.reset();
+    state.data = compute::PipelineContext{};
+    state.run_seen = 0;
+  }
+
+  static void default_tls_cleanup(ThreadLocalState& state) {
+    clear_tls_state(state);
+  }
+
+  static inline TlsCleanupHook cleanup_hook_ = &StageExecutor::default_tls_cleanup;
+
   // Prepares per-item state and injects it into the task context.
   // Responsibilities:
   // - Bind per-item metadata into the per-thread PipelineContext (path, ids, frame handles)

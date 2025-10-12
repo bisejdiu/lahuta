@@ -136,7 +136,7 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
   const bool assign_charge_flag = charge == 0;
   const bool assign_h_flag = h_count == 0;
 
-  const int degree = atom.getDegree();
+  const int degree  = atom.getDegree();
   const int valence = atom.getExplicitValence();
 
   const bool conjugated = is_conjugated(mol, atom);

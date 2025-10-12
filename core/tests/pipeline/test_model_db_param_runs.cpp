@@ -3,7 +3,10 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <random>
+#include <sstream>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include "analysis/contacts/computation.hpp"
@@ -22,6 +25,27 @@ using namespace lahuta::pipeline;
 // clang-format off
 namespace {
 namespace fs = std::filesystem;
+
+static fs::path make_unique_temp_directory(const std::string& prefix) {
+  auto temp_dir = fs::temp_directory_path();
+  std::random_device rd;
+  std::mt19937_64 rng(rd());
+  std::uniform_int_distribution<uint64_t> dist;
+
+  for (int attempt = 0; attempt < 128; ++attempt) {
+    std::ostringstream name;
+    name << prefix << std::hex << dist(rng);
+    auto candidate = temp_dir / name.str();
+
+    std::error_code ec;
+    if (fs::create_directory(candidate, ec)) return candidate;
+    if (!ec) continue; // directory already existed
+    if (ec != std::make_error_code(std::errc::file_exists)) {
+      throw std::system_error(ec, "make_unique_temp_directory: failed to create '" + candidate.string() + "'");
+    }
+  }
+  throw std::runtime_error("make_unique_temp_directory: exhausted attempts to create unique directory");
+}
 
 // Simple in-memory sink collecting payloads from a single "contacts" channel
 class CollectorSink : public dynamic::IDynamicSink {
@@ -117,8 +141,8 @@ TEST(ModelDatabasePipeline, MultiItemDbParameterizedRunsDoNotCrash) {
   ASSERT_TRUE(fs::exists(data_dir / "AF-P0CL56-F1-model_v4.cif.gz"));
   ASSERT_TRUE(fs::exists(data_dir / "AF-Q57552-F1-model_v4.cif.gz"));
 
-  fs::path base = fs::temp_directory_path() / (std::string("lahuta_test_db_param_") + std::to_string(std::rand()));
-  ASSERT_NO_THROW(fs::create_directories(base));
+  fs::path base;
+  ASSERT_NO_THROW(base = make_unique_temp_directory("lahuta_test_db_param_"));
 
   auto cleanup = [&]() {
     std::error_code ec;
@@ -175,8 +199,8 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
   fs::path target = data_dir / "AF-P0CL56-F1-model_v4.cif.gz";
   ASSERT_TRUE(fs::exists(target));
 
-  fs::path base = fs::temp_directory_path() / (std::string("lahuta_test_db_single_") + std::to_string(std::rand()));
-  ASSERT_NO_THROW(fs::create_directories(base));
+  fs::path base;
+  ASSERT_NO_THROW(base = make_unique_temp_directory("lahuta_test_db_single_"));
   auto cleanup = [&]() {
     std::error_code ec;
     fs::remove_all(base, ec);
@@ -211,7 +235,6 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
 
   ASSERT_NO_THROW(mgr.compile());
   ASSERT_NO_THROW(mgr.run(static_cast<std::size_t>(threads)));
-
   ASSERT_FALSE(sink->payloads.empty());
   bool found = false;
   for (const auto &payload : sink->payloads) {

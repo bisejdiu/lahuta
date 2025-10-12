@@ -9,7 +9,7 @@
 
 #include "lahuta.hpp"
 #include "pipeline/dynamic/types.hpp"
-#include "pipeline/pipeline_item.hpp"
+#include "pipeline/frame.hpp"
 #include "topology.hpp"
 
 // clang-format off
@@ -81,6 +81,18 @@ public:
     }
   }
 
+  void set_bytes(const std::string &key, py::object obj) {
+    if (!ctx_) return;
+    py::gil_scoped_acquire gil;
+    try {
+      // Accept bytes-like (bytes, bytearray, memoryview), py::bytes will coerce
+      py::bytes b = py::bytes(obj);
+      ctx_->set_bytes(key, b.cast<std::string>());
+    } catch (const py::error_already_set&) {
+      // invalid types are ignored
+    }
+  }
+
   py::object get_text(const std::string &key) const {
     if (!ctx_) return py::none();
     if (auto s = ctx_->get_text(key)) return py::str(*s);
@@ -113,6 +125,12 @@ public:
     }
   }
 
+  py::object get_bytes(const std::string &key) const {
+    if (!ctx_) return py::none();
+    if (auto s = ctx_->get_bytes(key)) return py::bytes(*s);
+    return py::none();
+  }
+
   py::object frame_metadata() const {
     if (auto meta = frame_metadata_ptr()) {
       py::dict out;
@@ -141,23 +159,22 @@ private:
 
 inline void bind_pipeline_context(py::module_ &md) {
   py::class_<PyPipelineContext>(md, "PipelineContext")
-      .def_property_readonly("path", &PyPipelineContext::path)
-      .def_property_readonly("conformer_id", &PyPipelineContext::conformer_id,
-          py::doc(R"doc(Return the conformer/frame identifier for the current item.)doc"))
-      .def_property_readonly("session_id", &PyPipelineContext::session_id,
-          py::doc(R"doc(Return the session identifier associated with this item.)doc"))
-      .def_property_readonly("timestamp_ps", &PyPipelineContext::timestamp_ps,
-          py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
+      .def_property_readonly("path",         &PyPipelineContext::path,         py::doc(R"doc(Return the input item path (e.g., file path).)doc"))
+      .def_property_readonly("conformer_id", &PyPipelineContext::conformer_id, py::doc(R"doc(Return the conformer/frame identifier for the current item.)doc"))
+      .def_property_readonly("session_id",   &PyPipelineContext::session_id,   py::doc(R"doc(Return the session identifier associated with this item.)doc"))
+      .def_property_readonly("timestamp_ps", &PyPipelineContext::timestamp_ps, py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
+
+      .def("get",          &PyPipelineContext::get)
       .def("get_system",   &PyPipelineContext::get_system)
       .def("get_topology", &PyPipelineContext::get_topology)
       .def("get_text",     &PyPipelineContext::get_text)
       .def("get_json",     &PyPipelineContext::get_json)
-      .def("get",          &PyPipelineContext::get)
+      .def("get_bytes",    &PyPipelineContext::get_bytes)
       .def("set_text",     &PyPipelineContext::set_text)
-//       .def("set_json",     &PyPipelineContext::set_json);
       .def("set_json",     &PyPipelineContext::set_json)
-      .def("frame_metadata", &PyPipelineContext::frame_metadata,
-          py::doc(R"doc(Current frame metadata.)doc"));
+      .def("set_bytes",    &PyPipelineContext::set_bytes)
+
+      .def("frame_metadata", &PyPipelineContext::frame_metadata, py::doc(R"doc(Current frame metadata.)doc"));
 }
 
 } // namespace lahuta::bindings

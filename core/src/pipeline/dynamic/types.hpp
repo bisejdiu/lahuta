@@ -86,6 +86,9 @@ public:
     return it == bytes_.end() ? nullptr : &it->second;
   }
 
+  const std::unordered_map<std::string, std::string>& texts() const noexcept { return texts_; }
+  const std::unordered_map<std::string, std::string>& bytes() const noexcept { return bytes_; }
+
   void clear() {
     objects_.clear();
     texts_  .clear();

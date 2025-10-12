@@ -5,6 +5,17 @@ include(CTest) # Provides BUILD_TESTING option
 include(GNUInstallDirs)
 include(CheckCXXSourceCompiles)
 
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH 1)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+  set(CMAKE_INSTALL_RPATH "@loader_path;@loader_path/..") # relative rpath in installation
+
+  set(CMAKE_SKIP_INSTALL_RPATH FALSE)
+  set(CMAKE_SKIP_BUILD_RPATH FALSE)
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_CONFIGURATION_TYPES)
@@ -424,7 +435,9 @@ if(LAHUTA_BUILD_PYTHON)
 
     set_target_properties(lahuta_ext PROPERTIES
       BUILD_RPATH   "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
-      INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path>$<$<PLATFORM_ID:Linux>:$ORIGIN>"
+      INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
+      # Build with install RPATH to prevent re-install errors on macOS
+      BUILD_WITH_INSTALL_RPATH TRUE
     )
 
     # mapping submodule, depends at Python-import level on lahuta
@@ -442,7 +455,9 @@ if(LAHUTA_BUILD_PYTHON)
       set_target_properties(mapping_ext PROPERTIES OUTPUT_NAME "mapping")
       set_target_properties(mapping_ext PROPERTIES
         BUILD_RPATH   "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
-        INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path>$<$<PLATFORM_ID:Linux>:$ORIGIN>"
+        INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
+        # Build with install RPATH to prevent re-install errors on macOS
+        BUILD_WITH_INSTALL_RPATH TRUE
       )
     endif()
 
@@ -483,6 +498,7 @@ if(LAHUTA_BUILD_PYTHON)
         COMPONENT python
         FILES_MATCHING
           PATTERN "*.py"
+          PATTERN "*.pyi"
           PATTERN "py.typed"
         PATTERN "__pycache__" EXCLUDE
       )

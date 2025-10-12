@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Stub generation script."""
+"""
+Stub generation script.
+
+This script generates Python type stubs (.pyi files) for the lahuta C++ extension
+modules directly in the local source tree. CMake will automatically copy them to
+the install location alongside other Python files.
+"""
 
 from __future__ import annotations
 
@@ -23,9 +29,16 @@ def main() -> int:
         print(f"{pkg_name_fmt} Package not found at {lahuta_pkg_dir}", file=sys.stderr)
         return 1
 
-    print(f"{pkg_name_fmt} Generating stubs for package at {lahuta_pkg_dir}", file=sys.stderr)
-
+    # Determine local source directory (where stubs should be generated)
     pkg_root = Path(__file__).resolve().parents[1]
+    local_lahuta_lib = pkg_root / "lahuta" / "lib"
+
+    if not local_lahuta_lib.exists():
+        print(f"{pkg_name_fmt} Local lib directory not found at {local_lahuta_lib}", file=sys.stderr)
+        return 1
+
+    print(f"{pkg_name_fmt} Generating stubs in local source tree", file=sys.stderr)
+
     stubgen_script = pkg_root / "external" / "pybind11_stubgen.py"
 
     if not stubgen_script.exists():
@@ -43,8 +56,11 @@ def main() -> int:
     if mapping_module_path.exists():
         modules.append("lahuta.lib.mapping")
 
+    # pybind11-stubgen creates: <output-dir>/lahuta/lib/<module>/__init__.pyi
+    # By setting output-dir to pkg_root (interop/python/), it creates the full path
     for module in modules:
         print(f"{pkg_name_fmt} Generating stubs for {module}", file=sys.stderr)
+
         try:
             result = subprocess.run(
                 [
@@ -52,7 +68,7 @@ def main() -> int:
                     str(stubgen_script),
                     module,
                     "--output-dir",
-                    str(install_prefix),
+                    str(pkg_root),
                     "--root-suffix=",
                     "--ignore-all-errors",
                     "--numpy-array-use-type-var",
@@ -73,7 +89,15 @@ def main() -> int:
             print(f"{pkg_name_fmt} Error generating stubs for {module}: {e}", file=sys.stderr)
             return 1
 
-    print(f"{pkg_name_fmt} Stub generation completed successfully", file=sys.stderr)
+    # Verify stubs were created
+    module_name = "lahuta"
+    generated_stub = local_lahuta_lib / module_name / "__init__.pyi"
+    if generated_stub.exists():
+        print(f"{pkg_name_fmt} Stubs generated at {local_lahuta_lib / module_name}", file=sys.stderr)
+    else:
+        print(f"{pkg_name_fmt} Warning: Expected stub not found at {generated_stub}", file=sys.stderr)
+
+    print(f"{pkg_name_fmt} Stub generation completed", file=sys.stderr)
     return 0
 
 

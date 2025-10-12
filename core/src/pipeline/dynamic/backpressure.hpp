@@ -230,21 +230,23 @@ struct SinkIngress {
       failed_ = true;
       error_ = "unknown error in sink writer";
     }
-    finished_ = true;
-    // Notify waiters immediately to avoid polling delays
+    {
+      std::lock_guard<std::mutex> lk(finished_m_);
+      finished_.store(true, std::memory_order_release);
+    }
     finished_cv_.notify_all();
   }
 
   void close_queue() { queue_.close(); }
 
   bool join_until(std::chrono::steady_clock::time_point deadline) {
-    // block until finished_ or deadline
-    if (!finished_) {
-      std::unique_lock<std::mutex> lk(finished_m_);
-      if (!finished_cv_.wait_until(lk, deadline, [&]{ return finished_.load(std::memory_order_acquire); })) {
-        return false; // deadline reached
-      }
+    // Always acquire mutex before checking finished_ to avoid missing notifications
+    std::unique_lock<std::mutex> lk(finished_m_);
+    if (!finished_cv_.wait_until(lk, deadline, [&]{ return finished_.load(std::memory_order_acquire); })) {
+      return false; // deadline reached
     }
+    lk.unlock();
+
     if (writer_.joinable()) writer_.join();
     return true;
   }

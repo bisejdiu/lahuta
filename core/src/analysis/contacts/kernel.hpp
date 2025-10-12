@@ -61,7 +61,7 @@ struct ContactsKernel {
         auto current_mode = params ? params->mode : AtomTypingMethod::Molstar;
         auto required_mode = typing_for_provider(p.provider);
         if (current_mode != required_mode) {
-          Logger::get_logger()->info("ContactsKernel: switching atom typing to {} for contacts computation", contact_provider_name(p.provider));
+          Logger::get_logger()->debug("ContactsKernel: switching atom typing to {} for contacts computation", contact_provider_name(p.provider));
           auto& topo_mut = const_cast<Topology&>(*top);
 
           topo_mut.assign_typing(required_mode);

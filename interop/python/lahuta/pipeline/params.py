@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # from lahuta.lib.lahuta.pipeline import StageManager
     from lahuta.lib import lahuta as _lib
 
     StageManager = _lib.pipeline.StageManager
 
+from lahuta.lib.lahuta import AtomTypingMethod
 from lahuta.lib.lahuta import TopologyComputers as TopologyComputation
 
 
@@ -52,7 +52,7 @@ class TopologyParams:
         return int(self._mgr.get_topology_params().get("atom_typing_method", -1))
 
     @atom_typing_method.setter
-    def atom_typing_method(self, value: int) -> None:
+    def atom_typing_method(self, value: int | AtomTypingMethod) -> None:
         self._mgr.set_topology_params({"atom_typing_method": int(value)})
 
     @property

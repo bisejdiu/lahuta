@@ -51,6 +51,15 @@ void Topology::assign_typing(AtomTypingMethod method) {
   auto& label  = topology::AtomTypingComputation<>::label;
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
 
+  // Temporary workaround for RDKit issues where valences are not properly set
+  for (auto& atomrec : engine_->get_data().atoms) {
+    auto &atom = atomrec.atom.get();
+    auto& atom_mut = const_cast<RDKit::Atom&>(atom);
+
+    atom_mut.calcExplicitValence(false);
+    atom_mut.calcImplicitValence(false);
+  }
+
   if (params) {
     params->mode = method;
     engine_->enable(label, true);
