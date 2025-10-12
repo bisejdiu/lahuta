@@ -9,6 +9,7 @@
 #include "compute/topology_snapshot.hpp"
 #include "contacts/arpeggio/provider.hpp"
 #include "contacts/engine.hpp"
+#include "contacts/getcontacts/provider.hpp"
 #include "contacts/molstar/provider.hpp"
 #include "logging.hpp"
 #include "pipeline/compute/context.hpp"
@@ -22,7 +23,7 @@
 namespace lahuta::analysis::contacts {
 using namespace lahuta::pipeline::compute;
 
-// Computes contacts using MolStar or Arpeggio providers and serializes results to JSON or text format.
+// Computes contacts using MolStar, Arpeggio, or GetContacts providers and serializes results to JSON or text format.
 struct ContactsKernel {
   static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const ContactsParams& p) {
     auto& data = context.data();
@@ -62,16 +63,29 @@ struct ContactsKernel {
       auto ts = data.ctx ? compute::require_topology_snapshot(*data.ctx)
                          : compute::snapshot_of(*top);
 
-      if (p.provider == ContactProvider::Arpeggio) {
-        InteractionEngine<ArpeggioContactProvider> engine;
-        res.contacts = (p.type == InteractionType::All)
-          ? engine.compute(ts)
-          : engine.compute(ts, p.type);
-      } else {
-        InteractionEngine<MolStarContactProvider> engine;
-        res.contacts = (p.type == InteractionType::All)
-          ? engine.compute(ts)
-          : engine.compute(ts, p.type);
+      switch (p.provider) {
+        case ContactProvider::Arpeggio: {
+          InteractionEngine<ArpeggioContactProvider> engine;
+          res.contacts = (p.type == InteractionType::All)
+            ? engine.compute(ts)
+            : engine.compute(ts, p.type);
+          break;
+        }
+        case ContactProvider::GetContacts: {
+          InteractionEngine<GetContactsProvider> engine;
+          res.contacts = (p.type == InteractionType::All)
+            ? engine.compute(ts)
+            : engine.compute(ts, p.type);
+          break;
+        }
+        case ContactProvider::MolStar:
+        default: {
+          InteractionEngine<MolStarContactProvider> engine;
+          res.contacts = (p.type == InteractionType::All)
+            ? engine.compute(ts)
+            : engine.compute(ts, p.type);
+          break;
+        }
       }
       res.num_contacts = res.contacts.size();
       res.success  = true;
@@ -98,7 +112,7 @@ struct ContactsKernel {
 
       if (data.ctx) {
         data.ctx->set_text("contacts_file",     res.file_path);
-        data.ctx->set_text("contacts_provider", (p.provider == ContactProvider::Arpeggio) ? "arpeggio" : "molstar");
+        data.ctx->set_text("contacts_provider", std::string(contact_provider_name(p.provider)));
         data.ctx->set_text("contacts_success",  res.success ? "1" : "0");
         data.ctx->set_text("contacts_count",    std::to_string(res.num_contacts));
       }

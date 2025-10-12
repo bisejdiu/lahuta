@@ -16,7 +16,7 @@ ContactRecipe<AtomRec, AtomRec, HydrophobicParams> make_hydrophobic_recipe() {
       const auto &atom_a = ctx.topology.atom(a).atom.get();
       const auto &atom_b = ctx.topology.atom(b).atom.get();
 
-      if (are_residueids_close(mol, atom_a, atom_b, 1)) return InteractionType::None;
+      if (are_residueids_close(mol, atom_a, atom_b, 0)) return InteractionType::None;
 
       if (atom_a.getAtomicNum() == Element::F && atom_b.getAtomicNum() == Element::F) return InteractionType::None;
 

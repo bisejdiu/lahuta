@@ -34,7 +34,7 @@ struct Serializer<fmt::json, ContactsRes> {
 
     builder.key("file_path")   .value(v.file_path)
            .key("success")     .value(v.success)
-           .key("provider")    .value(v.provider == analysis::contacts::ContactProvider::Arpeggio ? "arpeggio" : "molstar")
+           .key("provider")    .value(std::string(contact_provider_name(v.provider)))
            .key("contact_type").value(contact_type_str)
            .key("num_contacts").value(v.num_contacts)
            .key("frame_index") .value(v.frame_index);
@@ -67,7 +67,10 @@ struct Serializer<fmt::json, ContactsRes> {
     out.success   = r.get<bool>("success");
 
     std::string provider_str = r.get<std::string>("provider");
-    out.provider = (provider_str == "arpeggio") ? analysis::contacts::ContactProvider::Arpeggio : analysis::contacts::ContactProvider::MolStar;
+    if      (provider_str == "molstar")     out.provider = analysis::contacts::ContactProvider::MolStar;
+    else if (provider_str == "arpeggio")    out.provider = analysis::contacts::ContactProvider::Arpeggio;
+    else if (provider_str == "getcontacts") out.provider = analysis::contacts::ContactProvider::GetContacts;
+    else throw std::runtime_error("Unknown contact provider: " + provider_str);
 
     std::string contact_type_str = r.get<std::string>("contact_type");
     out.contact_type = (contact_type_str == "All")
@@ -95,7 +98,7 @@ struct Serializer<fmt::text, ContactsRes> {
 
     oss << (v.success ? "1" : "0") << " "
         << v.file_path << " "
-        << (v.provider == analysis::contacts::ContactProvider::Arpeggio ? "arpeggio" : "molstar") << " "
+        << contact_provider_name(v.provider) << " "
         << contact_type_str << " "
         << v.num_contacts << " "
         << v.frame_index  << "\n";

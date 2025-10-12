@@ -8,6 +8,7 @@
 #include <rdkit/GraphMol/RWMol.h>
 #include <typing/flags.hpp>
 #include <valence_model.hpp>
+#include "typing/getcontacts/atom_typing.hpp"
 #include "typing/types.hpp"
 #include "residues.hpp"
 #include "selections/mol_filters.hpp"
@@ -21,76 +22,88 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
-  if (params.mode == AtomTypingMethod::Molstar) {
-    try {
-      ValenceModel valence_model;
-      valence_model.apply(*data.mol);
+  try {
+    switch (params.mode) {
+      case AtomTypingMethod::Molstar: {
+        ValenceModel valence_model;
+        valence_model.apply(*data.mol);
 
-      data.atoms  = AtomTypeAnalysis()(*data.mol);
-      data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
+        data.atoms  = AtomTypeAnalysis()(*data.mol);
+        data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
 
-      //
-      // Rings have been computed by the ring kernel which is a dependency of this computation
-      // so we don't need to recompute them here.
-      //
-      // if (data.rings.empty()) {
-      //   data.rings  = populate_ring_entities(*data.mol);
-      // }
-
-      Logger::get_logger()->debug("atom_typing: molstar, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
-      return ComputationResult(true);
-    } catch (const std::exception &e) {
-      Logger::get_logger()->error("Exception in atom typing: {}", e.what());
-      return ComputationResult(ComputationError(std::string("Error computing atom types: ") + e.what()));
-    }
-  } else {
-    try {
-      // FIX: should have a clear method on the TopologyContext
-      data.atoms.clear(); data.groups.clear(); data.rings.clear();
-      data.atoms.reserve(data.mol->getNumAtoms());
-      for (auto atom : data.mol->atoms()) {
-        AtomType atom_type = get_atom_type(atom);
-        data.atoms.push_back(AtomRec{
-          /*.type =*/  atom_type,
-          /*,.atom =*/ *atom
-        });
+        Logger::get_logger()->debug("atom_typing: molstar, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
+        return ComputationResult(true);
       }
+      case AtomTypingMethod::Arpeggio: {
+        data.atoms.clear(); data.groups.clear();
+        data.atoms.reserve(data.mol->getNumAtoms());
+        for (auto atom : data.mol->atoms()) {
+          AtomType atom_type = get_atom_type(atom);
+          data.atoms.push_back(AtomRec{
+            /*.type =*/  atom_type,
+            /*,.atom =*/ *atom
+          });
+        }
 
-      auto unk_indices = data.residues->filter(std::not_fn(definitions::is_protein_extended)).get_atom_ids();
-      if (!unk_indices.empty()) {
-        std::sort(unk_indices.begin(), unk_indices.end());
-        auto new_mol = filter_with_bonds(*data.mol, unk_indices);
-        if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
-          new_mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
-          // RDKit::MolOps::findSSSR(new_mol);
+        auto unk_indices = data.residues->filter(std::not_fn(definitions::is_protein_extended)).get_atom_ids();
+        if (!unk_indices.empty()) {
+          std::sort(unk_indices.begin(), unk_indices.end());
+          auto new_mol = filter_with_bonds(*data.mol, unk_indices);
+          if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
+            new_mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
+            // RDKit::MolOps::findSSSR(new_mol);
 
-          auto vec = match_atom_types(new_mol);
-          for (size_t i = 0; i < unk_indices.size(); ++i) {
-            auto &rec = data.atoms[unk_indices[i]];
-            rec.type |= vec[i];
+            auto vec = match_atom_types(new_mol);
+            for (size_t i = 0; i < unk_indices.size(); ++i) {
+              auto &rec = data.atoms[unk_indices[i]];
+              rec.type |= vec[i];
+            }
           }
         }
-      }
 
-      data.rings = populate_ring_entities(*data.mol);
-
-      // we need to have Aromatic flags set on the atoms in AtomRec
-      for (const auto &ring : data.rings) {
-        if (ring.aromatic) {
-          for (const auto &atom_ref : ring.atoms) {
-            auto &atom = atom_ref.get();
-            auto &rec = data.atoms[atom.getIdx()];
-            rec.type |= AtomType::Aromatic;
+        // Set aromatic flags on atoms based on rings computed by RingComputation dependency
+        for (const auto &ring : data.rings) {
+          if (ring.aromatic) {
+            for (const auto &atom_ref : ring.atoms) {
+              auto &atom = atom_ref.get();
+              auto &rec = data.atoms[atom.getIdx()];
+              rec.type |= AtomType::Aromatic;
+            }
           }
         }
+        Logger::get_logger()->debug("atom_typing: arpeggio, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
+        return ComputationResult(true);
       }
-      Logger::get_logger()->debug("atom_typing: arpeggio, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
-      return ComputationResult(true);
-    } catch (const std::exception &e) {
-      Logger::get_logger()->error("Exception in atom typing: {}", e.what());
-      return ComputationResult(ComputationError(std::string("Error computing atom types: ") + e.what()));
+      case AtomTypingMethod::GetContacts: {
+        data.atoms.clear(); data.groups.clear();
+        data.atoms.reserve(data.mol->getNumAtoms());
+        for (auto atom : data.mol->atoms()) {
+          AtomType atom_type = typing::getcontacts::classify_atom(*data.mol, *atom);
+          data.atoms.push_back(AtomRec{
+            /*.type =*/  atom_type,
+            /*,.atom =*/ *atom
+          });
+        }
+
+        // Set aromatic flags on atoms based on rings computed by RingComputation dependency
+        for (const auto &ring : data.rings) {
+          if (ring.aromatic) {
+            for (const auto &atom_ref : ring.atoms) {
+              auto &atom = atom_ref.get();
+              data.atoms[atom.getIdx()].type |= AtomType::Aromatic;
+            }
+          }
+        }
+
+        Logger::get_logger()->debug("atom_typing: getcontacts, atoms={}, groups={}, rings={}", data.atoms.size(), data.groups.size(), data.rings.size());
+        return ComputationResult(true);
+      }
     }
+  } catch (const std::exception &e) {
+    Logger::get_logger()->error("Exception in atom typing: {}", e.what());
+    return ComputationResult(ComputationError(std::string("Error computing atom types: ") + e.what()));
   }
+  return ComputationResult(ComputationError("Unknown atom typing method"));
 }
 
 //

@@ -14,6 +14,7 @@
 #include "compute/topology_snapshot.hpp"
 #include "contacts/arpeggio/provider.hpp"
 #include "contacts/engine.hpp"
+#include "contacts/getcontacts/provider.hpp"
 #include "contacts/molstar/provider.hpp"
 #include "entities/contact.hpp"
 #include "entities/entity_id.hpp"
@@ -400,8 +401,9 @@ void bind_contacts(py::module_ &m) {
   m.def("decode_contacts_batch_parallel",  &decode_contacts_batch_parallel,  py::arg("payloads"), py::arg("columnar") = true); // parallel batch decode
 
   py::enum_<analysis::contacts::ContactProvider>(m, "ContactProvider")
-    .value("MolStar",  analysis::contacts::ContactProvider::MolStar)
-    .value("Arpeggio", analysis::contacts::ContactProvider::Arpeggio);
+    .value("MolStar",     analysis::contacts::ContactProvider::MolStar)
+    .value("Arpeggio",    analysis::contacts::ContactProvider::Arpeggio)
+    .value("GetContacts", analysis::contacts::ContactProvider::GetContacts);
 
   py::enum_<Category>(m, "Category")
     .value("None_",                 Category::None)
@@ -582,6 +584,7 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
 
   using MsEngine = InteractionEngine<MolStarContactProvider>;
   using AgEngine = InteractionEngine<ArpeggioContactProvider>;
+  using GcEngine = InteractionEngine<GetContactsProvider>;
 
   py::class_<MsEngine>(m, "MolStarContactsEngine")
     .def(py::init<>())
@@ -601,6 +604,17 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
         return eng.compute(ts);
       }, py::arg("topology"))
     .def("compute", [](const AgEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
+        auto ts = compute::snapshot_of(topo, topo.conformer());
+        return eng.compute(ts, std::move(only));
+      }, py::arg("topology"), py::arg("only"));
+
+  py::class_<GcEngine>(m, "GetContactsEngine")
+    .def(py::init<>())
+    .def("compute", [](const GcEngine& eng, const Topology& topo) {
+        auto ts = compute::snapshot_of(topo, topo.conformer());
+        return eng.compute(ts);
+      }, py::arg("topology"))
+    .def("compute", [](const GcEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
         auto ts = compute::snapshot_of(topo, topo.conformer());
         return eng.compute(ts, std::move(only));
       }, py::arg("topology"), py::arg("only"));

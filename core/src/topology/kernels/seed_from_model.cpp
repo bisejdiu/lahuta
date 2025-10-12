@@ -4,6 +4,7 @@
 #include "logging.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
+#include "typing/getcontacts/atom_typing.hpp"
 #include "typing/types.hpp"
 
 // clang-format off
@@ -19,7 +20,17 @@ SeedFromModelKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const 
 
     data.atoms.clear();
     data.atoms.reserve(data.mol->getNumAtoms());
-    if (params.mode == AtomTypingMethod::Molstar) {
+    if (params.mode == AtomTypingMethod::Arpeggio) {
+      for (const auto atom : data.mol->atoms()) {
+        AtomType atom_type = get_atom_type(atom);
+        data.atoms.push_back(AtomRec{atom_type, *atom});
+      }
+    } else if (params.mode == AtomTypingMethod::GetContacts) {
+      for (const auto atom : data.mol->atoms()) {
+        AtomType atom_type = typing::getcontacts::classify_atom(*data.mol, *atom);
+        data.atoms.push_back(AtomRec{atom_type, *atom});
+      }
+    } else {
       for (const auto atom : data.mol->atoms()) {
         auto atom_type = static_cast<AtomType>(atom->getCompAtomType());
         data.atoms.push_back(AtomRec{atom_type, *atom});
@@ -27,11 +38,6 @@ SeedFromModelKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const 
 
       // FIX: these are not fast. I'm working on alternatives.
       data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
-    } else {
-      for (const auto atom : data.mol->atoms()) {
-        AtomType atom_type = get_atom_type(atom);
-        data.atoms.push_back(AtomRec{atom_type, *atom});
-      }
     }
 
     data.rings  = AtomTypingKernel::populate_ring_entities(*data.mol);

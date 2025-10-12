@@ -25,6 +25,7 @@ PYBIND11_MODULE(lahuta, m) {
   lahuta::bindings::bind_rdkit(m);          // RDKit fundamental classes (Atom, Point3D, etc.)
 
   lahuta::bindings::bind_atom_types(m);     // AtomType enum and related functions
+  lahuta::bindings::bind_elements(m);       // Element helpers
   lahuta::bindings::bind_records(m);        // Entity records (AtomRec, RingRec, GroupRec)
   lahuta::bindings::bind_topology(m);       // Topology and related structures
   lahuta::bindings::bind_entity_id(m);      // EntityID class
