@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import json as _json
+import time
 from pathlib import Path
 from typing import (
     Any,
     Callable,
     Iterable,
     Literal,
-    Mapping,
     Protocol,
-    Sequence,
     Type,
     TypeAlias,
     TypeVar,
@@ -17,29 +15,26 @@ from typing import (
     overload,
 )
 
+from lahuta import logging
 from lahuta.lib import lahuta as _lib
+from lahuta.sources import PipelineSource
 
 from ._discovery import _ast_infer_builtins_for_callable, _discover_builtins_for_callable
+from ._inference import infer_python_task_format
 from .params import SystemParams, TopologyParams
+from .result import PipelineResult, _ChannelState
 from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
-from lahuta.sources import PipelineSource
 
 # fmt: off
 StageManager = _lib.pipeline.StageManager
-CppTask = _lib.pipeline.Task
-
-JsonPrimitive = str | int | float | bool | None
-JsonObject: TypeAlias = Mapping[str, "JsonValue"]
-JsonArray:  TypeAlias = Sequence["JsonValue"]
-JsonValue:  TypeAlias = JsonPrimitive | JsonObject | JsonArray
+CppTask: TypeAlias = _lib.pipeline.Task
 
 # Callable protocol for Python tasks that accept a PipelineContext and return any value
 # that can be serialized into a single ndjson record. The return type is expressed
 # by parameterizing PyTaskFn (e.g., PyTaskFn[dict[str, int]] or PyTaskFn[str]).
-R_co = TypeVar("R_co", covariant=True)
+R_co    = TypeVar("R_co", covariant=True)
 SchemaT = TypeVar("SchemaT")
-
 
 class PyTaskFn(Protocol[R_co]):
     def __call__(self, __ctx: PipelineContext) -> R_co: ...
@@ -48,10 +43,8 @@ class PyTaskFn(Protocol[R_co]):
 class Pipeline:
     """Pipeline builder and executor.
 
-    A Pipeline orchestrates computational tasks for analyzing molecular structures
-    and trajectories. Tasks emit results to channels, which can be consumed by
-    various sinks (memory, files, sharded outputs).
-
+    A Pipeline orchestrates computational tasks. Tasks emit results to channels,
+    which can be consumed by various sinks (memory, files, sharded outputs).
     """
 
     def __init__(self, source: PipelineSource) -> None:
@@ -63,10 +56,11 @@ class Pipeline:
         except Exception:
             pass
 
-        self._json_memory_channels: set[str] = set()
-        self._memory_sinks:  dict[str, list[_lib.pipeline.MemorySink]] = {}
-        self._file_sinks:    dict[str, list[_lib.pipeline.NdjsonSink]] = {}
-        self._sharded_sinks: dict[str, list[_lib.pipeline.ShardedNdjsonSink]] = {}
+        self._memory_sinks:     dict[str, list[_lib.pipeline.MemorySink]] = {}
+        self._file_sinks:       dict[str, list[_lib.pipeline.NdjsonSink]] = {}
+        self._sharded_sinks:    dict[str, list[_lib.pipeline.ShardedNdjsonSink]] = {}
+        self._channel_formats:  dict[str, OutputFormat] = {}
+        self._channel_decoders: dict[str, str] = {}
 
         # Parameter proxies
         self._system_params   = SystemParams(self._mgr)
@@ -104,14 +98,12 @@ class Pipeline:
         elif builtin_name == "topology":
             return self._topology_params
         else:
-            raise ValueError(
-                f"Unknown built-in: {builtin_name}. Valid options: 'system', 'topology'"
-            )
+            raise ValueError(f"Unknown built-in: {builtin_name}. Valid options: 'system', 'topology'")
 
     def describe(self) -> str:
-        """Return a description of the pipeline graph.
-
-        Shows task dependencies and whether nodes are built-in or user-defined.
+        """
+        Return a description of the pipeline graph.
+        Shows task dependencies and wheather nodes are built-in or user-defined.
         """
         graph = self._mgr.describe_graph()
         lines = ["Pipeline Graph:"]
@@ -128,20 +120,19 @@ class Pipeline:
         *,
         name: str,
         task: Callable[[PipelineContext], Any] | ContactTask | "CppTask",
-        depends: list[str] | None = None,
-        channel: str | None = None,
-        thread_safe: bool = True,
-        store: bool | None = None,
-        in_memory_policy: InMemoryPolicy = InMemoryPolicy.Keep,
         out: Iterable[FileOutput | ShardedOutput] | None = None,
+        in_memory_policy: InMemoryPolicy = InMemoryPolicy.Keep,
+        channel: str | None = None,
+        store: bool | None = None,
+        depends: list[str] | None = None,
+        thread_safe: bool = True,
     ) -> None:
         ch = channel or name
-        explicit_depends_provided = depends is not None
-        deps = list(depends) if explicit_depends_provided else []
+        deps = list(depends) if depends is not None else []
 
         # Default behavior: AST to validate arity and infer builtins. If topology
         # is not found via AST, augment with a single probe run. Then union.
-        if callable(task) and not explicit_depends_provided:
+        if callable(task) and depends is None:
             ast_found: set[str] = set()
             try:
                 ast_found = _ast_infer_builtins_for_callable(task)
@@ -176,11 +167,24 @@ class Pipeline:
             else:  # MolStar
                 self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
 
-            # JSON is the default out format
+            emission_fmt = task.fmt if isinstance(task.fmt, OutputFormat) else OutputFormat(task.fmt)
+            sink_override = self._preferred_sink_format(out)
+            if emission_fmt is OutputFormat.BINARY and sink_override is not None:
+                emission_fmt = sink_override
+
             self._mgr.add_contacts(
-                name, deps, task.provider, task.interaction_type, ch, "json", bool(thread_safe)
+                name,
+                deps,
+                task.provider,
+                task.interaction_type,
+                ch,
+                emission_fmt.value,
+                bool(thread_safe),
             )
-            self._attach_sinks(ch, in_memory_policy, out, json_channel=True)
+
+            self._channel_formats[ch] = emission_fmt
+            self._channel_decoders[ch] = "contacts"
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt)
             return
 
         # Python callable task
@@ -189,39 +193,61 @@ class Pipeline:
             # Serialize Python callable by default unless user explicitly marks thread_safe
             serialize = not bool(thread_safe)
             self._mgr.add_python(name, deps, task, ch, serialize=serialize, store=do_store)
-            self._attach_sinks(ch, in_memory_policy, out, json_channel=True)
+
+            # Auto-detect format from return type annotation and AST analysis
+            task_format = infer_python_task_format(task)
+            self._channel_formats[ch] = task_format
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format)
             return
 
         # Raw C++ task
         if isinstance(task, _lib.pipeline.Task):
             self._mgr.add_task(name, deps, task, bool(thread_safe))
-            self._attach_sinks(ch, in_memory_policy, out, json_channel=False)
+            self._channel_formats.setdefault(ch, OutputFormat.TEXT)
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=self._channel_formats[ch])
             return
 
         raise TypeError("task must be a callable, ContactTask spec, or pipeline.Task instance")
+
+    def _preferred_sink_format(
+        self,
+        out: Iterable[FileOutput | ShardedOutput] | None,
+    ) -> OutputFormat | None:
+        preferred: OutputFormat | None = None
+        if not out:
+            return None
+        for o in out:
+            fmt = o.fmt
+            if fmt == OutputFormat.BINARY:
+                raise ValueError("Binary file output is not supported for file or sharded sinks.")
+            if fmt == OutputFormat.JSON:
+                return OutputFormat.JSON
+            if fmt == OutputFormat.TEXT:
+                preferred = OutputFormat.TEXT
+        return preferred
 
     def _attach_sinks(
         self,
         channel: str,
         in_memory_policy: InMemoryPolicy,
         out: Iterable[FileOutput | ShardedOutput] | None,
-        json_channel: bool,
+        *,
+        channel_format: OutputFormat,
     ) -> None:
-        """Simplified sink attachment logic."""
-        # Memory sink only for text/JSON channels. Binary channels (e.g., LMDB payloads)
-        # must not attach a MemorySink, as pybind11 decodes std::string to str (utf-8).
-        if json_channel and in_memory_policy == InMemoryPolicy.Keep:
+        """Attach memory and file sinks for the given channel respecting output formats."""
+        if in_memory_policy == InMemoryPolicy.Keep:
             if channel not in self._memory_sinks:
                 ms = _lib.pipeline.MemorySink()
                 self._mgr.connect_sink(channel, ms)
                 self._memory_sinks[channel] = [ms]
-                self._json_memory_channels.add(channel)
+            self._channel_formats.setdefault(channel, channel_format)
 
         if not out:
             return
 
-        # File/sharded sinks
         for o in out:
+            if o.fmt == OutputFormat.BINARY:
+                raise ValueError("File and sharded outputs do not support binary payloads.")
             if isinstance(o, FileOutput):
                 sink = _lib.pipeline.NdjsonSink(str(o.path))
                 self._mgr.connect_sink(channel, sink)
@@ -235,9 +261,12 @@ class Pipeline:
     def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
+        if fmt == OutputFormat.BINARY:
+            raise ValueError("Binary output is not supported for NdjsonSink.")
         sink = _lib.pipeline.NdjsonSink(str(path))
         self._mgr.connect_sink(task_or_channel, sink)
         self._file_sinks.setdefault(task_or_channel, []).append(sink)
+        self._channel_formats.setdefault(task_or_channel, fmt)
         return
 
     def to_memory(self, task_or_channel: str) -> None:
@@ -245,6 +274,7 @@ class Pipeline:
             ms = _lib.pipeline.MemorySink()
             self._mgr.connect_sink(task_or_channel, ms)
             self._memory_sinks[task_or_channel] = [ms]
+        self._channel_formats.setdefault(task_or_channel, OutputFormat.JSON)
         return
 
     def to_sharded_files(
@@ -257,47 +287,47 @@ class Pipeline:
     ) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
+        if fmt == OutputFormat.BINARY:
+            raise ValueError("Binary output is not supported for sharded NDJSON sinks.")
         sink = _lib.pipeline.ShardedNdjsonSink(str(out_dir), int(shard_size))
         self._mgr.connect_sink(task_or_channel, sink)
         self._sharded_sinks.setdefault(task_or_channel, []).append(sink)
+        self._channel_formats.setdefault(task_or_channel, fmt)
         return
 
-    def run(self, threads: int = 8) -> dict[str, list[Any]]:
-        #
-        # We use Any to keep static analyzers permissive across heterogeneous channels.
-        # At runtime, json channels are parsed to native Python values. Text channels
-        # yield raw strings. Per-channel precise typing can be modeled by users py
-        # parameterizing PyTaskFn on the callables they define.   - Besian, September 2025
-        #
-
+    def run(self, threads: int = 8) -> PipelineResult:
         # Reset memory sinks so results do not accumulate across runs
         for sinks in self._memory_sinks.values():
             for s in sinks:
                 try:
                     s.clear()
                 except Exception:
-                    # fall back if clear() is not implemented
                     pass
 
+        _start = time.perf_counter()
         self._mgr.run(int(threads))
-        out: dict[str, list[Any]] = {}
-        for ch, sinks in self._memory_sinks.items():
-            # We use Any to keep static analyzers permissive across heterogeneous channels.
-            # At runtime, json channels are parsed to native Python values. Text channels
-            # yield raw strings.
-            acc: list[Any] = []
-            for s in sinks:
-                vals = s.result()
-                if ch in self._json_memory_channels:
-                    for v in vals:
-                        try:
-                            acc.append(_json.loads(v))
-                        except Exception:
-                            acc.append(v)
+        _elapsed = time.perf_counter() - _start
+        logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+
+        states: dict[str, _ChannelState] = {}
+        for channel, sinks in self._memory_sinks.items():
+            fmt = self._channel_formats.get(channel, OutputFormat.JSON)
+            buffer: list[Any] = []
+            for sink in sinks:
+                if fmt is OutputFormat.BINARY:
+                    buffer.extend(sink.result_bytes())
                 else:
-                    acc.extend(vals)
-            out[ch] = acc
-        return out
+                    buffer.extend(sink.result())
+
+            channel_format = fmt
+
+            states[channel] = _ChannelState(
+                format=channel_format,
+                decoder=self._channel_decoders.get(channel),
+                data=tuple(buffer),
+            )
+
+        return PipelineResult(states)
 
     #
     # If we want strong static typing of the run() output, we must accept a
@@ -307,7 +337,8 @@ class Pipeline:
     # know how to do in Python's type system.    - Besian, September 2025
     #
     def run_typed(self, schema: Type[SchemaT], threads: int = 8) -> SchemaT:
-        return cast(SchemaT, self.run(threads))
+        result = self.run(threads)
+        return cast(SchemaT, dict(result.items()))
 
     def file_outputs(self) -> dict[str, list[str]]:
         res: dict[str, list[str]] = {}

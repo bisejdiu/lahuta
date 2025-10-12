@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from lahuta.lib import lahuta as _lib
 
-from .core import ErrorInfo, ErrorRecord, Pipeline, PyTaskFn
+from .core import ErrorInfo, ErrorRecord, Pipeline, PipelineResult, PyTaskFn
 from .params import SystemParams, TopologyParams
 from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
@@ -18,6 +18,7 @@ __all__ = (
     "ErrorRecord",
     "ErrorInfo",
     "Pipeline",
+    "PipelineResult",
     "PipelineContext",
     "InMemoryPolicy",
     "OutputFormat",

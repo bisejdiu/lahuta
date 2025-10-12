@@ -1,4 +1,5 @@
 #include <analysis/contacts/computation.hpp>
+#include <analysis/contacts/hooks.hpp>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -17,6 +18,7 @@
 #include "pipeline/ingestion.hpp"
 #include "pipeline/stream_session.hpp"
 #include "topology.hpp"
+#include "io/sinks/ndjson.hpp"
 
 // clang-format off
 namespace {
@@ -55,6 +57,8 @@ private:
 
 struct TrajectorySummaryParams : ParameterBase<TrajectorySummaryParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = 201;
+  static constexpr const char* DEFAULT_CHANNEL = "trajectory_summary";
+  std::string channel = DEFAULT_CHANNEL;
 };
 
 class TrajectorySummaryComputation final : public ReadWriteComputation<PipelineContext, TrajectorySummaryParams, TrajectorySummaryComputation> {
@@ -62,33 +66,17 @@ public:
   using Base = ReadWriteComputation<PipelineContext, TrajectorySummaryParams, TrajectorySummaryComputation>;
   TrajectorySummaryComputation() : Base(TrajectorySummaryParams{}) {}
 
-  static constexpr ComputationLabel label{"trajectory_summary"};
+  static constexpr ComputationLabel label{TrajectorySummaryParams::DEFAULT_CHANNEL};
   using dependencies = Dependencies<Dependency<analysis::system::SystemReadComputation, void>>;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &context, const TrajectorySummaryParams &) {
+  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &context, const TrajectorySummaryParams &p) {
     auto &data = context.data();
     auto *task_ctx = data.ctx;
 
     std::shared_ptr<const Luni> system = task_ctx ? task_ctx->get_object<const Luni>("system") : nullptr;
-    if (!system && data.session) {
-      system = data.session->get_or_load_system();
-      if (task_ctx && system) {
-        task_ctx->set_object<const Luni>("system", system);
-      }
-    }
     if (!system) {
       return ComputationResult(ComputationError("TrajectorySummaryComputation requires a system"));
     }
-
-    std::shared_ptr<const Topology> topology_ptr =
-        task_ctx ? task_ctx->get_object<const Topology>("topology") : nullptr;
-    // if (!topology_ptr && data.session) {
-    //   TopologyBuildingOptions opts{};
-    //   topology_ptr = data.session->get_or_load_topology(opts);
-    //   if (task_ctx && topology_ptr) {
-    //     task_ctx->set_object<const Topology>("topology", topology_ptr);
-    //   }
-    // }
 
     std::vector<RDGeom::Point3D> first_5_atoms{};
     if (data.frame && data.session) {
@@ -120,29 +108,11 @@ public:
       std::cout << "System/topology are reused per session. Coordinates update for each frame." << std::endl;
     });
 
-    // std::ostringstream oss;
-    // oss << "Frame " << data.conformer_id;
-    // if (frame_meta) {
-    //   oss << " session='" << frame_meta->session_id << "'";
-    //   if (frame_meta->timestamp_ps) {
-    //     oss << " time_ps=" << *frame_meta->timestamp_ps;
-    //   }
-    // }
-    // oss << " system_ptr=" << static_cast<const void *>(system.get());
-    // if (topology_ptr) {
-    //   oss << " topology_ptr=" << static_cast<const void *>(topology_ptr.get());
-    // } else {
-    //   oss << " topology_ptr=<none>";
-    // }
-    // oss << " first_5_atoms=[";
-    // for (size_t i = 0; i < first_5_atoms.size(); ++i) {
-    //   if (i > 0) oss << ", ";
-    //   oss << "(" << first_5_atoms[i].x << ", " << first_5_atoms[i].y << ", " << first_5_atoms[i].z << ")";
-    // }
-    // oss << "]";
+    pipeline::dynamic::EmissionList out;
+    auto json = lahuta::analysis::contacts::build_contacts_summary_json(*data.ctx);
+    out.push_back({p.channel, std::move(json)});
 
-    // std::cout << oss.str() << std::endl;
-    return ComputationResult(true);
+    return ComputationResult(std::move(out));
   }
 };
 
@@ -183,9 +153,15 @@ int main() {
       },
       /*thread_safe=*/true);
 
-  manager.add_computation("trajectory_summary", {"system"}, [] {
+  manager.add_computation("trajectory_summary", {"contacts"}, [] {
     return std::make_unique<TrajectorySummaryComputation>();
   });
+
+  auto contacts_data_sink = std::make_shared<lahuta::pipeline::dynamic::NdjsonFileSink>("contacts_data.json");
+  manager.connect_sink("contacts", contacts_data_sink);
+
+  auto contacts_summary_sink = std::make_shared<lahuta::pipeline::dynamic::NdjsonFileSink>("contacts_summary.json");
+  manager.connect_sink(TrajectorySummaryParams::DEFAULT_CHANNEL, contacts_summary_sink);
 
   manager.run(16);
   return 0;

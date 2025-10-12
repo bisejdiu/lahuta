@@ -11,7 +11,7 @@ import os
 from pathlib import Path
 from typing import TypedDict
 
-from lahuta.pipeline import Pipeline, PipelineContext
+from lahuta.pipeline import Pipeline, PipelineContext, OutputFormat
 from lahuta.sources import FileSource
 
 

@@ -4,11 +4,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include "db/db.hpp"
+#include "io/sinks/lmdb.hpp"
 #include "io/sinks/memory.hpp"
 #include "io/sinks/ndjson.hpp"
 #include "io/sinks/sharded_ndjson.hpp"
-#include "io/sinks/lmdb.hpp"
-#include "db/db.hpp"
 
 namespace py = pybind11;
 namespace lahuta::bindings {
@@ -21,6 +21,13 @@ inline void bind_sinks(py::module_& md) {
   py::class_<MemorySink, IDynamicSink, std::shared_ptr<MemorySink>>(md, "MemorySink")
     .def(py::init<>())
     .def("result", &MemorySink::result, R"doc(Return collected payloads.)doc")
+    .def("result_bytes", [](const MemorySink& s) {
+          py::list out;
+          for (const auto& buf : s.result_bytes()) {
+            out.append(py::bytes(buf));
+          }
+          return out;
+        }, R"doc(Return collected payloads as bytes.)doc")
     .def("clear",  &MemorySink::clear,  R"doc(Clear collected payloads.)doc");
 
   py::class_<NdjsonFileSink, IDynamicSink, std::shared_ptr<NdjsonFileSink>>(md, "NdjsonSink")
@@ -33,9 +40,7 @@ inline void bind_sinks(py::module_& md) {
     .def("files", &ShardedNdjsonSink::files);
 
   py::class_<LmdbSink, IDynamicSink, std::shared_ptr<LmdbSink>>(md, "LmdbSink")
-    .def(py::init<
-           std::shared_ptr<lahuta::LMDBDatabase>, std::size_t
-         >(),
+    .def(py::init<std::shared_ptr<lahuta::LMDBDatabase>, std::size_t>(),
          py::arg("db"), py::arg("batch_size") = 1024u);
 }
 

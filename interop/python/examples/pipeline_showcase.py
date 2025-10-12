@@ -36,6 +36,8 @@ def _pick_some_files(n: int = 3) -> list[str]:
     return files[: max(1, n)]
 
 
+
+
 def ex_contacts_memory_dir() -> None:
     """Contacts over a directory, parsed JSON kept in memory"""
     source = DirectorySource(DATA_DIR, recursive=False, extensions=[".cif"], batch=64)
@@ -46,8 +48,10 @@ def ex_contacts_memory_dir() -> None:
         in_memory_policy=InMemoryPolicy.Keep
     )
     out = p.run(threads=4)
-    items = out.get("contacts", [])
-    print(f"contacts (memory, parsed): {len(items)} items; first keys={list(items[0].keys()) if items and isinstance(items[0], dict) else 'n/a'}")
+    contacts = out.to_numpy("contacts")
+    first = contacts[0] if contacts else None
+    columns = list(first["contacts"].keys()) if first else []
+    print(f"contacts (memory, columnar): {len(contacts)} items; contact columns={columns}")
 
 
 def ex_custom_system_stage() -> None:
@@ -57,7 +61,8 @@ def ex_custom_system_stage() -> None:
     # defaults to MolStar + All
     p.add_task(name="contacts", task=ContactTask(), in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
-    print(f"contacts (depends on 'init'): {len(out.get('contacts', []))}")
+    contacts = out.to_dict("contacts")
+    print(f"contacts (depends on 'init'): {len(contacts)}")
 
 
 def ex_contacts_providers() -> None:
@@ -67,9 +72,14 @@ def ex_contacts_providers() -> None:
     p.add_task(name="molstar_hbond", task=ContactTask(provider=ContactProvider.MolStar,  interaction_type=InteractionType.HydrogenBond), in_memory_policy=InMemoryPolicy.Keep)
     p.add_task(name="arpeggio_vdw",  task=ContactTask(provider=ContactProvider.Arpeggio, interaction_type=InteractionType.VanDerWaals),  in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
-    print("providers:",
-        "molstar_hbond=", len(out.get("molstar_hbond", [])),
-        "arpeggio_vdw=",  len(out.get("arpeggio_vdw",  [])),
+    molstar_contacts = out.to_dict("molstar_hbond")
+    arpeggio_contacts = out.to_dict("arpeggio_vdw")
+    print(
+        "providers:",
+        "molstar_hbond=",
+        len(molstar_contacts),
+        "arpeggio_vdw=",
+        len(arpeggio_contacts),
     )
 
 
@@ -84,7 +94,8 @@ def ex_contacts_to_file_and_memory() -> None:
                out=[FileOutput(out_path, fmt=OutputFormat.JSON)], in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
     files = p.file_outputs()
-    print(f"contacts: memory={len(out.get('contacts', []))}, file={files.get('contacts')}")
+    contacts = out.to_dict("contacts")
+    print(f"contacts: memory={len(contacts)}, file={files.get('contacts')}")
 
 
 def ex_contacts_sharded_files() -> None:
@@ -116,7 +127,8 @@ def ex_python_path_text() -> None:
     p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="names", task=basename, in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4) # can use multiple threads even with Python tasks
-    print(f"python(path->text): {out.get('names', [])}")
+    names = list(out.get("names", ()))
+    print(f"python(path->text): {names}")
 
 
 def ex_python_path_json_parsed() -> None:
@@ -127,7 +139,7 @@ def ex_python_path_json_parsed() -> None:
     p = Pipeline(FileSource(_pick_some_files(2)))
     p.add_task(name="desc", task=describe, in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
-    print(f"python(path->json, parsed): {out.get('desc', [])}")
+    print(f"python(path->json, parsed): {list(out.json('desc'))}")
 
 
 def ex_python_system_topology_input() -> None:
@@ -147,7 +159,7 @@ def ex_python_system_topology_input() -> None:
     # This is the default behavior, and we could omit `depends` here.
     p.add_task(name="summary", task=summarize, depends=["topology"], in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=2)
-    print(f"python(sys+topo->json): {out.get('summary', [])}")
+    print(f"python(sys+topo->json): {list(out.json('summary'))}")
 
 
 def ex_custom_channel_multi_sinks() -> None:
@@ -160,7 +172,7 @@ def ex_custom_channel_multi_sinks() -> None:
     p.add_task(name="meta_task", task=meta, channel="meta", in_memory_policy=InMemoryPolicy.Keep, out=[FileOutput("meta.ndjson", fmt=OutputFormat.JSON)])
     out = p.run(threads=8)
     files = p.file_outputs()
-    print(f"channel 'meta': memory={len(out.get('meta', []))}, file={files.get('meta')}")
+    print(f"channel 'meta': memory={len(out.json('meta'))}, file={files.get('meta')}")
 
 
 def ex_thread_safety_single_thread() -> None:
@@ -209,7 +221,7 @@ def ex_mixed_dag() -> None:
     p.add_task(name="annot", task=annotate, depends=["system", "contacts"], in_memory_policy=InMemoryPolicy.Keep)
 
     out = p.run(threads=4)
-    print({k: len(v) for k, v in out.items()})
+    print({channel: len(out.to_dict(channel)) for channel in out.channels()})
 
 
 def ex_convenience_sinks() -> None:
@@ -242,7 +254,7 @@ def ex_multiple_channels_mixed_sinks() -> None:
 
     p.add_task(name="names", task=s, in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=4)
-    print({k: (len(v) if isinstance(v, list) else v) for k, v in out.items()})
+    print({channel: len(out.to_dict(channel)) for channel in out.channels()})
     print("files:", p.file_outputs())
 
 
@@ -273,7 +285,8 @@ def ex_channel_fanin_contacts() -> None:
 
     out = p.run(threads=4)
     files = p.file_outputs()
-    print("fan-in contacts count:", len(out.get("contacts", [])))
+    contacts = out.to_dict("contacts")
+    print("fan-in contacts count:", len(contacts))
     print("single-file sink on 'contacts':", files.get("contacts"))
 
 
@@ -291,7 +304,7 @@ def ex_channel_rename_python() -> None:
     p.add_task(name="py_summarize_task", task=summarize, channel="summary", in_memory_policy=InMemoryPolicy.Keep)
     out = p.run(threads=1)
     print("channels:", list(out.keys()))  # ['summary'] (not 'py_summarize_task')
-    print("summary:", out.get("summary"))
+    print("summary:", list(out.json("summary")))
 
 
 def ex_channel_fanin_python_mix() -> None:
@@ -312,7 +325,7 @@ def ex_channel_fanin_python_mix() -> None:
     p.add_task(name="size_meta", task=extra, channel="meta", in_memory_policy=InMemoryPolicy.Keep)
     p.to_files("meta", path="meta.ndjson", fmt=OutputFormat.JSON)
     out = p.run(threads=1)
-    print("fan-in meta items:", len(out.get("meta", [])))
+    print("fan-in meta items:", len(out.json("meta")))
     print("fan-in meta file:", p.file_outputs().get("meta"))
 
 

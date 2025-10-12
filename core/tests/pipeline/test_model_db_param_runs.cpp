@@ -82,7 +82,7 @@ static std::shared_ptr<CollectorSink> run_contacts_pipeline_over_db(const fs::pa
     p.provider = analysis::contacts::ContactProvider::Arpeggio;
     p.type = InteractionType::All;
     p.channel = "contacts";
-    p.json = true;
+    p.format = pipeline::compute::ContactsOutputFormat::Json;
     mgr.add_computation(
         "contacts",
         {},
@@ -196,7 +196,7 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
     p.provider = analysis::contacts::ContactProvider::Arpeggio;
     p.type = InteractionType::All;
     p.channel = "contacts";
-    p.json = true;
+    p.format = pipeline::compute::ContactsOutputFormat::Json;
     mgr.add_computation(
         "contacts",
         {},

@@ -4,6 +4,7 @@
 #include "gemmi/third_party/sajson.h"
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -159,6 +160,22 @@ public:
     if (v.get_type() == sajson::TYPE_NULL)
       throw std::runtime_error("missing key \"" + std::string(key) + '"');
 
+    return read_value<T>(v, key);
+  }
+
+  template<typename T>
+  T get_or(std::string_view key, T default_value) const {
+    const sajson::string k{key.data(), key.size()};
+    const sajson::value v = doc_.get_root().get_value_of_key(k);
+
+    if (v.get_type() == sajson::TYPE_NULL) return default_value;
+
+    return read_value<T>(v, key);
+  }
+
+private:
+  template<typename T>
+  static T read_value(const sajson::value &v, std::string_view key) {
     if constexpr (std::is_same_v<T, bool>) {
       if (v.get_type() == sajson::TYPE_TRUE)  return true;
       if (v.get_type() == sajson::TYPE_FALSE) return false;

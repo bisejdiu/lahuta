@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from typing_extensions import TypeAlias
 
 from lahuta.lib import lahuta as _lib
 
@@ -23,6 +24,7 @@ class OutputFormat(str, Enum):
 
     JSON = "json"
     TEXT = "text"
+    BINARY = "binary"
 
 
 @dataclass
@@ -38,7 +40,7 @@ class ShardedOutput:
     fmt: OutputFormat = OutputFormat.JSON
 
 
-PipelineContext = _lib.pipeline.PipelineContext
+PipelineContext: TypeAlias = _lib.pipeline.PipelineContext
 
 __all__ = [
     "InMemoryPolicy",

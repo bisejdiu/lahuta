@@ -242,7 +242,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
         p.provider = cli.provider;
         p.type     = cli.interaction_type;
         p.channel  = "contacts";
-        p.json     = json_out;
+        p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
+                              : pipeline::compute::ContactsOutputFormat::Text;
         mgr.add_computation(
           "contacts",
           {},
@@ -291,7 +292,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
           p.provider = cli.provider;
           p.type     = cli.interaction_type;
           p.channel  = "contacts";
-          p.json     = json_out;
+          p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
+                                : pipeline::compute::ContactsOutputFormat::Text;
           mgr.add_computation(
             "contacts",
             {},

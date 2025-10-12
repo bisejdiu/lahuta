@@ -21,6 +21,10 @@ public:
     std::lock_guard<std::mutex> lk(m_);
     return out_;
   }
+  std::vector<std::string> result_bytes() const {
+    std::lock_guard<std::mutex> lk(m_);
+    return out_;
+  }
   void clear() {
     std::lock_guard<std::mutex> lk(m_);
     out_.clear();

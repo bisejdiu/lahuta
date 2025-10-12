@@ -15,8 +15,6 @@
 #include "analysis/system/model_pack_task.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
-#include "pipeline/dynamic/sources.hpp"
-#include "pipeline/sources.hpp"
 #include "pipeline/python_task.hpp"
 
 // clang-format off
@@ -50,22 +48,24 @@ inline void bind_stage_manager(py::module_ &md) {
     .def("add_contacts", [](StageManager &mgr,
                             const std::string &name,
                             const std::vector<std::string> &deps,
-                            lahuta::analysis::contacts::ContactProvider provider,
+                            analysis::contacts::ContactProvider provider,
                             InteractionType interaction_type,
                             std::optional<std::string> channel,
                             const std::string &out_fmt,
                             bool thread_safe) {
           std::string ch = channel.has_value() ? *channel : name;
-          bool json = true;
-          if (out_fmt == "json") json = true;
-          else if (out_fmt == "text") json = false;
-          else throw std::invalid_argument("out_fmt must be 'json' or 'text'");
+
+          pipeline::compute::ContactsOutputFormat format;
+          if      (out_fmt == "json")   format = pipeline::compute::ContactsOutputFormat::Json;
+          else if (out_fmt == "text")   format = pipeline::compute::ContactsOutputFormat::Text;
+          else if (out_fmt == "binary") format = pipeline::compute::ContactsOutputFormat::Binary;
+          else throw std::invalid_argument("out_fmt must be 'json', 'text', or 'binary'");
 
           pipeline::compute::ContactsParams p{};
           p.provider = provider;
           p.type     = interaction_type;
           p.channel  = ch;
-          p.json     = json;
+          p.format   = format;
 
           mgr.add_computation(name, deps, [label = name, p]() {
             return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
@@ -90,7 +90,7 @@ inline void bind_stage_manager(py::module_ &md) {
 
           auto t = std::make_shared<PyCallableTask>(std::move(fn), name, ch, store, serialize);
           // Preserve item-level parallelism: mark stage as thread-safe.
-          mgr.add_task(name, deps, std::move(t), /*thread_safe_for_stage=*/true);
+          mgr.add_task(name, deps, std::move(t), /*thread_safe=*/true);
         },
         py::arg("name"),
         py::arg("depends") = std::vector<std::string>{},
