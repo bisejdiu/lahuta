@@ -269,7 +269,7 @@ public:
     executor.run(item_stream, threads);
 
     // Stop ingress and drain writers with a deadline
-    mux_.close_and_flush(std::chrono::seconds(5));
+    mux_.close_and_flush(flush_timeout_);
     Logger::get_logger()->debug("StageManager: completed run_token {}", run_token);
   }
 
@@ -277,6 +277,15 @@ public:
 
   // Expose current sink stats snapshot for diagnostics/observability.
   std::vector<ChannelMultiplexer::SinkStatsSnapshot> stats() const { return mux_.stats(); }
+
+  // Flush timeout configuration
+  void set_flush_timeout(std::chrono::milliseconds timeout) {
+    if (timeout.count() < 0) {
+      throw std::invalid_argument("StageManager.set_flush_timeout: timeout must be non-negative");
+    }
+    flush_timeout_ = timeout;
+  }
+  std::chrono::milliseconds get_flush_timeout() const { return flush_timeout_; }
 
   // Parameter access for builtins
   compute::SystemReadParams& get_system_params() { return sys_params_; }
@@ -364,6 +373,9 @@ private:
   // Policy + introspection state
   bool auto_builtins_ = false;
   std::unordered_set<std::string> compiled_builtins_;
+
+  // Flush timeout configuration
+  std::chrono::milliseconds flush_timeout_{std::chrono::seconds(60)};
 };
 
 } // namespace lahuta::pipeline::dynamic
