@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <filesystem>
+
 #include "compute/topology_snapshot.hpp"
 #include "entities/context.hpp"
 #include "lahuta.hpp"

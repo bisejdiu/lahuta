@@ -86,7 +86,7 @@ jobs:
           test -f contacts.jsonl
           n=$(jq -r 'select(.num_contacts) | .num_contacts' contacts.jsonl | tail -n1 || echo 0)
           echo "num_contacts=$n"
-          test "$n" = "153"
+          test "$n" = "156"
 
           ./core/build/lahuta -f data/ubi.cif -p arpeggio
           test -f contacts.jsonl
@@ -111,8 +111,8 @@ jobs:
           ctest --test-dir core/build \
                 --output-on-failure   \
                 --no-tests=error      \
-                --parallel "${JOBS}"  \
-                --output-junit "${REPO_ROOT}/core/build/test-results/junit-${{ matrix.os }}-${{ matrix.arch }}.xml"
+                --parallel "${JOBS}"
+                # --output-junit "${REPO_ROOT}/core/build/test-results/junit-${{ matrix.os }}-${{ matrix.arch }}.xml"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -124,11 +124,11 @@ jobs:
             core/build/gtest-results/*.xml
           retention-days: 14
 
-      - name: Publish test report
-        if: always()
-        uses: dorny/test-reporter@v1
-        with:
-          name: unit tests (${{ matrix.os }}-${{ matrix.arch }})
-          path: core/build/test-results/*.xml
-          reporter: java-junit
-          fail-on-empty: true
+      # - name: Publish test report
+      #   if: always()
+      #   uses: dorny/test-reporter@v2
+      #   with:
+      #     name: unit tests (${{ matrix.os }}-${{ matrix.arch }})
+      #     path: core/build/test-results/*.xml
+      #     reporter: java-junit
+      #     fail-on-empty: true

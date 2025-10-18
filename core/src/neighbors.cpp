@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "neighbors.hpp"
 #include "lahuta.hpp"
 

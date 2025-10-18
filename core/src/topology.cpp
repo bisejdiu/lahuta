@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "topology.hpp"
 #include "logging.hpp"
 
