@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_TOPOLOGY_PARAMETERS_HPP
+#define LAHUTA_TOPOLOGY_PARAMETERS_HPP
 
 #include "compute/parameters.hpp"
 #include "contact_types.hpp"
@@ -54,3 +55,5 @@ struct ModelTopologyParams : public ParameterBase<ModelTopologyParams> {
 };
 
 } // namespace lahuta::topology
+
+#endif // LAHUTA_TOPOLOGY_PARAMETERS_HPP

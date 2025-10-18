@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP
+#define LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP
 
 #include <memory>
 #include <string>
@@ -101,3 +102,5 @@ public:
 };
 
 } // namespace lahuta::analysis::topology
+
+#endif // LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP

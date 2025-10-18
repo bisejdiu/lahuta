@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_BONDS_PERCEPTION_NONSTANDARD_BONDS_HPP
+#define LAHUTA_BONDS_PERCEPTION_NONSTANDARD_BONDS_HPP
 
 #include <vector>
 
@@ -43,3 +44,5 @@ bool process_inconsistent_instances(
     PerceptionStats *stats = nullptr);
 
 } // namespace lahuta::bonds
+
+#endif // LAHUTA_BONDS_PERCEPTION_NONSTANDARD_BONDS_HPP

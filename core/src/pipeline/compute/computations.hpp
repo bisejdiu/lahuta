@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_PIPELINE_COMPUTE_COMPUTATIONS_HPP
+#define LAHUTA_PIPELINE_COMPUTE_COMPUTATIONS_HPP
 
 #include <memory>
 #include <string>
@@ -74,3 +75,5 @@ private:
 };
 
 } // namespace lahuta::pipeline::compute
+
+#endif // LAHUTA_PIPELINE_COMPUTE_COMPUTATIONS_HPP

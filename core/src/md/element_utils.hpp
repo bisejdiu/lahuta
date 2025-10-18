@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_MD_ELEMENT_UTILS_HPP
+#define LAHUTA_MD_ELEMENT_UTILS_HPP
 
 #include <string_view>
 
@@ -20,3 +21,5 @@ namespace lahuta::md {
 [[nodiscard]] Element guess_element_from_gro(std::string_view atom_id, std::string_view comp_id);
 
 } // namespace lahuta::md
+
+#endif // LAHUTA_MD_ELEMENT_UTILS_HPP

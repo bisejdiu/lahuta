@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_LABEL_HPP
+#define LAHUTA_COMPUTE_LABEL_HPP
 
 #include <string_view>
 
@@ -21,3 +22,5 @@ private:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_LABEL_HPP

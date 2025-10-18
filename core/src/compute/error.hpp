@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_ERROR_HPP
+#define LAHUTA_COMPUTE_ERROR_HPP
 
 #include <string>
 
@@ -26,3 +27,5 @@ private:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_ERROR_HPP

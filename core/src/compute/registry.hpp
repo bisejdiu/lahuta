@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_REGISTRY_HPP
+#define LAHUTA_COMPUTE_REGISTRY_HPP
 
 #include "node.hpp"
 #include "compute/compute_base.hpp"
@@ -56,3 +57,5 @@ private:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_REGISTRY_HPP

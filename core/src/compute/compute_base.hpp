@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_COMPUTE_BASE_HPP
+#define LAHUTA_COMPUTE_COMPUTE_BASE_HPP
 
 #include <cstddef>
 #include <memory>
@@ -59,3 +60,5 @@ private:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_COMPUTE_BASE_HPP

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_BONDS_PERCEPTION_TEMPLATE_HPP
+#define LAHUTA_BONDS_PERCEPTION_TEMPLATE_HPP
 
 #include <cstdint>
 #include <optional>
@@ -80,3 +81,5 @@ bool apply_template_to_instance(
 } // namespace detail
 
 } // namespace lahuta::bonds
+
+#endif // LAHUTA_BONDS_PERCEPTION_TEMPLATE_HPP

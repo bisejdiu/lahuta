@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_DEPENDENCY_HPP
+#define LAHUTA_COMPUTE_DEPENDENCY_HPP
 
 #include "compute/label.hpp"
 #include "compute/result.hpp"
@@ -32,3 +33,5 @@ struct Dependencies {
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_DEPENDENCY_HPP

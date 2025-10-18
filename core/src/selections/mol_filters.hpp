@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_SELECTIONS_MOL_FILTERS_HPP
+#define LAHUTA_SELECTIONS_MOL_FILTERS_HPP
 
 #include "logging.hpp"
 #include <gemmi/mmread_gz.hpp>
@@ -82,3 +83,5 @@ inline RDKit::RWMol filter_with_bonds(const RDKit::RWMol &mol, std::vector<int> 
 }
 
 } // namespace lahuta
+
+#endif // LAHUTA_SELECTIONS_MOL_FILTERS_HPP

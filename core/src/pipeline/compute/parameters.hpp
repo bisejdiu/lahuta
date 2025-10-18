@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_PIPELINE_COMPUTE_PARAMETERS_HPP
+#define LAHUTA_PIPELINE_COMPUTE_PARAMETERS_HPP
 
 #include <cstdint>
 #include <optional>
@@ -62,3 +63,5 @@ struct DynamicTaskParams : public ParameterBase<DynamicTaskParams> {
 };
 
 } // namespace lahuta::pipeline::compute
+
+#endif // LAHUTA_PIPELINE_COMPUTE_PARAMETERS_HPP

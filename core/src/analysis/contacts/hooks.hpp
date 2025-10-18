@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_CONTACTS_HOOKS_HPP
+#define LAHUTA_ANALYSIS_CONTACTS_HOOKS_HPP
 
 #include "pipeline/dynamic/types.hpp"
 #include "serialization/json.hpp"
@@ -24,3 +25,5 @@ inline std::string build_contacts_summary_json(const pipeline::dynamic::TaskCont
 }
 
 } // namespace lahuta::analysis::contacts
+
+#endif // LAHUTA_ANALYSIS_CONTACTS_HOOKS_HPP

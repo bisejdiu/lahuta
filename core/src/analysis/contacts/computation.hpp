@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_CONTACTS_COMPUTATION_HPP
+#define LAHUTA_ANALYSIS_CONTACTS_COMPUTATION_HPP
 
 #include "analysis/contacts/kernel.hpp"
 #include "analysis/topology/computation.hpp"
@@ -19,3 +20,5 @@ public:
 };
 
 } // namespace lahuta::analysis::contacts
+
+#endif // LAHUTA_ANALYSIS_CONTACTS_COMPUTATION_HPP

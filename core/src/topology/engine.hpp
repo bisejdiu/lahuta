@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_TOPOLOGY_ENGINE_HPP
+#define LAHUTA_TOPOLOGY_ENGINE_HPP
 
 #include "compute/engine.hpp"
 #include "logging.hpp"
@@ -127,3 +128,5 @@ private:
 };
 
 } // namespace lahuta::topology
+
+#endif // LAHUTA_TOPOLOGY_ENGINE_HPP

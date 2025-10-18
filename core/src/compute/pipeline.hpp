@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_PIPELINE_HPP
+#define LAHUTA_COMPUTE_PIPELINE_HPP
 
 #include "node.hpp"
 #include "registry.hpp"
@@ -36,3 +37,5 @@ public:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_PIPELINE_HPP

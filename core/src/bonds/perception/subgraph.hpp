@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_BONDS_PERCEPTION_SUBGRAPH_HPP
+#define LAHUTA_BONDS_PERCEPTION_SUBGRAPH_HPP
 
 #include <rdkit/GraphMol/RWMol.h>
 
@@ -10,3 +11,5 @@ namespace lahuta::bonds::subgraph {
 RDKit::RWMol build_rdkit_submol(const RDKit::RWMol &source, span<const int> indices, bool include_bonds);
 
 } // namespace lahuta::bonds::subgraph
+
+#endif // LAHUTA_BONDS_PERCEPTION_SUBGRAPH_HPP

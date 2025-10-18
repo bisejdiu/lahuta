@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_READ_MMCIF_HPP
+#define LAHUTA_READ_MMCIF_HPP
 
 #include "logging.hpp"
 #include "gemmi/numb.hpp"
@@ -144,3 +145,5 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
 }
 
 } // namespace lahuta
+
+#endif // LAHUTA_READ_MMCIF_HPP

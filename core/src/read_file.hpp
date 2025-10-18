@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_READ_FILE_HPP
+#define LAHUTA_READ_FILE_HPP
 
 #include <gemmi/mmread_gz.hpp>
 #include <gemmi/mmread.hpp>
@@ -45,3 +46,5 @@ std::shared_ptr<RDKit::RWMol> read_and_make_molecule(T&& input) {
 }
 
 } // namespace lahuta
+
+#endif // LAHUTA_READ_FILE_HPP

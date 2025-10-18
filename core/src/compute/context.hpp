@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_CONTEXT_HPP
+#define LAHUTA_COMPUTE_CONTEXT_HPP
 
 #include <type_traits>
 
@@ -35,3 +36,5 @@ private:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_CONTEXT_HPP

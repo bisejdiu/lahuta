@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_RESULT_HPP
+#define LAHUTA_COMPUTE_RESULT_HPP
 
 #include "error.hpp"
 #include <memory>
@@ -89,3 +90,5 @@ public:
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_RESULT_HPP

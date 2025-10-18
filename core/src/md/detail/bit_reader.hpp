@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_MD_DETAIL_BIT_READER_HPP
+#define LAHUTA_MD_DETAIL_BIT_READER_HPP
 
 //
 // BitReader is a fast MSB-first XTC payload bitstream reader.
@@ -176,3 +177,5 @@ public:
 };
 
 } // namespace lahuta::md::detail
+
+#endif // LAHUTA_MD_DETAIL_BIT_READER_HPP

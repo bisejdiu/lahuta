@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_COMPUTE_IMPL_HPP
+#define LAHUTA_COMPUTE_COMPUTE_IMPL_HPP
 
 #include "compute_base.hpp"
 
@@ -98,4 +99,6 @@ public:
   }
 };
 
-} // namespace lahuta::topology::compute 
+} // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_COMPUTE_IMPL_HPP

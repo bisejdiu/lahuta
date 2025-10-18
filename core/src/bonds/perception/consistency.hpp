@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_BONDS_PERCEPTION_CONSISTENCY_HPP
+#define LAHUTA_BONDS_PERCEPTION_CONSISTENCY_HPP
 
 #include <string>
 #include <unordered_map>
@@ -26,3 +27,5 @@ struct ConsistencyPartitions {
 ConsistencyPartitions partition_instances_by_consistency(const RDKit::RWMol &mol, const std::vector<ResidueInstance> &instances);
 
 } // namespace lahuta::bonds
+
+#endif // LAHUTA_BONDS_PERCEPTION_CONSISTENCY_HPP

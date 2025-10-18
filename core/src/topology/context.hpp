@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_TOPOLOGY_CONTEXT_HPP
+#define LAHUTA_TOPOLOGY_CONTEXT_HPP
 
 #include "entities/records.hpp"
 #include "residues.hpp"
@@ -37,3 +38,5 @@ struct TopologyContext {
 };
 
 } // namespace lahuta::topology
+
+#endif // LAHUTA_TOPOLOGY_CONTEXT_HPP

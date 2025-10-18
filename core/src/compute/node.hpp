@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_NODE_HPP
+#define LAHUTA_COMPUTE_NODE_HPP
 
 #include "compute/_defs.hpp"
 #include "compute/compute_base.hpp"
@@ -37,3 +38,5 @@ struct ComputeNode {
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_NODE_HPP

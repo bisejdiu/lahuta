@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_RUNNERS_HPP
+#define LAHUTA_COMPUTE_RUNNERS_HPP
 
 #include "compute/_defs.hpp"
 #include "node.hpp"
@@ -110,3 +111,5 @@ ExecOrder schedule_and_run_from(Registry<D, M>& registry, DataContext<D, M>& ctx
 }
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_RUNNERS_HPP

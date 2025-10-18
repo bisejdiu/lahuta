@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_TOPOLOGY_KERNELS_HPP
+#define LAHUTA_TOPOLOGY_KERNELS_HPP
 
 #include "compute/context.hpp"
 #include "compute/result.hpp"
@@ -69,3 +70,5 @@ struct SeedFromModelKernel {
 };
 
 } // namespace lahuta::topology
+
+#endif // LAHUTA_TOPOLOGY_KERNELS_HPP
