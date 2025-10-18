@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
-project(lahuta VERSION 1.0.0 LANGUAGES CXX C)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(LahutaVersion)
+lahuta_read_version_file()
+
+project(lahuta VERSION ${LAHUTA_VERSION_BASE} LANGUAGES CXX C)
 
 include(CTest) # Provides BUILD_TESTING option
 include(GNUInstallDirs)
@@ -291,6 +296,8 @@ add_library(lahuta_core SHARED
 target_compile_features(lahuta_core PUBLIC cxx_std_17)
 set_property(TARGET lahuta_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+lahuta_configure_core_version(lahuta_core)
+
 target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/external
@@ -490,6 +497,12 @@ if(LAHUTA_BUILD_PYTHON)
       )
     endif()
 
+    # Configure Python version file for direct CMake installs
+    lahuta_configure_python_version(
+      "${PY_PKG_ROOT}"
+      "${CMAKE_CURRENT_BINARY_DIR}/python_configured"
+    )
+
     # Python file installation depends on build context
     if(NOT DEFINED SKBUILD)
       # Direct CMake install: we need to install Python files ourselves
@@ -501,6 +514,12 @@ if(LAHUTA_BUILD_PYTHON)
           PATTERN "*.pyi"
           PATTERN "py.typed"
         PATTERN "__pycache__" EXCLUDE
+        PATTERN "_version.py" EXCLUDE  # Exclude template, use configured version below
+      )
+      # Install the CMake-configured version file
+      install(FILES "${LAHUTA_PYTHON_VERSION_FILE}"
+        DESTINATION "lahuta"
+        COMPONENT python
       )
       message(STATUS "Direct CMake install: Installing Python files via CMake")
     else()
