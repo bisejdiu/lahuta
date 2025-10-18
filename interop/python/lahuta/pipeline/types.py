@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing_extensions import TypeAlias
+from typing import TypeAlias
 
 from lahuta.lib import lahuta as _lib
 

@@ -1,15 +1,11 @@
 from __future__ import annotations
 
+from typing import TypedDict
+
 from .params import SystemParams, TopologyParams
 from .result import PipelineResult
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 from .wrapper import Pipeline, PyTaskFn
-
-# Error payload emitted by Python tasks on exceptions (see python_task.hpp)
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
 
 
 class ErrorInfo(TypedDict):

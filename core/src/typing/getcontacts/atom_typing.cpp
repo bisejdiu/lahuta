@@ -171,6 +171,14 @@ bool is_hydrophobic_residue(const std::string& res) {
 AtomType classify_atom(const RDKit::RWMol& mol, const RDKit::Atom& atom) {
   AtomType type = AtomType::None;
 
+  //
+  // TODO: seed from model needs to compute atom types, but it does not go
+  // through the topology, hence why we need this here. - Besian, October 2025
+  //
+  auto& atom_mut = const_cast<RDKit::Atom&>(atom);
+  atom_mut.calcExplicitValence(false);
+  atom_mut.calcImplicitValence(false);
+
   auto res_info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
   if (!res_info) return type;
   const auto res    = res_info->getResidueName();

@@ -8,16 +8,22 @@ def _resolve_data_file(filename: str) -> Path:
     here = Path(__file__).resolve()
     p = here
     for _ in range(12):
-        candidate = p.parent / "data" / filename if p.name == "tests" else p / "data" / filename
-        if candidate.exists():
-            return candidate
-        direct = p / "data" / filename
-        if direct.exists():
-            return direct
+        # Try both data/ and core/data/ paths
+        for base in ["core/data", "data"]:
+            candidate = p.parent / base / filename if p.name == "tests" else p / base / filename
+            if candidate.exists():
+                return candidate
+            direct = p / base / filename
+            if direct.exists():
+                return direct
         p = p.parent
-    alt = Path.cwd() / "data" / filename
-    if alt.exists():
-        return alt
+
+    # Try current working directory
+    for base in ["core/data", "data"]:
+        alt = Path.cwd() / base / filename
+        if alt.exists():
+            return alt
+
     pytest.skip(f"Missing data/{filename}")
 
 

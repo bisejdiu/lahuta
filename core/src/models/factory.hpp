@@ -2,8 +2,8 @@
 #define LAHUTA_POOL_FACTORY_HPP
 
 #include <atomic>
-#include <cassert>
 #include <cstddef>
+#include <cstdlib>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -32,55 +32,72 @@ public:
   //
   // Policy: if already >= num_threads, do nothing, otherwise append new pools.
   static void initialize(size_t num_threads) {
-      if (pools_.size() >= num_threads) {
-          return; // already initialized to sufficient capacity. Do not shrink or clear (i.e., no pool_.clear(), see above).
-      }
-      const size_t old = pools_.size();
-      pools_.reserve(num_threads);
-      for (size_t i = old; i < num_threads; ++i) {
-          pools_.push_back(std::make_unique<PoolType>());
-      }
-  }
+    std::lock_guard<std::mutex> lock(grow_mtx_);
 
-  /// Get a pool for a specific thread ID.
-  static PoolType* get_pool_by_thread_id(size_t thread_id) {
-      assert(thread_id < pools_.size() && "Thread ID out of range");
-      return pools_[thread_id].get();
+    // already initialized to sufficient capacity. Do not shrink or clear (i.e., no pool_.clear(), see above).
+    if (pools_.size() >= num_threads) return;
+
+    const size_t old = pools_.size();
+    pools_.reserve(num_threads);
+    for (size_t i = old; i < num_threads; ++i) {
+      pools_.push_back(std::make_unique<PoolType>());
+      free_indices_.push_back(i);
+    }
   }
 
   /// Get the pool associated with the current thread.
-  static PoolType* get_pool_for_current_thread() {
-      static std::atomic<size_t> next_id{0};
-      static thread_local size_t thread_index = next_id.fetch_add(1, std::memory_order_relaxed);
-
-      // Self-initialize on first touch for this thread.
-      if (thread_index >= pools_.size()) {
-          std::lock_guard<std::mutex> lock(grow_mtx_);
-          if (thread_index >= pools_.size()) {
-              const size_t old = pools_.size();
-              pools_.reserve(thread_index + 1);
-              for (size_t i = old; i <= thread_index; ++i) {
-                  pools_.push_back(std::make_unique<PoolType>());
-              }
-          }
+  static PoolType *get_pool_for_current_thread() {
+    struct ThreadLocalPool {
+      ThreadLocalPool() {
+        std::lock_guard<std::mutex> lock(grow_mtx_);
+        if (!free_indices_.empty()) {
+          index_ = free_indices_.back();
+          free_indices_.pop_back();
+        } else {
+          index_ = pools_.size();
+          pools_.push_back(std::make_unique<PoolType>());
+        }
+        pool_ = pools_[index_].get();
       }
-      return pools_[thread_index].get();
+
+      ~ThreadLocalPool() {
+        if (!factory_alive_.load(std::memory_order_relaxed)) return;
+
+        std::lock_guard<std::mutex> lock(grow_mtx_);
+        pools_[index_]->reset();
+        free_indices_.push_back(index_);
+      }
+
+      PoolType *pool_{};
+      size_t index_{};
+    };
+
+    thread_local ThreadLocalPool local_pool;
+    return local_pool.pool_;
   }
 
   /// Get a fresh pool for the current thread, resetting its state.
-  static PoolType* get_fresh_pool_for_current_thread() {
-      PoolType* pool = get_pool_for_current_thread();
-      pool->reset();
-      return pool;
+  static PoolType *get_fresh_pool_for_current_thread() {
+    PoolType *pool = get_pool_for_current_thread();
+    pool->reset();
+    return pool;
   }
 
 private:
   inline static std::vector<std::unique_ptr<PoolType>> pools_;
   inline static std::mutex grow_mtx_;
+  inline static std::vector<size_t> free_indices_;
+  inline static std::atomic<bool> factory_alive_{true};
+
+  struct ShutdownHook {
+    ShutdownHook() { std::atexit(&PoolFactory::mark_shutdown); }
+  };
+  inline static ShutdownHook shutdown_hook_{};
+
+  static void mark_shutdown() { factory_alive_.store(false, std::memory_order_relaxed); }
 };
 
-// Using aliases is safer, because referencing the template directly could lead to
-// multiple independent instantiations
+// Using aliases is safer, because referencing the template directly may lead to multiple independent instantiations
 using AtomPoolFactory = PoolFactory<AtomPool>;
 using BondPoolFactory = PoolFactory<BondPool>;
 using InfoPoolFactory = PoolFactory<InfoPool>;

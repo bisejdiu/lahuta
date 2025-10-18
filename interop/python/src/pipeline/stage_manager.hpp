@@ -18,6 +18,8 @@
 #include "analysis/system/model_pack_task.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/process_pool.hpp"
+#include "pipeline/python_process_task.hpp"
 #include "pipeline/python_task.hpp"
 
 // clang-format off
@@ -27,6 +29,22 @@ using namespace lahuta::sources;
 using namespace lahuta::pipeline::dynamic;
 
 namespace {
+
+inline void python_stage_executor_tls_cleanup(StageExecutor::ThreadLocalState& state) {
+  // During interpreter shutdown we cannot safely acquire the GIL. Fall back to direct reset.
+  if (!Py_IsInitialized() || Py_IsFinalizing()) {
+    StageExecutor::clear_thread_local_state(state);
+    return;
+  }
+  try {
+    py::gil_scoped_acquire gil;
+    StageExecutor::clear_thread_local_state(state);
+  } catch (const py::error_already_set&) {
+    StageExecutor::clear_thread_local_state(state);
+  } catch (...) {
+    StageExecutor::clear_thread_local_state(state);
+  }
+}
 
 inline std::chrono::milliseconds seconds_to_milliseconds(double seconds) {
   using MilliRep = std::chrono::milliseconds::rep;
@@ -52,6 +70,8 @@ inline double milliseconds_to_seconds(std::chrono::milliseconds ms) {
 } // namespace
 
 inline void bind_stage_manager(py::module_ &md) {
+  StageExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup);
+
   py::class_<ITask, std::shared_ptr<ITask>> task(md, "Task");
 
   // Bind reusable C++ task that serializes models to ModelRecord payloads
@@ -126,6 +146,35 @@ inline void bind_stage_manager(py::module_ &md) {
         py::arg("channel") = std::optional<std::string>{},
         py::arg("serialize") = true,
         py::arg("store") = true)
+    .def("add_python_process", [](StageManager &mgr,
+                                  const std::string &name,
+                                  const std::vector<std::string> &deps,
+                                  const std::string &module,
+                                  const std::string &qualname,
+                                  py::object serialized_callable,
+                                  std::optional<std::string> channel,
+                                  bool store) {
+          std::optional<std::string> ch = channel.has_value() ? channel : std::optional<std::string>{name};
+          auto& sys_params = mgr.get_system_params();
+          auto& topo_params = mgr.get_topology_params();
+          auto t = std::make_shared<PyProcessTask>(name,
+                                                   module,
+                                                   qualname,
+                                                   std::move(serialized_callable),
+                                                   ch,
+                                                   store,
+                                                   &sys_params,
+                                                   &topo_params);
+          mgr.add_task(name, deps, std::move(t), /*thread_safe=*/true);
+        },
+        py::arg("name"),
+        py::arg("depends") = std::vector<std::string>{},
+        py::arg("module"),
+        py::arg("qualname"),
+        py::arg("serialized_callable") = py::none(),
+        py::arg("channel") = std::optional<std::string>{},
+        py::arg("store") = true)
+
     // sinks
     .def("connect_sink", [](StageManager &mgr,
                              const std::string &channel,
@@ -177,6 +226,21 @@ inline void bind_stage_manager(py::module_ &md) {
           py::gil_scoped_acquire acquire;
         },
         py::arg("threads") = 4, py::arg("flush_timeout") = py::none())
+
+    // Process pool management
+    .def("configure_python_process_pool", [](StageManager&, std::size_t processes) {
+          PyProcessPool::instance().configure(processes);
+        }, py::arg("processes"))
+    .def("shutdown_python_process_pool", [](StageManager&) {
+          PyProcessPool::instance().shutdown();
+          PyProcessTask::set_concurrency_limit(0);
+        })
+    .def("set_python_process_concurrency", [](StageManager&, std::size_t limit) {
+          PyProcessTask::set_concurrency_limit(limit);
+        }, py::arg("limit"))
+    .def("set_python_process_timeout", [](StageManager&, double seconds) {
+          PyProcessTask::set_timeout(seconds);
+        }, py::arg("seconds"))
 
     .def("set_auto_builtins", [](StageManager& mgr, bool on) { mgr.set_auto_builtins(on); })
     .def("get_auto_builtins", [](StageManager& mgr) { return mgr.get_auto_builtins(); })

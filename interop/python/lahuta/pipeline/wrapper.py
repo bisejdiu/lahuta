@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import (
@@ -21,6 +22,8 @@ from lahuta.sources import PipelineSource
 
 from ._discovery import _ast_infer_builtins_for_callable, _discover_builtins_for_callable
 from ._inference import infer_python_task_format
+from .mp_backend import PyTaskSpec as _MPPyTaskSpec
+from .mp_backend import resolve_callable_metadata
 from .params import SystemParams, TopologyParams
 from .result import PipelineResult, _ChannelState
 from .tasks import ContactTask
@@ -48,6 +51,7 @@ class Pipeline:
     """
 
     def __init__(self, source: PipelineSource) -> None:
+        self._source: PipelineSource = source
         mgr = _lib.pipeline.StageManager(source)
         self._mgr = mgr
         # Let Python own the default policy - auto-inject built-ins only when referenced
@@ -76,6 +80,26 @@ class Pipeline:
                 self._system_params.is_model = True
             except Exception:
                 pass
+
+        self._py_tasks: list[_MPPyTaskSpec] = [] # callable task registry for multiprocessing backend
+
+    def _process_pool_guard(self, processes: int):
+        class _Guard:
+            def __init__(self, mgr, count):
+                self._mgr   = mgr
+                self._count = count
+
+            def __enter__(self):
+                self._mgr.configure_python_process_pool(self._count)
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                try:
+                    self._mgr.shutdown_python_process_pool()
+                except Exception:
+                    pass
+
+        return _Guard(self._mgr, processes)
 
     @overload
     def params(self, builtin_name: Literal["system"]) -> SystemParams: ...
@@ -165,13 +189,13 @@ class Pipeline:
             if not self._topology_params.enabled:
                 raise ValueError("Topology is disabled. Cannot add ContactsTask which requires 'topology'.")
 
-            # Set atom typing method based on provider before adding contacts
-            if task.provider == _lib.ContactProvider.Arpeggio:
-                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Arpeggio
-            elif task.provider == _lib.ContactProvider.GetContacts:
-                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.GetContacts
-            else:
-                self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
+            match task.provider:
+                case _lib.ContactProvider.Arpeggio:
+                    self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Arpeggio
+                case _lib.ContactProvider.GetContacts:
+                    self._topology_params.atom_typing_method = _lib.AtomTypingMethod.GetContacts
+                case _:
+                    self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
 
             emission_fmt = task.fmt if isinstance(task.fmt, OutputFormat) else OutputFormat(task.fmt)
             sink_override = self._preferred_sink_format(out)
@@ -188,7 +212,7 @@ class Pipeline:
                 bool(thread_safe),
             )
 
-            self._channel_formats[ch] = emission_fmt
+            self._channel_formats[ch]  = emission_fmt
             self._channel_decoders[ch] = "contacts"
             self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt)
             return
@@ -204,6 +228,40 @@ class Pipeline:
             task_format = infer_python_task_format(task)
             self._channel_formats[ch] = task_format
             self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format)
+
+            # Record for multiprocessing backend
+            module, qualname = resolve_callable_metadata(task)
+            callable_blob: bytes | None = None
+            if module is None or qualname is None:
+                # Notebook/REPL task - serialize via cloudpickle
+                try:
+                    import cloudpickle
+                    callable_blob = cloudpickle.dumps(task)
+                except ImportError:
+                    logging.warn(
+                        f"Process backend: cloudpickle not available, task '{name}' will only run in threaded mode. "
+                        "Install cloudpickle to enable multiprocessing support for notebook tasks."
+                    )
+                    callable_blob = None
+                except Exception as exc:
+                    logging.warn(
+                        f"Process backend: unable to serialize task '{name}' via cloudpickle ({exc}). "
+                        "Task will only run in threaded mode."
+                    )
+                    callable_blob = None
+
+            self._py_tasks.append(_MPPyTaskSpec(
+                name=name,
+                fn=cast(PyTaskFn[Any], task),
+                module=module,
+                qualname=qualname,
+                callable_blob=callable_blob,
+                channel=ch,
+                store=do_store,
+                serialize=serialize,
+                depends=tuple(deps),
+                format=task_format,
+            ))
             return
 
         # Raw C++ task
@@ -215,22 +273,17 @@ class Pipeline:
 
         raise TypeError("task must be a callable, ContactTask spec, or pipeline.Task instance")
 
-    def _preferred_sink_format(
-        self,
-        out: Iterable[FileOutput | ShardedOutput] | None,
-    ) -> OutputFormat | None:
-        preferred: OutputFormat | None = None
+    def _preferred_sink_format(self, out: Iterable[FileOutput | ShardedOutput] | None) -> OutputFormat | None:
         if not out:
             return None
         for o in out:
-            fmt = o.fmt
-            if fmt == OutputFormat.BINARY:
+            if o.fmt == OutputFormat.BINARY:
                 raise ValueError("Binary file output is not supported for file or sharded sinks.")
-            if fmt == OutputFormat.JSON:
+            if o.fmt == OutputFormat.JSON:
                 return OutputFormat.JSON
-            if fmt == OutputFormat.TEXT:
-                preferred = OutputFormat.TEXT
-        return preferred
+            if o.fmt == OutputFormat.TEXT:
+                return OutputFormat.TEXT
+        return None
 
     def _attach_sinks(
         self,
@@ -280,7 +333,12 @@ class Pipeline:
             ms = _lib.pipeline.MemorySink()
             self._mgr.connect_sink(task_or_channel, ms)
             self._memory_sinks[task_or_channel] = [ms]
-        self._channel_formats.setdefault(task_or_channel, OutputFormat.JSON)
+
+            #
+            # If the channel already has a format (e.g., from a previous task), we keep it.
+            # Otherwise default to JSON.
+            #
+            self._channel_formats.setdefault(task_or_channel, OutputFormat.JSON)
         return
 
     def to_sharded_files(
@@ -295,13 +353,21 @@ class Pipeline:
             raise TypeError("fmt must be an OutputFormat enum value")
         if fmt == OutputFormat.BINARY:
             raise ValueError("Binary output is not supported for sharded NDJSON sinks.")
+
         sink = _lib.pipeline.ShardedNdjsonSink(str(out_dir), int(shard_size))
         self._mgr.connect_sink(task_or_channel, sink)
         self._sharded_sinks.setdefault(task_or_channel, []).append(sink)
         self._channel_formats.setdefault(task_or_channel, fmt)
         return
 
-    def run(self, threads: int = 8) -> PipelineResult:
+    def run(
+        self,
+        threads: int = 8,
+        *,
+        backend: Literal["threads", "processes"] = "threads",
+        processes: int | None = None,
+        process_timeout: float | None = 300.0,
+    ) -> PipelineResult:
         # Reset memory sinks so results do not accumulate across runs
         for sinks in self._memory_sinks.values():
             for s in sinks:
@@ -310,30 +376,98 @@ class Pipeline:
                 except Exception:
                     pass
 
-        _start = time.perf_counter()
-        self._mgr.run(int(threads))
-        _elapsed = time.perf_counter() - _start
-        logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+        def _collect_memory_states() -> dict[str, _ChannelState]:
+            states: dict[str, _ChannelState] = {}
+            for channel, sinks in self._memory_sinks.items():
+                fmt = self._channel_formats.get(channel, OutputFormat.JSON)
+                buffer: list[Any] = []
+                for sink in sinks:
+                    if fmt is OutputFormat.BINARY:
+                        buffer.extend(sink.result_bytes())
+                    else:
+                        buffer.extend(sink.result())
+                states[channel] = _ChannelState(
+                    format=fmt,
+                    decoder=self._channel_decoders.get(channel),
+                    data=tuple(buffer),
+                )
+            return states
 
-        states: dict[str, _ChannelState] = {}
-        for channel, sinks in self._memory_sinks.items():
-            fmt = self._channel_formats.get(channel, OutputFormat.JSON)
-            buffer: list[Any] = []
-            for sink in sinks:
-                if fmt is OutputFormat.BINARY:
-                    buffer.extend(sink.result_bytes())
-                else:
-                    buffer.extend(sink.result())
+        if backend == "threads":
+            _start = time.perf_counter()
+            self._mgr.run(int(threads))
+            _elapsed = time.perf_counter() - _start
+            logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+            return PipelineResult(_collect_memory_states())
 
-            channel_format = fmt
+        if backend == "processes":
+            if not self._py_tasks:
+                logging.warn("No Python tasks registered. Falling back to threaded backend.")
+                return self.run(threads=threads, backend="threads")
 
-            states[channel] = _ChannelState(
-                format=channel_format,
-                decoder=self._channel_decoders.get(channel),
-                data=tuple(buffer),
-            )
+            streaming_types: tuple[type[Any], ...] = ()
+            try:
+                # Fast failure until process backend supports streaming/MD descriptors across processes.
+                streaming_types = _lib.pipeline.sources.MdTrajectoriesSource, _lib.pipeline.sources.NmrSource
+            except AttributeError:
+                streaming_types = ()
 
-        return PipelineResult(states)
+            if streaming_types and isinstance(self._source, streaming_types):
+                raise RuntimeError("backend='processes' is not supported for streaming MD/NMR sources.")
+
+            # Tasks are convertible if they have module/qualname OR serialized blob
+            convertible = [
+                spec for spec in self._py_tasks
+                if (spec.module and spec.qualname) or (spec.callable_blob is not None)
+            ]
+            if not convertible:
+                logging.warn("No process-capable Python tasks registered. Falling back to threaded backend.")
+                return self.run(threads=threads, backend="threads")
+
+            proc_count      = processes if processes is not None else os.cpu_count() or 1
+            proc_count      = max(1, int(proc_count))
+            worker_threads  = max(1, int(threads))
+            timeout_seconds = float(process_timeout) if process_timeout is not None else 300.0
+
+            converted_names: set[str] = set()
+            try:
+                with self._process_pool_guard(proc_count):
+                    self._mgr.set_python_process_concurrency(proc_count)
+                    self._mgr.set_python_process_timeout(timeout_seconds)
+                    for spec in convertible:
+                        # Pass serialized callable as bytes or None
+                        serialized = spec.callable_blob if spec.callable_blob is not None else None
+                        self._mgr.add_python_process(
+                            spec.name,
+                            list(spec.depends),
+                            spec.module or "",
+                            spec.qualname or "",
+                            serialized,
+                            spec.channel,
+                            store=spec.store,
+                        )
+                        converted_names.add(spec.name)
+
+                    _start = time.perf_counter()
+                    self._mgr.run(worker_threads)
+                    _elapsed = time.perf_counter() - _start
+                    logging.info(f"pipeline.run (processes) finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+            finally:
+                if converted_names:
+                    for spec in self._py_tasks:
+                        if spec.name in converted_names:
+                            self._mgr.add_python(
+                                spec.name,
+                                list(spec.depends),
+                                spec.fn,
+                                spec.channel,
+                                serialize=spec.serialize,
+                                store=spec.store,
+                            )
+
+            return PipelineResult(_collect_memory_states())
+
+        raise ValueError("backend must be either 'threads' or 'processes'")
 
     #
     # If we want strong static typing of the run() output, we must accept a

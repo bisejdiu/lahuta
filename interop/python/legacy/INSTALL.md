@@ -48,7 +48,7 @@ pip install -e .
 ### Testing Python Bindings
 ```bash
 # From any directory:
-python -c "import lahuta; print('Bindings available:', lahuta.verify_bindings())"
+python -c "import lahuta; print('Lahuta successfully imported')"
 
 # Direct access to C++ classes:
 python -c "from lahuta.lib._lahuta import FastNS_, NSResults_; print('Direct access works')"

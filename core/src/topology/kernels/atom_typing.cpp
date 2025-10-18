@@ -22,6 +22,15 @@ ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
 
+  // TODO: should not be needed
+  for (auto& atomrec : data.atoms) {
+    auto &atom = atomrec.atom.get();
+    auto& atom_mut = const_cast<RDKit::Atom&>(atom);
+
+    atom_mut.calcExplicitValence(false);
+    atom_mut.calcImplicitValence(false);
+  }
+
   try {
     switch (params.mode) {
       case AtomTypingMethod::Molstar: {

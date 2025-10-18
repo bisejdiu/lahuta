@@ -32,6 +32,7 @@ constexpr std::size_t CELL_EIGEN_THRESHOLD  = 8;      // min points in cell to u
 constexpr std::size_t CROSS_EIGEN_THRESHOLD = 50;
 constexpr std::size_t BRUTE_EIGEN_THRESHOLD = 100;
 
+constexpr double COORD_EPSILON = 1e-10;
 
 constexpr std::array<std::array<int, DIMENSIONS>, 13> NEIGHBOR_CELLS = {{
   {1, 0,  0}, {1, 1,  0}, {0, 1,  0}, {-1, 1,  0},
@@ -54,7 +55,7 @@ FastNS::FastNS(const RDGeom::POINT3D_VECT &coords) {
       const double abs_val = std::abs(val);
       _lmax[i] = std::max(_lmax[i], val);
       _lmin[i] = std::min(_lmin[i], val);
-      if (abs_val > 0.0) {
+      if (abs_val > COORD_EPSILON) {
         if (abs_val < min_abs_coord_) min_abs_coord_ = abs_val;
         if (abs_val > max_abs_coord_) max_abs_coord_ = abs_val;
       }
@@ -91,7 +92,7 @@ FastNS::FastNS(const std::vector<std::vector<double>> &coords) {
       const double abs_val = std::abs(val);
       _lmax[i] = std::max(_lmax[i], val);
       _lmin[i] = std::min(_lmin[i], val);
-      if (abs_val > 0.0) {
+      if (abs_val > COORD_EPSILON) {
         if (abs_val < min_abs_coord_) min_abs_coord_ = abs_val;
         if (abs_val > max_abs_coord_) max_abs_coord_ = abs_val;
       }
@@ -133,9 +134,9 @@ FastNS::FastNS(const double *coords_ptr, std::size_t npts) {
     const double ax = std::abs(x);
     const double ay = std::abs(y);
     const double az = std::abs(z);
-    if (ax > 0.0) { if (ax < min_abs_coord_) min_abs_coord_ = ax; if (ax > max_abs_coord_) max_abs_coord_ = ax; }
-    if (ay > 0.0) { if (ay < min_abs_coord_) min_abs_coord_ = ay; if (ay > max_abs_coord_) max_abs_coord_ = ay; }
-    if (az > 0.0) { if (az < min_abs_coord_) min_abs_coord_ = az; if (az > max_abs_coord_) max_abs_coord_ = az; }
+    if (ax > COORD_EPSILON) { if (ax < min_abs_coord_) min_abs_coord_ = ax; if (ax > max_abs_coord_) max_abs_coord_ = ax; }
+    if (ay > COORD_EPSILON) { if (ay < min_abs_coord_) min_abs_coord_ = ay; if (ay > max_abs_coord_) max_abs_coord_ = ay; }
+    if (az > COORD_EPSILON) { if (az < min_abs_coord_) min_abs_coord_ = az; if (az > max_abs_coord_) max_abs_coord_ = az; }
   }
 
   if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
@@ -233,8 +234,8 @@ bool FastNS::build(double cutoff, bool brute_force_fallback) {
 
   if (has_mixed_scales_) {
     Logger::get_logger()->warn(
-        "FastNS.build: mixed-scale coordinates detected (ratio={:.2e}, orders~{:.1f}). Small distances may underflow to 0.0 with float precision.",
-        scale_ratio_, std::log10(scale_ratio_));
+        "FastNS.build: mixed-scale coordinates detected (ratio={:.2e}, orders~{:.1f}, range=[{:.3e}, {:.3e}])."
+        "Small distances may underflow to 0.0 with float precision.", scale_ratio_, std::log10(scale_ratio_), min_abs_coord_, max_abs_coord_);
   }
 
   Logger::get_logger()->trace(

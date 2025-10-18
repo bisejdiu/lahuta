@@ -55,6 +55,8 @@ def _classify_annotation(tp: Any) -> OutputFormat | None:
     # Direct primitives
     if tp is str:
         return OutputFormat.TEXT
+    if tp is bytes:
+        return OutputFormat.BINARY
     if tp in _JSON_SCALARS and tp is not str:
         return OutputFormat.JSON
 

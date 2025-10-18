@@ -82,12 +82,18 @@ public:
       std::string payload;
       if (py::isinstance<py::str>(resp)) {
         payload = resp.cast<std::string>();
+        if (store_) ctx.set_text(store_key_, payload);
+      } else if (PyBytes_Check(resp.ptr()) || PyByteArray_Check(resp.ptr()) || PyMemoryView_Check(resp.ptr())) {
+        // Treat bytes-like return values as binary payloads
+        py::bytes b = py::bytes(resp);
+        payload = b.cast<std::string>();
+        if (store_) ctx.set_bytes(store_key_, payload);
       } else {
-        // orjson.dumps returns bytes
+        // orjson.dumps returns bytes for JSON-serializable objects
         py::bytes b = dumps_(resp);
         payload = b.cast<std::string>();
+        if (store_) ctx.set_text(store_key_, payload);
       }
-      if (store_) ctx.set_text(store_key_, payload);
 
       TaskResult tr; tr.ok = true;
       if (emit_channel_.has_value()) tr.emits.push_back(Emission{*emit_channel_, std::move(payload)});

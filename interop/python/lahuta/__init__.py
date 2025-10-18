@@ -1,98 +1,88 @@
 """High-level Python package entry for Lahuta."""
 
 import sys
+from importlib.util import find_spec
+from importlib.metadata import version, PackageNotFoundError
 
 if sys.version_info < (3, 10):
     raise RuntimeError(f"Lahuta requires Python >= 3.10 (found {sys.version.split()[0]}).")
 
-_missing_dependencies: list[str] = []
-try:
-    import numpy  # noqa: F401
-except ImportError:
-    _missing_dependencies.append("numpy")
 
-try:
-    import orjson  # noqa: F401
-except ImportError:
-    _missing_dependencies.append("orjson")
+def _require_importable(dist: str, *, min_version: str | None = None) -> None:
+    if find_spec(dist) is None:
+        hint = f"pip install '{dist}{'>=' + min_version if min_version else ''}'"
+        raise ImportError(f"Lahuta requires {dist}. Install it with: {hint}")
+
+    if min_version:
+        try:
+            installed = version(dist)
+        except PackageNotFoundError as e:
+            raise ImportError(f"Lahuta requires {dist} >= {min_version}.") from e
+        from packaging.version import Version
+
+        if Version(installed) < Version(min_version):
+            raise ImportError(f"Lahuta requires {dist} >= {min_version} (found {installed}).")
+
+
+_require_importable("numpy", min_version="2.2")
+_require_importable("orjson", min_version="3.11")
+
+_missing_dependencies: list[str] = []
+if find_spec("cloudpickle") is None:
+    _missing_dependencies.append("cloudpickle")
 
 if _missing_dependencies:
     deps_str = ", ".join(_missing_dependencies)
-    print(
-        f"ERROR: Missing required dependencies: {deps_str}. Install with: pip install {' '.join(_missing_dependencies)}",
-        file=sys.stderr,
+    raise ImportError(
+        f"Lahuta requires {deps_str}. Install with: pip install {' '.join(_missing_dependencies)}"
     )
-    _cpp_bindings_available = False
-    _import_error = f"Missing dependencies: {deps_str}"
-else:
-    try:
-        # fmt: off
-        from .lib import lahuta as lxx
-        from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
-            AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
-            FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, Kind, \
-            LahutaSystem, LahutaSystemProperties, Logger, LuniFileProcessor, LuniPropertyResult, \
-            MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
-            PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
-            TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, process_files
 
-        rdkit     = lxx.rdkit
-        metrics   = lxx.metrics
-        neighbors = lxx.neighbors
+try:
+    # fmt: off
+    from .lib import lahuta as lxx
+    from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
+        AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
+        FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, Kind, \
+        LahutaSystem, LahutaSystemProperties, Logger, LuniFileProcessor, LuniPropertyResult, \
+        MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
+        PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
+        TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, process_files, vdw_radius
 
-        # must be kept here after the above import to not mess up cold access times
-        from .config import logging as logging
-        from .neighbors import NearestNeighbors
+    rdkit     = lxx.rdkit
+    metrics   = lxx.metrics
+    neighbors = lxx.neighbors
 
-        # So `import lahuta.logging` and `from lahuta.logging import LogLevel` work
-        sys.modules.setdefault(__name__ + ".logging", logging)
+    # must be kept here after the above import to not mess up cold access times
+    from .config import logging as logging
+    from .neighbors import NearestNeighbors
 
-        _cpp_bindings_available = True
-        _import_error = None
-    except ImportError as e:
-        _cpp_bindings_available = False
-        _import_error = str(e)
+    # So `import lahuta.logging` and `from lahuta.logging import LogLevel` work
+    sys.modules.setdefault(__name__ + ".logging", logging)
 
-        print(
-            f"ERROR: Lahuta could not be imported: {e}\nEnsure Lahuta has been built and installed correctly. See INSTALL.md for details.",
-            file=sys.stderr,
-        )
-
-
-def verify_bindings():
-    return _cpp_bindings_available
-
-
-def get_import_error():
-    return _import_error if not _cpp_bindings_available else None
+except ImportError as e:
+    raise ImportError(
+        f"Lahuta C++ bindings could not be imported: {e}\n"
+        "Ensure Lahuta has been built and installed correctly. See INSTALL.md for details."
+    ) from e
 
 
 # fmt: off
-if _cpp_bindings_available:
-    __all__ = [
-        'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
-        'AtomTypingMethod', 'ContactProvider', 'ContactSet',
-        'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
-        'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'Kind',
-        'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
-        'LuniPropertyResult', 'MolStarContactsEngine', 'GetContactsEngine', 'NSResults',
-        'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',
-        'Residue', 'Residues', 'RingRec', 'SearchOptions', 'Topology',
-        'TopologyBuildingOptions', 'TopologyComputers', 'compute_angles',
-        'factorize', 'find_contacts', 'metrics', 'neighbors', 'process_files', 'NearestNeighbors',
-        "verify_bindings", "get_import_error", "logging", "rdkit",
-    ]
-else:
-    # Fallback if C++ bindings are not available
-    # NOTE: We probably want to throw if we fail to import the bindings. There is no
-    # reason to use the Python package without the C++ core.
-    __all__ = ["verify_bindings", "get_import_error"]
+__all__ = [
+    'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
+    'AtomTypingMethod', 'ContactProvider', 'ContactSet',
+    'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
+    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'Kind',
+    'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
+    'LuniPropertyResult', 'MolStarContactsEngine', 'GetContactsEngine', 'NSResults',
+    'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',
+    'Residue', 'Residues', 'RingRec', 'SearchOptions', 'Topology',
+    'TopologyBuildingOptions', 'TopologyComputers', 'compute_angles',
+    'factorize', 'find_contacts', 'metrics', 'neighbors', 'process_files', 'NearestNeighbors',
+    "vdw_radius", "logging", "rdkit",
+]
 
 def _quick_self_test() -> bool:
     """Internal preflight and warm-up of array path."""
-    if not _cpp_bindings_available:
-        return False
-
     try:
         from .lib.lahuta import LahutaSystem as ___LahutaSystem
         ___rdkit = rdkit
@@ -116,8 +106,7 @@ def _quick_self_test() -> bool:
 # A microoptimization, if there ever was one.     - Besian, September 2025
 #
 try:
-    if _cpp_bindings_available:
-        # best-effort, ignore failure
-        _quick_self_test()
+    # best-effort, ignore failure
+    _quick_self_test()
 except Exception:
     pass
