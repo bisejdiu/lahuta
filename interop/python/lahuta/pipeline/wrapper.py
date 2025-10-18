@@ -16,11 +16,6 @@ from typing import (
     overload,
 )
 
-try:
-    import cloudpickle
-except ImportError:
-    cloudpickle = None
-
 from lahuta import logging
 from lahuta.lib import lahuta as _lib
 from lahuta.sources import PipelineSource
@@ -239,21 +234,21 @@ class Pipeline:
             callable_blob: bytes | None = None
             if module is None or qualname is None:
                 # Notebook/REPL task - serialize via cloudpickle
-                if cloudpickle is None:
+                try:
+                    import cloudpickle
+                    callable_blob = cloudpickle.dumps(task)
+                except ImportError:
                     logging.warn(
                         f"Process backend: cloudpickle not available, task '{name}' will only run in threaded mode. "
                         "Install cloudpickle to enable multiprocessing support for notebook tasks."
                     )
                     callable_blob = None
-                else:
-                    try:
-                        callable_blob = cloudpickle.dumps(task)
-                    except Exception as exc:
-                        logging.warn(
-                            f"Process backend: unable to serialize task '{name}' via cloudpickle ({exc}). "
-                            "Task will only run in threaded mode."
-                        )
-                        callable_blob = None
+                except Exception as exc:
+                    logging.warn(
+                        f"Process backend: unable to serialize task '{name}' via cloudpickle ({exc}). "
+                        "Task will only run in threaded mode."
+                    )
+                    callable_blob = None
 
             self._py_tasks.append(_MPPyTaskSpec(
                 name=name,

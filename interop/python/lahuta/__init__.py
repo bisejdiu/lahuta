@@ -7,14 +7,19 @@ if sys.version_info < (3, 10):
 
 _missing_dependencies: list[str] = []
 try:
-    import numpy  # noqa: F401
+    import numpy
 except ImportError:
     _missing_dependencies.append("numpy")
 
 try:
-    import orjson  # noqa: F401
+    import orjson
 except ImportError:
     _missing_dependencies.append("orjson")
+
+try:
+    import cloudpickle
+except ImportError:
+    _missing_dependencies.append("cloudpickle")
 
 if _missing_dependencies:
     deps_str = ", ".join(_missing_dependencies)

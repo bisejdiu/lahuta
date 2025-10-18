@@ -3,11 +3,6 @@ from __future__ import annotations
 import importlib
 from typing import Any, Callable
 
-try:
-    import cloudpickle
-except ImportError:
-    cloudpickle = None
-
 import orjson
 
 from lahuta.lib import lahuta as _lib
@@ -211,10 +206,7 @@ def execute_callable(
     try:
         # Resolve callable: prefer serialized blob for notebook/REPL tasks
         if serialized_callable:
-            if cloudpickle is None:
-                raise RuntimeError(
-                    "Process backend: received serialized callable but cloudpickle is not installed in worker."
-                )
+            import cloudpickle
             fn = cloudpickle.loads(serialized_callable)
         else:
             fn = _resolve_callable(module, qualname)
