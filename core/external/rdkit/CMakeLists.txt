@@ -91,6 +91,12 @@ add_library(rdkit STATIC
 )
 
 set_property(TARGET rdkit PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+# Suppress psABI warnings for GCC
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(rdkit PRIVATE -Wno-psabi)
+endif()
+
 target_include_directories(rdkit PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR} # rdkit headers
 )
