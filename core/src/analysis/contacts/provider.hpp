@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string_view>
 
 #include "contact_types.hpp"
@@ -16,6 +17,13 @@ inline constexpr std::string_view contact_provider_name(ContactProvider provider
     case ContactProvider::GetContacts: return "getcontacts";
   }
   return "unknown";
+}
+
+inline std::optional<ContactProvider> contact_provider_from_string(std::string_view name) noexcept {
+  if (name == "molstar")     return ContactProvider::MolStar;
+  if (name == "arpeggio")    return ContactProvider::Arpeggio;
+  if (name == "getcontacts") return ContactProvider::GetContacts;
+  return std::nullopt;
 }
 
 inline constexpr AtomTypingMethod typing_for_provider(ContactProvider provider) noexcept {

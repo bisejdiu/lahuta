@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include <type_traits>
 
 #include "analysis/contacts/computation.hpp"
@@ -178,13 +179,9 @@ int ContactsCommand::run(int argc, char* argv[]) {
 
     // Parse provider
     if (options[contacts_opts::ContactsOptionIndex::Provider]) {
-      std::string provider = options[contacts_opts::ContactsOptionIndex::Provider].arg;
-      if (provider == "molstar") {
-        cli.provider = analysis::contacts::ContactProvider::MolStar;
-      } else if (provider == "arpeggio") {
-        cli.provider = analysis::contacts::ContactProvider::Arpeggio;
-      } else if (provider == "getcontacts") {
-        cli.provider = analysis::contacts::ContactProvider::GetContacts;
+      std::string_view provider = options[contacts_opts::ContactsOptionIndex::Provider].arg;
+      if (auto p = analysis::contacts::contact_provider_from_string(provider)) {
+        cli.provider = *p;
       } else {
         Logger::get_logger()->error("Invalid provider '{}'. Must be 'molstar', 'arpeggio', or 'getcontacts'", provider);
         return 1;
