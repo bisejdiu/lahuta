@@ -1,24 +1,34 @@
 """High-level Python package entry for Lahuta."""
 
 import sys
+from importlib.util import find_spec
+from importlib.metadata import version, PackageNotFoundError
 
 if sys.version_info < (3, 10):
     raise RuntimeError(f"Lahuta requires Python >= 3.10 (found {sys.version.split()[0]}).")
 
+
+def _require_importable(dist: str, *, min_version: str | None = None) -> None:
+    if find_spec(dist) is None:
+        hint = f"pip install '{dist}{'>=' + min_version if min_version else ''}'"
+        raise ImportError(f"Lahuta requires {dist}. Install it with: {hint}")
+
+    if min_version:
+        try:
+            installed = version(dist)
+        except PackageNotFoundError as e:
+            raise ImportError(f"Lahuta requires {dist} >= {min_version}.") from e
+        from packaging.version import Version
+
+        if Version(installed) < Version(min_version):
+            raise ImportError(f"Lahuta requires {dist} >= {min_version} (found {installed}).")
+
+
+_require_importable("numpy", min_version="2.2")
+_require_importable("orjson", min_version="3.11")
+
 _missing_dependencies: list[str] = []
-try:
-    import numpy
-except ImportError:
-    _missing_dependencies.append("numpy")
-
-try:
-    import orjson
-except ImportError:
-    _missing_dependencies.append("orjson")
-
-try:
-    import cloudpickle
-except ImportError:
+if find_spec("cloudpickle") is None:
     _missing_dependencies.append("cloudpickle")
 
 if _missing_dependencies:

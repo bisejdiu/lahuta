@@ -16,6 +16,7 @@ dependencies = [
     "numpy",
     "orjson",
     "cloudpickle",
+    "packaging",
 ]
 
 [tool.scikit-build]
