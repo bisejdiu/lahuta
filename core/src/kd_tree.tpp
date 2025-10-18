@@ -1,6 +1,9 @@
 #ifndef LAHUTA_KD_TREE_TPP
 #define LAHUTA_KD_TREE_TPP
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <numeric>
 
 namespace lahuta {
