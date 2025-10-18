@@ -3,8 +3,10 @@
 import numpy as np
 import pytest
 
+from lahuta import rdkit
 
-def test_conformer_basic_and_positions_numpy_and_point3d(rdkit):
+
+def test_conformer_basic_and_positions_numpy_and_point3d():
 
     c = rdkit.Conformer(2)
     assert c.getNumAtoms() == 2
@@ -47,7 +49,7 @@ def test_conformer_basic_and_positions_numpy_and_point3d(rdkit):
     assert c.getPositions().shape == (3, 3)
 
 
-def test_conformer_view_is_mutable_and_reflects_back(rdkit):
+def test_conformer_view_is_mutable_and_reflects_back():
     c = rdkit.Conformer(1)
     arr = c.getPositions()
     assert arr.flags["C_CONTIGUOUS"]
@@ -56,7 +58,7 @@ def test_conformer_view_is_mutable_and_reflects_back(rdkit):
     assert (p.x, p.y, p.z) == (7.0, 8.0, 9.0)
 
 
-def test_has_non_zero_z_coords(rdkit):
+def test_has_non_zero_z_coords():
     c = rdkit.Conformer(3)
     c.set3D(True)
     # all z == 0 -> False

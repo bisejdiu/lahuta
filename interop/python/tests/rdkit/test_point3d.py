@@ -2,8 +2,10 @@
 
 import numpy as np
 
+from lahuta import rdkit
 
-def test_point3d_construction_and_str(rdkit):
+
+def test_point3d_construction_and_str():
     p0 = rdkit.Point3D()
     assert p0.x == 0.0 and p0.y == 0.0 and p0.z == 0.0
     s = str(p0)

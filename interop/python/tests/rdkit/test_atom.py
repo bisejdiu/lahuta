@@ -2,8 +2,10 @@
 
 import pytest
 
+from lahuta import rdkit
 
-def test_atom_queries_basic(rdkit):
+
+def test_atom_queries_basic():
     m = rdkit.RWMol()
     i = m.addAtom()
     a = m.getAtomWithIdx(i)
@@ -25,7 +27,7 @@ def test_atom_queries_basic(rdkit):
     assert a.getMonomerInfo() is None  # No monomer info by default
 
 
-def test_atom_pdb_residue_info_construction_and_setters(rdkit):
+def test_atom_pdb_residue_info_construction_and_setters():
     info = rdkit.AtomPDBResidueInfo(
         atomName=" CA ",
         serialNumber=10,
@@ -73,7 +75,7 @@ def test_atom_pdb_residue_info_construction_and_setters(rdkit):
     assert info.getSecondaryStructure() == 2
 
 
-def test_pooled_atom_pdb_residue_info_overloads_and_reset(rdkit):
+def test_pooled_atom_pdb_residue_info_overloads_and_reset():
     pinfo = rdkit.pAtomPDBResidueInfo()
     # Initialize later
     pinfo.initialize(" N  ", 1, "MET", 1)
