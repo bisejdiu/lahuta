@@ -5,19 +5,17 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "convert.hpp"
+#include "definitions.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"
+#include "numpy_utils.hpp"
 #include "spatial/fastns.hpp"
 #include "spatial/nsresults.hpp"
-#include "numpy_utils.hpp"
 #include "topology.hpp"
-#include "spatial/nsutils.hpp"
-#include "definitions.hpp"
-
-#include "GraphMol/Atom.h"
-#include "GraphMol/RWMol.h"
 
 namespace py = pybind11;
 

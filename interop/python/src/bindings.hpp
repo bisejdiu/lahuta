@@ -1,9 +1,8 @@
 #ifndef LAHUTA_BINDINGS_HPP
 #define LAHUTA_BINDINGS_HPP
 
-#include <pybind11/pybind11.h>
-
 #include <Python.h>
+#include <pybind11/pybind11.h>
 #if PY_VERSION_HEX < 0x030A0000
 #error "Lahuta Python bindings require Python >= 3.10"
 #endif

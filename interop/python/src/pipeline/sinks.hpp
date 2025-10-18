@@ -1,15 +1,15 @@
 #ifndef LAHUTA_BINDINGS_DYNAMIC_SINKS_HPP
 #define LAHUTA_BINDINGS_DYNAMIC_SINKS_HPP
 
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <chrono>
 #include <cmath>
 #include <limits>
 #include <mutex>
 #include <stdexcept>
 #include <thread>
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "db/db.hpp"
 #include "io/sinks/lmdb.hpp"

@@ -4,9 +4,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "bindings.hpp"
-
 #include "analysis/system/records.hpp"
+#include "bindings.hpp"
 #include "db/db.hpp"
 #include "db/reader.hpp"
 #include "lahuta.hpp"

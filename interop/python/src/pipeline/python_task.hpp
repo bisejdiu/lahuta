@@ -9,10 +9,9 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "pythoncapi_compat.h" // Backports public C-API to old Pythons
-
 #include "pipeline/context.hpp"
 #include "pipeline/dynamic/types.hpp"
+#include "pythoncapi_compat.h" // Backports public C-API to old Pythons
 
 // clang-format off
 namespace py = pybind11;

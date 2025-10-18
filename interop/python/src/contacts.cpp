@@ -1,7 +1,3 @@
-#include <pybind11/operators.h>
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -9,6 +5,10 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <pybind11/operators.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
 #include "analysis/contacts/provider.hpp"
 #include "compute/topology_snapshot.hpp"

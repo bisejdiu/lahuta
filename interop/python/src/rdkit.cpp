@@ -4,12 +4,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "GraphMol/Conformer.h"
-#include "GraphMol/RWMol.h"
-#include "rdkit/Geometry/point.h"
-#include "rdkit/GraphMol/Atom.h"
-#include "rdkit/GraphMol/Bond.h"
-#include "rdkit/GraphMol/MonomerInfo.h"
+#include <rdkit/Geometry/point.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/Bond.h>
+#include <rdkit/GraphMol/Conformer.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "numpy_utils.hpp"
 
