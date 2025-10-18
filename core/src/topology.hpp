@@ -87,9 +87,6 @@ public:
   /// Set whether to compute non-standard bonds
   void set_compute_nonstandard_bonds(bool compute);
 
-  /// approximate total memory usage
-  size_t total_size() const;
-
   const AtomRec&  atom (std::uint32_t idx) const;
   const RingRec&  ring (std::uint32_t idx) const;
   const GroupRec& group(std::uint32_t idx) const;

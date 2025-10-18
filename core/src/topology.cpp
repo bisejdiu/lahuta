@@ -170,27 +170,6 @@ const topology::ComputationLabel& Topology::get_label(TopologyComputation comp) 
   }
 }
 
-// FIX: We should update our code so we do not rely on this anymore.
-size_t Topology::total_size() const {
-  size_t total = sizeof(*this);
-
-  // Get size of topology data elements
-  const auto& data = engine_->get_data();
-
-  total += sizeof(AtomRec)  * data.atoms.size();
-  total += sizeof(RingRec)  * data.rings.size();
-  total += sizeof(GroupRec) * data.groups.size();
-
-  total += sizeof(AtomRec)  * engine_->get_data().atoms.size();
-  total += sizeof(RingRec)  * engine_->get_data().rings.size();
-  total += sizeof(GroupRec) * engine_->get_data().groups.size();
-
-  if (mol_) { total += sizeof(*mol_); }
-  total += data.residues->total_size();
-
-  return total;
-}
-
 const AtomRec& Topology::atom(uint32_t idx) const {
   return resolve<Kind::Atom>(EntityID::make(Kind::Atom, idx));
 }

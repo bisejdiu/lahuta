@@ -81,9 +81,6 @@ public:
   size_t size() const { return residues_.size(); }
 
 
-  /// approximate total memory size
-  std::size_t total_size() const;
-
 private:
   void build_residues(const RDKit::RWMol &mol, bool &status);
 

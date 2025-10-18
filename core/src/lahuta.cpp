@@ -148,26 +148,6 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
   return built;
 }
 
-size_t Luni::total_size() const {
-  size_t size = sizeof(Luni);
-
-  size += mol->getNumAtoms() * sizeof(RDKit::Atom) + mol->getNumAtoms() * sizeof(RDKit::Atom *);
-  size += mol->getNumBonds() * sizeof(RDKit::Bond) + mol->getNumBonds() * sizeof(RDKit::Bond *);
-  size += mol->getNumConformers() * sizeof(RDKit::Conformer);
-  size += mol->getNumConformers() * mol->getNumAtoms() * sizeof(RDGeom::Point3D);
-
-  if (topology) {
-    size += topology->total_size();
-    size += mol->getRingInfo()->getTotalMemory();
-  }
-
-  size += sizeof(char) * file_name_.size();
-  size += sizeof(int)  * filtered_indices.size();
-  size += sizeof(bool);
-
-  return size;
-}
-
 const std::vector<std::string> Luni::symbols() const {
   return atom_attrs<std::string>([](const RDKit::Atom *atom) { return atom->getSymbol(); });
 }
