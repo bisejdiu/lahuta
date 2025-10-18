@@ -50,33 +50,33 @@ make_tester(const std::array<std::pair<resTokenType, resTokenType>, N> &ranges) 
 }
 
 // clang-format off
-constexpr const std::array<resTokenType, 3> PositiveChargedResidues = {
+inline constexpr std::array<resTokenType, 3> PositiveChargedResidues = {
     resTokenType::ARG, resTokenType::HIS, resTokenType::LYS
 };
 
-constexpr const std::array<resTokenType, 2> NegativeChargedResidues = {
+inline constexpr std::array<resTokenType, 2> NegativeChargedResidues = {
     resTokenType::GLU, resTokenType::ASP
 };
 
-constexpr const std::array<std::pair<resTokenType, resTokenType>, 2> HistidineResidues = {
+inline constexpr std::array<std::pair<resTokenType, resTokenType>, 2> HistidineResidues = {
     std::make_pair(resTokenType::HIS, resTokenType::HIS),
     std::make_pair(resTokenType::HSD, resTokenType::HIP)
 };
 
-constexpr const std::pair<resTokenType, resTokenType> StandardAminoAcids = {
+inline constexpr std::pair<resTokenType, resTokenType> StandardAminoAcids = {
     resTokenType::GLY, resTokenType::HYP
 };
 
-constexpr const std::pair<resTokenType, resTokenType> PolymerResiduesRange = {
+inline constexpr std::pair<resTokenType, resTokenType> PolymerResiduesRange = {
     resTokenType::GLY, resTokenType::GPN
 };
 
-constexpr const std::pair<resTokenType, resTokenType> BaseResiduesRange = {
+inline constexpr std::pair<resTokenType, resTokenType> BaseResiduesRange = {
     resTokenType::GLY, resTokenType::GPN
 };
 
-constexpr int _AROMATIC_RESIDUES_COUNT = 28;
-constexpr const std::array<resTokenType, _AROMATIC_RESIDUES_COUNT> AromaticResidues = {
+inline constexpr int _AROMATIC_RESIDUES_COUNT = 28;
+inline constexpr std::array<resTokenType, _AROMATIC_RESIDUES_COUNT> AromaticResidues = {
     resTokenType::PHE, resTokenType::TYR, // phenylalanine, tyrosine
     resTokenType::HIS, resTokenType::TRP, // histidine, tryptophan
     resTokenType::DHI, resTokenType::DPN, // d-histidine, d-phenylalanine

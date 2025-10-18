@@ -10,7 +10,7 @@ using BondType = RDKit::Bond::BondType;
 
 namespace lahuta {
 
-constexpr const std::array<resTokenType, 28> PredefinedResidues {
+inline constexpr std::array<resTokenType, 28> PredefinedResidues {
     resTokenType::ALA, resTokenType::ARG, resTokenType::ASN, resTokenType::ASP,
     resTokenType::CYS, resTokenType::GLN, resTokenType::GLU, resTokenType::GLY,
     resTokenType::HIS, resTokenType::ILE, resTokenType::LEU, resTokenType::LYS,

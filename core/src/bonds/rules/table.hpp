@@ -6,8 +6,8 @@
 
 namespace lahuta {
 
-constexpr int MAX_ELEMENTS = 120;
-constexpr const double dbr = 2.001f; // default bond radius
+inline constexpr int MAX_ELEMENTS = 120;
+inline constexpr double dbr = 2.001f; // default bond radius
 
 namespace types {
 using AtomicNumber = int;

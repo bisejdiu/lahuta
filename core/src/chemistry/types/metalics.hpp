@@ -7,7 +7,7 @@
 
 namespace lahuta {
 
-constexpr const std::array<resTokenType, 7> OMetalBinders = {
+inline constexpr std::array<resTokenType, 7> OMetalBinders = {
     resTokenType::ASP,
     resTokenType::GLU,
     resTokenType::SER,
