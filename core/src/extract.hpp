@@ -5,10 +5,9 @@
 #include <iostream>
 #include <vector>
 
-#include <matcher.hpp>
+#include <ctpl/ctpl.h>
+#include <foldseek/matcher.hpp>
 
-#include "convert.hpp"
-#include "ctpl/ctpl.h"
 #include "gemmi/model.hpp"
 #include "seq.hpp"
 

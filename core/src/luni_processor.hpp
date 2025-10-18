@@ -5,7 +5,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "ctpl/ctpl.h"
+#include <ctpl/ctpl.h>
+
 #include "logging.hpp"
 #include "models/factory.hpp"
 

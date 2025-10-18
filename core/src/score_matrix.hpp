@@ -7,8 +7,9 @@
 #include <cstddef>
 #include <thread>
 
+#include <ctpl/ctpl.h>
+
 #include "ScoreMatrix.h"
-#include "ctpl/ctpl.h"
 #include "radix_sort.hpp"
 #include "substitution_matrix.hpp"
 #include "utils.hpp"
