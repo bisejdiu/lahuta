@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_CONTACTS_KERNEL_HPP
+#define LAHUTA_ANALYSIS_CONTACTS_KERNEL_HPP
 
 #include <memory>
 #include <string>
@@ -20,6 +21,15 @@
 #include "topology.hpp"
 
 // clang-format off
+namespace {
+using namespace lahuta;
+template <class Provider>
+auto compute_with_provider(const pipeline::compute::ContactsParams& p, const compute::TopologySnapshot& ts) -> ContactSet {
+  InteractionEngine<Provider> engine;
+  return (p.type == InteractionType::All) ? engine.compute(ts) : engine.compute(ts, p.type);
+}
+} // namespace
+
 namespace lahuta::analysis::contacts {
 using namespace lahuta::pipeline::compute;
 
@@ -64,29 +74,19 @@ struct ContactsKernel {
                          : compute::snapshot_of(*top);
 
       switch (p.provider) {
-        case ContactProvider::Arpeggio: {
-          InteractionEngine<ArpeggioContactProvider> engine;
-          res.contacts = (p.type == InteractionType::All)
-            ? engine.compute(ts)
-            : engine.compute(ts, p.type);
+        case ContactProvider::Arpeggio:
+          res.contacts = compute_with_provider<ArpeggioContactProvider>(p, ts);
           break;
-        }
-        case ContactProvider::GetContacts: {
-          InteractionEngine<GetContactsProvider> engine;
-          res.contacts = (p.type == InteractionType::All)
-            ? engine.compute(ts)
-            : engine.compute(ts, p.type);
+        case ContactProvider::GetContacts:
+          res.contacts = compute_with_provider<GetContactsProvider>(p, ts);
           break;
-        }
         case ContactProvider::MolStar:
-        default: {
-          InteractionEngine<MolStarContactProvider> engine;
-          res.contacts = (p.type == InteractionType::All)
-            ? engine.compute(ts)
-            : engine.compute(ts, p.type);
+          res.contacts = compute_with_provider<MolStarContactProvider>(p, ts);
           break;
-        }
+        default:
+          return ComputationResult(ComputationError("ContactsKernel: unsupported provider"));
       }
+
       res.num_contacts = res.contacts.size();
       res.success  = true;
       res.topology = top;
@@ -127,3 +127,5 @@ struct ContactsKernel {
 };
 
 } // namespace lahuta::analysis::contacts
+
+#endif // LAHUTA_ANALYSIS_CONTACTS_KERNEL_HPP

@@ -5,11 +5,22 @@ from lahuta.pipeline import BackpressureConfig, OnFull, get_default_backpressure
 
 
 def test_per_sink_backpressure_override_drops_large_payloads() -> None:
-    # Default allows large payloads, and per-sink override enforces small queue budget
+    # Default allows large payloads, and per-sink override enforces small queue budget.
+
+    #
+    # Note on flush timeout:
+    #   StageManager closes the queue and then waits for writer threads in ChannelMultiplexer::close_and_flush.
+    #   When a required sink rejects every payload (strict queue budget + DropLatest), the writer thread
+    #   still has to observe close(), flush(), and report finished_. With the production default of 60s,
+    #   tests would appear to "hang" for a minute even though they drop the payload immediately. I set
+    #   the timeout to 5s here so the join guard does not dominate test runtimes while still exercising
+    #   the backpressure logic.         - Besian, October 2025
+    #
     original = get_default_backpressure_config()
     try:
         src = _lib.pipeline.sources.FileSource(["item"])
         sm = _lib.pipeline.StageManager(src)
+        sm.set_flush_timeout(1.0)
 
         payload = "X" * 2048  # = 2 KiB
 
@@ -37,6 +48,7 @@ def test_sink_reuse_keeps_original_config() -> None:
     try:
         src = _lib.pipeline.sources.FileSource(["x"])
         sm = _lib.pipeline.StageManager(src)
+        sm.set_flush_timeout(1.0)
 
         big = "Z" * 4096  # = 4 KiB
 

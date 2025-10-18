@@ -1,6 +1,9 @@
 #ifndef LAHUTA_BINDINGS_STAGE_MANAGER_HPP
 #define LAHUTA_BINDINGS_STAGE_MANAGER_HPP
 
+#include <chrono>
+#include <cmath>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -22,6 +25,31 @@ namespace py = pybind11;
 namespace lahuta::bindings {
 using namespace lahuta::sources;
 using namespace lahuta::pipeline::dynamic;
+
+namespace {
+
+inline std::chrono::milliseconds seconds_to_milliseconds(double seconds) {
+  using MilliRep = std::chrono::milliseconds::rep;
+  if (!std::isfinite(seconds)) {
+    throw std::invalid_argument("flush_timeout must be a finite value");
+  }
+  if (seconds < 0.0) {
+    throw std::invalid_argument("flush_timeout must be non-negative");
+  }
+  const double max_seconds = static_cast<double>(std::numeric_limits<MilliRep>::max()) / 1000.0;
+  if (seconds > max_seconds) {
+    throw std::invalid_argument("flush_timeout is too large");
+  }
+  auto duration = std::chrono::duration<double>(seconds);
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(duration);
+  return ms;
+}
+
+inline double milliseconds_to_seconds(std::chrono::milliseconds ms) {
+  return std::chrono::duration<double>(ms).count();
+}
+
+} // namespace
 
 inline void bind_stage_manager(py::module_ &md) {
   py::class_<ITask, std::shared_ptr<ITask>> task(md, "Task");
@@ -126,18 +154,39 @@ inline void bind_stage_manager(py::module_ &md) {
           }
           return out;
         })
-    .def("run", [](StageManager &mgr, int threads) {
+    .def("run", [](StageManager &mgr, int threads, std::optional<double> flush_timeout) {
+          std::optional<std::chrono::milliseconds> previous_timeout;
+          if (flush_timeout.has_value()) {
+            const auto override_timeout = seconds_to_milliseconds(*flush_timeout);
+            previous_timeout = mgr.get_flush_timeout();
+            mgr.set_flush_timeout(override_timeout);
+          }
+          struct FlushTimeoutGuard {
+            StageManager& mgr;
+            std::optional<std::chrono::milliseconds> previous;
+            ~FlushTimeoutGuard() {
+              if (previous.has_value()) {
+                mgr.set_flush_timeout(*previous);
+              }
+            }
+          } guard{mgr, previous_timeout};
           {
             py::gil_scoped_release release;
             mgr.run(threads);
           }
           py::gil_scoped_acquire acquire;
         },
-        py::arg("threads") = 8)
+        py::arg("threads") = 4, py::arg("flush_timeout") = py::none())
 
-    // Policy control for builtins. Python turns this ON by default
     .def("set_auto_builtins", [](StageManager& mgr, bool on) { mgr.set_auto_builtins(on); })
     .def("get_auto_builtins", [](StageManager& mgr) { return mgr.get_auto_builtins(); })
+
+    .def("set_flush_timeout", [](StageManager& mgr, double timeout_seconds) {
+          mgr.set_flush_timeout(seconds_to_milliseconds(timeout_seconds));
+        }, py::arg("timeout"))
+    .def("get_flush_timeout", [](StageManager& mgr) {
+          return milliseconds_to_seconds(mgr.get_flush_timeout());
+        })
 
     // Parameter access for builtins
     .def("get_system_params", [](StageManager &mgr) -> py::dict {

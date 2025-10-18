@@ -55,6 +55,10 @@ class Pipeline:
             self._mgr.set_auto_builtins(True)
         except Exception:
             pass
+        try:
+            self._mgr.set_flush_timeout(1.0) # To keep test runs fast
+        except Exception:
+            pass
 
         self._memory_sinks:     dict[str, list[_lib.pipeline.MemorySink]] = {}
         self._file_sinks:       dict[str, list[_lib.pipeline.NdjsonSink]] = {}
