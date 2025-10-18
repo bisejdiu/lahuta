@@ -6,9 +6,9 @@ import pytest
 
 
 def test_rdkit_submodule_import():
-    import lahuta
-
-    if not lahuta.verify_bindings():
+    try:
+        import lahuta  # noqa: F401
+    except ImportError:
         pytest.skip("C++ bindings not available! rdkit test skipped")
 
     # check the rdkit submodule can be imported directly
