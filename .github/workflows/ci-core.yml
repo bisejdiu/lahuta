@@ -2,8 +2,9 @@ name: Core CI
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   pull_request:
+    branches: ["main"]
 
 jobs:
   core:
@@ -105,13 +106,13 @@ jobs:
 
           mkdir -p core/build/test-results core/build/gtest-results
 
-      REPO_ROOT="$(pwd)"
-      export GTEST_OUTPUT="xml:${REPO_ROOT}/core/build/gtest-results/"
+          REPO_ROOT="$(pwd)"
+          export GTEST_OUTPUT="xml:${REPO_ROOT}/core/build/gtest-results/"
           ctest --test-dir core/build \
                 --output-on-failure   \
                 --no-tests=error      \
                 --parallel "${JOBS}"  \
-        --output-junit "${REPO_ROOT}/core/build/test-results/junit-${{ matrix.os }}-${{ matrix.arch }}.xml"
+                --output-junit "${REPO_ROOT}/core/build/test-results/junit-${{ matrix.os }}-${{ matrix.arch }}.xml"
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

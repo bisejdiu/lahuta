@@ -16,6 +16,7 @@
 #define RD_MONOMERINFO_H
 
 #include <string>
+#include <stdexcept>
 #include <utility>
 #include <boost/shared_ptr.hpp>
 
