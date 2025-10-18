@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-
 #include <filesystem>
+
+#include <gtest/gtest.h>
 
 #include "compute/topology_snapshot.hpp"
 #include "entities/context.hpp"

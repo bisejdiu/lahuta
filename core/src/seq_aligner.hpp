@@ -1,16 +1,18 @@
 #ifndef LAHUTA_SEQ_ALIGNER_HPP
 #define LAHUTA_SEQ_ALIGNER_HPP
 
+#include <array>
+
+#include <StructureSmithWaterman.h>
+#include <SubstitutionMatrix.h>
+#include <TMaligner.h>
+
 #include "CalcProbTP.h"
 #include "fseek/align.hpp"
 #include "fseek/ops.hpp"
 #include "logging.hpp"
 #include "matcher.hpp"
 #include "seq.hpp"
-#include <StructureSmithWaterman.h>
-#include <SubstitutionMatrix.h>
-#include <TMaligner.h>
-#include <array>
 
 namespace lahuta {
 

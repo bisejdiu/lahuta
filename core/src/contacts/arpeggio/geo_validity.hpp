@@ -1,10 +1,11 @@
 #ifndef LAHUTA_CONTACTS_GEO_VALIDITY_HPP
 #define LAHUTA_CONTACTS_GEO_VALIDITY_HPP
 
-#include "Geometry/point.h"
-#include "GraphMol/Atom.h"
-#include "GraphMol/Conformer.h"
-#include "GraphMol/ROMol.h"
+#include <rdkit/Geometry/point.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/Conformer.h>
+#include <rdkit/GraphMol/ROMol.h>
+
 #include "elements.hpp"
 
 // clang-format off

@@ -1,11 +1,13 @@
 #ifndef LAHUTA_TOPOLOGY_CONTEXT_HPP
 #define LAHUTA_TOPOLOGY_CONTEXT_HPP
 
+#include <memory>
+#include <vector>
+
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "entities/records.hpp"
 #include "residues.hpp"
-#include <memory>
-#include <rdkit/GraphMol/RWMol.h>
-#include <vector>
 
 // clang-format off
 namespace lahuta::topology {

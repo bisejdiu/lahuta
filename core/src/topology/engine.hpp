@@ -1,11 +1,12 @@
 #ifndef LAHUTA_TOPOLOGY_ENGINE_HPP
 #define LAHUTA_TOPOLOGY_ENGINE_HPP
 
+#include <memory>
+
 #include "compute/engine.hpp"
 #include "logging.hpp"
 #include "topology/compute.hpp"
 #include "topology/parameters.hpp"
-#include <memory>
 
 // clang-format off
 namespace lahuta {

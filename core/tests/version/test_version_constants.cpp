@@ -1,7 +1,7 @@
-#include <gtest/gtest.h>
-
 #include <regex>
 #include <string>
+
+#include <gtest/gtest.h>
 
 #include "version.hpp"
 

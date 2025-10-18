@@ -1,15 +1,15 @@
 #ifndef LAHUTA_MAPPING_MAPPING_MANAGER_HPP
 #define LAHUTA_MAPPING_MAPPING_MANAGER_HPP
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "_defs.hpp"
 #include "aligner.hpp"
 #include "backtrace_parser.hpp"
 #include "equivalence_mapping.hpp"
 #include "seq.hpp"
-
-#include <memory>
-#include <string>
-#include <vector>
 
 // clang-format off
 namespace lahuta::mapping {

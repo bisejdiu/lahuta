@@ -1,10 +1,11 @@
 #ifndef LAHUTA_CLI_ARG_VALIDATION_HPP
 #define LAHUTA_CLI_ARG_VALIDATION_HPP
 
-#include "gemmi/third_party/optionparser.h"
-#include <unordered_set>
 #include <string>
 #include <string_view>
+#include <unordered_set>
+
+#include <gemmi/third_party/optionparser.h>
 
 namespace lahuta::cli::validate {
 

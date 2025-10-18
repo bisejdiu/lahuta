@@ -1,9 +1,10 @@
 #ifndef LAHUTA_MAPPING_DISJOINT_SET_HPP
 #define LAHUTA_MAPPING_DISJOINT_SET_HPP
 
-#include "_defs.hpp"
 #include <mutex>
 #include <vector>
+
+#include "_defs.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

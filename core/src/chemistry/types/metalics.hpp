@@ -1,9 +1,10 @@
 #ifndef LAHUTA_METALS_HPP
 #define LAHUTA_METALS_HPP
 
-#include "GraphMol/RWMol.h"
-#include "typing/types.hpp"
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "definitions.hpp"
+#include "typing/types.hpp"
 
 namespace lahuta {
 

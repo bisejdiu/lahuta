@@ -1,15 +1,13 @@
 #ifndef LAHUTA_PLANARITY_HPP
 #define LAHUTA_PLANARITY_HPP
 
-#include "Geometry/point.h"
-#include "GraphMol/RWMol.h"
-#include "rings.hpp"
-
-#if LAHUTA_USE_EIGEN == 1
-#include "Eigen/Dense"
-#endif
-
 #include <vector>
+
+#include <rdkit/Geometry/point.h>
+#include <rdkit/GraphMol/RWMol.h>
+
+#include "Eigen/Dense"
+#include "rings.hpp"
 
 namespace lahuta {
 

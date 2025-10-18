@@ -1,17 +1,19 @@
 #ifndef LAHUTA_FSEEK_UTILS_HPP
 #define LAHUTA_FSEEK_UTILS_HPP
 
-#include "GraphMol/Conformer.h"
-#include "GraphMol/RWMol.h"
+#include <array>
+#include <fstream>
+#include <iostream>
+#include <string>
+
+#include <rdkit/GraphMol/Conformer.h>
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "extract.hpp"
 #include "gemmi/resinfo.hpp"
 #include "lahuta.hpp"
 #include "matcher.hpp"
 #include "seq_aligner.hpp"
-#include <array>
-#include <fstream>
-#include <iostream>
-#include <string>
 
 namespace lahuta {
 

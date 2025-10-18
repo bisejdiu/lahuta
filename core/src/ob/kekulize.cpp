@@ -25,12 +25,13 @@ GNU General Public License for more details.
  * Lahuta license information is $LAHUTA_ROOT/LICENSE.
  */
 // #include <boost/range/iterator_range_core.hpp>
+#include <cstdlib>
+#include <cstring>
+
 #include <rdkit/GraphMol/Atom.h>
 #include <rdkit/GraphMol/Bond.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include <cstdlib>
-#include <cstring>
 #include "ob/bitvec.h"
 #include "ob/kekulize.h"
 

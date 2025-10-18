@@ -2,8 +2,9 @@
 #define LAHUTA_PIPELINE_BUILDER_HPP
 
 #include <memory>
-#include <pipeline/task_traits.hpp>
 #include <utility>
+
+#include <pipeline/task_traits.hpp>
 
 #include "core/emitter.hpp"
 #include "pipeline/dsl.hpp"

@@ -1,12 +1,13 @@
 #ifndef LAHUTA_JSON_HPP
 #define LAHUTA_JSON_HPP
 
-#include "gemmi/third_party/sajson.h"
 #include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include "gemmi/third_party/sajson.h"
 
 // clang-format off
 namespace lahuta {

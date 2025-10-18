@@ -1,11 +1,12 @@
 #ifndef LAHUTA_COMPUTE_RESULT_HPP
 #define LAHUTA_COMPUTE_RESULT_HPP
 
-#include "error.hpp"
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <typeinfo>
+
+#include "error.hpp"
 
 // clang-format off
 namespace lahuta::topology::compute {

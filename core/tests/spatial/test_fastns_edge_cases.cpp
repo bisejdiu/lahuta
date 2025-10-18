@@ -1,8 +1,7 @@
-#include <gtest/gtest.h>
-
 #include <limits>
 #include <stdexcept>
 
+#include <gtest/gtest.h>
 #include <rdkit/Geometry/point.h>
 
 #include "spatial/fastns.hpp"

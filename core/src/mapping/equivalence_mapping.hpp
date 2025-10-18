@@ -1,14 +1,14 @@
 #ifndef LAHUTA_MAPPING_DISJOINT_SET_MAPPING_HPP
 #define LAHUTA_MAPPING_DISJOINT_SET_MAPPING_HPP
 
-#include "_defs.hpp"
-#include "dynamic_equivalence.hpp"
-#include "residue_id.hpp"
-
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "_defs.hpp"
+#include "dynamic_equivalence.hpp"
+#include "residue_id.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

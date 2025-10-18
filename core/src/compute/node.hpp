@@ -1,15 +1,16 @@
 #ifndef LAHUTA_COMPUTE_NODE_HPP
 #define LAHUTA_COMPUTE_NODE_HPP
 
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <memory>
+
 #include "compute/_defs.hpp"
 #include "compute/compute_base.hpp"
 #include "compute/label.hpp"
 #include "parameters.hpp"
 #include "result.hpp"
-#include <array>
-#include <cassert>
-#include <cstdint>
-#include <memory>
 
 // clang-format off
 namespace lahuta::topology::compute {

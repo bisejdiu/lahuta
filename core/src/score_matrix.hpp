@@ -2,15 +2,16 @@
 #ifndef LAHUTA_SCORE_MATRIX_HPP
 #define LAHUTA_SCORE_MATRIX_HPP
 
+#include <array>
+#include <atomic>
+#include <cstddef>
+#include <thread>
+
 #include "ScoreMatrix.h"
 #include "ctpl/ctpl.h"
 #include "radix_sort.hpp"
 #include "substitution_matrix.hpp"
 #include "utils.hpp"
-#include <array>
-#include <atomic>
-#include <cstddef>
-#include <thread>
 
 namespace lahuta {
 

@@ -1,7 +1,8 @@
-#include "contacts/arpeggio/contacts.hpp"
-#include "chemistry/utils.hpp"
-#include "entities/context.hpp"
 #include <contacts/arpeggio/params.hpp>
+
+#include "chemistry/utils.hpp"
+#include "contacts/arpeggio/contacts.hpp"
+#include "entities/context.hpp"
 
 // clang-format off
 namespace lahuta::arpeggio {

@@ -2,6 +2,7 @@
 #define LAHUTA_ENTITIES_SEARCH_CONFIG_HPP
 
 #include <cstddef>
+
 #include "entities/interaction_types.hpp"
 
 // clang-format off

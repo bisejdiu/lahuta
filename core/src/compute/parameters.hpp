@@ -1,8 +1,9 @@
 #ifndef LAHUTA_COMPUTE_PARAMETERS_HPP
 #define LAHUTA_COMPUTE_PARAMETERS_HPP
 
-#include "compute/_defs.hpp"
 #include <memory>
+
+#include "compute/_defs.hpp"
 
 // clang-format off
 namespace lahuta::topology::compute {

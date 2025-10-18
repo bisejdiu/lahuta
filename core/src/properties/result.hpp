@@ -1,13 +1,15 @@
 #ifndef LAHUTA_RESULT_HPP
 #define LAHUTA_RESULT_HPP
 
-#include "properties/types.hpp"
-#include <Geometry/point.h>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
+
+#include <Geometry/point.h>
+
+#include "properties/types.hpp"
 
 // clang-format off
 

@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
-
 #include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"

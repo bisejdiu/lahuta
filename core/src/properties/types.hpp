@@ -1,8 +1,9 @@
 #ifndef LAHUTA_PROPERTY_TYPES_HPP
 #define LAHUTA_PROPERTY_TYPES_HPP
 
-#include <Geometry/point.h>
 #include <vector>
+
+#include <Geometry/point.h>
 
 // clang-format off
 

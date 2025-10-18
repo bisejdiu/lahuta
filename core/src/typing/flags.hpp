@@ -1,8 +1,9 @@
 #ifndef LAHUTA_TYPING_FLAGS_HPP
 #define LAHUTA_TYPING_FLAGS_HPP
 
-#include "typing/types.hpp"
 #include <string>
+
+#include "typing/types.hpp"
 
 namespace lahuta {
 

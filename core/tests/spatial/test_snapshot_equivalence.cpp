@@ -1,17 +1,15 @@
-#include <gtest/gtest.h>
-
 #include <filesystem>
 
-#include "lahuta.hpp"
-#include "logging.hpp"
+#include <gtest/gtest.h>
 
+#include "compute/topology_snapshot.hpp"
 #include "contacts/engine.hpp"
 #include "contacts/molstar/provider.hpp"
 #include "entities/find_contacts.hpp"
 #include "entities/records.hpp"
 #include "entities/search/config.hpp"
-
-#include "compute/topology_snapshot.hpp"
+#include "lahuta.hpp"
+#include "logging.hpp"
 #include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/types.hpp"
 

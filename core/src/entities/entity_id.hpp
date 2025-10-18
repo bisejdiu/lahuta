@@ -2,8 +2,8 @@
 #define LAHUTA_ENTITIES_ENTITY_ID_HPP
 
 #include <cstdint>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 // clang-format off
 namespace lahuta {

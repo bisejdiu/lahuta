@@ -1,11 +1,12 @@
 #ifndef LAHUTA_ENTITIES_VIEW_HPP
 #define LAHUTA_ENTITIES_VIEW_HPP
 
-#include "entity_id.hpp"
-#include "records.hpp"
 #include <algorithm>
 #include <iterator>
 #include <vector>
+
+#include "entity_id.hpp"
+#include "records.hpp"
 
 // clang-format off
 namespace lahuta {

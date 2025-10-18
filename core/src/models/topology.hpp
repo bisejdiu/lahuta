@@ -1,7 +1,7 @@
 #ifndef LAHUTA_MODEL_TOPOLOGY_HPP
 #define LAHUTA_MODEL_TOPOLOGY_HPP
 
-#include "GraphMol/RWMol.h"
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "models/parser.hpp"
 #include "models/topology_impl.hpp"

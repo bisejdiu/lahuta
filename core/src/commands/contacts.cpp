@@ -6,6 +6,7 @@
 #include "cli/arg_validation.hpp"
 #include "commands/contacts.hpp"
 #include "db/db.hpp"
+#include "gemmi/third_party/stb_sprintf.h"
 #include "io/sinks/logging.hpp"
 #include "io/sinks/ndjson.hpp"
 #include "logging.hpp"
@@ -13,9 +14,6 @@
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
-
-#define STB_SPRINTF_IMPLEMENTATION
-#include "gemmi/third_party/stb_sprintf.h"
 
 // clang-format off
 namespace lahuta::cli {

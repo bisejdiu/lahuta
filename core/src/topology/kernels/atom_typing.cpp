@@ -1,18 +1,19 @@
-#include "compute/context.hpp"
-#include "compute/result.hpp"
-#include "chemistry/atom_typing.hpp"
-#include "chemistry/group_typing.hpp"
-#include "logging.hpp"
-#include "topology/context.hpp"
-#include "topology/kernels.hpp"
 #include <rdkit/GraphMol/RWMol.h>
 #include <typing/flags.hpp>
 #include <valence_model.hpp>
-#include "typing/getcontacts/atom_typing.hpp"
-#include "typing/types.hpp"
+
+#include "chemistry/atom_typing.hpp"
+#include "chemistry/group_typing.hpp"
+#include "compute/context.hpp"
+#include "compute/result.hpp"
+#include "logging.hpp"
 #include "residues.hpp"
 #include "selections/mol_filters.hpp"
+#include "topology/context.hpp"
+#include "topology/kernels.hpp"
+#include "typing/getcontacts/atom_typing.hpp"
 #include "typing/smarts_matching.hpp"
+#include "typing/types.hpp"
 
 // clang-format off
 namespace lahuta::topology {

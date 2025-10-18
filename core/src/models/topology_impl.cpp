@@ -1,6 +1,6 @@
-#include "models/topology_impl.hpp"
 #include "logging.hpp"
 #include "models/topology/compute.hpp"
+#include "models/topology_impl.hpp"
 
 // clang-format off
 namespace lahuta::models {

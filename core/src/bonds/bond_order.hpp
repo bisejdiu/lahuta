@@ -1,11 +1,11 @@
 #ifndef LAHUTA_BOND_ORDER_HPP
 #define LAHUTA_BOND_ORDER_HPP
 
-#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 #include <rdkit/GraphMol/SmilesParse/SmilesParse.h>
+#include <rdkit/GraphMol/Substruct/SubstructMatch.h>
 
+// clang-format off
 using namespace RDKit;
-
 namespace lahuta {
 
 using HybridizationType = RDKit::Atom::HybridizationType;

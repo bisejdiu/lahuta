@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <cmath>
 #include <tuple>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "spatial/fastns.hpp"
 #include "spatial/nsresults.hpp"

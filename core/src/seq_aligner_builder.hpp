@@ -1,9 +1,10 @@
 #ifndef LAHUTA_SEQ_ALIGNER_BUILDER_HPP
 #define LAHUTA_SEQ_ALIGNER_BUILDER_HPP
 
+#include <memory>
+
 #include "fseek/ops.hpp"
 #include "seq_aligner.hpp"
-#include <memory>
 
 namespace lahuta {
 

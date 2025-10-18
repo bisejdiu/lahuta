@@ -1,12 +1,13 @@
 #ifndef LAHUTA_ENTITIES_SEARCH_HIT_BUFFER_HPP
 #define LAHUTA_ENTITIES_SEARCH_HIT_BUFFER_HPP
 
-#include "entities/interaction_types.hpp"
 #include <cstddef>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include "entities/interaction_types.hpp"
 
 namespace lahuta { struct ContactContext; }
 

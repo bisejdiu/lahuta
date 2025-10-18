@@ -1,11 +1,12 @@
 #ifndef LAHUTA_COMPUTE_REGISTRY_HPP
 #define LAHUTA_COMPUTE_REGISTRY_HPP
 
-#include "node.hpp"
-#include "compute/compute_base.hpp"
 #include <algorithm>
 #include <stdexcept>
 #include <utility>
+
+#include "compute/compute_base.hpp"
+#include "node.hpp"
 
 // clang-format off
 namespace lahuta::topology::compute {

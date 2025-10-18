@@ -1,14 +1,16 @@
 #ifndef LAHUTA_CONTACTS_HPP
 #define LAHUTA_CONTACTS_HPP
 
-#include "GraphMol/RWMol.h"
+#include <vector>
+
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "entities/records.hpp"
 #include "types/halogens.hpp"
 #include "types/hbonding.hpp"
 #include "types/hydrophobic.hpp"
 #include "types/metalics.hpp"
 #include "typing/types.hpp"
-#include <vector>
 
 // clang-format off
 namespace lahuta {

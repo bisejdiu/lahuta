@@ -1,10 +1,11 @@
 #ifndef LAHUTA_PIPELINE_STAGE_HPP
 #define LAHUTA_PIPELINE_STAGE_HPP
 
-#include "emitter.hpp"
 #include <functional>
 #include <type_traits>
 #include <utility>
+
+#include "emitter.hpp"
 
 // clang-format off
 namespace lahuta::pipeline {

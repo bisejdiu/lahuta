@@ -1,11 +1,12 @@
 #ifndef LAHUTA_MAPPING_RESIDUE_SET_HPP
 #define LAHUTA_MAPPING_RESIDUE_SET_HPP
 
-#include "_defs.hpp"
 #include <algorithm>
 #include <memory>
 #include <type_traits>
 #include <vector>
+
+#include "_defs.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

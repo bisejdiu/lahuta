@@ -1,11 +1,13 @@
 #ifndef PIPELINE_DSL_COMPONENTS_HPP
 #define PIPELINE_DSL_COMPONENTS_HPP
 
+#include <functional>
+
+#include <pipeline/function_traits.hpp>
+
 #include "pipeline/core/fork.hpp"
 #include "pipeline/core/sink_stage.hpp"
 #include "tags.hpp"
-#include <functional>
-#include <pipeline/function_traits.hpp>
 
 // clang-format off
 namespace lahuta::pipeline::dsl {

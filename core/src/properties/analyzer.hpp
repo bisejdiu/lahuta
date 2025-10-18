@@ -1,10 +1,11 @@
 #ifndef LAHUTA_PROPERTY_ANALYZER_HPP
 #define LAHUTA_PROPERTY_ANALYZER_HPP
 
+#include <Geometry/point.h>
+
 #include "properties/query.hpp"
 #include "properties/registry.hpp"
 #include "properties/types.hpp"
-#include <Geometry/point.h>
 
 // clang-format off
 

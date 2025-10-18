@@ -1,7 +1,8 @@
 #include <cctype>
 #include <filesystem>
-#include <gtest/gtest.h>
 #include <type_traits>
+
+#include <gtest/gtest.h>
 
 #include "convert.hpp"
 #include "lahuta.hpp"

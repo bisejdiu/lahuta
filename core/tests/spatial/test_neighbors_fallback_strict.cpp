@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <tuple>
 #include <utility>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "distances/neighbors.hpp"
 #include "test_utils/fp_test_utils.hpp"

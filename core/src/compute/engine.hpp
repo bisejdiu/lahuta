@@ -1,10 +1,6 @@
 #ifndef LAHUTA_COMPUTE_ENGINE_HPP
 #define LAHUTA_COMPUTE_ENGINE_HPP
 
-#include "node.hpp"
-#include "pipeline.hpp"
-#include "registry.hpp"
-#include "runners.hpp"
 #include <algorithm>
 #include <cassert>
 #include <deque>
@@ -14,6 +10,11 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#include "node.hpp"
+#include "pipeline.hpp"
+#include "registry.hpp"
+#include "runners.hpp"
 
 // clang-format off
 namespace lahuta::topology::compute {

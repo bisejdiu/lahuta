@@ -1,14 +1,14 @@
 #ifndef LAHUTA_CONTACTS_HBOND_GEO_VALIDITY_HPP
 #define LAHUTA_CONTACTS_HBOND_GEO_VALIDITY_HPP
 
-#include "chemistry/geometry.hpp"
-#include "chemistry/neighbors.hpp"
-#include "contacts/molstar/params.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <limits>
+
+#include "chemistry/geometry.hpp"
+#include "chemistry/neighbors.hpp"
+#include "contacts/molstar/params.hpp"
 
 // clang-format off
 namespace lahuta::molstar {

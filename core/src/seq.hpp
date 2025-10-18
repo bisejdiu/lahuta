@@ -1,11 +1,12 @@
 #ifndef LAHUTA_SEQ_HPP
 #define LAHUTA_SEQ_HPP
 
-#include "GraphMol/RWMol.h"
-#include "fseek/ops.hpp"
 #include <GemmiWrapper.h>
 #include <Sequence.h>
 #include <SubstitutionMatrix.h>
+#include <rdkit/GraphMol/RWMol.h>
+
+#include "fseek/ops.hpp"
 
 namespace lahuta {
 

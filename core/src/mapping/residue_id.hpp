@@ -1,10 +1,11 @@
 #ifndef LAHUTA_MAPPING_RESIDUE_IDENTIFIER_HPP
 #define LAHUTA_MAPPING_RESIDUE_IDENTIFIER_HPP
 
-#include "_defs.hpp"
 #include <functional>
 #include <string>
 #include <string_view>
+
+#include "_defs.hpp"
 
 namespace lahuta::mapping {
 

@@ -1,11 +1,12 @@
 #ifndef LAHUTA_TOPOLOGY_KERNELS_HPP
 #define LAHUTA_TOPOLOGY_KERNELS_HPP
 
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "compute/context.hpp"
 #include "compute/result.hpp"
 #include "entities/records.hpp"
 #include "parameters.hpp"
-#include <rdkit/GraphMol/RWMol.h>
 
 namespace lahuta::topology {
 using namespace compute;

@@ -1,11 +1,12 @@
 #ifndef LAHUTA_PROCESSOR_HPP
 #define LAHUTA_PROCESSOR_HPP
 
-#include "ctpl/ctpl.h"
-#include "logging.hpp"
 #include <memory>
 #include <string>
 #include <unordered_map>
+
+#include "ctpl/ctpl.h"
+#include "logging.hpp"
 #include "models/factory.hpp"
 
 // clang-format off

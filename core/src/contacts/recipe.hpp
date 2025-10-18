@@ -1,11 +1,12 @@
 #ifndef LAHUTA_CONTACTS_RECIPE_HPP
 #define LAHUTA_CONTACTS_RECIPE_HPP
 
+#include <cstdint>
+
 #include "entities/context.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/interaction_types.hpp"
 #include "entities/records.hpp"
-#include <cstdint>
 
 // clang-format off
 namespace lahuta {

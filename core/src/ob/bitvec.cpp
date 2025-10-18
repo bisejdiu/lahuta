@@ -17,11 +17,12 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 ***********************************************************************/
 
-#include "ob/bitvec.h"
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
+
+#include "ob/bitvec.h"
 
   /*! \class OBBitVec bitvec.h <openbabel/bitvec.h>
     \brief Fast and efficient bitstring class

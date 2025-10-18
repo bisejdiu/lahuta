@@ -2,18 +2,18 @@
 // - emit behavior after multiplexer is closed
 // - rotation by record count
 // - non-required sink failure behavior during close_and_flush
-#include <gtest/gtest.h>
-
 #include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <string>
 #include <vector>
 
+#include <gtest/gtest.h>
+#include <pipeline/dynamic/channel_multiplexer.hpp>
+
 #include "io/sinks/memory.hpp"
 #include "io/sinks/sharded_ndjson.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"
-#include <pipeline/dynamic/channel_multiplexer.hpp>
 
 using namespace lahuta::pipeline::dynamic;
 

@@ -1,9 +1,9 @@
 #ifndef LAHUTA_OPS_HPP
 #define LAHUTA_OPS_HPP
 
+#include "TMaligner.h"
 #include "blosum62.out.h"
 #include "mat3di.out.h"
-#include "TMaligner.h"
 
 enum class AlignType { AA, _3Di, AA_3Di };
 

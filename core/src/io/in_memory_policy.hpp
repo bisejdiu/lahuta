@@ -1,9 +1,9 @@
 #ifndef LAHUTA_IO_IN_MEMORY_POLICY_HPP
 #define LAHUTA_IO_IN_MEMORY_POLICY_HPP
 
-#include <vector>
 #include <memory>
 #include <type_traits>
+#include <vector>
 
 // clang-format off
 namespace lahuta {

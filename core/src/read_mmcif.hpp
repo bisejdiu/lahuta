@@ -1,16 +1,18 @@
 #ifndef LAHUTA_READ_MMCIF_HPP
 #define LAHUTA_READ_MMCIF_HPP
 
-#include "logging.hpp"
-#include "gemmi/numb.hpp"
+#include <stdexcept>
+#include <vector>
+
 #include <gemmi/atox.hpp>
 #include <gemmi/cif.hpp>
 #include <gemmi/elem.hpp>
 #include <rdkit/GraphMol/Conformer.h>
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <rdkit/GraphMol/RWMol.h>
-#include <stdexcept>
-#include <vector>
+
+#include "gemmi/numb.hpp"
+#include "logging.hpp"
 
 // clang-format off
 namespace lahuta {

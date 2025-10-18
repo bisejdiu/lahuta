@@ -1,5 +1,5 @@
-#include <rdkit/GraphMol/RWMol.h>
 #include <rdkit/GraphMol/MolOps.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "bond_order.hpp"
 #include "ob/clean_mol.hpp"
@@ -23,7 +23,7 @@ double average_ring_dihedral(const RDKit::ROMol &mol, const RDKit::Conformer &co
     for (size_t i = 0; i < ringSize; ++i) {
         torsionsSum += fabs(compute_dihedral(
             *positions[i],
-            *positions[(i + 1) % ringSize], 
+            *positions[(i + 1) % ringSize],
             *positions[(i + 2) % ringSize],
             *positions[(i + 3) % ringSize]
         ));

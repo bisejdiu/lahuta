@@ -1,11 +1,12 @@
 #ifndef LAHUTA_CLI_GLOBAL_OPTIONS_HPP
 #define LAHUTA_CLI_GLOBAL_OPTIONS_HPP
 
+#include <memory>
+#include <string>
+#include <unordered_map>
+
 #include "commands/command.hpp"
 #include "logging.hpp"
-#include <memory>
-#include <unordered_map>
-#include <string>
 
 namespace lahuta::cli {
 

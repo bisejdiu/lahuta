@@ -1,8 +1,9 @@
 #ifndef LAHUTA_AROMATICS_HPP
 #define LAHUTA_AROMATICS_HPP
 
-#include "residues.hpp"
 #include <GraphMol/RWMol.h>
+
+#include "residues.hpp"
 
 namespace lahuta {
 

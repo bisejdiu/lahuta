@@ -1,13 +1,14 @@
 #ifndef LAHUTA_MODELS_TOPOLOGY_ENGINE_HPP
 #define LAHUTA_MODELS_TOPOLOGY_ENGINE_HPP
 
+#include <algorithm>
+#include <memory>
+
 #include "compute/engine.hpp"
 #include "logging.hpp"
 #include "models/topology/compute.hpp"
 #include "models/topology/data.hpp"
 #include "models/topology/parameters.hpp"
-#include <algorithm>
-#include <memory>
 
 // clang-format off
 namespace lahuta::models {

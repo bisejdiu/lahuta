@@ -1,9 +1,10 @@
-#include "models/parser.hpp"
-#include "models/fast_lookup.hpp"
-#include "simde/x86/avx2.h"
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+
+#include "models/fast_lookup.hpp"
+#include "models/parser.hpp"
+#include "simde/x86/avx2.h"
 
 // clang-format off
 namespace lahuta {

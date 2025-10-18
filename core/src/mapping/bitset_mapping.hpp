@@ -1,13 +1,6 @@
 #ifndef LAHUTA_MAPPING_BITSET_MAPPING_HPP
 #define LAHUTA_MAPPING_BITSET_MAPPING_HPP
 
-#include "_defs.hpp"
-#include "mapping_manager.hpp"
-#include "mapping_matrix.hpp"
-#include "residues.hpp"
-#include "topology.hpp"
-
-#include <boost/dynamic_bitset.hpp>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -17,6 +10,14 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <boost/dynamic_bitset.hpp>
+
+#include "_defs.hpp"
+#include "mapping_manager.hpp"
+#include "mapping_matrix.hpp"
+#include "residues.hpp"
+#include "topology.hpp"
 
 // NOTE: We make copies of the residues in the mapping. Residues are POD objects,
 // so it's not clear to me if the tradoff of the better performance and memory footprint,

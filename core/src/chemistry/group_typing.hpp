@@ -3,7 +3,8 @@
 
 #include <vector>
 
-#include "GraphMol/RWMol.h"
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "contacts/aromaticity.hpp"
 #include "entities/records.hpp"
 #include "residues.hpp"

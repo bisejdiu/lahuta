@@ -1,8 +1,8 @@
 #ifndef LAHUTA_CONTACTS_ARPEGGIO_CONTACTS_HPP
 #define LAHUTA_CONTACTS_ARPEGGIO_CONTACTS_HPP
 
-#include "entities/records.hpp"
 #include "contacts/recipe.hpp"
+#include "entities/records.hpp"
 #include "params.hpp"
 
 namespace lahuta::arpeggio {

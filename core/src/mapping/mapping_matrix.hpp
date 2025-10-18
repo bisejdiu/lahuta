@@ -1,13 +1,15 @@
 #ifndef LAHUTA_MAPPING_MAPPING_MATRIX_HPP
 #define LAHUTA_MAPPING_MAPPING_MATRIX_HPP
 
-#include "_defs.hpp"
-#include <boost/dynamic_bitset.hpp>
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <boost/dynamic_bitset.hpp>
+
+#include "_defs.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

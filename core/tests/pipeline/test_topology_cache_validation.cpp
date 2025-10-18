@@ -1,5 +1,3 @@
-#include <gtest/gtest.h>
-
 #include <atomic>
 #include <cmath>
 #include <mutex>
@@ -9,6 +7,7 @@
 #include <vector>
 
 #include <GraphMol/Conformer.h>
+#include <gtest/gtest.h>
 
 #include "analysis/topology/computation.hpp"
 #include "compute/dependency.hpp"

@@ -2,8 +2,8 @@
 #define LAHUTA_TOKEN_LOOKUP_HPP
 
 // IWYU pragma: begin_exports
-#include "token.h"
 #include "token-gperf-generated.hpp"
+#include "token.h"
 // IWYU pragma: end_exports
 
 #endif // LAHUTA_TOKEN_LOOKUP_HPP

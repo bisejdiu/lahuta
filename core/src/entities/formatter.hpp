@@ -1,18 +1,20 @@
 #ifndef LAHUTA_ENTITIES_FORMATTER_HPP
 #define LAHUTA_ENTITIES_FORMATTER_HPP
 
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
+#include <GraphMol/MonomerInfo.h>
+#include <span.hpp>
+
 #include "contact.hpp"
 #include "entity_id.hpp"
 #include "interaction_types.hpp"
 #include "records.hpp"
 #include "resolver.hpp"
 #include "topology.hpp"
-#include <GraphMol/MonomerInfo.h>
-#include <span.hpp>
-#include <vector>
-#include <algorithm>
-#include <iostream>
-#include <iomanip>
 
 // clang-format off
 namespace lahuta {

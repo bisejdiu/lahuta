@@ -1,10 +1,11 @@
+#include <models/tables.hpp>
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "compute/context.hpp"
 #include "compute/result.hpp"
 #include "models/constants.hpp"
 #include "models/topology/data.hpp"
 #include "models/topology/kernels.hpp"
-#include <models/tables.hpp>
-#include <rdkit/GraphMol/RWMol.h>
 
 // clang-format off
 namespace lahuta::models::topology {

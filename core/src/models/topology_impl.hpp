@@ -1,8 +1,9 @@
 #ifndef LAHUTA_MODELS_MODEL_TOPOLOGY_HPP
 #define LAHUTA_MODELS_MODEL_TOPOLOGY_HPP
 
-#include "models/topology/engine.hpp"
 #include <memory>
+
+#include "models/topology/engine.hpp"
 
 // clang-format off
 namespace lahuta::models {

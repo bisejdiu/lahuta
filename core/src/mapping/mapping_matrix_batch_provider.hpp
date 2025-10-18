@@ -1,10 +1,11 @@
 #ifndef LAHUTA_MAPPING_MAPPING_MATRIX_BATCH_PROVIDER_HPP
 #define LAHUTA_MAPPING_MAPPING_MATRIX_BATCH_PROVIDER_HPP
 
-#include "mapping/bitset_mapping.hpp"
-#include "mapping/mapping_matrix.hpp"
 #include <memory>
 #include <vector>
+
+#include "mapping/bitset_mapping.hpp"
+#include "mapping/mapping_matrix.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

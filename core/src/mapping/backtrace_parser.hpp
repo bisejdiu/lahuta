@@ -1,10 +1,11 @@
 #ifndef LAHUTA_MAPPING_BACKTRACE_PARSER_HPP
 #define LAHUTA_MAPPING_BACKTRACE_PARSER_HPP
 
-#include "_defs.hpp"
 #include <string_view>
 #include <utility>
 #include <vector>
+
+#include "_defs.hpp"
 
 // clang-format off
 namespace lahuta {

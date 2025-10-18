@@ -1,7 +1,7 @@
 #include <string>
 
-#include "cli/arg_validation.hpp"
 #include "analysis/contacts/provider.hpp"
+#include "cli/arg_validation.hpp"
 #include "logging.hpp"
 
 // clang-format off

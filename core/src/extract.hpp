@@ -1,15 +1,16 @@
 #ifndef LAHUTA_EXTRACT_HPP
 #define LAHUTA_EXTRACT_HPP
 
-#include "convert.hpp"
-#include "gemmi/model.hpp"
-#include "seq.hpp"
-
-#include "ctpl/ctpl.h"
 #include <cassert>
 #include <iostream>
-#include <matcher.hpp>
 #include <vector>
+
+#include <matcher.hpp>
+
+#include "convert.hpp"
+#include "ctpl/ctpl.h"
+#include "gemmi/model.hpp"
+#include "seq.hpp"
 
 namespace lahuta {
 

@@ -8,11 +8,13 @@
 #ifndef LAHUTA_CHARGES_HPP
 #define LAHUTA_CHARGES_HPP
 
-#include "entities/records.hpp"
-#include "residues.hpp"
+#include <vector>
+
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
-#include <vector>
+
+#include "entities/records.hpp"
+#include "residues.hpp"
 
 namespace lahuta {
 

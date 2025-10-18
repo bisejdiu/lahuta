@@ -2,8 +2,8 @@
 #define LAHUTA_ENTITIES_FIND_CONTACTS_HPP
 
 #include <type_traits>
-#include <vector>
 #include <utility>
+#include <vector>
 
 #include "compute/topology_snapshot.hpp"
 #include "contact.hpp"

@@ -7,9 +7,9 @@
 //     provider string ("arpeggio" or "molstar").
 //   - The current atom typing mode reported by the topology engine matches
 //     the requested mode.
-#include <gtest/gtest.h>
-
 #include <filesystem>
+
+#include <gtest/gtest.h>
 
 #include "analysis/system/computation.hpp"
 #include "analysis/topology/computation.hpp"

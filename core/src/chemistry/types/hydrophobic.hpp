@@ -1,8 +1,9 @@
 #ifndef LAHUTA_HYDROPHOBIC_HPP
 #define LAHUTA_HYDROPHOBIC_HPP
 
-#include "typing/types.hpp"
 #include <GraphMol/RWMol.h>
+
+#include "typing/types.hpp"
 
 namespace lahuta {
 

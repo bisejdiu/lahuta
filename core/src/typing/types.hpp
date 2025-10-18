@@ -2,6 +2,7 @@
 #define LAHUTA_ATOM_TYPES_HPP
 
 #include <cstdint>
+
 #include <rdkit/GraphMol/MolOps.h>
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <rdkit/GraphMol/RWMol.h>

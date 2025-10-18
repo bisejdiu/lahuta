@@ -1,5 +1,5 @@
-#include "topology/engine.hpp"
 #include "topology.hpp"
+#include "topology/engine.hpp"
 
 // clang-format off
 namespace lahuta::topology {

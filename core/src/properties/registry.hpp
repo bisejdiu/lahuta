@@ -1,11 +1,13 @@
 #ifndef LAHUTA_PROPERTY_REGISTRY_HPP
 #define LAHUTA_PROPERTY_REGISTRY_HPP
 
-#include "properties/descriptor.hpp"
-#include "properties/types.hpp"
-#include <Geometry/point.h>
 #include <memory>
 #include <unordered_map>
+
+#include <Geometry/point.h>
+
+#include "properties/descriptor.hpp"
+#include "properties/types.hpp"
 
 // clang-format off
 

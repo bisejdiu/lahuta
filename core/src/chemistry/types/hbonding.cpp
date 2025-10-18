@@ -1,6 +1,6 @@
-#include "chemistry/types/hbonding.hpp"
 #include "chemistry/neighbors.hpp"
 #include "chemistry/predicates.hpp"
+#include "chemistry/types/hbonding.hpp"
 #include "chemistry/utils.hpp"
 #include "elements.hpp"
 

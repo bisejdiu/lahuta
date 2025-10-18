@@ -1,10 +1,11 @@
 #ifndef LAHUTA_DB_HPP
 #define LAHUTA_DB_HPP
 
+#include <filesystem>
+
 #include "db/reader.hpp"
 #include "db/writer.hpp"
 #include "lmdb/lmdb++.h"
-#include <filesystem>
 
 namespace fs = std::filesystem;
 namespace lahuta {
