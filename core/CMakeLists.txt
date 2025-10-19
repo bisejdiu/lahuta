@@ -224,9 +224,6 @@ add_library(lahuta_core SHARED
   external/mmap/MemoryMapped.cpp
   src/valence_model.cpp
 
-  src/ob/kekulize.cpp
-  src/ob/bitvec.cpp
-
   src/contacts/aromaticity.cpp
 
   src/chemistry/types/charges.cpp

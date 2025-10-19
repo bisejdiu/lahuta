@@ -6,7 +6,6 @@
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "entities/records.hpp"
-#include "ob/kekulize.h"
 #include "residues.hpp"
 
 namespace lahuta {

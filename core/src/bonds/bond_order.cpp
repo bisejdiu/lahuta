@@ -339,7 +339,6 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   //  which would "break ties" on complicated multi-ring systems
   // (Most of the current problems lie in the interface with the
   //   Kekulize code anyway, not in marking everything as potentially aromatic)
-  bool needs_kekulization = false;
   bool typed = false;
   unsigned int loopSize;
   for (const auto &ring : rlist) {
@@ -372,21 +371,11 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
               mol.getBondBetweenAtoms(ring[loop], ring[(loop + 1) % loopSize]);
           if (bond) {
             bond->setIsAromatic(true);
-            needs_kekulization = true;
           }
         }
       }
     }
   }
-
-  // if (needs_kekulization) {
-  //   for (auto bond: mol.bonds()) {
-  //     if (bond->getIsAromatic()) {
-  //       bond->getBeginAtom()->setIsAromatic(true);
-  //       bond->getEndAtom()->setIsAromatic(true);
-  //     }
-  //   }
-  // }
 
   mol.updatePropertyCache(false);
 }
