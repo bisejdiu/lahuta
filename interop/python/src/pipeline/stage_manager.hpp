@@ -19,8 +19,8 @@
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/process_pool.hpp"
-#include "pipeline/python_process_task.hpp"
-#include "pipeline/python_task.hpp"
+#include "pipeline/process_task.hpp"
+#include "pipeline/thread_task.hpp"
 
 // clang-format off
 namespace py = pybind11;
