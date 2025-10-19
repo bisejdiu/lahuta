@@ -83,48 +83,7 @@ const std::vector<SmartsPatternPair> bondSmarts = {
     {"[#6D3^2]([#8D1])([#16])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
     {"[#6D3^2]([#16D1])([#16])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
     {"[CD3^2]([#16D1])([N])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-    // Do not seem to work correctly with RDKit:
-    // {"[#6^2][#6D2^1][#6^2]", {0, 1, 2, 1, 2, 2}},
-    // {"[#6^2][#6D2^1][#8D1]", {0, 1, 2, 1, 2, 2}},
-    {"[#6D3^2;!R]([#7D1H0;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-    {"[#6D3^2;!R]([#7D2H1;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-    {"[#6D3^2;!R]([#7D3H2;!R])([#7;!R])*", {0, 1, 2, 0, 2, 1, 0, 3, 1}},
-    {"[#6D3^2;!R]([#1,#6])([#1,#6])[#7D3^2;!R]([#1])[#6]",
-     {0, 1, 1, 0, 2, 1, 0, 3, 2, 3, 4, 1, 3, 5, 1}},
 };
-
-SubStrMatches performSubstructMatch(RDKit::ROMol &mol, RDKit::ROMol &pattern,
-                                    SubstructMatchParameters &params);
-
-inline void RDKitSmartsMatch(RDKit::ROMol &mol, SubstructMatchParameters &params) {
-  // Precompute patterns statically
-  std::array<RDKit::ROMol *, std::size(smartsList)> patterns = [] {
-    std::array<RDKit::ROMol *, std::size(smartsList)> temp{};
-    for (size_t i = 0; i < std::size(smartsList); ++i) {
-      temp[i] = RDKit::SmartsToMol(smartsList[i].first);
-    }
-    return temp;
-  }();
-
-  for (size_t i = 0; i < std::size(smartsList); ++i) {
-    const auto &[smarts, hybridType] = smartsList[i];
-    RDKit::ROMol *pattern = patterns[i];
-
-    // FIX: supplying the param list leads to performance issues
-    // SubStrMatches matchList = performSubstructMatch(mol, *pattern, params);
-    SubStrMatches matchList;
-    RDKit::SubstructMatch(mol, *pattern, matchList);
-
-    for (const auto &match : matchList) {
-      for (const auto &pair : match) {
-        auto atom = mol.getAtomWithIdx(pair.second);
-        atom->setHybridization(hybridType);
-      }
-      // auto atom = mol.getAtomWithIdx(match[0].second);
-      // atom->setHybridization(hybridType);
-    }
-  }
-}
 
 inline void OBBondTypeAssignment(RDKit::ROMol &mol) {
 
@@ -143,24 +102,22 @@ inline void OBBondTypeAssignment(RDKit::ROMol &mol) {
     RDKit::ROMol *pattern = patterns[i];
 
     SubstructMatchParameters params;
-    params.maxMatches = 100000000;
+    params.maxMatches = 100000;
     std::vector<RDKit::MatchVectType> matchList;
     matchList = RDKit::SubstructMatch(mol, *pattern, params);
 
     for (const auto &match : matchList) {
       for (auto j = 0; j < bondVector.size(); j += 3) {
-        auto bond = mol.getBondBetweenAtoms(match[bondVector[j]].second,
-                                            match[bondVector[j + 1]].second);
+        auto bond = mol.getBondBetweenAtoms(match[bondVector[j]].second, match[bondVector[j + 1]].second);
         if (bond) {
-          // FIX: there is an implicit conversion from int to BondType
-          bond->setBondType(Bond::BondType(bondVector[j + 2]));
+          bond->setBondType(static_cast<RDKit::Bond::BondType>(bondVector[j + 2]));
         }
       }
     }
   }
 }
 
-inline double AverageBondAngle(const RDKit::Atom *atom) {
+inline double average_bond_angle(const RDKit::Atom *atom) {
   double avgDegrees = 0.0;
   int n = 0;
 

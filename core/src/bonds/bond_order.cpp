@@ -39,12 +39,6 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     atom->setHybridization(HybridizationType::SP);
   }
 
-  SubstructMatchParameters params;
-  params.maxMatches = mol.getNumAtoms();
-  // NOTE: SmartsMatching can take the number of threads as a parameter
-  // params.numThreads = 1;
-  RDKitSmartsMatch(mol, params);
-
   // Pass 1: Assign estimated hybridization based on average bond angles
   // taken from AtomIsInRing
   // FIX: Check performance of this operation
@@ -54,7 +48,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   }
   for (auto atom: mol.atoms()) {
     atom->getAtomicNum();
-    double avgDegrees = AverageBondAngle(atom);
+    double avgDegrees = average_bond_angle(atom);
 
     if (avgDegrees > 155.0) {
       atom->setHybridization(HybridizationType::SP);
@@ -124,12 +118,9 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
   //          bonded to another or an sp2 hybrid isn't bonded
   //          to another (or terminal atoms in both cases)
   //          mark them to a lower hybridization for now
-
-  // NOTE: Hybridization assignment for all atoms is done before function is
-  // called
   for (auto atom: mol.atoms()) {
-    if (atom->getHybridization() == HybridizationType::SP ||
-        atom->getHybridization() == HybridizationType::SP2) {
+    if (atom->getHybridization() == HybridizationType::SP2 ||
+        atom->getHybridization() == HybridizationType::SP) {
       bool openNbr = false;
       ROMol::ADJ_ITER nbrIdx, endNbr;
       boost::tie(nbrIdx, endNbr) = mol.getAtomNeighbors(atom);
@@ -167,7 +158,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(a1);
+    double avgDegrees = average_bond_angle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -205,7 +196,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(a1);
+    double avgDegrees = average_bond_angle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -243,7 +234,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
     RDKit::Atom *a3 = mol.getAtomWithIdx(match[2].second);
 
-    double avgDegrees = AverageBondAngle(a2);
+    double avgDegrees = average_bond_angle(a2);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     auto a3Pos = conf.getAtomPos(a3->getIdx());
@@ -281,7 +272,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(a1);
+    double avgDegrees = average_bond_angle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;
@@ -318,7 +309,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     RDKit::Atom *a1 = mol.getAtomWithIdx(match[0].second);
     RDKit::Atom *a2 = mol.getAtomWithIdx(match[1].second);
 
-    double avgDegrees = AverageBondAngle(a1);
+    double avgDegrees = average_bond_angle(a1);
     auto a1Pos = conf.getAtomPos(a1->getIdx());
     auto a2Pos = conf.getAtomPos(a2->getIdx());
     RDGeom::Point3D v1 = a2Pos - a1Pos;

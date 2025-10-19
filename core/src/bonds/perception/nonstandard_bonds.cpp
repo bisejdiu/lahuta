@@ -16,6 +16,8 @@ namespace lahuta::bonds {
 
 bool apply_residue_level_bond_orders(BondAssignmentResult &result, PerceptionStats *stats) {
   RDKit::RWMol &mol = result.mol;
+  result.mol.updatePropertyCache(false);
+
   if (mol.getNumAtoms() == 0) return true;
 
   if (stats) stats->reset();
