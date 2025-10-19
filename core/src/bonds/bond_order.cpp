@@ -2,8 +2,6 @@
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "bond_order.hpp"
-#include "ob/clean_mol.hpp"
-#include "ob/kekulize.h"
 
 namespace lahuta {
 
@@ -98,7 +96,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
         for (const auto &atomIdx : ring) {
           RDKit::Atom *atom = mol.getAtomWithIdx(atomIdx);
           // if (atom->getDegree() == 2) {
-          if (ob_explicit_valence(mol, atom) == 2) {
+          if (atom->getDegree() == 2) {
             atom->setHybridization(HybridizationType::SP2);
           }
         }
@@ -113,8 +111,8 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
         for (const auto &atomIdx : ring) {
           RDKit::Atom *atom = mol.getAtomWithIdx(atomIdx);
           // if (atom->getDegree() == 2 || atom->getDegree() == 3) {
-          if (ob_explicit_valence(mol, atom) == 2 ||
-              ob_explicit_valence(mol, atom) == 3) {
+          const auto explicit_degree = atom->getDegree();
+          if (explicit_degree == 2 || explicit_degree == 3) {
             atom->setHybridization(HybridizationType::SP2);
           }
         }
@@ -137,8 +135,7 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
       boost::tie(nbrIdx, endNbr) = mol.getAtomNeighbors(atom);
       for (; nbrIdx != endNbr; ++nbrIdx) {
         const RDKit::Atom *neighbor = mol.getAtomWithIdx(*nbrIdx);
-        if (neighbor->getHybridization() < HybridizationType::SP3 ||
-            ob_explicit_valence(mol, neighbor) == 1) {
+        if (neighbor->getHybridization() < HybridizationType::SP3 || neighbor->getDegree() == 1) {
           openNbr = true;
           break;
         }
@@ -382,15 +379,14 @@ void perceive_bond_orders_obabel(RDKit::RWMol &mol) {
     }
   }
 
-  if (needs_kekulization) {
-    for (auto bond: mol.bonds()) {
-      if (bond->getIsAromatic()) {
-        bond->getBeginAtom()->setIsAromatic(true);
-        bond->getEndAtom()->setIsAromatic(true);
-      }
-    }
-    bool ok = OBKekulize(&mol);
-  }
+  // if (needs_kekulization) {
+  //   for (auto bond: mol.bonds()) {
+  //     if (bond->getIsAromatic()) {
+  //       bond->getBeginAtom()->setIsAromatic(true);
+  //       bond->getEndAtom()->setIsAromatic(true);
+  //     }
+  //   }
+  // }
 
   mol.updatePropertyCache(false);
 }

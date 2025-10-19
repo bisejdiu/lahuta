@@ -193,6 +193,7 @@ target_include_directories(lmdb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external)
 add_library(lahuta_core SHARED
   src/bonds/bonds.cpp
   src/bonds/bond_order.cpp
+  src/bonds/clean_bonds.cpp
   src/convert.cpp
   src/kd_tree.cpp
   src/kd_index.cpp
@@ -224,7 +225,6 @@ add_library(lahuta_core SHARED
   src/valence_model.cpp
 
   src/ob/kekulize.cpp
-  src/ob/clean_mol.cpp
   src/ob/bitvec.cpp
 
   src/contacts/aromaticity.cpp

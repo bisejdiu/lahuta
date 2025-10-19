@@ -5,9 +5,9 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "bonds/bond_order.hpp"
+#include "bonds/clean_bonds.hpp"
 #include "logging.hpp"
 #include "nonstandard_bonds.hpp"
-#include "ob/clean_mol.hpp"
 #include "selections/mol_filters.hpp"
 #include "template.hpp"
 
