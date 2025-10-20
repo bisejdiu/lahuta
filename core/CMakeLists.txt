@@ -72,8 +72,8 @@ if(NOT MSVC)
   endif()
 endif()
 
-option(LAHUTA_BUILD_CLI            "Build CLI executables" ON)
 option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
+option(LAHUTA_BUILD_EXAMPLES       "Build Lahuta example executables" OFF)
 option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
 option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" ON)
 option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
@@ -284,10 +284,6 @@ add_library(lahuta_core SHARED
   src/contacts/getcontacts/pi_cation.cpp
   src/contacts/getcontacts/pistacking.cpp
 
-  src/cli/arg_validation.cpp
-  src/cli/global_options.cpp
-  src/commands/contacts.cpp
-  src/commands/createdb.cpp
 )
 
 target_compile_features(lahuta_core PUBLIC cxx_std_17)
@@ -349,6 +345,10 @@ if(LAHUTA_BUILD_FOLDSEEK)
   )
 endif()
 
+if(LAHUTA_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+
 # Eigen, system first, bundled fallback
 if(LAHUTA_WITH_EIGEN)
   find_package(Eigen3 QUIET)
@@ -360,22 +360,6 @@ if(LAHUTA_WITH_EIGEN)
     target_compile_definitions(lahuta_core PUBLIC LAHUTA_USE_EIGEN=1)
     set(LAHUTA_HAS_EIGEN ON)
   endif()
-endif()
-
-# CLI executables
-function(add_lahuta_executable target main_file)
-  add_executable(${target} ${main_file})
-  target_compile_features(${target} PRIVATE cxx_std_17)
-  target_link_libraries(${target} PRIVATE lahuta_core ZLIB::ZLIB spdlog::spdlog_header_only)
-endfunction()
-
-if(LAHUTA_BUILD_CLI)
-  add_lahuta_executable(lahuta_cli apps/main.cpp)
-  set_target_properties(lahuta_cli PROPERTIES OUTPUT_NAME "lahuta")
-  add_lahuta_executable(resolver apps/use_resolver.cpp)
-  add_lahuta_executable(md_stage_manager_example apps/md_stage_manager_example.cpp)
-  add_lahuta_executable(nmr_stage_manager_example apps/nmr_stage_manager_example.cpp)
-  add_lahuta_executable(getcontacts_example apps/getcontacts_example.cpp)
 endif()
 
 if(LAHUTA_BUILD_PYTHON)

@@ -59,40 +59,69 @@ jobs:
           fi
           echo "PATH: $PATH"
 
-      - name: Configure
+      - name: Configure (CLI OFF)
         run: |
           set -euo pipefail
           RUST_FLAGS=""
           if [ "$RUNNER_OS" = "macOS" ]; then
             RUST_FLAGS="-DRust_COMPILER=$(rustup which rustc) -DRust_CARGO=$(rustup which cargo)"
           fi
-          cmake -S core -B core/build -G Ninja \
+          cmake -S . -B build/off -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DLAHUTA_BUILD_CLI=OFF     \
             -DLAHUTA_VENDOR_BOOST=ON   \
             -DLAHUTA_BUILD_PYTHON=OFF  \
             -DBUILD_TESTING=ON         \
             $RUST_FLAGS
 
-      - name: Build
-        run: cmake --build core/build --parallel
+      - name: Build (CLI OFF)
+        run: cmake --build build/off --parallel
+
+      - name: Configure (CLI ON)
+        run: |
+          set -euo pipefail
+          RUST_FLAGS=""
+          if [ "$RUNNER_OS" = "macOS" ]; then
+            RUST_FLAGS="-DRust_COMPILER=$(rustup which rustc) -DRust_CARGO=$(rustup which cargo)"
+          fi
+          cmake -S . -B build/on -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLAHUTA_BUILD_CLI=ON      \
+            -DLAHUTA_VENDOR_BOOST=ON   \
+            -DLAHUTA_BUILD_PYTHON=OFF  \
+            -DBUILD_TESTING=ON         \
+            $RUST_FLAGS
+
+      - name: Build (CLI ON)
+        run: cmake --build build/on --parallel
 
       - name: Test CLI runs
-        run: ./core/build/lahuta --help
+        run: ./build/on/cli/lahuta/lahuta --help
 
       - name: Run CLI, get contacts and verify
         run: |
           set -euxo pipefail
-          ./core/build/lahuta -f data/ubi.cif -p molstar
+          rm -f contacts.jsonl
+          ./build/on/cli/lahuta/lahuta -f data/ubi.cif -p molstar
           test -f contacts.jsonl
           n=$(jq -r 'select(.num_contacts) | .num_contacts' contacts.jsonl | tail -n1 || echo 0)
           echo "num_contacts=$n"
           test "$n" = "156"
 
-          ./core/build/lahuta -f data/ubi.cif -p arpeggio
+          rm -f contacts.jsonl
+          ./build/on/cli/lahuta/lahuta -f data/ubi.cif -p arpeggio
           test -f contacts.jsonl
           n=$(jq -r 'select(.num_contacts) | .num_contacts' contacts.jsonl | tail -n1 || echo 0)
           echo "num_contacts=$n"
           test "$n" = "384"
+
+      - name: Run CLI tests
+        run: |
+          set -euo pipefail
+          ctest --test-dir build/on \
+                --output-on-failure \
+                --no-tests=error    \
+                --tests-regex '^lahuta_'
 
       - name: Run tests
         run: |
@@ -104,11 +133,11 @@ jobs:
             JOBS=$(sysctl -n hw.logicalcpu)
           fi
 
-          mkdir -p core/build/test-results core/build/gtest-results
+          mkdir -p build/off/test-results build/off/gtest-results
 
           REPO_ROOT="$(pwd)"
-          export GTEST_OUTPUT="xml:${REPO_ROOT}/core/build/gtest-results/"
-          ctest --test-dir core/build \
+          export GTEST_OUTPUT="xml:${REPO_ROOT}/build/off/gtest-results/"
+          ctest --test-dir build/off \
                 --output-on-failure   \
                 --no-tests=error      \
                 --parallel "${JOBS}"
@@ -120,8 +149,8 @@ jobs:
         with:
           name: test-results-${{ matrix.os }}-${{ matrix.arch }}
           path: |
-            core/build/test-results/*.xml
-            core/build/gtest-results/*.xml
+            build/off/test-results/*.xml
+            build/off/gtest-results/*.xml
           retention-days: 14
 
       # - name: Publish test report
