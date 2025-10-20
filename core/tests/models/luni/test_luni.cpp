@@ -21,11 +21,12 @@ static_assert( std::is_move_assignable_v   <Luni>, "Luni should be move-assignab
 static fs::path locate_data_file(const std::string &filename) {
   fs::path p = fs::current_path();
   for (int i = 0; i < 12; ++i) {
-    fs::path cand1 = p / "data" / filename;
-    if (fs::exists(cand1)) return cand1;
+    // Prefer core/data first (new location), then fallback to legacy data/
+    fs::path cand_core = p / "core" / "data" / filename;
+    if (fs::exists(cand_core)) return cand_core;
 
-    fs::path cand2 = p / "core" / ".." / "data" / filename;
-    if (fs::exists(cand2)) return cand2;
+    fs::path cand_legacy = p / "data" / filename;
+    if (fs::exists(cand_legacy)) return cand_legacy;
 
     if (p.has_parent_path()) {
       p = p.parent_path();
@@ -38,7 +39,7 @@ static fs::path locate_data_file(const std::string &filename) {
 
 TEST(Luni_Construction, GetTopology_Throws_BeforeBuild) {
   auto path = locate_data_file("ubi.cif");
-  if (path.empty()) GTEST_SKIP() << "data/ubi.cif not found. Skipping integration test.";
+  if (path.empty()) GTEST_SKIP() << "core/data/ubi.cif not found. Skipping integration test.";
 
   Luni luni(path.string());
 
@@ -52,7 +53,7 @@ TEST(Luni_Construction, GetTopology_Throws_BeforeBuild) {
 
 TEST(Luni_DataBasics, CountsAndArrays_FromRealData) {
   auto path = locate_data_file("ubi.cif");
-  if (path.empty()) GTEST_SKIP() << "data/ubi.cif not found. Skipping integration test.";
+  if (path.empty()) GTEST_SKIP() << "core/data/ubi.cif not found. Skipping integration test.";
 
   Luni luni(path.string());
   const auto n = static_cast<int>(luni.n_atoms());
@@ -89,7 +90,7 @@ TEST(Luni_DataBasics, CountsAndArrays_FromRealData) {
 
 TEST(Luni_DataBasics, CentroidMatches_Expected) {
   auto path = locate_data_file("ubi.cif");
-  if (path.empty()) GTEST_SKIP() << "data/ubi.cif not found. Skipping integration test.";
+  if (path.empty()) GTEST_SKIP() << "core/data/ubi.cif not found. Skipping integration test.";
 
   Luni luni(path.string());
   const int n = static_cast<int>(luni.n_atoms());
@@ -118,7 +119,7 @@ TEST(Luni_DataBasics, CentroidMatches_Expected) {
 
 TEST(Luni_Filter, BackboneSubset_CountMatches) {
   auto path = locate_data_file("ubi.cif");
-  if (path.empty()) GTEST_SKIP() << "data/ubi.cif not found. Skipping integration test.";
+  if (path.empty()) GTEST_SKIP() << "core/data/ubi.cif not found. Skipping integration test.";
 
   Luni luni(path.string());
   const auto names = luni.names();
@@ -139,7 +140,7 @@ TEST(Luni_Filter, BackboneSubset_CountMatches) {
 
 TEST(Luni_Topology, BuildAndExecuteRings) {
   auto path = locate_data_file("ubi.cif");
-  if (path.empty()) GTEST_SKIP() << "data/ubi.cif not found. Skipping integration test.";
+  if (path.empty()) GTEST_SKIP() << "core/data/ubi.cif not found. Skipping integration test.";
 
   Luni luni(path.string());
 
