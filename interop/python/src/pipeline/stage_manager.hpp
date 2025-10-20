@@ -95,7 +95,6 @@ inline void bind_stage_manager(py::module_ &md) {
 
     .def("add_contacts", [](StageManager &mgr,
                             const std::string &name,
-                            const std::vector<std::string> &deps,
                             analysis::contacts::ContactProvider provider,
                             InteractionType interaction_type,
                             std::optional<std::string> channel,
@@ -115,11 +114,12 @@ inline void bind_stage_manager(py::module_ &md) {
           p.channel  = ch;
           p.format   = format;
 
+          std::vector<std::string> deps = {"topology"};
           mgr.add_computation(name, deps, [label = name, p]() {
             return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
           }, thread_safe);
         },
-        py::arg("name"), py::arg("depends") = std::vector<std::string>{},
+        py::arg("name"),
         py::arg("provider"), py::arg("interaction_type"),
         py::arg("channel") = std::optional<std::string>{},
         py::arg("out_fmt") = std::string("json"),

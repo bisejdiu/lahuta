@@ -204,7 +204,6 @@ class Pipeline:
 
             self._mgr.add_contacts(
                 name,
-                deps,
                 task.provider,
                 task.interaction_type,
                 ch,

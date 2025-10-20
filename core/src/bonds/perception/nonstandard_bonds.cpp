@@ -52,6 +52,7 @@ bool apply_residue_level_bond_orders(BondAssignmentResult &result, PerceptionSta
   }
 
   for (auto &inst : instances) {
+    // TODO: Sorting for nonstandard residues is not necessary, but not doing so hits bond iterators and affects performance
     std::sort(inst.mol_indices.begin(), inst.mol_indices.end());
   }
 
@@ -72,6 +73,7 @@ bool apply_residue_level_bond_orders(BondAssignmentResult &result, PerceptionSta
     ResidueInstance pseudo;
     pseudo.key.resname = "__UNASSIGNED__";
     pseudo.mol_indices = unassigned;
+    // TODO: Sorting for nonstandard residues is not necessary, but not doing so hits bond iterators and affects performance
     std::sort(pseudo.mol_indices.begin(), pseudo.mol_indices.end());
 
     auto templ = detail::build_residue_template(mol, pseudo.mol_indices);
