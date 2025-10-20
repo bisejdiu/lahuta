@@ -43,7 +43,7 @@ ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &c
 
     mol.updatePropertyCache(false);
     RDKit::MolOps::setHybridization(mol);
-    fix_bonds(mol);
+    // fix_bonds(mol);
 
     Logger::get_logger()->debug("bonds: assigned, nonstandard_pending={}", result.has_unlisted_resnames);
     return ComputationResult(result);
@@ -99,7 +99,7 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
       }
     }
 
-    BondKernel::fix_bonds(result.mol);
+    // BondKernel::fix_bonds(result.mol);
 
     // This should not be needed anymore, but kept temporarily in case we regress somehow
     // bool include_dative_bonds = true;
