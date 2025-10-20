@@ -198,8 +198,8 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
 }
 
 bool AtomTypingKernel::should_initialize_ringinfo(int mol_size) {
-  constexpr int small_threshold  = 20'000;
-  constexpr int medium_threshold = 50'000;
+  constexpr int small_threshold  = 30'000;
+  constexpr int medium_threshold = 65'000;
   constexpr int large_threshold  = 100'000;
 
   if (mol_size < small_threshold) return true;
