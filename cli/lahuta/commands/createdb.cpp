@@ -1,12 +1,15 @@
 #include <chrono>
 #include <iostream>
-#include <sstream>
 #include <string>
+#include <string_view>
 #include <type_traits>
+#include <variant>
+#include <vector>
 
 #include "analysis/system/model_pack_task.hpp"
 #include "analysis/system/records.hpp"
 #include "cli/arg_validation.hpp"
+#include "cli/extension_utils.hpp"
 #include "commands/createdb.hpp"
 #include "db/db.hpp"
 #include "io/sinks/lmdb.hpp"
@@ -26,7 +29,7 @@ struct CreateDbOptions {
 
   SourceMode source_mode = SourceMode::Directory;
   std::string directory_path;
-  std::string extension = ".cif.gz";
+  std::vector<std::string> extensions{".cif", ".cif.gz"};
   bool recursive = true;
   std::vector<std::string> file_vector;
   std::string file_list_path;
@@ -39,10 +42,11 @@ struct CreateDbOptions {
 using WriterRes = analysis::system::ModelRecord;
 using Source = std::variant<sources::Directory, std::vector<std::string>, sources::FileList>;
 
+
 static Source pick_source(const CreateDbOptions& cli) {
   switch (cli.source_mode) {
     case CreateDbOptions::SourceMode::Directory:
-      return sources::Directory{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
+      return sources::Directory{cli.directory_path, cli.extensions, cli.recursive, cli.batch_size};
     case CreateDbOptions::SourceMode::Vector:
       return cli.file_vector;
     case CreateDbOptions::SourceMode::FileList:
@@ -74,7 +78,7 @@ const option::Descriptor usage[] = {
   {CreateDbOptionIndex::DatabasePath, 0, "o", "output", validate::Required,
    "  --output, -o <path>          \tOutput database path."},
   {CreateDbOptionIndex::Extension, 0, "e", "extension", validate::Required,
-   "  --extension, -e <ext>        \tFile extension for directory mode (default: .cif.gz)."},
+   "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or comma-separate values (default: .cif, .cif.gz)."},
   {CreateDbOptionIndex::Recursive, 0, "r", "recursive", option::Arg::None,
    "  --recursive, -r              \tRecursively search subdirectories."},
   {0, 0, "", "", option::Arg::None,
@@ -116,11 +120,11 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     }
     if (options[createdb_opts::CreateDbOptionIndex::SourceVector]) {
       cli.source_mode = CreateDbOptions::SourceMode::Vector;
-      std::string files_str = options[createdb_opts::CreateDbOptionIndex::SourceVector].arg;
-      std::stringstream ss(files_str);
-      std::string file;
-      while (std::getline(ss, file, ',')) {
-        if (!file.empty()) cli.file_vector.push_back(file);
+      cli.file_vector.clear();
+      for (const option::Option* opt = &options[createdb_opts::CreateDbOptionIndex::SourceVector];
+           opt != nullptr;
+           opt = opt->next()) {
+        if (opt->arg) parse_file_argument(opt->arg, cli.file_vector);
       }
       source_count++;
     }
@@ -147,8 +151,14 @@ int CreateDbCommand::run(int argc, char* argv[]) {
 
     // optional options
     if (options[createdb_opts::CreateDbOptionIndex::Extension]) {
-      cli.extension = options[createdb_opts::CreateDbOptionIndex::Extension].arg;
+      cli.extensions.clear();
+      for (const option::Option* opt = &options[createdb_opts::CreateDbOptionIndex::Extension];
+           opt != nullptr;
+           opt = opt->next()) {
+        parse_extension_argument(opt->arg ? opt->arg : "", cli.extensions);
+      }
     }
+    if (cli.extensions.empty()) cli.extensions.emplace_back();
 
     cli.recursive = options[createdb_opts::CreateDbOptionIndex::Recursive] ? true : false;
 
@@ -172,7 +182,7 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     switch (cli.source_mode) {
       case CreateDbOptions::SourceMode::Directory:
         Logger::get_logger()->info("Source directory: {}", cli.directory_path);
-        Logger::get_logger()->info("Extension: {}", cli.extension);
+        Logger::get_logger()->info("Extensions: {}", describe_extensions(cli.extensions));
         Logger::get_logger()->info("Recursive: {}", cli.recursive ? "Yes" : "No");
         break;
       case CreateDbOptions::SourceMode::Vector:
