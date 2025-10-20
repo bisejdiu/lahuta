@@ -27,9 +27,6 @@ using CommandFactory = std::unique_ptr<CliCommand>(*)();
 // Get the command registry mapping subcommand names to factory functions
 [[nodiscard]] const std::unordered_map<std::string, CommandFactory>& get_command_registry() noexcept;
 
-// Parse global options and return the subcommand name and remaining arguments. Returns subcommand name if found, or empty string on error/help
-[[nodiscard]] std::string parse_global_options(int argc, char* argv[], lahuta::Logger::LogLevel& log_level, int& sub_argc, char**& sub_argv);
-
 void print_global_help();
 
 } // namespace lahuta::cli

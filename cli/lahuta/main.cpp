@@ -12,12 +12,27 @@ int main(int argc, char* argv[]) {
 
     lahuta::Logger::get_instance().set_log_level(g.log_level);
 
+    if (g.help_requested && g.tail.empty()) {
+      print_global_help();
+      return 0;
+    }
+
+    if (g.tail.empty()) {
+      lahuta::Logger::get_logger()->error("No subcommand provided (run lahuta --help for usage)");
+      return 1;
+    }
+
     if (g.help_requested) {
       print_global_help();
       return 0;
     }
 
     const std::string_view subcommand{g.tail[0]};
+
+    if (subcommand.empty() || subcommand.front() == '-') {
+      lahuta::Logger::get_logger()->error("Expected subcommand before '{}'. Run lahuta --help for usage.", subcommand);
+      return 1;
+    }
 
     const auto& registry = get_command_registry();
     const auto it = registry.find(std::string{subcommand});
