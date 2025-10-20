@@ -1,7 +1,9 @@
 """Tests that enums are accessible and work correctly with bond operations."""
 
+from lahuta import rdkit
 
-def test_enums_accessible_and_roundtrip_on_bond(rdkit):
+
+def test_enums_accessible_and_roundtrip_on_bond():
     m = rdkit.RWMol()
     m.addAtom()
     m.addAtom()

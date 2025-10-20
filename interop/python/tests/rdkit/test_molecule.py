@@ -1,7 +1,9 @@
 """Tests molecule construction, atoms, bonds, and queries."""
 
+from lahuta import rdkit
 
-def test_rw_mol_atoms_bonds_and_queries(rdkit):
+
+def test_rw_mol_atoms_bonds_and_queries():
     m = rdkit.RWMol()
 
     a0 = m.addAtom()

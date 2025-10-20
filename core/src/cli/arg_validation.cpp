@@ -1,6 +1,7 @@
 #include <string>
 
 #include "cli/arg_validation.hpp"
+#include "analysis/contacts/provider.hpp"
 #include "logging.hpp"
 
 // clang-format off
@@ -31,14 +32,16 @@ option::ArgStatus Required(const option::Option& option, bool msg) {
 
 option::ArgStatus Provider(const option::Option& option, bool msg) {
   if (!option.arg) {
-    if (msg) log_error("Option '{}' requires a provider (arpeggio or molstar)", HELP_MSG_SUFFIX, opt_name(option));
+    if (msg) log_error("Option '{}' requires a provider", HELP_MSG_SUFFIX, opt_name(option));
     return option::ARG_ILLEGAL;
   }
 
   const std::string_view provider{option.arg};
-  if (provider == "arpeggio" || provider == "molstar") return option::ARG_OK;
+  if (analysis::contacts::contact_provider_from_string(provider).has_value()) {
+    return option::ARG_OK;
+  }
 
-  if (msg) log_error("Invalid provider '{}'. Must be 'arpeggio' or 'molstar'", HELP_MSG_SUFFIX, provider);
+  if (msg) log_error("Invalid provider '{}'. Must be 'arpeggio', 'molstar', or 'getcontacts'", HELP_MSG_SUFFIX, provider);
   return option::ARG_ILLEGAL;
 }
 

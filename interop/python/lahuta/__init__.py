@@ -33,9 +33,7 @@ if find_spec("cloudpickle") is None:
 
 if _missing_dependencies:
     deps_str = ", ".join(_missing_dependencies)
-    raise ImportError(
-        f"Lahuta requires {deps_str}. Install with: pip install {' '.join(_missing_dependencies)}"
-    )
+    raise ImportError(f"Lahuta requires {deps_str}. Install with: pip install {' '.join(_missing_dependencies)}")
 
 try:
     # fmt: off

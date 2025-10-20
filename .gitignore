@@ -4,22 +4,20 @@ cachedir/
 *.py[codi]
 *$py.class
 
-# No easily downloadable PDB/CIF files in the testing directory
 *.pdb
 *.cif
 tests/data/*.pdb
 tests/data/*.cif
 
 # other
-core/external/Eigen/eigen
 .DS_Store
 design_docs/
 interop/python/notebooks/
 core/data/simulationdatabase/
+core/external/Eigen/eigen
 
 # IDEs and editors
 .vscode
-
 
 # local notebooks
 # notebooks/

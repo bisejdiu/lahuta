@@ -12,22 +12,22 @@ TRec_co = TypeVar("TRec_co", AtomRec, RingRec, GroupRec, covariant=True)
 # fmt: off
 @dataclass(frozen=True)
 class Selector(Generic[TRec_co]):
-    """Selection for a given entity kind with an optional predicate."""
+    """Selection for a given entity kind with an optional selector."""
 
     kind: lxx.Kind
-    predicate: Callable[[TRec_co], bool] | None = None
+    selector: Callable[[TRec_co], bool] | None = None
 
 
-def atoms(predicate:  Callable[[AtomRec], bool] | None = None) ->  Selector[AtomRec]:
-    return Selector(kind=lxx.Kind.Atom, predicate=predicate)
+def atoms(selector:  Callable[[AtomRec], bool] | None = None) ->  Selector[AtomRec]:
+    return Selector(kind=lxx.Kind.Atom, selector=selector)
 
 
-def rings(predicate:  Callable[[RingRec], bool] | None = None) ->  Selector[RingRec]:
-    return Selector(kind=lxx.Kind.Ring, predicate=predicate)
+def rings(selector:  Callable[[RingRec], bool] | None = None) ->  Selector[RingRec]:
+    return Selector(kind=lxx.Kind.Ring, selector=selector)
 
 
-def groups(predicate: Callable[[GroupRec], bool] | None = None) -> Selector[GroupRec]:
-    return Selector(kind=lxx.Kind.Group, predicate=predicate)
+def groups(selector: Callable[[GroupRec], bool] | None = None) -> Selector[GroupRec]:
+    return Selector(kind=lxx.Kind.Group, selector=selector)
 
 
 __all__ = [

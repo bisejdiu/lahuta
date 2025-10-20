@@ -154,9 +154,6 @@ public:
 
   friend class Contacts;
 
-  /// very rough estimate of the memory size
-  size_t total_size() const;
-
 private:
   struct TopologyBuildState {
     std::mutex mutex;

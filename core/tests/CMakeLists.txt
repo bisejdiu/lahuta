@@ -49,7 +49,7 @@ target_include_directories(lahuta_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 if(MSVC)
   target_compile_options(lahuta_tests PRIVATE /fp:precise)
 else()
-  target_compile_options(lahuta_tests PRIVATE -fno-fast-math -fexcess-precision=standard -ffp-contract=off)
+  target_compile_options(lahuta_tests PRIVATE -fno-fast-math -ffp-contract=off)
 endif()
 
 target_link_libraries(lahuta_tests

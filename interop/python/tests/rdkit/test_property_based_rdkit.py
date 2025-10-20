@@ -3,9 +3,11 @@
 import numpy as np
 import pytest
 
+from lahuta import rdkit
+
 
 # fmt: off
-def test_hypothesis_conformer_positions(rdkit):
+def test_hypothesis_conformer_positions():
     hyp = pytest.importorskip("hypothesis",             reason="Hypothesis not installed")
     st  = pytest.importorskip("hypothesis.strategies",  reason="Hypothesis not installed")
     hnp = pytest.importorskip("hypothesis.extra.numpy", reason="Hypothesis not installed")

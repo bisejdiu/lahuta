@@ -89,12 +89,12 @@ template <size_t KmerSize, size_t AlphabetSize>
 constexpr std::array<std::array<unsigned char, KmerSize>, __pow__(AlphabetSize, KmerSize)>
 generate_permutations() {
 
-  constexpr const auto permutation_size = __pow__(AlphabetSize, KmerSize);
+  constexpr auto permutation_size = __pow__(AlphabetSize, KmerSize);
 
   std::array<std::array<unsigned char, KmerSize>, permutation_size> permutation{};
   std::array<unsigned char, KmerSize> outputTemp{};
   size_t result_index = 0;
-  constexpr const auto kmer_input = build_input<KmerSize, AlphabetSize>();
+  constexpr auto kmer_input = build_input<KmerSize, AlphabetSize>();
 
   cartesian_product<KmerSize, AlphabetSize>(kmer_input, permutation, outputTemp, 0, result_index);
   return permutation;

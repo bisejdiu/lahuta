@@ -2,8 +2,10 @@
 
 import numpy as np
 
+from lahuta import rdkit
 
-def test_conformer_mol_ownership_and_copying(rdkit):
+
+def test_conformer_mol_ownership_and_copying():
     m = rdkit.RWMol()
     c = rdkit.Conformer(2)
     # Add matching atoms to the molecule so conformer can be attached

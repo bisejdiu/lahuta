@@ -37,17 +37,17 @@ def _create_search_options(distance_max: float | None = None, opts: lxx.SearchOp
         search_opts.distance_max = float(distance_max)
     return search_opts
 
-def _get_predicate(selector: SelectorLike) -> Callable[..., bool]:
-    """Extract predicate function from selector, using a default true function if None.
+def _get_selector(selector: SelectorLike) -> Callable[..., bool]:
+    """Extract selector function from selector, using a default true function if None.
 
     Args:
-        selector: Entity selector with optional predicate
+        selector: Entity selector with optional selector
 
     Returns:
-        Callable predicate function
+        Callable selector function
     """
-    if selector.predicate is not None:
-        return selector.predicate
+    if selector.selector is not None:
+        return selector.selector
 
     def _always_true(_: SelectorLike) -> bool:
         return True
@@ -123,20 +123,20 @@ def find_contacts(
     # Input validation and preparation
     search_opts = _create_search_options(distance_max, opts)
 
-    # Extract predicates
-    pred_a = _get_predicate(a)
+    # Extract selectors
+    sel_a = _get_selector(a)
 
     # Handle single entity type (self-contact)
     if b is None:
         if tester is None:
-            return lxx.find_contacts(topology, a.kind, pred_a, search_opts)
-        return lxx.find_contacts(topology, a.kind, pred_a, tester, search_opts)
+            return lxx.find_contacts(topology, a.kind, sel_a, search_opts)
+        return lxx.find_contacts(topology, a.kind, sel_a, tester, search_opts)
 
     # Handle dual entity types (cross-contact)
-    pred_b = _get_predicate(b)
+    sel_b = _get_selector(b)
     if tester is None:
-        return lxx.find_contacts(topology, a.kind, pred_a, b.kind, pred_b, search_opts)
-    return lxx.find_contacts(topology, a.kind, pred_a, b.kind, pred_b, tester, search_opts)
+        return lxx.find_contacts(topology, a.kind, sel_a, b.kind, sel_b, search_opts)
+    return lxx.find_contacts(topology, a.kind, sel_a, b.kind, sel_b, tester, search_opts)
 
 
 def compute_contacts(

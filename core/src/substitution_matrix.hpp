@@ -111,7 +111,7 @@ constexpr std::array<char, UCHAR_MAX> make_filled_uchar_array() {
 } // namespace
 
 struct __SubMatrix__ {
-  static constexpr const int alphabetSize = 21;
+  static constexpr int alphabetSize = 21;
   static constexpr int containsX = 1;
   constexpr static const double ANY_BACK = 1E-5;
 
@@ -393,8 +393,8 @@ inline BaseMatrix *create_base_matrix(const __SubMatrix__ &source) {
   return ptr;
 }
 
-constexpr const __SubMatrix__ CTSM8 = __SubMatrix__(&SubMatrix3Di, 8.0f, -0.2f);
-constexpr const __SubMatrix__ CTSM2 = __SubMatrix__(&SubMatrix3Di, 2.0f, -0.2f);
+inline constexpr __SubMatrix__ CTSM8 = __SubMatrix__(&SubMatrix3Di, 8.0f, -0.2f);
+inline constexpr __SubMatrix__ CTSM2 = __SubMatrix__(&SubMatrix3Di, 2.0f, -0.2f);
 
 } // namespace lahuta
 

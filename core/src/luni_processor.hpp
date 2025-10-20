@@ -17,33 +17,18 @@ template <typename T>
 class ResultStore {
 public:
   // FIX: in Python, alias int to Bytes
-  explicit ResultStore(size_t mem_threshold = MAX_MEM_THRESHOLD) : mem_threshold_(mem_threshold), curr_mem_usage(0) {}
+  explicit ResultStore(size_t mem_threshold = MAX_MEM_THRESHOLD) { (void)mem_threshold; }
 
   // 'value' is constructed in-place as a std::unique_ptr<T>
   void add_result(const std::string &file_name, T &&value) {
       std::lock_guard<std::mutex> lock(mtx_);
 
       auto value_ = std::make_unique<T>(std::move(value));
-      size_t object_size = value_->total_size();
-
-      if (curr_mem_usage + object_size > mem_threshold_) {
-          std::stringstream error_msg;
-          error_msg << "Memory threshold exceeded. Current usage: "
-                    << curr_mem_usage / (1024 * 1024) << " MB, threshold: "
-                    << "Adding object of size " << object_size << " bytes would exceed threshold of "
-                    << mem_threshold_ / (1024 * 1024) << " MB";
-          throw std::runtime_error(error_msg.str());
-      }
-    // log mmeory usage and object size
-    Logger::get_logger()->info("Current memory usage: {} MB, object size: {} bytes", curr_mem_usage / (1024 * 1024), object_size);
-
 
       results_.emplace(
           std::piecewise_construct,
           std::forward_as_tuple(file_name),
           std::forward_as_tuple(std::move(value_)));
-
-      curr_mem_usage += object_size;
   }
 
   // Returns a pointer to the stored T, or nullptr if not present.
@@ -68,22 +53,14 @@ public:
       return out;
   }
 
-  size_t get_current_memory_usage() const {
-      std::lock_guard<std::mutex> lock(mtx_);
-      return curr_mem_usage;
-  }
-
   void clear() {
       std::lock_guard<std::mutex> lock(mtx_);
       results_.clear();
-      curr_mem_usage = 0;
   }
 
 private:
   mutable std::mutex mtx_;
   std::unordered_map<std::string, std::unique_ptr<T>> results_;
-  size_t mem_threshold_;
-  size_t curr_mem_usage;
 };
 
 struct NoOpCallback {

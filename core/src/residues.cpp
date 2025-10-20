@@ -22,13 +22,11 @@ struct ResidueKeyHash {
   }
 };
 
-
 bool Residues::build() {
   bool success = false;
   build_residues(mol_, success);
   return success;
 }
-
 
 Residues Residues::filter(std::function<bool(const Residue &)> predicate) const {
   Residues result(mol_);
@@ -50,7 +48,6 @@ Residues Residues::filter(std::function<bool(const std::string &)> predicate) co
   return result;
 }
 
-
 template <typename ResultType>
 std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)> func) const {
   std::vector<ResultType> result;
@@ -60,7 +57,6 @@ std::vector<ResultType> Residues::map(std::function<ResultType(const Residue &)>
   }
   return result;
 }
-
 
 void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
   std::unordered_map<std::tuple<std::string, int, std::string, std::string>, size_t, ResidueKeyHash> residue_index_map;
@@ -99,7 +95,6 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
   status = true;
 }
 
-
 std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RWMol &mol, const Residues &residues) {
 
   using RingSize = definitions::arom_rings::RingSize;
@@ -134,23 +129,5 @@ std::vector<std::vector<int>> find_and_process_aromatic_residues(const RDKit::RW
 
   return ring_vector;
 }
-
-std::size_t Residues::total_size() const {
-  std::size_t total = 0;
-
-  total += sizeof(*this);
-  total += sizeof(residues_);
-  total += sizeof(Residue) * residues_.capacity();
-
-  for (const auto &res : residues_) {
-    total += sizeof(char) * res.chain_id.capacity();
-    total += sizeof(char) * res.name.capacity();
-    total += sizeof(char) * res.alt_loc.capacity();
-
-    total += sizeof(const RDKit::Atom*) * res.atoms.capacity();
-  }
-  return total;
-}
-
 
 } // namespace lahuta

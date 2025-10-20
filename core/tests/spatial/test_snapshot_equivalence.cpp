@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <filesystem>
+
 #include "lahuta.hpp"
 #include "logging.hpp"
 

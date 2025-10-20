@@ -130,8 +130,8 @@ struct FoldSeekOps {
   int gapExtend = 1;
 };
 
-constexpr const CompileTimeMatrix SubMatrix3Di(subMatrices[0]);
-constexpr const CompileTimeMatrix SubMatrixBlosum62(subMatrices[1]);
+inline constexpr CompileTimeMatrix SubMatrix3Di(subMatrices[0]);
+inline constexpr CompileTimeMatrix SubMatrixBlosum62(subMatrices[1]);
 
 namespace {
 constexpr bool compare_strings(const char *str1, const char *str2) {
