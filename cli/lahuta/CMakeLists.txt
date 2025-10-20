@@ -13,7 +13,7 @@ target_include_directories(lahuta PRIVATE
 )
 
 target_link_libraries(lahuta PRIVATE lahuta_core)
-target_compile_features(lahuta PRIVATE cxx_std_20)
+target_compile_features(lahuta PRIVATE cxx_std_17)
 
 if(BUILD_TESTING)
   add_test(NAME lahuta_help COMMAND lahuta --help)

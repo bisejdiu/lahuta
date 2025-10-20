@@ -3,10 +3,10 @@
 
 #include <vector>
 
+#include <Eigen/Dense>
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "Eigen/Dense"
 #include "rings.hpp"
 
 namespace lahuta {

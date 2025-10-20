@@ -51,7 +51,7 @@ conda install -c bisejdiu lahuta
 ```
 
 ## Building the C++ Core and CLI
-- Configure from the repository root with CMake. CLI targets are enabled using `LAHUTA_BUILD_CLI` (ON by default):
+- Configure **from the repository root** with CMake. CLI targets are enabled using `LAHUTA_BUILD_CLI` (ON by default):
   ```bash
   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLAHUTA_BUILD_CLI=ON
   cmake --build build --target lahuta
@@ -61,6 +61,12 @@ conda install -c bisejdiu lahuta
   cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLAHUTA_BUILD_CLI=OFF
   cmake --build build
   ```
+- Switch between shared and static linkage for `lahuta_core` (and therefore the CLI) with:
+  ```bash
+  cmake -S . -B build -DLAHUTA_BUILD_SHARED_CORE=OFF
+  ```
+  The default (`ON`) produces a shared library for reuse by the Python bindings. Turn it `OFF` for a static CLI.
+- CLI commands live under `cli/` and consume only public `lahuta_core` headers.
 
 ## Documentation
 `Lahuta` provides extensive internal code documentation, an understandable API, and dedicated documentation pages. The [documentation](https://bisejdiu.github.io/lahuta/) provides a detailed usage guide with many examples, a few tutorials, and a detailed overview of the API. 

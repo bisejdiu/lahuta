@@ -4,7 +4,6 @@
 #include <cassert>
 #include <vector>
 
-#include <Eigen/Dense>
 #include <rdkit/Geometry/point.h>
 
 namespace lahuta {

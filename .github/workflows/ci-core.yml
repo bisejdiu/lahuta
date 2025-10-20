@@ -69,6 +69,7 @@ jobs:
           cmake -S . -B build/off -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DLAHUTA_BUILD_CLI=OFF     \
+            -DLAHUTA_BUILD_SHARED_CORE=ON \
             -DLAHUTA_VENDOR_BOOST=ON   \
             -DLAHUTA_BUILD_PYTHON=OFF  \
             -DBUILD_TESTING=ON         \
@@ -87,6 +88,7 @@ jobs:
           cmake -S . -B build/on -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DLAHUTA_BUILD_CLI=ON      \
+            -DLAHUTA_BUILD_SHARED_CORE=ON \
             -DLAHUTA_VENDOR_BOOST=ON   \
             -DLAHUTA_BUILD_PYTHON=OFF  \
             -DBUILD_TESTING=ON         \

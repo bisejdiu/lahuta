@@ -6,6 +6,10 @@ lahuta_read_version_file()
 
 project(lahuta VERSION ${LAHUTA_VERSION_BASE} LANGUAGES CXX C)
 
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(FATAL_ERROR "Configure from the repository root (cmake -S . -B build [...])")
+endif()
+
 include(CTest) # Provides BUILD_TESTING option
 include(GNUInstallDirs)
 include(CheckCXXSourceCompiles)
@@ -33,8 +37,6 @@ endif()
 
 set(LAHUTA_OPT_LEVEL 3 CACHE STRING "Optimization level for Release/RelWithDebInfo (0/1/2/3 or 'fast')")
 set_property(CACHE LAHUTA_OPT_LEVEL PROPERTY STRINGS 0 1 2 3 fast)
-option(LAHUTA_ENABLE_LTO "Enable interprocedural optimization (LTO/IPO) for non-Debug builds" ON)
-option(LAHUTA_NATIVE_ARCH "Enable -march=native for non-Debug builds" OFF)
 
 # Apply interprocedural optimization consistently to subprojects
 if(LAHUTA_ENABLE_LTO)
@@ -72,13 +74,6 @@ if(NOT MSVC)
   endif()
 endif()
 
-option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
-option(LAHUTA_BUILD_EXAMPLES       "Build Lahuta example executables" OFF)
-option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
-option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" ON)
-option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
-option(LAHUTA_ENABLE_EXPENSIVE_TESTS "Enable expensive tests that require large datasets" OFF)
-option(LAHUTA_BUILD_FOLDSEEK       "Build foldseek and mapping components" OFF)
 
 set(RDK_USE_BOOST_SERIALIZATION OFF CACHE BOOL "Disable rdkit boost serialization" FORCE)
 
@@ -96,7 +91,6 @@ set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks"      FORCE
 set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE)
 set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
 
-option(LAHUTA_DISTOPIA_ENABLE_SVE "Enable Highway SVE targets for distopia" OFF)
 
 find_package(ZLIB REQUIRED)
 
@@ -190,7 +184,12 @@ add_library(lmdb STATIC
 set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(lmdb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
-add_library(lahuta_core SHARED
+set(_lahuta_core_library_type SHARED)
+if(NOT LAHUTA_BUILD_SHARED_CORE)
+  set(_lahuta_core_library_type STATIC)
+endif()
+
+add_library(lahuta_core ${_lahuta_core_library_type}
   src/bonds/bonds.cpp
   src/bonds/bond_order.cpp
   src/bonds/clean_bonds.cpp
@@ -349,18 +348,25 @@ if(LAHUTA_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-# Eigen, system first, bundled fallback
-if(LAHUTA_WITH_EIGEN)
-  find_package(Eigen3 QUIET)
+if(LAHUTA_VENDOR_EIGEN)
+  set(LAHUTA_EIGEN_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen")
+  if(NOT EXISTS "${LAHUTA_EIGEN_VENDOR_DIR}/eigen/Eigen/Core")
+    message(FATAL_ERROR "Vendored Eigen headers not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen.\n"
+                        "Ensure submodules are initialized (git submodule update --init --recursive),\n"
+                        "or disable vendoring with -DLAHUTA_VENDOR_EIGEN=OFF to use system Eigen.")
+  endif()
+  add_subdirectory(external/Eigen)
+  message(STATUS "Using vendored Eigen headers at ${LAHUTA_EIGEN_VENDOR_DIR}")
+else()
+  find_package(Eigen3 REQUIRED)
   if(NOT TARGET Eigen3::Eigen)
-    add_subdirectory(external/Eigen)
+    message(FATAL_ERROR "System Eigen3 not found. Install Eigen3 or configure with -DLAHUTA_VENDOR_EIGEN=ON to use vendored Eigen.")
   endif()
-  if(TARGET Eigen3::Eigen)
-    target_link_libraries(lahuta_core PUBLIC Eigen3::Eigen)
-    target_compile_definitions(lahuta_core PUBLIC LAHUTA_USE_EIGEN=1)
-    set(LAHUTA_HAS_EIGEN ON)
-  endif()
+  message(STATUS "Using system Eigen3")
 endif()
+
+target_link_libraries(lahuta_core PUBLIC Eigen3::Eigen)
+target_compile_definitions(lahuta_core PUBLIC LAHUTA_USE_EIGEN=1)
 
 if(LAHUTA_BUILD_PYTHON)
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -466,14 +472,24 @@ if(LAHUTA_BUILD_PYTHON)
     endif()
 
     # runtime shared libraries needed by Python extensions
+    if(LAHUTA_BUILD_SHARED_CORE)
+      set(_lahuta_core_python_dest LIBRARY DESTINATION "lahuta/lib")
+    else()
+      set(_lahuta_core_python_dest ARCHIVE DESTINATION "lahuta/lib")
+    endif()
+
     if(LAHUTA_BUILD_FOLDSEEK)
-      install(TARGETS lahuta_core foldseek
+      install(TARGETS lahuta_core
+        ${_lahuta_core_python_dest}
+        COMPONENT python
+      )
+      install(TARGETS foldseek
         LIBRARY DESTINATION "lahuta/lib"
         COMPONENT python
       )
     else()
       install(TARGETS lahuta_core
-        LIBRARY DESTINATION "lahuta/lib"
+        ${_lahuta_core_python_dest}
         COMPONENT python
       )
     endif()
