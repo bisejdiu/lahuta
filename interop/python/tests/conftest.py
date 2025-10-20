@@ -4,6 +4,43 @@ from typing import Callable
 import pytest
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--lahuta-error",
+        action="store_true",
+        default=False,
+        help="Set Lahuta logging to ERROR level",
+    )
+    parser.addoption(
+        "--lahuta-info",
+        action="store_true",
+        default=False,
+        help="Set Lahuta logging to INFO level",
+    )
+    parser.addoption(
+        "--lahuta-debug",
+        action="store_true",
+        default=False,
+        help="Set Lahuta logging to DEBUG level",
+    )
+
+
+def pytest_configure(config):
+    from lahuta import logging
+    from lahuta.logging import LogLevel
+
+    # debug > info > error
+    if config.option.lahuta_debug:
+        logging.set_global_verbosity(LogLevel.DEBUG)
+        print("[pytest] Lahuta logging: DEBUG")
+    elif config.option.lahuta_info:
+        logging.set_global_verbosity(LogLevel.INFO)
+        print("[pytest] Lahuta logging: INFO")
+    elif config.option.lahuta_error:
+        logging.set_global_verbosity(LogLevel.ERROR)
+        print("[pytest] Lahuta logging: ERROR")
+
+
 def _resolve_data_file(filename: str) -> Path:
     here = Path(__file__).resolve()
     p = here
