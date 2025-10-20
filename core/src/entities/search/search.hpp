@@ -75,6 +75,10 @@ NeighborResult neighbour_search(
     result.idxs_b = materialize_selection(recs_b, pred_b, opts.sel_reserve_factor_b);
   }
 
+  Logger::get_logger()->debug("NeighborSearch: {} search, {} entities A, {} entities B, max_distance={:.2f}",
+                              SelfSearch ? "Self" : "Cross",
+                              result.idxs_a.size(), result.idxs_b.size(), opts.distance_max);
+
   if (result.idxs_a.empty() || result.idxs_b.empty()) return result;
 
   span<uint32_t> span_a(result.idxs_a);
@@ -86,6 +90,11 @@ NeighborResult neighbour_search(
   [&]() {
     float radius_sq = opts.distance_max * opts.distance_max;
     SearchAlgorithm algo = chose_algo_heuristic(span_a.size(), span_b.size());
+
+    Logger::get_logger()->debug("NeighborSearch: Using {} search algorithm for {}x{} entities",
+                                algo == SearchAlgorithm::Grid ? "Grid" : "Brute Force",
+                                span_a.size(), span_b.size());
+
     if (algo == SearchAlgorithm::Grid) {
 
       auto &grid_span = SelfSearch ? span_a : span_b;
@@ -99,6 +108,9 @@ NeighborResult neighbour_search(
   }();
 
   result.hits = buffer.release();
+
+  Logger::get_logger()->debug("NeighborSearch: Found {} potential contacts", result.hits.size());
+
   return result;
 }
 

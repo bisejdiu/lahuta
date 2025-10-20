@@ -308,7 +308,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }, src_variant);
     }
 
-    Logger::get_logger()->info("Contact computation (dynamic) completed successfully!");
+    Logger::get_logger()->info("Contact computation completed successfully!");
     return 0;
 
   } catch (const std::exception& e) {
