@@ -14,7 +14,7 @@ class DirectorySource(_lib.pipeline.sources.DirectorySource):
         path: str | Path,
         *,
         recursive: bool = True,
-        extensions: Sequence[str | Path] | str | Path | None = None,
+        extensions: Iterable[str | Path] | str | Path | None = None,
         batch: int = 200,
     ) -> None:
         if extensions is None:
@@ -22,7 +22,7 @@ class DirectorySource(_lib.pipeline.sources.DirectorySource):
         elif isinstance(extensions, (str, Path)):
             ext_arg = [str(extensions)]
         else:
-            ext_arg = [str(ext) for ext in extensions]
+            ext_arg = list(dict.fromkeys(str(ext) for ext in extensions))
         super().__init__(str(path), ext_arg, bool(recursive), int(batch))
 
 

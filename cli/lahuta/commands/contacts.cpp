@@ -1,9 +1,14 @@
 #include <stdexcept>
+#include <string>
+#include <string_view>
 #include <type_traits>
+#include <variant>
+#include <vector>
 
 #include "analysis/contacts/computation.hpp"
 #include "analysis/contacts/provider.hpp"
 #include "cli/arg_validation.hpp"
+#include "cli/extension_utils.hpp"
 #include "commands/contacts.hpp"
 #include "db/db.hpp"
 #include "gemmi/third_party/stb_sprintf.h"
@@ -31,7 +36,7 @@ struct ContactsOptions {
 
   SourceMode source_mode = SourceMode::Directory;
   std::string directory_path;
-  std::string extension = ".cif";
+  std::vector<std::string> extensions{".cif", ".cif.gz"};
   bool recursive = true;
   std::vector<std::string> file_vector;
   std::string file_list_path;
@@ -49,10 +54,9 @@ struct ContactsOptions {
   size_t batch_size = 200;
 };
 
-
 Source pick_source(const ContactsOptions& cli) {
   switch (cli.source_mode) {
-    case ContactsOptions::SourceMode::Directory: return sources::Directory{cli.directory_path, cli.extension, cli.recursive, cli.batch_size};
+    case ContactsOptions::SourceMode::Directory: return sources::Directory{cli.directory_path, cli.extensions, cli.recursive, cli.batch_size};
     case ContactsOptions::SourceMode::Vector:    return cli.file_vector;
     case ContactsOptions::SourceMode::FileList:  return sources::FileList {cli.file_list_path};
     case ContactsOptions::SourceMode::Database:  break; // Handled separately
@@ -71,13 +75,13 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::SourceDirectory, 0, "d", "directory", validate::Required,
    "  --directory, -d <path>       \tProcess all files in directory."},
   {ContactsOptionIndex::SourceVector, 0, "f", "files", validate::Required,
-   "  --files, -f <file1,file2>    \tProcess specific files (comma-separated)."},
+   "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."},
   {ContactsOptionIndex::SourceFileList, 0, "l", "file-list", validate::Required,
    "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."},
   {ContactsOptionIndex::SourceDatabase, 0, "", "database", validate::Required,
    "  --database <path>            \tProcess structures from database."},
   {ContactsOptionIndex::Extension, 0, "e", "extension", validate::Required,
-   "  --extension, -e <ext>        \tFile extension for directory mode (default: .cif)."},
+   "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or comma-separate values (default: .cif, .cif.gz)."},
   {ContactsOptionIndex::Recursive, 0, "r", "recursive", option::Arg::None,
    "  --recursive, -r              \tRecursively search subdirectories."},
   {0, 0, "", "", option::Arg::None,
@@ -136,15 +140,11 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
     if (options[contacts_opts::ContactsOptionIndex::SourceVector]) {
       cli.source_mode = ContactsOptions::SourceMode::Vector;
-      std::string files_str = options[contacts_opts::ContactsOptionIndex::SourceVector].arg;
-
-      // parse comma-separated files
-      std::stringstream ss(files_str);
-      std::string file;
-      while (std::getline(ss, file, ',')) {
-        if (!file.empty()) {
-          cli.file_vector.push_back(file);
-        }
+      cli.file_vector.clear();
+      for (const option::Option* opt = &options[contacts_opts::ContactsOptionIndex::SourceVector];
+           opt != nullptr;
+           opt = opt->next()) {
+        if (opt->arg) parse_file_argument(opt->arg, cli.file_vector);
       }
       source_count++;
     }
@@ -170,8 +170,14 @@ int ContactsCommand::run(int argc, char* argv[]) {
 
     // Parse other options
     if (options[contacts_opts::ContactsOptionIndex::Extension]) {
-      cli.extension = options[contacts_opts::ContactsOptionIndex::Extension].arg;
+      cli.extensions.clear();
+      for (const option::Option* opt = &options[contacts_opts::ContactsOptionIndex::Extension];
+           opt != nullptr;
+           opt = opt->next()) {
+        parse_extension_argument(opt->arg ? opt->arg : "", cli.extensions);
+      }
     }
+    if (cli.extensions.empty()) cli.extensions.emplace_back();
 
     cli.recursive = options[contacts_opts::ContactsOptionIndex::Recursive] ? true : false;
 
@@ -218,6 +224,12 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
 
     initialize_runtime(cli.threads);
+
+    if (cli.source_mode == ContactsOptions::SourceMode::Directory) {
+      Logger::get_logger()->info("Source directory: {}", cli.directory_path);
+      Logger::get_logger()->info("Extensions: {}", describe_extensions(cli.extensions));
+      Logger::get_logger()->info("Recursive: {}", cli.recursive ? "Yes" : "No");
+    }
 
     bool is_db = (cli.source_mode == ContactsOptions::SourceMode::Database);
     if (is_db) {
@@ -308,7 +320,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }, src_variant);
     }
 
-    Logger::get_logger()->info("Contact computation (dynamic) completed successfully!");
+    Logger::get_logger()->info("Contact computation completed successfully!");
     return 0;
 
   } catch (const std::exception& e) {

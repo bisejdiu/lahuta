@@ -172,8 +172,8 @@ AtomType classify_atom(const RDKit::RWMol& mol, const RDKit::Atom& atom) {
   AtomType type = AtomType::None;
 
   //
-  // TODO: seed from model needs to compute atom types, but it does not go
-  // through the topology, hence why we need this here. - Besian, October 2025
+  // Calling updatePropertyCache from the calling code does not seem to update
+  // the code. I have no idea why. - Besian, October 2025
   //
   auto& atom_mut = const_cast<RDKit::Atom&>(atom);
   atom_mut.calcExplicitValence(false);

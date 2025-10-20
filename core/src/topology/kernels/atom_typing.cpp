@@ -1,3 +1,7 @@
+#include <algorithm>
+#include <functional>
+#include <optional>
+
 #include <rdkit/GraphMol/RWMol.h>
 #include <typing/flags.hpp>
 #include <valence_model.hpp>
@@ -15,6 +19,47 @@
 #include "typing/smarts_matching.hpp"
 #include "typing/types.hpp"
 
+namespace {
+
+class ResidueChunkIterator {
+public:
+  ResidueChunkIterator(const lahuta::Residues &residues, int chunk_threshold)
+      : residues_(residues.get_residues()), threshold_(std::max(chunk_threshold, 1)) {}
+
+  std::optional<std::vector<int>> next() {
+    while (next_residue_index_ < residues_.size()) {
+      const auto &residue = residues_[next_residue_index_++];
+      if (residue.atoms.empty()) continue;
+
+      buffer_.reserve(buffer_.size() + residue.atoms.size());
+      for (const auto *atom : residue.atoms) {
+        buffer_.push_back(atom->getIdx());
+      }
+
+      if (static_cast<int>(buffer_.size()) >= threshold_) {
+        return flush_buffer();
+      }
+    }
+
+    if (buffer_.empty()) return std::nullopt;
+    return flush_buffer();
+  }
+
+private:
+  std::optional<std::vector<int>> flush_buffer() {
+    std::vector<int> chunk;
+    chunk.swap(buffer_);
+    return chunk;
+  }
+
+  const std::vector<lahuta::Residue> &residues_;
+  size_t next_residue_index_ = 0;
+  int threshold_;
+  std::vector<int> buffer_;
+};
+
+} // namespace
+
 // clang-format off
 namespace lahuta::topology {
 
@@ -22,15 +67,6 @@ template <typename DataT>
 ComputationResult
 AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const AtomTypingParams &params) {
   auto &data = context.data();
-
-  // TODO: should not be needed
-  for (auto& atomrec : data.atoms) {
-    auto &atom = atomrec.atom.get();
-    auto& atom_mut = const_cast<RDKit::Atom&>(atom);
-
-    atom_mut.calcExplicitValence(false);
-    atom_mut.calcImplicitValence(false);
-  }
 
   try {
     switch (params.mode) {
@@ -55,19 +91,23 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
           });
         }
 
-        auto unk_indices = data.residues->filter(std::not_fn(definitions::is_protein_extended)).get_atom_ids();
-        if (!unk_indices.empty()) {
-          std::sort(unk_indices.begin(), unk_indices.end());
-          auto new_mol = filter_with_bonds(*data.mol, unk_indices);
-          if (should_initialize_ringinfo(new_mol.getNumAtoms())) {
-            new_mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
-            // RDKit::MolOps::findSSSR(new_mol);
+        constexpr int residue_chunk_soft_threshold = 5'000;
+        auto unknown_residues = data.residues->filter(std::not_fn(definitions::is_protein_extended));
+        ResidueChunkIterator chunker(unknown_residues, residue_chunk_soft_threshold);
 
-            auto vec = match_atom_types(new_mol);
-            for (size_t i = 0; i < unk_indices.size(); ++i) {
-              auto &rec = data.atoms[unk_indices[i]];
-              rec.type |= vec[i];
-            }
+        while (auto chunk = chunker.next()) {
+          if (chunk->empty()) continue;
+
+          auto chunk_mol = filter_with_bonds(*data.mol, *chunk);
+          if (!should_initialize_ringinfo(chunk_mol.getNumAtoms())) continue;
+
+          chunk_mol.getRingInfo()->initialize(RDKit::FIND_RING_TYPE_SYMM_SSSR);
+          RDKit::MolOps::findSSSR(chunk_mol);
+
+          auto chunk_types = match_atom_types(chunk_mol);
+          for (size_t i = 0; i < chunk->size(); ++i) {
+            auto &rec = data.atoms[(*chunk)[i]];
+            rec.type |= chunk_types[i];
           }
         }
 
@@ -158,8 +198,8 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
 }
 
 bool AtomTypingKernel::should_initialize_ringinfo(int mol_size) {
-  constexpr int small_threshold  = 20'000;
-  constexpr int medium_threshold = 50'000;
+  constexpr int small_threshold  = 30'000;
+  constexpr int medium_threshold = 65'000;
   constexpr int large_threshold  = 100'000;
 
   if (mol_size < small_threshold) return true;

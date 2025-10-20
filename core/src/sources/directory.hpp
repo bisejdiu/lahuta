@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -28,6 +29,15 @@ public:
       : Directory(directory_path,
                   extension.empty() ? std::vector<std::string>{}
                                     : std::vector<std::string>{std::string(extension)},
+                  recursive,
+                  batch_size) {}
+
+  Directory(std::string_view directory_path,
+            std::initializer_list<std::string_view> extensions,
+            bool recursive = true,
+            std::size_t batch_size = 1024)
+      : Directory(directory_path,
+                  std::vector<std::string>(extensions.begin(), extensions.end()),
                   recursive,
                   batch_size) {}
 

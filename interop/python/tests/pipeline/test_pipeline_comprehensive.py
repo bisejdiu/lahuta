@@ -111,6 +111,35 @@ class TestPipelineFromDirectory:
                     assert isinstance(contact["type"], str)
                     assert len(contact["type"]) > 0
 
+    def test_directory_source_multiple_extensions(self, temp_dir: Path):
+        """DirectorySource accepts multiple extensions and filters accordingly."""
+        multi_dir = temp_dir / "multi_ext"
+        multi_dir.mkdir(parents=True, exist_ok=True)
+
+        files = {
+            "alpha.cif": "data",
+            "beta.pdb": "data",
+            "ignored.txt": "data",
+        }
+        for name, content in files.items():
+            (multi_dir / name).write_text(content)
+
+        source = DirectorySource(multi_dir, recursive=False, extensions=[".cif", ".pdb"])
+        p = Pipeline(source)
+        # Ensure synthetic files do not trigger built-ins that expect biomolecular data
+        p._mgr.set_auto_builtins(False)
+
+        def capture(ctx: PipelineContext) -> dict[str, str]:
+            return {"path": ctx.path}
+
+        p.add_task(name="paths", task=capture, depends=[], in_memory_policy=InMemoryPolicy.Keep)
+        results = p.run(threads=1)
+        records = results.to_dict("paths")
+
+        assert len(records) == 2
+        names = {Path(rec["path"]).name for rec in records}
+        assert names == {"alpha.cif", "beta.pdb"}
+
 
 class TestPipelineFromFiles:
     """Test pipeline creation from explicit file list."""

@@ -73,6 +73,10 @@ struct ContactsKernel {
       auto ts = data.ctx ? compute::require_topology_snapshot(*data.ctx)
                          : compute::snapshot_of(*top);
 
+      Logger::get_logger()->debug("ContactsKernel: Starting contact computation using {} provider for {} contacts",
+                                  contact_provider_name(p.provider),
+                                  interaction_type_to_string(p.type));
+
       switch (p.provider) {
         case ContactProvider::Arpeggio:
           res.contacts = compute_with_provider<ArpeggioContactProvider>(p, ts);
@@ -86,6 +90,9 @@ struct ContactsKernel {
         default:
           return ComputationResult(ComputationError("ContactsKernel: unsupported provider"));
       }
+
+      Logger::get_logger()->debug("ContactsKernel: Completed contact computation using {} provider, found {} contacts",
+                                  contact_provider_name(p.provider), res.contacts.size());
 
       res.num_contacts = res.contacts.size();
       res.success  = true;

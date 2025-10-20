@@ -44,7 +44,10 @@ endif()
 add_executable(lahuta_tests ${LAHUTA_TEST_MAIN} ${LAHUTA_TEST_UNITS})
 target_compile_features(lahuta_tests PRIVATE cxx_std_17)
 
-target_include_directories(lahuta_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(lahuta_tests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/cli/lahuta
+)
 
 if(MSVC)
   target_compile_options(lahuta_tests PRIVATE /fp:precise)

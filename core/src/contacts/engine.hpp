@@ -52,6 +52,8 @@ public:
       if (!spec.enabled) return;
       if (only && spec.tag != *only) return;
 
+      Logger::get_logger()->debug("InteractionEngine: Computing {} contacts", interaction_type_to_string(spec.tag));
+
       auto& R   = spec.recipe;
       auto ctx  = ContactContext{ts, R.params};
       auto opts = search::make_search_opts(spec.tag.category);
@@ -62,7 +64,9 @@ public:
       } else {
         out.insert(find_contacts(ctx, R.pred_a, R.pred_b, opts, R.tester));
       }
+      Logger::get_logger()->debug("InteractionEngine: Completed {} contacts computation", interaction_type_to_string(spec.tag));
     };
+
 
     std::apply([&](auto&... Ss){ (run_spec(Ss), ...); }, this->specs());
     return out;

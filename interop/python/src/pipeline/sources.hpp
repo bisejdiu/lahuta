@@ -165,7 +165,7 @@ inline void bind_sources(py::module_ &md) {
       .def(py::init<const std::string &, const std::string &, bool, std::size_t>(),
            py::arg("path"), py::arg("ext") = std::string(""), py::arg("recursive") = true, py::arg("batch") = 200)
       .def(py::init([](const std::string &path, std::vector<std::string> extensions, bool recursive, std::size_t batch) {
-             return std::make_shared<sources::DirectoryAdapter>(sources::Directory(path, std::move(extensions), recursive, batch));
+             return std::make_shared<sources::DirectoryAdapter>(path, std::move(extensions), recursive, batch);
            }),
            py::arg("path"), py::arg("extensions"), py::arg("recursive") = true, py::arg("batch") = 200);
 

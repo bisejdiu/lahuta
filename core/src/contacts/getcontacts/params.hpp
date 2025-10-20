@@ -26,7 +26,7 @@ struct HydrophobicParams {
 };
 
 struct VanDerWaalsParams {
-  double distance_max       = 6.0;
+  double distance_max       = 4.5; // 6.0 ?
   double epsilon            = 0.5;
   int    min_residue_offset = 2;
 };

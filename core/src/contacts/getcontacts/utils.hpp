@@ -50,6 +50,38 @@ inline bool is_disulfide_pair(const RDKit::RWMol& mol, const RDKit::Atom& a, con
   return mol.getBondBetweenAtoms(a.getIdx(), b.getIdx()) != nullptr;
 }
 
+// Find SG atom in the same residue as the given atom
+inline const RDKit::Atom* find_sg_in_residue(const RDKit::RWMol& mol, const RDKit::Atom& atom, const RDKit::AtomPDBResidueInfo* info) noexcept {
+  if (atom.getAtomicNum() == Element::S && info->getName() == "SG") return &atom;
+
+  std::vector<const RDKit::Atom*> to_check;
+  to_check.push_back(&atom);
+
+  for (size_t i = 0; i < to_check.size() && i < 20; ++i) {
+    const auto* current = to_check[i];
+    for (const auto& bond : mol.atomBonds(current)) {
+      const auto* nbr = bond->getOtherAtom(current);
+      auto* nbr_info = static_cast<const RDKit::AtomPDBResidueInfo*>(nbr->getMonomerInfo());
+      if (!nbr_info) continue;
+
+      const bool same_residue =
+          nbr_info->getResidueNumber() == info->getResidueNumber() &&
+          nbr_info->getChainId() == info->getChainId();
+
+      if (!same_residue) continue;
+
+      if (nbr->getAtomicNum() == Element::S && nbr_info->getName() == "SG") {
+        return nbr;
+      }
+      if (std::find(to_check.begin(), to_check.end(), nbr) == to_check.end()) {
+        to_check.push_back(nbr);
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 // Check if two atoms belong to CYS residues that form a disulfide bridge.
 inline bool is_cys_disulfide_contact(const RDKit::RWMol& mol, const RDKit::Atom& a, const RDKit::Atom& b) noexcept {
   // Check if both atoms are from CYS residues
@@ -59,33 +91,12 @@ inline bool is_cys_disulfide_contact(const RDKit::RWMol& mol, const RDKit::Atom&
   if (!info_a || !info_b) return false;
   if (info_a->getResidueName() != "CYS" || info_b->getResidueName() != "CYS") return false;
 
-  // If they're from the same residue, it's not a disulfide contact
   if (info_a->getResidueNumber() == info_b->getResidueNumber() && info_a->getChainId() == info_b->getChainId()) return false;
 
-  const RDKit::Atom* sg_a = nullptr;
-  const RDKit::Atom* sg_b = nullptr;
+  const RDKit::Atom* sg_a = find_sg_in_residue(mol, a, info_a);
+  const RDKit::Atom* sg_b = find_sg_in_residue(mol, b, info_b);
 
-  for (const auto& atom : mol.atoms()) {
-    auto info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom->getMonomerInfo());
-    if (!info) continue;
-
-    if (info->getResidueNumber() == info_a->getResidueNumber() &&
-        info->getChainId() == info_a->getChainId() &&
-        info->getName() == "SG") {
-      sg_a = atom;
-    }
-
-    if (info->getResidueNumber() == info_b->getResidueNumber() &&
-        info->getChainId() == info_b->getChainId() &&
-        info->getName() == "SG") {
-      sg_b = atom;
-    }
-  }
-
-  if (sg_a && sg_b) {
-    return mol.getBondBetweenAtoms(sg_a->getIdx(), sg_b->getIdx()) != nullptr;
-  }
-
+  if (sg_a && sg_b) return mol.getBondBetweenAtoms(sg_a->getIdx(), sg_b->getIdx()) != nullptr;
   return false;
 }
 

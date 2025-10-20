@@ -8,6 +8,7 @@ cachedir/
 *.cif
 tests/data/*.pdb
 tests/data/*.cif
+TODO.md
 
 # other
 .DS_Store

@@ -27,7 +27,6 @@ ContactRecipe<AtomRec, AtomRec, VanDerWaalsParams> make_vdw_recipe() {
   return {
     VanDerWaalsParams{},
     +[](const AtomRec& rec) { return true; },
-    +[](const AtomRec& rec) { return true; },
     +[](u32 a, u32 b, float d_sq, const ContactContext& ctx) -> InteractionType {
 
       const auto& params = ctx.get_params<VanDerWaalsParams>();

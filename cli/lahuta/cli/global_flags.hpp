@@ -21,44 +21,36 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
   GlobalFlags g;
   g.tail.reserve(argc);
 
-  // check subcommand
-  bool has_explicit_subcommand = false;
+  int first_non_global = argc;
   for (int i = 1; i < argc; ++i) {
-    std::string_view arg{argv[i]};
-    if (!arg.empty() && arg[0] != '-') {
-      if (arg == "contacts" || arg == "createdb") { has_explicit_subcommand = true; }
-      break;
-    }
-  }
-
-  for (int i = 1; i < argc; ++i) { // skip executable name
     std::string_view arg{argv[i]};
     if (arg == "-v" || arg == "--verbose") {
       if (i + 1 >= argc) throw std::runtime_error("Option '-v/--verbose' expects <level> (0,1,2)");
+      ++i; // Skip level token for now, actual parsing occurs below
+      continue;
+    }
+    if (arg == "-h" || arg == "--help") {
+      g.help_requested = true;
+      continue;
+    }
+    first_non_global = i;
+    break;
+  }
 
+  for (int i = 1; i < argc; ++i) {
+    std::string_view arg{argv[i]};
+    if (arg == "-v" || arg == "--verbose") {
+      if (i + 1 >= argc) throw std::runtime_error("Option '-v/--verbose' expects <level> (0,1,2)");
       std::string_view lvl{argv[++i]};
       if      (lvl == "0") g.log_level = lahuta::Logger::LogLevel::Error;
       else if (lvl == "1") g.log_level = lahuta::Logger::LogLevel::Info;
       else if (lvl == "2") g.log_level = lahuta::Logger::LogLevel::Debug;
       else throw std::runtime_error("Invalid verbosity level '" + std::string(lvl) + "'. Must be 0, 1 or 2");
-
-      continue;           // swallow both tokens
+      continue;
     } else if (arg == "-h" || arg == "--help") {
-      // only treat help as global if there's no explicit subcommand
-      if (!has_explicit_subcommand) {
-        g.help_requested = true;
-        continue;           // swallow help flag
-      }
-      // let the subcommand handle it
+      if (i < first_non_global) continue;
     }
-    g.tail.push_back(argv[i]);
-  }
-
-  // if no subcommand was explicitly provided, default to "contacts"
-  if (!has_explicit_subcommand && !g.tail.empty()) {
-    g.tail.insert(g.tail.begin(), const_cast<char*>("contacts"));
-  } else if (!has_explicit_subcommand && g.tail.empty()) {
-    g.tail.push_back(const_cast<char*>("contacts"));
+    if (i >= first_non_global) g.tail.push_back(argv[i]);
   }
 
   return g;
