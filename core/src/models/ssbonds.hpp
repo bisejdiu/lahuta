@@ -1,7 +1,8 @@
 #ifndef LAHUTA_MODEL_SSBONDS_HPP
 #define LAHUTA_MODEL_SSBONDS_HPP
 
-#include "Geometry/point.h"
+#include <rdkit/Geometry/point.h>
+
 #include "bonds/rules/table.hpp"
 #include "distances/api.hpp"
 

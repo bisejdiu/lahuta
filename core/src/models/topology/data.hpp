@@ -1,13 +1,15 @@
 #ifndef LAHUTA_MODELS_TOPOLOGY_DATA_HPP
 #define LAHUTA_MODELS_TOPOLOGY_DATA_HPP
 
+#include <memory>
+#include <vector>
+
+#include <rdkit/GraphMol/GraphDefs.hpp>
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "models/factory.hpp"
 #include "models/parser.hpp"
 #include "models/pools.hpp"
-#include <memory>
-#include <rdkit/GraphMol/GraphDefs.hpp>
-#include <rdkit/GraphMol/RWMol.h>
-#include <vector>
 
 // clang-format off
 namespace lahuta::models::topology {

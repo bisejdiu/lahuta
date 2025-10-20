@@ -1,5 +1,14 @@
 cmake_minimum_required(VERSION 3.20)
-project(lahuta VERSION 1.0.0 LANGUAGES CXX C)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(LahutaVersion)
+lahuta_read_version_file()
+
+project(lahuta VERSION ${LAHUTA_VERSION_BASE} LANGUAGES CXX C)
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  message(FATAL_ERROR "Configure from the repository root (cmake -S . -B build [...])")
+endif()
 
 include(CTest) # Provides BUILD_TESTING option
 include(GNUInstallDirs)
@@ -28,8 +37,6 @@ endif()
 
 set(LAHUTA_OPT_LEVEL 3 CACHE STRING "Optimization level for Release/RelWithDebInfo (0/1/2/3 or 'fast')")
 set_property(CACHE LAHUTA_OPT_LEVEL PROPERTY STRINGS 0 1 2 3 fast)
-option(LAHUTA_ENABLE_LTO "Enable interprocedural optimization (LTO/IPO) for non-Debug builds" ON)
-option(LAHUTA_NATIVE_ARCH "Enable -march=native for non-Debug builds" OFF)
 
 # Apply interprocedural optimization consistently to subprojects
 if(LAHUTA_ENABLE_LTO)
@@ -67,13 +74,6 @@ if(NOT MSVC)
   endif()
 endif()
 
-option(LAHUTA_BUILD_CLI            "Build CLI executables" ON)
-option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
-option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11_stubgen" OFF)
-option(LAHUTA_WITH_EIGEN           "Use Eigen3 (system or bundled fallback)" ON)
-option(LAHUTA_VENDOR_BOOST         "Use vendored Boost headers instead of system Boost" ON)
-option(LAHUTA_ENABLE_EXPENSIVE_TESTS "Enable expensive tests that require large datasets" OFF)
-option(LAHUTA_BUILD_FOLDSEEK       "Build foldseek and mapping components" OFF)
 
 set(RDK_USE_BOOST_SERIALIZATION OFF CACHE BOOL "Disable rdkit boost serialization" FORCE)
 
@@ -91,7 +91,6 @@ set(HWY_ENABLE_BENCHMARKS OFF CACHE BOOL "Disable highway benchmarks"      FORCE
 set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE)
 set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
 
-option(LAHUTA_DISTOPIA_ENABLE_SVE "Enable Highway SVE targets for distopia" OFF)
 
 find_package(ZLIB REQUIRED)
 
@@ -185,9 +184,15 @@ add_library(lmdb STATIC
 set_target_properties(lmdb PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(lmdb PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external)
 
-add_library(lahuta_core SHARED
+set(_lahuta_core_library_type SHARED)
+if(NOT LAHUTA_BUILD_SHARED_CORE)
+  set(_lahuta_core_library_type STATIC)
+endif()
+
+add_library(lahuta_core ${_lahuta_core_library_type}
   src/bonds/bonds.cpp
   src/bonds/bond_order.cpp
+  src/bonds/clean_bonds.cpp
   src/convert.cpp
   src/kd_tree.cpp
   src/kd_index.cpp
@@ -217,10 +222,6 @@ add_library(lahuta_core SHARED
 
   external/mmap/MemoryMapped.cpp
   src/valence_model.cpp
-
-  src/ob/kekulize.cpp
-  src/ob/clean_mol.cpp
-  src/ob/bitvec.cpp
 
   src/contacts/aromaticity.cpp
 
@@ -282,14 +283,12 @@ add_library(lahuta_core SHARED
   src/contacts/getcontacts/pi_cation.cpp
   src/contacts/getcontacts/pistacking.cpp
 
-  src/cli/arg_validation.cpp
-  src/cli/global_options.cpp
-  src/commands/contacts.cpp
-  src/commands/createdb.cpp
 )
 
 target_compile_features(lahuta_core PUBLIC cxx_std_17)
 set_property(TARGET lahuta_core PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+lahuta_configure_core_version(lahuta_core)
 
 target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -345,34 +344,29 @@ if(LAHUTA_BUILD_FOLDSEEK)
   )
 endif()
 
-# Eigen, system first, bundled fallback
-if(LAHUTA_WITH_EIGEN)
-  find_package(Eigen3 QUIET)
+if(LAHUTA_BUILD_EXAMPLES)
+  add_subdirectory(examples)
+endif()
+
+if(LAHUTA_VENDOR_EIGEN)
+  set(LAHUTA_EIGEN_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen")
+  if(NOT EXISTS "${LAHUTA_EIGEN_VENDOR_DIR}/eigen/Eigen/Core")
+    message(FATAL_ERROR "Vendored Eigen headers not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen.\n"
+                        "Ensure submodules are initialized (git submodule update --init --recursive),\n"
+                        "or disable vendoring with -DLAHUTA_VENDOR_EIGEN=OFF to use system Eigen.")
+  endif()
+  add_subdirectory(external/Eigen)
+  message(STATUS "Using vendored Eigen headers at ${LAHUTA_EIGEN_VENDOR_DIR}")
+else()
+  find_package(Eigen3 REQUIRED)
   if(NOT TARGET Eigen3::Eigen)
-    add_subdirectory(external/Eigen)
+    message(FATAL_ERROR "System Eigen3 not found. Install Eigen3 or configure with -DLAHUTA_VENDOR_EIGEN=ON to use vendored Eigen.")
   endif()
-  if(TARGET Eigen3::Eigen)
-    target_link_libraries(lahuta_core PUBLIC Eigen3::Eigen)
-    target_compile_definitions(lahuta_core PUBLIC LAHUTA_USE_EIGEN=1)
-    set(LAHUTA_HAS_EIGEN ON)
-  endif()
+  message(STATUS "Using system Eigen3")
 endif()
 
-# CLI executables
-function(add_lahuta_executable target main_file)
-  add_executable(${target} ${main_file})
-  target_compile_features(${target} PRIVATE cxx_std_17)
-  target_link_libraries(${target} PRIVATE lahuta_core ZLIB::ZLIB spdlog::spdlog_header_only)
-endfunction()
-
-if(LAHUTA_BUILD_CLI)
-  add_lahuta_executable(lahuta_cli apps/main.cpp)
-  set_target_properties(lahuta_cli PROPERTIES OUTPUT_NAME "lahuta")
-  add_lahuta_executable(resolver apps/use_resolver.cpp)
-  add_lahuta_executable(md_stage_manager_example apps/md_stage_manager_example.cpp)
-  add_lahuta_executable(nmr_stage_manager_example apps/nmr_stage_manager_example.cpp)
-  add_lahuta_executable(getcontacts_example apps/getcontacts_example.cpp)
-endif()
+target_link_libraries(lahuta_core PUBLIC Eigen3::Eigen)
+target_compile_definitions(lahuta_core PUBLIC LAHUTA_USE_EIGEN=1)
 
 if(LAHUTA_BUILD_PYTHON)
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
@@ -478,17 +472,33 @@ if(LAHUTA_BUILD_PYTHON)
     endif()
 
     # runtime shared libraries needed by Python extensions
+    if(LAHUTA_BUILD_SHARED_CORE)
+      set(_lahuta_core_python_dest LIBRARY DESTINATION "lahuta/lib")
+    else()
+      set(_lahuta_core_python_dest ARCHIVE DESTINATION "lahuta/lib")
+    endif()
+
     if(LAHUTA_BUILD_FOLDSEEK)
-      install(TARGETS lahuta_core foldseek
+      install(TARGETS lahuta_core
+        ${_lahuta_core_python_dest}
+        COMPONENT python
+      )
+      install(TARGETS foldseek
         LIBRARY DESTINATION "lahuta/lib"
         COMPONENT python
       )
     else()
       install(TARGETS lahuta_core
-        LIBRARY DESTINATION "lahuta/lib"
+        ${_lahuta_core_python_dest}
         COMPONENT python
       )
     endif()
+
+    # Configure Python version file for direct CMake installs
+    lahuta_configure_python_version(
+      "${PY_PKG_ROOT}"
+      "${CMAKE_CURRENT_BINARY_DIR}/python_configured"
+    )
 
     # Python file installation depends on build context
     if(NOT DEFINED SKBUILD)
@@ -501,6 +511,12 @@ if(LAHUTA_BUILD_PYTHON)
           PATTERN "*.pyi"
           PATTERN "py.typed"
         PATTERN "__pycache__" EXCLUDE
+        PATTERN "_version.py" EXCLUDE  # Exclude template, use configured version below
+      )
+      # Install the CMake-configured version file
+      install(FILES "${LAHUTA_PYTHON_VERSION_FILE}"
+        DESTINATION "lahuta"
+        COMPONENT python
       )
       message(STATUS "Direct CMake install: Installing Python files via CMake")
     else()

@@ -1,8 +1,8 @@
-#include <gtest/gtest.h>
-
 #include <cmath>
 #include <random>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "distances/api.hpp"
 #include "test_utils/fp_test_utils.hpp"

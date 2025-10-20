@@ -1,8 +1,9 @@
 #ifndef LAHUTA_PIPELINE_ENGINE_HPP
 #define LAHUTA_PIPELINE_ENGINE_HPP
 
-#include "core/emitter.hpp"
 #include <ctpl.h>
+
+#include "core/emitter.hpp"
 
 // clang-format off
 namespace lahuta::pipeline {

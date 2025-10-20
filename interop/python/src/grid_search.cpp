@@ -2,12 +2,13 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <rdkit/Geometry/point.h>
+
 #include "kd_index.hpp"
-#include "spatial/fastns.hpp"
-#include "spatial/nsresults.hpp"
 #include "nsresults_python.hpp"
 #include "numpy_utils.hpp"
-#include "rdkit/Geometry/point.h"
+#include "spatial/fastns.hpp"
+#include "spatial/nsresults.hpp"
 
 namespace py = pybind11;
 

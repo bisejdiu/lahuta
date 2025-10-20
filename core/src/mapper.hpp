@@ -1,29 +1,26 @@
 #ifndef LAHUTA_MAPPER_HPP
 #define LAHUTA_MAPPER_HPP
 
-#include "GraphMol/Atom.h"
-#include <entities/records.hpp>
+#include <algorithm>
+#include <functional>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <entities/records.hpp>
+#include <rdkit/GraphMol/Atom.h>
+
+#include "backtrace.hpp"
+#include "entities/contact.hpp"
 #include "lahuta.hpp"
 #include "logging.hpp"
 #include "matcher.hpp"
 #include "seq.hpp"
 #include "topology.hpp"
-#include "backtrace.hpp"
-#include "entities/contact.hpp"
-
-#include <algorithm>
-#include <memory>
-#include <optional>
-#include <unordered_map>
-#include <vector>
-// get the custom has function for pairs
-#include <functional>
-#include <utility>
 
 namespace lahuta {
 

@@ -1,23 +1,24 @@
 #ifndef LAHUTA_RULES_HPP
 #define LAHUTA_RULES_HPP
 
-#include "GraphMol/Bond.h"
 #include <array>
 #include <string_view>
+
+#include <rdkit/GraphMol/Bond.h>
+
 #include "token.h"
 
 using BondType = RDKit::Bond::BondType;
 
 namespace lahuta {
 
-inline constexpr std::array<resTokenType, 28> PredefinedResidues {
-    resTokenType::ALA, resTokenType::ARG, resTokenType::ASN, resTokenType::ASP,
-    resTokenType::CYS, resTokenType::GLN, resTokenType::GLU, resTokenType::GLY,
-    resTokenType::HIS, resTokenType::ILE, resTokenType::LEU, resTokenType::LYS,
-    resTokenType::MET, resTokenType::PHE, resTokenType::PRO, resTokenType::SER,
-    resTokenType::THR, resTokenType::TRP, resTokenType::TYR, resTokenType::VAL,
-    resTokenType::A, resTokenType::G, resTokenType::C, resTokenType::U,
-    resTokenType::DA, resTokenType::DC, resTokenType::DG, resTokenType::DT,
+inline constexpr std::array<resTokenType, 28> PredefinedResidues{
+    resTokenType::ALA, resTokenType::ARG, resTokenType::ASN, resTokenType::ASP, resTokenType::CYS,
+    resTokenType::GLN, resTokenType::GLU, resTokenType::GLY, resTokenType::HIS, resTokenType::ILE,
+    resTokenType::LEU, resTokenType::LYS, resTokenType::MET, resTokenType::PHE, resTokenType::PRO,
+    resTokenType::SER, resTokenType::THR, resTokenType::TRP, resTokenType::TYR, resTokenType::VAL,
+    resTokenType::A,   resTokenType::G,   resTokenType::C,   resTokenType::U,   resTokenType::DA,
+    resTokenType::DC,  resTokenType::DG,  resTokenType::DT,
     /*resTokenType::HOH*/
 };
 

@@ -1,7 +1,7 @@
 #include <string>
 
-#include "cli/arg_validation.hpp"
 #include "analysis/contacts/provider.hpp"
+#include "cli/arg_validation.hpp"
 #include "logging.hpp"
 
 // clang-format off
@@ -9,9 +9,10 @@ namespace lahuta::cli::validate {
 
 namespace {
   template<typename... Args>
-  void log_error(const std::string& format_str, std::string_view suffix, Args&&... args) {
-    const auto full_format = format_str + std::string{suffix};
-    lahuta::Logger::get_logger()->error(full_format, std::forward<Args>(args)...);
+  void log_error(std::string_view format_str, std::string_view suffix, Args&&... args) {
+    std::string full_format{format_str};
+    full_format.append(suffix);
+    lahuta::Logger::get_logger()->error(SPDLOG_FMT_RUNTIME(full_format), std::forward<Args>(args)...);
   }
 
   inline std::string_view opt_name(const option::Option& opt) noexcept {

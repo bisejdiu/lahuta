@@ -1,9 +1,10 @@
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "compute/context.hpp"
 #include "compute/result.hpp"
 #include "logging.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
-#include <rdkit/GraphMol/RWMol.h>
 
 // clang-format off
 namespace lahuta::topology {

@@ -1,5 +1,5 @@
-#include "models/topology/engine.hpp"
 #include "models/topology/compute.hpp"
+#include "models/topology/engine.hpp"
 
 // clang-format off
 namespace lahuta::models::topology {

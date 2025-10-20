@@ -1,9 +1,10 @@
 #ifndef LAHUTA_PIPELINE_SINK_ADAPTER_HPP
 #define LAHUTA_PIPELINE_SINK_ADAPTER_HPP
 
-#include "serialization/serializer.hpp"
 #include <type_traits>
 #include <utility>
+
+#include "serialization/serializer.hpp"
 
 // clang-format off
 namespace lahuta::pipeline {

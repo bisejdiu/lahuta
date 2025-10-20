@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-
 #include <cstdio>
 #include <memory>
 #include <sstream>
 #include <string>
+
+#include <gtest/gtest.h>
 
 #include "md/gro_reader.hpp"
 

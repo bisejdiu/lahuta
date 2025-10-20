@@ -1,16 +1,18 @@
 #ifndef LAHUTA_PREFILTER_HPP
 #define LAHUTA_PREFILTER_HPP
 
-#include "score_matrix.hpp"
-#include "tantan.h"
+#include <climits>
+#include <optional>
+
 #include <IndexTable.h>
 #include <QueryMatcher.h>
 #include <Sequence.h>
-#include <climits>
 #include <extract.hpp>
 #include <fseek/ops.hpp>
-#include <optional>
 #include <substitution_matrix.hpp>
+
+#include "score_matrix.hpp"
+#include "tantan.h"
 
 namespace lahuta {
 

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_TOPOLOGY_KERNEL_HPP
+#define LAHUTA_ANALYSIS_TOPOLOGY_KERNEL_HPP
 
 #include <memory>
 #include <string>
@@ -77,3 +78,5 @@ struct BuildTopologyKernel {
 };
 
 } // namespace lahuta::analysis::topology
+
+#endif // LAHUTA_ANALYSIS_TOPOLOGY_KERNEL_HPP

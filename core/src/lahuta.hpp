@@ -15,8 +15,6 @@
 #include "logging.hpp"
 #include "topology.hpp"
 
-constexpr const char *LAHUTA_VERSION = "0.10.0";
-
 // clang-format off
 namespace lahuta {
 

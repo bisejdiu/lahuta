@@ -1,10 +1,11 @@
 #ifndef LAHUTA_LOGGING_HPP
 #define LAHUTA_LOGGING_HPP
 
-#include "spinner.hpp"
 #include <spdlog/common.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
+
+#include "spinner.hpp"
 
 #define LAHUTA_TRACE EntryExitTraceLogger scoped_logger(__FUNCTION__, __FILE__, __LINE__)
 

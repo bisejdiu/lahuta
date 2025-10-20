@@ -1,11 +1,13 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_CONTACTS_RECORDS_HPP
+#define LAHUTA_ANALYSIS_CONTACTS_RECORDS_HPP
+
+#include <memory>
+#include <string>
 
 #include "analysis/contacts/provider.hpp"
 #include "entities/contact.hpp"
 #include "entities/interaction_types.hpp"
 #include "topology.hpp"
-#include <memory>
-#include <string>
 
 namespace lahuta::analysis::contacts {
 
@@ -21,3 +23,5 @@ struct ContactsRecord {
 };
 
 } // namespace lahuta::analysis::contacts
+
+#endif // LAHUTA_ANALYSIS_CONTACTS_RECORDS_HPP

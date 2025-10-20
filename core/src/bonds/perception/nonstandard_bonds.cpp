@@ -5,9 +5,9 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "bonds/bond_order.hpp"
+#include "bonds/clean_bonds.hpp"
 #include "logging.hpp"
 #include "nonstandard_bonds.hpp"
-#include "ob/clean_mol.hpp"
 #include "selections/mol_filters.hpp"
 #include "template.hpp"
 
@@ -16,6 +16,8 @@ namespace lahuta::bonds {
 
 bool apply_residue_level_bond_orders(BondAssignmentResult &result, PerceptionStats *stats) {
   RDKit::RWMol &mol = result.mol;
+  result.mol.updatePropertyCache(false);
+
   if (mol.getNumAtoms() == 0) return true;
 
   if (stats) stats->reset();

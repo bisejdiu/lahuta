@@ -1,9 +1,10 @@
 #ifndef LAHUTA_CONTACT_UTILS_HPP
 #define LAHUTA_CONTACT_UTILS_HPP
 
-#include "GraphMol/MonomerInfo.h"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+
 #include "elements.hpp"
 
 namespace lahuta {

@@ -1,10 +1,11 @@
 #ifndef LAHUTA_HEURISTICS_HPP
 #define LAHUTA_HEURISTICS_HPP
 
-#include "utils.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
-#include <elements.hpp>
+
+#include "elements.hpp"
+#include "utils.hpp"
 
 // clang-format off
 namespace lahuta {

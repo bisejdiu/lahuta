@@ -1,6 +1,7 @@
 #include "chemistry/types/halogens.hpp"
-#include <elements.hpp>
+#include "elements.hpp"
 
+// clang-format off
 namespace lahuta {
 
 std::unordered_set<Element> HalogenDonors    = {Element::Cl, Element::Br, Element::I};

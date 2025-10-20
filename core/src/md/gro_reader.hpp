@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_MD_GRO_READER_HPP
+#define LAHUTA_MD_GRO_READER_HPP
 
 #include <istream>
 #include <memory>
@@ -22,3 +23,5 @@ std::shared_ptr<RDKit::RWMol> read_gro_to_rwmol(std::string_view filename);
 std::shared_ptr<RDKit::RWMol> read_gro_stream_to_rwmol(std::istream &stream);
 
 } // namespace lahuta::md
+
+#endif // LAHUTA_MD_GRO_READER_HPP

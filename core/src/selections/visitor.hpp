@@ -1,8 +1,9 @@
 #ifndef VISITOR_HPP
 #define VISITOR_HPP
 
-#include "nodes.hpp"
 #include <vector>
+
+#include "nodes.hpp"
 
 namespace lahuta {
 

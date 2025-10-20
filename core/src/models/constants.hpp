@@ -1,8 +1,9 @@
 #ifndef LAHUTA_MODEL_CONSTANTS_HPP
 #define LAHUTA_MODEL_CONSTANTS_HPP
 
-#include "GraphMol/Bond.h"
 #include <array>
+
+#include <rdkit/GraphMol/Bond.h>
 
 using BondType = RDKit::Bond::BondType;
 

@@ -1,11 +1,12 @@
+#include <rdkit/GraphMol/MolOps.h>
+#include <rdkit/GraphMol/Rings.h>
+
 #include "aromatics.hpp"
-#include "GraphMol/MolOps.h"
-#include "GraphMol/Rings.h"
 #include "common.hpp"
-#include "selections/mol_filters.hpp"
 #include "definitions.hpp"
 #include "logging.hpp"
 #include "planarity.hpp"
+#include "selections/mol_filters.hpp"
 
 namespace lahuta {
 
@@ -18,7 +19,6 @@ void add_rings_to_mol(const RDKit::RWMol &mol, const RDKit::VECT_INT_VECT &rings
     mol.getRingInfo()->addRing(rings[i], bidx[i]);
   }
 }
-
 
 AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
   RDKit::VECT_INT_VECT rings, bonds;
@@ -40,7 +40,6 @@ AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
   return {rings, bonds};
 }
 
-
 std::vector<std::vector<int>>
 map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector<int> &indices) {
   std::vector<std::vector<int>> mapped_rings;
@@ -58,7 +57,6 @@ map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector
   return mapped_rings;
 }
 
-
 void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, std::vector<int> &indices) {
 
   auto new_mol = filter_with_bonds(mol, indices);
@@ -69,7 +67,6 @@ void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, std::vector<i
 
   add_rings_to_mol(mol, mapped_rings);
 }
-
 
 void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &residues) {
 
@@ -82,11 +79,11 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   add_rings_to_mol(mol, rings);
 
   // if (spdlog::should_log(spdlog::level::debug)) {
-  if (true) { // FIX: 
+  if (true) { // FIX:
     auto unk_res = residues.filter(std::not_fn(definitions::is_predefined));
 
     std::unordered_map<std::string, int> residue_counts;
-    for (const auto &res : unk_res) { 
+    for (const auto &res : unk_res) {
       residue_counts[res.name]++;
     }
     for (const auto &[name, count] : residue_counts) {

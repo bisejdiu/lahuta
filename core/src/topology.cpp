@@ -1,7 +1,7 @@
 #include <stdexcept>
 
-#include "topology.hpp"
 #include "logging.hpp"
+#include "topology.hpp"
 
 // clang-format off
 namespace lahuta {

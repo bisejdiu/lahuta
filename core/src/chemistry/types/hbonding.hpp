@@ -8,9 +8,10 @@
 #ifndef LAHUTA_HYDROGEN_BONDS_HPP
 #define LAHUTA_HYDROGEN_BONDS_HPP
 
-#include "typing/types.hpp"
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
+
+#include "typing/types.hpp"
 
 // clang-format off
 namespace lahuta {

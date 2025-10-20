@@ -1,9 +1,10 @@
 #ifndef LAHUTA_POOLS_HPP
 #define LAHUTA_POOLS_HPP
 
-#include "GraphMol/Atom.h"
-#include "GraphMol/Bond.h"
-#include "GraphMol/MonomerInfo.h"
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/Bond.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+
 #include "models/obj_pool.hpp"
 
 namespace lahuta {

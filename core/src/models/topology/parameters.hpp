@@ -1,8 +1,9 @@
 #ifndef LAHUTA_MODELS_TOPOLOGY_PARAMETERS_HPP
 #define LAHUTA_MODELS_TOPOLOGY_PARAMETERS_HPP
 
-#include "compute/parameters.hpp"
 #include <GraphMol/GraphDefs.hpp>
+
+#include "compute/parameters.hpp"
 
 // clang-format off
 namespace lahuta::models::topology {

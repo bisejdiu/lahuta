@@ -1,8 +1,9 @@
 #ifndef LAHUTA_COMMON_HPP
 #define LAHUTA_COMMON_HPP
 
-#include "GraphMol/MonomerInfo.h"
-#include "GraphMol/RWMol.h"
+#include <rdkit/GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "logging.hpp"
 
 namespace lahuta {

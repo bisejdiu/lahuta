@@ -1,13 +1,15 @@
 #ifndef LAHUTA_FIND_RINGS_HPP
 #define LAHUTA_FIND_RINGS_HPP
 
-#include "GraphMol/RWMol.h"
-#include "residues.hpp"
 #include <array>
 #include <bitset>
 #include <optional>
 #include <unordered_map>
 #include <vector>
+
+#include <rdkit/GraphMol/RWMol.h>
+
+#include "residues.hpp"
 
 // clang-format off
 

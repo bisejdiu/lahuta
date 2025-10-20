@@ -1,5 +1,6 @@
-#include "entities/contact.hpp"
 #include <algorithm>
+
+#include "entities/contact.hpp"
 
 namespace lahuta {
 

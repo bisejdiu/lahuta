@@ -1,9 +1,10 @@
 #ifndef OPERATOR_HANDLER_HPP
 #define OPERATOR_HANDLER_HPP
 
-#include "nodes.hpp"
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
+
+#include "nodes.hpp"
 
 namespace lahuta {
 

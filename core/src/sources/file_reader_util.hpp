@@ -1,12 +1,13 @@
 #ifndef LAHUTA_SOURCES_FILE_READER_UTIL_HPP
 #define LAHUTA_SOURCES_FILE_READER_UTIL_HPP
 
-#include "serialization/serializer.hpp"
 #include <fstream>
 #include <functional>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#include "serialization/serializer.hpp"
 
 // clang-format off
 namespace lahuta::sources {

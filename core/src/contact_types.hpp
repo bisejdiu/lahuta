@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_CONTACT_TYPES_HPP
+#define LAHUTA_CONTACT_TYPES_HPP
 
 #include <string_view>
 
@@ -17,3 +18,5 @@ inline constexpr std::string_view contact_computer_name(AtomTypingMethod type) n
 }
 
 } // namespace lahuta
+
+#endif // LAHUTA_CONTACT_TYPES_HPP

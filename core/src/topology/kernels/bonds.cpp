@@ -105,8 +105,6 @@ ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::R
     // bool include_dative_bonds = true;
     // RDKit::MolOps::symmetrizeSSSR(result.mol, include_dative_bonds);
     // if (!used_cache) {
-    //   // Only recompute aromaticity for the fallback path; the cached path
-    //   // preserves per-residue template aromatic flags.
     //   RDKit::MolOps::setAromaticity(result.mol);
     // }
 

@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
-
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"

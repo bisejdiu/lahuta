@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <cstring>
 #include <random>
 #include <tuple>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "distances/neighbors.hpp"
 #include "test_utils/fp_test_utils.hpp"

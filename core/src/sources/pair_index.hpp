@@ -1,9 +1,10 @@
 #ifndef LAHUTA_SOURCES_PAIR_INDEX_HPP
 #define LAHUTA_SOURCES_PAIR_INDEX_HPP
 
-#include <seq.hpp>
 #include <string>
 #include <vector>
+
+#include <seq.hpp>
 
 namespace lahuta::sources {
 

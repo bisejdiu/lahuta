@@ -1,9 +1,10 @@
 #ifndef LAHUTA_RINGS_HPP
 #define LAHUTA_RINGS_HPP
 
+#include <vector>
+
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RWMol.h>
-#include <vector>
 
 namespace lahuta {
 

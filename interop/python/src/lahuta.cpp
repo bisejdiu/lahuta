@@ -4,10 +4,20 @@
 #include "bindings.hpp"
 #include "luni_props.hpp"
 #include "runtime.hpp"
+#include "version.hpp"
 
 // clang-format off
 PYBIND11_MODULE(lahuta, m) {
   m.doc() = "lahuta: A Python binding for the Lahuta library";
+
+  // Surface the Lahuta core version in the extension module.
+  m.attr("__version__") = std::string(lahuta::version);
+  m.attr("__version_info__") = py::make_tuple(
+      lahuta::version_major,
+      lahuta::version_minor,
+      lahuta::version_patch,
+      std::string(lahuta::version_suffix)
+  );
 
   // Pre-import numpy so first array creation in property getters doesn't pay
   // the import/initialization cost on the first call (**should** help move cost to module import).

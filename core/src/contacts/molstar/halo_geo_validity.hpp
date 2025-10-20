@@ -1,11 +1,11 @@
 #ifndef LAHUTA_CONTACTS_GEO_VALIDITY_HPP
 #define LAHUTA_CONTACTS_GEO_VALIDITY_HPP
 
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "chemistry/geometry.hpp"
 #include "contacts/molstar/params.hpp"
-
-#include "GraphMol/Atom.h"
-#include "GraphMol/RWMol.h"
 
 // clang-format off
 namespace lahuta::molstar {

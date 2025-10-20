@@ -1,11 +1,12 @@
 #ifndef LAHUTA_AROMATICITY_HPP
 #define LAHUTA_AROMATICITY_HPP
 
-#include "GraphMol/RWMol.h"
-#include "ob/kekulize.h"
-#include "residues.hpp"
-#include "entities/records.hpp"
 #include <vector>
+
+#include <rdkit/GraphMol/RWMol.h>
+
+#include "entities/records.hpp"
+#include "residues.hpp"
 
 namespace lahuta {
 

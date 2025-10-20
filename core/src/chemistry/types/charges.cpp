@@ -1,11 +1,12 @@
-#include "chemistry/types/charges.hpp"
+#include <unordered_map>
+
 #include "chemistry/heuristics.hpp"
+#include "chemistry/types/charges.hpp"
 #include "chemistry/utils.hpp"
 #include "definitions.hpp"
+#include "elements.hpp"
 #include "entities/records.hpp"
 #include "residues.hpp"
-#include <elements.hpp>
-#include <unordered_map>
 
 // clang-format off
 namespace lahuta {

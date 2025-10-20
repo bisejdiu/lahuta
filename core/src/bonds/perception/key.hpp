@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_BONDS_PERCEPTION_KEY_HPP
+#define LAHUTA_BONDS_PERCEPTION_KEY_HPP
 
 #include <string>
 #include <string_view>
@@ -70,3 +71,5 @@ template <> struct hash<lahuta::bonds::ResidueKey> {
   }
 };
 } // namespace std
+
+#endif // LAHUTA_BONDS_PERCEPTION_KEY_HPP

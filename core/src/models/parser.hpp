@@ -1,9 +1,10 @@
 #ifndef LAHUTA_SUPER_FLY_PARSER_HPP
 #define LAHUTA_SUPER_FLY_PARSER_HPP
 
-#include "Geometry/point.h"
 #include <stdexcept>
 #include <string>
+
+#include <rdkit/Geometry/point.h>
 
 // clang-format off
 namespace lahuta {

@@ -1,10 +1,11 @@
 #ifndef LAHUTA_SOURCES_IN_MEMORY_HPP
 #define LAHUTA_SOURCES_IN_MEMORY_HPP
 
-#include "logging.hpp"
 #include <memory>
 #include <optional>
 #include <vector>
+
+#include "logging.hpp"
 
 // clang-format off
 namespace lahuta::sources {

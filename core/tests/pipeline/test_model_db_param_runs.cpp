@@ -1,5 +1,3 @@
-#include <gtest/gtest.h>
-
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -8,6 +6,8 @@
 #include <string>
 #include <system_error>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "analysis/contacts/computation.hpp"
 #include "analysis/system/model_pack_task.hpp"

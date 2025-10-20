@@ -1,11 +1,12 @@
 #ifndef LAHUTA_MODELS_TOPOLOGY_KERNELS_HPP
 #define LAHUTA_MODELS_TOPOLOGY_KERNELS_HPP
 
+#include <rdkit/GraphMol/RWMol.h>
+
 #include "compute/context.hpp"
 #include "compute/result.hpp"
 #include "models/topology/data.hpp"
 #include "models/topology/parameters.hpp"
-#include <rdkit/GraphMol/RWMol.h>
 
 namespace lahuta {
 struct AminoAcidEdges;

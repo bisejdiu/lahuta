@@ -6,8 +6,6 @@
 // - per-sink isolation (slow sink does not stall others)
 // - deterministic shutdown semantics (drain/timeout/failure propagation)
 // - file rotation policies (by bytes)
-#include <gtest/gtest.h>
-
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -18,11 +16,13 @@
 #include <thread>
 #include <vector>
 
+#include <gtest/gtest.h>
+#include <pipeline/dynamic/backpressure.hpp>
+#include <pipeline/dynamic/channel_multiplexer.hpp>
+
 #include "io/sinks/memory.hpp"
 #include "io/sinks/sharded_ndjson.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"
-#include <pipeline/dynamic/backpressure.hpp>
-#include <pipeline/dynamic/channel_multiplexer.hpp>
 
 using namespace lahuta::pipeline::dynamic;
 

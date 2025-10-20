@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_PIPELINE_COMPUTE_DYNAMIC_COMPUTATION_HPP
+#define LAHUTA_PIPELINE_COMPUTE_DYNAMIC_COMPUTATION_HPP
 
 #include <string>
 #include <vector>
@@ -38,3 +39,5 @@ private:
 };
 
 } // namespace lahuta::pipeline::compute
+
+#endif // LAHUTA_PIPELINE_COMPUTE_DYNAMIC_COMPUTATION_HPP

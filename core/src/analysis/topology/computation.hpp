@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_TOPOLOGY_COMPUTATION_HPP
+#define LAHUTA_ANALYSIS_TOPOLOGY_COMPUTATION_HPP
 
 #include "analysis/system/computation.hpp"
 #include "analysis/topology/kernel.hpp"
@@ -25,3 +26,5 @@ public:
 };
 
 } // namespace lahuta::analysis::topology
+
+#endif // LAHUTA_ANALYSIS_TOPOLOGY_COMPUTATION_HPP

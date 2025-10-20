@@ -1,17 +1,18 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP
+#define LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP
 
 #include <memory>
 #include <string>
 
+#include "analysis/topology/computation.hpp"
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
+#include "logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/dynamic_computation.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "topology.hpp"
 #include "topology/compute.hpp"
-#include <analysis/topology/computation.hpp>
-#include <logging.hpp>
 
 //
 // EnsureTypingKernel: Makes sure that the current Topology's atom typing mode matches a desired
@@ -101,3 +102,5 @@ public:
 };
 
 } // namespace lahuta::analysis::topology
+
+#endif // LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP

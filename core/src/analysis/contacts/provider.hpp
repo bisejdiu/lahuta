@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_CONTACTS_PROVIDER_HPP
+#define LAHUTA_ANALYSIS_CONTACTS_PROVIDER_HPP
 
 #include <optional>
 #include <string_view>
@@ -37,3 +38,5 @@ inline constexpr AtomTypingMethod typing_for_provider(ContactProvider provider) 
 }
 
 } // namespace lahuta::analysis::contacts
+
+#endif // LAHUTA_ANALYSIS_CONTACTS_PROVIDER_HPP

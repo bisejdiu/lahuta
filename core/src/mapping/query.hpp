@@ -1,14 +1,15 @@
 #ifndef LAHUTA_MAPPING_QUERY_HPP
 #define LAHUTA_MAPPING_QUERY_HPP
 
-#include "_defs.hpp"
-#include "residue_set.hpp"
-#include "bitset_mapping.hpp"
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include "_defs.hpp"
+#include "bitset_mapping.hpp"
+#include "residue_set.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

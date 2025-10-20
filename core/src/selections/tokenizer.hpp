@@ -2,9 +2,9 @@
 #define LAHUTA_TOKENIZER_HPP
 
 #include <cctype>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #include "parser.hpp"
 #include "visitor.hpp"

@@ -1,8 +1,8 @@
 #ifndef LAHUTA_ENTITIES_CONTACT_HPP
 #define LAHUTA_ENTITIES_CONTACT_HPP
 
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 #include "entity_id.hpp"
 #include "interaction_types.hpp"

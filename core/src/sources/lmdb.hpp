@@ -2,14 +2,15 @@
 #define LAHUTA_SOURCES_LMDB_HPP
 
 #include <memory>
-#include <models/topology.hpp>
 #include <mutex>
 #include <optional>
-#include <utility>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+
+#include <models/topology.hpp>
 
 #include "analysis/system/records.hpp"
 #include "db/reader.hpp"

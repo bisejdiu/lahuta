@@ -1,7 +1,9 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_PARAMETERS_HPP
+#define LAHUTA_COMPUTE_PARAMETERS_HPP
+
+#include <memory>
 
 #include "compute/_defs.hpp"
-#include <memory>
 
 // clang-format off
 namespace lahuta::topology::compute {
@@ -34,3 +36,5 @@ struct ParameterBase : public ParameterInterface {
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_PARAMETERS_HPP

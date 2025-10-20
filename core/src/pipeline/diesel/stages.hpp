@@ -1,10 +1,11 @@
 #ifndef LAHUTA_PIPELINE_DSL_STAGES_HPP
 #define LAHUTA_PIPELINE_DSL_STAGES_HPP
 
+#include <type_traits>
+
 #include "pipeline/core/stage.hpp"
 #include "pipeline/function_traits.hpp"
 #include "tags.hpp"
-#include <type_traits>
 
 // clang-format off
 namespace lahuta::pipeline::dsl {

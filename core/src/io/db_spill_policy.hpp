@@ -1,9 +1,10 @@
 #ifndef LAHUTA_DB_SPILL_POLICY_HPP
 #define LAHUTA_DB_SPILL_POLICY_HPP
 
+#include <vector>
+
 #include "io/lmdb_backend.hpp"
 #include "serialization/serializer.hpp"
-#include <vector>
 
 // clang-format off
 namespace lahuta {

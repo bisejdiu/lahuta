@@ -4,11 +4,11 @@
 #include <string>
 #include <string_view>
 
-#include "token_lookup.hpp"
-#include "rules.hpp"
+#include <rdkit/GraphMol/MonomerInfo.h>
 
-#include "GraphMol/MonomerInfo.h"
 #include "common.hpp"
+#include "rules.hpp"
+#include "token_lookup.hpp"
 
 namespace lahuta {
 

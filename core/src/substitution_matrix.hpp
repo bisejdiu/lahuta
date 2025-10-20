@@ -7,11 +7,12 @@
 #ifndef LAHUTA_SUBSTITUTION_MATRIX_H
 #define LAHUTA_SUBSTITUTION_MATRIX_H
 
+#include <array>
+#include <climits>
+
 #include "BaseMatrix.h"
 #include "fseek/ops.hpp"
 #include "utils.hpp"
-#include <array>
-#include <climits>
 
 namespace lahuta {
 

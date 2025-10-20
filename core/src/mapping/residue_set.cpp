@@ -1,7 +1,7 @@
-#include "mapping/residue_set.hpp"
 #include "mapping/bitset_mapping.hpp"
 #include "mapping/mapping_matrix.hpp"
 #include "mapping/mapping_matrix_batch_provider.hpp"
+#include "mapping/residue_set.hpp"
 
 // clang-format off
 namespace lahuta::mapping {

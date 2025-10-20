@@ -2,7 +2,9 @@
 #define LAHUTA_DISTANCES_NEIGHBORS_HPP
 
 #include <vector>
+
 #include <rdkit/Geometry/point.h>
+
 #include "spatial/nsresults.hpp"
 
 // clang-format off

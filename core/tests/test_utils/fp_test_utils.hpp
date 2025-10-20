@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_TESTS_TEST_UTILS_FP_TEST_UTILS_HPP
+#define LAHUTA_TESTS_TEST_UTILS_FP_TEST_UTILS_HPP
 
 #include <cmath>
 #include <cstdint>
@@ -88,3 +89,5 @@ inline long long ulp_distancef(float a, float b) {
   } while (0)
 
 } // namespace lahuta::test_utils
+
+#endif // LAHUTA_TESTS_TEST_UTILS_FP_TEST_UTILS_HPP

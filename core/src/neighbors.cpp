@@ -1,7 +1,7 @@
 #include <stdexcept>
 
-#include "neighbors.hpp"
 #include "lahuta.hpp"
+#include "neighbors.hpp"
 
 namespace lahuta {
 

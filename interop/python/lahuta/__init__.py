@@ -4,6 +4,8 @@ import sys
 from importlib.util import find_spec
 from importlib.metadata import version, PackageNotFoundError
 
+from ._version import VersionInfo, __version__, version_info
+
 if sys.version_info < (3, 10):
     raise RuntimeError(f"Lahuta requires Python >= 3.10 (found {sys.version.split()[0]}).")
 
@@ -54,6 +56,12 @@ try:
     from .config import logging as logging
     from .neighbors import NearestNeighbors
 
+    try:
+        lxx.__version__ = __version__
+        lxx.__version_info__ = version_info.as_tuple()
+    except Exception:
+        pass
+
     # So `import lahuta.logging` and `from lahuta.logging import LogLevel` work
     sys.modules.setdefault(__name__ + ".logging", logging)
 
@@ -77,6 +85,7 @@ __all__ = [
     'TopologyBuildingOptions', 'TopologyComputers', 'compute_angles',
     'factorize', 'find_contacts', 'metrics', 'neighbors', 'process_files', 'NearestNeighbors',
     "vdw_radius", "logging", "rdkit",
+    "__version__", "version_info", "VersionInfo",
 ]
 
 def _quick_self_test() -> bool:

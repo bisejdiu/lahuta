@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_TOPOLOGY_COMPUTE_HPP
+#define LAHUTA_TOPOLOGY_COMPUTE_HPP
 
 #include "bonds/bonds.hpp"
 #include "compute/compute_impl.hpp"
@@ -112,3 +113,5 @@ public:
 };
 
 } // namespace lahuta::topology
+
+#endif // LAHUTA_TOPOLOGY_COMPUTE_HPP

@@ -1,9 +1,9 @@
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <random>
 #include <tuple>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "distances/neighbors.hpp"
 #include "kd_index.hpp"

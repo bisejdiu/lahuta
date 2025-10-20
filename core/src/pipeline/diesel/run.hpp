@@ -1,10 +1,11 @@
 #ifndef LAHUTA_PIPELINE_RUN_HPP
 #define LAHUTA_PIPELINE_RUN_HPP
 
+#include <type_traits>
+
 #include "pipe.hpp"
 #include "pipeline/engine.hpp"
 #include "sources.hpp"
-#include <type_traits>
 
 // clang-format off
 namespace lahuta::pipeline::dsl {

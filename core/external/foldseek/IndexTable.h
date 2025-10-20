@@ -7,19 +7,20 @@
 // Abstract: Index table stores the list of DB sequences containing a certain k-mer, for each k-mer.
 //
 
-#include "Sequence.h"
-#include "Indexer.h"
-#include "Debug.h"
-#include "Util.h"
-#include "SequenceLookup.h"
-#include "MathUtil.h"
-#include "KmerGenerator.h"
-#include "Parameters.h"
-#include "FastSort.h"
-#include <stdlib.h>
 #include <algorithm>
+#include <stdlib.h>
 
-#include "ctpl.h"
+#include <ctpl.h>
+
+#include "Debug.h"
+#include "FastSort.h"
+#include "Indexer.h"
+#include "KmerGenerator.h"
+#include "MathUtil.h"
+#include "Parameters.h"
+#include "Sequence.h"
+#include "SequenceLookup.h"
+#include "Util.h"
 
 // IndexEntryLocal is an entry with position and seqId for a kmer
 // structure needs to be packed or it will need 8 bytes instead of 6

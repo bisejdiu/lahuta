@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_MD_DETAIL_XTC_SMALLINTS_HPP
+#define LAHUTA_MD_DETAIL_XTC_SMALLINTS_HPP
 //
 // XTC small-int decoding utilities.
 //
@@ -525,3 +526,5 @@ inline void decode_mixed3_precomp(BitReader &reader, unsigned bits, const DivSpe
 }
 
 } // namespace lahuta::md::detail
+
+#endif // LAHUTA_MD_DETAIL_XTC_SMALLINTS_HPP

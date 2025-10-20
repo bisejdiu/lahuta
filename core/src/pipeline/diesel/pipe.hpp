@@ -1,8 +1,9 @@
 #ifndef LAHUTA_PIPELINE_DSL_PIPE_HPP
 #define LAHUTA_PIPELINE_DSL_PIPE_HPP
 
-#include "pipeline/core/stage.hpp"
 #include <utility>
+
+#include "pipeline/core/stage.hpp"
 
 // clang-format off
 namespace lahuta::pipeline::dsl {

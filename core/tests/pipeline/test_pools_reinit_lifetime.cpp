@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-
 #include <filesystem>
+
+#include <gtest/gtest.h>
 
 #include "lahuta.hpp"
 #include "logging.hpp"

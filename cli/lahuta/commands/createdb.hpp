@@ -1,8 +1,9 @@
 #ifndef LAHUTA_CLI_CREATEDB_HPP
 #define LAHUTA_CLI_CREATEDB_HPP
 
-#include "commands/command.hpp"
 #include <memory>
+
+#include "commands/command.hpp"
 
 namespace lahuta::cli {
 

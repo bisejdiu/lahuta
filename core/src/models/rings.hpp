@@ -2,6 +2,7 @@
 #define LAHUTA_MODEL_RINGS_HPP
 
 #include <vector>
+
 #include "constants.hpp"
 
 namespace lahuta {

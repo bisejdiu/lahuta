@@ -1,8 +1,9 @@
 #ifndef LAHUTA_IO_LMDB_BACKEND_HPP
 #define LAHUTA_IO_LMDB_BACKEND_HPP
 
-#include "db/writer.hpp"
 #include <string>
+
+#include "db/writer.hpp"
 
 namespace lahuta {
 

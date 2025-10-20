@@ -1,13 +1,13 @@
 #ifndef LAHUTA_FASTNS_HPP
 #define LAHUTA_FASTNS_HPP
 
-#include <Eigen/Dense>
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <memory>
 #include <vector>
 
+#include <Eigen/Dense>
 #include <rdkit/Geometry/point.h>
 
 #include "nsresults.hpp"

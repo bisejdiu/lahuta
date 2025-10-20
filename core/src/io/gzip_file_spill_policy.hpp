@@ -1,13 +1,15 @@
 #ifndef LAHUTA_IO_GZIP_FILE_SPILL_POLICY_HPP
 #define LAHUTA_IO_GZIP_FILE_SPILL_POLICY_HPP
 
-#include "serialization/serializer.hpp"
 #include <cstring>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <vector>
+
 #include <zlib.h>
+
+#include "serialization/serializer.hpp"
 
 // clang-format off
 namespace lahuta {

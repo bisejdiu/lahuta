@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_SYSTEM_COMPUTATION_HPP
+#define LAHUTA_ANALYSIS_SYSTEM_COMPUTATION_HPP
 
 #include "analysis/system/kernel.hpp"
 #include "compute/compute_impl.hpp"
@@ -24,3 +25,5 @@ public:
 };
 
 } // namespace lahuta::analysis::system
+
+#endif // LAHUTA_ANALYSIS_SYSTEM_COMPUTATION_HPP

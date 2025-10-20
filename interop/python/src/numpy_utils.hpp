@@ -8,8 +8,7 @@
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
-
-#include "Geometry/point.h"
+#include <rdkit/Geometry/point.h>
 
 namespace py = pybind11;
 

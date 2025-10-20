@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LAHUTA_ANALYSIS_SYSTEM_RECORDS_HPP
+#define LAHUTA_ANALYSIS_SYSTEM_RECORDS_HPP
 
 #include <string>
 
@@ -13,3 +14,5 @@ struct ModelRecord {
 };
 
 } // namespace lahuta::analysis::system
+
+#endif // LAHUTA_ANALYSIS_SYSTEM_RECORDS_HPP

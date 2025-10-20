@@ -2,6 +2,7 @@
 #define LAHUTA_BOND_TABLE_HPP
 
 #include <array>
+
 #include <gemmi/elem.hpp>
 
 namespace lahuta {

@@ -1,6 +1,10 @@
 #ifndef LAHUTA_ALIGNER_HPP
 #define LAHUTA_ALIGNER_HPP
 
+#include <memory>
+
+#include <spdlog/spdlog.h>
+
 #include "fseek/ops.hpp"
 #include "fseek/utils.hpp"
 #include "logging.hpp"
@@ -9,8 +13,6 @@
 #include "seq.hpp"
 #include "seq_aligner.hpp"
 #include "seq_aligner_builder.hpp"
-#include <memory>
-#include <spdlog/spdlog.h>
 
 // clang-format off
 

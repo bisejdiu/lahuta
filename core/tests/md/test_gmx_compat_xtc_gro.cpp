@@ -1,7 +1,5 @@
 // Inspired by GROMACS tests (confio/trajectoryreader)
 
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -14,6 +12,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "md/gro_reader.hpp"
 #include "md/xtc_reader.hpp"

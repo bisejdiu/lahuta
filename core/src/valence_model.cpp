@@ -1,5 +1,6 @@
-#include "valence_model.hpp"
 #include <GraphMol/MonomerInfo.h>
+
+#include "valence_model.hpp"
 
 namespace lahuta {
 

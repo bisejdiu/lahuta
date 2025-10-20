@@ -1,12 +1,14 @@
-#pragma once
+#ifndef LAHUTA_READ_FILE_HPP
+#define LAHUTA_READ_FILE_HPP
 
-#include <gemmi/mmread_gz.hpp>
-#include <gemmi/mmread.hpp>
-#include <gemmi/pdb.hpp>
 #include <gemmi/gz.hpp>
+#include <gemmi/mmread.hpp>
+#include <gemmi/mmread_gz.hpp>
+#include <gemmi/pdb.hpp>
 #include <rdkit/GraphMol/RWMol.h>
-#include "read_mmcif.hpp"
+
 #include "convert.hpp"
+#include "read_mmcif.hpp"
 
 namespace lahuta {
 using gemmi::CoorFormat;
@@ -45,3 +47,5 @@ std::shared_ptr<RDKit::RWMol> read_and_make_molecule(T&& input) {
 }
 
 } // namespace lahuta
+
+#endif // LAHUTA_READ_FILE_HPP

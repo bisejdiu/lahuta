@@ -1,8 +1,10 @@
-#pragma once
+#ifndef LAHUTA_COMPUTE_DEPENDENCY_HPP
+#define LAHUTA_COMPUTE_DEPENDENCY_HPP
+
+#include <vector>
 
 #include "compute/label.hpp"
 #include "compute/result.hpp"
-#include <vector>
 
 // clang-format off
 namespace lahuta::topology::compute {
@@ -32,3 +34,5 @@ struct Dependencies {
 };
 
 } // namespace lahuta::topology::compute
+
+#endif // LAHUTA_COMPUTE_DEPENDENCY_HPP

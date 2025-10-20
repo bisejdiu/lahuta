@@ -3,8 +3,8 @@
 
 #include <optional>
 #include <string>
-#include <variant>
 #include <unordered_set>
+#include <variant>
 
 #include "sources/lmdb.hpp"
 #include "sources/nmr.hpp"

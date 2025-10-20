@@ -1,7 +1,7 @@
-#include <gtest/gtest.h>
-
 #include <array>
 #include <sstream>
+
+#include <gtest/gtest.h>
 
 #include "md/xdr.hpp"
 #include "md/xtc_reader.hpp"

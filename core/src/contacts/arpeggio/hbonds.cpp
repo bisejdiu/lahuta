@@ -1,8 +1,9 @@
+#include <contacts/arpeggio/params.hpp>
+
+#include "chemistry/utils.hpp"
 #include "contacts/arpeggio/contacts.hpp"
 #include "contacts/arpeggio/geo_validity.hpp"
-#include "chemistry/utils.hpp"
 #include "entities/context.hpp"
-#include <contacts/arpeggio/params.hpp>
 
 // clang-format off
 namespace lahuta::arpeggio {

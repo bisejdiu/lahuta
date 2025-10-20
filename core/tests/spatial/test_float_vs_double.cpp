@@ -1,7 +1,7 @@
-#include <gtest/gtest.h>
-
 #include <cstring>
 #include <random>
+
+#include <gtest/gtest.h>
 
 #include "distances/api.hpp"
 #include "test_utils/fp_test_utils.hpp"
