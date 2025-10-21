@@ -20,6 +20,7 @@
 #include "entities/contact.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/interaction_types.hpp"
+#include "interactions.hpp"
 #include "numpy_utils.hpp"
 #include "topology.hpp"
 
@@ -29,43 +30,6 @@ namespace py = pybind11;
 namespace lahuta::bindings {
 
 namespace {
-
-void add_python_interactions(InteractionTypeSet& out, py::handle obj) {
-  if (!obj || obj.is_none()) return;
-
-  if (py::isinstance<InteractionTypeSet>(obj)) {
-    out |= obj.cast<InteractionTypeSet>();
-    return;
-  }
-
-  if (py::isinstance<InteractionType>(obj)) {
-    out |= obj.cast<InteractionType>();
-    return;
-  }
-
-  if (py::isinstance<py::str>(obj)) {
-    auto text = obj.cast<std::string>();
-    if (auto parsed = parse_interaction_type_sequence(text, '|')) {
-      out |= *parsed;
-      return;
-    }
-    if (auto parsed = parse_interaction_type_sequence(text, ',')) {
-      out |= *parsed;
-      return;
-    }
-    throw py::value_error("Unknown interaction type string: " + text);
-  }
-
-  if (PySequence_Check(obj.ptr())) {
-    py::sequence seq = py::reinterpret_borrow<py::sequence>(obj);
-    for (auto item : seq) {
-      add_python_interactions(out, item);
-    }
-    return;
-  }
-
-  throw py::type_error("Expected InteractionType, InteractionTypeSet, or iterable of interaction types");
-}
 
 std::optional<InteractionTypeSet> parse_optional_python_interactions(py::handle obj) {
   if (!obj || obj.is_none()) return std::nullopt;

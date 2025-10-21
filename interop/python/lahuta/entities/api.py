@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable, Iterable, Literal, TypeAlias, overload
 
+from .._interaction_utils import normalize_interaction_selection
 from ..lib import lahuta as lxx
 from .selectors import Selector
 
@@ -164,34 +165,10 @@ def compute_contacts(
     if only is None:
         return engine.compute(topology)
 
-    interaction_filter = _normalize_interactions(only)
+    interaction_filter = normalize_interaction_selection(only, arg_name="only")
     if interaction_filter.is_all():
         return engine.compute(topology)
     return engine.compute(topology, interaction_filter)
-
-
-def _normalize_interactions(
-    value: lxx.InteractionType | lxx.InteractionTypeSet | Iterable[lxx.InteractionType],
-) -> lxx.InteractionTypeSet:
-    if isinstance(value, lxx.InteractionTypeSet):
-        return value
-    if isinstance(value, lxx.InteractionType):
-        return lxx.InteractionTypeSet(value)
-
-    result = lxx.InteractionTypeSet()
-    for item in value:
-        if isinstance(item, lxx.InteractionTypeSet):
-            result |= item
-        elif isinstance(item, lxx.InteractionType):
-            result |= item
-        else:
-            raise TypeError(
-                "only must be an InteractionType, InteractionTypeSet, or iterable of InteractionType values",
-            )
-
-    if result.empty():
-        raise ValueError("only iterable must not be empty")
-    return result
 
 __all__ = [
     "find_contacts",

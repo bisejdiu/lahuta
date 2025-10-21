@@ -42,7 +42,7 @@ try:
     from .lib import lahuta as lxx
     from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
         AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
-        FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, Kind, \
+        FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, InteractionTypeSet, Kind, \
         LahutaSystem, LahutaSystemProperties, Logger, LuniFileProcessor, LuniPropertyResult, \
         MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
         PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
@@ -77,7 +77,7 @@ __all__ = [
     'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
     'AtomTypingMethod', 'ContactProvider', 'ContactSet',
     'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
-    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'Kind',
+    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'InteractionTypeSet', 'Kind',
     'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
     'LuniPropertyResult', 'MolStarContactsEngine', 'GetContactsEngine', 'NSResults',
     'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',

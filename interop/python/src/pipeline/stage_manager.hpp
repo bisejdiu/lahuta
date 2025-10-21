@@ -17,6 +17,7 @@
 #include "analysis/contacts/computation.hpp"
 #include "analysis/contacts/provider.hpp"
 #include "analysis/system/model_pack_task.hpp"
+#include "interactions.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/process_pool.hpp"
@@ -30,43 +31,6 @@ using namespace lahuta::sources;
 using namespace lahuta::pipeline::dynamic;
 
 namespace {
-
-inline void add_python_interactions(InteractionTypeSet& out, py::handle obj) {
-  if (!obj || obj.is_none()) return;
-
-  if (py::isinstance<InteractionTypeSet>(obj)) {
-    out |= obj.cast<InteractionTypeSet>();
-    return;
-  }
-
-  if (py::isinstance<InteractionType>(obj)) {
-    out |= obj.cast<InteractionType>();
-    return;
-  }
-
-  if (py::isinstance<py::str>(obj)) {
-    auto text = obj.cast<std::string>();
-    if (auto parsed = parse_interaction_type_sequence(text, '|')) {
-      out |= *parsed;
-      return;
-    }
-    if (auto parsed = parse_interaction_type_sequence(text, ',')) {
-      out |= *parsed;
-      return;
-    }
-    throw py::value_error("Unknown interaction type string: " + text);
-  }
-
-  if (PySequence_Check(obj.ptr())) {
-    py::sequence seq = py::reinterpret_borrow<py::sequence>(obj);
-    for (auto item : seq) {
-      add_python_interactions(out, item);
-    }
-    return;
-  }
-
-  throw py::type_error("Expected InteractionType, InteractionTypeSet, or iterable of interaction types");
-}
 
 inline InteractionTypeSet normalize_interaction_argument(py::handle obj) {
   if (!obj || obj.is_none()) return InteractionTypeSet::all();

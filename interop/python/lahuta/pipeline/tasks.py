@@ -5,6 +5,7 @@ from typing import Iterable
 
 from lahuta.lib.lahuta import ContactProvider, InteractionType, InteractionTypeSet
 
+from .._interaction_utils import normalize_interaction_selection
 from .types import OutputFormat
 
 
@@ -17,31 +18,7 @@ class ContactTask:
     fmt: OutputFormat = OutputFormat.BINARY
 
     def __post_init__(self) -> None:
-        self.interaction_type = _normalize_interaction_types(self.interaction_type)
-
-
-def _normalize_interaction_types(
-    value: InteractionType | InteractionTypeSet | Iterable[InteractionType],
-) -> InteractionTypeSet:
-    if isinstance(value, InteractionTypeSet):
-        return value
-    if isinstance(value, InteractionType):
-        return InteractionTypeSet(value)
-
-    result = InteractionTypeSet()
-    for item in value:
-        if isinstance(item, InteractionTypeSet):
-            result |= item
-        elif isinstance(item, InteractionType):
-            result |= item
-        else:
-            raise TypeError(
-                "interaction_type must be an InteractionType, InteractionTypeSet, or an iterable of InteractionType values",
-            )
-
-    if result.empty():
-        raise ValueError("interaction_type iterable must not be empty")
-    return result
+        self.interaction_type = normalize_interaction_selection(self.interaction_type, arg_name="interaction_type")
 
 
 __all__ = ["ContactTask"]
