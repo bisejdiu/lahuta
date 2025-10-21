@@ -15,9 +15,7 @@ namespace lahuta {
 void add_rings_to_mol(const RDKit::RWMol &mol, const RDKit::VECT_INT_VECT &rings) {
   RDKit::VECT_INT_VECT bidx;
   RingUtils::convertToBonds(rings, bidx, mol);
-  for (size_t i = 0; i < rings.size(); ++i) {
-    mol.getRingInfo()->addRing(rings[i], bidx[i]);
-  }
+  mol.getRingInfo()->addAllRings(rings, bidx);
 }
 
 AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
