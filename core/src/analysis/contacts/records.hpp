@@ -15,7 +15,7 @@ struct ContactsRecord {
   bool success;
   std::string file_path;
   contacts::ContactProvider provider;
-  InteractionType contact_type;
+  InteractionTypeSet contact_types;
   ContactSet contacts;
   std::size_t num_contacts;
   std::size_t frame_index = 0;

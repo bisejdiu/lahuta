@@ -47,7 +47,7 @@ struct BuildTopologyParams : public ParameterBase<BuildTopologyParams> {
 struct ContactsParams : public ParameterBase<ContactsParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::CONTACTS;
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
-  InteractionType type = InteractionType::All;
+  InteractionTypeSet type = InteractionTypeSet::all();
   std::string channel = "contacts";
   ContactsOutputFormat format = ContactsOutputFormat::Json;
 };

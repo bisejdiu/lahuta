@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 
 #include "analysis/contacts/computation.hpp"
@@ -29,6 +30,53 @@ using namespace lahuta::sources;
 using namespace lahuta::pipeline::dynamic;
 
 namespace {
+
+inline void add_python_interactions(InteractionTypeSet& out, py::handle obj) {
+  if (!obj || obj.is_none()) return;
+
+  if (py::isinstance<InteractionTypeSet>(obj)) {
+    out |= obj.cast<InteractionTypeSet>();
+    return;
+  }
+
+  if (py::isinstance<InteractionType>(obj)) {
+    out |= obj.cast<InteractionType>();
+    return;
+  }
+
+  if (py::isinstance<py::str>(obj)) {
+    auto text = obj.cast<std::string>();
+    if (auto parsed = parse_interaction_type_sequence(text, '|')) {
+      out |= *parsed;
+      return;
+    }
+    if (auto parsed = parse_interaction_type_sequence(text, ',')) {
+      out |= *parsed;
+      return;
+    }
+    throw py::value_error("Unknown interaction type string: " + text);
+  }
+
+  if (PySequence_Check(obj.ptr())) {
+    py::sequence seq = py::reinterpret_borrow<py::sequence>(obj);
+    for (auto item : seq) {
+      add_python_interactions(out, item);
+    }
+    return;
+  }
+
+  throw py::type_error("Expected InteractionType, InteractionTypeSet, or iterable of interaction types");
+}
+
+inline InteractionTypeSet normalize_interaction_argument(py::handle obj) {
+  if (!obj || obj.is_none()) return InteractionTypeSet::all();
+  InteractionTypeSet set;
+  add_python_interactions(set, obj);
+  if (set.empty()) {
+    throw py::value_error("Interaction type selection cannot be empty");
+  }
+  return set;
+}
 
 inline void python_stage_executor_tls_cleanup(StageExecutor::ThreadLocalState& state) {
   // During interpreter shutdown we cannot safely acquire the GIL. Fall back to direct reset.
@@ -96,7 +144,7 @@ inline void bind_stage_manager(py::module_ &md) {
     .def("add_contacts", [](StageManager &mgr,
                             const std::string &name,
                             analysis::contacts::ContactProvider provider,
-                            InteractionType interaction_type,
+                            py::object interaction_obj,
                             std::optional<std::string> channel,
                             const std::string &out_fmt,
                             bool thread_safe) {
@@ -108,9 +156,11 @@ inline void bind_stage_manager(py::module_ &md) {
           else if (out_fmt == "binary") format = pipeline::compute::ContactsOutputFormat::Binary;
           else throw std::invalid_argument("out_fmt must be 'json', 'text', or 'binary'");
 
+          InteractionTypeSet interaction_types = normalize_interaction_argument(interaction_obj);
+
           pipeline::compute::ContactsParams p{};
           p.provider = provider;
-          p.type     = interaction_type;
+          p.type     = interaction_types;
           p.channel  = ch;
           p.format   = format;
 
@@ -120,7 +170,7 @@ inline void bind_stage_manager(py::module_ &md) {
           }, thread_safe);
         },
         py::arg("name"),
-        py::arg("provider"), py::arg("interaction_type"),
+        py::arg("provider"), py::arg("interaction_types") = py::none(),
         py::arg("channel") = std::optional<std::string>{},
         py::arg("out_fmt") = std::string("json"),
         py::arg("thread_safe") = true)

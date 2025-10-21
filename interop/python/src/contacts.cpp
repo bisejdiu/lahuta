@@ -8,6 +8,7 @@
 
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 
 #include "analysis/contacts/provider.hpp"
@@ -29,13 +30,60 @@ namespace lahuta::bindings {
 
 namespace {
 
+void add_python_interactions(InteractionTypeSet& out, py::handle obj) {
+  if (!obj || obj.is_none()) return;
+
+  if (py::isinstance<InteractionTypeSet>(obj)) {
+    out |= obj.cast<InteractionTypeSet>();
+    return;
+  }
+
+  if (py::isinstance<InteractionType>(obj)) {
+    out |= obj.cast<InteractionType>();
+    return;
+  }
+
+  if (py::isinstance<py::str>(obj)) {
+    auto text = obj.cast<std::string>();
+    if (auto parsed = parse_interaction_type_sequence(text, '|')) {
+      out |= *parsed;
+      return;
+    }
+    if (auto parsed = parse_interaction_type_sequence(text, ',')) {
+      out |= *parsed;
+      return;
+    }
+    throw py::value_error("Unknown interaction type string: " + text);
+  }
+
+  if (PySequence_Check(obj.ptr())) {
+    py::sequence seq = py::reinterpret_borrow<py::sequence>(obj);
+    for (auto item : seq) {
+      add_python_interactions(out, item);
+    }
+    return;
+  }
+
+  throw py::type_error("Expected InteractionType, InteractionTypeSet, or iterable of interaction types");
+}
+
+std::optional<InteractionTypeSet> parse_optional_python_interactions(py::handle obj) {
+  if (!obj || obj.is_none()) return std::nullopt;
+  InteractionTypeSet set;
+  add_python_interactions(set, obj);
+  if (set.empty()) {
+    throw py::value_error("Interaction type selection cannot be empty");
+  }
+  return set;
+}
+
 constexpr uint8_t ContactsBinaryVersion = 1;
 
 struct ContactsRecordColumns {
   bool success = false;
   std::string file_path;
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
-  InteractionType contact_type = InteractionType::All;
+  InteractionTypeSet contact_types = InteractionTypeSet::all();
   std::uint64_t frame_index = 0;
   std::vector<std::uint64_t> lhs_ids;
   std::vector<std::uint64_t> rhs_ids;
@@ -101,9 +149,24 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
   decoded.success = read_u8() != 0;
   decoded.provider = static_cast<analysis::contacts::ContactProvider>(read_u8());
 
-  const uint32_t contact_type = read_u32();
-  decoded.contact_type.category = static_cast<Category>(contact_type & 0xFFFFu);
-  decoded.contact_type.flavor   = static_cast<Flavor>((contact_type >> 16) & 0xFFFFu);
+  const uint8_t filter_mode = read_u8();
+  const uint32_t filter_count = read_u32();
+  InteractionTypeSet filters;
+  if (filter_mode == 0) {
+    filters = InteractionTypeSet::all();
+    for (uint32_t i = 0; i < filter_count; ++i) {
+      (void)read_u32();
+    }
+  } else {
+    for (uint32_t i = 0; i < filter_count; ++i) {
+      const uint32_t type_raw = read_u32();
+      InteractionType type{};
+      type.category = static_cast<Category>(type_raw & 0xFFFFu);
+      type.flavor   = static_cast<Flavor>((type_raw >> 16) & 0xFFFFu);
+      filters.add(type);
+    }
+  }
+  decoded.contact_types = filters;
 
   std::string file_path;
   read_string(file_path);
@@ -165,7 +228,7 @@ py::dict make_contacts_numpy(ContactsRecordColumns decoded) {
   out["success"]      = decoded.success;
   out["file_path"]    = decoded.file_path;
   out["provider"]     = std::string(contact_provider_name(decoded.provider));
-  out["contact_type"] = interaction_type_to_string(decoded.contact_type);
+  out["contact_type"] = interaction_type_set_to_string(decoded.contact_types, "|");
   out["num_contacts"] = static_cast<uint32_t>(num_contacts);
   out["frame_index"]  = py::int_(decoded.frame_index);
   out["contacts"]     = std::move(contacts);
@@ -199,7 +262,7 @@ py::dict decode_contacts_to_dict_direct(ContactsRecordColumns decoded) {
   result["success"]      = decoded.success;
   result["file_path"]    = decoded.file_path;
   result["provider"]     = std::string(contact_provider_name(decoded.provider));
-  result["contact_type"] = interaction_type_to_string(decoded.contact_type);
+  result["contact_type"] = interaction_type_set_to_string(decoded.contact_types, "|");
   result["num_contacts"] = static_cast<uint32_t>(num_contacts);
   result["frame_index"]  = py::int_(decoded.frame_index);
   result["contacts"]     = std::move(contacts_list);
@@ -237,7 +300,7 @@ py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
   result["success"]      = decoded.success;
   result["file_path"]    = decoded.file_path;
   result["provider"]     = std::string(contact_provider_name(decoded.provider));
-  result["contact_type"] = interaction_type_to_string(decoded.contact_type);
+  result["contact_type"] = interaction_type_set_to_string(decoded.contact_types, "|");
   result["num_contacts"] = static_cast<uint32_t>(num_contacts);
   result["frame_index"]  = py::int_(decoded.frame_index);
   result["contacts"]     = std::move(contacts);
@@ -486,6 +549,74 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
           return py::bool_(self != o);
         }
         return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+      })
+    .def("__or__", [](const InteractionType& lhs, const InteractionType& rhs) {
+        return InteractionTypeSet{lhs, rhs};
+      }, py::is_operator())
+    .def("__or__", [](const InteractionType& lhs, const InteractionTypeSet& rhs) {
+        InteractionTypeSet out = rhs;
+        out |= lhs;
+        return out;
+      }, py::is_operator())
+    .def("__ror__", [](const InteractionType& rhs, const InteractionType& lhs) {
+        return InteractionTypeSet{lhs, rhs};
+      }, py::is_operator())
+    .def("__ror__", [](const InteractionType& rhs, const InteractionTypeSet& lhs) {
+        InteractionTypeSet out = lhs;
+        out |= rhs;
+        return out;
+      }, py::is_operator());
+
+  py::class_<InteractionTypeSet>(m, "InteractionTypeSet")
+    .def(py::init<>())
+    .def(py::init<InteractionType>())
+    .def(py::init<std::initializer_list<InteractionType>>())
+    .def_static("all", []() { return InteractionTypeSet::all(); })
+    .def("is_all", &InteractionTypeSet::is_all)
+    .def("empty", &InteractionTypeSet::empty)
+    .def("members", [](const InteractionTypeSet& self) {
+        auto members = self.members();
+        py::list out;
+        for (auto type : members) out.append(type);
+        return out;
+      })
+    .def("__len__", [](const InteractionTypeSet& self) { return static_cast<std::size_t>(self.count()); })
+    .def("__contains__", [](const InteractionTypeSet& self, const InteractionType& value) {
+        return self.contains(value);
+      })
+    .def("__or__", [](const InteractionTypeSet& lhs, const InteractionTypeSet& rhs) {
+        auto out = lhs;
+        out |= rhs;
+        return out;
+      }, py::is_operator())
+    .def("__or__", [](const InteractionTypeSet& lhs, const InteractionType& rhs) {
+        auto out = lhs;
+        out |= rhs;
+        return out;
+      }, py::is_operator())
+    .def("__ror__", [](const InteractionTypeSet& rhs, const InteractionTypeSet& lhs) {
+        auto out = lhs;
+        out |= rhs;
+        return out;
+      }, py::is_operator())
+    .def("__ror__", [](const InteractionTypeSet& rhs, const InteractionType& lhs) {
+        auto out = rhs;
+        out |= lhs;
+        return out;
+      }, py::is_operator())
+    .def("__ior__", [](InteractionTypeSet& lhs, const InteractionTypeSet& rhs) -> InteractionTypeSet& {
+        lhs |= rhs;
+        return lhs;
+      }, py::is_operator())
+    .def("__ior__", [](InteractionTypeSet& lhs, const InteractionType& rhs) -> InteractionTypeSet& {
+        lhs |= rhs;
+        return lhs;
+      }, py::is_operator())
+    .def("__str__", [](const InteractionTypeSet& self) {
+        return interaction_type_set_to_string(self, "|");
+      })
+    .def("__repr__", [](const InteractionTypeSet& self) {
+        return std::string("InteractionTypeSet(") + interaction_type_set_to_string(self, "|") + ")";
       });
 
   // A contact between two entities with distance and interaction type
@@ -592,10 +723,12 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
         auto ts = compute::snapshot_of(topo, topo.conformer());
         return eng.compute(ts);
       }, py::arg("topology"))
-    .def("compute", [](const MsEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
+    .def("compute", [](const MsEngine& eng, const Topology& topo, py::object only) {
         auto ts = compute::snapshot_of(topo, topo.conformer());
-        return eng.compute(ts, std::move(only));
-      }, py::arg("topology"), py::arg("only"));
+        auto filter = parse_optional_python_interactions(only);
+        if (!filter || filter->is_all()) return eng.compute(ts);
+        return eng.compute(ts, std::move(filter));
+      }, py::arg("topology"), py::arg("only") = py::none());
 
   py::class_<AgEngine>(m, "ArpeggioContactsEngine")
     .def(py::init<>())
@@ -603,10 +736,12 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
         auto ts = compute::snapshot_of(topo, topo.conformer());
         return eng.compute(ts);
       }, py::arg("topology"))
-    .def("compute", [](const AgEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
+    .def("compute", [](const AgEngine& eng, const Topology& topo, py::object only) {
         auto ts = compute::snapshot_of(topo, topo.conformer());
-        return eng.compute(ts, std::move(only));
-      }, py::arg("topology"), py::arg("only"));
+        auto filter = parse_optional_python_interactions(only);
+        if (!filter || filter->is_all()) return eng.compute(ts);
+        return eng.compute(ts, std::move(filter));
+      }, py::arg("topology"), py::arg("only") = py::none());
 
   py::class_<GcEngine>(m, "GetContactsEngine")
     .def(py::init<>())
@@ -614,9 +749,11 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
         auto ts = compute::snapshot_of(topo, topo.conformer());
         return eng.compute(ts);
       }, py::arg("topology"))
-    .def("compute", [](const GcEngine& eng, const Topology& topo, std::optional<InteractionType> only) {
+    .def("compute", [](const GcEngine& eng, const Topology& topo, py::object only) {
         auto ts = compute::snapshot_of(topo, topo.conformer());
-        return eng.compute(ts, std::move(only));
-      }, py::arg("topology"), py::arg("only"));
+        auto filter = parse_optional_python_interactions(only);
+        if (!filter || filter->is_all()) return eng.compute(ts);
+        return eng.compute(ts, std::move(filter));
+      }, py::arg("topology"), py::arg("only") = py::none());
 }
 } // namespace lahuta::bindings

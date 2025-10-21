@@ -43,7 +43,7 @@ struct ContactsOptions {
   std::string database_path;
 
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
-  InteractionType interaction_type = InteractionType::All;
+  InteractionTypeSet interaction_types = InteractionTypeSet::all();
 
   bool want_json   = false;
   bool want_text   = false;
@@ -89,7 +89,7 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::Provider, 0, "p", "provider", validate::Provider,
    "  --provider, -p <provider>    \tContact provider: 'molstar', 'arpeggio', or 'getcontacts' (default: molstar)."},
   {ContactsOptionIndex::InteractionType, 0, "i", "interaction", validate::ContactType,
-   "  --interaction, -i <type>     \tInteraction type: 'hbond', 'hydrophobic', 'ionic', etc.\n"},
+   "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', etc. Repeat or comma-separate to combine.\n"},
   {0, 0, "", "", option::Arg::None,
    "\nOutput Options:"},
   {ContactsOptionIndex::OutputJson, 0, "", "json", option::Arg::None,
@@ -193,9 +193,26 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
 
     // Parse interaction type
-    if (options[contacts_opts::ContactsOptionIndex::InteractionType]) {
-      std::string interaction = options[contacts_opts::ContactsOptionIndex::InteractionType].arg;
-      cli.interaction_type = get_interaction_type(interaction);
+    using coi = contacts_opts::ContactsOptionIndex;
+    if (options[coi::InteractionType]) {
+      bool has_selection = false;
+      InteractionTypeSet selected;
+      for (const option::Option* opt = &options[coi::InteractionType]; opt != nullptr; opt = opt->next()) {
+        std::string_view arg = opt->arg ? opt->arg : "";
+        auto parsed = parse_interaction_type_sequence(arg, ',');
+        if (!parsed) parsed = parse_interaction_type_sequence(arg, '|');
+        if (!parsed) {
+          Logger::get_logger()->error("Invalid interaction type specification '{}'", arg);
+          return 1;
+        }
+        if (!has_selection) {
+          selected = *parsed;
+          has_selection = true;
+        } else {
+          selected |= *parsed;
+        }
+      }
+      if (has_selection) cli.interaction_types = selected;
     }
 
     // Parse output options
@@ -248,7 +265,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       {
         pipeline::compute::ContactsParams p{};
         p.provider = cli.provider;
-        p.type     = cli.interaction_type;
+        p.type     = cli.interaction_types;
         p.channel  = "contacts";
         p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
                               : pipeline::compute::ContactsOutputFormat::Text;
@@ -296,7 +313,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         {
           pipeline::compute::ContactsParams p{};
           p.provider = cli.provider;
-          p.type     = cli.interaction_type;
+          p.type     = cli.interaction_types;
           p.channel  = "contacts";
           p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
                                 : pipeline::compute::ContactsOutputFormat::Text;

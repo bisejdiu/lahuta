@@ -51,6 +51,26 @@ def test_provider_engine_molstar_counts_and_samples(luni: lxx.LahutaSystem, topo
     assert atom_pair(29, 37, lxx.Category.HydrogenBond) in keys_hb
 
 
+def test_compute_contacts_multiple_interactions(topo: lxx.Topology) -> None:
+    combo = compute_contacts(
+        topo,
+        provider="molstar",
+        only=[lxx.InteractionType.HydrogenBond, lxx.InteractionType.WeakHydrogenBond],
+    )
+    assert combo.size() > 0
+
+    categories = {c.type.category for c in combo}
+    assert categories.issubset({lxx.Category.HydrogenBond, lxx.Category.WeakHydrogenBond})
+
+    combo_or = compute_contacts(
+        topo,
+        provider="molstar",
+        only=lxx.InteractionType.HydrogenBond | lxx.InteractionType.WeakHydrogenBond,
+    )
+    assert combo_or.size() == combo.size()
+    assert all(c.type.category in categories for c in combo_or)
+
+
 def test_self_hydrophobic_like_count_and_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
     sel = atoms(lambda a: a.type.has(lxx.AtomType.Hydrophobic))
 

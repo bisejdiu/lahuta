@@ -1,13 +1,6 @@
-"""
-Contact detection and analysis.
-
-Provides a simplified, Pythonic interface for contact detection between
-molecular entities using flexible selectors and optional custom interaction testers.
-"""
-
 from __future__ import annotations
 
-from typing import Callable, Literal, TypeAlias, overload
+from typing import Callable, Iterable, Literal, TypeAlias, overload
 
 from ..lib import lahuta as lxx
 from .selectors import Selector
@@ -18,7 +11,7 @@ Provider:     TypeAlias = Literal["molstar", "arpeggio"]
 SelectorLike: TypeAlias = Selector[lxx.AtomRec] | Selector[lxx.RingRec] | Selector[lxx.GroupRec]
 
 DEFAULT_PROVIDER: Provider = "molstar"
-SUPPORTED_PROVIDERS = frozenset(["molstar", "arpeggio"])
+SUPPORTED_PROVIDERS = frozenset(["molstar", "arpeggio", "getcontacts"])
 
 def _create_search_options(distance_max: float | None = None, opts: lxx.SearchOptions | None = None) -> lxx.SearchOptions:
     """Create or modify search options.
@@ -142,7 +135,7 @@ def find_contacts(
 def compute_contacts(
     topology: lxx.Topology,
     provider: Provider = DEFAULT_PROVIDER,
-    only: lxx.InteractionType | None = None,
+    only: lxx.InteractionType | lxx.InteractionTypeSet | Iterable[lxx.InteractionType] | None = None,
 ) -> lxx.ContactSet:
     """Compute molecular contacts using predefined interactions types and providers.
 
@@ -170,7 +163,35 @@ def compute_contacts(
     # Compute contacts with optional filtering
     if only is None:
         return engine.compute(topology)
-    return engine.compute(topology, only)
+
+    interaction_filter = _normalize_interactions(only)
+    if interaction_filter.is_all():
+        return engine.compute(topology)
+    return engine.compute(topology, interaction_filter)
+
+
+def _normalize_interactions(
+    value: lxx.InteractionType | lxx.InteractionTypeSet | Iterable[lxx.InteractionType],
+) -> lxx.InteractionTypeSet:
+    if isinstance(value, lxx.InteractionTypeSet):
+        return value
+    if isinstance(value, lxx.InteractionType):
+        return lxx.InteractionTypeSet(value)
+
+    result = lxx.InteractionTypeSet()
+    for item in value:
+        if isinstance(item, lxx.InteractionTypeSet):
+            result |= item
+        elif isinstance(item, lxx.InteractionType):
+            result |= item
+        else:
+            raise TypeError(
+                "only must be an InteractionType, InteractionTypeSet, or iterable of InteractionType values",
+            )
+
+    if result.empty():
+        raise ValueError("only iterable must not be empty")
+    return result
 
 __all__ = [
     "find_contacts",
