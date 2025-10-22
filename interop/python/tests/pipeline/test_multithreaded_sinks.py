@@ -3,7 +3,8 @@ from __future__ import annotations
 import tempfile
 import time
 from pathlib import Path
-from threading import Thread
+
+import pytest
 
 from lahuta.pipeline import (
     BackpressureConfig,
@@ -60,7 +61,6 @@ def test_multithreaded_writer_sinks() -> None:
 
     # Multi-threaded should generally be faster for slow I/O tasks
     # (though we don't enforce strict timing due to test environment variability)
-    print(f"Single-threaded: {single_duration:.3f}s, Multi-threaded: {multi_duration:.3f}s")
 
 
 def test_multithreaded_file_sinks() -> None:
@@ -185,6 +185,22 @@ def test_backpressure_config_with_writer_threads() -> None:
         assert "writer_threads" in str(e)
 
 
+def test_writer_thread_validation_errors() -> None:
+    """Ensure invalid writer thread counts raise helpful errors."""
+    p = Pipeline(FileSource(["item"]))
+
+    with pytest.raises(ValueError):
+        p.add_task(
+            name="invalid_task",
+            task=lambda ctx: ctx.path,
+            writer_threads=0,
+        )
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        with pytest.raises(TypeError):
+            p.to_files("some_channel", path=Path(tmp_dir) / "out.jsonl", writer_threads=True)
+
+
 def test_sharded_files_with_multiple_writers() -> None:
     """Test sharded file output with multiple writer threads."""
     # Note: Sharded files seem to have a pre-existing issue, so we'll test the API
@@ -216,15 +232,3 @@ def test_sharded_files_with_multiple_writers() -> None:
 
         # Verify the output directory was created (even if files aren't)
         assert out_dir.exists()
-
-        print("Sharded files API test passed (actual file creation known issue)")
-
-
-if __name__ == "__main__":
-    test_multithreaded_writer_sinks()
-    test_multithreaded_file_sinks()
-    test_mixed_writer_thread_configurations()
-    test_backpressure_config_with_writer_threads()
-    test_sharded_files_with_multiple_writers()
-    print("All multi-threaded sink tests passed!")
-

@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <mutex>
 #include <string>
 #include <string_view>
 
@@ -24,16 +25,24 @@ public:
     if (!out_) throw std::runtime_error("cannot open output file: " + path_);
   }
   void write(EmissionView e) override {
+    std::lock_guard<std::mutex> lk(mu_);
     out_.write(e.payload.data(), static_cast<std::streamsize>(e.payload.size()));
     out_.put('\n');
   }
-  void flush() override { out_.flush(); }
-  void close() override { if (out_.is_open()) out_.close(); }
+  void flush() override {
+    std::lock_guard<std::mutex> lk(mu_);
+    out_.flush();
+  }
+  void close() override {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (out_.is_open()) out_.close();
+  }
   std::string file() const { return path_; }
 
 private:
   std::string path_;
   std::ofstream out_;
+  mutable std::mutex mu_;
 };
 
 } // namespace lahuta::pipeline::dynamic

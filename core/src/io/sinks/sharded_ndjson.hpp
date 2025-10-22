@@ -29,7 +29,8 @@ public:
   }
 
   void write(EmissionView e) override {
-    ensure_open();
+    std::lock_guard<std::mutex> lk(mu_);
+    ensure_open_locked();
     const std::size_t bytes = e.payload.size() + 1; // include newline
     out_.write(e.payload.data(), static_cast<std::streamsize>(e.payload.size()));
     out_.put('\n');
@@ -37,7 +38,7 @@ public:
     current_shard_bytes_ += bytes;
     const bool rotate_by_count = (shard_size_ > 0) && (current_in_shard_ >= shard_size_);
     const bool rotate_by_bytes = (max_shard_bytes_ > 0) && (current_shard_bytes_ >= max_shard_bytes_);
-    if (rotate_by_count || rotate_by_bytes) rotate();
+    if (rotate_by_count || rotate_by_bytes) rotate_locked();
   }
 
   std::vector<std::string> files() const {
@@ -45,11 +46,17 @@ public:
     return files_;
   }
 
-  void flush() override { if (out_.is_open()) out_.flush(); }
-  void close() override { if (out_.is_open()) out_.close(); }
+  void flush() override {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (out_.is_open()) out_.flush();
+  }
+  void close() override {
+    std::lock_guard<std::mutex> lk(mu_);
+    if (out_.is_open()) out_.close();
+  }
 
 private:
-  void ensure_open() {
+  void ensure_open_locked() {
     if (out_.is_open()) return;
     char buf[64];
     std::snprintf(buf, sizeof(buf), "part-%05zu.ndjson", shard_index_++);
@@ -60,7 +67,7 @@ private:
     current_in_shard_    = 0;
     current_shard_bytes_ = 0;
   }
-  void rotate() {
+  void rotate_locked() {
     if (out_.is_open()) out_.close();
     current_in_shard_    = 0;
     current_shard_bytes_ = 0;
@@ -71,6 +78,7 @@ private:
   std::ofstream out_;
   std::vector<std::string> files_;
   mutable std::mutex files_mu_;
+  std::mutex mu_;
   std::size_t current_in_shard_    = 0;
   std::size_t shard_index_         = 0;
   std::size_t max_shard_bytes_     = 0;

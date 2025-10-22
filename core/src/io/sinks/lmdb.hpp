@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -32,6 +33,7 @@ public:
   }
 
   void write(EmissionView e) override {
+    std::lock_guard<std::mutex> lk(mu_);
     // Payload layout (see serialization/specializations/model.hpp):
     // [1 byte success][4 bytes path_len][path][4 bytes blob_len][blob]
     const char* data = e.payload.data();
@@ -66,6 +68,17 @@ public:
   }
 
   void flush() override {
+    std::lock_guard<std::mutex> lk(mu_);
+    flush_locked();
+  }
+
+  void close() override {
+    std::lock_guard<std::mutex> lk(mu_);
+    flush_locked();
+  }
+
+private:
+  void flush_locked() {
     if (started_) {
       writer_.commit_txn();
       since_commit_ = 0;
@@ -73,15 +86,11 @@ public:
     }
   }
 
-  void close() override {
-    flush();
-  }
-
-private:
   lahuta::LMDBWriter writer_;
   std::size_t batch_size_ = 1024;
   std::size_t since_commit_ = 0;
   bool started_ = false;
+  std::mutex mu_;
 };
 
 } // namespace lahuta::pipeline::dynamic

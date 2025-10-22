@@ -16,6 +16,7 @@
 #include "io/sinks/ndjson.hpp"
 #include "logging.hpp"
 #include "pipeline/compute/parameters.hpp"
+#include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
@@ -108,7 +109,7 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::BatchSize, 0, "b", "batch-size", validate::Required,
    "  --batch-size, -b <size>      \tBatch size for processing (default: 200)."},
   {ContactsOptionIndex::WriterThreads, 0, "", "writer-threads", validate::Required,
-   "  --writer-threads <num>       \tNumber of writer threads per sink (default: 1)."},
+   "  --writer-threads <num>       \tNumber of writer threads per sink (default: pipeline setting)."},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace contacts_opts
@@ -133,6 +134,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
   try {
     // parse CLI Arguments into ContactsOptions
     ContactsOptions cli;
+    const auto default_sink_cfg = dynamic::get_default_backpressure_config();
+    cli.writer_threads = default_sink_cfg.writer_threads;
 
     // parse source options
     int source_count = 0;
@@ -291,7 +294,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
 
       // Sinks
-      dynamic::BackpressureConfig sink_cfg;
+      auto sink_cfg = dynamic::get_default_backpressure_config();
       sink_cfg.writer_threads = cli.writer_threads;
       if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"), sink_cfg);
       if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"), sink_cfg);
@@ -341,7 +344,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         }
 
         // Sinks
-        dynamic::BackpressureConfig sink_cfg;
+        auto sink_cfg = dynamic::get_default_backpressure_config();
         sink_cfg.writer_threads = cli.writer_threads;
         if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"), sink_cfg);
         if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"), sink_cfg);
