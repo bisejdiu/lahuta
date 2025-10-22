@@ -5,6 +5,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -101,6 +102,12 @@ public:
     Debug
   };
 
+  struct StageTiming {
+    std::string label;
+    double setup_seconds   = 0.0;
+    double compute_seconds = 0.0;
+  };
+
   struct RunReport {
     double total_seconds   = 0.0;
     double cpu_seconds     = 0.0;
@@ -120,6 +127,25 @@ public:
     bool        all_thread_safe   = true;
     std::size_t run_token         = 0;
     bool        metrics_enabled   = true;
+    std::size_t peak_inflight_items = 0;
+    double      average_queue_depth = 0.0;
+    double      permit_wait_total_seconds = 0.0;
+    double      permit_wait_min_seconds   = 0.0;
+    double      permit_wait_max_seconds   = 0.0;
+    double      permit_wait_avg_seconds   = 0.0;
+    std::size_t permit_wait_events        = 0;
+    std::vector<StageTiming> stage_breakdown;
+    std::uint64_t mux_enqueued_msgs  = 0;
+    std::uint64_t mux_enqueued_bytes = 0;
+    std::uint64_t mux_written_msgs   = 0;
+    std::uint64_t mux_written_bytes  = 0;
+    std::uint64_t mux_stall_ns       = 0;
+    std::uint64_t mux_drops          = 0;
+    std::size_t   mux_queue_depth_peak  = 0;
+    std::size_t   mux_queue_bytes_peak  = 0;
+    std::size_t   mux_active_writers_total = 0;
+    std::size_t   mux_active_writers_peak  = 0;
+    std::size_t   mux_sink_count = 0;
   };
 
   explicit StageManager(SourcePtr src)
@@ -310,7 +336,8 @@ public:
     const bool metrics_enabled = reporting_level_ != ReportingLevel::Off;
 
     if (metrics_enabled) {
-      StageRunMetrics metrics;
+      StageRunMetrics metrics(reporting_level_ == ReportingLevel::Debug);
+      metrics.configure_stage_breakdown(snapshot.labels.size());
       std::shared_ptr<IRunObserver> observer_copy = reporting_level_ == ReportingLevel::Debug ? run_observer_ : nullptr;
       StageExecutor<StageRunMetrics> executor(snapshot, mux_, run_token, metrics, std::move(observer_copy));
       IngestItemStream item_stream(*src_, realizer_);
@@ -335,6 +362,8 @@ public:
 
       metrics_snapshot = metrics.snapshot();
     }
+
+    const auto sink_stats = mux_.stats();
 
     const auto total_end = std::chrono::steady_clock::now();
 
@@ -366,6 +395,66 @@ public:
     report.threads_used      = all_thread_safe ? requested_threads : std::size_t{1};
     report.run_token         = run_token;
     report.metrics_enabled   = metrics_enabled;
+    report.peak_inflight_items = metrics_snapshot.inflight_peak;
+    if (metrics_snapshot.inflight_samples > 0) {
+      report.average_queue_depth = static_cast<double>(metrics_snapshot.inflight_sum) /
+                                   static_cast<double>(metrics_snapshot.inflight_samples);
+    }
+    report.permit_wait_events = static_cast<std::size_t>(metrics_snapshot.permit_wait_samples);
+    if (report.permit_wait_events > 0) {
+      report.permit_wait_total_seconds = to_seconds(std::chrono::nanoseconds(metrics_snapshot.permit_wait_ns_total));
+      report.permit_wait_min_seconds   = to_seconds(std::chrono::nanoseconds(metrics_snapshot.permit_wait_ns_min));
+      report.permit_wait_max_seconds   = to_seconds(std::chrono::nanoseconds(metrics_snapshot.permit_wait_ns_max));
+      report.permit_wait_avg_seconds   = report.permit_wait_total_seconds /
+                                         static_cast<double>(report.permit_wait_events);
+    }
+    if (metrics_enabled && reporting_level_ == ReportingLevel::Debug &&
+        !metrics_snapshot.stage_compute_ns.empty()) {
+      const auto stage_count = std::min({metrics_snapshot.stage_compute_ns.size(),
+                                         metrics_snapshot.stage_setup_ns.size(),
+                                         snapshot.labels.size()});
+      report.stage_breakdown.reserve(stage_count);
+      for (std::size_t i = 0; i < stage_count; ++i) {
+        StageTiming timing;
+        timing.label = std::string(snapshot.labels[i].to_string_view());
+        timing.setup_seconds   = to_seconds(std::chrono::nanoseconds(metrics_snapshot.stage_setup_ns[i]));
+        timing.compute_seconds = to_seconds(std::chrono::nanoseconds(metrics_snapshot.stage_compute_ns[i]));
+        report.stage_breakdown.push_back(std::move(timing));
+      }
+    }
+    std::uint64_t mux_enqueued_msgs  = 0;
+    std::uint64_t mux_enqueued_bytes = 0;
+    std::uint64_t mux_written_msgs   = 0;
+    std::uint64_t mux_written_bytes  = 0;
+    std::uint64_t mux_stall_ns       = 0;
+    std::uint64_t mux_drops          = 0;
+    std::size_t mux_queue_depth_peak = 0;
+    std::size_t mux_queue_bytes_peak = 0;
+    std::size_t mux_active_writers_total = 0;
+    std::size_t mux_active_writers_peak  = 0;
+    for (const auto& s : sink_stats) {
+      mux_enqueued_msgs  += s.enqueued_msgs;
+      mux_enqueued_bytes += s.enqueued_bytes;
+      mux_written_msgs   += s.written_msgs;
+      mux_written_bytes  += s.written_bytes;
+      mux_stall_ns       += s.stalled_ns;
+      mux_drops          += s.drops;
+      if (s.queue_high_water_msgs  > mux_queue_depth_peak) mux_queue_depth_peak  = s.queue_high_water_msgs;
+      if (s.queue_high_water_bytes > mux_queue_bytes_peak) mux_queue_bytes_peak  = s.queue_high_water_bytes;
+      mux_active_writers_total += s.writer_threads;
+      if (s.writer_threads > mux_active_writers_peak) mux_active_writers_peak = s.writer_threads;
+    }
+    report.mux_sink_count          = sink_stats.size();
+    report.mux_enqueued_msgs       = mux_enqueued_msgs;
+    report.mux_enqueued_bytes      = mux_enqueued_bytes;
+    report.mux_written_msgs        = mux_written_msgs;
+    report.mux_written_bytes       = mux_written_bytes;
+    report.mux_stall_ns            = mux_stall_ns;
+    report.mux_drops               = mux_drops;
+    report.mux_queue_depth_peak    = mux_queue_depth_peak;
+    report.mux_queue_bytes_peak    = mux_queue_bytes_peak;
+    report.mux_active_writers_total = mux_active_writers_total;
+    report.mux_active_writers_peak  = mux_active_writers_peak;
 
     Logger::get_logger()->debug(
       "StageManager: completed run_token {} (total={:.6f}s cpu={:.6f}s io={:.6f}s items={} skipped={})",

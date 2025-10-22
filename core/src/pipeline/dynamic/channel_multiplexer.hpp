@@ -135,6 +135,9 @@ public:
     std::size_t queue_msgs  = 0;
     std::size_t queue_bytes = 0;
     std::size_t writer_threads = 0;
+    std::size_t queue_high_water_msgs  = 0;
+    std::size_t queue_high_water_bytes = 0;
+    std::size_t active_writers         = 0;
   };
 
   std::vector<SinkStatsSnapshot> stats() const {
@@ -154,6 +157,9 @@ public:
       s.queue_msgs     = si->queue_.size_msgs();
       s.queue_bytes    = si->queue_.size_bytes();
       s.writer_threads = si->cfg_.writer_threads;
+      s.queue_high_water_msgs  = si->queue_.high_water_msgs();
+      s.queue_high_water_bytes = si->queue_.high_water_bytes();
+      s.active_writers         = si->active_writers_.load(std::memory_order_relaxed);
       out.push_back(std::move(s));
     }
     return out;

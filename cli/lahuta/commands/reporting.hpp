@@ -1,6 +1,7 @@
 #ifndef LAHUTA_CLI_COMMANDS_REPORTING_HPP
 #define LAHUTA_CLI_COMMANDS_REPORTING_HPP
 
+#include <chrono>
 #include <string_view>
 
 #include "logging.hpp"
@@ -30,6 +31,41 @@ log_pipeline_report(std::string_view label, const pipeline::dynamic::StageManage
                  "throughput={:.2f} items/s",
                  label, report.items_total, report.items_processed,
                  report.items_skipped, throughput);
+
+    logger->info("{} pipeline concurrency: peak_inflight={} avg_queue_depth={:.2f}",
+                 label, report.peak_inflight_items, report.average_queue_depth);
+
+    if (report.permit_wait_events > 0) {
+      logger->info("{} permit waits: events={} total={:.6f}s avg={:.6f}s min={:.6f}s max={:.6f}s",
+                   label,
+                   report.permit_wait_events,
+                   report.permit_wait_total_seconds,
+                   report.permit_wait_avg_seconds,
+                   report.permit_wait_min_seconds,
+                   report.permit_wait_max_seconds);
+    } else {
+      logger->info("{} permit waits: no blocking observed", label);
+    }
+
+    const double stall_seconds = std::chrono::duration<double>(std::chrono::nanoseconds(report.mux_stall_ns)).count();
+    logger->info("{} multiplexer: sinks={} enq_msgs={} written_msgs={} drops={} stall={:.6f}s queue_peak={} active_writers(total/peak)={}/{}",
+                 label,
+                 report.mux_sink_count,
+                 report.mux_enqueued_msgs,
+                 report.mux_written_msgs,
+                 report.mux_drops,
+                 stall_seconds,
+                 report.mux_queue_depth_peak,
+                 report.mux_active_writers_total,
+                 report.mux_active_writers_peak);
+
+    if (!report.stage_breakdown.empty()) {
+      logger->info("{} stage breakdown:", label);
+      for (const auto& timing : report.stage_breakdown) {
+        logger->info("  {} setup={:.6f}s compute={:.6f}s",
+                     timing.label, timing.setup_seconds, timing.compute_seconds);
+      }
+    }
   } else {
     logger->info("{} pipeline summary: total={:.3f}s (metrics disabled)",
                  label, report.total_seconds);

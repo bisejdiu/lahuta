@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstdint>
 #include <thread>
 #include <vector>
 
@@ -21,6 +22,8 @@ TEST(StageRunMetricsTest, AggregatesSingleThread) {
   metrics.inc_items_skipped(handle);
 
   metrics.add_flush(std::chrono::nanoseconds(13));
+  metrics.on_item_inflight_enter();
+  metrics.on_item_inflight_exit();
 
   const auto snapshot = metrics.snapshot();
   EXPECT_EQ(snapshot.ingest_ns, 5);
@@ -30,6 +33,10 @@ TEST(StageRunMetricsTest, AggregatesSingleThread) {
   EXPECT_EQ(snapshot.flush_ns, 13);
   EXPECT_EQ(snapshot.items_total, std::size_t{1});
   EXPECT_EQ(snapshot.items_skipped, std::size_t{1});
+  EXPECT_EQ(snapshot.inflight_peak, std::size_t{1});
+  EXPECT_EQ(snapshot.inflight_samples, std::uint64_t{2});
+  EXPECT_EQ(snapshot.inflight_sum, std::uint64_t{1});
+  EXPECT_EQ(snapshot.permit_wait_ns_total, std::uint64_t{0});
 }
 
 TEST(StageRunMetricsTest, AggregatesAcrossThreads) {
@@ -60,6 +67,10 @@ TEST(StageRunMetricsTest, AggregatesAcrossThreads) {
   }
 
   metrics.add_flush(std::chrono::nanoseconds(100));
+  metrics.on_item_inflight_enter();
+  metrics.on_item_inflight_enter();
+  metrics.on_item_inflight_exit();
+  metrics.on_item_inflight_exit();
 
   std::int64_t expected_ingest = 0;
   std::int64_t expected_prepare = 0;
@@ -84,4 +95,31 @@ TEST(StageRunMetricsTest, AggregatesAcrossThreads) {
   EXPECT_EQ(snapshot.flush_ns, 100);
   EXPECT_EQ(snapshot.items_total, static_cast<std::size_t>(threads));
   EXPECT_EQ(snapshot.items_skipped, expected_skipped);
+  EXPECT_EQ(snapshot.inflight_peak, std::size_t{2});
+  EXPECT_EQ(snapshot.permit_wait_ns_total, std::uint64_t{0});
+}
+
+TEST(StageRunMetricsTest, RecordsStageBreakdownWhenEnabled) {
+  StageRunMetrics metrics(/*enable_stage_breakdown=*/true);
+  metrics.configure_stage_breakdown(2);
+  StageRunMetrics::ThreadHandle handle;
+  metrics.ensure(handle);
+  metrics.add_stage_setup(handle, 0, std::chrono::nanoseconds(10));
+  metrics.add_stage_compute(handle, 0, std::chrono::nanoseconds(20));
+  metrics.add_stage_setup(handle, 1, std::chrono::nanoseconds(30));
+  metrics.add_stage_compute(handle, 1, std::chrono::nanoseconds(40));
+  metrics.add_permit_wait(handle, std::chrono::nanoseconds(50));
+  metrics.add_permit_wait(handle, std::chrono::nanoseconds(150));
+
+  const auto snapshot = metrics.snapshot();
+  ASSERT_EQ(snapshot.stage_setup_ns.size(), std::size_t{2});
+  ASSERT_EQ(snapshot.stage_compute_ns.size(), std::size_t{2});
+  EXPECT_EQ(snapshot.stage_setup_ns[0], 10);
+  EXPECT_EQ(snapshot.stage_compute_ns[0], 20);
+  EXPECT_EQ(snapshot.stage_setup_ns[1], 30);
+  EXPECT_EQ(snapshot.stage_compute_ns[1], 40);
+  EXPECT_EQ(snapshot.permit_wait_ns_total, std::uint64_t{200});
+  EXPECT_EQ(snapshot.permit_wait_samples, std::uint64_t{2});
+  EXPECT_EQ(snapshot.permit_wait_ns_min, std::int64_t{50});
+  EXPECT_EQ(snapshot.permit_wait_ns_max, std::int64_t{150});
 }

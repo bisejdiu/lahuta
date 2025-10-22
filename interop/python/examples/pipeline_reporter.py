@@ -58,6 +58,23 @@ def _summarize(report: dict[str, object]) -> str:
         "total_seconds": report["total_seconds"],
         "cpu_seconds": report["cpu_seconds"],
         "io_seconds": report["io_seconds"],
+        "peak_inflight_items": report.get("peak_inflight_items"),
+        "average_queue_depth": report.get("average_queue_depth"),
+        "permit_waits": {
+            "events": report.get("permit_wait_events"),
+            "total_seconds": report.get("permit_wait_total_seconds"),
+            "avg_seconds": report.get("permit_wait_avg_seconds"),
+            "min_seconds": report.get("permit_wait_min_seconds"),
+            "max_seconds": report.get("permit_wait_max_seconds"),
+        },
+        "mux": {
+            "sinks": report.get("mux_sink_count"),
+            "queue_peak": report.get("mux_queue_depth_peak"),
+            "enqueued_msgs": report.get("mux_enqueued_msgs"),
+            "written_msgs": report.get("mux_written_msgs"),
+            "drops": report.get("mux_drops"),
+        },
+        "stage_breakdown": report.get("stage_breakdown"),
     }
     return json.dumps(interesting, indent=2)
 

@@ -89,12 +89,29 @@ public:
     logger->debug("StageExecutor[run_token={}]: starting run with {} thread(s) and {} stage(s)",
                   run_token_, threads, stage_.labels.size());
 
+    metrics_.configure_stage_breakdown(stage_.labels.size());
+
+    struct InflightGuard {
+      Metrics& metrics;
+      bool active{false};
+      explicit InflightGuard(Metrics& m) : metrics(m), active(true) {
+        metrics.on_item_inflight_enter();
+      }
+      void release() {
+        if (!active) return;
+        metrics.on_item_inflight_exit();
+        active = false;
+      }
+      ~InflightGuard() { release(); }
+    };
+
     // Worker stage: process each PipelineItem end-to-end on a worker thread
     auto observer = observer_;
     Stage<PipelineItem, void> process_stage(
       [this, observer](PipelineItem item, IEmitter<void>&) {
         auto& tls_state = get_tls_state();
         auto& metrics_handle = ensure_metrics_handle(tls_state);
+        InflightGuard inflight_guard{metrics_};
 
         auto logger = Logger::get_logger();
         const char* session_label = item.session_id.empty() ? "<none>" : item.session_id.c_str();
@@ -130,7 +147,7 @@ public:
 
         const auto prepare_start = after_setup;
         // Prepare per-item state and publish well-known objects into TaskContext
-        const bool prepared = prepare_item_state(item, ctx, tls_state.data, permit, shared_coords, conformer);
+        const bool prepared = prepare_item_state(item, ctx, tls_state.data, permit, shared_coords, conformer, metrics_handle);
         const auto after_prepare = Clock::now();
         metrics_.add_prepare(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(after_prepare - prepare_start));
         if (!prepared) {
@@ -144,16 +161,26 @@ public:
         }
 
         const auto compute_start = after_prepare;
-        for (const auto& lbl : stage_.labels) {
+        for (std::size_t index = 0; index < stage_.labels.size(); ++index) {
+          const auto& lbl = stage_.labels[index];
+          const auto stage_run_begin = Clock::now();
           (void)tls_state.engine->template run_from<void>(lbl);
+          const auto stage_run_end = Clock::now();
+          metrics_.add_stage_compute(metrics_handle, index, std::chrono::duration_cast<std::chrono::nanoseconds>(stage_run_end - stage_run_begin));
           auto res = tls_state.engine->get_computation_result(lbl);
           const bool ok = !res.has_error();
           if (observer) observer->on_stage_complete(run_token_, item, lbl.to_string_view(), ok);
-          if (!ok) break;
+          if (!ok) {
+            const auto stage_end = Clock::now();
+            metrics_.add_stage_setup(metrics_handle, index, std::chrono::duration_cast<std::chrono::nanoseconds>(stage_end - stage_run_end));
+            break;
+          }
           if (res.has_value() && res.get_type() == typeid(EmissionList)) {
             auto emits = res.template move_value<EmissionList>();
             for (auto &e : emits) mux_.emit(std::move(e));
           }
+          const auto stage_end = Clock::now();
+          metrics_.add_stage_setup(metrics_handle, index, std::chrono::duration_cast<std::chrono::nanoseconds>(stage_end - stage_run_end));
         }
         const auto after_compute = Clock::now();
         metrics_.add_compute(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(after_compute - compute_start));
@@ -231,7 +258,8 @@ private:
       compute::PipelineContext& p_ctx,
       std::unique_ptr<StreamSession::Permit>& permit,
       std::shared_ptr<RDGeom::POINT3D_VECT>& shared_coords,
-      std::shared_ptr<RDKit::Conformer>& conformer) {
+      std::shared_ptr<RDKit::Conformer>& conformer,
+      ThreadHandle& metrics_handle) {
 
     p_ctx.ctx          = &t_ctx;
     p_ctx.item_path    = item.item_path;
@@ -242,7 +270,11 @@ private:
     compute::set_frame_metadata(t_ctx, item);
 
     if (item.session) {
-      permit = std::make_unique<StreamSession::Permit>(item.session->acquire_permit());
+      const auto permit_begin = Clock::now();
+      auto acquired = item.session->acquire_permit();
+      const auto permit_end = Clock::now();
+      permit = std::make_unique<StreamSession::Permit>(std::move(acquired));
+      metrics_.add_permit_wait(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(permit_end - permit_begin));
     } else {
       permit.reset();
     }

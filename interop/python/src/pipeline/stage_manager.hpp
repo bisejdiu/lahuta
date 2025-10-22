@@ -288,6 +288,33 @@ inline void bind_stage_manager(py::module_ &md) {
           d["all_thread_safe"]   = report.all_thread_safe;
           d["run_token"]         = report.run_token;
           d["metrics_enabled"]   = report.metrics_enabled;
+          d["peak_inflight_items"]   = report.peak_inflight_items;
+          d["average_queue_depth"]   = report.average_queue_depth;
+          d["permit_wait_events"]    = report.permit_wait_events;
+          d["permit_wait_total_seconds"] = report.permit_wait_total_seconds;
+          d["permit_wait_min_seconds"]   = report.permit_wait_min_seconds;
+          d["permit_wait_max_seconds"]   = report.permit_wait_max_seconds;
+          d["permit_wait_avg_seconds"]   = report.permit_wait_avg_seconds;
+          py::list stage_breakdown;
+          for (const auto& st : report.stage_breakdown) {
+            py::dict stage_entry;
+            stage_entry["label"] = st.label;
+            stage_entry["setup_seconds"] = st.setup_seconds;
+            stage_entry["compute_seconds"] = st.compute_seconds;
+            stage_breakdown.append(std::move(stage_entry));
+          }
+          d["stage_breakdown"] = std::move(stage_breakdown);
+          d["mux_sink_count"]        = report.mux_sink_count;
+          d["mux_enqueued_msgs"]     = report.mux_enqueued_msgs;
+          d["mux_enqueued_bytes"]    = report.mux_enqueued_bytes;
+          d["mux_written_msgs"]      = report.mux_written_msgs;
+          d["mux_written_bytes"]     = report.mux_written_bytes;
+          d["mux_stall_ns"]          = report.mux_stall_ns;
+          d["mux_drops"]             = report.mux_drops;
+          d["mux_queue_depth_peak"]  = report.mux_queue_depth_peak;
+          d["mux_queue_bytes_peak"]  = report.mux_queue_bytes_peak;
+          d["mux_active_writers_total"] = report.mux_active_writers_total;
+          d["mux_active_writers_peak"]  = report.mux_active_writers_peak;
           return d;
         })
 

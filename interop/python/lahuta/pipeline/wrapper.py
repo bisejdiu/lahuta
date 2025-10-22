@@ -110,9 +110,27 @@ class Pipeline:
     def get_reporting_level(self) -> ReportingLevel:
         return self._reporting_level
 
+    @staticmethod
+    def _clone_report(report: dict[str, Any] | None) -> dict[str, Any] | None:
+        if report is None:
+            return None
+        clone = dict(report)
+        stages = clone.get("stage_breakdown")
+        if isinstance(stages, list):
+            clone["stage_breakdown"] = [dict(stage) for stage in stages]
+        return clone
+
     def get_run_report(self) -> dict[str, Any] | None:
-        """Return the most recent run report, if available."""
-        return None if self._last_report is None else dict(self._last_report)
+        """
+        Return the most recent run report, if available.
+
+        When metrics are enabled the report includes pipeline totals as well as:
+            * peak_inflight_items / average_queue_depth
+            * permit_wait_* fields with min/avg/max acquisition latency
+            * mux_* counters summarising channel writer activity
+            * stage_breakdown (DEBUG): per-stage setup/compute timings
+        """
+        return self._clone_report(self._last_report)
 
     def _process_pool_guard(self, processes: int):
         class _Guard:
@@ -466,7 +484,7 @@ class Pipeline:
             _elapsed = time.perf_counter() - _start
             logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
             report = self._mgr.last_run_report()
-            self._last_report = dict(report) if report is not None else None
+            self._last_report = self._clone_report(report)
             return PipelineResult(_collect_memory_states())
 
         if backend == "processes":
@@ -535,7 +553,7 @@ class Pipeline:
                             )
 
             report = self._mgr.last_run_report()
-            self._last_report = dict(report) if report is not None else None
+            self._last_report = self._clone_report(report)
             return PipelineResult(_collect_memory_states())
 
         raise ValueError("backend must be either 'threads' or 'processes'")
