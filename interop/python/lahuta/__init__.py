@@ -68,7 +68,7 @@ try:
 except ImportError as e:
     raise ImportError(
         f"Lahuta C++ bindings could not be imported: {e}\n"
-        "Ensure Lahuta has been built and installed correctly. See INSTALL.md for details."
+        "Ensure Lahuta has been built and installed correctly. See README.md for details."
     ) from e
 
 

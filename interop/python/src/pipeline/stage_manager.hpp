@@ -20,6 +20,7 @@
 #include "interactions.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/dynamic/run_metrics.hpp"
 #include "pipeline/process_pool.hpp"
 #include "pipeline/process_task.hpp"
 #include "pipeline/thread_task.hpp"
@@ -42,19 +43,37 @@ inline InteractionTypeSet normalize_interaction_argument(py::handle obj) {
   return set;
 }
 
-inline void python_stage_executor_tls_cleanup(StageExecutor::ThreadLocalState& state) {
+using DefaultExecutor = StageExecutor<StageRunMetrics>;
+using NullExecutor    = StageExecutor<NullStageRunMetrics>;
+
+inline void python_stage_executor_tls_cleanup(DefaultExecutor::ThreadLocalState& state) {
   // During interpreter shutdown we cannot safely acquire the GIL. Fall back to direct reset.
   if (!Py_IsInitialized() || Py_IsFinalizing()) {
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
     return;
   }
   try {
     py::gil_scoped_acquire gil;
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
   } catch (const py::error_already_set&) {
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
   } catch (...) {
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
+  }
+}
+
+inline void python_stage_executor_tls_cleanup_null(NullExecutor::ThreadLocalState& state) {
+  if (!Py_IsInitialized() || Py_IsFinalizing()) {
+    NullExecutor::clear_thread_local_state(state);
+    return;
+  }
+  try {
+    py::gil_scoped_acquire gil;
+    NullExecutor::clear_thread_local_state(state);
+  } catch (const py::error_already_set&) {
+    NullExecutor::clear_thread_local_state(state);
+  } catch (...) {
+    NullExecutor::clear_thread_local_state(state);
   }
 }
 
@@ -82,7 +101,13 @@ inline double milliseconds_to_seconds(std::chrono::milliseconds ms) {
 } // namespace
 
 inline void bind_stage_manager(py::module_ &md) {
-  StageExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup);
+  DefaultExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup);
+  NullExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup_null);
+
+  py::enum_<StageManager::ReportingLevel>(md, "ReportingLevel")
+    .value("OFF", StageManager::ReportingLevel::Off)
+    .value("BASIC", StageManager::ReportingLevel::Basic)
+    .value("DEBUG", StageManager::ReportingLevel::Debug);
 
   py::class_<ITask, std::shared_ptr<ITask>> task(md, "Task");
 
@@ -262,6 +287,7 @@ inline void bind_stage_manager(py::module_ &md) {
           d["threads_used"]      = report.threads_used;
           d["all_thread_safe"]   = report.all_thread_safe;
           d["run_token"]         = report.run_token;
+          d["metrics_enabled"]   = report.metrics_enabled;
           return d;
         })
 
@@ -282,6 +308,12 @@ inline void bind_stage_manager(py::module_ &md) {
 
     .def("set_auto_builtins", [](StageManager& mgr, bool on) { mgr.set_auto_builtins(on); })
     .def("get_auto_builtins", [](StageManager& mgr) { return mgr.get_auto_builtins(); })
+    .def("set_reporting_level", [](StageManager& mgr, StageManager::ReportingLevel level) {
+          mgr.set_reporting_level(level);
+        })
+    .def("get_reporting_level", [](StageManager& mgr) {
+          return mgr.get_reporting_level();
+        })
 
     .def("set_flush_timeout", [](StageManager& mgr, double timeout_seconds) {
           mgr.set_flush_timeout(seconds_to_milliseconds(timeout_seconds));

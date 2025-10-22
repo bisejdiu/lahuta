@@ -32,6 +32,7 @@ from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, Sh
 
 # fmt: off
 StageManager = _lib.pipeline.StageManager
+ReportingLevel = _lib.pipeline.ReportingLevel
 CppTask: TypeAlias = _lib.pipeline.Task
 
 # Callable protocol for Python tasks that accept a PipelineContext and return any value
@@ -56,15 +57,6 @@ class Pipeline:
         mgr = _lib.pipeline.StageManager(source)
         self._mgr = mgr
         # Let Python own the default policy - auto-inject built-ins only when referenced
-        try:
-            self._mgr.set_auto_builtins(True)
-        except Exception:
-            pass
-        try:
-            self._mgr.set_flush_timeout(1.0) # To keep test runs fast
-        except Exception:
-            pass
-
         self._memory_sinks:     dict[str, list[_lib.pipeline.MemorySink]] = {}
         self._file_sinks:       dict[str, list[_lib.pipeline.NdjsonSink]] = {}
         self._sharded_sinks:    dict[str, list[_lib.pipeline.ShardedNdjsonSink]] = {}
@@ -81,8 +73,46 @@ class Pipeline:
                 self._system_params.is_model = True
             except Exception:
                 pass
-
         self._py_tasks: list[_MPPyTaskSpec] = [] # callable task registry for multiprocessing backend
+        self._reporting_level: ReportingLevel = ReportingLevel.BASIC
+        self._last_report: dict[str, Any] | None = None
+
+        try:
+            self._mgr.set_auto_builtins(True)
+        except Exception:
+            pass
+        try:
+            self._mgr.set_flush_timeout(1.0) # To keep test runs fast
+        except Exception:
+            pass
+        try:
+            self._mgr.set_reporting_level(self._reporting_level)
+        except AttributeError:
+            # Older runtimes lack reporting level support; leave at default.
+            pass
+
+    def set_reporting_level(self, level: ReportingLevel | str) -> None:
+        """Control pipeline metrics collection."""
+        if isinstance(level, str):
+            try:
+                level = ReportingLevel[level.upper()]
+            except KeyError as exc:
+                raise ValueError(f"Unknown reporting level '{level}'. Valid levels: {[e.name for e in ReportingLevel]}") from exc
+        if not isinstance(level, ReportingLevel):
+            raise TypeError("level must be a ReportingLevel enum or string name")
+        self._reporting_level = level
+        try:
+            self._mgr.set_reporting_level(level)
+        except AttributeError:
+            # Older extensions do not expose reporting levels
+            raise RuntimeError("Current Lahuta extension does not support reporting levels; rebuild Lahuta.") from None
+
+    def get_reporting_level(self) -> ReportingLevel:
+        return self._reporting_level
+
+    def get_run_report(self) -> dict[str, Any] | None:
+        """Return the most recent run report, if available."""
+        return None if self._last_report is None else dict(self._last_report)
 
     def _process_pool_guard(self, processes: int):
         class _Guard:
@@ -404,6 +434,7 @@ class Pipeline:
         processes: int | None = None,
         process_timeout: float | None = 300.0,
     ) -> PipelineResult:
+        self._last_report = None
         # Reset memory sinks so results do not accumulate across runs
         for sinks in self._memory_sinks.values():
             for s in sinks:
@@ -434,6 +465,8 @@ class Pipeline:
             self._mgr.run(int(threads))
             _elapsed = time.perf_counter() - _start
             logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+            report = self._mgr.last_run_report()
+            self._last_report = dict(report) if report is not None else None
             return PipelineResult(_collect_memory_states())
 
         if backend == "processes":
@@ -501,6 +534,8 @@ class Pipeline:
                                 store=spec.store,
                             )
 
+            report = self._mgr.last_run_report()
+            self._last_report = dict(report) if report is not None else None
             return PipelineResult(_collect_memory_states())
 
         raise ValueError("backend must be either 'threads' or 'processes'")

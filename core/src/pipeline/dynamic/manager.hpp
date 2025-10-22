@@ -23,6 +23,8 @@
 #include "pipeline/dynamic/channel_multiplexer.hpp"
 #include "pipeline/dynamic/executor.hpp"
 #include "pipeline/dynamic/ingest_stream.hpp"
+#include "pipeline/dynamic/run_metrics.hpp"
+#include "pipeline/dynamic/run_observer.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "runtime.hpp"
@@ -93,6 +95,12 @@ class StageManager {
 public:
   using SourcePtr = std::shared_ptr<sources::IDescriptor>;
 
+  enum class ReportingLevel {
+    Off,
+    Basic,
+    Debug
+  };
+
   struct RunReport {
     double total_seconds   = 0.0;
     double cpu_seconds     = 0.0;
@@ -111,6 +119,7 @@ public:
     std::size_t threads_used      = 0;
     bool        all_thread_safe   = true;
     std::size_t run_token         = 0;
+    bool        metrics_enabled   = true;
   };
 
   explicit StageManager(SourcePtr src)
@@ -130,6 +139,12 @@ public:
     Logger::get_logger()->debug("StageManager: auto_builtins set to {}", auto_builtins_);
   }
   bool get_auto_builtins() const noexcept { return auto_builtins_; }
+
+  void set_reporting_level(ReportingLevel level) { reporting_level_ = level; }
+  ReportingLevel get_reporting_level() const noexcept { return reporting_level_; }
+
+  void set_run_observer(std::shared_ptr<IRunObserver> observer) { run_observer_ = std::move(observer); }
+  std::shared_ptr<IRunObserver> get_run_observer() const { return run_observer_; }
 
   // Register or replace a task node with dependencies and implementation.
   // Internals:
@@ -291,16 +306,35 @@ public:
       "StageManager: starting run (token={} threads={} stages={} all_thread_safe={})",
       run_token, requested_threads, snapshot.labels.size(), all_thread_safe);
 
-    StageExecutor::RunMetrics metrics;
-    StageExecutor executor(snapshot, mux_, run_token, metrics);
-    IngestItemStream item_stream(*src_, realizer_);
-    executor.run(item_stream, requested_threads);
+    StageMetricsSnapshot metrics_snapshot{};
+    const bool metrics_enabled = reporting_level_ != ReportingLevel::Off;
 
-    // Stop ingress and drain writers with a deadline
-    const auto flush_begin = std::chrono::steady_clock::now();
-    mux_.close_and_flush(flush_timeout_);
-    const auto flush_end = std::chrono::steady_clock::now();
-    metrics.add_flush(std::chrono::duration_cast<std::chrono::nanoseconds>(flush_end - flush_begin));
+    if (metrics_enabled) {
+      StageRunMetrics metrics;
+      std::shared_ptr<IRunObserver> observer_copy = reporting_level_ == ReportingLevel::Debug ? run_observer_ : nullptr;
+      StageExecutor<StageRunMetrics> executor(snapshot, mux_, run_token, metrics, std::move(observer_copy));
+      IngestItemStream item_stream(*src_, realizer_);
+      executor.run(item_stream, requested_threads);
+
+      const auto flush_begin = std::chrono::steady_clock::now();
+      mux_.close_and_flush(flush_timeout_);
+      const auto flush_end = std::chrono::steady_clock::now();
+      metrics.add_flush(std::chrono::duration_cast<std::chrono::nanoseconds>(flush_end - flush_begin));
+
+      metrics_snapshot = metrics.snapshot();
+    } else {
+      NullStageRunMetrics metrics;
+      StageExecutor<NullStageRunMetrics> executor(snapshot, mux_, run_token, metrics);
+      IngestItemStream item_stream(*src_, realizer_);
+      executor.run(item_stream, requested_threads);
+
+      const auto flush_begin = std::chrono::steady_clock::now();
+      mux_.close_and_flush(flush_timeout_);
+      const auto flush_end = std::chrono::steady_clock::now();
+      metrics.add_flush(std::chrono::duration_cast<std::chrono::nanoseconds>(flush_end - flush_begin));
+
+      metrics_snapshot = metrics.snapshot();
+    }
 
     const auto total_end = std::chrono::steady_clock::now();
 
@@ -312,21 +346,26 @@ public:
 
     RunReport report;
     report.total_seconds     = to_seconds(total_ns);
-    report.cpu_seconds       = to_seconds(metrics.cpu_duration());
-    report.io_seconds        = to_seconds(metrics.io_duration());
-    report.ingest_seconds    = to_seconds(metrics.ingest_duration());
-    report.prepare_seconds   = to_seconds(metrics.prepare_duration());
-    report.flush_seconds     = to_seconds(metrics.flush_duration());
-    report.setup_seconds     = to_seconds(metrics.setup_duration());
-    report.compute_seconds   = to_seconds(metrics.compute_duration());
-    report.items_total       = metrics.items_total();
-    report.items_skipped     = metrics.items_skipped();
+    report.ingest_seconds    = to_seconds(std::chrono::nanoseconds(metrics_snapshot.ingest_ns));
+    report.prepare_seconds   = to_seconds(std::chrono::nanoseconds(metrics_snapshot.prepare_ns));
+    report.flush_seconds     = to_seconds(std::chrono::nanoseconds(metrics_snapshot.flush_ns));
+    report.setup_seconds     = to_seconds(std::chrono::nanoseconds(metrics_snapshot.setup_ns));
+    report.compute_seconds   = to_seconds(std::chrono::nanoseconds(metrics_snapshot.compute_ns));
+
+    const auto cpu_ns = metrics_snapshot.setup_ns + metrics_snapshot.compute_ns;
+    const auto io_ns  = metrics_snapshot.ingest_ns + metrics_snapshot.prepare_ns + metrics_snapshot.flush_ns;
+    report.cpu_seconds       = to_seconds(std::chrono::nanoseconds(cpu_ns));
+    report.io_seconds        = to_seconds(std::chrono::nanoseconds(io_ns));
+
+    report.items_total       = metrics_snapshot.items_total;
+    report.items_skipped     = metrics_snapshot.items_skipped;
     report.items_processed   = report.items_total >= report.items_skipped ? (report.items_total - report.items_skipped) : 0;
     report.stage_count       = snapshot.labels.size();
     report.threads_requested = requested_threads;
     report.all_thread_safe   = all_thread_safe;
     report.threads_used      = all_thread_safe ? requested_threads : std::size_t{1};
     report.run_token         = run_token;
+    report.metrics_enabled   = metrics_enabled;
 
     Logger::get_logger()->debug(
       "StageManager: completed run_token {} (total={:.6f}s cpu={:.6f}s io={:.6f}s items={} skipped={})",
@@ -443,6 +482,8 @@ private:
   // Policy + introspection state
   bool auto_builtins_ = false;
   std::unordered_set<std::string> compiled_builtins_;
+  ReportingLevel reporting_level_{ReportingLevel::Basic};
+  std::shared_ptr<IRunObserver> run_observer_;
 
   // Flush timeout configuration
   std::chrono::milliseconds flush_timeout_{std::chrono::seconds(60)};

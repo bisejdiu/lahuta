@@ -17,18 +17,24 @@ log_pipeline_report(std::string_view label, const pipeline::dynamic::StageManage
           ? static_cast<double>(report.items_processed) / report.total_seconds
           : 0.0;
 
-  logger->info("{} pipeline summary: total={:.3f}s cpu={:.3f}s io={:.3f}s "
-               "(ingest={:.3f}s prepare={:.3f}s flush={:.3f}s) "
-               "setup={:.3f}s compute={:.3f}s",
-               label, report.total_seconds, report.cpu_seconds,
-               report.io_seconds, report.ingest_seconds, report.prepare_seconds,
-               report.flush_seconds, report.setup_seconds,
-               report.compute_seconds);
+  if (report.metrics_enabled) {
+    logger->info("{} pipeline summary: total={:.3f}s cpu={:.3f}s io={:.3f}s "
+                 "(ingest={:.3f}s prepare={:.3f}s flush={:.3f}s) "
+                 "setup={:.3f}s compute={:.3f}s",
+                 label, report.total_seconds, report.cpu_seconds,
+                 report.io_seconds, report.ingest_seconds, report.prepare_seconds,
+                 report.flush_seconds, report.setup_seconds,
+                 report.compute_seconds);
 
-  logger->info("{} pipeline items: total={} processed={} skipped={} "
-               "throughput={:.2f} items/s",
-               label, report.items_total, report.items_processed,
-               report.items_skipped, throughput);
+    logger->info("{} pipeline items: total={} processed={} skipped={} "
+                 "throughput={:.2f} items/s",
+                 label, report.items_total, report.items_processed,
+                 report.items_skipped, throughput);
+  } else {
+    logger->info("{} pipeline summary: total={:.3f}s (metrics disabled)",
+                 label, report.total_seconds);
+    logger->info("{} pipeline items: metrics disabled; totals unavailable", label);
+  }
 
   logger->info("{} pipeline resources: stages={} threads_requested={} "
                "threads_used={} all_thread_safe={} run_token={}",
