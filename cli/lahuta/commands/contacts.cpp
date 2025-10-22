@@ -46,6 +46,7 @@ struct ContactsOptions {
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
 
+  bool is_af2_model = false;
   bool want_json   = false;
   bool want_text   = false;
   bool want_log    = false;
@@ -92,6 +93,8 @@ const option::Descriptor usage[] = {
    "  --provider, -p <provider>    \tContact provider: 'molstar', 'arpeggio', or 'getcontacts' (default: molstar)."},
   {ContactsOptionIndex::InteractionType, 0, "i", "interaction", validate::ContactType,
    "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', etc. Repeat or comma-separate to combine.\n"},
+  {ContactsOptionIndex::IsAf2Model, 0, "", "is_af2_model", option::Arg::None,
+   "  --is_af2_model               \tInputs are AlphaFold2 models (or AF2-like)."},
   {0, 0, "", "", option::Arg::None,
    "\nOutput Options:"},
   {ContactsOptionIndex::OutputJson, 0, "", "json", option::Arg::None,
@@ -221,6 +224,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
       if (has_selection) cli.interaction_types = selected;
     }
 
+    cli.is_af2_model = options[contacts_opts::ContactsOptionIndex::IsAf2Model] ? true : false;
+
     // Parse output options
     cli.want_json   = options[contacts_opts::ContactsOptionIndex::OutputJson] ? true : false;
     cli.want_text   = options[contacts_opts::ContactsOptionIndex::OutputText] ? true : false;
@@ -263,6 +268,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
 
     bool is_db = (cli.source_mode == ContactsOptions::SourceMode::Database);
+    const bool use_model_pipeline = cli.is_af2_model || is_db;
     if (is_db) {
       auto db = std::make_shared<LMDBDatabase>(cli.database_path);
       auto src = dynamic::sources_factory::from_lmdb(db, std::string{}, cli.batch_size);
@@ -271,7 +277,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       mgr.set_auto_builtins(true);
 
       // Configure built-ins
-      mgr.get_system_params().is_model = true;
+      mgr.get_system_params().is_model = use_model_pipeline;
       mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
 
       const bool json_out = (cli.want_json || !cli.want_text);
@@ -321,7 +327,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         mgr.set_auto_builtins(true);
 
         // Configure built-ins
-        mgr.get_system_params().is_model = false;
+        mgr.get_system_params().is_model = use_model_pipeline;
         mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
 
         // Tasks: ensure_typing -> contacts

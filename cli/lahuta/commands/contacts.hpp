@@ -23,6 +23,7 @@ enum ContactsOptionIndex : unsigned {
   // Compute options
   Provider,
   InteractionType,
+  IsAf2Model,
 
   // Output options
   OutputJson,
