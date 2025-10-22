@@ -1,3 +1,4 @@
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -56,6 +57,7 @@ struct ContactsOptions {
   int threads = 8;
   size_t batch_size = 200;
   size_t writer_threads = 1;
+  const PipelineReporter* reporter = nullptr;
 };
 
 Source pick_source(const ContactsOptions& cli) {
@@ -106,6 +108,10 @@ const option::Descriptor usage[] = {
    "  --log                        \tOutput results to standard output (logging)."},
   {ContactsOptionIndex::NoCompress, 0, "", "no-compress", option::Arg::None,
    "  --no-compress                \tDisable gzip compression (default: enabled)."},
+  {ContactsOptionIndex::Reporter, 0, "", "reporter", validate::Required,
+   "  --reporter <name>            \tSelect pipeline reporter (use --list-reporters for available values)."},
+  {ContactsOptionIndex::ListReporters, 0, "", "list-reporters", option::Arg::None,
+   "  --list-reporters             \tList available reporters with descriptions and exit."},
   {0, 0, "", "", option::Arg::None,
    "\nRuntime Options:"},
   {ContactsOptionIndex::Threads, 0, "t", "threads", validate::Required,
@@ -140,6 +146,31 @@ int ContactsCommand::run(int argc, char* argv[]) {
     ContactsOptions cli;
     const auto default_sink_cfg = dynamic::get_default_backpressure_config();
     cli.writer_threads = default_sink_cfg.writer_threads;
+    cli.reporter = &default_pipeline_reporter();
+
+    if (options[contacts_opts::ContactsOptionIndex::ListReporters]) {
+      std::cout << "Available reporters:\n";
+      for (const auto& rep : available_pipeline_reporters()) {
+        std::cout << "  " << rep.name << " - " << rep.description << "\n";
+      }
+      return 0;
+    }
+
+    if (options[contacts_opts::ContactsOptionIndex::Reporter]) {
+      std::string_view name = options[contacts_opts::ContactsOptionIndex::Reporter].arg
+                                ? options[contacts_opts::ContactsOptionIndex::Reporter].arg
+                                : std::string_view{};
+      if (name.empty()) {
+        Logger::get_logger()->error("--reporter requires a value. Use --list-reporters to see options.");
+        return 1;
+      }
+      if (const auto* rep = find_pipeline_reporter(name)) {
+        cli.reporter = rep;
+      } else {
+        Logger::get_logger()->error("Unknown reporter '{}'. Use --list-reporters to view available reporters.", name);
+        return 1;
+      }
+    }
 
     // parse source options
     int source_count = 0;
@@ -309,7 +340,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
 
       mgr.compile();
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
-      log_pipeline_report("contacts", report);
+      const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
+      reporter->emit("contacts", report);
     } else {
       Source src_variant = pick_source(cli);
       std::visit([&](auto&& src) {
@@ -360,7 +392,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
 
         mgr.compile();
         const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
-        log_pipeline_report("contacts", report);
+        const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
+        reporter->emit("contacts", report);
       }, src_variant);
     }
 

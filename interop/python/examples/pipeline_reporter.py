@@ -81,7 +81,7 @@ def _summarize(report: dict[str, object]) -> str:
 
 def main(files: Iterable[str] | None = None) -> None:
     """Execute the example across all reporting levels."""
-    selected = list(files) if files else _sample_files()
+    selected = list(files) if files else _sample_files(5)
     print(f"Processing {len(selected)} items:")
     for path in selected:
         print(f"  - {path}")
