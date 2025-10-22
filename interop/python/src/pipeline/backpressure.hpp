@@ -24,6 +24,7 @@ inline void bind_backpressure(py::module_& md) {
       .def_readwrite("max_queue_bytes",  &BackpressureConfig::max_queue_bytes)
       .def_readwrite("max_batch_msgs",   &BackpressureConfig::max_batch_msgs)
       .def_readwrite("max_batch_bytes",  &BackpressureConfig::max_batch_bytes)
+      .def_readwrite("writer_threads",   &BackpressureConfig::writer_threads)
       .def_readwrite("offer_wait_slice", &BackpressureConfig::offer_wait_slice)
       .def_readwrite("on_full",          &BackpressureConfig::on_full)
       .def_readwrite("required",         &BackpressureConfig::required)

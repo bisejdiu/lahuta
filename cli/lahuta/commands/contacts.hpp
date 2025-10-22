@@ -35,7 +35,8 @@ enum ContactsOptionIndex : unsigned {
 
   // Runtime options
   Threads,
-  BatchSize
+  BatchSize,
+  WriterThreads
 };
 } // namespace contacts_opts
 

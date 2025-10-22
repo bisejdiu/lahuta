@@ -29,6 +29,7 @@ struct BackpressureConfig {
   std::size_t max_queue_bytes = 1ull * 1024 * 1024 * 1024; // = 1 GiB
   std::size_t max_batch_msgs  = 256;
   std::size_t max_batch_bytes = 50 * 1024 * 1024;          // = 50 MiB
+  std::size_t writer_threads  = 1;
   // Producer wait-slice while blocking on full queue. Not a hard timeout.
   // Total blocking under OnFull::Block is not bounded. This is the maximum duration
   // of a single wait before re-checking capacity. With correct (?) condition-variable
@@ -44,6 +45,7 @@ inline void validate_config(const BackpressureConfig& cfg) {
   if (cfg.max_queue_bytes == 0) throw std::invalid_argument("max_queue_bytes must be > 0");
   if (cfg.max_batch_msgs  == 0) throw std::invalid_argument("max_batch_msgs  must be > 0");
   if (cfg.max_batch_bytes == 0) throw std::invalid_argument("max_batch_bytes must be > 0");
+  if (cfg.writer_threads  == 0) throw std::invalid_argument("writer_threads  must be > 0");
   if (cfg.max_batch_bytes > cfg.max_queue_bytes) {
     throw std::invalid_argument("max_batch_bytes cannot exceed max_queue_bytes");
   }
@@ -199,12 +201,20 @@ struct SinkIngress {
   ~SinkIngress() {
     // Handle orderly shutdown to avoid std::terminate on joinable threads
     queue_.close();
-    if (writer_.joinable()) writer_.join();
+    for (auto& w : writers_) {
+      if (w.joinable()) w.join();
+    }
   }
 
   void start() {
-    if (writer_.joinable()) throw std::logic_error("SinkIngress::start called twice");
-    writer_ = std::thread([this]{ this->run(); });
+    if (start_called_) throw std::logic_error("SinkIngress::start called twice");
+    start_called_ = true;
+    const auto threads = cfg_.writer_threads;
+    active_writers_.store(threads, std::memory_order_relaxed);
+    writers_.reserve(threads);
+    for (std::size_t i = 0; i < threads; ++i) {
+      writers_.emplace_back([this]{ this->run(); });
+    }
   }
 
   void run() {
@@ -221,20 +231,12 @@ struct SinkIngress {
           written_bytes_ += n.size;
         }
       }
-      sink_->flush();
-      sink_->close();
     } catch (const std::exception& ex) {
-      failed_ = true;
-      error_ = ex.what();
+      record_failure(ex.what());
     } catch (...) {
-      failed_ = true;
-      error_ = "unknown error in sink writer";
+      record_failure("unknown error in sink writer");
     }
-    {
-      std::lock_guard<std::mutex> lk(finished_m_);
-      finished_.store(true, std::memory_order_release);
-    }
-    finished_cv_.notify_all();
+    finalize_writer();
   }
 
   void close_queue() { queue_.close(); }
@@ -247,7 +249,9 @@ struct SinkIngress {
     }
     lk.unlock();
 
-    if (writer_.joinable()) writer_.join();
+    for (auto& w : writers_) {
+      if (w.joinable()) w.join();
+    }
     return true;
   }
 
@@ -267,7 +271,7 @@ struct SinkIngress {
   // Subsequent default changes do not affect existing ingresses.
   BackpressureConfig cfg_{};
   BoundedQueue queue_;
-  std::thread writer_;
+  std::vector<std::thread> writers_;
 
   // metrics/state
   alignas(64) std::atomic<uint64_t> enq_msgs_      {0};
@@ -278,12 +282,47 @@ struct SinkIngress {
   alignas(64) std::atomic<uint64_t> drops_counter_ {0};
   alignas(64) std::atomic<bool>     finished_  {false};
   alignas(64) std::atomic<bool>     failed_    {false};
+  alignas(64) std::atomic<std::size_t> active_writers_{0};
   // error_ is written by the writer thread and only read after join_until() observes finished_ true
   // and joins the thread.
   std::string           error_;
 
   std::condition_variable finished_cv_;
   mutable std::mutex finished_m_;
+
+  bool start_called_ = false;
+
+  void finalize_writer() {
+    if (active_writers_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+      try {
+        sink_->flush();
+      } catch (const std::exception& ex) {
+        record_failure(ex.what());
+      } catch (...) {
+        record_failure("unknown error in sink writer");
+      }
+      try {
+        sink_->close();
+      } catch (const std::exception& ex) {
+        record_failure(ex.what());
+      } catch (...) {
+        record_failure("unknown error in sink writer");
+      }
+      {
+        std::lock_guard<std::mutex> lk(finished_m_);
+        finished_.store(true, std::memory_order_release);
+      }
+      finished_cv_.notify_all();
+    }
+  }
+
+  void record_failure(std::string msg) {
+    queue_.close();
+    bool expected = false;
+    if (failed_.compare_exchange_strong(expected, true, std::memory_order_relaxed)) {
+      error_ = std::move(msg);
+    }
+  }
 
   // For observability
   uint64_t drops()      const { return drops_counter_ .load(std::memory_order_relaxed); }

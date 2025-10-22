@@ -10,7 +10,8 @@ class IDynamicSink {
 public:
   virtual ~IDynamicSink() = default;
 
-  // Writer threads call write(e). Sinks must not retain e.payload beyond this call.
+  // Writer threads (potentially more than one per sink) call write(e).
+  // Implementations must be thread-safe and must not retain e.payload beyond this call.
   virtual void write(EmissionView e) = 0;
 
   // Optional hooks

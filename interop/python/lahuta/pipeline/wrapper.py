@@ -154,6 +154,7 @@ class Pipeline:
         store: bool | None = None,
         depends: list[str] | None = None,
         thread_safe: bool = True,
+        writer_threads: int = 1,
     ) -> None:
         ch = channel or name
         deps = list(depends) if depends is not None else []
@@ -213,7 +214,7 @@ class Pipeline:
 
             self._channel_formats[ch]  = emission_fmt
             self._channel_decoders[ch] = "contacts"
-            self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt)
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt, writer_threads=writer_threads)
             return
 
         # Python callable task
@@ -226,7 +227,7 @@ class Pipeline:
             # Auto-detect format from return type annotation and AST analysis
             task_format = infer_python_task_format(task)
             self._channel_formats[ch] = task_format
-            self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format)
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format, writer_threads=writer_threads)
 
             # Record for multiprocessing backend
             module, qualname = resolve_callable_metadata(task)
@@ -267,7 +268,7 @@ class Pipeline:
         if isinstance(task, _lib.pipeline.Task):
             self._mgr.add_task(name, deps, task, bool(thread_safe))
             self._channel_formats.setdefault(ch, OutputFormat.TEXT)
-            self._attach_sinks(ch, in_memory_policy, out, channel_format=self._channel_formats[ch])
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=self._channel_formats[ch], writer_threads=writer_threads)
             return
 
         raise TypeError("task must be a callable, ContactTask spec, or pipeline.Task instance")
@@ -291,12 +292,17 @@ class Pipeline:
         out: Iterable[FileOutput | ShardedOutput] | None,
         *,
         channel_format: OutputFormat,
+        writer_threads: int = 1,
     ) -> None:
         """Attach memory and file sinks for the given channel respecting output formats."""
+        # Create backpressure config with specified writer threads
+        sink_cfg = _lib.pipeline.BackpressureConfig()
+        sink_cfg.writer_threads = writer_threads
+
         if in_memory_policy == InMemoryPolicy.Keep:
             if channel not in self._memory_sinks:
                 ms = _lib.pipeline.MemorySink()
-                self._mgr.connect_sink(channel, ms)
+                self._mgr.connect_sink(channel, ms, sink_cfg)
                 self._memory_sinks[channel] = [ms]
             self._channel_formats.setdefault(channel, channel_format)
 
@@ -308,29 +314,33 @@ class Pipeline:
                 raise ValueError("File and sharded outputs do not support binary payloads.")
             if isinstance(o, FileOutput):
                 sink = _lib.pipeline.NdjsonSink(str(o.path))
-                self._mgr.connect_sink(channel, sink)
+                self._mgr.connect_sink(channel, sink, sink_cfg)
                 self._file_sinks.setdefault(channel, []).append(sink)
             elif isinstance(o, ShardedOutput):
                 sink = _lib.pipeline.ShardedNdjsonSink(str(o.out_dir), int(o.shard_size))
-                self._mgr.connect_sink(channel, sink)
+                self._mgr.connect_sink(channel, sink, sink_cfg)
                 self._sharded_sinks.setdefault(channel, []).append(sink)
 
     # Sinks
-    def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON) -> None:
+    def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON, writer_threads: int = 1) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
         if fmt == OutputFormat.BINARY:
             raise ValueError("Binary output is not supported for NdjsonSink.")
+        sink_cfg = _lib.pipeline.BackpressureConfig()
+        sink_cfg.writer_threads = writer_threads
         sink = _lib.pipeline.NdjsonSink(str(path))
-        self._mgr.connect_sink(task_or_channel, sink)
+        self._mgr.connect_sink(task_or_channel, sink, sink_cfg)
         self._file_sinks.setdefault(task_or_channel, []).append(sink)
         self._channel_formats.setdefault(task_or_channel, fmt)
         return
 
-    def to_memory(self, task_or_channel: str) -> None:
+    def to_memory(self, task_or_channel: str, *, writer_threads: int = 1) -> None:
+        sink_cfg = _lib.pipeline.BackpressureConfig()
+        sink_cfg.writer_threads = writer_threads
         if task_or_channel not in self._memory_sinks:
             ms = _lib.pipeline.MemorySink()
-            self._mgr.connect_sink(task_or_channel, ms)
+            self._mgr.connect_sink(task_or_channel, ms, sink_cfg)
             self._memory_sinks[task_or_channel] = [ms]
 
             #
@@ -347,14 +357,17 @@ class Pipeline:
         out_dir: str | Path,
         fmt: OutputFormat = OutputFormat.JSON,
         shard_size: int = 1000,
+        writer_threads: int = 1,
     ) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
         if fmt == OutputFormat.BINARY:
             raise ValueError("Binary output is not supported for sharded NDJSON sinks.")
 
+        sink_cfg = _lib.pipeline.BackpressureConfig()
+        sink_cfg.writer_threads = writer_threads
         sink = _lib.pipeline.ShardedNdjsonSink(str(out_dir), int(shard_size))
-        self._mgr.connect_sink(task_or_channel, sink)
+        self._mgr.connect_sink(task_or_channel, sink, sink_cfg)
         self._sharded_sinks.setdefault(task_or_channel, []).append(sink)
         self._channel_formats.setdefault(task_or_channel, fmt)
         return

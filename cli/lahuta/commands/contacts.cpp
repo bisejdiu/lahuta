@@ -52,6 +52,7 @@ struct ContactsOptions {
 
   int threads = 8;
   size_t batch_size = 200;
+  size_t writer_threads = 1;
 };
 
 Source pick_source(const ContactsOptions& cli) {
@@ -106,6 +107,8 @@ const option::Descriptor usage[] = {
    "  --threads, -t <num>          \tNumber of threads to use (default: 8)."},
   {ContactsOptionIndex::BatchSize, 0, "b", "batch-size", validate::Required,
    "  --batch-size, -b <size>      \tBatch size for processing (default: 200)."},
+  {ContactsOptionIndex::WriterThreads, 0, "", "writer-threads", validate::Required,
+   "  --writer-threads <num>       \tNumber of writer threads per sink (default: 1)."},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace contacts_opts
@@ -240,6 +243,14 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
     }
 
+    if (options[contacts_opts::ContactsOptionIndex::WriterThreads]) {
+      cli.writer_threads = std::stoull(options[contacts_opts::ContactsOptionIndex::WriterThreads].arg);
+      if (cli.writer_threads == 0) {
+        Logger::get_logger()->error("Writer threads must be positive");
+        return 1;
+      }
+    }
+
     initialize_runtime(cli.threads);
 
     if (cli.source_mode == ContactsOptions::SourceMode::Directory) {
@@ -280,9 +291,11 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
 
       // Sinks
-      if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"));
-      if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"));
-      if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>());
+      dynamic::BackpressureConfig sink_cfg;
+      sink_cfg.writer_threads = cli.writer_threads;
+      if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"), sink_cfg);
+      if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"), sink_cfg);
+      if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
       mgr.run(static_cast<std::size_t>(cli.threads));
@@ -328,9 +341,11 @@ int ContactsCommand::run(int argc, char* argv[]) {
         }
 
         // Sinks
-        if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"));
-        if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"));
-        if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>());
+        dynamic::BackpressureConfig sink_cfg;
+        sink_cfg.writer_threads = cli.writer_threads;
+        if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"), sink_cfg);
+        if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"), sink_cfg);
+        if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
         mgr.run(static_cast<std::size_t>(cli.threads));

@@ -1,6 +1,8 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <mutex>
+#include <set>
 #include <string>
 #include <thread>
 #include <vector>
@@ -16,13 +18,19 @@ namespace {
 
 class RecordingSink : public IDynamicSink { // records writes and flags flush/close calls.
 public:
-  void write(EmissionView v) override { writes.emplace_back(std::string(v.payload)); }
+  void write(EmissionView v) override {
+    std::lock_guard<std::mutex> lk(m_);
+    writes.emplace_back(std::string(v.payload));
+  }
   void flush() override { flushed.store(true, std::memory_order_release); }
   void close() override { closed.store (true, std::memory_order_release); }
 
   std::vector<std::string> writes;
   std::atomic<bool> flushed{false};
   std::atomic<bool> closed{false};
+
+private:
+  std::mutex m_;
 };
 
 BackpressureConfig small_cfg() {
@@ -206,6 +214,63 @@ TEST(SinkIngress, JoinWithVeryShortDeadlineTimesOut) {
   ingress.close_queue();
   const auto deadline2 = std::chrono::steady_clock::now() + std::chrono::seconds(5);
   ASSERT_TRUE(ingress.join_until(deadline2));
+}
+
+class ThreadTrackingSink : public IDynamicSink {
+public:
+  void write(EmissionView) override {
+    {
+      std::lock_guard<std::mutex> lk(m_);
+      writer_threads_.insert(std::this_thread::get_id());
+    }
+    write_count_.fetch_add(1, std::memory_order_relaxed);
+    std::this_thread::sleep_for(std::chrono::milliseconds(2));
+  }
+
+  void flush() override { flushed_.store(true, std::memory_order_release); }
+  void close() override { closed_ .store(true, std::memory_order_release); }
+
+  std::size_t thread_count() const {
+    std::lock_guard<std::mutex> lk(m_);
+    return writer_threads_.size();
+  }
+
+  std::size_t write_count() const { return write_count_.load(std::memory_order_relaxed); }
+  bool flushed() const { return flushed_.load(std::memory_order_acquire); }
+  bool closed () const { return closed_ .load(std::memory_order_acquire); }
+
+private:
+  mutable std::mutex m_;
+  std::set<std::thread::id> writer_threads_;
+  std::atomic<std::size_t> write_count_{0};
+  std::atomic<bool> flushed_{false};
+  std::atomic<bool> closed_ {false};
+};
+
+TEST(SinkIngress, ConfigurableWriterThreads) {
+  auto sink = std::make_shared<ThreadTrackingSink>();
+  auto cfg = small_cfg();
+  cfg.writer_threads = 3;
+  cfg.max_batch_msgs = 1;
+
+  SinkIngress ingress(sink, cfg);
+  ingress.start();
+
+  constexpr int total_msgs = 90;
+  auto payload = std::make_shared<const std::string>("x");
+  for (int i = 0; i < total_msgs; ++i) {
+    ASSERT_TRUE(ingress.offer(1, payload, payload->size()));
+  }
+
+  ingress.close_queue();
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  ASSERT_TRUE(ingress.join_until(deadline));
+
+  EXPECT_EQ(sink->write_count(), static_cast<std::size_t>(total_msgs));
+  EXPECT_GE(sink->thread_count(), 2u);
+  EXPECT_LE(sink->thread_count(), cfg.writer_threads);
+  EXPECT_TRUE(sink->flushed());
+  EXPECT_TRUE(sink->closed());
 }
 
 } // namespace
