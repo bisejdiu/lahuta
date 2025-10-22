@@ -1,4 +1,4 @@
-# Lahuta
+# ⚡ Lahuta ⚡
 [![Github-CI][github-ci-core]][github-link]
 [![Github-CI][github-ci-python]][github-link]
 [![Conda][conda-badge]][conda-link]
@@ -104,6 +104,7 @@ The core of Lahuta consists of these modules (see under `core/src/`):
 - `pipeline` - High-level pipeline framework for processing, parallel execution, backpressure system, and progress tracking.
 - `selections` - Expressive selection language for querying atoms, residues, and substructures based on geometric, chemical, or topological criteria (WIP)
 - `serialization` - Data serialization and deserialization.
+- `sinks` - Data output handlers that write pipeline results to files, databases, or memory.
 - `spatial` - Spatial indexing structures (cell lists, KD-trees) for scalable neighbor queries and contact searches.
 - `topology` - Topology construction engine.
 
