@@ -26,6 +26,18 @@ using lahuta::topology::compute::Mut;
 // clang-format off
 namespace {
 
+#if defined(__has_feature)
+#  if __has_feature(address_sanitizer)
+constexpr bool RunningUnderASan = true;
+#  else
+constexpr bool RunningUnderASan = false;
+#  endif
+#elif defined(__SANITIZE_ADDRESS__)
+constexpr bool RunningUnderASan = true;
+#else
+constexpr bool RunningUnderASan = false;
+#endif
+
 // Run a computation and assert success
 static void run_ok(ComputeEngine<PipelineContext, Mut::ReadWrite>& eng, const ComputationLabel& lbl) {
   ASSERT_TRUE(eng.run_from<void>(lbl));
@@ -78,6 +90,10 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
 }
 
 TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
+  if (RunningUnderASan) {
+    GTEST_SKIP() << "Ring perception by RDKit is flaky when AddressSanitizer is enabled.";
+  }
+
   PipelineContext pcx;
   namespace fs = std::filesystem;
   fs::path here(__FILE__);
