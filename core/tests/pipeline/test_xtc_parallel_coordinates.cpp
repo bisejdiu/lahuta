@@ -1,4 +1,5 @@
 #include <atomic>
+#include <filesystem>
 #include <mutex>
 #include <optional>
 #include <random>
@@ -27,9 +28,27 @@ using namespace lahuta::pipeline::compute;
 // clang-format off
 namespace {
 
-constexpr const char *gpcrmd_dir = "/Users/bsejdiu/projects/lahuta_dev/lahuta/gpcrmd";
-std::string pdb_path = std::string(gpcrmd_dir) + "/10828_dyn_85.pdb";
-std::string xtc_path = std::string(gpcrmd_dir) + "/10824_trj_85.xtc";
+namespace fs = std::filesystem;
+static fs::path locate_simulation_file(const std::string &filename) {
+#ifdef LAHUTA_SIMDB_DIR
+  {
+    fs::path base{LAHUTA_SIMDB_DIR};
+    fs::path cand = base / filename;
+    if (fs::exists(cand)) return cand;
+  }
+#endif
+  fs::path p = fs::current_path();
+  for (int i = 0; i < 12; ++i) {
+    fs::path cand_core = p / "core" / "data" / "simulationdatabase" / filename;
+    if (fs::exists(cand_core)) return cand_core;
+
+    if (!p.has_parent_path()) break;
+    p = p.parent_path();
+  }
+  return {};
+}
+
+static fs::path pdb_path, xtc_path;
 
 struct SingleTrajectoryDescriptor final : sources::IDescriptor {
   std::string structure;
@@ -145,6 +164,12 @@ private:
 
 TEST(ParallelXtcCoordinates, ConsistencyAcrossThreads) {
   Logger::get_instance().set_log_level(Logger::LogLevel::Info);
+
+  pdb_path = locate_simulation_file("lysozyme.gro");
+  xtc_path = locate_simulation_file("lysozyme.xtc");
+  if (pdb_path.empty() || xtc_path.empty()) {
+    GTEST_SKIP() << "Simulation data not available";
+  }
 
   // Oracle
   auto baseline = std::make_shared<CoordinateCollector>();

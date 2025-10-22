@@ -35,10 +35,9 @@ if(NOT FETCH_TESTDATA)
 endif()
 
 # Exclude expensive & local-data dependent tests
-if(NOT LAHUTA_ENABLE_EXPENSIVE_TESTS)
+if(NOT (DEFINED ENV{LAHUTA_ENABLE_EXPENSIVE_TESTS} AND NOT "$ENV{LAHUTA_ENABLE_EXPENSIVE_TESTS}" STREQUAL ""))
   list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_topology_cache_validation.cpp)
   list(REMOVE_ITEM LAHUTA_TEST_UNITS ${CMAKE_CURRENT_SOURCE_DIR}/pipeline/test_xtc_parallel_coordinates.cpp)
-  # message(STATUS "Excluding expensive tests. Set -DLAHUTA_ENABLE_EXPENSIVE_TESTS=ON to include them.")
 endif()
 
 add_executable(lahuta_tests ${LAHUTA_TEST_MAIN} ${LAHUTA_TEST_UNITS})
@@ -61,6 +60,14 @@ target_link_libraries(lahuta_tests
     GTest::gtest
     ${_gmock_target}
 )
+
+if(DEFINED ENV{LAHUTA_ENABLE_EXPENSIVE_TESTS} AND NOT "$ENV{LAHUTA_ENABLE_EXPENSIVE_TESTS}" STREQUAL "")
+  set(_lahuta_simdb_dir "${CMAKE_SOURCE_DIR}/gpcrmd")
+else()
+  set(_lahuta_simdb_dir "${CMAKE_CURRENT_SOURCE_DIR}/data/simulationdatabase")
+endif()
+
+target_compile_definitions(lahuta_tests PRIVATE LAHUTA_SIMDB_DIR=\"${_lahuta_simdb_dir}\")
 
 # Sanitizers and coverage
 option(ENABLE_ASAN "Enable AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
