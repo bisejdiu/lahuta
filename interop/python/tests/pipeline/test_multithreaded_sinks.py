@@ -13,6 +13,7 @@ from lahuta.pipeline import (
     Pipeline,
     PipelineContext,
 )
+from lahuta.pipeline.types import FileOutput, ShardedOutput
 from lahuta.sources import FileSource
 
 
@@ -203,8 +204,6 @@ def test_writer_thread_validation_errors() -> None:
 
 def test_sharded_files_with_multiple_writers() -> None:
     """Test sharded file output with multiple writer threads."""
-    # Note: Sharded files seem to have a pre-existing issue, so we'll test the API
-    # but not the actual file creation
     items = [f"item_{i}" for i in range(25)]
 
     def write_task(ctx: PipelineContext) -> dict:
@@ -212,23 +211,31 @@ def test_sharded_files_with_multiple_writers() -> None:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         out_dir = Path(tmp_dir) / "shards"
+        sharded_out = ShardedOutput(out_dir=str(out_dir), shard_size=8)
 
-        # Test that the API accepts writer_threads parameter
         p = Pipeline(FileSource(items))
         p.add_task(
             name="sharded_task",
             task=write_task,
+            out=[sharded_out],
             in_memory_policy=InMemoryPolicy.Keep,
             writer_threads=4,
         )
 
-        # Test that to_sharded_files accepts writer_threads
-        p.to_sharded_files("sharded_task", out_dir=out_dir, shard_size=8, writer_threads=4)
-
         result = p.run(threads=3)
 
-        # Verify in-memory result works
+        # Verify in-memory result
         assert len(result["sharded_task"]) == len(items)
 
-        # Verify the output directory was created (even if files aren't)
+        # Verify sharded files were created
         assert out_dir.exists()
+        shard_files = list(out_dir.glob("*.ndjson"))  # Look for ndjson files
+        assert len(shard_files) >= 3  # Should create at least 3 shards for 25 items with shard_size=8
+
+        # Total lines across all shards
+        total_lines = 0
+        for shard_file in shard_files:
+            lines = sum(1 for _ in shard_file.read_text().splitlines() if _.strip())
+            total_lines += lines
+
+        assert total_lines == len(items)
