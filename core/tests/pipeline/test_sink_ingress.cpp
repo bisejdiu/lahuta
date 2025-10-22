@@ -3,6 +3,7 @@
 #include <memory>
 #include <mutex>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -247,6 +248,47 @@ private:
   std::atomic<bool> closed_ {false};
 };
 
+class FailOnFirstWriteSink : public IDynamicSink {
+public:
+  void write(EmissionView) override {
+    bool already = fail_.exchange(true, std::memory_order_acq_rel);
+    if (!already) {
+      throw std::runtime_error("Oh, no!");
+    }
+  }
+
+  void flush() override {}
+  void close() override {}
+
+  bool threw() const { return fail_.load(std::memory_order_acquire); }
+
+private:
+  std::atomic<bool> fail_{false};
+};
+
+TEST(SinkIngress, SingleWriterUsesDefaultThreadCount) {
+  auto sink = std::make_shared<ThreadTrackingSink>();
+  auto cfg = small_cfg();
+  cfg.max_batch_msgs = 1;
+  SinkIngress ingress(sink, cfg);
+  ingress.start();
+
+  auto payload = std::make_shared<const std::string>("x");
+  constexpr int total_msgs = 32;
+  for (int i = 0; i < total_msgs; ++i) {
+    ASSERT_TRUE(ingress.offer(1, payload, payload->size()));
+  }
+
+  ingress.close_queue();
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  ASSERT_TRUE(ingress.join_until(deadline));
+
+  EXPECT_EQ(sink->write_count(), static_cast<std::size_t>(total_msgs));
+  EXPECT_EQ(sink->thread_count(), 1u);
+  EXPECT_TRUE(sink->flushed());
+  EXPECT_TRUE(sink->closed());
+}
+
 TEST(SinkIngress, ConfigurableWriterThreads) {
   auto sink = std::make_shared<ThreadTrackingSink>();
   auto cfg = small_cfg();
@@ -271,6 +313,30 @@ TEST(SinkIngress, ConfigurableWriterThreads) {
   EXPECT_LE(sink->thread_count(), cfg.writer_threads);
   EXPECT_TRUE(sink->flushed());
   EXPECT_TRUE(sink->closed());
+}
+
+TEST(SinkIngress, WriterFailureClosesQueue) {
+  auto sink = std::make_shared<FailOnFirstWriteSink>();
+  auto cfg = small_cfg();
+  cfg.writer_threads = 4;
+  cfg.max_batch_msgs = 1;
+
+  SinkIngress ingress(sink, cfg);
+  ingress.start();
+
+  auto payload = std::make_shared<const std::string>("y");
+  // Enqueue several messages, the first write will throw
+  for (int i = 0; i < 8; ++i) {
+    ASSERT_TRUE(ingress.offer(1, payload, payload->size()));
+  }
+
+  ingress.close_queue();
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  ASSERT_TRUE(ingress.join_until(deadline));
+  EXPECT_TRUE(sink->threw());
+
+  auto another = std::make_shared<const std::string>("z");
+  EXPECT_FALSE(ingress.offer(1, another, another->size()));
 }
 
 } // namespace

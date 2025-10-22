@@ -9,12 +9,18 @@ import pytest
 from lahuta.pipeline import (
     BackpressureConfig,
     InMemoryPolicy,
-    OutputFormat,
     Pipeline,
     PipelineContext,
+    get_default_backpressure_config,
+    set_default_backpressure_config,
 )
-from lahuta.pipeline.types import FileOutput, ShardedOutput
+from lahuta.pipeline.types import ShardedOutput
 from lahuta.sources import FileSource
+
+
+def _writer_thread_counts(p: Pipeline) -> list[int]:
+    stats = p._mgr.stats()
+    return [int(s.get("writer_threads", 0)) for s in stats]
 
 
 def test_multithreaded_writer_sinks() -> None:
@@ -40,7 +46,7 @@ def test_multithreaded_writer_sinks() -> None:
 
     start_time = time.time()
     result_single = p_single.run(threads=4)
-    single_duration = time.time() - start_time
+    _ = time.time() - start_time
 
     # Test with multiple writer threads
     p_multi = Pipeline(FileSource(items))
@@ -53,7 +59,7 @@ def test_multithreaded_writer_sinks() -> None:
 
     start_time = time.time()
     result_multi = p_multi.run(threads=4)
-    multi_duration = time.time() - start_time
+    _ = time.time() - start_time
 
     # Verify results contain the same items (order may differ due to threading)
     assert set(result_single["slow_task"]) == set(result_multi["slow_task"])
@@ -62,6 +68,8 @@ def test_multithreaded_writer_sinks() -> None:
 
     # Multi-threaded should generally be faster for slow I/O tasks
     # (though we don't enforce strict timing due to test environment variability)
+    assert max(_writer_thread_counts(p_single)) == 1
+    assert max(_writer_thread_counts(p_multi)) == 4
 
 
 def test_multithreaded_file_sinks() -> None:
@@ -113,6 +121,9 @@ def test_multithreaded_file_sinks() -> None:
         lines2 = sum(1 for _ in output_file2.read_text().splitlines() if _.strip())
         assert lines1 == len(items)
         assert lines2 == len(items)
+        assert max(_writer_thread_counts(p1)) == 1
+        counts_p2 = _writer_thread_counts(p2)
+        assert 3 in counts_p2
 
 
 def test_mixed_writer_thread_configurations() -> None:
@@ -165,6 +176,9 @@ def test_mixed_writer_thread_configurations() -> None:
         lines_b = sum(1 for _ in output_b.read_text().splitlines() if _.strip())
         assert lines_a == len(items)
         assert lines_b == len(items)
+        counts = _writer_thread_counts(p)
+        assert 1 in counts
+        assert 3 in counts
 
 
 def test_backpressure_config_with_writer_threads() -> None:
@@ -184,6 +198,32 @@ def test_backpressure_config_with_writer_threads() -> None:
         assert False, "Expected validation error for writer_threads=0"
     except ValueError as e:
         assert "writer_threads" in str(e)
+
+
+def test_default_writer_threads_are_applied() -> None:
+    """Ensure global defaults propagate when explicit overrides are absent."""
+    original = get_default_backpressure_config()
+    modified = get_default_backpressure_config()
+    modified.writer_threads = 3
+    set_default_backpressure_config(modified)
+    try:
+        items = [f"item_{i}" for i in range(10)]
+
+        def passthrough(ctx: PipelineContext) -> str:
+            return ctx.path
+
+        p = Pipeline(FileSource(items))
+        p.add_task(
+            name="default_task",
+            task=passthrough,
+            in_memory_policy=InMemoryPolicy.Keep,
+        )
+        result = p.run(threads=2)
+        assert len(result["default_task"]) == len(items)
+        counts = _writer_thread_counts(p)
+        assert 3 in counts
+    finally:
+        set_default_backpressure_config(original)
 
 
 def test_writer_thread_validation_errors() -> None:
@@ -239,3 +279,28 @@ def test_sharded_files_with_multiple_writers() -> None:
             total_lines += lines
 
         assert total_lines == len(items)
+        counts = _writer_thread_counts(p)
+        assert 4 in counts
+
+
+def test_multithreaded_sink_soak() -> None:
+    """Run a heavier workload to surface coordination regressions under load."""
+    items = [f"item_{i}" for i in range(5000)]
+
+    def slow_task(ctx: PipelineContext) -> str:
+        time.sleep(0.0015)
+        return ctx.path
+
+    p = Pipeline(FileSource(items))
+    p.add_task(
+        name="slow_multi",
+        task=slow_task,
+        in_memory_policy=InMemoryPolicy.Keep,
+        writer_threads=4,
+    )
+    result = p.run(threads=6)
+    assert len(result["slow_multi"]) == len(items)
+    counts = _writer_thread_counts(p)
+    assert 4 in counts
+    for stat in p._mgr.stats():
+        assert stat.get("drops", 0) == 0

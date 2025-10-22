@@ -134,6 +134,7 @@ public:
     uint64_t drops          = 0;
     std::size_t queue_msgs  = 0;
     std::size_t queue_bytes = 0;
+    std::size_t writer_threads = 0;
   };
 
   std::vector<SinkStatsSnapshot> stats() const {
@@ -152,6 +153,7 @@ public:
       s.drops          = si->drops_counter_ .load(std::memory_order_relaxed);
       s.queue_msgs     = si->queue_.size_msgs();
       s.queue_bytes    = si->queue_.size_bytes();
+      s.writer_threads = si->cfg_.writer_threads;
       out.push_back(std::move(s));
     }
     return out;

@@ -204,15 +204,16 @@ inline void bind_stage_manager(py::module_ &md) {
           auto v = mgr.stats();
           for (const auto &s : v) {
             py::dict d;
-            d["sink_name"]     = s.sink_name;
-            d["enqueued_msgs"] = s.enqueued_msgs;
-            d["enqueued_bytes"]= s.enqueued_bytes;
-            d["written_msgs"]  = s.written_msgs;
-            d["written_bytes"] = s.written_bytes;
-            d["stalled_ns"]    = s.stalled_ns;
-            d["drops"]         = s.drops;
-            d["queue_msgs"]    = s.queue_msgs;
-            d["queue_bytes"]   = s.queue_bytes;
+            d["sink_name"]      = s.sink_name;
+            d["enqueued_msgs"]  = s.enqueued_msgs;
+            d["enqueued_bytes"] = s.enqueued_bytes;
+            d["written_msgs"]   = s.written_msgs;
+            d["written_bytes"]  = s.written_bytes;
+            d["stalled_ns"]     = s.stalled_ns;
+            d["drops"]          = s.drops;
+            d["queue_msgs"]     = s.queue_msgs;
+            d["queue_bytes"]    = s.queue_bytes;
+            d["writer_threads"] = s.writer_threads;
             out.append(std::move(d));
           }
           return out;
