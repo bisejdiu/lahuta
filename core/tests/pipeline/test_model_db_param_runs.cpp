@@ -12,12 +12,12 @@
 #include "analysis/contacts/computation.hpp"
 #include "analysis/system/model_pack_task.hpp"
 #include "db/db.hpp"
-#include "io/sinks/lmdb.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
+#include "sinks/lmdb.hpp"
 
 using namespace lahuta;
 using namespace lahuta::pipeline;

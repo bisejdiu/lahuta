@@ -12,11 +12,11 @@
 #include "cli/extension_utils.hpp"
 #include "commands/createdb.hpp"
 #include "db/db.hpp"
-#include "io/sinks/lmdb.hpp"
 #include "logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
+#include "sinks/lmdb.hpp"
 
 // clang-format off
 namespace lahuta::cli {

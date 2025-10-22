@@ -4,7 +4,6 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -17,8 +16,7 @@
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/ingestion.hpp"
 #include "pipeline/stream_session.hpp"
-#include "topology.hpp"
-#include "io/sinks/ndjson.hpp"
+#include "sinks/ndjson.hpp"
 
 // clang-format off
 namespace {
