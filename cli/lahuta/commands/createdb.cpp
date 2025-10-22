@@ -1,4 +1,3 @@
-#include <chrono>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -11,6 +10,7 @@
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
 #include "commands/createdb.hpp"
+#include "commands/reporting.hpp"
 #include "db/db.hpp"
 #include "logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
@@ -200,8 +200,7 @@ int CreateDbCommand::run(int argc, char* argv[]) {
 
     auto db = std::make_shared<LMDBDatabase>(cli.database_path);
 
-    Logger::get_logger()->debug("Processing files (dynamic pipeline)...");
-    const auto t0 = std::chrono::high_resolution_clock::now();
+    Logger::get_logger()->debug("Processing files ...");
 
     Source source_variant = pick_source(cli);
     std::visit([&](auto&& src) {
@@ -224,13 +223,11 @@ int CreateDbCommand::run(int argc, char* argv[]) {
       mgr.connect_sink("db", std::make_shared<dynamic::LmdbSink>(db, cli.batch_size));
 
       mgr.compile();
-      mgr.run(static_cast<std::size_t>(cli.threads));
+      const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      log_pipeline_report("createdb", report);
     }, source_variant);
 
-    const auto t1 = std::chrono::high_resolution_clock::now();
-    const auto duration = std::chrono::duration<double>(t1 - t0).count();
-
-    Logger::get_logger()->info("Database creation (dynamic) completed in {:.2f} seconds!", duration);
+    Logger::get_logger()->info("Database creation completed successfully!");
     return 0;
 
   } catch (const std::exception& e) {

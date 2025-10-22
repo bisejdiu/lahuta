@@ -241,6 +241,29 @@ inline void bind_stage_manager(py::module_ &md) {
           py::gil_scoped_acquire acquire;
         },
         py::arg("threads") = 4, py::arg("flush_timeout") = py::none())
+    .def("last_run_report", [](StageManager &mgr) -> py::object {
+          const auto& opt = mgr.last_report();
+          if (!opt.has_value()) return py::none();
+          const auto& report = *opt;
+          py::dict d;
+          d["total_seconds"]     = report.total_seconds;
+          d["cpu_seconds"]       = report.cpu_seconds;
+          d["io_seconds"]        = report.io_seconds;
+          d["ingest_seconds"]    = report.ingest_seconds;
+          d["prepare_seconds"]   = report.prepare_seconds;
+          d["flush_seconds"]     = report.flush_seconds;
+          d["setup_seconds"]     = report.setup_seconds;
+          d["compute_seconds"]   = report.compute_seconds;
+          d["items_total"]       = report.items_total;
+          d["items_processed"]   = report.items_processed;
+          d["items_skipped"]     = report.items_skipped;
+          d["stage_count"]       = report.stage_count;
+          d["threads_requested"] = report.threads_requested;
+          d["threads_used"]      = report.threads_used;
+          d["all_thread_safe"]   = report.all_thread_safe;
+          d["run_token"]         = report.run_token;
+          return d;
+        })
 
     // Process pool management
     .def("configure_python_process_pool", [](StageManager&, std::size_t processes) {

@@ -10,6 +10,7 @@
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
 #include "commands/contacts.hpp"
+#include "commands/reporting.hpp"
 #include "db/db.hpp"
 #include "gemmi/third_party/stb_sprintf.h"
 #include "logging.hpp"
@@ -307,7 +308,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
       if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
-      mgr.run(static_cast<std::size_t>(cli.threads));
+      const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      log_pipeline_report("contacts", report);
     } else {
       Source src_variant = pick_source(cli);
       std::visit([&](auto&& src) {
@@ -357,7 +359,8 @@ int ContactsCommand::run(int argc, char* argv[]) {
         if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
-        mgr.run(static_cast<std::size_t>(cli.threads));
+        const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+        log_pipeline_report("contacts", report);
       }, src_variant);
     }
 

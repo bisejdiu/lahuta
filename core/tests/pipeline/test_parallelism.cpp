@@ -76,10 +76,14 @@ TEST(DynamicPipelineParallelism, RunsInParallelAcrossItems) {
   mgr.add_task("probe", /*deps=*/{}, task, /*thread_safe=*/true);
 
   mgr.compile();
-  mgr.run(threads);
+  auto report = mgr.run(threads);
 
   EXPECT_EQ(probe->arrived, items);
   EXPECT_EQ(probe->max_concurrent, threads);
+  EXPECT_EQ(report.items_total, static_cast<std::size_t>(items));
+  EXPECT_EQ(report.items_processed, static_cast<std::size_t>(items));
+  EXPECT_EQ(report.items_skipped, std::size_t{0});
+  EXPECT_EQ(report.threads_used, static_cast<std::size_t>(threads));
 }
 
 TEST(DynamicPipelineParallelism, CollapsesWhenTaskMarkedUnsafe) {
@@ -96,10 +100,11 @@ TEST(DynamicPipelineParallelism, CollapsesWhenTaskMarkedUnsafe) {
   mgr.add_task("probe", /*deps=*/{}, task, /*thread_safe=*/false);
 
   mgr.compile();
-  mgr.run(threads); // ask for 4, but expect single-threaded due to unsafe task
+  auto report = mgr.run(threads); // ask for 4, but expect single-threaded due to unsafe task
 
   EXPECT_EQ(probe->arrived, items);
   EXPECT_EQ(probe->max_concurrent, 1);
+  EXPECT_EQ(report.threads_used, std::size_t{1});
 }
 
 namespace {

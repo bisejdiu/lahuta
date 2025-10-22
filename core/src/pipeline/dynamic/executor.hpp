@@ -1,6 +1,8 @@
 #ifndef LAHUTA_PIPELINE_DYNAMIC_EXECUTOR_HPP
 #define LAHUTA_PIPELINE_DYNAMIC_EXECUTOR_HPP
 
+#include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -47,6 +49,40 @@ class StageExecutor {
 public:
   using EngineT = ComputeEngine<compute::PipelineContext, Mut::ReadWrite>;
 
+  struct RunMetrics {
+    using rep = std::chrono::nanoseconds::rep;
+
+    void add_ingest (std::chrono::nanoseconds d) { ingest_ns_ .fetch_add(static_cast<rep>(d.count()), std::memory_order_relaxed); }
+    void add_prepare(std::chrono::nanoseconds d) { prepare_ns_.fetch_add(static_cast<rep>(d.count()), std::memory_order_relaxed); }
+    void add_setup  (std::chrono::nanoseconds d) { setup_ns_  .fetch_add(static_cast<rep>(d.count()), std::memory_order_relaxed); }
+    void add_compute(std::chrono::nanoseconds d) { compute_ns_.fetch_add(static_cast<rep>(d.count()), std::memory_order_relaxed); }
+    void add_flush  (std::chrono::nanoseconds d) { flush_ns_  .fetch_add(static_cast<rep>(d.count()), std::memory_order_relaxed); }
+
+    void inc_items_total()   { items_total_  .fetch_add(1, std::memory_order_relaxed); }
+    void inc_items_skipped() { items_skipped_.fetch_add(1, std::memory_order_relaxed); }
+
+    std::size_t items_total() const   { return items_total_  .load(std::memory_order_relaxed); }
+    std::size_t items_skipped() const { return items_skipped_.load(std::memory_order_relaxed); }
+
+    std::chrono::nanoseconds ingest_duration()  const { return std::chrono::nanoseconds(ingest_ns_ .load(std::memory_order_relaxed)); }
+    std::chrono::nanoseconds prepare_duration() const { return std::chrono::nanoseconds(prepare_ns_.load(std::memory_order_relaxed)); }
+    std::chrono::nanoseconds setup_duration()   const { return std::chrono::nanoseconds(setup_ns_  .load(std::memory_order_relaxed)); }
+    std::chrono::nanoseconds compute_duration() const { return std::chrono::nanoseconds(compute_ns_.load(std::memory_order_relaxed)); }
+    std::chrono::nanoseconds flush_duration()   const { return std::chrono::nanoseconds(flush_ns_  .load(std::memory_order_relaxed)); }
+    std::chrono::nanoseconds cpu_duration()     const { return setup_duration()  + compute_duration(); }
+    std::chrono::nanoseconds io_duration()      const { return ingest_duration() + prepare_duration() + flush_duration(); }
+
+  private:
+    std::atomic<rep> ingest_ns_{0};
+    std::atomic<rep> prepare_ns_{0};
+    std::atomic<rep> setup_ns_{0};
+    std::atomic<rep> compute_ns_{0};
+    std::atomic<rep> flush_ns_{0};
+
+    std::atomic<std::size_t> items_total_{0};
+    std::atomic<std::size_t> items_skipped_{0};
+  };
+
   struct ThreadLocalState {
     std::unique_ptr<EngineT> engine;
     compute::PipelineContext data;
@@ -59,8 +95,8 @@ public:
 
   using TlsCleanupHook = void(*)(ThreadLocalState&);
 
-  StageExecutor(const CompiledStage& stage, ChannelMultiplexer& mux, std::size_t run_token)
-    : stage_(stage), mux_(mux), run_token_(run_token) {}
+  StageExecutor(const CompiledStage& stage, ChannelMultiplexer& mux, std::size_t run_token, RunMetrics& metrics)
+    : stage_(stage), mux_(mux), run_token_(run_token), metrics_(metrics) {}
 
   static void set_tls_cleanup_hook(TlsCleanupHook hook) {
     cleanup_hook_ = hook ? hook : &StageExecutor::default_tls_cleanup;
@@ -81,6 +117,8 @@ public:
     logger->debug("StageExecutor[run_token={}]: starting run with {} thread(s) and {} stage(s)",
                   run_token_, threads, stage_.labels.size());
 
+    using Clock = std::chrono::steady_clock;
+
     // Worker stage: process each PipelineItem end-to-end on a worker thread
     Stage<PipelineItem, void> process_stage(
       [this](PipelineItem item, IEmitter<void>&) {
@@ -91,6 +129,9 @@ public:
         logger->debug(
           "StageExecutor[run_token={}]: processing item session='{}' conformer={} path='{}'",
           run_token_, session_label, item.conformer_id, item.item_path);
+
+        metrics_.inc_items_total();
+        const auto stage_begin = Clock::now();
 
         // Rebuild the worker-local engine once per run() based on the run token.
         // Clear the engine first to release any held resources before rebuilding.
@@ -106,19 +147,28 @@ public:
         TaskContext ctx;
         tls_state.engine->reset();
 
+        const auto after_setup = Clock::now();
+        metrics_.add_setup(std::chrono::duration_cast<std::chrono::nanoseconds>(after_setup - stage_begin));
+
         // Per-item temporaries, lifetimes are scoped to this item, and retained by ctx
         std::unique_ptr<StreamSession::Permit> permit;
         std::shared_ptr<RDGeom::POINT3D_VECT>  shared_coords;
         std::shared_ptr<RDKit::Conformer>      conformer;
 
+        const auto prepare_start = after_setup;
         // Prepare per-item state and publish well-known objects into TaskContext
-        if (!prepare_item_state(item, ctx, tls_state.data, permit, shared_coords, conformer)) {
+        const bool prepared = prepare_item_state(item, ctx, tls_state.data, permit, shared_coords, conformer);
+        const auto after_prepare = Clock::now();
+        metrics_.add_prepare(std::chrono::duration_cast<std::chrono::nanoseconds>(after_prepare - prepare_start));
+        if (!prepared) {
           logger->warn(
             "StageExecutor[run_token={}]: skipping item session='{}' conformer={} due to coordinate/setup failure",
             run_token_, session_label, item.conformer_id);
+          metrics_.inc_items_skipped();
           return;
         }
 
+        const auto compute_start = after_prepare;
         for (const auto& lbl : stage_.labels) {
           (void)tls_state.engine->template run_from<void>(lbl);
           auto res = tls_state.engine->get_computation_result(lbl);
@@ -128,12 +178,28 @@ public:
             for (auto &e : emits) mux_.emit(std::move(e));
           }
         }
+        const auto after_compute = Clock::now();
+        metrics_.add_compute(std::chrono::duration_cast<std::chrono::nanoseconds>(after_compute - compute_start));
       },
       /*thread_safe=*/stage_.all_thread_safe
     );
 
     struct Done : IEmitter<void> { void emit() override {} } done;
-    PipelineEngine{threads}.run(src, process_stage, done);
+
+    struct TimedSource {
+      Source& inner;
+      RunMetrics& metrics;
+
+      auto next() {
+        const auto start = Clock::now();
+        auto item = inner.next();
+        const auto end = Clock::now();
+        metrics.add_ingest(std::chrono::duration_cast<std::chrono::nanoseconds>(end - start));
+        return item;
+      }
+    } timed_src{src, metrics_};
+
+    PipelineEngine{threads}.run(timed_src, process_stage, done);
 
     //
     // TLS cleanup: always clear the caller-thread cache so any held resources (including
@@ -222,6 +288,7 @@ private:
   const CompiledStage &stage_;
   ChannelMultiplexer  &mux_;
   std::size_t run_token_;
+  RunMetrics& metrics_;
 };
 
 } // namespace lahuta::pipeline::dynamic

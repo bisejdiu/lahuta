@@ -1,6 +1,7 @@
 #ifndef LAHUTA_PIPELINE_DYNAMIC_MANAGER_HPP
 #define LAHUTA_PIPELINE_DYNAMIC_MANAGER_HPP
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -91,6 +92,26 @@ Overloaded(Ts...)->Overloaded<Ts...>;
 class StageManager {
 public:
   using SourcePtr = std::shared_ptr<sources::IDescriptor>;
+
+  struct RunReport {
+    double total_seconds   = 0.0;
+    double cpu_seconds     = 0.0;
+    double io_seconds      = 0.0;
+    double ingest_seconds  = 0.0;
+    double prepare_seconds = 0.0;
+    double flush_seconds   = 0.0;
+    double setup_seconds   = 0.0;
+    double compute_seconds = 0.0;
+
+    std::size_t items_total     = 0;
+    std::size_t items_processed = 0;
+    std::size_t items_skipped   = 0;
+    std::size_t stage_count     = 0;
+    std::size_t threads_requested = 0;
+    std::size_t threads_used      = 0;
+    bool        all_thread_safe   = true;
+    std::size_t run_token         = 0;
+  };
 
   explicit StageManager(SourcePtr src)
       : src_(std::move(src)) {
@@ -231,11 +252,16 @@ public:
   // (compute-backed or dynamic ITask) is marked non-thread-safe, the run executes
   // single-threaded. Injected builtins are not considered in this gate.
   //
-  void run(std::size_t threads = 1) {
+  RunReport run(std::size_t threads = 1) {
+
+    last_report_.reset();
+    const auto total_begin = std::chrono::steady_clock::now();
+
+    const std::size_t requested_threads = std::max<std::size_t>(threads, std::size_t{1});
 
     if (compute_factories_.empty()) compile();
 
-    LahutaRuntime::ensure_initialized(threads); // Size thread dependent resources for the worker count
+    LahutaRuntime::ensure_initialized(requested_threads); // Size thread dependent resources for the worker count
 
     // Source is reset so it is reusable across multiple run() calls.
     src_->reset();
@@ -263,17 +289,61 @@ public:
     const std::size_t run_token = 1 + global_run_epoch_.fetch_add(1, std::memory_order_relaxed);
     Logger::get_logger()->debug(
       "StageManager: starting run (token={} threads={} stages={} all_thread_safe={})",
-      run_token, threads, snapshot.labels.size(), all_thread_safe);
-    StageExecutor executor(snapshot, mux_, run_token);
+      run_token, requested_threads, snapshot.labels.size(), all_thread_safe);
+
+    StageExecutor::RunMetrics metrics;
+    StageExecutor executor(snapshot, mux_, run_token, metrics);
     IngestItemStream item_stream(*src_, realizer_);
-    executor.run(item_stream, threads);
+    executor.run(item_stream, requested_threads);
 
     // Stop ingress and drain writers with a deadline
+    const auto flush_begin = std::chrono::steady_clock::now();
     mux_.close_and_flush(flush_timeout_);
-    Logger::get_logger()->debug("StageManager: completed run_token {}", run_token);
+    const auto flush_end = std::chrono::steady_clock::now();
+    metrics.add_flush(std::chrono::duration_cast<std::chrono::nanoseconds>(flush_end - flush_begin));
+
+    const auto total_end = std::chrono::steady_clock::now();
+
+    auto to_seconds = [](std::chrono::nanoseconds ns) {
+      return std::chrono::duration<double>(ns).count();
+    };
+
+    const auto total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_end - total_begin);
+
+    RunReport report;
+    report.total_seconds     = to_seconds(total_ns);
+    report.cpu_seconds       = to_seconds(metrics.cpu_duration());
+    report.io_seconds        = to_seconds(metrics.io_duration());
+    report.ingest_seconds    = to_seconds(metrics.ingest_duration());
+    report.prepare_seconds   = to_seconds(metrics.prepare_duration());
+    report.flush_seconds     = to_seconds(metrics.flush_duration());
+    report.setup_seconds     = to_seconds(metrics.setup_duration());
+    report.compute_seconds   = to_seconds(metrics.compute_duration());
+    report.items_total       = metrics.items_total();
+    report.items_skipped     = metrics.items_skipped();
+    report.items_processed   = report.items_total >= report.items_skipped ? (report.items_total - report.items_skipped) : 0;
+    report.stage_count       = snapshot.labels.size();
+    report.threads_requested = requested_threads;
+    report.all_thread_safe   = all_thread_safe;
+    report.threads_used      = all_thread_safe ? requested_threads : std::size_t{1};
+    report.run_token         = run_token;
+
+    Logger::get_logger()->debug(
+      "StageManager: completed run_token {} (total={:.6f}s cpu={:.6f}s io={:.6f}s items={} skipped={})",
+      run_token,
+      report.total_seconds,
+      report.cpu_seconds,
+      report.io_seconds,
+      report.items_total,
+      report.items_skipped);
+
+    last_report_ = report;
+    return report;
   }
 
   const std::vector<std::string>& sorted_tasks() const { return targets_; }
+
+  const std::optional<RunReport>& last_report() const noexcept { return last_report_; }
 
   // Expose current sink stats snapshot for diagnostics/observability.
   std::vector<ChannelMultiplexer::SinkStatsSnapshot> stats() const { return mux_.stats(); }
@@ -376,6 +446,8 @@ private:
 
   // Flush timeout configuration
   std::chrono::milliseconds flush_timeout_{std::chrono::seconds(60)};
+
+  std::optional<RunReport> last_report_;
 };
 
 } // namespace lahuta::pipeline::dynamic
