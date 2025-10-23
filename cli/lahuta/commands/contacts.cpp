@@ -1,4 +1,9 @@
+#include <chrono>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -20,6 +25,7 @@
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
+#include "serialization/json.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 
@@ -52,7 +58,6 @@ struct ContactsOptions {
   bool want_json   = false;
   bool want_text   = false;
   bool want_log    = false;
-
   int threads = 8;
   size_t batch_size = 200;
   size_t writer_threads = 1;
@@ -68,6 +73,89 @@ Source pick_source(const ContactsOptions& cli) {
   }
   throw std::logic_error("Invalid source mode");
 }
+
+namespace {
+
+std::string current_timestamp_string() {
+  using namespace std::chrono;
+  const auto now = system_clock::now();
+  const auto tt = system_clock::to_time_t(now);
+  std::tm tm{};
+#if defined(_WIN32)
+  localtime_s(&tm, &tt);
+#else
+  localtime_r(&tt, &tm);
+#endif
+  const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % milliseconds(1000);
+  std::ostringstream oss;
+  oss << std::put_time(&tm, "%Y%m%d_%H%M%S")
+      << '_' << std::setw(3) << std::setfill('0') << ms.count();
+  return oss.str();
+}
+
+bool write_run_report_json(const std::string& path, const pipeline::dynamic::StageManager::RunReport& report) {
+  std::ofstream out(path, std::ios::out | std::ios::trunc);
+  if (!out) {
+    Logger::get_logger()->error("Unable to write RunReport JSON to '{}'", path);
+    return false;
+  }
+
+  lahuta::JsonBuilder json(512);
+  json.key("total_seconds").value(report.total_seconds)
+      .key("cpu_seconds").value(report.cpu_seconds)
+      .key("io_seconds").value(report.io_seconds)
+      .key("ingest_seconds").value(report.ingest_seconds)
+      .key("prepare_seconds").value(report.prepare_seconds)
+      .key("flush_seconds").value(report.flush_seconds)
+      .key("setup_seconds").value(report.setup_seconds)
+      .key("compute_seconds").value(report.compute_seconds)
+      .key("items_total").value(report.items_total)
+      .key("items_processed").value(report.items_processed)
+      .key("items_skipped").value(report.items_skipped)
+      .key("stage_count").value(report.stage_count)
+      .key("threads_requested").value(report.threads_requested)
+      .key("threads_used").value(report.threads_used)
+      .key("all_thread_safe").value(report.all_thread_safe)
+      .key("run_token").value(report.run_token)
+      .key("metrics_enabled").value(report.metrics_enabled)
+      .key("peak_inflight_items").value(report.peak_inflight_items)
+      .key("average_queue_depth").value(report.average_queue_depth)
+      .key("permit_wait_total_seconds").value(report.permit_wait_total_seconds)
+      .key("permit_wait_min_seconds").value(report.permit_wait_min_seconds)
+      .key("permit_wait_max_seconds").value(report.permit_wait_max_seconds)
+      .key("permit_wait_avg_seconds").value(report.permit_wait_avg_seconds)
+      .key("permit_wait_events").value(report.permit_wait_events)
+      .key("mux_sink_count").value(report.mux_sink_count)
+      .key("mux_enqueued_msgs").value(report.mux_enqueued_msgs)
+      .key("mux_enqueued_bytes").value(report.mux_enqueued_bytes)
+      .key("mux_written_msgs").value(report.mux_written_msgs)
+      .key("mux_written_bytes").value(report.mux_written_bytes)
+      .key("mux_stall_ns").value(report.mux_stall_ns)
+      .key("mux_drops").value(report.mux_drops)
+      .key("mux_queue_depth_peak").value(report.mux_queue_depth_peak)
+      .key("mux_queue_bytes_peak").value(report.mux_queue_bytes_peak)
+      .key("mux_active_writers_total").value(report.mux_active_writers_total)
+      .key("mux_active_writers_peak").value(report.mux_active_writers_peak);
+
+  json.key("stage_breakdown").begin_array();
+  for (const auto& stage : report.stage_breakdown) {
+    json.begin_object()
+        .key("label").value(stage.label)
+        .key("setup_seconds").value(stage.setup_seconds)
+        .key("compute_seconds").value(stage.compute_seconds)
+        .end_object();
+  }
+  json.end_array();
+
+  out << json.str() << '\n';
+  return true;
+}
+
+std::string make_report_path(std::size_t run_token, const std::string& timestamp) {
+  return "contacts_run_report_" + std::to_string(run_token) + '_' + timestamp + ".json";
+}
+
+} // namespace
 
 namespace contacts_opts {
 const option::Descriptor usage[] = {
@@ -152,20 +240,32 @@ int ContactsCommand::run(int argc, char* argv[]) {
     const auto default_sink_cfg = dynamic::get_default_backpressure_config();
     cli.writer_threads = default_sink_cfg.writer_threads;
     cli.reporter = &default_pipeline_reporter();
+    const std::string run_timestamp = current_timestamp_string();
+    const std::string contacts_json_path = "contacts_" + run_timestamp + ".jsonl";
+    const std::string contacts_text_path = "contacts_" + run_timestamp + ".txt";
 
+    auto emit_and_save_report = [&](const pipeline::dynamic::StageManager::RunReport& report) {
+      const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
+      reporter->emit("contacts", report);
+      const std::string report_path = make_report_path(report.run_token, run_timestamp);
+      if (!write_run_report_json(report_path, report)) {
+        throw std::runtime_error("Failed to persist RunReport JSON");
+      }
+      Logger::get_logger()->info("Run report saved to {}", report_path);
+    };
 
     if (options[contacts_opts::ContactsOptionIndex::Reporter]) {
       std::string_view name = options[contacts_opts::ContactsOptionIndex::Reporter].arg
                                 ? options[contacts_opts::ContactsOptionIndex::Reporter].arg
                                 : std::string_view{};
       if (name.empty()) {
-        Logger::get_logger()->error("--reporter requires a value. Use --list-reporters to see options.");
+        Logger::get_logger()->error("--reporter requires a value.");
         return 1;
       }
       if (const auto* rep = find_pipeline_reporter(name)) {
         cli.reporter = rep;
       } else {
-        Logger::get_logger()->error("Unknown reporter '{}'. Use --list-reporters to view available reporters.", name);
+        Logger::get_logger()->error("Unknown reporter '{}' ", name);
         return 1;
       }
     }
@@ -331,14 +431,19 @@ int ContactsCommand::run(int argc, char* argv[]) {
       // Sinks
       auto sink_cfg = dynamic::get_default_backpressure_config();
       sink_cfg.writer_threads = cli.writer_threads;
-      if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"), sink_cfg);
-      if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"), sink_cfg);
+      if  (json_out && cli.want_json) {
+        mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_json_path), sink_cfg);
+        Logger::get_logger()->info("Contacts JSON sink -> {}", contacts_json_path);
+      }
+      if (!json_out && cli.want_text) {
+        mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_text_path), sink_cfg);
+        Logger::get_logger()->info("Contacts text sink -> {}", contacts_text_path);
+      }
       if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
-      const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
-      reporter->emit("contacts", report);
+      emit_and_save_report(report);
     } else {
       Source src_variant = pick_source(cli);
       std::visit([&](auto&& src) {
@@ -383,14 +488,19 @@ int ContactsCommand::run(int argc, char* argv[]) {
         // Sinks
         auto sink_cfg = dynamic::get_default_backpressure_config();
         sink_cfg.writer_threads = cli.writer_threads;
-        if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"), sink_cfg);
-        if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"), sink_cfg);
+        if  (json_out && cli.want_json) {
+          mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_json_path), sink_cfg);
+          Logger::get_logger()->info("Contacts JSON sink -> {}", contacts_json_path);
+        }
+        if (!json_out && cli.want_text) {
+          mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_text_path), sink_cfg);
+          Logger::get_logger()->info("Contacts text sink -> {}", contacts_text_path);
+        }
         if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
         const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
-        const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
-        reporter->emit("contacts", report);
+        emit_and_save_report(report);
       }, src_variant);
     }
 

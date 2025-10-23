@@ -30,7 +30,6 @@ enum ContactsOptionIndex : unsigned {
   OutputText,
   OutputLog,
   Reporter,
-  ListReporters,
 
   // Experimental backend
   Dynamic,
