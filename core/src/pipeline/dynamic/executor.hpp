@@ -29,6 +29,11 @@
 namespace lahuta::pipeline::dynamic {
 using namespace lahuta::topology::compute;
 
+template <class Dur>
+constexpr std::chrono::nanoseconds to_ns(Dur d) {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(d);
+}
+
 // Immutable snapshot used by the executor per run
 struct CompiledStage {
   // Pointers to manager-owned plan vectors to avoid per-run copies.
@@ -138,7 +143,7 @@ public:
         tls_state.engine->reset();
 
         const auto after_setup = Clock::now();
-        metrics_.add_setup(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(after_setup - stage_begin));
+        metrics_.add_setup(metrics_handle, to_ns(after_setup - stage_begin));
 
         // Per-item temporaries, lifetimes are scoped to this item, and retained by ctx
         std::unique_ptr<StreamSession::Permit> permit;
@@ -149,7 +154,7 @@ public:
         // Prepare per-item state and publish well-known objects into TaskContext
         const bool prepared = prepare_item_state(item, ctx, tls_state.data, permit, shared_coords, conformer, metrics_handle);
         const auto after_prepare = Clock::now();
-        metrics_.add_prepare(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(after_prepare - prepare_start));
+        metrics_.add_prepare(metrics_handle, to_ns(after_prepare - prepare_start));
         if (!prepared) {
           logger->warn(
             "StageExecutor[run_token={}]: skipping item session='{}' conformer={} due to coordinate/setup failure",
@@ -166,13 +171,13 @@ public:
           const auto stage_run_begin = Clock::now();
           (void)tls_state.engine->template run_from<void>(lbl);
           const auto stage_run_end = Clock::now();
-          metrics_.add_stage_compute(metrics_handle, index, std::chrono::duration_cast<std::chrono::nanoseconds>(stage_run_end - stage_run_begin));
+          metrics_.add_stage_compute(metrics_handle, index, to_ns(stage_run_end - stage_run_begin));
           auto res = tls_state.engine->get_computation_result(lbl);
           const bool ok = !res.has_error();
           if (observer) observer->on_stage_complete(run_token_, item, lbl.to_string_view(), ok);
           if (!ok) {
             const auto stage_end = Clock::now();
-            metrics_.add_stage_setup(metrics_handle, index, std::chrono::duration_cast<std::chrono::nanoseconds>(stage_end - stage_run_end));
+            metrics_.add_stage_setup(metrics_handle, index, to_ns(stage_end - stage_run_end));
             break;
           }
           if (res.has_value() && res.get_type() == typeid(EmissionList)) {
@@ -180,10 +185,10 @@ public:
             for (auto &e : emits) mux_.emit(std::move(e));
           }
           const auto stage_end = Clock::now();
-          metrics_.add_stage_setup(metrics_handle, index, std::chrono::duration_cast<std::chrono::nanoseconds>(stage_end - stage_run_end));
+          metrics_.add_stage_setup(metrics_handle, index, to_ns(stage_end - stage_run_end));
         }
         const auto after_compute = Clock::now();
-        metrics_.add_compute(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(after_compute - compute_start));
+        metrics_.add_compute(metrics_handle, to_ns(after_compute - compute_start));
         if (observer) observer->on_item_end(run_token_, item);
       },
       /*thread_safe=*/stage_.all_thread_safe
@@ -202,7 +207,7 @@ public:
         const auto end = Clock::now();
         auto& tls_state = StageExecutor::get_tls_state();
         auto& handle = executor.ensure_metrics_handle(tls_state);
-        metrics.add_ingest(handle, std::chrono::duration_cast<std::chrono::nanoseconds>(end - start));
+        metrics.add_ingest(handle, to_ns(end - start));
         return item;
       }
     } timed_src{src, *this, metrics_};
@@ -274,7 +279,7 @@ private:
       auto acquired = item.session->acquire_permit();
       const auto permit_end = Clock::now();
       permit = std::make_unique<StreamSession::Permit>(std::move(acquired));
-      metrics_.add_permit_wait(metrics_handle, std::chrono::duration_cast<std::chrono::nanoseconds>(permit_end - permit_begin));
+      metrics_.add_permit_wait(metrics_handle, to_ns(permit_end - permit_begin));
     } else {
       permit.reset();
     }

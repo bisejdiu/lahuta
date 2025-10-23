@@ -346,7 +346,7 @@ public:
       const auto flush_begin = std::chrono::steady_clock::now();
       mux_.close_and_flush(flush_timeout_);
       const auto flush_end = std::chrono::steady_clock::now();
-      metrics.add_flush(std::chrono::duration_cast<std::chrono::nanoseconds>(flush_end - flush_begin));
+      metrics.add_flush(to_ns(flush_end - flush_begin));
 
       metrics_snapshot = metrics.snapshot();
     } else {
@@ -358,7 +358,7 @@ public:
       const auto flush_begin = std::chrono::steady_clock::now();
       mux_.close_and_flush(flush_timeout_);
       const auto flush_end = std::chrono::steady_clock::now();
-      metrics.add_flush(std::chrono::duration_cast<std::chrono::nanoseconds>(flush_end - flush_begin));
+      metrics.add_flush(to_ns(flush_end - flush_begin));
 
       metrics_snapshot = metrics.snapshot();
     }
@@ -371,7 +371,7 @@ public:
       return std::chrono::duration<double>(ns).count();
     };
 
-    const auto total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(total_end - total_begin);
+    const auto total_ns = to_ns(total_end - total_begin);
 
     RunReport report;
     report.total_seconds     = to_seconds(total_ns);

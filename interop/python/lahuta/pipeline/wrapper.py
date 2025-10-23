@@ -31,7 +31,7 @@ from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 
 # fmt: off
-StageManager = _lib.pipeline.StageManager
+StageManager   = _lib.pipeline.StageManager
 ReportingLevel = _lib.pipeline.ReportingLevel
 CppTask: TypeAlias = _lib.pipeline.Task
 
@@ -91,21 +91,12 @@ class Pipeline:
             # Older runtimes lack reporting level support; leave at default.
             pass
 
-    def set_reporting_level(self, level: ReportingLevel | str) -> None:
+    def set_reporting_level(self, level: ReportingLevel) -> None:
         """Control pipeline metrics collection."""
-        if isinstance(level, str):
-            try:
-                level = ReportingLevel[level.upper()]
-            except KeyError as exc:
-                raise ValueError(f"Unknown reporting level '{level}'. Valid levels: {[e.name for e in ReportingLevel]}") from exc
         if not isinstance(level, ReportingLevel):
             raise TypeError("level must be a ReportingLevel enum or string name")
         self._reporting_level = level
-        try:
-            self._mgr.set_reporting_level(level)
-        except AttributeError:
-            # Older extensions do not expose reporting levels
-            raise RuntimeError("Current Lahuta extension does not support reporting levels; rebuild Lahuta.") from None
+        self._mgr.set_reporting_level(level)
 
     def get_reporting_level(self) -> ReportingLevel:
         return self._reporting_level
@@ -114,7 +105,7 @@ class Pipeline:
     def _clone_report(report: dict[str, Any] | None) -> dict[str, Any] | None:
         if report is None:
             return None
-        clone = dict(report)
+        clone  = dict(report)
         stages = clone.get("stage_breakdown")
         if isinstance(stages, list):
             clone["stage_breakdown"] = [dict(stage) for stage in stages]

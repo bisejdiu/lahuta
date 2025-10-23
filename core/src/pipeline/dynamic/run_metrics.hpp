@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+// clang-format off
 namespace lahuta::pipeline::dynamic {
 
 struct StageMetricsSnapshot {
@@ -35,17 +36,18 @@ struct StageMetricsSnapshot {
 
 class StageRunMetrics {
   struct Slot;
+
 public:
   using Clock = std::chrono::steady_clock;
 
   class ThreadHandle {
   public:
     ThreadHandle() = default;
-    ThreadHandle(const ThreadHandle&) = delete;
-    ThreadHandle& operator=(const ThreadHandle&) = delete;
+    ThreadHandle(const ThreadHandle &) = delete;
+    ThreadHandle &operator=(const ThreadHandle &) = delete;
 
-    ThreadHandle(ThreadHandle&& other) noexcept { *this = std::move(other); }
-    ThreadHandle& operator=(ThreadHandle&& other) noexcept {
+    ThreadHandle(ThreadHandle &&other) noexcept { *this = std::move(other); }
+    ThreadHandle &operator=(ThreadHandle &&other) noexcept {
       if (this != &other) {
         reset();
         owner_ = other.owner_;
@@ -58,9 +60,7 @@ public:
 
     ~ThreadHandle() { reset(); }
 
-    bool attached() const noexcept {
-      return owner_ != nullptr && slot_ != nullptr;
-    }
+    bool attached() const noexcept { return owner_ != nullptr && slot_ != nullptr; }
 
     void reset() noexcept {
       owner_ = nullptr;
@@ -70,15 +70,14 @@ public:
   private:
     friend class StageRunMetrics;
 
-    StageRunMetrics* owner_{nullptr};
-    Slot*            slot_{nullptr};
+    StageRunMetrics *owner_{nullptr};
+    Slot *slot_{nullptr};
   };
 
   StageRunMetrics() = default;
-  explicit StageRunMetrics(bool enable_stage_breakdown)
-      : stage_breakdown_enabled_(enable_stage_breakdown) {}
-  StageRunMetrics(const StageRunMetrics&) = delete;
-  StageRunMetrics& operator=(const StageRunMetrics&) = delete;
+  explicit StageRunMetrics(bool enable_stage_breakdown) : stage_breakdown_enabled_(enable_stage_breakdown) {}
+  StageRunMetrics(const StageRunMetrics &) = delete;
+  StageRunMetrics &operator=(const StageRunMetrics &) = delete;
 
   void set_stage_breakdown_enabled(bool enabled) {
     stage_breakdown_enabled_.store(enabled, std::memory_order_relaxed);
@@ -92,54 +91,52 @@ public:
     if (!stage_breakdown_enabled()) return;
     std::scoped_lock lk(mutex_);
     stage_count_ = count;
-    for (auto& ptr : slots_) {
+    for (auto &ptr : slots_) {
       if (ptr) ptr->ensure_stage_capacity(stage_count_);
     }
   }
 
-  void ensure(ThreadHandle& handle) {
+  void ensure(ThreadHandle &handle) {
     if (handle.owner_ != this || handle.slot_ == nullptr) {
       allocate_slot(handle);
     }
   }
 
-  void add_ingest(ThreadHandle& handle, std::chrono::nanoseconds d) {
-    auto* slot = slot_for(handle);
+  void add_ingest(ThreadHandle &handle, std::chrono::nanoseconds d) {
+    auto *slot = slot_for(handle);
     slot->ingest_ns += d.count();
   }
 
-  void add_prepare(ThreadHandle& handle, std::chrono::nanoseconds d) {
-    auto* slot = slot_for(handle);
+  void add_prepare(ThreadHandle &handle, std::chrono::nanoseconds d) {
+    auto *slot = slot_for(handle);
     slot->prepare_ns += d.count();
   }
 
-  void add_setup(ThreadHandle& handle, std::chrono::nanoseconds d) {
-    auto* slot = slot_for(handle);
+  void add_setup(ThreadHandle &handle, std::chrono::nanoseconds d) {
+    auto *slot = slot_for(handle);
     slot->setup_ns += d.count();
   }
 
-  void add_compute(ThreadHandle& handle, std::chrono::nanoseconds d) {
-    auto* slot = slot_for(handle);
+  void add_compute(ThreadHandle &handle, std::chrono::nanoseconds d) {
+    auto *slot = slot_for(handle);
     slot->compute_ns += d.count();
   }
 
-  void add_flush(std::chrono::nanoseconds d) {
-    flush_ns_.fetch_add(d.count(), std::memory_order_relaxed);
-  }
+  void add_flush(std::chrono::nanoseconds d) { flush_ns_.fetch_add(d.count(), std::memory_order_relaxed); }
 
-  void inc_items_total(ThreadHandle& handle) {
-    auto* slot = slot_for(handle);
+  void inc_items_total(ThreadHandle &handle) {
+    auto *slot = slot_for(handle);
     ++slot->items_total;
   }
 
-  void inc_items_skipped(ThreadHandle& handle) {
-    auto* slot = slot_for(handle);
+  void inc_items_skipped(ThreadHandle &handle) {
+    auto *slot = slot_for(handle);
     ++slot->items_skipped;
   }
 
-  void add_permit_wait(ThreadHandle& handle, std::chrono::nanoseconds d) {
+  void add_permit_wait(ThreadHandle &handle, std::chrono::nanoseconds d) {
     if (d.count() < 0) return;
-    auto* slot = slot_for(handle);
+    auto *slot = slot_for(handle);
     const auto ns = d.count();
     slot->permit_wait_ns_total += static_cast<std::uint64_t>(ns);
     ++slot->permit_wait_samples;
@@ -161,20 +158,16 @@ public:
     inflight_samples_.fetch_add(1, std::memory_order_relaxed);
   }
 
-  void add_stage_setup(ThreadHandle& handle,
-                       std::size_t stage_index,
-                       std::chrono::nanoseconds d) {
+  void add_stage_setup(ThreadHandle &handle, std::size_t stage_index, std::chrono::nanoseconds d) {
     if (!stage_breakdown_enabled()) return;
-    auto* slot = slot_for(handle);
+    auto *slot = slot_for(handle);
     if (stage_index >= slot->stage_setup_ns.size()) return;
     slot->stage_setup_ns[stage_index] += d.count();
   }
 
-  void add_stage_compute(ThreadHandle& handle,
-                         std::size_t stage_index,
-                         std::chrono::nanoseconds d) {
+  void add_stage_compute(ThreadHandle &handle, std::size_t stage_index, std::chrono::nanoseconds d) {
     if (!stage_breakdown_enabled()) return;
-    auto* slot = slot_for(handle);
+    auto *slot = slot_for(handle);
     if (stage_index >= slot->stage_compute_ns.size()) return;
     slot->stage_compute_ns[stage_index] += d.count();
   }
@@ -188,15 +181,15 @@ public:
     }
     std::int64_t global_min_wait = std::numeric_limits<std::int64_t>::max();
     std::int64_t global_max_wait = 0;
-    std::uint64_t total_wait_ns = 0;
-    std::uint64_t wait_samples = 0;
-    for (const auto& ptr : slots_) {
+    std::uint64_t total_wait_ns  = 0;
+    std::uint64_t wait_samples   = 0;
+    for (const auto &ptr : slots_) {
       if (!ptr) continue;
-      out.ingest_ns     += ptr->ingest_ns;
-      out.prepare_ns    += ptr->prepare_ns;
-      out.setup_ns      += ptr->setup_ns;
-      out.compute_ns    += ptr->compute_ns;
-      out.items_total   += ptr->items_total;
+      out.ingest_ns   += ptr->ingest_ns;
+      out.prepare_ns  += ptr->prepare_ns;
+      out.setup_ns    += ptr->setup_ns;
+      out.compute_ns  += ptr->compute_ns;
+      out.items_total += ptr->items_total;
       out.items_skipped += ptr->items_skipped;
       if (ptr->permit_wait_samples > 0) {
         total_wait_ns += ptr->permit_wait_ns_total;
@@ -207,7 +200,7 @@ public:
       if (stage_breakdown_enabled()) {
         const auto n = std::min(stage_count_, ptr->stage_setup_ns.size());
         for (std::size_t i = 0; i < n; ++i) {
-          out.stage_setup_ns[i]  += ptr->stage_setup_ns[i];
+          out.stage_setup_ns[i]   += ptr->stage_setup_ns[i];
           out.stage_compute_ns[i] += ptr->stage_compute_ns[i];
         }
       }
@@ -222,8 +215,8 @@ public:
       out.permit_wait_ns_max = 0;
     }
     out.flush_ns = flush_ns_.load(std::memory_order_relaxed);
-    out.inflight_peak    = inflight_peak_.load(std::memory_order_relaxed);
-    out.inflight_sum     = inflight_sum_.load(std::memory_order_relaxed);
+    out.inflight_peak = inflight_peak_.load(std::memory_order_relaxed);
+    out.inflight_sum  = inflight_sum_.load(std::memory_order_relaxed);
     out.inflight_samples = inflight_samples_.load(std::memory_order_relaxed);
     return out;
   }
@@ -234,12 +227,12 @@ private:
     std::int64_t prepare_ns = 0;
     std::int64_t setup_ns   = 0;
     std::int64_t compute_ns = 0;
-    std::size_t  items_total   = 0;
-    std::size_t  items_skipped = 0;
+    std::size_t items_total = 0;
+    std::size_t items_skipped = 0;
     std::uint64_t permit_wait_ns_total = 0;
     std::uint64_t permit_wait_samples  = 0;
-    std::int64_t  permit_wait_ns_min   = std::numeric_limits<std::int64_t>::max();
-    std::int64_t  permit_wait_ns_max   = 0;
+    std::int64_t permit_wait_ns_min = std::numeric_limits<std::int64_t>::max();
+    std::int64_t permit_wait_ns_max = 0;
     std::vector<std::int64_t> stage_setup_ns;
     std::vector<std::int64_t> stage_compute_ns;
 
@@ -249,14 +242,14 @@ private:
     }
   };
 
-  Slot* slot_for(ThreadHandle& handle) {
+  Slot *slot_for(ThreadHandle &handle) {
     ensure(handle);
     return handle.slot_;
   }
 
-  void allocate_slot(ThreadHandle& handle) {
+  void allocate_slot(ThreadHandle &handle) {
     auto slot_ptr = std::make_unique<Slot>();
-    Slot* raw = slot_ptr.get();
+    Slot *raw = slot_ptr.get();
     {
       std::scoped_lock lk(mutex_);
       if (stage_breakdown_enabled()) {
@@ -265,13 +258,12 @@ private:
       slots_.push_back(std::move(slot_ptr));
     }
     handle.owner_ = this;
-    handle.slot_  = raw;
+    handle.slot_ = raw;
   }
 
   void update_peak(std::size_t value) {
     std::size_t expected = inflight_peak_.load(std::memory_order_relaxed);
-    while (value > expected &&
-           !inflight_peak_.compare_exchange_weak(expected, value, std::memory_order_relaxed)) {
+    while (value > expected && !inflight_peak_.compare_exchange_weak(expected, value, std::memory_order_relaxed)) {
       // expected is updated with current value on failure
     }
   }
@@ -279,8 +271,8 @@ private:
   mutable std::mutex mutex_;
   std::vector<std::unique_ptr<Slot>> slots_;
   std::atomic<std::int64_t> flush_ns_{0};
-  std::atomic<std::size_t> inflight_current_{0};
-  std::atomic<std::size_t> inflight_peak_{0};
+  std::atomic<std::size_t>  inflight_current_{0};
+  std::atomic<std::size_t>  inflight_peak_{0};
   std::atomic<std::uint64_t> inflight_sum_{0};
   std::atomic<std::uint64_t> inflight_samples_{0};
   std::atomic<bool> stage_breakdown_enabled_{false};
@@ -300,19 +292,19 @@ public:
   bool stage_breakdown_enabled() const noexcept { return false; }
   void configure_stage_breakdown(std::size_t) noexcept {}
 
-  void ensure(ThreadHandle&) noexcept {}
-  void add_ingest(ThreadHandle&, std::chrono::nanoseconds) noexcept {}
-  void add_prepare(ThreadHandle&, std::chrono::nanoseconds) noexcept {}
-  void add_setup(ThreadHandle&, std::chrono::nanoseconds) noexcept {}
-  void add_compute(ThreadHandle&, std::chrono::nanoseconds) noexcept {}
+  void ensure(ThreadHandle &) noexcept {}
+  void add_ingest(ThreadHandle &, std::chrono::nanoseconds) noexcept {}
+  void add_prepare(ThreadHandle &, std::chrono::nanoseconds) noexcept {}
+  void add_setup(ThreadHandle &, std::chrono::nanoseconds) noexcept {}
+  void add_compute(ThreadHandle &, std::chrono::nanoseconds) noexcept {}
   void add_flush(std::chrono::nanoseconds) noexcept {}
-  void inc_items_total(ThreadHandle&) noexcept {}
-  void inc_items_skipped(ThreadHandle&) noexcept {}
-  void add_permit_wait(ThreadHandle&, std::chrono::nanoseconds) noexcept {}
+  void inc_items_total(ThreadHandle &) noexcept {}
+  void inc_items_skipped(ThreadHandle &) noexcept {}
+  void add_permit_wait(ThreadHandle &, std::chrono::nanoseconds) noexcept {}
   void on_item_inflight_enter() noexcept {}
   void on_item_inflight_exit() noexcept {}
-  void add_stage_setup(ThreadHandle&, std::size_t, std::chrono::nanoseconds) noexcept {}
-  void add_stage_compute(ThreadHandle&, std::size_t, std::chrono::nanoseconds) noexcept {}
+  void add_stage_setup(ThreadHandle &, std::size_t, std::chrono::nanoseconds) noexcept {}
+  void add_stage_compute(ThreadHandle &, std::size_t, std::chrono::nanoseconds) noexcept {}
 
   StageMetricsSnapshot snapshot() const noexcept { return {}; }
 };

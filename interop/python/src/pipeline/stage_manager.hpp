@@ -105,7 +105,7 @@ inline void bind_stage_manager(py::module_ &md) {
   NullExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup_null);
 
   py::enum_<StageManager::ReportingLevel>(md, "ReportingLevel")
-    .value("OFF", StageManager::ReportingLevel::Off)
+    .value("OFF",   StageManager::ReportingLevel::Off)
     .value("BASIC", StageManager::ReportingLevel::Basic)
     .value("DEBUG", StageManager::ReportingLevel::Debug);
 

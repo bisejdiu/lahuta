@@ -1,9 +1,4 @@
-"""
-Pipeline reporting example showcasing how to control metrics levels.
-
-Run this module directly to execute a small pipeline over the bundled
-example structures while toggling Lahuta's reporting levels.
-"""
+"""Pipeline reporting example showcasing how to control metrics levels."""
 
 from __future__ import annotations
 
@@ -16,7 +11,6 @@ from lahuta.sources import FileSource
 
 
 def _sample_files(limit: int = 2) -> list[str]:
-    """Pick a couple of sample structures from the repository data directory."""
     data_dir = Path(__file__).resolve().parents[3] / "core" / "data"
     if not data_dir.exists():
         raise RuntimeError(f"Expected Lahuta data directory at {data_dir}")
@@ -80,7 +74,6 @@ def _summarize(report: dict[str, object]) -> str:
 
 
 def main(files: Iterable[str] | None = None) -> None:
-    """Execute the example across all reporting levels."""
     selected = list(files) if files else _sample_files(5)
     print(f"Processing {len(selected)} items:")
     for path in selected:

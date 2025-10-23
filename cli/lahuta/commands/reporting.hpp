@@ -17,8 +17,7 @@ inline double compute_throughput(const pipeline::dynamic::StageManager::RunRepor
   return static_cast<double>(report.items_processed) / report.total_seconds;
 }
 
-inline void log_pipeline_report_summary(std::string_view label,
-                                        const pipeline::dynamic::StageManager::RunReport& report) {
+inline void log_pipeline_report_summary(std::string_view label, const pipeline::dynamic::StageManager::RunReport& report) {
   auto logger = Logger::get_logger();
   const double throughput = compute_throughput(report);
 
@@ -48,8 +47,7 @@ inline void log_pipeline_report_summary(std::string_view label,
                report.run_token);
 }
 
-inline void log_pipeline_report_terse(std::string_view label,
-                                      const pipeline::dynamic::StageManager::RunReport& report) {
+inline void log_pipeline_report_terse(std::string_view label, const pipeline::dynamic::StageManager::RunReport& report) {
   auto logger = Logger::get_logger();
   const double throughput = compute_throughput(report);
   logger->info("{} run complete: total={:.3f}s processed={} skipped={} throughput={:.2f} items/s metrics={}",
@@ -58,8 +56,7 @@ inline void log_pipeline_report_terse(std::string_view label,
                report.metrics_enabled ? "on" : "off");
 }
 
-inline void log_pipeline_report_diagnostics(std::string_view label,
-                                            const pipeline::dynamic::StageManager::RunReport& report) {
+inline void log_pipeline_report_diagnostics(std::string_view label, const pipeline::dynamic::StageManager::RunReport& report) {
   log_pipeline_report_summary(label, report);
 
   if (!report.metrics_enabled) {
@@ -98,8 +95,7 @@ inline void log_pipeline_report_diagnostics(std::string_view label,
   if (!report.stage_breakdown.empty()) {
     logger->info("{} stage breakdown:", label);
     for (const auto& timing : report.stage_breakdown) {
-      logger->info("  {} setup={:.6f}s compute={:.6f}s",
-                   timing.label, timing.setup_seconds, timing.compute_seconds);
+      logger->info("  {} setup={:.6f}s compute={:.6f}s", timing.label, timing.setup_seconds, timing.compute_seconds);
     }
   }
 }
@@ -130,8 +126,7 @@ inline const PipelineReporter* find_pipeline_reporter(std::string_view name) {
   return it == reporters.end() ? nullptr : &*it;
 }
 
-inline void
-log_pipeline_report(std::string_view label, const pipeline::dynamic::StageManager::RunReport &report) {
+inline void log_pipeline_report(std::string_view label, const pipeline::dynamic::StageManager::RunReport &report) {
   log_pipeline_report_summary(label, report);
 }
 

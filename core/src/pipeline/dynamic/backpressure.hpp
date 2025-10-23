@@ -1,7 +1,6 @@
 #ifndef LAHUTA_PIPELINE_DYNAMIC_BACKPRESSURE_HPP
 #define LAHUTA_PIPELINE_DYNAMIC_BACKPRESSURE_HPP
 
-#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -109,7 +108,7 @@ public:
         q_.push_back(std::move(n));
         bytes_ += need;
         if (q_.size() > high_water_msgs_) high_water_msgs_ = q_.size();
-        if (bytes_ > high_water_bytes_) high_water_bytes_ = bytes_;
+        if (bytes_ > high_water_bytes_)  high_water_bytes_ = bytes_;
         lk.unlock();
         cv_not_empty_.notify_one();
         return true;
@@ -199,7 +198,7 @@ private:
   std::size_t max_bytes_ = 0;
   std::deque<QueueNode> q_;
   std::size_t bytes_ = 0;
-  std::size_t high_water_msgs_ = 0;
+  std::size_t high_water_msgs_  = 0;
   std::size_t high_water_bytes_ = 0;
   mutable std::mutex m_;
   std::condition_variable cv_not_full_;

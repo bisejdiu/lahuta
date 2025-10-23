@@ -6,19 +6,6 @@ from lahuta.pipeline import Pipeline, ReportingLevel, StageManager
 from lahuta.sources import FileSource
 
 
-def _locate_repo_root() -> Path:
-    here = Path(__file__).resolve()
-    for candidate in [here.parent, *here.parents]:
-        if (candidate / "core").is_dir() and (candidate / "interop" / "python").is_dir():
-            return candidate
-    raise RuntimeError("Unable to locate Lahuta repository root")
-
-
-ROOT = _locate_repo_root()
-INTEROP_SRC = ROOT / "interop" / "python"
-EXT_DIR = ROOT / "build" / "core"
-
-
 def test_stage_manager_reporting_levels(data_path):
     sample = str(data_path("ubi.cif"))
     manager = StageManager(FileSource([sample]))

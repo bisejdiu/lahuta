@@ -29,7 +29,6 @@ enum ContactsOptionIndex : unsigned {
   OutputJson,
   OutputText,
   OutputLog,
-  NoCompress,
   Reporter,
   ListReporters,
 

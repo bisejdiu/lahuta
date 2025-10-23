@@ -52,7 +52,6 @@ struct ContactsOptions {
   bool want_json   = false;
   bool want_text   = false;
   bool want_log    = false;
-  bool no_compress = false;
 
   int threads = 8;
   size_t batch_size = 200;
@@ -73,8 +72,18 @@ Source pick_source(const ContactsOptions& cli) {
 namespace contacts_opts {
 const option::Descriptor usage[] = {
   {ContactsOptionIndex::Unknown, 0, "", "", validate::Unknown,
-   "Usage: lahuta contacts [options]\n\n"
+   "Usage: lahuta contacts [options]\n"
+   "Author: Besian I. Sejdiu (@bisejdiu)\n\n"
    "Compute inter-atomic contacts.\n\n"
+
+    "<<< Detailed help will be added soon. >>>\n\n"
+
+    "Available reporters (--reporter <name>):\n"
+    "  summary     - Concise summary of computation results (negligible overhead).\n"
+    "  terse       - Fastest logging footprint.\n"
+    "  diagnostics - Detailed diagnostics for in-depth analysis (small overhead).\n"
+    "\n"
+
    "Input Options (choose one):"},
   {ContactsOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help, -h                   \tPrint this help message and exit."},
@@ -106,12 +115,8 @@ const option::Descriptor usage[] = {
    "  --text                       \tOutput results in text format."},
   {ContactsOptionIndex::OutputLog, 0, "", "log", option::Arg::None,
    "  --log                        \tOutput results to standard output (logging)."},
-  {ContactsOptionIndex::NoCompress, 0, "", "no-compress", option::Arg::None,
-   "  --no-compress                \tDisable gzip compression (default: enabled)."},
   {ContactsOptionIndex::Reporter, 0, "", "reporter", validate::Required,
-   "  --reporter <name>            \tSelect pipeline reporter (use --list-reporters for available values)."},
-  {ContactsOptionIndex::ListReporters, 0, "", "list-reporters", option::Arg::None,
-   "  --list-reporters             \tList available reporters with descriptions and exit."},
+   "  --reporter <name>            \tSelect pipeline reporter. See help for names."},
   {0, 0, "", "", option::Arg::None,
    "\nRuntime Options:"},
   {ContactsOptionIndex::Threads, 0, "t", "threads", validate::Required,
@@ -119,7 +124,7 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::BatchSize, 0, "b", "batch-size", validate::Required,
    "  --batch-size, -b <size>      \tBatch size for processing (default: 200)."},
   {ContactsOptionIndex::WriterThreads, 0, "", "writer-threads", validate::Required,
-   "  --writer-threads <num>       \tNumber of writer threads per sink (default: pipeline setting)."},
+   "  --writer-threads <num>       \tNumber of writer threads per sink (default: 1)."},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace contacts_opts
@@ -148,13 +153,6 @@ int ContactsCommand::run(int argc, char* argv[]) {
     cli.writer_threads = default_sink_cfg.writer_threads;
     cli.reporter = &default_pipeline_reporter();
 
-    if (options[contacts_opts::ContactsOptionIndex::ListReporters]) {
-      std::cout << "Available reporters:\n";
-      for (const auto& rep : available_pipeline_reporters()) {
-        std::cout << "  " << rep.name << " - " << rep.description << "\n";
-      }
-      return 0;
-    }
 
     if (options[contacts_opts::ContactsOptionIndex::Reporter]) {
       std::string_view name = options[contacts_opts::ContactsOptionIndex::Reporter].arg
@@ -262,7 +260,6 @@ int ContactsCommand::run(int argc, char* argv[]) {
     cli.want_json   = options[contacts_opts::ContactsOptionIndex::OutputJson] ? true : false;
     cli.want_text   = options[contacts_opts::ContactsOptionIndex::OutputText] ? true : false;
     cli.want_log    = options[contacts_opts::ContactsOptionIndex::OutputLog]  ? true : false;
-    cli.no_compress = options[contacts_opts::ContactsOptionIndex::NoCompress] ? true : false;
 
     if (!cli.want_json && !cli.want_text && !cli.want_log) cli.want_json = true; // json if nothing specified
 
