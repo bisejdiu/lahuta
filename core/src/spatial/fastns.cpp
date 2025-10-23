@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <mutex>
 #include <stdexcept>
 
 #include <Eigen/Dense>
@@ -40,6 +41,8 @@ constexpr std::array<std::array<int, DIMENSIONS>, 13> NEIGHBOR_CELLS = {{
   {1, 0,  1}, {1, 1,  1}, {0, 1,  1}, {-1, 1,  1},
   {0, 0,  1}
 }};
+
+static std::once_flag eigen_threads_once; // Eigen global thread setting needs to be done once process-wide to avoid TSAN races
 
 } // namespace
 
@@ -159,7 +162,7 @@ FastNS::FastNS(const double *coords_ptr, std::size_t npts) {
 
 void FastNS::initialize_eigen_views() {
   if (n_points == 0 || coords_bbox.empty()) return;
-  Eigen::setNbThreads(1); // we handle our own threading
+  std::call_once(eigen_threads_once, [](){ Eigen::setNbThreads(1); }); // we handle our own threading
   P = std::make_unique<Eigen::Map<const RowMatX3f>>(coords_bbox.data(), static_cast<Eigen::Index>(n_points), 3); // Eigen Map view of coords_bbox
   P_norm2 = P->rowwise().squaredNorm(); // Precompute per-point squared norms once
 }
