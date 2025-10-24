@@ -77,14 +77,13 @@ static double sq_distance(const RDGeom::Point3D &a, const RDGeom::Point3D &b) {
 
 struct CoordinateCollector {
   std::mutex mtx;
-  bool indices_ready{false};
-  std::vector<unsigned> selected_indices; // size <= 100
+  std::once_flag indices_once;
+  std::vector<unsigned> selected_indices; // size <= 100, initialized once
   std::unordered_map<std::size_t, std::vector<RDGeom::Point3D>> coords_by_conformer_id;
   std::atomic<size_t> frames{0};
 
   void reset() {
     std::scoped_lock lk(mtx);
-    indices_ready = false;
     selected_indices.clear();
     coords_by_conformer_id.clear();
     frames = 0;
@@ -134,14 +133,10 @@ public:
     conf.bindExternalPositions(std::move(slab));
     const RDKit::Conformer &cref = conf; // const-view to avoid mutating accessors
 
-    if (!collector_->indices_ready) {
-      std::scoped_lock lk(collector_->mtx);
-      if (!collector_->indices_ready) {
-        const std::size_t natoms = static_cast<std::size_t>(cref.getNumAtoms());
-        collector_->selected_indices = select_random_unique_indices(natoms, 100, /*seed=*/1337);
-        collector_->indices_ready = true;
-      }
-    }
+    std::call_once(collector_->indices_once, [&] {
+      const std::size_t natoms = static_cast<std::size_t>(cref.getNumAtoms());
+      collector_->selected_indices = select_random_unique_indices(natoms, 100, /*seed=*/8351);
+    });
 
     std::vector<RDGeom::Point3D> coords;
     coords.reserve(collector_->selected_indices.size());
