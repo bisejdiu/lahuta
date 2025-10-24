@@ -16,6 +16,27 @@
 // clang-format off
 namespace lahuta {
 
+std::shared_ptr<Luni::TopologyBuildState> Luni::ensure_topology_state() const {
+  if (topology_state_) return topology_state_;
+
+  std::lock_guard<std::mutex> lk(topology_state_init_mutex_);
+  if (!topology_state_) topology_state_ = std::make_shared<TopologyBuildState>();
+  return topology_state_;
+}
+
+Luni::TopologyWriteGuard::TopologyWriteGuard(std::shared_ptr<TopologyBuildState> state) : state_(std::move(state)), lock_() {
+  if (!state_) return;
+
+  lock_ = std::unique_lock<std::mutex>(state_->modify_mutex, std::defer_lock);
+  std::unique_lock<std::mutex> state_lock(state_->mutex);
+  state_->cv.wait(state_lock, [this] { return !state_->building; });
+  lock_.lock();
+}
+
+Luni::TopologyWriteGuard Luni::acquire_topology_write_guard() const {
+  return TopologyWriteGuard(ensure_topology_state());
+}
+
 Luni::Luni(Luni&& other) noexcept
   : mol             (std::move(other.mol)),
     topology        (std::move(other.topology)),
@@ -99,19 +120,15 @@ Luni Luni::from_model_data(const ModelParserResult &data, ModelTopologyMethod me
 }
 
 bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
-  if (!topology_state_) {
-    topology_state_ = std::make_shared<TopologyBuildState>();
-  }
-
-  auto state = topology_state_;
-  std::unique_lock<std::mutex> lk(state->mutex);
+  auto state = ensure_topology_state();
+  std::unique_lock<std::mutex> state_lock(state->mutex);
   if (topology_built_.load(std::memory_order_acquire)) {
     Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
     return true;
   }
 
   while (state->building) {
-    state->cv.wait(lk, [state]() { return !state->building; });
+    state->cv.wait(state_lock, [state]() { return !state->building; });
     if (topology_built_.load(std::memory_order_acquire)) {
       Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
       return true;
@@ -119,7 +136,8 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
   }
 
   state->building = true;
-  lk.unlock();
+  std::unique_lock<std::mutex> modify_lock(state->modify_mutex);
+  state_lock.unlock();
 
   bool built = false;
   try {
@@ -137,12 +155,13 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
     built = false;
   }
 
-  lk.lock();
+  state_lock.lock();
   if (built) {
     topology_built_.store(true, std::memory_order_release);
   }
   state->building = false;
-  lk.unlock();
+  state_lock.unlock();
+  modify_lock.unlock();
   state->cv.notify_all();
 
   return built;

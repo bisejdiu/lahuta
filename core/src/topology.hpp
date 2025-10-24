@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include "contact_types.hpp"
@@ -50,6 +51,7 @@ public:
   [[nodiscard]] bool build(TopologyBuildingOptions tops);
 
   void run_mask(TopologyComputation mask) const {
+    std::lock_guard<std::mutex> lock(engine_mutex_);
     for (auto bit : BASE_COMPUTATION_FLAGS)
       if (has_flag(mask, bit)) {
         Logger::get_logger()->debug("run_mask: {}", Topology::get_label(bit).to_string_view());
@@ -133,6 +135,8 @@ private:
 private:
   std::shared_ptr<RDKit::RWMol> mol_;
   std::unique_ptr<topology::TopologyEngine> engine_;
+  mutable std::mutex engine_mutex_;
+
 
   template <typename T>
   static inline const T& check_size(const std::vector<T>& vec, std::size_t idx, const char* kind_label) {
