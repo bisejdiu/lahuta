@@ -50,6 +50,11 @@ public:
     return plddt_;
   }
 
+  std::shared_ptr<const std::vector<DSSPAssignment>> residue_dssp() const override {
+    ensure_loaded();
+    return dssp_;
+  }
+
 protected:
   std::shared_ptr<const Luni> build_system() const override {
     auto rec = record();
@@ -111,6 +116,7 @@ private:
       positions_ = std::move(positions);
       metadata_  = std::make_shared<ModelMetadata>(record_->data.metadata);
       plddt_     = std::make_shared<std::vector<pLDDTCategory>>(record_->data.plddt_per_residue);
+      dssp_      = std::make_shared<std::vector<DSSPAssignment>>(record_->data.dssp_per_residue);
     });
   }
 
@@ -122,6 +128,7 @@ private:
   mutable std::shared_ptr<const RDGeom::POINT3D_VECT> positions_;
   mutable std::shared_ptr<const ModelMetadata> metadata_;
   mutable std::shared_ptr<const std::vector<pLDDTCategory>> plddt_;
+  mutable std::shared_ptr<const std::vector<DSSPAssignment>> dssp_;
 };
 
 class LMDBRealizer {

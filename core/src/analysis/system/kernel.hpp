@@ -8,6 +8,7 @@
 #include "analysis/system/model_loader.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
+#include "models/dssp.hpp"
 #include "models/metadata.hpp"
 #include "models/plddt.hpp"
 #include "pipeline/compute/context.hpp"
@@ -35,6 +36,17 @@ inline void publish_plddt(pipeline::dynamic::TaskContext* ctx, const std::vector
   ctx->set_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY, std::move(shared));
 }
 
+inline void publish_dssp(pipeline::dynamic::TaskContext* ctx, std::shared_ptr<const std::vector<DSSPAssignment>> assignments) {
+  if (!ctx || !assignments || assignments->empty()) return;
+  ctx->set_object<const std::vector<DSSPAssignment>>(pipeline::CTX_DSSP_KEY, std::move(assignments));
+}
+
+inline void publish_dssp(pipeline::dynamic::TaskContext* ctx, const std::vector<DSSPAssignment>& assignments) {
+  if (!ctx || assignments.empty()) return;
+  auto shared = std::make_shared<std::vector<DSSPAssignment>>(assignments);
+  ctx->set_object<const std::vector<DSSPAssignment>>(pipeline::CTX_DSSP_KEY, std::move(shared));
+}
+
 struct SystemReadKernel {
   static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const SystemReadParams& p) {
     try {
@@ -50,10 +62,14 @@ struct SystemReadKernel {
         if (auto cats = data.session->residue_plddt()) {
           publish_plddt(data.ctx, std::move(cats));
         }
+        if (auto dssp = data.session->residue_dssp()) {
+          publish_dssp(data.ctx, std::move(dssp));
+        }
       } else if (p.is_model) {
         auto parsed = load_model_parser_result(data.item_path);
         publish_model_metadata(data.ctx, parsed.metadata);
         publish_plddt(data.ctx, parsed.plddt_per_residue);
+        publish_dssp(data.ctx, parsed.dssp_per_residue);
         auto s = Luni::from_model_data(parsed);
         sys = std::make_shared<Luni>(std::move(s));
       } else {

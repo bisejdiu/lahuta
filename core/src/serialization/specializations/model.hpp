@@ -22,9 +22,11 @@ struct Serializer<fmt::binary, ModelParserResult> {
     const std::size_t taxonomy_len  = r.metadata.ncbi_taxonomy_id.size();
     const std::size_t organism_len  = r.metadata.organism_scientific.size();
     const std::size_t plddt_bytes   = r.plddt_per_residue.size() * sizeof(pLDDTCategory);
-    // Layout: [seq_len][n_points][sequence][coords][taxonomy_len][organism_len][taxonomy][organism][plddt_len][plddt_bytes]
+    const std::size_t dssp_bytes    = r.dssp_per_residue.size() * sizeof(DSSPAssignment);
+    // Layout: [seq_len][n_points][sequence][coords][taxonomy_len][organism_len][taxonomy][organism][plddt_len][plddt_bytes][dssp_len][dssp_bytes]
     return sizeof(uint32_t) * 2 + seq_len + coords_bytes + sizeof(uint32_t) * 2 +
-           taxonomy_len + organism_len + sizeof(uint32_t) + plddt_bytes;
+           taxonomy_len + organism_len + sizeof(uint32_t) + plddt_bytes +
+           sizeof(uint32_t) + dssp_bytes;
   }
 
   static void serialize_into_buffer(const Record &r, char *dest) {
@@ -33,6 +35,7 @@ struct Serializer<fmt::binary, ModelParserResult> {
     const uint32_t taxonomy_len = static_cast<uint32_t>(r.metadata.ncbi_taxonomy_id.size());
     const uint32_t organism_len = static_cast<uint32_t>(r.metadata.organism_scientific.size());
     const uint32_t plddt_len    = static_cast<uint32_t>(r.plddt_per_residue.size());
+    const uint32_t dssp_len     = static_cast<uint32_t>(r.dssp_per_residue.size());
 
     char *p = dest;
     std::memcpy(p, &seq_len, sizeof(seq_len));
@@ -75,6 +78,14 @@ struct Serializer<fmt::binary, ModelParserResult> {
       const size_t plddt_bytes = static_cast<size_t>(plddt_len) * sizeof(pLDDTCategory);
       std::memcpy(p, r.plddt_per_residue.data(), plddt_bytes);
       p += plddt_bytes;
+    }
+
+    std::memcpy(p, &dssp_len, sizeof(dssp_len));
+    p += sizeof(dssp_len);
+    if (dssp_len) {
+      const size_t dssp_bytes = static_cast<size_t>(dssp_len) * sizeof(DSSPAssignment);
+      std::memcpy(p, r.dssp_per_residue.data(), dssp_bytes);
+      p += dssp_bytes;
     }
   }
 
@@ -161,10 +172,32 @@ struct Serializer<fmt::binary, ModelParserResult> {
       } else {
         r.plddt_per_residue.clear();
       }
+
+      if (remaining >= sizeof(uint32_t)) {
+        uint32_t dssp_len = 0;
+        std::memcpy(&dssp_len, p, sizeof(dssp_len));
+        p += sizeof(dssp_len);
+        remaining -= sizeof(dssp_len);
+        const size_t dssp_bytes = static_cast<size_t>(dssp_len) * sizeof(DSSPAssignment);
+        if (remaining < dssp_bytes) {
+          throw std::runtime_error("Corrupted data in deserialization (DSSP payload)");
+        }
+        r.dssp_per_residue.resize(dssp_len);
+        if (dssp_bytes) {
+          std::memcpy(r.dssp_per_residue.data(), p, dssp_bytes);
+          p += dssp_bytes;
+          remaining -= dssp_bytes;
+        } else {
+          r.dssp_per_residue.clear();
+        }
+      } else {
+        r.dssp_per_residue.clear();
+      }
     } else {
       r.metadata.ncbi_taxonomy_id.clear();
       r.metadata.organism_scientific.clear();
       r.plddt_per_residue.clear();
+      r.dssp_per_residue.clear();
     }
     return r;
   }
@@ -199,7 +232,7 @@ struct Serializer<fmt::binary, analysis::system::ModelRecord> {
     // blob length
     std::memcpy(p, &blob_len, sizeof(blob_len));
     p += sizeof(blob_len);
-    // ModelParserResult blob = [seq_len][n_points][sequence][coords(float3)*n][taxonomy_len][organism_len][taxonomy][organism]
+    // ModelParserResult blob = [seq_len][n_points][sequence][coords(float3)*n][taxonomy_len][organism_len][taxonomy][organism][plddt_len][plddt][dssp_len][dssp]
     Serializer<fmt::binary, ModelParserResult>::serialize_into_buffer(r.data, p);
     p += blob_len;
   }

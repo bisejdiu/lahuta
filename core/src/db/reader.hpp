@@ -64,9 +64,31 @@ public:
       result.plddt_per_residue.resize(plddt_len);
       if (plddt_bytes) {
         std::memcpy(result.plddt_per_residue.data(), tail, plddt_bytes);
+        tail += plddt_bytes;
+        remaining -= plddt_bytes;
+      } else {
+        result.plddt_per_residue.clear();
       }
     } else {
       result.plddt_per_residue.clear();
+    }
+
+    result.dssp_per_residue.clear();
+    if (remaining >= sizeof(uint32_t)) {
+      uint32_t dssp_len = 0;
+      std::memcpy(&dssp_len, tail, sizeof(dssp_len));
+      tail += sizeof(dssp_len);
+      remaining -= sizeof(dssp_len);
+      const size_t dssp_bytes = static_cast<size_t>(dssp_len) * sizeof(DSSPAssignment);
+      if (remaining < dssp_bytes) {
+        throw std::runtime_error("Corrupted DSSP data for key: " + key);
+      }
+      result.dssp_per_residue.resize(dssp_len);
+      if (dssp_bytes) {
+        std::memcpy(result.dssp_per_residue.data(), tail, dssp_bytes);
+      }
+    } else {
+      result.dssp_per_residue.clear();
     }
 
     return true;

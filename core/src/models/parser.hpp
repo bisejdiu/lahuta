@@ -7,6 +7,7 @@
 
 #include <rdkit/Geometry/point.h>
 
+#include "models/dssp.hpp"
 #include "models/metadata.hpp"
 #include "models/plddt.hpp"
 
@@ -17,6 +18,7 @@ struct ModelParserResult {
   std::string sequence;
   ModelMetadata metadata;
   std::vector<pLDDTCategory> plddt_per_residue;
+  std::vector<DSSPAssignment> dssp_per_residue;
   mutable RDGeom::POINT3D_VECT coords;
   mutable bool coords_consumed{false};
 

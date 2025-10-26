@@ -46,8 +46,11 @@ public:
         size_t coords_size    = data.coords.size() * 3 * sizeof(float); // 3 floats per point
         const uint32_t plddt_len = static_cast<uint32_t>(data.plddt_per_residue.size());
         const size_t plddt_bytes = static_cast<size_t>(plddt_len) * sizeof(pLDDTCategory);
+        const uint32_t dssp_len  = static_cast<uint32_t>(data.dssp_per_residue.size());
+        const size_t dssp_bytes  = static_cast<size_t>(dssp_len) * sizeof(DSSPAssignment);
         size_t total_size     = sizeof(SerializedModelData) + sequence_size + taxonomy_size + organism_size + coords_size +
-                                sizeof(uint32_t) + plddt_bytes;
+                                sizeof(uint32_t) + plddt_bytes +
+                                sizeof(uint32_t) + dssp_bytes;
 
         // Allocate a buffer and serialize the header, sequence, and coordinates
         std::unique_ptr<char[]> buffer(new char[total_size]);
@@ -79,6 +82,13 @@ public:
         plddt_ptr += sizeof(plddt_len);
         if (plddt_bytes) {
             std::memcpy(plddt_ptr, data.plddt_per_residue.data(), plddt_bytes);
+            plddt_ptr += plddt_bytes;
+        }
+
+        std::memcpy(plddt_ptr, &dssp_len, sizeof(dssp_len));
+        plddt_ptr += sizeof(dssp_len);
+        if (dssp_bytes) {
+            std::memcpy(plddt_ptr, data.dssp_per_residue.data(), dssp_bytes);
         }
 
         bool created_txn = false;
