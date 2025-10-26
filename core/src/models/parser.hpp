@@ -11,6 +11,8 @@ namespace lahuta {
 
 struct ModelParserResult {
   std::string sequence;
+  std::string ncbi_taxonomy_id;
+  std::string organism_scientific;
   mutable RDGeom::POINT3D_VECT coords;
   mutable bool coords_consumed{false};
 

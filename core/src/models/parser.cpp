@@ -114,6 +114,17 @@ inline auto extract_marker_value(const char* data, size_t size, const char* mark
   return result;
 }
 
+inline std::string strip_cif_quotes(std::string value) {
+  if (value.size() >= 2) {
+    const char first = value.front();
+    const char last  = value.back();
+    if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+      value.erase(value.size() - 1);
+      value.erase(value.begin());
+    }
+  }
+  return value;
+}
 
 ModelParserResult parse_model(const char *data, size_t size) {
   ModelParserResult output;
@@ -122,8 +133,12 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
   // difficult to benchmark
   // 34 is much more precise, but is inconsistent and some files fail.
-  p = data + skip_hashes_avx2(data, size, 31);
+  // p = data + skip_hashes_avx2(data, size, 1);
   output.sequence = extract_marker_value(data, size, "_struct_ref.pdbx_seq_one_letter_code");
+  output.ncbi_taxonomy_id = strip_cif_quotes(
+      extract_marker_value(data, size, "_ma_target_ref_db_details.ncbi_taxonomy_id"));
+  output.organism_scientific = strip_cif_quotes(
+      extract_marker_value(data, size, "_ma_target_ref_db_details.organism_scientific"));
 
   // we got the sequence, now we skip to the first ATOM record
   while (p + 4 < end) {

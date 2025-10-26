@@ -24,6 +24,8 @@ public:
     // basic sanity check on the size.
     size_t expected_size = sizeof(SerializedModelData) +
                            serialized->sequence_length +
+                           serialized->ncbi_taxonomy_id_length +
+                           serialized->organism_scientific_length +
                            serialized->num_points * 3  *
                            sizeof(float); // 3 floats per point
 
@@ -32,6 +34,8 @@ public:
     }
 
     result.sequence.assign(serialized->sequence_data(), serialized->sequence_length);
+    result.ncbi_taxonomy_id.assign(serialized->taxonomy_id_data(), serialized->ncbi_taxonomy_id_length);
+    result.organism_scientific.assign(serialized->organism_scientific_data(), serialized->organism_scientific_length);
 
     // float coords --> Point3D
     result.coords.resize(serialized->num_points);

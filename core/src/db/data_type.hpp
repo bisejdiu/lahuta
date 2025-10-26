@@ -9,14 +9,23 @@ namespace lahuta {
 struct SerializedModelData {
   std::uint32_t sequence_length;
   std::uint32_t num_points;
+  std::uint32_t ncbi_taxonomy_id_length;
+  std::uint32_t organism_scientific_length;
 
   const char *sequence_data() const {
     return reinterpret_cast<const char *>(this) + sizeof(SerializedModelData);
   }
 
+  const char *taxonomy_id_data() const {
+    return sequence_data() + sequence_length;
+  }
+
+  const char *organism_scientific_data() const {
+    return taxonomy_id_data() + ncbi_taxonomy_id_length;
+  }
+
   const float *coords_data_float() const {
-    return reinterpret_cast<const float *>(
-        reinterpret_cast<const char *>(this) + sizeof(SerializedModelData) + sequence_length);
+    return reinterpret_cast<const float *>(organism_scientific_data() + organism_scientific_length);
   }
 };
 

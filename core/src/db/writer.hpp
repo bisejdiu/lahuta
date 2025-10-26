@@ -41,20 +41,30 @@ public:
 
     bool store(const std::string &key, const ModelParserResult &data, bool commit = true) {
         size_t sequence_size  = data.sequence.size();
+        size_t taxonomy_size  = data.ncbi_taxonomy_id.size();
+        size_t organism_size  = data.organism_scientific.size();
         size_t coords_size    = data.coords.size() * 3 * sizeof(float); // 3 floats per point
-        size_t total_size     = sizeof(SerializedModelData) + sequence_size + coords_size;
+        size_t total_size     = sizeof(SerializedModelData) + sequence_size + taxonomy_size + organism_size + coords_size;
 
         // Allocate a buffer and serialize the header, sequence, and coordinates
         std::unique_ptr<char[]> buffer(new char[total_size]);
         auto* serialized = reinterpret_cast<SerializedModelData*>(buffer.get());
         serialized->sequence_length = static_cast<uint32_t>(sequence_size);
         serialized->num_points = static_cast<uint32_t>(data.coords.size());
+        serialized->ncbi_taxonomy_id_length = static_cast<uint32_t>(taxonomy_size);
+        serialized->organism_scientific_length = static_cast<uint32_t>(organism_size);
 
         char* seq_ptr = buffer.get() + sizeof(SerializedModelData);
-        std::memcpy(seq_ptr, data.sequence.data(), sequence_size);
+        if (sequence_size) std::memcpy(seq_ptr, data.sequence.data(), sequence_size);
+
+        char* taxonomy_ptr = seq_ptr + sequence_size;
+        if (taxonomy_size) std::memcpy(taxonomy_ptr, data.ncbi_taxonomy_id.data(), taxonomy_size);
+
+        char* organism_ptr = taxonomy_ptr + taxonomy_size;
+        if (organism_size) std::memcpy(organism_ptr, data.organism_scientific.data(), organism_size);
 
         // convert Point3D to float
-        float* float_coords = reinterpret_cast<float*>(seq_ptr + sequence_size);
+        float* float_coords = reinterpret_cast<float*>(organism_ptr + organism_size);
         for (size_t i = 0; i < data.coords.size(); ++i) {
             float_coords[i * 3]     = static_cast<float>(data.coords[i].x);
             float_coords[i * 3 + 1] = static_cast<float>(data.coords[i].y);
