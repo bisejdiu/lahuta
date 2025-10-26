@@ -15,6 +15,27 @@ import sys
 from pathlib import Path
 
 
+def _get_sanitizer_lib_path() -> str:
+    if sys.platform != "darwin":
+        return ""
+
+    try:
+        result = subprocess.run(
+            ["clang", "--print-file-name=libclang_rt.tsan_osx_dynamic.dylib"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            lib_path = result.stdout.strip()
+            if lib_path and "/" in lib_path:
+                return lib_path
+    except Exception:
+        pass
+
+    return ""
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("Usage: generate_stubs_post_install.py <install_prefix>", file=sys.stderr)
@@ -49,6 +70,16 @@ def main() -> int:
     prefix = str(install_prefix)
     env["PYTHONPATH"] = prefix + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env.pop("PYTHONHOME", None)
+
+    sanitizer_vars = ["DYLD_INSERT_LIBRARIES", "TSAN_OPTIONS", "LSAN_OPTIONS", "UBSAN_OPTIONS", "ASAN_OPTIONS"]
+    for var in sanitizer_vars:
+        if var in os.environ:
+            env[var] = os.environ[var]
+
+    if "DYLD_INSERT_LIBRARIES" not in env:
+        lib_path = _get_sanitizer_lib_path()
+        if lib_path:
+            env["DYLD_INSERT_LIBRARIES"] = lib_path
 
     modules = ["lahuta.lib.lahuta"]
 

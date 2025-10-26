@@ -119,16 +119,61 @@ def run_child() -> Callable[[str], object]:
     import os
     import subprocess
     import sys
+    import tempfile
     from pathlib import Path as _Path
 
+    def _get_sanitizer_lib_path() -> str:
+        """Get the TSan library path for the current platform.
+
+        On macOS, uses clang to locate libclang_rt.tsan_osx_dynamic.dylib.
+        Returns empty string if not found or on unsupported platforms.
+        """
+        if sys.platform != "darwin":
+            return ""
+
+        try:
+            result = subprocess.run(
+                ["clang", "--print-file-name=libclang_rt.tsan_osx_dynamic.dylib"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                lib_path = result.stdout.strip()
+                if lib_path and "/" in lib_path:
+                    return lib_path
+        except Exception:
+            pass
+
+        return ""
+
     def _inner(code: str) -> subprocess.CompletedProcess:
-        return subprocess.run(
-            [sys.executable, "-c", code],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env={**os.environ},
-            cwd=str(_Path.cwd()),
-        )
+        env = os.environ.copy()
+
+        sanitizer_vars = ["DYLD_INSERT_LIBRARIES", "TSAN_OPTIONS", "LSAN_OPTIONS", "UBSAN_OPTIONS", "ASAN_OPTIONS"]
+        for var in sanitizer_vars:
+            if var in os.environ:
+                env[var] = os.environ[var]
+
+        if "TSAN_OPTIONS" in os.environ and "DYLD_INSERT_LIBRARIES" not in env:
+            lib_path = _get_sanitizer_lib_path()
+            if lib_path:
+                env["DYLD_INSERT_LIBRARIES"] = lib_path
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            temp_script = f.name
+
+        try:
+            return subprocess.run(
+                [sys.executable, temp_script],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=env,
+                cwd=str(_Path.cwd()),
+            )
+        finally:
+            os.unlink(temp_script)
 
     return _inner

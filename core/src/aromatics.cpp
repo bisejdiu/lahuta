@@ -61,8 +61,6 @@ void apply_sssr_and_planarity_aromaticity(const RDKit::RWMol &mol, std::vector<i
   auto aromatic_rings = get_molops_aromatic_rings(new_mol);
 
   auto mapped_rings = map_rings(aromatic_rings.rings, indices);
-  auto mapped_bonds = map_rings(aromatic_rings.bonds, indices);
-
   add_rings_to_mol(mol, mapped_rings);
 }
 
