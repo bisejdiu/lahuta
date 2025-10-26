@@ -8,6 +8,8 @@
 #include <pybind11/stl.h>
 
 #include "lahuta.hpp"
+#include "models/metadata.hpp"
+#include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "pipeline/frame.hpp"
 #include "topology.hpp"
@@ -46,6 +48,24 @@ public:
       }
     }
     return py::none();
+  }
+
+  py::object taxonomy_metadata() const {
+    if (!ctx_) return py::none();
+    auto meta = ctx_->get_object<ModelMetadata>(pipeline::CTX_MODEL_METADATA_KEY);
+    if (!meta) return py::none();
+    py::dict out;
+    if (meta->ncbi_taxonomy_id.empty()) {
+      out["ncbi_taxonomy_id"] = py::none();
+    } else {
+      out["ncbi_taxonomy_id"] = py::str(meta->ncbi_taxonomy_id);
+    }
+    if (meta->organism_scientific.empty()) {
+      out["organism_scientific"] = py::none();
+    } else {
+      out["organism_scientific"] = py::str(meta->organism_scientific);
+    }
+    return out;
   }
 
   py::object get_system() const {
@@ -163,6 +183,7 @@ inline void bind_pipeline_context(py::module_ &md) {
       .def_property_readonly("conformer_id", &PyPipelineContext::conformer_id, py::doc(R"doc(Return the conformer/frame identifier for the current item.)doc"))
       .def_property_readonly("session_id",   &PyPipelineContext::session_id,   py::doc(R"doc(Return the session identifier associated with this item.)doc"))
       .def_property_readonly("timestamp_ps", &PyPipelineContext::timestamp_ps, py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
+      .def_property_readonly("taxonomy",     &PyPipelineContext::taxonomy_metadata, py::doc(R"doc(Model taxonomy metadata for AlphaFold-like inputs (dict with ncbi_taxonomy_id / organism_scientific).)doc"))
 
       .def("get",          &PyPipelineContext::get)
       .def("get_system",   &PyPipelineContext::get_system)

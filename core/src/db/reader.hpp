@@ -34,8 +34,8 @@ public:
     }
 
     result.sequence.assign(serialized->sequence_data(), serialized->sequence_length);
-    result.ncbi_taxonomy_id.assign(serialized->taxonomy_id_data(), serialized->ncbi_taxonomy_id_length);
-    result.organism_scientific.assign(serialized->organism_scientific_data(), serialized->organism_scientific_length);
+    result.metadata.ncbi_taxonomy_id.assign(serialized->taxonomy_id_data(), serialized->ncbi_taxonomy_id_length);
+    result.metadata.organism_scientific.assign(serialized->organism_scientific_data(), serialized->organism_scientific_length);
 
     // float coords --> Point3D
     result.coords.resize(serialized->num_points);

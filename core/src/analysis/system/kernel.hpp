@@ -4,28 +4,43 @@
 #include <memory>
 #include <string>
 
+#include "analysis/system/model_loader.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
+#include "models/metadata.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
+#include "pipeline/dynamic/keys.hpp"
 
 // clang-format off
 namespace lahuta::analysis::system {
 using namespace lahuta::pipeline::compute;
+
+inline void publish_model_metadata(pipeline::dynamic::TaskContext* ctx, const ModelMetadata& meta) {
+  if (!ctx || meta.empty()) return;
+  ctx->set_object<ModelMetadata>(pipeline::CTX_MODEL_METADATA_KEY, std::make_shared<ModelMetadata>(meta));
+}
 
 struct SystemReadKernel {
   static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const SystemReadParams& p) {
     try {
       auto& data = context.data();
 
-      auto sys = [&data, &p]() -> std::shared_ptr<const Luni> {
+      std::shared_ptr<const Luni> sys;
 
-        if (data.session) return data.session->get_or_load_system();
-        if (!p.is_model)  return std::make_shared<Luni>(data.item_path);
-
-        auto s = Luni::from_model_file(data.item_path);
-        return std::make_shared<Luni>(std::move(s));
-      }();
+      if (data.session) {
+        sys = data.session->get_or_load_system();
+        if (auto meta = data.session->model_metadata()) {
+          publish_model_metadata(data.ctx, *meta);
+        }
+      } else if (p.is_model) {
+        auto parsed = load_model_parser_result(data.item_path);
+        publish_model_metadata(data.ctx, parsed.metadata);
+        auto s = Luni::from_model_data(parsed);
+        sys = std::make_shared<Luni>(std::move(s));
+      } else {
+        sys = std::make_shared<Luni>(data.item_path);
+      }
 
       if (!sys) return ComputationResult(ComputationError("SystemRead failed: null system"));
 

@@ -39,6 +39,11 @@ public:
     return std::make_shared<Frame>(std::move(coords));
   }
 
+  std::shared_ptr<const ModelMetadata> model_metadata() const override {
+    ensure_loaded();
+    return metadata_;
+  }
+
 protected:
   std::shared_ptr<const Luni> build_system() const override {
     auto rec = record();
@@ -98,6 +103,7 @@ private:
       auto positions = std::make_shared<RDGeom::POINT3D_VECT>(rec.data.coords);
       record_    = std::make_shared<analysis::system::ModelRecord>(std::move(rec));
       positions_ = std::move(positions);
+      metadata_  = std::make_shared<ModelMetadata>(record_->data.metadata);
     });
   }
 
@@ -107,6 +113,7 @@ private:
   mutable std::once_flag load_once_;
   mutable std::shared_ptr<analysis::system::ModelRecord> record_;
   mutable std::shared_ptr<const RDGeom::POINT3D_VECT> positions_;
+  mutable std::shared_ptr<const ModelMetadata> metadata_;
 };
 
 class LMDBRealizer {

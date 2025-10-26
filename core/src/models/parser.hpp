@@ -6,13 +6,14 @@
 
 #include <rdkit/Geometry/point.h>
 
+#include "models/metadata.hpp"
+
 // clang-format off
 namespace lahuta {
 
 struct ModelParserResult {
   std::string sequence;
-  std::string ncbi_taxonomy_id;
-  std::string organism_scientific;
+  ModelMetadata metadata;
   mutable RDGeom::POINT3D_VECT coords;
   mutable bool coords_consumed{false};
 

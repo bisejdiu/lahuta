@@ -19,8 +19,8 @@ struct Serializer<fmt::binary, ModelParserResult> {
   static std::size_t serialized_size(const Record &r) {
     const std::size_t seq_len       = r.sequence.size();
     const std::size_t coords_bytes  = r.coords.size() * 3 * sizeof(float);
-    const std::size_t taxonomy_len  = r.ncbi_taxonomy_id.size();
-    const std::size_t organism_len  = r.organism_scientific.size();
+    const std::size_t taxonomy_len  = r.metadata.ncbi_taxonomy_id.size();
+    const std::size_t organism_len  = r.metadata.organism_scientific.size();
     // Layout: [seq_len][n_points][sequence][coords][taxonomy_len][organism_len][taxonomy][organism]
     return sizeof(uint32_t) * 2 + seq_len + coords_bytes + sizeof(uint32_t) * 2 + taxonomy_len + organism_len;
   }
@@ -28,8 +28,8 @@ struct Serializer<fmt::binary, ModelParserResult> {
   static void serialize_into_buffer(const Record &r, char *dest) {
     const uint32_t seq_len      = static_cast<uint32_t>(r.sequence.size());
     const uint32_t n_points     = static_cast<uint32_t>(r.coords.size());
-    const uint32_t taxonomy_len = static_cast<uint32_t>(r.ncbi_taxonomy_id.size());
-    const uint32_t organism_len = static_cast<uint32_t>(r.organism_scientific.size());
+    const uint32_t taxonomy_len = static_cast<uint32_t>(r.metadata.ncbi_taxonomy_id.size());
+    const uint32_t organism_len = static_cast<uint32_t>(r.metadata.organism_scientific.size());
 
     char *p = dest;
     std::memcpy(p, &seq_len, sizeof(seq_len));
@@ -57,12 +57,12 @@ struct Serializer<fmt::binary, ModelParserResult> {
     p += sizeof(organism_len);
 
     if (taxonomy_len) {
-      std::memcpy(p, r.ncbi_taxonomy_id.data(), taxonomy_len);
+      std::memcpy(p, r.metadata.ncbi_taxonomy_id.data(), taxonomy_len);
     }
     p += taxonomy_len;
 
     if (organism_len) {
-      std::memcpy(p, r.organism_scientific.data(), organism_len);
+      std::memcpy(p, r.metadata.organism_scientific.data(), organism_len);
     }
     p += organism_len;
   }
@@ -124,13 +124,13 @@ struct Serializer<fmt::binary, ModelParserResult> {
         throw std::runtime_error("Corrupted data in deserialization (taxonomy payload)");
       }
 
-      r.ncbi_taxonomy_id.assign(p, taxonomy_len);
+      r.metadata.ncbi_taxonomy_id.assign(p, taxonomy_len);
       p += taxonomy_len;
-      r.organism_scientific.assign(p, organism_len);
+      r.metadata.organism_scientific.assign(p, organism_len);
       p += organism_len;
     } else {
-      r.ncbi_taxonomy_id.clear();
-      r.organism_scientific.clear();
+      r.metadata.ncbi_taxonomy_id.clear();
+      r.metadata.organism_scientific.clear();
     }
     return r;
   }
