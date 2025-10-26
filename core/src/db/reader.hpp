@@ -22,14 +22,13 @@ public:
     const SerializedModelData* serialized = reinterpret_cast<const SerializedModelData*>(value.data());
 
     // basic sanity check on the size.
-    size_t expected_size = sizeof(SerializedModelData) +
-                           serialized->sequence_length +
-                           serialized->ncbi_taxonomy_id_length +
-                           serialized->organism_scientific_length +
-                           serialized->num_points * 3  *
-                           sizeof(float); // 3 floats per point
+    size_t minimum_size = sizeof(SerializedModelData) +
+                          serialized->sequence_length +
+                          serialized->ncbi_taxonomy_id_length +
+                          serialized->organism_scientific_length +
+                          serialized->num_points * 3 * sizeof(float); // 3 floats per point
 
-    if (value.size() < expected_size) {
+    if (value.size() < minimum_size) {
       throw std::runtime_error("Corrupted data for key: " + key);
     }
 
@@ -44,6 +43,30 @@ public:
       result.coords[i].x = static_cast<double>(float_coords[i * 3]);
       result.coords[i].y = static_cast<double>(float_coords[i * 3 + 1]);
       result.coords[i].z = static_cast<double>(float_coords[i * 3 + 2]);
+    }
+
+    const char* tail = reinterpret_cast<const char*>(float_coords + serialized->num_points * 3);
+    size_t consumed = tail - value.data();
+    if (consumed > value.size()) {
+      throw std::runtime_error("Corrupted coordinate data for key: " + key);
+    }
+    size_t remaining = value.size() - consumed;
+    result.plddt_per_residue.clear();
+    if (remaining >= sizeof(uint32_t)) {
+      uint32_t plddt_len = 0;
+      std::memcpy(&plddt_len, tail, sizeof(plddt_len));
+      tail += sizeof(plddt_len);
+      remaining -= sizeof(plddt_len);
+      const size_t plddt_bytes = static_cast<size_t>(plddt_len) * sizeof(pLDDTCategory);
+      if (remaining < plddt_bytes) {
+        throw std::runtime_error("Corrupted pLDDT data for key: " + key);
+      }
+      result.plddt_per_residue.resize(plddt_len);
+      if (plddt_bytes) {
+        std::memcpy(result.plddt_per_residue.data(), tail, plddt_bytes);
+      }
+    } else {
+      result.plddt_per_residue.clear();
     }
 
     return true;

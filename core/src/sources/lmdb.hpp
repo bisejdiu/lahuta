@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <models/topology.hpp>
 
@@ -42,6 +43,11 @@ public:
   std::shared_ptr<const ModelMetadata> model_metadata() const override {
     ensure_loaded();
     return metadata_;
+  }
+
+  std::shared_ptr<const std::vector<pLDDTCategory>> residue_plddt() const override {
+    ensure_loaded();
+    return plddt_;
   }
 
 protected:
@@ -104,6 +110,7 @@ private:
       record_    = std::make_shared<analysis::system::ModelRecord>(std::move(rec));
       positions_ = std::move(positions);
       metadata_  = std::make_shared<ModelMetadata>(record_->data.metadata);
+      plddt_     = std::make_shared<std::vector<pLDDTCategory>>(record_->data.plddt_per_residue);
     });
   }
 
@@ -114,6 +121,7 @@ private:
   mutable std::shared_ptr<analysis::system::ModelRecord> record_;
   mutable std::shared_ptr<const RDGeom::POINT3D_VECT> positions_;
   mutable std::shared_ptr<const ModelMetadata> metadata_;
+  mutable std::shared_ptr<const std::vector<pLDDTCategory>> plddt_;
 };
 
 class LMDBRealizer {

@@ -126,6 +126,30 @@ inline std::string strip_cif_quotes(std::string value) {
   return value;
 }
 
+inline double parse_fixed_float(const char* start) {
+  bool negative = false;
+  const char* p = start;
+  if (*p == '-') {
+    negative = true;
+    ++p;
+  }
+  double value = 0.0;
+  while (*p >= '0' && *p <= '9') {
+    value = value * 10.0 + static_cast<double>(*p - '0');
+    ++p;
+  }
+  if (*p == '.') {
+    ++p;
+    double factor = 0.1;
+    while (*p >= '0' && *p <= '9') {
+      value += static_cast<double>(*p - '0') * factor;
+      factor *= 0.1;
+      ++p;
+    }
+  }
+  return negative ? -value : value;
+}
+
 ModelParserResult parse_model(const char *data, size_t size) {
   ModelParserResult output;
   const char *const end = data + size;
@@ -176,22 +200,41 @@ ModelParserResult parse_model(const char *data, size_t size) {
   while (z_pos < end && *z_pos == ' ') z_pos++;
   int z_offset = z_pos - first_atom;
 
+  // find B-factor (pLDDT)
+  const char* bfactor_pos = z_pos; // z_pos points to the start of the z value
+  while (bfactor_pos < end && *bfactor_pos != ' ') bfactor_pos++; // Skip z value   -> spaces
+  while (bfactor_pos < end && *bfactor_pos == ' ') bfactor_pos++; // Skip spaces    -> start of occupancy
+  while (bfactor_pos < end && *bfactor_pos != ' ') bfactor_pos++; // Skip occupancy -> spaces
+  while (bfactor_pos < end && *bfactor_pos == ' ') bfactor_pos++; // Skip spaces    -> start of B-factor
+  int bfactor_offset = bfactor_pos - first_atom;
+
   // find the end of first line to determine line length
   const char* line_end = static_cast<const char*>(std::memchr(first_atom, '\n', end - first_atom));
   if (!line_end) line_end = end;
 
   size_t line_length = line_end - first_atom + 1; // +1 to include newline
+  if (bfactor_pos >= line_end) bfactor_offset = -1;
 
   // count ATOM records to reserve space for coordinates
   size_t atom_count = 0;
   const char* counter = first_atom;
 
   for (const auto &c : output.sequence) {
-    atom_count += StandardAminoAcidAtomSizeTable[c];
+    atom_count += StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(c)];
   }
   atom_count += 1; // for Frodo
 
   output.coords.reserve(atom_count);
+  output.plddt_per_residue.assign(output.sequence.size(), pLDDTCategory::VeryLow);
+
+  size_t residue_index = 0;
+  size_t atoms_in_residue = 0;
+  if (!output.sequence.empty()) {
+    atoms_in_residue = StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(output.sequence[0])];
+    if (atoms_in_residue == 0) atoms_in_residue = 1;
+  }
+  size_t atoms_seen_in_residue = 0;
+  bool recorded_plddt = false;
 
   // 1. all atom recods are the same length
   // 2. atom records are consecutive
@@ -202,7 +245,7 @@ ModelParserResult parse_model(const char *data, size_t size) {
           break;
       }
 
-      // --- x position ---
+      // x position
       double x = 0.0;
       bool x_negative = false;
       const char* x_start = atom_ptr + x_offset;
@@ -231,7 +274,7 @@ ModelParserResult parse_model(const char *data, size_t size) {
       }
       if (x_negative) x = -x;
 
-      // --- y position ---
+      // y position
       double y = 0.0;
       bool y_negative = false;
       const char* y_start = atom_ptr + y_offset;
@@ -257,7 +300,7 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
       if (y_negative) y = -y;
 
-      // --- z position ---
+      // z position
       double z = 0.0;
       bool z_negative = false;
       const char* z_start = atom_ptr + z_offset;
@@ -284,6 +327,31 @@ ModelParserResult parse_model(const char *data, size_t size) {
       if (z_negative) z = -z;
 
       output.coords.push_back({x, y, z});
+
+      if (!recorded_plddt && bfactor_offset >= 0 && residue_index < output.plddt_per_residue.size()) {
+          const char* b_start = atom_ptr + bfactor_offset;
+          if (b_start < atom_ptr + line_length) {
+              double bfactor = parse_fixed_float(b_start);
+              auto category = categorize_plddt(bfactor);
+              output.plddt_per_residue[residue_index] = category;
+              recorded_plddt = true;
+          }
+      }
+
+      if (residue_index < output.plddt_per_residue.size() && atoms_in_residue > 0) {
+          atoms_seen_in_residue++;
+          if (atoms_seen_in_residue >= atoms_in_residue) {
+              residue_index++;
+              atoms_seen_in_residue = 0;
+              recorded_plddt = false;
+              if (residue_index < output.sequence.size()) {
+                  atoms_in_residue = StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(output.sequence[residue_index])];
+                  if (atoms_in_residue == 0) atoms_in_residue = 1;
+              } else {
+                  atoms_in_residue = 0;
+              }
+          }
+      }
 
       atom_ptr += line_length;
   }

@@ -9,6 +9,7 @@
 
 #include "lahuta.hpp"
 #include "models/metadata.hpp"
+#include "models/plddt.hpp"
 #include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "pipeline/frame.hpp"
@@ -151,6 +152,17 @@ public:
     return py::none();
   }
 
+  py::object plddt_categories() const {
+    if (!ctx_) return py::none();
+    auto cats = ctx_->get_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY);
+    if (!cats) return py::none();
+    py::list out(cats->size());
+    for (size_t i = 0; i < cats->size(); ++i) {
+      out[i] = py::int_(static_cast<std::uint8_t>((*cats)[i]));
+    }
+    return out;
+  }
+
   py::object frame_metadata() const {
     if (auto meta = frame_metadata_ptr()) {
       py::dict out;
@@ -184,6 +196,7 @@ inline void bind_pipeline_context(py::module_ &md) {
       .def_property_readonly("session_id",   &PyPipelineContext::session_id,   py::doc(R"doc(Return the session identifier associated with this item.)doc"))
       .def_property_readonly("timestamp_ps", &PyPipelineContext::timestamp_ps, py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
       .def_property_readonly("taxonomy",     &PyPipelineContext::taxonomy_metadata, py::doc(R"doc(Model taxonomy metadata for AlphaFold-like inputs (dict with ncbi_taxonomy_id / organism_scientific).)doc"))
+      .def_property_readonly("plddt",        &PyPipelineContext::plddt_categories, py::doc(R"doc(Residue-level pLDDT categories (list of ints, 0=VeryHigh ... 3=VeryLow).)doc"))
 
       .def("get",          &PyPipelineContext::get)
       .def("get_system",   &PyPipelineContext::get_system)

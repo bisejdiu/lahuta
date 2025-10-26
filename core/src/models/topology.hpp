@@ -17,6 +17,7 @@ namespace lahuta {
 // 4. Only one chain (A)
 // 5. Only one model
 // 6. The last atom in the molecule is OXT
+// 7. Occupancy is always 1.0
 //
 
 //

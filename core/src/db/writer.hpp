@@ -44,7 +44,10 @@ public:
         size_t taxonomy_size  = data.metadata.ncbi_taxonomy_id.size();
         size_t organism_size  = data.metadata.organism_scientific.size();
         size_t coords_size    = data.coords.size() * 3 * sizeof(float); // 3 floats per point
-        size_t total_size     = sizeof(SerializedModelData) + sequence_size + taxonomy_size + organism_size + coords_size;
+        const uint32_t plddt_len = static_cast<uint32_t>(data.plddt_per_residue.size());
+        const size_t plddt_bytes = static_cast<size_t>(plddt_len) * sizeof(pLDDTCategory);
+        size_t total_size     = sizeof(SerializedModelData) + sequence_size + taxonomy_size + organism_size + coords_size +
+                                sizeof(uint32_t) + plddt_bytes;
 
         // Allocate a buffer and serialize the header, sequence, and coordinates
         std::unique_ptr<char[]> buffer(new char[total_size]);
@@ -69,6 +72,13 @@ public:
             float_coords[i * 3]     = static_cast<float>(data.coords[i].x);
             float_coords[i * 3 + 1] = static_cast<float>(data.coords[i].y);
             float_coords[i * 3 + 2] = static_cast<float>(data.coords[i].z);
+        }
+
+        char* plddt_ptr = reinterpret_cast<char*>(float_coords + data.coords.size() * 3);
+        std::memcpy(plddt_ptr, &plddt_len, sizeof(plddt_len));
+        plddt_ptr += sizeof(plddt_len);
+        if (plddt_bytes) {
+            std::memcpy(plddt_ptr, data.plddt_per_residue.data(), plddt_bytes);
         }
 
         bool created_txn = false;

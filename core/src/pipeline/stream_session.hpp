@@ -5,7 +5,9 @@
 #include <functional>
 #include <memory>
 #include <string_view>
+#include <vector>
 
+#include "models/plddt.hpp"
 #include "topology.hpp"
 
 // clang-format off
@@ -20,6 +22,7 @@ struct StreamSession {
   virtual std::shared_ptr<const Luni>     get_or_load_system() const = 0;
   virtual std::shared_ptr<const Topology> get_or_load_topology(const TopologyBuildingOptions &) const = 0;
   virtual std::shared_ptr<const ModelMetadata> model_metadata() const { return {}; }
+  virtual std::shared_ptr<const std::vector<pLDDTCategory>> residue_plddt() const { return {}; }
 
   class Permit { // RAII counting-semaphore token
   public:

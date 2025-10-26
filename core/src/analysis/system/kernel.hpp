@@ -3,14 +3,17 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "analysis/system/model_loader.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
 #include "models/metadata.hpp"
+#include "models/plddt.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/keys.hpp"
+#include "pipeline/dynamic/types.hpp"
 
 // clang-format off
 namespace lahuta::analysis::system {
@@ -19,6 +22,17 @@ using namespace lahuta::pipeline::compute;
 inline void publish_model_metadata(pipeline::dynamic::TaskContext* ctx, const ModelMetadata& meta) {
   if (!ctx || meta.empty()) return;
   ctx->set_object<ModelMetadata>(pipeline::CTX_MODEL_METADATA_KEY, std::make_shared<ModelMetadata>(meta));
+}
+
+inline void publish_plddt(pipeline::dynamic::TaskContext* ctx, std::shared_ptr<const std::vector<pLDDTCategory>> categories) {
+  if (!ctx || !categories || categories->empty()) return;
+  ctx->set_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY, std::move(categories));
+}
+
+inline void publish_plddt(pipeline::dynamic::TaskContext* ctx, const std::vector<pLDDTCategory>& categories) {
+  if (!ctx || categories.empty()) return;
+  auto shared = std::make_shared<std::vector<pLDDTCategory>>(categories);
+  ctx->set_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY, std::move(shared));
 }
 
 struct SystemReadKernel {
@@ -33,9 +47,13 @@ struct SystemReadKernel {
         if (auto meta = data.session->model_metadata()) {
           publish_model_metadata(data.ctx, *meta);
         }
+        if (auto cats = data.session->residue_plddt()) {
+          publish_plddt(data.ctx, std::move(cats));
+        }
       } else if (p.is_model) {
         auto parsed = load_model_parser_result(data.item_path);
         publish_model_metadata(data.ctx, parsed.metadata);
+        publish_plddt(data.ctx, parsed.plddt_per_residue);
         auto s = Luni::from_model_data(parsed);
         sys = std::make_shared<Luni>(std::move(s));
       } else {
