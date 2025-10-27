@@ -27,13 +27,21 @@ p.params("system").is_model = True
 
 def inspect(ctx) -> str: # our type inference cannot infer str in this context
     s = ctx.get_system()
-    dssp = ctx.dssp
-    plddt = ctx.plddt
-    assert isinstance(dssp, list) and isinstance(plddt, list)
-    assert len(dssp) == len(plddt) and len(dssp) > 0
+    topo = ctx.get_topology()
+    assert topo is not None
+    payload = ctx.model_payload
+    assert payload is not None
+    dssp = payload.dssp
+    residue_bf = payload.bfactors
+    ctx_bf = ctx.bfactors
+    assert isinstance(dssp, list) and isinstance(residue_bf, list)
+    assert len(dssp) == len(residue_bf) and len(dssp) > 0
+    assert ctx_bf is None or isinstance(ctx_bf, list)
+    meta = payload.metadata
+    assert meta is None or isinstance(meta, dict)
     return f"ok {{ctx.path}} {{int(s.n_atoms)}}"
 
-p.add_task(name="inspect", task=inspect, depends=["system"])
+p.add_task(name="inspect", task=inspect, depends=["topology"])
 out = p.run(threads=1)
 print("OK", out.get("inspect", []))
 """

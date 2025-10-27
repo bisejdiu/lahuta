@@ -100,9 +100,45 @@ inline double milliseconds_to_seconds(std::chrono::milliseconds ms) {
 
 } // namespace
 
+inline std::vector<pipeline::DataField> bitset_to_fields(pipeline::DataFieldSet set) {
+  std::vector<pipeline::DataField> fields;
+  auto try_add = [&](pipeline::DataField field) {
+    if (set.contains(field)) fields.push_back(field);
+  };
+  try_add(pipeline::DataField::Metadata);
+  try_add(pipeline::DataField::Sequence);
+  try_add(pipeline::DataField::Positions);
+  try_add(pipeline::DataField::Plddt);
+  try_add(pipeline::DataField::Dssp);
+  try_add(pipeline::DataField::SequenceView);
+  try_add(pipeline::DataField::PositionsView);
+  try_add(pipeline::DataField::PlddtView);
+  try_add(pipeline::DataField::DsspView);
+  return fields;
+}
+
+inline pipeline::DataFieldSet fields_to_bitset(const std::vector<pipeline::DataField>& fields) {
+  pipeline::DataFieldSet set = pipeline::DataFieldSet::none();
+  for (auto field : fields) {
+    set |= field;
+  }
+  return set;
+}
+
 inline void bind_stage_manager(py::module_ &md) {
   DefaultExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup);
   NullExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup_null);
+
+  py::enum_<pipeline::DataField>(md, "DataField")
+    .value("Metadata",      pipeline::DataField::Metadata)
+    .value("Sequence",      pipeline::DataField::Sequence)
+    .value("Positions",     pipeline::DataField::Positions)
+    .value("Plddt",         pipeline::DataField::Plddt)
+    .value("Dssp",          pipeline::DataField::Dssp)
+    .value("SequenceView",  pipeline::DataField::SequenceView)
+    .value("PositionsView", pipeline::DataField::PositionsView)
+    .value("PlddtView",     pipeline::DataField::PlddtView)
+    .value("DsspView",      pipeline::DataField::DsspView);
 
   py::enum_<StageManager::ReportingLevel>(md, "ReportingLevel")
     .value("OFF",   StageManager::ReportingLevel::Off)
@@ -163,6 +199,16 @@ inline void bind_stage_manager(py::module_ &md) {
         py::arg("channel") = std::optional<std::string>{},
         py::arg("out_fmt") = std::string("json"),
         py::arg("thread_safe") = true)
+
+    .def("set_task_data_fields", [](StageManager& mgr, const std::string& name, const std::vector<pipeline::DataField>& fields) {
+          mgr.set_task_data_requirements(name, fields_to_bitset(fields));
+        },
+        py::arg("name"), py::arg("fields"))
+
+    .def("get_task_data_fields", [](StageManager& mgr, const std::string& name) {
+          return bitset_to_fields(mgr.get_task_data_requirements(name));
+        },
+        py::arg("name"))
 
     // python tasks
     .def("add_python", [](StageManager &mgr,

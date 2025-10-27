@@ -10,6 +10,7 @@ from typing import (
     Iterable,
     Literal,
     Protocol,
+    Sequence,
     Type,
     TypeAlias,
     TypeVar,
@@ -19,7 +20,12 @@ from typing import (
 
 from lahuta import logging
 from lahuta.lib import lahuta as _lib
-from lahuta.sources import PipelineSource
+from lahuta.sources import (
+    DatabaseHandleSource,
+    DatabaseSource,
+    LmdbSource,
+    PipelineSource,
+)
 
 from ._discovery import _ast_infer_builtins_for_callable, _discover_builtins_for_callable
 from ._inference import infer_python_task_format
@@ -31,9 +37,14 @@ from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 
 # fmt: off
+DataField      = _lib.pipeline.DataField
 StageManager   = _lib.pipeline.StageManager
 ReportingLevel = _lib.pipeline.ReportingLevel
 CppTask: TypeAlias = _lib.pipeline.Task
+
+_DATABASE_SOURCE_TYPES: tuple[type[Any], ...] = tuple(
+    t for t in (DatabaseSource, DatabaseHandleSource, LmdbSource) if t is not None
+)
 
 # Callable protocol for Python tasks that accept a PipelineContext and return any value
 # that can be serialized into a single ndjson record. The return type is expressed
@@ -88,7 +99,8 @@ class Pipeline:
         try:
             self._mgr.set_reporting_level(self._reporting_level)
         except AttributeError:
-            # Older runtimes lack reporting level support; leave at default.
+            # Older runtimes lack reporting level support. leave at default.
+            # Check! Should not happen anymore.
             pass
 
     def set_reporting_level(self, level: ReportingLevel) -> None:
@@ -195,6 +207,7 @@ class Pipeline:
         depends: list[str] | None = None,
         thread_safe: bool = True,
         writer_threads: int | None = None,
+        requires_fields: Iterable[DataField] | None = None,
     ) -> None:
         ch = channel or name
         deps = list(depends) if depends is not None else []
@@ -224,6 +237,10 @@ class Pipeline:
             raise ValueError(
                 "Topology is disabled via Pipeline.params('topology').enabled = False. Cannot add tasks depending on 'topology'."
             )
+
+        req_fields_tuple = self._normalize_requires_fields(requires_fields)
+        if req_fields_tuple:
+            self._validate_requires_fields()
 
         # Resolve ContactTask spec to a compute-backed contacts node
         if isinstance(task, ContactTask):
@@ -255,6 +272,7 @@ class Pipeline:
             self._channel_formats[ch]  = emission_fmt
             self._channel_decoders[ch] = "contacts"
             self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt, writer_threads=writer_threads)
+            self._apply_requires_fields(name, req_fields_tuple)
             return
 
         # Python callable task
@@ -268,6 +286,7 @@ class Pipeline:
             task_format = infer_python_task_format(task)
             self._channel_formats[ch] = task_format
             self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format, writer_threads=writer_threads)
+            self._apply_requires_fields(name, req_fields_tuple)
 
             # Record for multiprocessing backend
             module, qualname = resolve_callable_metadata(task)
@@ -309,9 +328,34 @@ class Pipeline:
             self._mgr.add_task(name, deps, task, bool(thread_safe))
             self._channel_formats.setdefault(ch, OutputFormat.TEXT)
             self._attach_sinks(ch, in_memory_policy, out, channel_format=self._channel_formats[ch], writer_threads=writer_threads)
+            self._apply_requires_fields(name, req_fields_tuple)
             return
 
         raise TypeError("task must be a callable, ContactTask spec, or pipeline.Task instance")
+
+    def _normalize_requires_fields(self, fields: Iterable[DataField] | None) -> tuple[DataField, ...]:
+        if not fields:
+            return tuple()
+        normalized: list[DataField] = []
+        for entry in fields:
+            if isinstance(entry, DataField):
+                normalized.append(entry)
+            else:
+                raise TypeError("requires_fields entries must be DataField enums")
+        return tuple(normalized)
+
+    def _validate_requires_fields(self) -> None:
+        is_model = bool(self._mgr.get_system_params().get("is_model", False))
+        if not is_model:
+            raise ValueError(
+                "requires_fields is only supported for model inputs. "
+                "Set pipeline.params('system').is_model = True before adding the task."
+            )
+
+    def _apply_requires_fields(self, task_name: str, fields: Sequence[DataField]) -> None:
+        if not fields:
+            return
+        self._mgr.set_task_data_fields(task_name, list(fields))
 
     def _preferred_sink_format(self, out: Iterable[FileOutput | ShardedOutput] | None) -> OutputFormat | None:
         if not out:
@@ -479,6 +523,11 @@ class Pipeline:
             return PipelineResult(_collect_memory_states())
 
         if backend == "processes":
+            if _DATABASE_SOURCE_TYPES and isinstance(self._source, _DATABASE_SOURCE_TYPES):
+                raise RuntimeError(
+                    "backend='processes' is not supported for database-type sources. "
+                    "Process workers cannot yet access LMDB-backed DataField views."
+                )
             if not self._py_tasks:
                 logging.warn("No Python tasks registered. Falling back to threaded backend.")
                 return self.run(threads=threads, backend="threads")

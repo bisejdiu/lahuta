@@ -15,6 +15,17 @@ namespace lahuta::dist {
 
 constexpr int BlockCols = 4096;
 
+namespace {
+RDGeom::POINT3D_VECT promote_points(const RDGeom::POINT3D_VECT_F &coords) {
+  RDGeom::POINT3D_VECT out;
+  out.reserve(coords.size());
+  for (const auto &p : coords) {
+    out.emplace_back(static_cast<double>(p.x), static_cast<double>(p.y), static_cast<double>(p.z));
+  }
+  return out;
+}
+}  // namespace
+
 NSResults neighbors_within_radius_self(const RDGeom::POINT3D_VECT &coords, const NeighborSearchOptions &options) {
   if (coords.empty()) return {};
 
@@ -57,6 +68,23 @@ NSResults neighbors_within_radius_cross_fastns(const RDGeom::POINT3D_VECT &queri
   return results;
 }
 
+NSResults neighbors_within_radius_self(const RDGeom::POINT3D_VECT_F &coords, const NeighborSearchOptions &options) {
+  auto promoted = promote_points(coords);
+  return neighbors_within_radius_self(promoted, options);
+}
+
+NSResults neighbors_within_radius_cross(const RDGeom::POINT3D_VECT_F &queries, const RDGeom::POINT3D_VECT_F &targets, const NeighborSearchOptions &options) {
+  auto q = promote_points(queries);
+  auto t = promote_points(targets);
+  return neighbors_within_radius_cross(q, t, options);
+}
+
+NSResults neighbors_within_radius_cross_fastns(const RDGeom::POINT3D_VECT_F &queries, const RDGeom::POINT3D_VECT_F &targets, const NeighborSearchOptions &options) {
+  auto q = promote_points(queries);
+  auto t = promote_points(targets);
+  return neighbors_within_radius_cross_fastns(q, t, options);
+}
+
 NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT &coords, double cutoff) {
   if (coords.empty()) return {};
   const float cutoff_sq = static_cast<float>(cutoff * cutoff);
@@ -87,6 +115,17 @@ NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT &coords, d
     }
   }
   return results;
+}
+
+NSResults brute_force_radius_self_streamed(const RDGeom::POINT3D_VECT_F &coords, double cutoff) {
+  auto promoted = promote_points(coords);
+  return brute_force_radius_self_streamed(promoted, cutoff);
+}
+
+NSResults brute_force_radius_cross_streamed(const RDGeom::POINT3D_VECT_F &queries, const RDGeom::POINT3D_VECT_F &targets, double cutoff) {
+  auto q = promote_points(queries);
+  auto t = promote_points(targets);
+  return brute_force_radius_cross_streamed(q, t, cutoff);
 }
 
 NSResults brute_force_radius_cross_streamed(const RDGeom::POINT3D_VECT &queries, const RDGeom::POINT3D_VECT &targets, double cutoff) {

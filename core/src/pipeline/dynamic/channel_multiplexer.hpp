@@ -19,6 +19,34 @@ namespace lahuta::pipeline::dynamic {
 
 class ChannelMultiplexer {
 public:
+  ChannelMultiplexer() = default;
+
+  ChannelMultiplexer(ChannelMultiplexer&& other) noexcept {
+    std::lock_guard<std::mutex> lk(other.m_);
+    closed_ = other.closed_;
+    ingresses_       = std::move(other.ingresses_);
+    subscribers_     = std::move(other.subscribers_);
+    channel_to_id_   = std::move(other.channel_to_id_);
+    sink_to_ingress_ = std::move(other.sink_to_ingress_);
+    next_channel_id_ = other.next_channel_id_;
+  }
+
+  ChannelMultiplexer& operator=(ChannelMultiplexer&& other) noexcept {
+    if (this != &other) {
+      std::scoped_lock lock(m_, other.m_);
+      closed_ = other.closed_;
+      ingresses_       = std::move(other.ingresses_);
+      subscribers_     = std::move(other.subscribers_);
+      channel_to_id_   = std::move(other.channel_to_id_);
+      sink_to_ingress_ = std::move(other.sink_to_ingress_);
+      next_channel_id_ = other.next_channel_id_;
+    }
+    return *this;
+  }
+
+  ChannelMultiplexer(const ChannelMultiplexer&) = delete;
+  ChannelMultiplexer& operator=(const ChannelMultiplexer&) = delete;
+
   // Connect a sink to a channel with an optional backpressure config.
   void connect(const std::string& channel,
                std::shared_ptr<IDynamicSink> sink,
@@ -26,9 +54,11 @@ public:
     std::lock_guard<std::mutex> lk(m_);
     const auto ch_id = intern_channel_locked(channel);
 
+    //
     // Defaults are applied at ingress construction time. If the same sink instance
     // is connected again later -even after defaults change - the existing ingress
     // and its captured config are reused.
+    //
     BackpressureConfig effective = cfg.has_value() ? *cfg : get_default_backpressure_config();
 
     // one ingress per sink instance

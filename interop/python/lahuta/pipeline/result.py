@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Iterator, KeysView, Mapping
+from typing import Any, Callable, Iterator, KeysView, Mapping
 
 import orjson
 
@@ -27,7 +27,7 @@ class PipelineResult:
     """Encapsulates in-memory pipeline outputs with lazy decoding utilities."""
 
     def __init__(self, channels: Mapping[str, _ChannelState]) -> None:
-        self._channels: Dict[str, _ChannelState] = dict(channels)
+        self._channels: dict[str, _ChannelState] = dict(channels)
 
     def __contains__(self, channel: object) -> bool:
         return channel in self._channels

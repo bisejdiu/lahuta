@@ -1,3 +1,4 @@
+#include <rdkit/GraphMol/MonomerInfo.h>
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "compute/context.hpp"
@@ -57,11 +58,18 @@ void ModelAtomsKernel::create_atoms_for_residue(int residue_idx, char aa_type, M
     RDKit::Atom *atom = data.atom_pool->createAtom();
     atom->setIdx(static_cast<unsigned int>(data.atom_idx));
     atom->setAtomicNum(atom_num);
+    double plddt_value = 0.0;
+    const auto &plddts = data.input_data->plddt_per_residue;
+    const auto res_idx = static_cast<std::size_t>(residue_idx);
+    if (!plddts.empty() && res_idx < plddts.size()) {
+      plddt_value = static_cast<double>(static_cast<std::uint8_t>(plddts[res_idx]));
+    }
     atom->setMonomerInfo(data.info_pool->createAtomInfo(
         atom_name,
         data.atom_idx + 1,
         entry.name,
-        residue_idx + 1));
+        residue_idx + 1,
+        plddt_value));
     atom->setNumCompImplicitHs(ih);
     atom->setCompAtomType(at);
     atom->setHybridization(static_cast<RDKit::Atom::HybridizationType>(hyb));
@@ -83,11 +91,20 @@ void ModelAtomsKernel::fix_termini_atoms(char aa_type, int num_residues, ModelDa
   RDKit::Atom *oxt_atom = data.atom_pool->createAtom();
   oxt_atom->setIdx(static_cast<unsigned int>(data.atom_idx));
   oxt_atom->setAtomicNum(8);
+  double plddt_value = 0.0;
+  const auto &plddts = data.input_data->plddt_per_residue;
+  if (!plddts.empty() && num_residues > 0) {
+    const auto idx = static_cast<std::size_t>(num_residues - 1);
+    if (idx < plddts.size()) {
+      plddt_value = static_cast<double>(static_cast<std::uint8_t>(plddts[idx]));
+    }
+  }
   oxt_atom->setMonomerInfo(data.info_pool->createAtomInfo(
       "OXT",
       data.atom_idx + 1,
       entry.name,
-      num_residues));
+      num_residues,
+      plddt_value));
   oxt_atom->setNumCompImplicitHs(0);
   oxt_atom->setCompAtomType(9217);
   oxt_atom->setHybridization(RDKit::Atom::SP2);

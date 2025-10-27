@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -177,3 +178,19 @@ def run_child() -> Callable[[str], object]:
             os.unlink(temp_script)
 
     return _inner
+
+
+DEFAULT_LMDB = Path(__file__).resolve().parents[1] / "db_1773"
+
+
+@pytest.fixture(scope="session")
+def db_path() -> Path:
+    env = os.getenv("LAHUTA_TEST_DB")
+    if env:
+        path = Path(env)
+        if not path.exists():
+            pytest.skip(f"LAHUTA_TEST_DB path does not exist: {path}")
+        return path
+    if DEFAULT_LMDB.exists():
+        return DEFAULT_LMDB
+    pytest.skip("Missing LMDB database (set LAHUTA_TEST_DB or ensure hum_db exists)")

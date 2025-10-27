@@ -351,20 +351,20 @@ ModelParserResult parse_model(const char *data, size_t size) {
   while (z_pos < end && *z_pos == ' ') z_pos++;
   int z_offset = z_pos - first_atom;
 
-  // find B-factor (pLDDT)
-  const char* bfactor_pos = z_pos; // z_pos points to the start of the z value
-  while (bfactor_pos < end && *bfactor_pos != ' ') bfactor_pos++; // Skip z value   -> spaces
-  while (bfactor_pos < end && *bfactor_pos == ' ') bfactor_pos++; // Skip spaces    -> start of occupancy
-  while (bfactor_pos < end && *bfactor_pos != ' ') bfactor_pos++; // Skip occupancy -> spaces
-  while (bfactor_pos < end && *bfactor_pos == ' ') bfactor_pos++; // Skip spaces    -> start of B-factor
-  int bfactor_offset = bfactor_pos - first_atom;
+  // pLDDT
+  const char* plddt_pos = z_pos;
+  for (int i = 0; i < 2; ++i) {
+      while (plddt_pos < end && *plddt_pos != ' ') ++plddt_pos;
+      while (plddt_pos < end && *plddt_pos == ' ') ++plddt_pos;
+  }
+  ptrdiff_t plddt_offset = plddt_pos - first_atom;
 
   // find the end of first line to determine line length
   const char* line_end = static_cast<const char*>(std::memchr(first_atom, '\n', end - first_atom));
   if (!line_end) line_end = end;
 
   size_t line_length = line_end - first_atom + 1; // +1 to include newline
-  if (bfactor_pos >= line_end) bfactor_offset = -1;
+  if (plddt_pos >= line_end) plddt_offset = -1;
 
   // count ATOM records to reserve space for coordinates
   size_t atom_count = 0;
@@ -482,12 +482,11 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
     output.coords.push_back({x, y, z});
 
-    if (!recorded_plddt && bfactor_offset >= 0 && residue_index < output.plddt_per_residue.size()) {
-      const char *b_start = atom_ptr + bfactor_offset;
+    if (!recorded_plddt && plddt_offset >= 0 && residue_index < output.plddt_per_residue.size()) {
+      const char *b_start = atom_ptr + plddt_offset;
       if (b_start < atom_ptr + line_length) {
-        double bfactor = parse_fixed_float(b_start);
-        auto category = categorize_plddt(bfactor);
-        output.plddt_per_residue[residue_index] = category;
+        double plddt_score = parse_fixed_float(b_start);
+        output.plddt_per_residue[residue_index] = categorize_plddt(plddt_score);
         recorded_plddt = true;
       }
     }

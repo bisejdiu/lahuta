@@ -21,6 +21,7 @@
 #include "pipeline/compute/computations.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
+#include "pipeline/data_requirements.hpp"
 #include "pipeline/dynamic/channel_multiplexer.hpp"
 #include "pipeline/dynamic/executor.hpp"
 #include "pipeline/dynamic/ingest_stream.hpp"
@@ -172,6 +173,23 @@ public:
   void set_run_observer(std::shared_ptr<IRunObserver> observer) { run_observer_ = std::move(observer); }
   std::shared_ptr<IRunObserver> get_run_observer() const { return run_observer_; }
 
+  void set_task_data_requirements(const std::string& name, pipeline::DataFieldSet fields) {
+    auto it = nodes_.find(name);
+    if (it == nodes_.end()) {
+      throw std::invalid_argument("StageManager: unknown task '" + name + "' in set_task_data_requirements");
+    }
+    it->second.requirements |= fields;
+    invalidate_compilation();
+  }
+
+  pipeline::DataFieldSet get_task_data_requirements(const std::string& name) const {
+    auto it = nodes_.find(name);
+    if (it == nodes_.end()) {
+      throw std::invalid_argument("StageManager: unknown task '" + name + "' in get_task_data_requirements");
+    }
+    return it->second.requirements;
+  }
+
   // Register or replace a task node with dependencies and implementation.
   // Internals:
   // - Records insertion order the first time a label is seen (in targets_)
@@ -184,6 +202,7 @@ public:
     bool fresh = nodes_.find(name) == nodes_.end();
     std::string label = name;
     Node n; n.name = std::move(name); n.deps = std::move(deps); n.task = std::move(impl); n.thread_safe = thread_safe;
+    if (n.task) n.requirements = n.task->data_requirements();
     if (fresh) targets_.push_back(n.name);
     nodes_[n.name] = std::move(n);
     compute_factories_.clear(); // invalidate compiled factories
@@ -212,7 +231,16 @@ public:
     if (!factory) throw std::invalid_argument("StageManager.add_computation: factory is null");
     bool fresh = nodes_.find(name) == nodes_.end();
     std::string label = name;
-    Node n; n.name = name; n.deps = std::move(deps); n.task = nullptr; n.thread_safe = thread_safe; n.make_compute = std::move(factory);
+    Node n; n.name = name; n.deps = std::move(deps); n.task = nullptr; n.thread_safe = thread_safe;
+    auto probe_factory = factory;
+    try {
+      auto sample = probe_factory();
+      if (sample) n.requirements = sample->data_requirements();
+    } catch (...) {
+      n.requirements = pipeline::DataFieldSet::none();
+      throw;
+    }
+    n.make_compute = std::move(factory);
     if (fresh) targets_.push_back(n.name);
     nodes_[n.name] = std::move(n);
     compute_factories_.clear(); // invalidate compiled factories
@@ -283,6 +311,20 @@ public:
         });
       }
     }
+
+    graph_requirements_ = pipeline::DataFieldSet::none();
+    if (inj.inject_system) {
+      auto sample = std::make_unique<analysis::system::SystemReadComputation>(sys_params_);
+      graph_requirements_ |= sample->data_requirements();
+    }
+    if (inj.inject_topology) {
+      auto sample = std::make_unique<analysis::topology::BuildTopologyComputation>(top_params_);
+      graph_requirements_ |= sample->data_requirements();
+    }
+    for (const auto& [name, node] : nodes_) {
+      graph_requirements_ |= node.requirements;
+    }
+    realizer_.set_requirements(graph_requirements_);
     logger->debug("StageManager: compile finished (factories={} builtins={})", compute_factories_.size(), compiled_builtins_.size());
   }
 
@@ -301,6 +343,7 @@ public:
     const std::size_t requested_threads = std::max<std::size_t>(threads, std::size_t{1});
 
     if (compute_factories_.empty()) compile();
+    realizer_.set_requirements(graph_requirements_);
 
     LahutaRuntime::ensure_initialized(requested_threads); // Size thread dependent resources for the worker count
 
@@ -339,7 +382,7 @@ public:
       StageRunMetrics metrics(reporting_level_ == ReportingLevel::Debug);
       metrics.configure_stage_breakdown(snapshot.labels.size());
       std::shared_ptr<IRunObserver> observer_copy = reporting_level_ == ReportingLevel::Debug ? run_observer_ : nullptr;
-      StageExecutor<StageRunMetrics> executor(snapshot, mux_, run_token, metrics, std::move(observer_copy));
+      StageExecutor<StageRunMetrics> executor(snapshot, mux_, run_token, metrics, graph_requirements_, std::move(observer_copy));
       IngestItemStream item_stream(*src_, realizer_);
       executor.run(item_stream, requested_threads);
 
@@ -351,7 +394,7 @@ public:
       metrics_snapshot = metrics.snapshot();
     } else {
       NullStageRunMetrics metrics;
-      StageExecutor<NullStageRunMetrics> executor(snapshot, mux_, run_token, metrics);
+      StageExecutor<NullStageRunMetrics> executor(snapshot, mux_, run_token, metrics, graph_requirements_);
       IngestItemStream item_stream(*src_, realizer_);
       executor.run(item_stream, requested_threads);
 
@@ -470,8 +513,8 @@ public:
   }
 
   const std::vector<std::string>& sorted_tasks() const { return targets_; }
-
   const std::optional<RunReport>& last_report() const noexcept { return last_report_; }
+  pipeline::DataFieldSet data_requirements() const noexcept { return graph_requirements_; }
 
   // Expose current sink stats snapshot for diagnostics/observability.
   std::vector<ChannelMultiplexer::SinkStatsSnapshot> stats() const { return mux_.stats(); }
@@ -497,6 +540,7 @@ public:
     /*sorted_.clear();*/
     compute_factories_.clear();
     compiled_builtins_.clear();
+    graph_requirements_ = pipeline::DataFieldSet::none();
   }
 
   // Graph introspection for Python API
@@ -551,6 +595,7 @@ private:
     std::shared_ptr<ITask> task;
     bool thread_safe = true;
     std::function<std::unique_ptr<compute::Computation<compute::PipelineContext, compute::Mut::ReadWrite>>()> make_compute;
+    pipeline::DataFieldSet requirements = pipeline::DataFieldSet::none();
   };
 
 private:
@@ -573,6 +618,7 @@ private:
   std::unordered_set<std::string> compiled_builtins_;
   ReportingLevel reporting_level_{ReportingLevel::Basic};
   std::shared_ptr<IRunObserver> run_observer_;
+  pipeline::DataFieldSet graph_requirements_ = pipeline::DataFieldSet::none();
 
   // Flush timeout configuration
   std::chrono::milliseconds flush_timeout_{std::chrono::seconds(60)};

@@ -14,6 +14,8 @@
 #include <cmath>
 #include <vector>
 #include <map>
+#include <type_traits>
+#include <cstddef>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -50,27 +52,30 @@ class Point {
 #endif
 
 // typedef class Point3D Point;
-class Point3D {
+template <typename T = double>
+class Point3DT {
+  static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>, "Point3DT only supports float or double");
+
  public:
-  double x{0.0};
-  double y{0.0};
-  double z{0.0};
+  T x{0.0};
+  T y{0.0};
+  T z{0.0};
 
-  Point3D() {}
-  Point3D(double xv, double yv, double zv) : x(xv), y(yv), z(zv) {}
+  Point3DT() = default;
+  Point3DT(T xv, T yv, T zv) : x(xv), y(yv), z(zv) {}
+  ~Point3DT() = default;
+  Point3DT(const Point3DT &) = default;
+  Point3DT &operator=(const Point3DT &) = default;
 
-  ~Point3D() = default;
-
-  /*Point3D(const Point3D &other)*/
-  /*    : Point(other), x(other.x), y(other.y), z(other.z) {}*/
-  Point3D(const Point3D &other) : x(other.x), y(other.y), z(other.z) {}
-
-
-  /*Point3D *copy() const override { return new Point3D(*this); }*/
+  template <typename U>
+  explicit Point3DT(const Point3DT<U> &other)
+      : x(static_cast<T>(other.x)),
+        y(static_cast<T>(other.y)),
+        z(static_cast<T>(other.z)) {}
 
   inline unsigned int dimension() const { return 3; }
 
-  inline double operator[](unsigned int i) const {
+  inline T operator[](unsigned int i) const {
     PRECONDITION(i < 3, "Invalid index on Point3D");
     if (i == 0) {
       return x;
@@ -81,7 +86,7 @@ class Point3D {
     }
   }
 
-  inline double &operator[](unsigned int i) {
+  inline T &operator[](unsigned int i) {
     PRECONDITION(i < 3, "Invalid index on Point3D");
     if (i == 0) {
       return x;
@@ -92,46 +97,36 @@ class Point3D {
     }
   }
 
-  Point3D &operator=(const Point3D &other) {
-    if (&other == this) {
-      return *this;
-    }
-    x = other.x;
-    y = other.y;
-    z = other.z;
-    return *this;
-  }
-
-  Point3D &operator+=(const Point3D &other) {
+  Point3DT &operator+=(const Point3DT &other) {
     x += other.x;
     y += other.y;
     z += other.z;
     return *this;
   }
 
-  Point3D &operator-=(const Point3D &other) {
+  Point3DT &operator-=(const Point3DT &other) {
     x -= other.x;
     y -= other.y;
     z -= other.z;
     return *this;
   }
 
-  Point3D &operator*=(double scale) {
+  Point3DT &operator*=(T scale) {
     x *= scale;
     y *= scale;
     z *= scale;
     return *this;
   }
 
-  Point3D &operator/=(double scale) {
+  Point3DT &operator/=(T scale) {
     x /= scale;
     y /= scale;
     z /= scale;
     return *this;
   }
 
-  Point3D operator-() const {
-    Point3D res(x, y, z);
+  Point3DT operator-() const {
+    Point3DT res(x, y, z);
     res.x *= -1.0;
     res.y *= -1.0;
     res.z *= -1.0;
@@ -139,40 +134,32 @@ class Point3D {
   }
 
   void normalize() {
-    double l = this->length();
+    T l = this->length();
     x /= l;
     y /= l;
     z /= l;
   }
 
-  double length() const {
-    double res = x * x + y * y + z * z;
-    return sqrt(res);
+  T length() const {
+    T res = x * x + y * y + z * z;
+    return static_cast<T>(std::sqrt(static_cast<double>(res)));
   }
 
-  double lengthSq() const {
-    // double res = pow(x,2) + pow(y,2) + pow(z,2);
-    double res = x * x + y * y + z * z;
+  T lengthSq() const {
+    T res = x * x + y * y + z * z;
     return res;
   }
 
-  double dotProduct(const Point3D &other) const {
-    double res = x * (other.x) + y * (other.y) + z * (other.z);
+  T dotProduct(const Point3DT &other) const {
+    T res = x * (other.x) + y * (other.y) + z * (other.z);
     return res;
   }
 
-  /*! \brief determines the angle between a vector to this point
-   *   from the origin and a vector to the other point.
-   *
-   *  The angle is unsigned: the results of this call will always
-   *   be between 0 and M_PI
-   */
-  double angleTo(const Point3D &other) const {
-    double lsq = lengthSq() * other.lengthSq();
-    double dotProd = dotProduct(other);
-    dotProd /= sqrt(lsq);
+  double angleTo(const Point3DT &other) const {
+    double lsq = static_cast<double>(lengthSq()) * static_cast<double>(other.lengthSq());
+    double dotProd = static_cast<double>(dotProduct(other));
+    dotProd /= std::sqrt(lsq);
 
-    // watch for roundoff error:
     if (dotProd <= -1.0) {
       return M_PI;
     }
@@ -180,29 +167,19 @@ class Point3D {
       return 0.0;
     }
 
-    return acos(dotProd);
+    return std::acos(dotProd);
   }
 
-  /*! \brief determines the signed angle between a vector to this point
-   *   from the origin and a vector to the other point.
-   *
-   *  The results of this call will be between 0 and M_2_PI
-   */
-  double signedAngleTo(const Point3D &other) const {
+  double signedAngleTo(const Point3DT &other) const {
     double res = this->angleTo(other);
-    // check the sign of the z component of the cross product:
     if ((this->x * other.y - this->y * other.x) < -1e-6) {
       res = 2.0 * M_PI - res;
     }
     return res;
   }
 
-  /*! \brief Returns a normalized direction vector from this
-   *   point to another.
-   *
-   */
-  Point3D directionVector(const Point3D &other) const {
-    Point3D res;
+  Point3DT directionVector(const Point3DT &other) const {
+    Point3DT res;
     res.x = other.x - x;
     res.y = other.y - y;
     res.z = other.z - z;
@@ -210,24 +187,16 @@ class Point3D {
     return res;
   }
 
-  /*! \brief Cross product of this point with the another point
-   *
-   * The order is important here
-   *  The result is "this" cross with "other" not (other x this)
-   */
-  Point3D crossProduct(const Point3D &other) const {
-    Point3D res;
+  Point3DT crossProduct(const Point3DT &other) const {
+    Point3DT res;
     res.x = y * (other.z) - z * (other.y);
     res.y = -x * (other.z) + z * (other.x);
     res.z = x * (other.y) - y * (other.x);
     return res;
   }
 
-  /*! \brief Get a unit perpendicular from this point (treating it as a vector):
-   *
-   */
-  Point3D getPerpendicular() const {
-    Point3D res(0.0, 0.0, 0.0);
+  Point3DT getPerpendicular() const {
+    Point3DT res(static_cast<T>(0.0), static_cast<T>(0.0), static_cast<T>(0.0));
     if (x) {
       if (y) {
         res.y = -1 * x;
@@ -255,22 +224,88 @@ class Point3D {
   }
 };
 
-// given a  set of four pts in 3D compute the dihedral angle between the
-// plane of the first three points (pt1, pt2, pt3) and the plane of the
-// last three points (pt2, pt3, pt4)
-// the computed angle is between 0 and PI
-double computeDihedralAngle(const Point3D &pt1,
-                                                       const Point3D &pt2,
-                                                       const Point3D &pt3,
-                                                       const Point3D &pt4);
+template <typename T>
+inline Point3DT<T> operator+(const Point3DT<T> &p1, const Point3DT<T> &p2) {
+  Point3DT<T> res;
+  res.x = p1.x + p2.x;
+  res.y = p1.y + p2.y;
+  res.z = p1.z + p2.z;
+  return res;
+}
 
-// given a  set of four pts in 3D compute the signed dihedral angle between the
-// plane of the first three points (pt1, pt2, pt3) and the plane of the
-// last three points (pt2, pt3, pt4)
-// the computed angle is between -PI and PI
-double computeSignedDihedralAngle(
-    const Point3D &pt1, const Point3D &pt2, const Point3D &pt3,
-    const Point3D &pt4);
+template <typename T>
+inline Point3DT<T> operator-(const Point3DT<T> &p1, const Point3DT<T> &p2) {
+  Point3DT<T> res;
+  res.x = p1.x - p2.x;
+  res.y = p1.y - p2.y;
+  res.z = p1.z - p2.z;
+  return res;
+}
+
+template <typename T>
+inline Point3DT<T> operator*(const Point3DT<T> &p1, T v) {
+  Point3DT<T> res;
+  res.x = p1.x * v;
+  res.y = p1.y * v;
+  res.z = p1.z * v;
+  return res;
+}
+
+template <typename T>
+inline Point3DT<T> operator/(const Point3DT<T> &p1, T v) {
+  Point3DT<T> res;
+  res.x = p1.x / v;
+  res.y = p1.y / v;
+  res.z = p1.z / v;
+  return res;
+}
+
+template <typename T>
+inline double computeDihedralAngle(const Point3DT<T> &pt1,
+                                   const Point3DT<T> &pt2,
+                                   const Point3DT<T> &pt3,
+                                   const Point3DT<T> &pt4) {
+  Point3DT<T> begEndVec = pt3 - pt2;
+  Point3DT<T> begNbrVec = pt1 - pt2;
+  Point3DT<T> crs1 = begNbrVec.crossProduct(begEndVec);
+
+  Point3DT<T> endNbrVec = pt4 - pt3;
+  Point3DT<T> crs2 = endNbrVec.crossProduct(begEndVec);
+
+  double ang = crs1.angleTo(crs2);
+  return ang;
+}
+
+template <typename T>
+inline double computeSignedDihedralAngle(const Point3DT<T> &pt1,
+                                         const Point3DT<T> &pt2,
+                                         const Point3DT<T> &pt3,
+                                         const Point3DT<T> &pt4) {
+  Point3DT<T> begEndVec = pt3 - pt2;
+  Point3DT<T> begNbrVec = pt1 - pt2;
+  Point3DT<T> crs1 = begNbrVec.crossProduct(begEndVec);
+
+  Point3DT<T> endNbrVec = pt4 - pt3;
+  Point3DT<T> crs2 = endNbrVec.crossProduct(begEndVec);
+
+  double ang = crs1.angleTo(crs2);
+
+  Point3DT<T> crs3 = crs1.crossProduct(crs2);
+  double dot = static_cast<double>(crs3.dotProduct(begEndVec));
+  if (dot < 0.0) {
+    ang *= -1;
+  }
+
+  return ang;
+}
+
+using Point3D = Point3DT<double>;
+using Point3Df = Point3DT<float>;
+typedef std::vector<Point3D> POINT3D_VECT;
+typedef std::vector<Point3Df> POINT3D_VECT_F;
+
+static_assert(sizeof(Point3Df) == 3 * sizeof(float), "Point3Df must stay tightly packed");
+static_assert(alignof(Point3Df) == alignof(float), "Point3Df alignment must match float");
 
 class Point2D : public Point {
  public:
@@ -554,15 +589,6 @@ typedef INT_POINT2D_MAP::const_iterator INT_POINT2D_MAP_CI;
 
 std::ostream &operator<<(std::ostream &target,
                                                     const RDGeom::Point &pt);
-
-RDGeom::Point3D operator+(const RDGeom::Point3D &p1,
-                                                     const RDGeom::Point3D &p2);
-RDGeom::Point3D operator-(const RDGeom::Point3D &p1,
-                                                     const RDGeom::Point3D &p2);
-RDGeom::Point3D operator*(const RDGeom::Point3D &p1,
-                                                     double v);
-RDGeom::Point3D operator/(const RDGeom::Point3D &p1,
-                                                     double v);
 
 RDGeom::Point2D operator+(const RDGeom::Point2D &p1,
                                                      const RDGeom::Point2D &p2);

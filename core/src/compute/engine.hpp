@@ -107,6 +107,11 @@ public:
     return node.done && node.res.is_success();
   }
 
+  /// Execute a precomputed plan without re-planning.
+  void execute_plan(const ExecOrder& plan) {
+    execute_pipeline(registry, ctx, plan);
+  }
+
   void enable(ComputationLabel label, bool on) {
     int idx = registry.find(label);
     if (idx < 0) throw std::runtime_error("unknown label");

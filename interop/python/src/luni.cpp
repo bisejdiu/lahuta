@@ -163,7 +163,6 @@ void bind_luni(py::module &m) {
 
     .def_property_readonly("n_atoms",   [](class Luni &luni) { return luni.n_atoms(); },       "Number of atoms")
     .def_property_readonly("file_name", [](class Luni &luni) { return luni.get_file_name(); }, "Source file name")
-
     // very simple neighbor search
     .def("find_neighbors", [](class Luni &luni, double cutoff, int res_dif){
         auto grid = FastNS(luni.get_conformer().getPositions());

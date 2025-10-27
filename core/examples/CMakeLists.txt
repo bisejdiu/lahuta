@@ -1,4 +1,5 @@
 set(LAHUTA_EXAMPLE_SOURCES
+  lmdb_examples.cpp
   getcontacts_example.cpp
   md_pipeline_example.cpp
   md_stage_manager_example.cpp

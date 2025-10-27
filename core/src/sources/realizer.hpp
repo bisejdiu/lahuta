@@ -9,6 +9,7 @@
 #include "sources/lmdb.hpp"
 #include "sources/nmr.hpp"
 #include "sources/trajectory.hpp"
+#include "pipeline/data_requirements.hpp"
 
 // clang-format off
 namespace lahuta::sources {
@@ -27,6 +28,11 @@ Overloaded(Ts...)->Overloaded<Ts...>;
 //
 class Realizer {
 public:
+  void set_requirements(pipeline::DataFieldSet req) {
+    requirements_ = req;
+    lmdb_.set_requirements(req);
+  }
+
   void reset() {
     file_emitted_.clear();
     lmdb_.reset();
@@ -64,6 +70,7 @@ private:
   LMDBRealizer lmdb_;
   NMRRealizer  nmr_;
   TrajectoryRealizer traj_;
+  pipeline::DataFieldSet requirements_ = pipeline::DataFieldSet::none();
 };
 
 } // namespace lahuta::sources

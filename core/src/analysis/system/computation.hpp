@@ -6,6 +6,7 @@
 #include "compute/dependency.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
+#include "pipeline/data_requirements.hpp"
 
 // clang-format off
 namespace lahuta::analysis::system {
@@ -19,8 +20,12 @@ public:
   constexpr static const ComputationLabel label{"system"};
   using dependencies = UnitComputation;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& ctx, const SystemReadParams& p) { 
+  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& ctx, const SystemReadParams& p) {
     return SystemReadKernel::execute(ctx, p);
+  }
+
+  pipeline::DataFieldSet data_requirements() const override {
+    return pipeline::DataFieldSet::of({pipeline::DataField::Sequence, pipeline::DataField::Positions, pipeline::DataField::Plddt});
   }
 };
 

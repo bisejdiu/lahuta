@@ -80,7 +80,6 @@ private:
       do {
         current_batch_.push_back(std::string(key));
         count++;
-
         if (count >= batch_size_) {
           break;
         }

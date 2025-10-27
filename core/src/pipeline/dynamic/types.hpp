@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "pipeline/data_requirements.hpp"
+
 // clang-format off
 namespace lahuta::pipeline::dynamic {
 
@@ -152,6 +154,7 @@ class ITask {
 public:
   virtual ~ITask() = default;
   virtual TaskResult run(const std::string& item_path, TaskContext& ctx) = 0;
+  virtual pipeline::DataFieldSet data_requirements() const { return pipeline::DataFieldSet::none(); }
 };
 
 } // namespace lahuta::pipeline::dynamic

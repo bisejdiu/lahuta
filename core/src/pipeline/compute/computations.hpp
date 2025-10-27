@@ -57,6 +57,10 @@ public:
   DynamicTaskComputation(std::string label, std::vector<std::string> dep_names, std::shared_ptr<dynamic::ITask> task)
     : DynamicRWComputation<DynamicTaskParams>(std::move(label), std::move(dep_names), DynamicTaskParams{}), task_(std::move(task)) {}
 
+  pipeline::DataFieldSet data_requirements() const override {
+    return task_ ? task_->data_requirements() : pipeline::DataFieldSet::none();
+  }
+
 private:
   ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& context, const DynamicTaskParams&) override {
     auto& data = context.data();
