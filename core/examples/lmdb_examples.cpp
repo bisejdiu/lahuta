@@ -72,7 +72,7 @@ public:
 class TopologyOnlyTask final : public ITask {
 public:
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
-    auto topology = ctx.get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+    auto topology = ctx.topology();
     if (!topology) {
       std::cerr << "[topology] Missing topology for '" << item_path << "'\n";
       return TaskResult{false, {}};
@@ -87,7 +87,7 @@ public:
       : cutoff_(cutoff), total_pairs_(std::move(total_pairs)) {}
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
-    auto conformer = ctx.get_object<const RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY);
+    auto conformer = ctx.conformer();
     if (!conformer) {
       std::cerr << "[neighbors] Missing conformer for '" << item_path << "'\n";
       return TaskResult{false, {}};
@@ -114,7 +114,7 @@ public:
   explicit PlddtSummaryTask(const std::string &output_channel) : output_channel_(output_channel) {}
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
-    auto payload = ctx.get_object<const pipeline::ModelPayloadSlices>(pipeline::CTX_MODEL_PAYLOAD_KEY);
+    auto payload = ctx.model_payload();
     if (!payload || !payload->plddts) {
       std::cerr << "[plddt_summary] Missing pLDDT scores for '" << item_path << "'\n";
       return TaskResult{false, {}};

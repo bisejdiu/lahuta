@@ -18,8 +18,8 @@ using namespace lahuta::pipeline::dynamic;
 class TopologySummaryTask final : public ITask {
 public:
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
-    auto sys = ctx.get_object<const Luni>(pipeline::CTX_SYSTEM_KEY);
-    auto topo = ctx.get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+    auto sys = ctx.system();
+    auto topo = ctx.topology();
 
     if (!sys) {
       std::cerr << "[system_topology_pipeline] Missing system for '" << item_path << "'\n";

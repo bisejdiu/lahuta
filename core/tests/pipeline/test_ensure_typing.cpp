@@ -81,7 +81,7 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
   run_ok(eng, analysis::topology::BuildTopologyComputation::label);
   run_ok(eng, ComputationLabel{"ensure_typing_arpeggio"});
 
-  auto topo = tctx.get_object<const Topology>("topology");
+  auto topo = tctx.topology();
   ASSERT_TRUE(topo);
   EXPECT_FALSE(current_is_molstar(*topo));
   const std::string* s = tctx.get_text("atom_typing_mode");
@@ -115,7 +115,7 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   run_ok(eng, analysis::topology::BuildTopologyComputation::label);
   run_ok(eng, ComputationLabel{"ensure_typing_molstar"});
 
-  auto topo = tctx.get_object<const Topology>("topology");
+  auto topo = tctx.topology();
   ASSERT_TRUE(topo);
   EXPECT_TRUE(current_is_molstar(*topo));
   const std::string* s = tctx.get_text("atom_typing_mode");

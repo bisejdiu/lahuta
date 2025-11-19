@@ -197,14 +197,14 @@ public:
 
   py::object get_system() const {
     if (!ctx_) return py::none();
-    auto sys = ctx_->get_object<const Luni>("system");
+    auto sys = ctx_->system();
     if (!sys) return py::none();
     return py::cast(sys);
   }
 
   py::object get_topology() const {
     if (!ctx_) return py::none();
-    auto top = ctx_->get_object<const Topology>("topology");
+    auto top = ctx_->topology();
     if (!top) return py::none();
     return py::cast(top);
   }
@@ -307,13 +307,13 @@ public:
 private:
   const FrameMetadata* frame_metadata_ptr() const {
     if (!ctx_) return nullptr;
-    auto meta = ctx_->get_object<FrameMetadata>("lahuta.frame");
+    auto meta = ctx_->frame_metadata();
     return meta ? meta.get() : nullptr;
   }
 
   std::shared_ptr<const pipeline::ModelPayloadSlices> payload_ptr() const {
     if (!ctx_) return {};
-    return ctx_->get_object<const pipeline::ModelPayloadSlices>(pipeline::CTX_MODEL_PAYLOAD_KEY);
+    return ctx_->model_payload();
   }
 
   TaskContext *ctx_;

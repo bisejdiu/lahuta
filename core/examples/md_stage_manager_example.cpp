@@ -71,7 +71,7 @@ public:
     auto &data = context.data();
     auto *task_ctx = data.ctx;
 
-    std::shared_ptr<const Luni> system = task_ctx ? task_ctx->get_object<const Luni>("system") : nullptr;
+    std::shared_ptr<const Luni> system = task_ctx ? task_ctx->system() : nullptr;
     if (!system) {
       return ComputationResult(ComputationError("TrajectorySummaryComputation requires a system"));
     }
@@ -98,7 +98,7 @@ public:
       }
     }
 
-    auto frame_meta = task_ctx ? task_ctx->get_object<FrameMetadata>("lahuta.frame") : nullptr;
+    auto frame_meta = task_ctx ? task_ctx->frame_metadata() : nullptr;
 
     static std::once_flag header_once;
     std::call_once(header_once, []() {

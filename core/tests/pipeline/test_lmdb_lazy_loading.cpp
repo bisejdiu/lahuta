@@ -45,7 +45,7 @@ public:
       EXPECT_EQ(slices.metadata->ncbi_taxonomy_id, "9606");
     }
     if (auto task_ctx = ctx.data().ctx) {
-      auto payload = task_ctx->get_object<const pipeline::ModelPayloadSlices>(pipeline::CTX_MODEL_PAYLOAD_KEY);
+      auto payload = task_ctx->model_payload();
       EXPECT_TRUE(payload);
       if (payload) {
         EXPECT_TRUE(payload->metadata);
@@ -92,7 +92,7 @@ public:
     if (!ctx.data().ctx) {
       return ComputationResult(ComputationError("missing task context"));
     }
-    auto payload = ctx.data().ctx->get_object<const pipeline::ModelPayloadSlices>(pipeline::CTX_MODEL_PAYLOAD_KEY);
+    auto payload = ctx.data().ctx->model_payload();
     EXPECT_TRUE(payload);
     if (payload) {
       EXPECT_TRUE(payload->sequence);

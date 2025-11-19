@@ -65,7 +65,7 @@ public:
     auto &data = context.data();
     auto *task_ctx = data.ctx;
 
-    auto system = task_ctx ? task_ctx->get_object<const Luni>("system") : nullptr;
+    auto system = task_ctx ? task_ctx->system() : nullptr;
     if (!system && data.session) {
       system = data.session->get_or_load_system();
       if (task_ctx && system) {
@@ -76,7 +76,7 @@ public:
       return ComputationResult(ComputationError("FrameSummaryComputation requires a system"));
     }
 
-    auto topology_ptr = task_ctx ? task_ctx->get_object<const Topology>("topology") : nullptr;
+    auto topology_ptr = task_ctx ? task_ctx->topology() : nullptr;
     if (!topology_ptr && data.session) {
       TopologyBuildingOptions opts{};
       topology_ptr = data.session->get_or_load_topology(opts);
@@ -114,7 +114,7 @@ public:
       first_atom = conf.getAtomPos(0);
     }
 
-    auto frame_meta = task_ctx ? task_ctx->get_object<FrameMetadata>("lahuta.frame") : nullptr;
+    auto frame_meta = task_ctx ? task_ctx->frame_metadata() : nullptr;
 
     static std::once_flag header_once;
     std::call_once(header_once, []() {

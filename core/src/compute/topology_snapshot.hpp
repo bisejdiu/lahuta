@@ -6,7 +6,6 @@
 
 #include <GraphMol/Conformer.h>
 
-#include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "topology.hpp"
 
@@ -27,7 +26,7 @@ inline TopologySnapshot snapshot_of(const Topology& topo, const RDKit::Conformer
 // Construct from a Topology and optional TaskContext
 inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynamic::TaskContext* tctx = nullptr) {
   if (tctx) {
-    if (auto conf = tctx->get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY)) {
+    if (auto conf = tctx->conformer()) {
       return TopologySnapshot{topo, *conf};
     }
   }
@@ -36,7 +35,7 @@ inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynami
 
 // Non-null TaskContext reference
 inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynamic::TaskContext& tctx) {
-  if (auto conf = tctx.get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY)) {
+  if (auto conf = tctx.conformer()) {
     return TopologySnapshot{topo, *conf};
   }
   return TopologySnapshot{topo, topo.conformer()};
@@ -44,9 +43,9 @@ inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynami
 
 // Return a snapshot if Topology exists in context, otherwise std::nullopt.
 inline std::optional<TopologySnapshot> try_topology_snapshot(const pipeline::dynamic::TaskContext& tctx) {
-  auto top = tctx.get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+  auto top = tctx.topology();
   if (!top) return std::nullopt;
-  if (auto conf = tctx.get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY)) {
+  if (auto conf = tctx.conformer()) {
     return TopologySnapshot{*top, *conf};
   }
   return TopologySnapshot{*top, top->conformer()};
@@ -54,9 +53,9 @@ inline std::optional<TopologySnapshot> try_topology_snapshot(const pipeline::dyn
 
 // Require a snapshot from context, throws if Topology is missing.
 inline TopologySnapshot require_topology_snapshot(const pipeline::dynamic::TaskContext& tctx) {
-  auto top = tctx.get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+  auto top = tctx.topology();
   if (!top) throw std::runtime_error("Topology not found in TaskContext");
-  if (auto conf = tctx.get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY)) {
+  if (auto conf = tctx.conformer()) {
     return TopologySnapshot{*top, *conf};
   }
   return TopologySnapshot{*top, top->conformer()};
