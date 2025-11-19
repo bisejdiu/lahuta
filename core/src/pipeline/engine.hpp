@@ -1,11 +1,41 @@
 #ifndef LAHUTA_PIPELINE_ENGINE_HPP
 #define LAHUTA_PIPELINE_ENGINE_HPP
 
-#include <ctpl.h>
+//
+// CTPL's default header (ctpl.h) uses Boost.Lockfree's MPMC queue, whereas the
+// STL variant (ctpl_stl.h) uses a mutex/condvar queue. Under ThreadSanitizer,
+// the Boost queue frequently triggers data-race warnings in the freelist during
+// queue::pop() (Michael & Scott algorithm). These reports are known and seem to
+// arise from TSan's limited modeling of complex lock-free protocols: the
+// implementation may speculatively touch memory that is later discarded, which
+// TSan flags as a race even though the algorithm's happens-before is correct.
+// See https://github.com/boostorg/lockfree/issues/78 for details.
+// To avoid TSan false positives, I use ctpl_stl.h when TSan is active, and
+// ctpl.h otherwise.    - Besian, October 2025
+//
+
+// clang-format off
+#if defined(__has_feature)
+#  if __has_feature(thread_sanitizer)
+#    define LAHUTA_TSAN_ACTIVE 1
+#  endif
+#endif
+#if !defined(LAHUTA_TSAN_ACTIVE) && defined(ENABLE_TSAN)
+#  define LAHUTA_TSAN_ACTIVE 1
+#endif
+
+#if defined(LAHUTA_TSAN_ACTIVE)
+#  include <ctpl_stl.h>
+#else
+#  include <ctpl.h>
+#endif
+
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 
 #include "core/emitter.hpp"
 
-// clang-format off
 namespace lahuta::pipeline {
 
 class PipelineEngine {

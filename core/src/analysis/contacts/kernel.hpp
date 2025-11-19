@@ -26,7 +26,8 @@ using namespace lahuta;
 template <class Provider>
 auto compute_with_provider(const pipeline::compute::ContactsParams& p, const compute::TopologySnapshot& ts) -> ContactSet {
   InteractionEngine<Provider> engine;
-  return (p.type == InteractionType::All) ? engine.compute(ts) : engine.compute(ts, p.type);
+  if (p.type.is_all()) return engine.compute(ts);
+  return engine.compute(ts, std::optional<InteractionTypeSet>{p.type});
 }
 } // namespace
 
@@ -40,13 +41,13 @@ struct ContactsKernel {
 
     try {
       ContactsRecord res;
-      res.file_path    = data.item_path;
-      res.provider     = p.provider;
-      res.contact_type = p.type;
-      res.success      = false;
-      res.num_contacts = 0;
-      res.frame_index  = static_cast<std::size_t>(data.conformer_id);
-      res.topology     = nullptr;
+      res.file_path     = data.item_path;
+      res.provider      = p.provider;
+      res.contact_types = p.type;
+      res.success       = false;
+      res.num_contacts  = 0;
+      res.frame_index   = static_cast<std::size_t>(data.conformer_id);
+      res.topology      = nullptr;
 
       std::shared_ptr<const Topology> top;
       if (data.ctx) top = data.ctx->get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
@@ -75,7 +76,7 @@ struct ContactsKernel {
 
       Logger::get_logger()->debug("ContactsKernel: Starting contact computation using {} provider for {} contacts",
                                   contact_provider_name(p.provider),
-                                  interaction_type_to_string(p.type));
+                                  interaction_type_set_to_string(p.type));
 
       switch (p.provider) {
         case ContactProvider::Arpeggio:

@@ -11,13 +11,16 @@
 #include <vector>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/pytypes.h>
 #include <pybind11/stl.h>
 
 #include "analysis/contacts/computation.hpp"
 #include "analysis/contacts/provider.hpp"
 #include "analysis/system/model_pack_task.hpp"
+#include "interactions.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/dynamic/run_metrics.hpp"
 #include "pipeline/process_pool.hpp"
 #include "pipeline/process_task.hpp"
 #include "pipeline/thread_task.hpp"
@@ -30,19 +33,47 @@ using namespace lahuta::pipeline::dynamic;
 
 namespace {
 
-inline void python_stage_executor_tls_cleanup(StageExecutor::ThreadLocalState& state) {
+inline InteractionTypeSet normalize_interaction_argument(py::handle obj) {
+  if (!obj || obj.is_none()) return InteractionTypeSet::all();
+  InteractionTypeSet set;
+  add_python_interactions(set, obj);
+  if (set.empty()) {
+    throw py::value_error("Interaction type selection cannot be empty");
+  }
+  return set;
+}
+
+using DefaultExecutor = StageExecutor<StageRunMetrics>;
+using NullExecutor    = StageExecutor<NullStageRunMetrics>;
+
+inline void python_stage_executor_tls_cleanup(DefaultExecutor::ThreadLocalState& state) {
   // During interpreter shutdown we cannot safely acquire the GIL. Fall back to direct reset.
   if (!Py_IsInitialized() || Py_IsFinalizing()) {
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
     return;
   }
   try {
     py::gil_scoped_acquire gil;
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
   } catch (const py::error_already_set&) {
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
   } catch (...) {
-    StageExecutor::clear_thread_local_state(state);
+    DefaultExecutor::clear_thread_local_state(state);
+  }
+}
+
+inline void python_stage_executor_tls_cleanup_null(NullExecutor::ThreadLocalState& state) {
+  if (!Py_IsInitialized() || Py_IsFinalizing()) {
+    NullExecutor::clear_thread_local_state(state);
+    return;
+  }
+  try {
+    py::gil_scoped_acquire gil;
+    NullExecutor::clear_thread_local_state(state);
+  } catch (const py::error_already_set&) {
+    NullExecutor::clear_thread_local_state(state);
+  } catch (...) {
+    NullExecutor::clear_thread_local_state(state);
   }
 }
 
@@ -70,7 +101,13 @@ inline double milliseconds_to_seconds(std::chrono::milliseconds ms) {
 } // namespace
 
 inline void bind_stage_manager(py::module_ &md) {
-  StageExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup);
+  DefaultExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup);
+  NullExecutor::set_tls_cleanup_hook(&python_stage_executor_tls_cleanup_null);
+
+  py::enum_<StageManager::ReportingLevel>(md, "ReportingLevel")
+    .value("OFF",   StageManager::ReportingLevel::Off)
+    .value("BASIC", StageManager::ReportingLevel::Basic)
+    .value("DEBUG", StageManager::ReportingLevel::Debug);
 
   py::class_<ITask, std::shared_ptr<ITask>> task(md, "Task");
 
@@ -96,7 +133,7 @@ inline void bind_stage_manager(py::module_ &md) {
     .def("add_contacts", [](StageManager &mgr,
                             const std::string &name,
                             analysis::contacts::ContactProvider provider,
-                            InteractionType interaction_type,
+                            py::object interaction_obj,
                             std::optional<std::string> channel,
                             const std::string &out_fmt,
                             bool thread_safe) {
@@ -108,9 +145,11 @@ inline void bind_stage_manager(py::module_ &md) {
           else if (out_fmt == "binary") format = pipeline::compute::ContactsOutputFormat::Binary;
           else throw std::invalid_argument("out_fmt must be 'json', 'text', or 'binary'");
 
+          InteractionTypeSet interaction_types = normalize_interaction_argument(interaction_obj);
+
           pipeline::compute::ContactsParams p{};
           p.provider = provider;
-          p.type     = interaction_type;
+          p.type     = interaction_types;
           p.channel  = ch;
           p.format   = format;
 
@@ -120,7 +159,7 @@ inline void bind_stage_manager(py::module_ &md) {
           }, thread_safe);
         },
         py::arg("name"),
-        py::arg("provider"), py::arg("interaction_type"),
+        py::arg("provider"), py::arg("interaction_types") = py::none(),
         py::arg("channel") = std::optional<std::string>{},
         py::arg("out_fmt") = std::string("json"),
         py::arg("thread_safe") = true)
@@ -190,15 +229,16 @@ inline void bind_stage_manager(py::module_ &md) {
           auto v = mgr.stats();
           for (const auto &s : v) {
             py::dict d;
-            d["sink_name"]     = s.sink_name;
-            d["enqueued_msgs"] = s.enqueued_msgs;
-            d["enqueued_bytes"]= s.enqueued_bytes;
-            d["written_msgs"]  = s.written_msgs;
-            d["written_bytes"] = s.written_bytes;
-            d["stalled_ns"]    = s.stalled_ns;
-            d["drops"]         = s.drops;
-            d["queue_msgs"]    = s.queue_msgs;
-            d["queue_bytes"]   = s.queue_bytes;
+            d["sink_name"]      = s.sink_name;
+            d["enqueued_msgs"]  = s.enqueued_msgs;
+            d["enqueued_bytes"] = s.enqueued_bytes;
+            d["written_msgs"]   = s.written_msgs;
+            d["written_bytes"]  = s.written_bytes;
+            d["stalled_ns"]     = s.stalled_ns;
+            d["drops"]          = s.drops;
+            d["queue_msgs"]     = s.queue_msgs;
+            d["queue_bytes"]    = s.queue_bytes;
+            d["writer_threads"] = s.writer_threads;
             out.append(std::move(d));
           }
           return out;
@@ -226,6 +266,57 @@ inline void bind_stage_manager(py::module_ &md) {
           py::gil_scoped_acquire acquire;
         },
         py::arg("threads") = 4, py::arg("flush_timeout") = py::none())
+    .def("last_run_report", [](StageManager &mgr) -> py::object {
+          const auto& opt = mgr.last_report();
+          if (!opt.has_value()) return py::none();
+          const auto& report = *opt;
+          py::dict d;
+          d["total_seconds"]     = report.total_seconds;
+          d["cpu_seconds"]       = report.cpu_seconds;
+          d["io_seconds"]        = report.io_seconds;
+          d["ingest_seconds"]    = report.ingest_seconds;
+          d["prepare_seconds"]   = report.prepare_seconds;
+          d["flush_seconds"]     = report.flush_seconds;
+          d["setup_seconds"]     = report.setup_seconds;
+          d["compute_seconds"]   = report.compute_seconds;
+          d["items_total"]       = report.items_total;
+          d["items_processed"]   = report.items_processed;
+          d["items_skipped"]     = report.items_skipped;
+          d["stage_count"]       = report.stage_count;
+          d["threads_requested"] = report.threads_requested;
+          d["threads_used"]      = report.threads_used;
+          d["all_thread_safe"]   = report.all_thread_safe;
+          d["run_token"]         = report.run_token;
+          d["metrics_enabled"]   = report.metrics_enabled;
+          d["peak_inflight_items"]   = report.peak_inflight_items;
+          d["average_queue_depth"]   = report.average_queue_depth;
+          d["permit_wait_events"]    = report.permit_wait_events;
+          d["permit_wait_total_seconds"] = report.permit_wait_total_seconds;
+          d["permit_wait_min_seconds"]   = report.permit_wait_min_seconds;
+          d["permit_wait_max_seconds"]   = report.permit_wait_max_seconds;
+          d["permit_wait_avg_seconds"]   = report.permit_wait_avg_seconds;
+          py::list stage_breakdown;
+          for (const auto& st : report.stage_breakdown) {
+            py::dict stage_entry;
+            stage_entry["label"] = st.label;
+            stage_entry["setup_seconds"] = st.setup_seconds;
+            stage_entry["compute_seconds"] = st.compute_seconds;
+            stage_breakdown.append(std::move(stage_entry));
+          }
+          d["stage_breakdown"] = std::move(stage_breakdown);
+          d["mux_sink_count"]        = report.mux_sink_count;
+          d["mux_enqueued_msgs"]     = report.mux_enqueued_msgs;
+          d["mux_enqueued_bytes"]    = report.mux_enqueued_bytes;
+          d["mux_written_msgs"]      = report.mux_written_msgs;
+          d["mux_written_bytes"]     = report.mux_written_bytes;
+          d["mux_stall_ns"]          = report.mux_stall_ns;
+          d["mux_drops"]             = report.mux_drops;
+          d["mux_queue_depth_peak"]  = report.mux_queue_depth_peak;
+          d["mux_queue_bytes_peak"]  = report.mux_queue_bytes_peak;
+          d["mux_active_writers_total"] = report.mux_active_writers_total;
+          d["mux_active_writers_peak"]  = report.mux_active_writers_peak;
+          return d;
+        })
 
     // Process pool management
     .def("configure_python_process_pool", [](StageManager&, std::size_t processes) {
@@ -244,6 +335,12 @@ inline void bind_stage_manager(py::module_ &md) {
 
     .def("set_auto_builtins", [](StageManager& mgr, bool on) { mgr.set_auto_builtins(on); })
     .def("get_auto_builtins", [](StageManager& mgr) { return mgr.get_auto_builtins(); })
+    .def("set_reporting_level", [](StageManager& mgr, StageManager::ReportingLevel level) {
+          mgr.set_reporting_level(level);
+        })
+    .def("get_reporting_level", [](StageManager& mgr) {
+          return mgr.get_reporting_level();
+        })
 
     .def("set_flush_timeout", [](StageManager& mgr, double timeout_seconds) {
           mgr.set_flush_timeout(seconds_to_milliseconds(timeout_seconds));

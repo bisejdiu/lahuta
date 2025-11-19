@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Iterable
+
 import pytest
 
 import lahuta as lxx
@@ -49,6 +51,40 @@ def test_provider_engine_molstar_counts_and_samples(luni: lxx.LahutaSystem, topo
     assert atom_pair(4, 76,  lxx.Category.HydrogenBond) in keys_hb
     assert atom_pair(8, 72,  lxx.Category.HydrogenBond) in keys_hb
     assert atom_pair(29, 37, lxx.Category.HydrogenBond) in keys_hb
+
+
+def test_compute_contacts_multiple_interactions(topo: lxx.Topology) -> None:
+    hb  = lxx.InteractionType.HydrogenBond
+    whb = lxx.InteractionType.WeakHydrogenBond
+
+    combo = compute_contacts(topo, provider="molstar", only=[hb, whb])
+    assert combo.size() > 0
+
+    combo_contacts = set(combo)
+    categories = {c.type.category for c in combo_contacts}
+    assert lxx.Category.HydrogenBond in categories
+    assert lxx.Category.WeakHydrogenBond in categories
+    assert categories.issubset({lxx.Category.HydrogenBond, lxx.Category.WeakHydrogenBond})
+
+    combo_or = compute_contacts(topo, provider="molstar", only=hb | whb)
+    assert set(combo_or) == combo_contacts
+
+    filter_set = lxx.InteractionTypeSet(hb)
+    filter_set |= whb
+    combo_set = compute_contacts(topo, provider="molstar", only=filter_set)
+    assert set(combo_set) == combo_contacts
+
+    nested = compute_contacts(topo, provider="molstar", only=[hb, [whb, hb], (lxx.InteractionTypeSet(whb),)])
+    assert set(nested) == combo_contacts
+
+    def pair_generator() -> Iterable[lxx.InteractionType]:
+        yield from (hb, whb)
+
+    combo_iter = compute_contacts(topo, provider="molstar", only=pair_generator())
+    assert set(combo_iter) == combo_contacts
+
+    duplicated = compute_contacts(topo, provider="molstar", only=[hb, hb, whb, filter_set])
+    assert set(duplicated) == combo_contacts
 
 
 def test_self_hydrophobic_like_count_and_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:

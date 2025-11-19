@@ -15,6 +15,16 @@
 #include "logging.hpp"
 #include "topology.hpp"
 
+//
+// A note on thread safety:
+// Luni-level: TopologyWriteGuard serializes writers and blocks during builds via
+// TopologyBuildState (mutex + cv). Topology-level: engine_mutex_ protects all
+// TopologyEngine access. No lock ordering issues since Topology methods never
+// call back into Luni. Writers are serialized, builds don't overlap with
+// mutations, and direct Topology access should be thread-safe. With one Luni
+// instance per thread, mutexes are uncontended and overhead is negligible. - Besian, October 2025
+//
+
 // clang-format off
 namespace lahuta {
 
@@ -79,6 +89,7 @@ public:
 
   /// Enable or disable a specific computation in the topology
   void enable_computation(TopologyComputation comp, bool enabled) const {
+    [[maybe_unused]] auto guard = acquire_topology_write_guard();
     ensure_topology_initialized();
     if (topology) {
       topology->enable_computation(comp, enabled);
@@ -87,6 +98,7 @@ public:
 
   /// Enable only the specified computations (disabling all others)
   void enable_only(TopologyComputation comps) const {
+    [[maybe_unused]] auto guard = acquire_topology_write_guard();
     ensure_topology_initialized();
     if (topology) {
       topology->enable_only(comps);
@@ -107,8 +119,9 @@ public:
 
   /// Execute a specific computation with its dependencies
   bool execute_computation(TopologyComputation comp) {
+    [[maybe_unused]] auto guard = acquire_topology_write_guard();
     if (topology) {
-      return topology->execute_computation(comp); 
+      return topology->execute_computation(comp);
     }
     Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
     return false;
@@ -116,6 +129,7 @@ public:
 
   /// Set the cutoff for neighbor search
   void set_search_cutoff_for_bonds(double cutoff) const {
+    [[maybe_unused]] auto guard = acquire_topology_write_guard();
     ensure_topology_initialized();
     if (topology) {
       topology->set_cutoff(cutoff);
@@ -124,6 +138,7 @@ public:
 
   /// Set the atom typing method
   void set_atom_typing_method(AtomTypingMethod method) const {
+    [[maybe_unused]] auto guard = acquire_topology_write_guard();
     ensure_topology_initialized();
     if (topology) {
       topology->set_atom_typing_method(method);
@@ -157,7 +172,24 @@ private:
     std::mutex mutex;
     std::condition_variable cv;
     bool building = false;
+    std::mutex modify_mutex;
   };
+
+  class TopologyWriteGuard {
+  public:
+    explicit TopologyWriteGuard(std::shared_ptr<TopologyBuildState> state);
+    TopologyWriteGuard(const TopologyWriteGuard&)            = delete;
+    TopologyWriteGuard& operator=(const TopologyWriteGuard&) = delete;
+    TopologyWriteGuard(TopologyWriteGuard&&) noexcept        = default;
+    TopologyWriteGuard& operator=(TopologyWriteGuard&&) noexcept = default;
+
+  private:
+    std::shared_ptr<TopologyBuildState> state_;
+    std::unique_lock<std::mutex>         lock_;
+  };
+
+  TopologyWriteGuard acquire_topology_write_guard() const;
+  std::shared_ptr<TopologyBuildState> ensure_topology_state() const;
 
   explicit Luni(std::shared_ptr<RDKit::RWMol> valid_mol)
     : mol(valid_mol), topology(std::make_shared<Topology>(valid_mol)), topology_built_(false),
@@ -188,6 +220,7 @@ private:
   bool model_origin_ = false; // flag controlling model code path
 
   mutable std::shared_ptr<TopologyBuildState> topology_state_ = std::make_shared<TopologyBuildState>();
+  mutable std::mutex topology_state_init_mutex_;
   mutable std::once_flag topology_init_once_;
 
   std::string file_name_;

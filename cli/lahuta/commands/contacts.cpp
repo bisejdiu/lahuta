@@ -1,3 +1,9 @@
+#include <chrono>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -10,15 +16,18 @@
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
 #include "commands/contacts.hpp"
+#include "commands/reporting.hpp"
 #include "db/db.hpp"
 #include "gemmi/third_party/stb_sprintf.h"
-#include "io/sinks/logging.hpp"
-#include "io/sinks/ndjson.hpp"
 #include "logging.hpp"
 #include "pipeline/compute/parameters.hpp"
+#include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
+#include "serialization/json.hpp"
+#include "sinks/logging.hpp"
+#include "sinks/ndjson.hpp"
 
 // clang-format off
 namespace lahuta::cli {
@@ -43,15 +52,16 @@ struct ContactsOptions {
   std::string database_path;
 
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
-  InteractionType interaction_type = InteractionType::All;
+  InteractionTypeSet interaction_types = InteractionTypeSet::all();
 
+  bool is_af2_model = false;
   bool want_json   = false;
   bool want_text   = false;
   bool want_log    = false;
-  bool no_compress = false;
-
   int threads = 8;
   size_t batch_size = 200;
+  size_t writer_threads = 1;
+  const PipelineReporter* reporter = nullptr;
 };
 
 Source pick_source(const ContactsOptions& cli) {
@@ -64,11 +74,104 @@ Source pick_source(const ContactsOptions& cli) {
   throw std::logic_error("Invalid source mode");
 }
 
+namespace {
+
+std::string current_timestamp_string() {
+  using namespace std::chrono;
+  const auto now = system_clock::now();
+  const auto tt = system_clock::to_time_t(now);
+  std::tm tm{};
+#if defined(_WIN32)
+  localtime_s(&tm, &tt);
+#else
+  localtime_r(&tt, &tm);
+#endif
+  const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % milliseconds(1000);
+  std::ostringstream oss;
+  oss << std::put_time(&tm, "%Y%m%d_%H%M%S")
+      << '_' << std::setw(3) << std::setfill('0') << ms.count();
+  return oss.str();
+}
+
+bool write_run_report_json(const std::string& path, const pipeline::dynamic::StageManager::RunReport& report) {
+  std::ofstream out(path, std::ios::out | std::ios::trunc);
+  if (!out) {
+    Logger::get_logger()->error("Unable to write RunReport JSON to '{}'", path);
+    return false;
+  }
+
+  lahuta::JsonBuilder json(512);
+  json.key("total_seconds").value(report.total_seconds)
+      .key("cpu_seconds").value(report.cpu_seconds)
+      .key("io_seconds").value(report.io_seconds)
+      .key("ingest_seconds").value(report.ingest_seconds)
+      .key("prepare_seconds").value(report.prepare_seconds)
+      .key("flush_seconds").value(report.flush_seconds)
+      .key("setup_seconds").value(report.setup_seconds)
+      .key("compute_seconds").value(report.compute_seconds)
+      .key("items_total").value(report.items_total)
+      .key("items_processed").value(report.items_processed)
+      .key("items_skipped").value(report.items_skipped)
+      .key("stage_count").value(report.stage_count)
+      .key("threads_requested").value(report.threads_requested)
+      .key("threads_used").value(report.threads_used)
+      .key("all_thread_safe").value(report.all_thread_safe)
+      .key("run_token").value(report.run_token)
+      .key("metrics_enabled").value(report.metrics_enabled)
+      .key("peak_inflight_items").value(report.peak_inflight_items)
+      .key("average_queue_depth").value(report.average_queue_depth)
+      .key("permit_wait_total_seconds").value(report.permit_wait_total_seconds)
+      .key("permit_wait_min_seconds").value(report.permit_wait_min_seconds)
+      .key("permit_wait_max_seconds").value(report.permit_wait_max_seconds)
+      .key("permit_wait_avg_seconds").value(report.permit_wait_avg_seconds)
+      .key("permit_wait_events").value(report.permit_wait_events)
+      .key("mux_sink_count").value(report.mux_sink_count)
+      .key("mux_enqueued_msgs").value(report.mux_enqueued_msgs)
+      .key("mux_enqueued_bytes").value(report.mux_enqueued_bytes)
+      .key("mux_written_msgs").value(report.mux_written_msgs)
+      .key("mux_written_bytes").value(report.mux_written_bytes)
+      .key("mux_stall_ns").value(report.mux_stall_ns)
+      .key("mux_drops").value(report.mux_drops)
+      .key("mux_queue_depth_peak").value(report.mux_queue_depth_peak)
+      .key("mux_queue_bytes_peak").value(report.mux_queue_bytes_peak)
+      .key("mux_active_writers_total").value(report.mux_active_writers_total)
+      .key("mux_active_writers_peak").value(report.mux_active_writers_peak);
+
+  json.key("stage_breakdown").begin_array();
+  for (const auto& stage : report.stage_breakdown) {
+    json.begin_object()
+        .key("label").value(stage.label)
+        .key("setup_seconds").value(stage.setup_seconds)
+        .key("compute_seconds").value(stage.compute_seconds)
+        .end_object();
+  }
+  json.end_array();
+
+  out << json.str() << '\n';
+  return true;
+}
+
+std::string make_report_path(std::size_t run_token, const std::string& timestamp) {
+  return "contacts_run_report_" + std::to_string(run_token) + '_' + timestamp + ".json";
+}
+
+} // namespace
+
 namespace contacts_opts {
 const option::Descriptor usage[] = {
   {ContactsOptionIndex::Unknown, 0, "", "", validate::Unknown,
-   "Usage: lahuta contacts [options]\n\n"
+   "Usage: lahuta contacts [options]\n"
+   "Author: Besian I. Sejdiu (@bisejdiu)\n\n"
    "Compute inter-atomic contacts.\n\n"
+
+    "<<< Detailed help will be added soon. >>>\n\n"
+
+    "Available reporters (--reporter <name>):\n"
+    "  summary     - Concise summary of computation results (negligible overhead).\n"
+    "  terse       - Fastest logging footprint.\n"
+    "  diagnostics - Detailed diagnostics for in-depth analysis (small overhead).\n"
+    "\n"
+
    "Input Options (choose one):"},
   {ContactsOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help, -h                   \tPrint this help message and exit."},
@@ -89,7 +192,9 @@ const option::Descriptor usage[] = {
   {ContactsOptionIndex::Provider, 0, "p", "provider", validate::Provider,
    "  --provider, -p <provider>    \tContact provider: 'molstar', 'arpeggio', or 'getcontacts' (default: molstar)."},
   {ContactsOptionIndex::InteractionType, 0, "i", "interaction", validate::ContactType,
-   "  --interaction, -i <type>     \tInteraction type: 'hbond', 'hydrophobic', 'ionic', etc.\n"},
+   "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', etc. Repeat or comma-separate to combine.\n"},
+  {ContactsOptionIndex::IsAf2Model, 0, "", "is_af2_model", option::Arg::None,
+   "  --is_af2_model               \tInputs are AlphaFold2 models (or AF2-like)."},
   {0, 0, "", "", option::Arg::None,
    "\nOutput Options:"},
   {ContactsOptionIndex::OutputJson, 0, "", "json", option::Arg::None,
@@ -98,14 +203,16 @@ const option::Descriptor usage[] = {
    "  --text                       \tOutput results in text format."},
   {ContactsOptionIndex::OutputLog, 0, "", "log", option::Arg::None,
    "  --log                        \tOutput results to standard output (logging)."},
-  {ContactsOptionIndex::NoCompress, 0, "", "no-compress", option::Arg::None,
-   "  --no-compress                \tDisable gzip compression (default: enabled)."},
+  {ContactsOptionIndex::Reporter, 0, "", "reporter", validate::Required,
+   "  --reporter <name>            \tSelect pipeline reporter. See help for names."},
   {0, 0, "", "", option::Arg::None,
    "\nRuntime Options:"},
   {ContactsOptionIndex::Threads, 0, "t", "threads", validate::Required,
    "  --threads, -t <num>          \tNumber of threads to use (default: 8)."},
   {ContactsOptionIndex::BatchSize, 0, "b", "batch-size", validate::Required,
    "  --batch-size, -b <size>      \tBatch size for processing (default: 200)."},
+  {ContactsOptionIndex::WriterThreads, 0, "", "writer-threads", validate::Required,
+   "  --writer-threads <num>       \tNumber of writer threads per sink (default: 1)."},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace contacts_opts
@@ -130,6 +237,38 @@ int ContactsCommand::run(int argc, char* argv[]) {
   try {
     // parse CLI Arguments into ContactsOptions
     ContactsOptions cli;
+    const auto default_sink_cfg = dynamic::get_default_backpressure_config();
+    cli.writer_threads = default_sink_cfg.writer_threads;
+    cli.reporter = &default_pipeline_reporter();
+    const std::string run_timestamp = current_timestamp_string();
+    const std::string contacts_json_path = "contacts_" + run_timestamp + ".jsonl";
+    const std::string contacts_text_path = "contacts_" + run_timestamp + ".txt";
+
+    auto emit_and_save_report = [&](const pipeline::dynamic::StageManager::RunReport& report) {
+      const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
+      reporter->emit("contacts", report);
+      const std::string report_path = make_report_path(report.run_token, run_timestamp);
+      if (!write_run_report_json(report_path, report)) {
+        throw std::runtime_error("Failed to persist RunReport JSON");
+      }
+      Logger::get_logger()->info("Run report saved to {}", report_path);
+    };
+
+    if (options[contacts_opts::ContactsOptionIndex::Reporter]) {
+      std::string_view name = options[contacts_opts::ContactsOptionIndex::Reporter].arg
+                                ? options[contacts_opts::ContactsOptionIndex::Reporter].arg
+                                : std::string_view{};
+      if (name.empty()) {
+        Logger::get_logger()->error("--reporter requires a value.");
+        return 1;
+      }
+      if (const auto* rep = find_pipeline_reporter(name)) {
+        cli.reporter = rep;
+      } else {
+        Logger::get_logger()->error("Unknown reporter '{}' ", name);
+        return 1;
+      }
+    }
 
     // parse source options
     int source_count = 0;
@@ -193,16 +332,34 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
 
     // Parse interaction type
-    if (options[contacts_opts::ContactsOptionIndex::InteractionType]) {
-      std::string interaction = options[contacts_opts::ContactsOptionIndex::InteractionType].arg;
-      cli.interaction_type = get_interaction_type(interaction);
+    using coi = contacts_opts::ContactsOptionIndex;
+    if (options[coi::InteractionType]) {
+      bool has_selection = false;
+      InteractionTypeSet selected;
+      for (const option::Option* opt = &options[coi::InteractionType]; opt != nullptr; opt = opt->next()) {
+        std::string_view arg = opt->arg ? opt->arg : "";
+        auto parsed = parse_interaction_type_sequence(arg, ',');
+        if (!parsed) parsed = parse_interaction_type_sequence(arg, '|');
+        if (!parsed) {
+          Logger::get_logger()->error("Invalid interaction type specification '{}'", arg);
+          return 1;
+        }
+        if (!has_selection) {
+          selected = *parsed;
+          has_selection = true;
+        } else {
+          selected |= *parsed;
+        }
+      }
+      if (has_selection) cli.interaction_types = selected;
     }
+
+    cli.is_af2_model = options[contacts_opts::ContactsOptionIndex::IsAf2Model] ? true : false;
 
     // Parse output options
     cli.want_json   = options[contacts_opts::ContactsOptionIndex::OutputJson] ? true : false;
     cli.want_text   = options[contacts_opts::ContactsOptionIndex::OutputText] ? true : false;
     cli.want_log    = options[contacts_opts::ContactsOptionIndex::OutputLog]  ? true : false;
-    cli.no_compress = options[contacts_opts::ContactsOptionIndex::NoCompress] ? true : false;
 
     if (!cli.want_json && !cli.want_text && !cli.want_log) cli.want_json = true; // json if nothing specified
 
@@ -223,6 +380,14 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
     }
 
+    if (options[contacts_opts::ContactsOptionIndex::WriterThreads]) {
+      cli.writer_threads = std::stoull(options[contacts_opts::ContactsOptionIndex::WriterThreads].arg);
+      if (cli.writer_threads == 0) {
+        Logger::get_logger()->error("Writer threads must be positive");
+        return 1;
+      }
+    }
+
     initialize_runtime(cli.threads);
 
     if (cli.source_mode == ContactsOptions::SourceMode::Directory) {
@@ -232,6 +397,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
 
     bool is_db = (cli.source_mode == ContactsOptions::SourceMode::Database);
+    const bool use_model_pipeline = cli.is_af2_model || is_db;
     if (is_db) {
       auto db = std::make_shared<LMDBDatabase>(cli.database_path);
       auto src = dynamic::sources_factory::from_lmdb(db, std::string{}, cli.batch_size);
@@ -240,7 +406,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       mgr.set_auto_builtins(true);
 
       // Configure built-ins
-      mgr.get_system_params().is_model = true;
+      mgr.get_system_params().is_model = use_model_pipeline;
       mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
 
       const bool json_out = (cli.want_json || !cli.want_text);
@@ -248,7 +414,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       {
         pipeline::compute::ContactsParams p{};
         p.provider = cli.provider;
-        p.type     = cli.interaction_type;
+        p.type     = cli.interaction_types;
         p.channel  = "contacts";
         p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
                               : pipeline::compute::ContactsOutputFormat::Text;
@@ -263,12 +429,21 @@ int ContactsCommand::run(int argc, char* argv[]) {
       }
 
       // Sinks
-      if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"));
-      if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"));
-      if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>());
+      auto sink_cfg = dynamic::get_default_backpressure_config();
+      sink_cfg.writer_threads = cli.writer_threads;
+      if  (json_out && cli.want_json) {
+        mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_json_path), sink_cfg);
+        Logger::get_logger()->info("Contacts JSON sink -> {}", contacts_json_path);
+      }
+      if (!json_out && cli.want_text) {
+        mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_text_path), sink_cfg);
+        Logger::get_logger()->info("Contacts text sink -> {}", contacts_text_path);
+      }
+      if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
-      mgr.run(static_cast<std::size_t>(cli.threads));
+      const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      emit_and_save_report(report);
     } else {
       Source src_variant = pick_source(cli);
       std::visit([&](auto&& src) {
@@ -288,7 +463,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         mgr.set_auto_builtins(true);
 
         // Configure built-ins
-        mgr.get_system_params().is_model = false;
+        mgr.get_system_params().is_model = use_model_pipeline;
         mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
 
         // Tasks: ensure_typing -> contacts
@@ -296,7 +471,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         {
           pipeline::compute::ContactsParams p{};
           p.provider = cli.provider;
-          p.type     = cli.interaction_type;
+          p.type     = cli.interaction_types;
           p.channel  = "contacts";
           p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
                                 : pipeline::compute::ContactsOutputFormat::Text;
@@ -311,12 +486,21 @@ int ContactsCommand::run(int argc, char* argv[]) {
         }
 
         // Sinks
-        if  (json_out && cli.want_json) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.jsonl"));
-        if (!json_out && cli.want_text) mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>("contacts.txt"));
-        if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>());
+        auto sink_cfg = dynamic::get_default_backpressure_config();
+        sink_cfg.writer_threads = cli.writer_threads;
+        if  (json_out && cli.want_json) {
+          mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_json_path), sink_cfg);
+          Logger::get_logger()->info("Contacts JSON sink -> {}", contacts_json_path);
+        }
+        if (!json_out && cli.want_text) {
+          mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_text_path), sink_cfg);
+          Logger::get_logger()->info("Contacts text sink -> {}", contacts_text_path);
+        }
+        if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
-        mgr.run(static_cast<std::size_t>(cli.threads));
+        const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+        emit_and_save_report(report);
       }, src_variant);
     }
 

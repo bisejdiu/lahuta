@@ -7,6 +7,9 @@ from .params import SystemParams, TopologyParams
 from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 
+StageManager = _lib.pipeline.StageManager
+ReportingLevel = _lib.pipeline.ReportingLevel
+
 BackpressureConfig = _lib.pipeline.BackpressureConfig
 OnFull = _lib.pipeline.OnFull
 get_default_backpressure_config = _lib.pipeline.get_default_backpressure_config
@@ -29,6 +32,8 @@ __all__ = (
     "get_default_backpressure_config",
     "set_default_backpressure_config",
     "set_default_max_queue_bytes",
+    "StageManager",
+    "ReportingLevel",
     "ContactTask",
     "SystemParams",
     "TopologyParams",

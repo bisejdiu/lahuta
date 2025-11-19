@@ -52,7 +52,7 @@ struct BondAssignmentPattern {
 };
 
 const std::array<std::shared_ptr<RDKit::ROMol>, HybPatterns.size()> &hybridization_queries() {
-  static const std::array<std::shared_ptr<RDKit::ROMol>, HybPatterns.size()> queries = [] {
+  thread_local const std::array<std::shared_ptr<RDKit::ROMol>, HybPatterns.size()> queries = [] {
     std::array<std::shared_ptr<RDKit::ROMol>, HybPatterns.size()> tmp{};
     for (size_t i = 0; i < HybPatterns.size(); ++i) {
       tmp[i].reset(RDKit::SmartsToMol(HybPatterns[i].smarts));
@@ -105,7 +105,7 @@ const std::vector<BondAssignmentPattern> &bond_assignment_patterns() {
 }
 
 const std::vector<std::shared_ptr<RDKit::ROMol>> &bond_assignment_queries() {
-  static const std::vector<std::shared_ptr<RDKit::ROMol>> queries = [] {
+  thread_local const std::vector<std::shared_ptr<RDKit::ROMol>> queries = [] {
     std::vector<std::shared_ptr<RDKit::ROMol>> tmp;
     tmp.reserve(bond_assignment_patterns().size());
     for (const auto &pattern : bond_assignment_patterns()) {
@@ -313,7 +313,7 @@ void apply_bond_assignment_patterns(RDKit::RWMol &mol) {
 }
 
 const RDKit::ROMol &compile_smarts_once(const char *smarts) {
-  static std::vector<std::pair<std::string, std::shared_ptr<RDKit::ROMol>>> cache;
+  thread_local std::vector<std::pair<std::string, std::shared_ptr<RDKit::ROMol>>> cache;
   auto it = std::find_if(cache.begin(), cache.end(), [smarts](const auto &entry) { return entry.first == smarts; });
   if (it == cache.end()) {
     cache.emplace_back(smarts, std::shared_ptr<RDKit::ROMol>(RDKit::SmartsToMol(smarts)));

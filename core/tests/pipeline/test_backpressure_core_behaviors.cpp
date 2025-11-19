@@ -17,12 +17,12 @@
 #include <vector>
 
 #include <gtest/gtest.h>
-#include <pipeline/dynamic/backpressure.hpp>
-#include <pipeline/dynamic/channel_multiplexer.hpp>
 
-#include "io/sinks/memory.hpp"
-#include "io/sinks/sharded_ndjson.hpp"
+#include "pipeline/dynamic/backpressure.hpp"
+#include "pipeline/dynamic/channel_multiplexer.hpp"
 #include "pipeline/dynamic/sink_iface.hpp"
+#include "sinks/memory.hpp"
+#include "sinks/sharded_ndjson.hpp"
 
 using namespace lahuta::pipeline::dynamic;
 

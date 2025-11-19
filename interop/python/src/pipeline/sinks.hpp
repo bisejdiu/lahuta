@@ -12,10 +12,10 @@
 #include <pybind11/stl.h>
 
 #include "db/db.hpp"
-#include "io/sinks/lmdb.hpp"
-#include "io/sinks/memory.hpp"
-#include "io/sinks/ndjson.hpp"
-#include "io/sinks/sharded_ndjson.hpp"
+#include "sinks/lmdb.hpp"
+#include "sinks/memory.hpp"
+#include "sinks/ndjson.hpp"
+#include "sinks/sharded_ndjson.hpp"
 
 namespace py = pybind11;
 namespace lahuta::bindings {

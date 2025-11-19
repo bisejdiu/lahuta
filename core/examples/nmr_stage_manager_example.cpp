@@ -1,5 +1,3 @@
-#include <analysis/contacts/computation.hpp>
-#include <io/sinks/ndjson.hpp>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -10,6 +8,7 @@
 
 #include <GraphMol/Conformer.h>
 
+#include "analysis/contacts/computation.hpp"
 #include "analysis/topology/computation.hpp"
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
@@ -18,6 +17,7 @@
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/ingestion.hpp"
 #include "pipeline/stream_session.hpp"
+#include "sinks/ndjson.hpp"
 #include "topology.hpp"
 
 // clang-format off

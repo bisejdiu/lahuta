@@ -58,6 +58,7 @@ void convertToBonds(const INT_VECT &ring, INT_VECT &bondRing,
 
 void convertToBonds(const VECT_INT_VECT &res, VECT_INT_VECT &brings,
                     const ROMol &mol) {
+  brings.reserve(res.size());
   for (const auto &ring : res) {
     INT_VECT bring;
     convertToBonds(ring, bring, mol);

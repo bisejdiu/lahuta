@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from numbers import Integral
 from pathlib import Path
 from typing import (
     Any,
@@ -30,7 +31,8 @@ from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 
 # fmt: off
-StageManager = _lib.pipeline.StageManager
+StageManager   = _lib.pipeline.StageManager
+ReportingLevel = _lib.pipeline.ReportingLevel
 CppTask: TypeAlias = _lib.pipeline.Task
 
 # Callable protocol for Python tasks that accept a PipelineContext and return any value
@@ -55,15 +57,6 @@ class Pipeline:
         mgr = _lib.pipeline.StageManager(source)
         self._mgr = mgr
         # Let Python own the default policy - auto-inject built-ins only when referenced
-        try:
-            self._mgr.set_auto_builtins(True)
-        except Exception:
-            pass
-        try:
-            self._mgr.set_flush_timeout(1.0) # To keep test runs fast
-        except Exception:
-            pass
-
         self._memory_sinks:     dict[str, list[_lib.pipeline.MemorySink]] = {}
         self._file_sinks:       dict[str, list[_lib.pipeline.NdjsonSink]] = {}
         self._sharded_sinks:    dict[str, list[_lib.pipeline.ShardedNdjsonSink]] = {}
@@ -80,8 +73,55 @@ class Pipeline:
                 self._system_params.is_model = True
             except Exception:
                 pass
-
         self._py_tasks: list[_MPPyTaskSpec] = [] # callable task registry for multiprocessing backend
+        self._reporting_level: ReportingLevel = ReportingLevel.BASIC
+        self._last_report: dict[str, Any] | None = None
+
+        try:
+            self._mgr.set_auto_builtins(True)
+        except Exception:
+            pass
+        try:
+            self._mgr.set_flush_timeout(1.0) # To keep test runs fast
+        except Exception:
+            pass
+        try:
+            self._mgr.set_reporting_level(self._reporting_level)
+        except AttributeError:
+            # Older runtimes lack reporting level support; leave at default.
+            pass
+
+    def set_reporting_level(self, level: ReportingLevel) -> None:
+        """Control pipeline metrics collection."""
+        if not isinstance(level, ReportingLevel):
+            raise TypeError("level must be a ReportingLevel enum or string name")
+        self._reporting_level = level
+        self._mgr.set_reporting_level(level)
+
+    def get_reporting_level(self) -> ReportingLevel:
+        return self._reporting_level
+
+    @staticmethod
+    def _clone_report(report: dict[str, Any] | None) -> dict[str, Any] | None:
+        if report is None:
+            return None
+        clone  = dict(report)
+        stages = clone.get("stage_breakdown")
+        if isinstance(stages, list):
+            clone["stage_breakdown"] = [dict(stage) for stage in stages]
+        return clone
+
+    def get_run_report(self) -> dict[str, Any] | None:
+        """
+        Return the most recent run report, if available.
+
+        When metrics are enabled the report includes pipeline totals as well as:
+            * peak_inflight_items / average_queue_depth
+            * permit_wait_* fields with min/avg/max acquisition latency
+            * mux_* counters summarising channel writer activity
+            * stage_breakdown (DEBUG): per-stage setup/compute timings
+        """
+        return self._clone_report(self._last_report)
 
     def _process_pool_guard(self, processes: int):
         class _Guard:
@@ -154,6 +194,7 @@ class Pipeline:
         store: bool | None = None,
         depends: list[str] | None = None,
         thread_safe: bool = True,
+        writer_threads: int | None = None,
     ) -> None:
         ch = channel or name
         deps = list(depends) if depends is not None else []
@@ -213,7 +254,7 @@ class Pipeline:
 
             self._channel_formats[ch]  = emission_fmt
             self._channel_decoders[ch] = "contacts"
-            self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt)
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=emission_fmt, writer_threads=writer_threads)
             return
 
         # Python callable task
@@ -226,7 +267,7 @@ class Pipeline:
             # Auto-detect format from return type annotation and AST analysis
             task_format = infer_python_task_format(task)
             self._channel_formats[ch] = task_format
-            self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format)
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format, writer_threads=writer_threads)
 
             # Record for multiprocessing backend
             module, qualname = resolve_callable_metadata(task)
@@ -267,7 +308,7 @@ class Pipeline:
         if isinstance(task, _lib.pipeline.Task):
             self._mgr.add_task(name, deps, task, bool(thread_safe))
             self._channel_formats.setdefault(ch, OutputFormat.TEXT)
-            self._attach_sinks(ch, in_memory_policy, out, channel_format=self._channel_formats[ch])
+            self._attach_sinks(ch, in_memory_policy, out, channel_format=self._channel_formats[ch], writer_threads=writer_threads)
             return
 
         raise TypeError("task must be a callable, ContactTask spec, or pipeline.Task instance")
@@ -284,6 +325,19 @@ class Pipeline:
                 return OutputFormat.TEXT
         return None
 
+    def _make_backpressure_config(self, writer_threads: int | None):
+        if writer_threads is None:
+            return None
+        if isinstance(writer_threads, bool) or not isinstance(writer_threads, Integral):
+            raise TypeError("writer_threads must be a positive integer")
+        value = int(writer_threads)
+        if value <= 0:
+            raise ValueError("writer_threads must be a positive integer")
+        cfg = _lib.pipeline.get_default_backpressure_config()
+        cfg.writer_threads = value
+        cfg.validate()
+        return cfg
+
     def _attach_sinks(
         self,
         channel: str,
@@ -291,12 +345,21 @@ class Pipeline:
         out: Iterable[FileOutput | ShardedOutput] | None,
         *,
         channel_format: OutputFormat,
+        writer_threads: int | None = None,
     ) -> None:
         """Attach memory and file sinks for the given channel respecting output formats."""
+        sink_cfg = self._make_backpressure_config(writer_threads)
+
+        def connect(target_channel: str, sink_obj: Any) -> None:
+            if sink_cfg is None:
+                self._mgr.connect_sink(target_channel, sink_obj)
+            else:
+                self._mgr.connect_sink(target_channel, sink_obj, sink_cfg)
+
         if in_memory_policy == InMemoryPolicy.Keep:
             if channel not in self._memory_sinks:
                 ms = _lib.pipeline.MemorySink()
-                self._mgr.connect_sink(channel, ms)
+                connect(channel, ms)
                 self._memory_sinks[channel] = [ms]
             self._channel_formats.setdefault(channel, channel_format)
 
@@ -308,29 +371,37 @@ class Pipeline:
                 raise ValueError("File and sharded outputs do not support binary payloads.")
             if isinstance(o, FileOutput):
                 sink = _lib.pipeline.NdjsonSink(str(o.path))
-                self._mgr.connect_sink(channel, sink)
+                connect(channel, sink)
                 self._file_sinks.setdefault(channel, []).append(sink)
             elif isinstance(o, ShardedOutput):
                 sink = _lib.pipeline.ShardedNdjsonSink(str(o.out_dir), int(o.shard_size))
-                self._mgr.connect_sink(channel, sink)
+                connect(channel, sink)
                 self._sharded_sinks.setdefault(channel, []).append(sink)
 
     # Sinks
-    def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON) -> None:
+    def to_files(self, task_or_channel: str, *, path: str | Path, fmt: OutputFormat = OutputFormat.JSON, writer_threads: int | None = None) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
         if fmt == OutputFormat.BINARY:
             raise ValueError("Binary output is not supported for NdjsonSink.")
+        sink_cfg = self._make_backpressure_config(writer_threads)
         sink = _lib.pipeline.NdjsonSink(str(path))
-        self._mgr.connect_sink(task_or_channel, sink)
+        if sink_cfg is None:
+            self._mgr.connect_sink(task_or_channel, sink)
+        else:
+            self._mgr.connect_sink(task_or_channel, sink, sink_cfg)
         self._file_sinks.setdefault(task_or_channel, []).append(sink)
         self._channel_formats.setdefault(task_or_channel, fmt)
         return
 
-    def to_memory(self, task_or_channel: str) -> None:
+    def to_memory(self, task_or_channel: str, *, writer_threads: int | None = None) -> None:
+        sink_cfg = self._make_backpressure_config(writer_threads)
         if task_or_channel not in self._memory_sinks:
             ms = _lib.pipeline.MemorySink()
-            self._mgr.connect_sink(task_or_channel, ms)
+            if sink_cfg is None:
+                self._mgr.connect_sink(task_or_channel, ms)
+            else:
+                self._mgr.connect_sink(task_or_channel, ms, sink_cfg)
             self._memory_sinks[task_or_channel] = [ms]
 
             #
@@ -347,14 +418,19 @@ class Pipeline:
         out_dir: str | Path,
         fmt: OutputFormat = OutputFormat.JSON,
         shard_size: int = 1000,
+        writer_threads: int | None = None,
     ) -> None:
         if not isinstance(fmt, OutputFormat):
             raise TypeError("fmt must be an OutputFormat enum value")
         if fmt == OutputFormat.BINARY:
             raise ValueError("Binary output is not supported for sharded NDJSON sinks.")
 
+        sink_cfg = self._make_backpressure_config(writer_threads)
         sink = _lib.pipeline.ShardedNdjsonSink(str(out_dir), int(shard_size))
-        self._mgr.connect_sink(task_or_channel, sink)
+        if sink_cfg is None:
+            self._mgr.connect_sink(task_or_channel, sink)
+        else:
+            self._mgr.connect_sink(task_or_channel, sink, sink_cfg)
         self._sharded_sinks.setdefault(task_or_channel, []).append(sink)
         self._channel_formats.setdefault(task_or_channel, fmt)
         return
@@ -367,6 +443,7 @@ class Pipeline:
         processes: int | None = None,
         process_timeout: float | None = 300.0,
     ) -> PipelineResult:
+        self._last_report = None
         # Reset memory sinks so results do not accumulate across runs
         for sinks in self._memory_sinks.values():
             for s in sinks:
@@ -397,6 +474,8 @@ class Pipeline:
             self._mgr.run(int(threads))
             _elapsed = time.perf_counter() - _start
             logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+            report = self._mgr.last_run_report()
+            self._last_report = self._clone_report(report)
             return PipelineResult(_collect_memory_states())
 
         if backend == "processes":
@@ -464,6 +543,8 @@ class Pipeline:
                                 store=spec.store,
                             )
 
+            report = self._mgr.last_run_report()
+            self._last_report = self._clone_report(report)
             return PipelineResult(_collect_memory_states())
 
         raise ValueError("backend must be either 'threads' or 'processes'")

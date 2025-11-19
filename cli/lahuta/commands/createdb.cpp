@@ -1,4 +1,3 @@
-#include <chrono>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -11,12 +10,13 @@
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
 #include "commands/createdb.hpp"
+#include "commands/reporting.hpp"
 #include "db/db.hpp"
-#include "io/sinks/lmdb.hpp"
 #include "logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
+#include "sinks/lmdb.hpp"
 
 // clang-format off
 namespace lahuta::cli {
@@ -37,6 +37,7 @@ struct CreateDbOptions {
   std::string database_path;
   size_t batch_size = 1000;
   int threads = 8;
+  size_t max_size_gb = 500;
 };
 
 using WriterRes = analysis::system::ModelRecord;
@@ -81,6 +82,8 @@ const option::Descriptor usage[] = {
    "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or comma-separate values (default: .cif, .cif.gz)."},
   {CreateDbOptionIndex::Recursive, 0, "r", "recursive", option::Arg::None,
    "  --recursive, -r              \tRecursively search subdirectories."},
+  {CreateDbOptionIndex::MaxSize, 0, "m", "max-size", validate::Required,
+   "  --max-size, -m <size>        \tMaximum database size in GB (default: 500)."},
   {0, 0, "", "", option::Arg::None,
    "\nPerformance Options:"},
   {CreateDbOptionIndex::BatchSize, 0, "b", "batch-size", validate::Required,
@@ -178,6 +181,14 @@ int CreateDbCommand::run(int argc, char* argv[]) {
       }
     }
 
+    if (options[createdb_opts::CreateDbOptionIndex::MaxSize]) {
+      cli.max_size_gb = std::stoull(options[createdb_opts::CreateDbOptionIndex::MaxSize].arg);
+      if (cli.max_size_gb == 0) {
+        Logger::get_logger()->error("Max size must be positive");
+        return 1;
+      }
+    }
+
     Logger::get_logger()->info("Creating database...");
     switch (cli.source_mode) {
       case CreateDbOptions::SourceMode::Directory:
@@ -195,13 +206,13 @@ int CreateDbCommand::run(int argc, char* argv[]) {
     Logger::get_logger()->info("Database path: {}", cli.database_path);
     Logger::get_logger()->info("Batch size: {}", cli.batch_size);
     Logger::get_logger()->info("Threads: {}", cli.threads);
+    Logger::get_logger()->info("Max size: {} GB", cli.max_size_gb);
 
     initialize_runtime(cli.threads);
 
-    auto db = std::make_shared<LMDBDatabase>(cli.database_path);
+    auto db = std::make_shared<LMDBDatabase>(cli.database_path, cli.max_size_gb);
 
-    Logger::get_logger()->debug("Processing files (dynamic pipeline)...");
-    const auto t0 = std::chrono::high_resolution_clock::now();
+    Logger::get_logger()->debug("Processing files ...");
 
     Source source_variant = pick_source(cli);
     std::visit([&](auto&& src) {
@@ -224,13 +235,11 @@ int CreateDbCommand::run(int argc, char* argv[]) {
       mgr.connect_sink("db", std::make_shared<dynamic::LmdbSink>(db, cli.batch_size));
 
       mgr.compile();
-      mgr.run(static_cast<std::size_t>(cli.threads));
+      const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      log_pipeline_report("createdb", report);
     }, source_variant);
 
-    const auto t1 = std::chrono::high_resolution_clock::now();
-    const auto duration = std::chrono::duration<double>(t1 - t0).count();
-
-    Logger::get_logger()->info("Database creation (dynamic) completed in {:.2f} seconds!", duration);
+    Logger::get_logger()->info("Database creation completed successfully!");
     return 0;
 
   } catch (const std::exception& e) {

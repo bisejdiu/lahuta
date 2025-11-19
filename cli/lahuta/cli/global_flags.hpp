@@ -12,7 +12,7 @@ namespace lahuta::cli {
 
 struct GlobalFlags {
   // Default log level is Warn unless overridden by -v
-  lahuta::Logger::LogLevel log_level = lahuta::Logger::LogLevel::Warn;
+  lahuta::Logger::LogLevel log_level = lahuta::Logger::LogLevel::Info;
   std::vector<char*> tail;                                             // argv sans globals
   bool help_requested = false;                                         // -h/--help flag
 };

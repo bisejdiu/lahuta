@@ -2,6 +2,7 @@
 
 #include "analysis/contacts/provider.hpp"
 #include "cli/arg_validation.hpp"
+#include "entities/interaction_types.hpp"
 #include "logging.hpp"
 
 // clang-format off
@@ -53,9 +54,9 @@ option::ArgStatus ContactType(const option::Option& option, bool msg) {
   }
 
   const std::string_view type{option.arg};
-  const auto& valid_types = get_valid_contact_types();
-
-  if (const auto it = valid_types.find(std::string{type}); it != valid_types.end()) return option::ARG_OK;
+  if (parse_interaction_type_sequence(type, ',') || parse_interaction_type_sequence(type, '|')) {
+    return option::ARG_OK;
+  }
 
   if (msg) log_error("Invalid contact type '{}'", HELP_MSG_SUFFIX, type);
   return option::ARG_ILLEGAL;
@@ -76,10 +77,13 @@ option::ArgStatus Verbosity(const option::Option& option, bool msg) {
 
 [[nodiscard]] const std::unordered_set<std::string>& get_valid_contact_types() noexcept {
   static const std::unordered_set<std::string> valid_types = {
-    "hbond", "hydrophobic", "ionic",
-    "weak_hbond", "halogen", "metalic", "cationpi", "pistacking",
-    "polar_hbond", "weak_polar_hbond", "aromatic", "carbonyl",
-    "vdw", "donor_pi", "sulphur_pi", "carbon_pi"
+    "all", "generic", "none",
+    "hbond", "hydrogenbond", "weak_hbond", "weakhydrogenbond",
+    "polar_hbond", "polarhydrogenbond", "weak_polar_hbond", "weakpolarhydrogenbond",
+    "hydrophobic", "ionic", "halogen", "metalic", "metalcoordination",
+    "cationpi", "aromatic", "pistacking", "pistackingp", "pistackingt",
+    "carbonyl", "vdw", "vanderwaals", "donor_pi", "donorpi",
+    "sulphur_pi", "sulphurpi", "carbon_pi", "carbonpi"
   };
   return valid_types;
 }

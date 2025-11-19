@@ -1,4 +1,5 @@
 #include <atomic>
+#include <filesystem>
 #include <mutex>
 #include <optional>
 #include <random>
@@ -27,9 +28,27 @@ using namespace lahuta::pipeline::compute;
 // clang-format off
 namespace {
 
-constexpr const char *gpcrmd_dir = "/Users/bsejdiu/projects/lahuta_dev/lahuta/gpcrmd";
-std::string pdb_path = std::string(gpcrmd_dir) + "/10828_dyn_85.pdb";
-std::string xtc_path = std::string(gpcrmd_dir) + "/10824_trj_85.xtc";
+namespace fs = std::filesystem;
+static fs::path locate_simulation_file(const std::string &filename) {
+#ifdef LAHUTA_SIMDB_DIR
+  {
+    fs::path base{LAHUTA_SIMDB_DIR};
+    fs::path cand = base / filename;
+    if (fs::exists(cand)) return cand;
+  }
+#endif
+  fs::path p = fs::current_path();
+  for (int i = 0; i < 12; ++i) {
+    fs::path cand_core = p / "core" / "data" / "simulationdatabase" / filename;
+    if (fs::exists(cand_core)) return cand_core;
+
+    if (!p.has_parent_path()) break;
+    p = p.parent_path();
+  }
+  return {};
+}
+
+static fs::path pdb_path, xtc_path;
 
 struct SingleTrajectoryDescriptor final : sources::IDescriptor {
   std::string structure;
@@ -58,14 +77,13 @@ static double sq_distance(const RDGeom::Point3D &a, const RDGeom::Point3D &b) {
 
 struct CoordinateCollector {
   std::mutex mtx;
-  bool indices_ready{false};
-  std::vector<unsigned> selected_indices; // size <= 100
+  std::once_flag indices_once;
+  std::vector<unsigned> selected_indices; // size <= 100, initialized once
   std::unordered_map<std::size_t, std::vector<RDGeom::Point3D>> coords_by_conformer_id;
   std::atomic<size_t> frames{0};
 
   void reset() {
     std::scoped_lock lk(mtx);
-    indices_ready = false;
     selected_indices.clear();
     coords_by_conformer_id.clear();
     frames = 0;
@@ -115,14 +133,10 @@ public:
     conf.bindExternalPositions(std::move(slab));
     const RDKit::Conformer &cref = conf; // const-view to avoid mutating accessors
 
-    if (!collector_->indices_ready) {
-      std::scoped_lock lk(collector_->mtx);
-      if (!collector_->indices_ready) {
-        const std::size_t natoms = static_cast<std::size_t>(cref.getNumAtoms());
-        collector_->selected_indices = select_random_unique_indices(natoms, 100, /*seed=*/1337);
-        collector_->indices_ready = true;
-      }
-    }
+    std::call_once(collector_->indices_once, [&] {
+      const std::size_t natoms = static_cast<std::size_t>(cref.getNumAtoms());
+      collector_->selected_indices = select_random_unique_indices(natoms, 100, /*seed=*/8351);
+    });
 
     std::vector<RDGeom::Point3D> coords;
     coords.reserve(collector_->selected_indices.size());
@@ -145,6 +159,12 @@ private:
 
 TEST(ParallelXtcCoordinates, ConsistencyAcrossThreads) {
   Logger::get_instance().set_log_level(Logger::LogLevel::Info);
+
+  pdb_path = locate_simulation_file("lysozyme.gro");
+  xtc_path = locate_simulation_file("lysozyme.xtc");
+  if (pdb_path.empty() || xtc_path.empty()) {
+    GTEST_SKIP() << "Simulation data not available";
+  }
 
   // Oracle
   auto baseline = std::make_shared<CoordinateCollector>();

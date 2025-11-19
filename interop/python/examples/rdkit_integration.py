@@ -6,7 +6,7 @@ import numpy as np
 
 from lahuta import LahutaSystem, logging
 
-DATA = Path(__file__).resolve().parents[3] / "data" / "ubi.cif"
+DATA = Path(__file__).resolve().parents[3] / "core" / "data" / "ubi.cif"
 
 
 # fmt: off
@@ -26,7 +26,7 @@ def rdkit_integration() -> tuple[int, int]:
     at0 = mol.getAtomWithIdx(0)
     info = at0.getMonomerInfo()
     if info:
-        logging.info(f"--> MonomerInfo from Atom: name={info.getName()} res={info.getResidueName()}{info.getResidueNumber()} serial={info.getSerialNumber()}")
+        logging.info(f"MonomerInfo from Atom: name={info.getName()} res={info.getResidueName()}{info.getResidueNumber()} serial={info.getSerialNumber()}")
     else:
         logging.info("No MonomerInfo attached to the Atom")
     return mol.getNumAtoms(), mol.getNumBonds()

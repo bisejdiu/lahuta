@@ -22,6 +22,7 @@ enum CreateDbOptionIndex : unsigned {
   // Database options
   DatabasePath,
   BatchSize,
+  MaxSize,
 
   // Runtime options
   Threads

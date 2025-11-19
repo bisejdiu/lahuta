@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 
 #include "md/error.hpp"
 
@@ -37,8 +38,11 @@ public:
       : base_(reinterpret_cast<const std::uint8_t *>(data)),
         cur_ (reinterpret_cast<const std::uint8_t *>(data)),
         end_ (reinterpret_cast<const std::uint8_t *>(data) + size),
-     end_pad_(reinterpret_cast<const std::uint8_t *>(data) + size + tail_zeros) {
-    end_bulk8_ = (end_pad_ >= base_ + 8) ? (end_pad_ - 8) : base_;
+        size_(size) {
+    const std::size_t max_tail  = std::numeric_limits<std::size_t>::max() - size_;
+    const std::size_t safe_tail = (tail_zeros > max_tail) ? max_tail : tail_zeros;
+    pad_limit_ = size_ + safe_tail;
+    bulk8_limit_offset_ = (pad_limit_ >= 8u) ? (pad_limit_ - 8u) : 0u;
   }
 
   // Fast path for n==1
@@ -119,11 +123,12 @@ private:
   std::uint64_t reg_ = 0ull;
   unsigned bits_ = 0u; // valid bits in reg_ (0..64)
 
-  const std::uint8_t *base_      = nullptr;
-  const std::uint8_t *cur_       = nullptr;
-  const std::uint8_t *end_       = nullptr;  // logical end (no padding)
-  const std::uint8_t *end_pad_   = nullptr;  // end + tail zeros
-  const std::uint8_t *end_bulk8_ = nullptr;  // last position where 8B load is safe
+  const std::uint8_t *base_       = nullptr;
+  const std::uint8_t *cur_        = nullptr;
+  const std::uint8_t *end_        = nullptr;  // logical end (no padding)
+  std::size_t size_               = 0u;
+  std::size_t pad_limit_          = 0u;       // logical end + declared tail zeros
+  std::size_t bulk8_limit_offset_ = 0u;       // last offset where 8B load is safe
 
   static inline std::uint64_t bswap64(std::uint64_t x) {
 #if defined(__clang__) || defined(__GNUC__)
@@ -140,23 +145,33 @@ private:
   inline void refill() {
     // Bulk: when empty and an 8B load is safe in memory (because of padding),
     // still count only real payload bytes as valid bits.
-    if (bits_ == 0 && cur_ <= end_bulk8_) {
+    const std::size_t offset  = static_cast<std::size_t>(cur_ - base_);
+    if (bits_ == 0 && offset <= bulk8_limit_offset_) {
       // Real bytes still available in the logical payload
       const std::size_t avail = (cur_ < end_) ? static_cast<std::size_t>(end_ - cur_) : 0u;
       if (avail > 0) {
-        std::uint64_t w = 0ull;
-        // Unaligned memcpy of 8B is always safe because of tail padding.
-        std::memcpy(&w, cur_, 8);
+        if (avail >= 8u) {
+          std::uint64_t w = 0ull;
+          std::memcpy(&w, cur_, 8);
 #if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-        w = bswap64(w);
+          w = bswap64(w);
 #elif defined(_WIN32) || defined(_WIN64)
-        w = bswap64(w);
+          w = bswap64(w);
 #endif
+          reg_  = w;
+          bits_ = 64u;
+          cur_ += 8u;
+          return;
+        }
+
+        std::uint64_t w = 0ull;
+        unsigned shift  = 56u;
+        for (std::size_t i = 0; i < avail; ++i, shift -= 8u) {
+          w |= static_cast<std::uint64_t>(cur_[i]) << shift;
+        }
         reg_ = w;
-        // Count only the bits that come from real payload bytes (<= 64).
-        const std::size_t take = (avail >= 8u) ? 8u : avail;
-        bits_ = static_cast<unsigned>(8u * take);
-        cur_ += take; // advance only over real bytes
+        bits_ = static_cast<unsigned>(8u * avail);
+        cur_ += avail; // advance only over real bytes
         return;
       }
     }

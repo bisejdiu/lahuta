@@ -46,11 +46,11 @@ public:
     return compute(ts, /*no tag filter*/ std::nullopt);
   }
 
-  [[nodiscard]] ContactSet compute(const compute::TopologySnapshot& ts, std::optional<InteractionType> only) const {
+  [[nodiscard]] ContactSet compute(const compute::TopologySnapshot& ts, std::optional<InteractionTypeSet> only) const {
     ContactSet out;
     auto run_spec = [&](auto& spec){
       if (!spec.enabled) return;
-      if (only && spec.tag != *only) return;
+      if (only && !only->contains(spec.tag)) return;
 
       Logger::get_logger()->debug("InteractionEngine: Computing {} contacts", interaction_type_to_string(spec.tag));
 

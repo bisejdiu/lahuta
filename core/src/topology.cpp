@@ -7,6 +7,7 @@
 namespace lahuta {
 
 bool Topology::build(TopologyBuildingOptions tops) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!mol_) {
     Logger::get_logger()->critical("Cannot build topology without a molecule.");
     return false;
@@ -50,6 +51,7 @@ bool Topology::build(TopologyBuildingOptions tops) {
 }
 
 void Topology::assign_typing(AtomTypingMethod method) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   auto& label  = topology::AtomTypingComputation<>::label;
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(label);
 
@@ -68,6 +70,7 @@ void Topology::assign_typing(AtomTypingMethod method) {
 }
 
 void Topology::enable_computation(TopologyComputation comp, bool enabled) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
 
   if (is_base_flag(comp)) {
@@ -85,6 +88,7 @@ void Topology::enable_computation(TopologyComputation comp, bool enabled) {
 }
 
 void Topology::enable_only(TopologyComputation comps) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
 
   for (auto flag : BASE_COMPUTATION_FLAGS) {
@@ -99,6 +103,7 @@ void Topology::enable_only(TopologyComputation comps) {
 }
 
 bool Topology::is_computation_enabled(TopologyComputation comp) const {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
   if (is_base_flag(comp)) return engine_->is_computation_available(get_label(comp));
 
@@ -112,6 +117,7 @@ bool Topology::is_computation_enabled(TopologyComputation comp) const {
 }
 
 bool Topology::execute_computation(TopologyComputation comp) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) return false;
 
   if (is_base_flag(comp)) {
@@ -131,18 +137,21 @@ bool Topology::execute_computation(TopologyComputation comp) {
 }
 
 void Topology::set_cutoff(double cutoff) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
   auto* params = engine_->get_parameters<topology::NeighborSearchParams>(topology::NeighborSearchComputation<>::label);
   if (params) params->cutoff = cutoff;
 }
 
 void Topology::set_atom_typing_method(AtomTypingMethod method) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(topology::AtomTypingComputation<>::label);
   if (params) params->mode = method;
 }
 
 void Topology::set_compute_nonstandard_bonds(bool compute) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
   engine_->enable(topology::NonStandardBondComputation<>::label, compute);
 }

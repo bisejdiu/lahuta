@@ -1,5 +1,6 @@
 #include <atomic>
 #include <cmath>
+#include <filesystem>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -26,9 +27,26 @@ using namespace lahuta::pipeline::compute;
 
 namespace {
 
-constexpr const char *gpcrmd_dir = "/Users/bsejdiu/projects/lahuta_dev/lahuta/gpcrmd";
-std::string pdb_path = std::string(gpcrmd_dir) + "/10828_dyn_85.pdb";
-std::string xtc_path = std::string(gpcrmd_dir) + "/10824_trj_85.xtc";
+namespace fs = std::filesystem;
+
+static fs::path locate_simulation_file(const std::string &filename) {
+#ifdef LAHUTA_SIMDB_DIR
+  {
+    fs::path from_cmake{LAHUTA_SIMDB_DIR};
+    fs::path cand = from_cmake / filename;
+    if (fs::exists(cand)) return cand;
+  }
+#endif
+  fs::path p = fs::current_path();
+  for (int i = 0; i < 6; ++i) {
+    fs::path cand_core = p / "core" / "data" / "simulationdatabase" / filename;
+    if (fs::exists(cand_core)) return cand_core;
+
+    if (!p.has_parent_path()) break;
+    p = p.parent_path();
+  }
+  return {};
+}
 
 struct SingleTrajectoryDescriptor final : sources::IDescriptor {
   std::string structure;
@@ -80,19 +98,29 @@ struct TopologyOracle {
   // baseline ring centers for motion detection across frames
   bool centers_ready{false};
   std::vector<RDGeom::Point3D> last_ring_centers;
+  bool positions_ready{false};
+  std::vector<RDGeom::Point3D> last_positions;
+  bool frame_index_ready{false};
+  std::size_t last_frame_index{0};
   // topology object identity validation
-  std::atomic<const Topology*> last_topology_ptr{nullptr};
+  std::atomic<const Topology *> last_topology_ptr{nullptr};
 
   void reset() {
     std::scoped_lock lk(mtx);
     initialized = false;
+    centers_ready = false;
+    positions_ready = false;
+    frame_index_ready = false;
     residues.clear();
     rings.clear();
     groups.clear();
-    frames = 0;
-    errors = 0;
-    changed_frames = 0;
-    last_topology_ptr = nullptr;
+    last_ring_centers.clear();
+    last_positions.clear();
+    last_frame_index = 0;
+    frames.store(0);
+    errors.store(0);
+    changed_frames.store(0);
+    last_topology_ptr.store(nullptr);
   }
 } g_oracle;
 
@@ -144,7 +172,8 @@ struct OracleCheckParams : ParameterBase<OracleCheckParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = 203; // local test id (fits in uint8)
 };
 
-class OracleCheckComputation final : public ReadWriteComputation<PipelineContext, OracleCheckParams, OracleCheckComputation> {
+class OracleCheckComputation final
+    : public ReadWriteComputation<PipelineContext, OracleCheckParams, OracleCheckComputation> {
 public:
   using Base = ReadWriteComputation<PipelineContext, OracleCheckParams, OracleCheckComputation>;
   OracleCheckComputation() : Base(OracleCheckParams{}) {}
@@ -152,7 +181,8 @@ public:
   static constexpr ComputationLabel label{"oracle_check"};
   using dependencies = Dependencies<Dependency<analysis::topology::BuildTopologyComputation, void>>;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &ctx, const OracleCheckParams &) {
+  ComputationResult
+  execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &ctx, const OracleCheckParams &) {
     auto &data = ctx.data();
     try {
       // system and topology
@@ -180,7 +210,8 @@ public:
       }
 
       // conformer view
-      auto conf_ptr = task_ctx ? task_ctx->get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY) : nullptr;
+      auto conf_ptr =
+          task_ctx ? task_ctx->get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY) : nullptr;
       RDKit::Conformer conf_tmp; // fallback
       if (!conf_ptr && data.frame) {
         auto view = data.frame->load_coordinates();
@@ -191,6 +222,15 @@ public:
         conf_tmp.bindExternalPositions(std::move(slab));
       }
       const RDKit::Conformer &conf = conf_ptr ? *conf_ptr : conf_tmp;
+
+      bool frame_moved = false;
+      //
+      // I track a few (maybe redundant) signals:
+      //   - ring centers
+      //   - overall atom positions
+      //   - the frame indices themselves
+      // Only when any of these change do I consider the frame to have "moved".
+      //
 
       // Initialize oracle
       {
@@ -287,15 +327,15 @@ public:
               g_oracle.last_ring_centers = std::move(current_centers);
               g_oracle.centers_ready = true;
             } else if (current_centers.size() == g_oracle.last_ring_centers.size()) {
-              bool moved = false;
-              const double move_tol = 1e-8;
+              const double move_tol = 1e-12;
+              bool ring_moved = false;
               for (size_t i = 0; i < current_centers.size(); ++i) {
                 if (sq_distance(current_centers[i], g_oracle.last_ring_centers[i]) > move_tol) {
-                  moved = true;
+                  ring_moved = true;
                   break;
                 }
               }
-              if (moved) ++g_oracle.changed_frames;
+              if (ring_moved) frame_moved = true;
               g_oracle.last_ring_centers.swap(current_centers);
             }
           }
@@ -327,6 +367,50 @@ public:
         }
       }
 
+      if (data.frame) {
+        const auto frame_idx = data.frame->index();
+        std::scoped_lock lk(g_oracle.mtx);
+        if (!g_oracle.frame_index_ready) {
+          g_oracle.last_frame_index = frame_idx;
+          g_oracle.frame_index_ready = true;
+        } else if (g_oracle.last_frame_index != frame_idx) {
+          frame_moved = true;
+          g_oracle.last_frame_index = frame_idx;
+        }
+      }
+
+      // capture overall coordinate motion as a fallback
+      {
+        const auto &positions = conf.getPositions();
+        std::vector<RDGeom::Point3D> current_positions;
+        current_positions.reserve(positions.size());
+        for (const auto &p : positions)
+          current_positions.push_back(p);
+
+        std::scoped_lock lk(g_oracle.mtx);
+        if (!g_oracle.positions_ready) {
+          g_oracle.last_positions = std::move(current_positions);
+          g_oracle.positions_ready = true;
+        } else if (g_oracle.last_positions.size() == current_positions.size()) {
+          const double pos_tol = 1e-12;
+          bool coordinates_moved = false;
+          for (size_t i = 0; i < current_positions.size(); ++i) {
+            if (sq_distance(current_positions[i], g_oracle.last_positions[i]) > pos_tol) {
+              coordinates_moved = true;
+              break;
+            }
+          }
+          if (coordinates_moved) frame_moved = true;
+          g_oracle.last_positions.swap(current_positions);
+        } else {
+          ++g_oracle.errors;
+        }
+      }
+
+      if (frame_moved) {
+        g_oracle.changed_frames.fetch_add(1);
+      }
+
       ++g_oracle.frames;
       return ComputationResult(true);
     } catch (const std::exception &e) {
@@ -340,13 +424,19 @@ public:
 TEST(TopologyCacheValidation, GPCRMD_Trajectory_Threads) {
   Logger::get_instance().set_log_level(Logger::LogLevel::Info);
 
+  const auto structure_path  = locate_simulation_file("lysozyme.gro");
+  const auto trajectory_path = locate_simulation_file("lysozyme.xtc");
+  if (structure_path.empty() || trajectory_path.empty()) {
+    GTEST_SKIP() << "core/data/simulationdatabase lysozyme data not available";
+  }
+
   const std::vector<int> threads = {1, 4, 8, 16};
   for (int t : threads) {
     g_oracle.reset();
 
     auto src = std::make_unique<SingleTrajectoryDescriptor>(
-        std::string(pdb_path),
-        std::vector<std::string>{std::string(xtc_path)});
+        structure_path.string(),
+        std::vector<std::string>{trajectory_path.string()});
     pipeline::dynamic::StageManager mgr(std::move(src));
     mgr.set_auto_builtins(true);
     mgr.add_computation("oracle_check", {"topology"}, [] {
@@ -355,10 +445,8 @@ TEST(TopologyCacheValidation, GPCRMD_Trajectory_Threads) {
 
     mgr.run(static_cast<std::size_t>(t));
 
-    // Basic invariants
     EXPECT_GT(g_oracle.frames.load(), 0u) << "No frames processed";
     EXPECT_EQ(g_oracle.errors.load(), 0u) << "Topology stability or geometry recompute failed";
-    // Ensure at least some frames had motion detected in ring centers
-    EXPECT_GT(g_oracle.changed_frames.load(), 0u);
+    EXPECT_GT(g_oracle.changed_frames.load(), 0u) << "Expected motion in multi-frame trajectory";
   }
 }

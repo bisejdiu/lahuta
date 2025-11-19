@@ -28,9 +28,7 @@ struct Serializer<fmt::json, ContactsRes> {
   static std::string serialize(const ContactsRes &v) {
     JsonBuilder builder;
 
-    std::string contact_type_str = (v.contact_type == InteractionType::All)
-      ? "All"
-      : interaction_type_to_string(v.contact_type);
+    const std::string contact_type_str = interaction_type_set_to_string(v.contact_types, "|");
 
     builder.key("file_path")   .value(v.file_path)
            .key("success")     .value(v.success)
@@ -73,9 +71,11 @@ struct Serializer<fmt::json, ContactsRes> {
     else throw std::runtime_error("Unknown contact provider: " + provider_str);
 
     std::string contact_type_str = r.get<std::string>("contact_type");
-    out.contact_type = (contact_type_str == "All")
-      ? InteractionType::All
-      : get_interaction_type(contact_type_str);
+    if (auto parsed = parse_interaction_type_sequence(contact_type_str, '|')) {
+      out.contact_types = *parsed;
+    } else {
+      throw std::runtime_error("ContactsRes JSON deserialize: unknown contact type list: " + contact_type_str);
+    }
 
     out.num_contacts = r.get<size_t>("num_contacts");
     out.frame_index  = r.get_or<std::size_t>("frame_index", 0);
@@ -92,9 +92,7 @@ struct Serializer<fmt::text, ContactsRes> {
   static std::string serialize(const ContactsRes &v) {
     std::ostringstream oss;
 
-    std::string contact_type_str = (v.contact_type == InteractionType::All)
-      ? "All"
-      : interaction_type_to_string(v.contact_type);
+    const std::string contact_type_str = interaction_type_set_to_string(v.contact_types, "|");
 
     oss << (v.success ? "1" : "0") << " "
         << v.file_path << " "
@@ -153,8 +151,14 @@ struct Serializer<fmt::binary, ContactsRes> {
       return static_cast<uint32_t>(len);
     };
 
-    std::size_t size = sizeof(uint8_t)  * 3  /*version, success, provider*/ +
-                       sizeof(uint32_t) * 3  /*contact_type, path_len, num_contacts*/ +
+    const bool filter_all = v.contact_types.is_all();
+    std::vector<InteractionType> filters = filter_all ? std::vector<InteractionType>{}
+                                                      : v.contact_types.members();
+
+    std::size_t size = sizeof(uint8_t)  * 4  /*version, success, provider, filter_mode*/ +
+                       sizeof(uint32_t)      /*filter_count*/ +
+                       sizeof(uint32_t) * filters.size() /*filter codes*/ +
+                       sizeof(uint32_t)      /*path_len*/ +
                        sizeof(uint64_t)      /*frame_index*/ +
                        v.file_path.size() +
                        v.contacts.size() * (sizeof(uint64_t) * 2 + sizeof(float) + sizeof(uint32_t)) +
@@ -176,8 +180,13 @@ struct Serializer<fmt::binary, ContactsRes> {
     buffer.push_back(static_cast<char>(v.success ? 1 : 0));
     buffer.push_back(static_cast<char>(static_cast<uint8_t>(v.provider)));
 
-    const uint32_t contact_type = static_cast<uint32_t>(v.contact_type);
-    append_pod(contact_type);
+    buffer.push_back(static_cast<char>(filter_all ? 0 : 1));
+    const uint32_t filter_count = static_cast<uint32_t>(filters.size());
+    append_pod(filter_count);
+    for (auto type : filters) {
+      const uint32_t type_raw = static_cast<uint32_t>(type);
+      append_pod(type_raw);
+    }
 
     const uint32_t path_len = checked_len(v.file_path.size());
     append_pod(path_len);
@@ -265,9 +274,25 @@ struct Serializer<fmt::binary, ContactsRes> {
     const uint8_t provider = read_u8(offset);
     result.provider = static_cast<analysis::contacts::ContactProvider>(provider);
 
-    const uint32_t contact_type = read_u32(offset);
-    result.contact_type.category = static_cast<Category>(contact_type & 0xFFFFu);
-    result.contact_type.flavor   = static_cast<Flavor>((contact_type >> 16) & 0xFFFFu);
+    const uint8_t  filter_mode  = read_u8(offset);
+    const uint32_t filter_count = read_u32(offset);
+    InteractionTypeSet filters;
+    if (filter_mode == 0) {
+      filters = InteractionTypeSet::all();
+      // make sure we skip any stale codes if present
+      for (uint32_t i = 0; i < filter_count; ++i) {
+        (void)read_u32(offset);
+      }
+    } else {
+      for (uint32_t i = 0; i < filter_count; ++i) {
+        const uint32_t type_raw = read_u32(offset);
+        InteractionType type;
+        type.category = static_cast<Category>(type_raw & 0xFFFFu);
+        type.flavor   = static_cast<Flavor>((type_raw >> 16) & 0xFFFFu);
+        filters.add(type);
+      }
+    }
+    result.contact_types = filters;
 
     const uint32_t path_len = read_u32(offset);
     require(offset, path_len);

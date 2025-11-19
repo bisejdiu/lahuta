@@ -185,7 +185,7 @@ inline void attach_conformer(RDKit::RWMol &mol, std::vector<RDGeom::Point3D> &&c
   conformer->setAllAtomPositions(std::move(coords));
   conformer->setId(0);
   mol.addConformer(conformer, true);
-  // mol.updatePropertyCache(false);
+  mol.updatePropertyCache(false);
 }
 
 } // namespace

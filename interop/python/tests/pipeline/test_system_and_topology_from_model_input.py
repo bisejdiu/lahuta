@@ -27,6 +27,10 @@ p.params("system").is_model = True
 
 def inspect(ctx) -> str: # our type inference cannot infer str in this context
     s = ctx.get_system()
+    dssp = ctx.dssp
+    plddt = ctx.plddt
+    assert isinstance(dssp, list) and isinstance(plddt, list)
+    assert len(dssp) == len(plddt) and len(dssp) > 0
     return f"ok {{ctx.path}} {{int(s.n_atoms)}}"
 
 p.add_task(name="inspect", task=inspect, depends=["system"])

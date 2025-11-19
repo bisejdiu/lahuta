@@ -23,19 +23,21 @@ enum ContactsOptionIndex : unsigned {
   // Compute options
   Provider,
   InteractionType,
+  IsAf2Model,
 
   // Output options
   OutputJson,
   OutputText,
   OutputLog,
-  NoCompress,
+  Reporter,
 
   // Experimental backend
   Dynamic,
 
   // Runtime options
   Threads,
-  BatchSize
+  BatchSize,
+  WriterThreads
 };
 } // namespace contacts_opts
 

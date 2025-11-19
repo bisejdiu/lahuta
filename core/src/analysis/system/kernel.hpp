@@ -3,29 +3,78 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
+#include "analysis/system/model_loader.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
+#include "models/dssp.hpp"
+#include "models/metadata.hpp"
+#include "models/plddt.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
+#include "pipeline/dynamic/keys.hpp"
+#include "pipeline/dynamic/types.hpp"
 
 // clang-format off
 namespace lahuta::analysis::system {
 using namespace lahuta::pipeline::compute;
+
+inline void publish_model_metadata(pipeline::dynamic::TaskContext* ctx, const ModelMetadata& meta) {
+  if (!ctx || meta.empty()) return;
+  ctx->set_object<ModelMetadata>(pipeline::CTX_MODEL_METADATA_KEY, std::make_shared<ModelMetadata>(meta));
+}
+
+inline void publish_plddt(pipeline::dynamic::TaskContext* ctx, std::shared_ptr<const std::vector<pLDDTCategory>> categories) {
+  if (!ctx || !categories || categories->empty()) return;
+  ctx->set_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY, std::move(categories));
+}
+
+inline void publish_plddt(pipeline::dynamic::TaskContext* ctx, const std::vector<pLDDTCategory>& categories) {
+  if (!ctx || categories.empty()) return;
+  auto shared = std::make_shared<std::vector<pLDDTCategory>>(categories);
+  ctx->set_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY, std::move(shared));
+}
+
+inline void publish_dssp(pipeline::dynamic::TaskContext* ctx, std::shared_ptr<const std::vector<DSSPAssignment>> assignments) {
+  if (!ctx || !assignments || assignments->empty()) return;
+  ctx->set_object<const std::vector<DSSPAssignment>>(pipeline::CTX_DSSP_KEY, std::move(assignments));
+}
+
+inline void publish_dssp(pipeline::dynamic::TaskContext* ctx, const std::vector<DSSPAssignment>& assignments) {
+  if (!ctx || assignments.empty()) return;
+  auto shared = std::make_shared<std::vector<DSSPAssignment>>(assignments);
+  ctx->set_object<const std::vector<DSSPAssignment>>(pipeline::CTX_DSSP_KEY, std::move(shared));
+}
 
 struct SystemReadKernel {
   static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const SystemReadParams& p) {
     try {
       auto& data = context.data();
 
-      auto sys = [&data, &p]() -> std::shared_ptr<const Luni> {
+      std::shared_ptr<const Luni> sys;
 
-        if (data.session) return data.session->get_or_load_system();
-        if (!p.is_model)  return std::make_shared<Luni>(data.item_path);
-
-        auto s = Luni::from_model_file(data.item_path);
-        return std::make_shared<Luni>(std::move(s));
-      }();
+      if (data.session) {
+        sys = data.session->get_or_load_system();
+        if (auto meta = data.session->model_metadata()) {
+          publish_model_metadata(data.ctx, *meta);
+        }
+        if (auto cats = data.session->residue_plddt()) {
+          publish_plddt(data.ctx, std::move(cats));
+        }
+        if (auto dssp = data.session->residue_dssp()) {
+          publish_dssp(data.ctx, std::move(dssp));
+        }
+      } else if (p.is_model) {
+        auto parsed = load_model_parser_result(data.item_path);
+        publish_model_metadata(data.ctx, parsed.metadata);
+        publish_plddt(data.ctx, parsed.plddt_per_residue);
+        publish_dssp(data.ctx, parsed.dssp_per_residue);
+        auto s = Luni::from_model_data(parsed);
+        sys = std::make_shared<Luni>(std::move(s));
+      } else {
+        sys = std::make_shared<Luni>(data.item_path);
+      }
 
       if (!sys) return ComputationResult(ComputationError("SystemRead failed: null system"));
 

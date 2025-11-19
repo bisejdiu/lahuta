@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
 
 #include <models/topology.hpp>
 
@@ -37,6 +38,21 @@ public:
   std::shared_ptr<FrameHandle> make_frame() const {
     auto coords = positions();
     return std::make_shared<Frame>(std::move(coords));
+  }
+
+  std::shared_ptr<const ModelMetadata> model_metadata() const override {
+    ensure_loaded();
+    return metadata_;
+  }
+
+  std::shared_ptr<const std::vector<pLDDTCategory>> residue_plddt() const override {
+    ensure_loaded();
+    return plddt_;
+  }
+
+  std::shared_ptr<const std::vector<DSSPAssignment>> residue_dssp() const override {
+    ensure_loaded();
+    return dssp_;
   }
 
 protected:
@@ -98,6 +114,9 @@ private:
       auto positions = std::make_shared<RDGeom::POINT3D_VECT>(rec.data.coords);
       record_    = std::make_shared<analysis::system::ModelRecord>(std::move(rec));
       positions_ = std::move(positions);
+      metadata_  = std::make_shared<ModelMetadata>(record_->data.metadata);
+      plddt_     = std::make_shared<std::vector<pLDDTCategory>>(record_->data.plddt_per_residue);
+      dssp_      = std::make_shared<std::vector<DSSPAssignment>>(record_->data.dssp_per_residue);
     });
   }
 
@@ -107,6 +126,9 @@ private:
   mutable std::once_flag load_once_;
   mutable std::shared_ptr<analysis::system::ModelRecord> record_;
   mutable std::shared_ptr<const RDGeom::POINT3D_VECT> positions_;
+  mutable std::shared_ptr<const ModelMetadata> metadata_;
+  mutable std::shared_ptr<const std::vector<pLDDTCategory>> plddt_;
+  mutable std::shared_ptr<const std::vector<DSSPAssignment>> dssp_;
 };
 
 class LMDBRealizer {
