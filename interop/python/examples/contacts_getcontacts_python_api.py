@@ -8,7 +8,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, TypeAlias
 
-import lahuta as lxx
+from lahuta import (
+    AtomType,
+    AtomTypingMethod,
+    ContactSet,
+    InteractionType,
+    LahutaSystem,
+    Topology,
+    vdw_radius,
+)
 from lahuta.entities import atoms, find_contacts, rings
 from lahuta.rdkit import Atom, Conformer, Point3D, RWMol
 
@@ -19,8 +27,8 @@ ResidueKey: TypeAlias = tuple[str, int, str]
 ChainResidueKey: TypeAlias = tuple[str, int]
 DisulfidePair:   TypeAlias = tuple[AtomIndex, AtomIndex]
 
-ContactClassifier:      TypeAlias = Callable[[AtomIndex, AtomIndex, float],               lxx.InteractionType | None]
-HydrogenBondClassifier: TypeAlias = Callable[[AtomIndex, AtomIndex, float, float | None], lxx.InteractionType | None]
+ContactClassifier:      TypeAlias = Callable[[AtomIndex, AtomIndex, float],               InteractionType | None]
+HydrogenBondClassifier: TypeAlias = Callable[[AtomIndex, AtomIndex, float, float | None], InteractionType | None]
 
 
 def _vector_sub(a: Vec3D, b: Vec3D) -> Vec3D:
@@ -68,7 +76,7 @@ def _point3d_to_tuple(pt: Point3D) -> Vec3D:
     return (float(pt.x), float(pt.y), float(pt.z))
 
 
-def _ring_geometries(topology: lxx.Topology) -> list[RingGeometry]:
+def _ring_geometries(topology: Topology) -> list[RingGeometry]:
     geoms: list[RingGeometry] = []
     for ring_view in topology.rings:
         center = _point3d_to_tuple(ring_view.center)
@@ -141,19 +149,19 @@ class RingGeometry:
     first_atom_idx: AtomIndex | None
 
 
-def load_topology(structure: Path) -> tuple[lxx.LahutaSystem, lxx.Topology]:
+def load_topology(structure: Path) -> tuple[LahutaSystem, Topology]:
     if not structure.exists():
         raise SystemExit(f"Structure file {structure} not found")
 
-    system = lxx.LahutaSystem(str(structure))
+    system = LahutaSystem(str(structure))
     if not system.build_topology():
         raise SystemExit("Failed to build topology for the input structure")
     topology = system.get_topology()
-    topology.assign_typing(lxx.AtomTypingMethod.GetContacts)
+    topology.assign_typing(AtomTypingMethod.GetContacts)
     return system, topology
 
 
-def prepare_atom_metadata(topology: lxx.Topology) -> AtomMetadata:
+def prepare_atom_metadata(topology: Topology) -> AtomMetadata:
     mol = topology.molecule()
     atomic_numbers: list[int] = []
     vdw_radii:      list[float] = []
@@ -167,7 +175,7 @@ def prepare_atom_metadata(topology: lxx.Topology) -> AtomMetadata:
         z   = atom.getAtomicNum()
         atomic_numbers.append(z)
 
-        radius = lxx.vdw_radius(z) if z else 0.0
+        radius = vdw_radius(z) if z else 0.0
         vdw_radii.append(float(radius) if radius else 0.0)
 
         info = atom.getMonomerInfo()
@@ -253,7 +261,7 @@ def _atoms_same_residue(mol: RWMol, idx_a: AtomIndex, idx_b: AtomIndex | None) -
     return key_a is not None and key_a == key_b
 
 
-def compute_pi_stacking(topology: lxx.Topology) -> lxx.ContactSet:
+def compute_pi_stacking(topology: Topology) -> ContactSet:
     """Compute parallel pi-pi stacking interactions."""
     params_angle_cutoff    = 30.0
     params_psi_cutoff      = 45.0
@@ -266,12 +274,12 @@ def compute_pi_stacking(topology: lxx.Topology) -> lxx.ContactSet:
 
     aromatic_ring_selector = rings(lambda r: r.aromatic)
 
-    def tester(idx_a: int, idx_b: int, _d2: float) -> lxx.InteractionType:
+    def tester(idx_a: int, idx_b: int, _d2: float) -> InteractionType:
         geom_a = ring_geoms[idx_a]
         geom_b = ring_geoms[idx_b]
 
         if _rings_same_residue(mol, geom_a.first_atom_idx, geom_b.first_atom_idx):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         center_a = geom_a.center
         center_b = geom_b.center
@@ -281,26 +289,26 @@ def compute_pi_stacking(topology: lxx.Topology) -> lxx.ContactSet:
         vec_ab = _vector_sub(center_a, center_b)
         center_distance_sq = _length_sq(vec_ab)
         if center_distance_sq <= 1e-16:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
         if center_distance_sq > params_centroid_cutoff_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         normal_angle = _vector_angle_deg(normal_a, normal_b)
         aligned = normal_angle if normal_angle <= 90.0 else 180.0 - normal_angle
         if aligned > params_angle_cutoff:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         psi_a = _psi_angle_deg(center_a, center_b, normal_a)
         psi_b = _psi_angle_deg(center_b, center_a, normal_b)
         if min(psi_a, psi_b) > params_psi_cutoff:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
-        return lxx.InteractionType.PiStackingP
+        return InteractionType.PiStackingP
 
     return find_contacts(topology, aromatic_ring_selector, tester=tester, distance_max=params_distance_max)
 
 
-def compute_t_stacking(topology: lxx.Topology) -> lxx.ContactSet:
+def compute_t_stacking(topology: Topology) -> ContactSet:
     """Compute T-shaped pi-pi stacking interactions."""
     params_angle_cutoff  = 30.0
     params_psi_cutoff    = 45.0
@@ -312,12 +320,12 @@ def compute_t_stacking(topology: lxx.Topology) -> lxx.ContactSet:
     mol = topology.molecule()
     aromatic_ring_selector = rings(lambda r: r.aromatic)
 
-    def tester(idx_a: int, idx_b: int, _d2: float) -> lxx.InteractionType:
+    def tester(idx_a: int, idx_b: int, _d2: float) -> InteractionType:
         geom_a = ring_geoms[idx_a]
         geom_b = ring_geoms[idx_b]
 
         if _rings_same_residue(mol, geom_a.first_atom_idx, geom_b.first_atom_idx):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         center_a = geom_a.center
         center_b = geom_b.center
@@ -327,25 +335,25 @@ def compute_t_stacking(topology: lxx.Topology) -> lxx.ContactSet:
         vec_ab = _vector_sub(center_a, center_b)
         center_distance_sq = _length_sq(vec_ab)
         if center_distance_sq <= 1e-16:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
         if center_distance_sq > params_centroid_cutoff_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         normal_angle = _vector_angle_deg(normal_a, normal_b)
         if abs(normal_angle - 90.0) > params_angle_cutoff:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         psi_a = _psi_angle_deg(center_a, center_b, normal_a)
         psi_b = _psi_angle_deg(center_b, center_a, normal_b)
         if min(psi_a, psi_b) > params_psi_cutoff:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
-        return lxx.InteractionType.PiStackingT
+        return InteractionType.PiStackingT
 
     return find_contacts(topology, aromatic_ring_selector, tester=tester, distance_max=params_distance_max)
 
 
-def compute_pi_cation(topology: lxx.Topology, metadata: AtomMetadata) -> lxx.ContactSet:
+def compute_pi_cation(topology: Topology, metadata: AtomMetadata) -> ContactSet:
     """Compute cation-pi interactions."""
     params_centroid_cutoff = 6.0
     params_centroid_cutoff_sq = params_centroid_cutoff * params_centroid_cutoff
@@ -360,11 +368,11 @@ def compute_pi_cation(topology: lxx.Topology, metadata: AtomMetadata) -> lxx.Con
     aromatic_ring_selector = rings(lambda r: r.aromatic)
     cation_atom_selector   = atoms(lambda rec: rec.idx() in positive_indices)
 
-    def tester(idx_cation: int, idx_ring: int, _d2: float) -> lxx.InteractionType:
+    def tester(idx_cation: int, idx_ring: int, _d2: float) -> InteractionType:
         geom_ring = ring_geoms[idx_ring]
 
         if _atoms_same_residue(mol, idx_cation, geom_ring.first_atom_idx):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         center = geom_ring.center
         normal = geom_ring.normal
@@ -374,16 +382,16 @@ def compute_pi_cation(topology: lxx.Topology, metadata: AtomMetadata) -> lxx.Con
 
         center_distance_sq = _length_sq(vec_center_to_cation)
         if center_distance_sq <= 1e-16:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
         if center_distance_sq > params_centroid_cutoff_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         raw_angle = _vector_angle_deg(normal, vec_center_to_cation)
         angle = raw_angle if raw_angle <= 90.0 else 180.0 - raw_angle
         if angle > params_angle_cutoff:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
-        return lxx.InteractionType.CationPi
+        return InteractionType.CationPi
 
     return find_contacts(
         topology,
@@ -433,7 +441,7 @@ def _best_dha_angle_deg(mol: RWMol, conf: Conformer, donor_idx: AtomIndex, accep
     return best_angle
 
 
-def compute_hydrophobic(topology: lxx.Topology, metadata: AtomMetadata, classifier: ContactClassifier | None = None) -> lxx.ContactSet:
+def compute_hydrophobic(topology: Topology, metadata: AtomMetadata, classifier: ContactClassifier | None = None) -> ContactSet:
     """Compute hydrophobic contacts between carbon atoms."""
     params_epsilon        = 0.5
     params_min_res_offset = 2
@@ -441,41 +449,41 @@ def compute_hydrophobic(topology: lxx.Topology, metadata: AtomMetadata, classifi
     params_distance_max_sq = params_distance_max * params_distance_max
 
     mol = topology.molecule()
-    hydrophobic_selector = atoms(lambda rec: rec.type.has(lxx.AtomType.Hydrophobic))
+    hydrophobic_selector = atoms(lambda rec: rec.type.has(AtomType.Hydrophobic))
 
-    def tester(idx_a: int, idx_b: int, dist_sq: float) -> lxx.InteractionType:
+    def tester(idx_a: int, idx_b: int, dist_sq: float) -> InteractionType:
         if residues_too_close(idx_a, idx_b, metadata.residue_infos, params_min_res_offset):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if not _is_hydrophobic_carbon(mol, idx_a):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
         if not _is_hydrophobic_carbon(mol, idx_b):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if is_cys_disulfide_contact(idx_a, idx_b, metadata.residue_infos, metadata.cys_sg_lookup, mol):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if dist_sq > params_distance_max_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         cutoff = metadata.vdw_radii[idx_a] + metadata.vdw_radii[idx_b] + params_epsilon
         cutoff_sq = cutoff * cutoff
         if dist_sq >= cutoff_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if classifier is not None:
             distance = math.sqrt(dist_sq)
             result = classifier(idx_a, idx_b, distance)
             if result is None:
-                return lxx.InteractionType.None_
+                return InteractionType.None_
             return result
 
-        return lxx.InteractionType.Hydrophobic
+        return InteractionType.Hydrophobic
 
     return find_contacts(topology, hydrophobic_selector, tester=tester, distance_max=params_distance_max)
 
 
-def compute_hbonds(topology: lxx.Topology, metadata: AtomMetadata, classifier: HydrogenBondClassifier | None = None) -> lxx.ContactSet:
+def compute_hbonds(topology: Topology, metadata: AtomMetadata, classifier: HydrogenBondClassifier | None = None) -> ContactSet:
     """Compute hydrogen bonds between donor and acceptor atoms."""
     params_distance_max    = 4.5
     params_distance_cutoff = 3.5
@@ -487,35 +495,35 @@ def compute_hbonds(topology: lxx.Topology, metadata: AtomMetadata, classifier: H
     mol  = topology.molecule()
     conf = topology.conformer()
 
-    donor_selector    = atoms(lambda rec: rec.type.has(lxx.AtomType.HbondDonor))
-    acceptor_selector = atoms(lambda rec: rec.type.has(lxx.AtomType.HbondAcceptor))
+    donor_selector    = atoms(lambda rec: rec.type.has(AtomType.HbondDonor))
+    acceptor_selector = atoms(lambda rec: rec.type.has(AtomType.HbondAcceptor))
 
-    def tester(idx_d: int, idx_a: int, dist_sq: float) -> lxx.InteractionType:
+    def tester(idx_d: int, idx_a: int, dist_sq: float) -> InteractionType:
         if residues_too_close(idx_d, idx_a, metadata.residue_infos, params_min_residue_offset):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         atomic_d = metadata.atomic_numbers[idx_d]
         atomic_a = metadata.atomic_numbers[idx_a]
         if exclude_sulfur and (atomic_d == 16 or atomic_a == 16):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if dist_sq > params_distance_cutoff_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         angle = _best_dha_angle_deg(mol, conf, idx_d, idx_a)
         if angle is not None:
             min_angle = 180.0 - params_angle_tolerance
             if angle < min_angle:
-                return lxx.InteractionType.None_
+                return InteractionType.None_
 
         if classifier is not None:
             distance = math.sqrt(dist_sq)
             result = classifier(idx_d, idx_a, distance, angle)
             if result is None:
-                return lxx.InteractionType.None_
+                return InteractionType.None_
             return result
 
-        return lxx.InteractionType.HydrogenBond
+        return InteractionType.HydrogenBond
 
     return find_contacts(
         topology,
@@ -577,7 +585,7 @@ def is_cys_disulfide_contact(
     return mol.getBondBetweenAtoms(sg_a, sg_b) is not None
 
 
-def compute_salt_bridges(topology: lxx.Topology, meta: AtomMetadata) -> lxx.ContactSet:
+def compute_salt_bridges(topology: Topology, meta: AtomMetadata) -> ContactSet:
     """Compute salt bridges between positive and negative atoms."""
     distance_cutoff = 4.0
     distance_cutoff_sq = distance_cutoff * distance_cutoff
@@ -588,22 +596,22 @@ def compute_salt_bridges(topology: lxx.Topology, meta: AtomMetadata) -> lxx.Cont
     negative_atom_selector = atoms(lambda rec: rec.idx() in negative_indices)
     positive_atom_selector = atoms(lambda rec: rec.idx() in positive_indices)
 
-    def tester(idx_anion: int, idx_cation: int, dist_sq: float) -> lxx.InteractionType:
+    def tester(idx_anion: int, idx_cation: int, dist_sq: float) -> InteractionType:
         if dist_sq > distance_cutoff_sq:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
         if idx_anion == idx_cation:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         pair = tuple(sorted((idx_anion, idx_cation)))
         if pair in meta.disulfide_pairs:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
-        return lxx.InteractionType.Ionic
+        return InteractionType.Ionic
 
     return find_contacts(topology, negative_atom_selector, positive_atom_selector, tester=tester, distance_max=5.0)
 
 
-def compute_vdw_contacts(topology: lxx.Topology, meta: AtomMetadata) -> lxx.ContactSet:
+def compute_vdw_contacts(topology: Topology, meta: AtomMetadata) -> ContactSet:
     """Compute van der Waals contacts between heavy atoms."""
     mol = topology.molecule()
     epsilon = 0.5
@@ -612,34 +620,34 @@ def compute_vdw_contacts(topology: lxx.Topology, meta: AtomMetadata) -> lxx.Cont
 
     heavy_atom_selector = atoms(lambda rec: meta.atomic_numbers[rec.idx()] != 1)
 
-    def tester(idx_a: int, idx_b: int, dist_sq: float) -> lxx.InteractionType:
+    def tester(idx_a: int, idx_b: int, dist_sq: float) -> InteractionType:
         if idx_a == idx_b:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if meta.atomic_numbers[idx_a] == 1 or meta.atomic_numbers[idx_b] == 1:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if residues_too_close(idx_a, idx_b, meta.residue_infos, min_residue_offset):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if is_cys_disulfide_contact(idx_a, idx_b, meta.residue_infos, meta.cys_sg_lookup, mol):
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         radius_sum = meta.vdw_radii[idx_a] + meta.vdw_radii[idx_b] + epsilon
         if radius_sum <= 0.0:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
         if dist_sq > radius_sum * radius_sum:
-            return lxx.InteractionType.None_
+            return InteractionType.None_
 
-        return lxx.InteractionType.VanDerWaals
+        return InteractionType.VanDerWaals
 
     return find_contacts(topology, heavy_atom_selector, tester=tester, distance_max=distance_max)
 
 
 def summarize_contacts(
     label: str,
-    contacts: lxx.ContactSet,
+    contacts: ContactSet,
     limit: int,
 ) -> None:
     print(f"{label}: {contacts.size()} contacts")

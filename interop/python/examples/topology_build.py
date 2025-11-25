@@ -3,50 +3,49 @@
 from pathlib import Path
 from typing import Callable
 
-import lahuta as lxx
-from lahuta import logging
+from lahuta import AtomTypingMethod, LahutaSystem, Residue, TopologyComputers, logging
 
 
 # fmt: off
 def topology_build(path: str | Path) -> None:
     logging.set_global_verbosity(logging.LogLevel.INFO)
-    sys = lxx.LahutaSystem(str(path))
-    sys.enable_only(lxx.TopologyComputers.Bonds)
+    sys = LahutaSystem(str(path))
+    sys.enable_only(TopologyComputers.Bonds)
     sys.set_search_cutoff_for_bonds(5)
     sys.build_topology()
 
-    if not sys.is_computation_enabled(lxx.TopologyComputers.Rings):
-        sys.enable_computation(lxx.TopologyComputers.Rings, True)
-    sys.execute_computation(lxx.TopologyComputers.Rings)
+    if not sys.is_computation_enabled(TopologyComputers.Rings):
+        sys.enable_computation(TopologyComputers.Rings, True)
+    sys.execute_computation(TopologyComputers.Rings)
 
     top = sys.get_topology()
     logging.info(f"Number of rings: {len(top.rings)}")
     logging.info("topology built")
 
 
-def topology_counts_and_rings(path: str | Path) -> lxx.LahutaSystem:
-    sys = lxx.LahutaSystem(str(path))
+def topology_counts_and_rings(path: str | Path) -> LahutaSystem:
+    sys = LahutaSystem(str(path))
     sys.build_topology()
     topo = sys.get_topology()
 
     n_res    = len(topo.residues)
     n_groups = len(topo.groups)
 
-    res_filter: Callable[[lxx.Residue], None] = lambda r: logging.info(f"Residue {r.name} ({r.idx})") if r.name.startswith("G") else None # noqa: E731
+    res_filter: Callable[[Residue], None] = lambda r: logging.info(f"Residue {r.name} ({r.idx})") if r.name.startswith("G") else None # noqa: E731
     topo.residues.map(res_filter)
 
     logging.info(f"Counts: residues={n_res}, groups={n_groups}")
     return sys
 
-def typing_compare(sys: lxx.LahutaSystem) -> None:
+def typing_compare(sys: LahutaSystem) -> None:
     top = sys.get_topology()
 
-    top.set_atom_typing_method(lxx.AtomTypingMethod.Molstar)
-    top.assign_typing(lxx.AtomTypingMethod.Molstar)
+    top.set_atom_typing_method(AtomTypingMethod.Molstar)
+    top.assign_typing(AtomTypingMethod.Molstar)
     mol_types = [rec.type for rec in top.atom_types]
 
-    top.set_atom_typing_method(lxx.AtomTypingMethod.Arpeggio)
-    top.assign_typing(lxx.AtomTypingMethod.Arpeggio)
+    top.set_atom_typing_method(AtomTypingMethod.Arpeggio)
+    top.assign_typing(AtomTypingMethod.Arpeggio)
     arp_types = [rec.type for rec in top.atom_types]
 
     diffs = sum(m != a for m, a in zip(mol_types, arp_types))

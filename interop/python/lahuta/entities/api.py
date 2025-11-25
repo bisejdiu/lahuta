@@ -3,18 +3,18 @@ from __future__ import annotations
 from typing import Callable, Iterable, Literal, TypeAlias, overload
 
 from .._interaction_utils import normalize_interaction_selection
-from ..lib import lahuta as lxx
+from ..lib import lahuta as _lib
 from .selectors import Selector
 
 # fmt: off
-Tester:       TypeAlias = Callable[[int, int, float], lxx.InteractionType]
+Tester:       TypeAlias = Callable[[int, int, float], _lib.InteractionType]
 Provider:     TypeAlias = Literal["molstar", "arpeggio"]
-SelectorLike: TypeAlias = Selector[lxx.AtomRec] | Selector[lxx.RingRec] | Selector[lxx.GroupRec]
+SelectorLike: TypeAlias = Selector[_lib.AtomRec] | Selector[_lib.RingRec] | Selector[_lib.GroupRec]
 
 DEFAULT_PROVIDER: Provider = "molstar"
 SUPPORTED_PROVIDERS = frozenset(["molstar", "arpeggio", "getcontacts"])
 
-def _create_search_options(distance_max: float | None = None, opts: lxx.SearchOptions | None = None) -> lxx.SearchOptions:
+def _create_search_options(distance_max: float | None = None, opts: _lib.SearchOptions | None = None) -> _lib.SearchOptions:
     """Create or modify search options.
 
     Args:
@@ -24,7 +24,7 @@ def _create_search_options(distance_max: float | None = None, opts: lxx.SearchOp
     Returns:
         Configured search options object
     """
-    search_opts = opts or lxx.SearchOptions()
+    search_opts = opts or _lib.SearchOptions()
     if distance_max is not None:
         if distance_max <= 0:
             raise ValueError(f"distance_max must be positive, got {distance_max}")
@@ -50,40 +50,40 @@ def _get_selector(selector: SelectorLike) -> Callable[..., bool]:
 
 @overload
 def find_contacts(
-    topology: lxx.Topology,
+    topology: _lib.Topology,
     a: SelectorLike,
     *,
     tester: Tester | None = ...,
     distance_max: float | None = ...,
-    opts: lxx.SearchOptions | None = ...,
-) -> lxx.ContactSet:
+    opts: _lib.SearchOptions | None = ...,
+) -> _lib.ContactSet:
     """Find contacts within a single entity type."""
     ...
 
 
 @overload
 def find_contacts(
-    topology: lxx.Topology,
+    topology: _lib.Topology,
     a: SelectorLike,
     b: SelectorLike,
     *,
     tester: Tester | None = ...,
     distance_max: float | None = ...,
-    opts: lxx.SearchOptions | None = ...,
-) -> lxx.ContactSet:
+    opts: _lib.SearchOptions | None = ...,
+) -> _lib.ContactSet:
     """Find contacts between two different entity types."""
     ...
 
 
 def find_contacts(
-    topology: lxx.Topology,
+    topology: _lib.Topology,
     a: SelectorLike,
     b: SelectorLike | None = None,
     *,
     tester: Tester | None = None,
     distance_max: float | None = None,
-    opts: lxx.SearchOptions | None = None,
-) -> lxx.ContactSet:
+    opts: _lib.SearchOptions | None = None,
+) -> _lib.ContactSet:
     """Find contacts between molecular entities using flexible selectors.
 
     This function provides a unified interface for contact detection between
@@ -123,21 +123,21 @@ def find_contacts(
     # Handle single entity type (self-contact)
     if b is None:
         if tester is None:
-            return lxx.find_contacts(topology, a.kind, sel_a, search_opts)
-        return lxx.find_contacts(topology, a.kind, sel_a, tester, search_opts)
+            return _lib.find_contacts(topology, a.kind, sel_a, search_opts)
+        return _lib.find_contacts(topology, a.kind, sel_a, tester, search_opts)
 
     # Handle dual entity types (cross-contact)
     sel_b = _get_selector(b)
     if tester is None:
-        return lxx.find_contacts(topology, a.kind, sel_a, b.kind, sel_b, search_opts)
-    return lxx.find_contacts(topology, a.kind, sel_a, b.kind, sel_b, tester, search_opts)
+        return _lib.find_contacts(topology, a.kind, sel_a, b.kind, sel_b, search_opts)
+    return _lib.find_contacts(topology, a.kind, sel_a, b.kind, sel_b, tester, search_opts)
 
 
 def compute_contacts(
-    topology: lxx.Topology,
+    topology: _lib.Topology,
     provider: Provider = DEFAULT_PROVIDER,
-    only: lxx.InteractionType | lxx.InteractionTypeSet | Iterable[lxx.InteractionType] | None = None,
-) -> lxx.ContactSet:
+    only: _lib.InteractionType | _lib.InteractionTypeSet | Iterable[_lib.InteractionType] | None = None,
+) -> _lib.ContactSet:
     """Compute molecular contacts using predefined interactions types and providers.
 
     Args:
@@ -154,12 +154,12 @@ def compute_contacts(
 
     Examples:
         >>> all_contacts = compute_contacts(topology)
-        >>> hbonds = compute_contacts(topology, "arpeggio", lxx.InteractionType.HydrogenBond)
+        >>> hbonds = compute_contacts(topology, "arpeggio", InteractionType.HydrogenBond)
     """
     if provider not in SUPPORTED_PROVIDERS:
         raise ValueError(f"Unsupported provider '{provider}'. Supported providers: {', '.join(SUPPORTED_PROVIDERS)}")
 
-    engine = lxx.MolStarContactsEngine() if provider == "molstar" else lxx.ArpeggioContactsEngine()
+    engine = _lib.MolStarContactsEngine() if provider == "molstar" else _lib.ArpeggioContactsEngine()
 
     # Compute contacts with optional filtering
     if only is None:

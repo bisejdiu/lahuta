@@ -1,22 +1,22 @@
 from __future__ import annotations
 
-import lahuta as lxx
+from lahuta import Category, ContactSet, LahutaSystem, MolStarContactsEngine
 
 
-def _keyset(cs: lxx.ContactSet) -> set[tuple[int, int, int, int, lxx.Category]]:
-    out: set[tuple[int, int, int, int, lxx.Category]] = set()
+def _keyset(cs: ContactSet) -> set[tuple[int, int, int, int, Category]]:
+    out: set[tuple[int, int, int, int, Category]] = set()
     for c in cs:
         d = c.to_dict()
         out.add((d["lhs_kind"], int(d["lhs_index"]), d["rhs_kind"], int(d["rhs_index"]), d["category"]))
     return out
 
 
-def test_engine_deterministic_computation(luni: lxx.LahutaSystem) -> None:
+def test_engine_deterministic_computation(luni: LahutaSystem) -> None:
     """Test that contact computation is deterministic."""
     assert luni.build_topology() is True
     top = luni.get_topology()
 
-    eng = lxx.MolStarContactsEngine()
+    eng = MolStarContactsEngine()
 
     results = [eng.compute(top) for _ in range(3)]
 
@@ -25,7 +25,7 @@ def test_engine_deterministic_computation(luni: lxx.LahutaSystem) -> None:
         assert _keyset(result) == _keyset(results[0])
 
 
-def test_engine_vs_explicit_conformer_snapshot_parity(luni: lxx.LahutaSystem) -> None:
+def test_engine_vs_explicit_conformer_snapshot_parity(luni: LahutaSystem) -> None:
     """Test parity between topology conformer and explicit identical conformer.
 
     This tests the snapshot mechanism by ensuring that using the same conformer
@@ -34,7 +34,7 @@ def test_engine_vs_explicit_conformer_snapshot_parity(luni: lxx.LahutaSystem) ->
     assert luni.build_topology() is True
     top = luni.get_topology()
 
-    eng = lxx.MolStarContactsEngine()
+    eng = MolStarContactsEngine()
 
     # Path A: Use topology's conformer
     a = eng.compute(top)

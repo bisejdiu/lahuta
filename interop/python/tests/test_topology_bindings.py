@@ -6,39 +6,39 @@ from pathlib import Path
 
 import pytest
 
-import lahuta as lxx
+from lahuta import AtomTypingMethod, LahutaSystem, TopologyBuildingOptions, TopologyComputers
 
 
 # Isolated, per-test system with topology already built.
 # Avoids test ordering dependence when running with pytest-xdist.
 @pytest.fixture(scope="function")
-def luni_built(ubi_cif: Path) -> lxx.LahutaSystem:
-    sys = lxx.LahutaSystem(str(ubi_cif))
+def luni_built(ubi_cif: Path) -> LahutaSystem:
+    sys = LahutaSystem(str(ubi_cif))
     assert sys.build_topology() is True
     return sys
 
 
 # fmt: off
-def test_topology_build_with_options_and_flags(luni: lxx.LahutaSystem) -> None:
+def test_topology_build_with_options_and_flags(luni: LahutaSystem) -> None:
     # Configure explicit options
-    opts = lxx.TopologyBuildingOptions()
+    opts = TopologyBuildingOptions()
     opts.cutoff = 4.5
     opts.compute_nonstandard_bonds = True
-    opts.atom_typing_method = lxx.AtomTypingMethod.Molstar
+    opts.atom_typing_method = AtomTypingMethod.Molstar
 
     # Start with no stages, then selectively enable
-    luni.enable_only(lxx.TopologyComputers.None_)
-    luni.enable_only(lxx.TopologyComputers.Standard)
+    luni.enable_only(TopologyComputers.None_)
+    luni.enable_only(TopologyComputers.Standard)
 
     assert luni.build_topology(opts) is True
     assert luni.has_topology_built() is True
 
-    if not luni.is_computation_enabled(lxx.TopologyComputers.Rings):
-        luni.enable_computation(lxx.TopologyComputers.Rings, True)
-    assert luni.execute_computation(lxx.TopologyComputers.Rings) is True
+    if not luni.is_computation_enabled(TopologyComputers.Rings):
+        luni.enable_computation(TopologyComputers.Rings, True)
+    assert luni.execute_computation(TopologyComputers.Rings) is True
 
 
-def test_residues_container_and_helpers(luni_built: lxx.LahutaSystem) -> None:
+def test_residues_container_and_helpers(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
     residues = topo.residues
 
@@ -61,16 +61,16 @@ def test_residues_container_and_helpers(luni_built: lxx.LahutaSystem) -> None:
     assert all(isinstance(i, int) and i >= 0 for i in atom_ids)
 
 
-def test_atom_typing_and_records(luni_built: lxx.LahutaSystem) -> None:
+def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
 
     # Assign types using both backends, lists must have size N_atoms
-    topo.set_atom_typing_method(lxx.AtomTypingMethod.Molstar)
-    topo.assign_typing(lxx.AtomTypingMethod.Molstar)
+    topo.set_atom_typing_method(AtomTypingMethod.Molstar)
+    topo.assign_typing(AtomTypingMethod.Molstar)
     types_molstar = topo.atom_types
 
-    topo.set_atom_typing_method(lxx.AtomTypingMethod.Arpeggio)
-    topo.assign_typing(lxx.AtomTypingMethod.Arpeggio)
+    topo.set_atom_typing_method(AtomTypingMethod.Arpeggio)
+    topo.assign_typing(AtomTypingMethod.Arpeggio)
     types_arpeggio = topo.atom_types
 
     assert isinstance(types_molstar, list) and isinstance(types_arpeggio, list)
@@ -86,7 +86,7 @@ def test_atom_typing_and_records(luni_built: lxx.LahutaSystem) -> None:
     assert isinstance(rec0.idx(), int) and rec0.idx() == 0
 
 
-def test_molecule_and_conformer_handles(luni_built: lxx.LahutaSystem) -> None:
+def test_molecule_and_conformer_handles(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
     mol  = topo.molecule()
     conf = topo.conformer()

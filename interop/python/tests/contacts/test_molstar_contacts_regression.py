@@ -7,7 +7,7 @@ from typing import Any
 
 import pytest
 
-import lahuta as lxx
+from lahuta import ContactProvider
 from lahuta.pipeline import Pipeline
 from lahuta.pipeline.tasks import ContactTask
 from lahuta.sources import FileSource
@@ -23,7 +23,7 @@ def _compute_molstar_contacts(structure_path: Path) -> dict[str, Any]:
     pipeline = Pipeline(FileSource(str(structure_path)))
     pipeline.add_task(
         name="ms",
-        task=ContactTask(provider=lxx.ContactProvider.MolStar),
+        task=ContactTask(provider=ContactProvider.MolStar),
     )
     output = pipeline.run(threads=1)
     records = output.to_dict("ms")

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import time
 from numbers import Integral
 from pathlib import Path
@@ -29,8 +28,6 @@ from lahuta.sources import (
 
 from ._discovery import _ast_infer_builtins_for_callable, _discover_builtins_for_callable
 from ._inference import infer_python_task_format
-from .mp_backend import PyTaskSpec as _MPPyTaskSpec
-from .mp_backend import resolve_callable_metadata
 from .params import SystemParams, TopologyParams
 from .result import PipelineResult, _ChannelState
 from .tasks import ContactTask
@@ -84,7 +81,6 @@ class Pipeline:
                 self._system_params.is_model = True
             except Exception:
                 pass
-        self._py_tasks: list[_MPPyTaskSpec] = [] # callable task registry for multiprocessing backend
         self._reporting_level: ReportingLevel = ReportingLevel.BASIC
         self._last_report: dict[str, Any] | None = None
 
@@ -134,24 +130,6 @@ class Pipeline:
             * stage_breakdown (DEBUG): per-stage setup/compute timings
         """
         return self._clone_report(self._last_report)
-
-    def _process_pool_guard(self, processes: int):
-        class _Guard:
-            def __init__(self, mgr, count):
-                self._mgr   = mgr
-                self._count = count
-
-            def __enter__(self):
-                self._mgr.configure_python_process_pool(self._count)
-                return self
-
-            def __exit__(self, exc_type, exc, tb):
-                try:
-                    self._mgr.shutdown_python_process_pool()
-                except Exception:
-                    pass
-
-        return _Guard(self._mgr, processes)
 
     @overload
     def params(self, builtin_name: Literal["system"]) -> SystemParams: ...
@@ -287,40 +265,6 @@ class Pipeline:
             self._channel_formats[ch] = task_format
             self._attach_sinks(ch, in_memory_policy, out, channel_format=task_format, writer_threads=writer_threads)
             self._apply_requires_fields(name, req_fields_tuple)
-
-            # Record for multiprocessing backend
-            module, qualname = resolve_callable_metadata(task)
-            callable_blob: bytes | None = None
-            if module is None or qualname is None:
-                # Notebook/REPL task - serialize via cloudpickle
-                try:
-                    import cloudpickle
-                    callable_blob = cloudpickle.dumps(task)
-                except ImportError:
-                    logging.warn(
-                        f"Process backend: cloudpickle not available, task '{name}' will only run in threaded mode. "
-                        "Install cloudpickle to enable multiprocessing support for notebook tasks."
-                    )
-                    callable_blob = None
-                except Exception as exc:
-                    logging.warn(
-                        f"Process backend: unable to serialize task '{name}' via cloudpickle ({exc}). "
-                        "Task will only run in threaded mode."
-                    )
-                    callable_blob = None
-
-            self._py_tasks.append(_MPPyTaskSpec(
-                name=name,
-                fn=cast(PyTaskFn[Any], task),
-                module=module,
-                qualname=qualname,
-                callable_blob=callable_blob,
-                channel=ch,
-                store=do_store,
-                serialize=serialize,
-                depends=tuple(deps),
-                format=task_format,
-            ))
             return
 
         # Raw C++ task
@@ -482,10 +426,6 @@ class Pipeline:
     def run(
         self,
         threads: int = 8,
-        *,
-        backend: Literal["threads", "processes"] = "threads",
-        processes: int | None = None,
-        process_timeout: float | None = 300.0,
     ) -> PipelineResult:
         self._last_report = None
         # Reset memory sinks so results do not accumulate across runs
@@ -513,90 +453,13 @@ class Pipeline:
                 )
             return states
 
-        if backend == "threads":
-            _start = time.perf_counter()
-            self._mgr.run(int(threads))
-            _elapsed = time.perf_counter() - _start
-            logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
-            report = self._mgr.last_run_report()
-            self._last_report = self._clone_report(report)
-            return PipelineResult(_collect_memory_states())
-
-        if backend == "processes":
-            if _DATABASE_SOURCE_TYPES and isinstance(self._source, _DATABASE_SOURCE_TYPES):
-                raise RuntimeError(
-                    "backend='processes' is not supported for database-type sources. "
-                    "Process workers cannot yet access LMDB-backed DataField views."
-                )
-            if not self._py_tasks:
-                logging.warn("No Python tasks registered. Falling back to threaded backend.")
-                return self.run(threads=threads, backend="threads")
-
-            streaming_types: tuple[type[Any], ...] = ()
-            try:
-                # Fast failure until process backend supports streaming/MD descriptors across processes.
-                streaming_types = _lib.pipeline.sources.MdTrajectoriesSource, _lib.pipeline.sources.NmrSource
-            except AttributeError:
-                streaming_types = ()
-
-            if streaming_types and isinstance(self._source, streaming_types):
-                raise RuntimeError("backend='processes' is not supported for streaming MD/NMR sources.")
-
-            # Tasks are convertible if they have module/qualname OR serialized blob
-            convertible = [
-                spec for spec in self._py_tasks
-                if (spec.module and spec.qualname) or (spec.callable_blob is not None)
-            ]
-            if not convertible:
-                logging.warn("No process-capable Python tasks registered. Falling back to threaded backend.")
-                return self.run(threads=threads, backend="threads")
-
-            proc_count      = processes if processes is not None else os.cpu_count() or 1
-            proc_count      = max(1, int(proc_count))
-            worker_threads  = max(1, int(threads))
-            timeout_seconds = float(process_timeout) if process_timeout is not None else 300.0
-
-            converted_names: set[str] = set()
-            try:
-                with self._process_pool_guard(proc_count):
-                    self._mgr.set_python_process_concurrency(proc_count)
-                    self._mgr.set_python_process_timeout(timeout_seconds)
-                    for spec in convertible:
-                        # Pass serialized callable as bytes or None
-                        serialized = spec.callable_blob if spec.callable_blob is not None else None
-                        self._mgr.add_python_process(
-                            spec.name,
-                            list(spec.depends),
-                            spec.module or "",
-                            spec.qualname or "",
-                            serialized,
-                            spec.channel,
-                            store=spec.store,
-                        )
-                        converted_names.add(spec.name)
-
-                    _start = time.perf_counter()
-                    self._mgr.run(worker_threads)
-                    _elapsed = time.perf_counter() - _start
-                    logging.info(f"pipeline.run (processes) finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
-            finally:
-                if converted_names:
-                    for spec in self._py_tasks:
-                        if spec.name in converted_names:
-                            self._mgr.add_python(
-                                spec.name,
-                                list(spec.depends),
-                                spec.fn,
-                                spec.channel,
-                                serialize=spec.serialize,
-                                store=spec.store,
-                            )
-
-            report = self._mgr.last_run_report()
-            self._last_report = self._clone_report(report)
-            return PipelineResult(_collect_memory_states())
-
-        raise ValueError("backend must be either 'threads' or 'processes'")
+        _start = time.perf_counter()
+        self._mgr.run(int(threads))
+        _elapsed = time.perf_counter() - _start
+        logging.info(f"pipeline.run finished in {_elapsed*1000:.1f} ms ({_elapsed:.3f} s)")
+        report = self._mgr.last_run_report()
+        self._last_report = self._clone_report(report)
+        return PipelineResult(_collect_memory_states())
 
     #
     # If we want strong static typing of the run() output, we must accept a

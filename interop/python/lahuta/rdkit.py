@@ -11,10 +11,10 @@ from __future__ import annotations
 # fmt: off
 try:
     # Import the main lahuta module and re-export its rdkit submodule
-    from .lib import lahuta as lxx
+    from .lib import lahuta as _lib
 
     # Re-export all rdkit symbols explicitly
-    _rdkit = lxx.rdkit
+    _rdkit = _lib.rdkit
 
     # Export all rdkit classes and functions
     Atom       = _rdkit.Atom

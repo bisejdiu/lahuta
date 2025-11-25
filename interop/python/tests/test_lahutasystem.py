@@ -13,7 +13,7 @@ import hashlib
 import numpy as np
 import pytest
 
-import lahuta as lxx
+from lahuta import LahutaSystem, LahutaSystemProperties, TopologyComputers
 
 
 # fmt: off
@@ -81,17 +81,17 @@ EXPECTED = {
 
 
 @pytest.fixture(scope="session")
-def props(luni: lxx.LahutaSystem) -> lxx.LahutaSystemProperties:
+def props(luni: LahutaSystem) -> LahutaSystemProperties:
     return luni.props
 
 
 @pytest.fixture(scope="session")
-def filtered_backbone(luni: lxx.LahutaSystem) -> lxx.LahutaSystem:
+def filtered_backbone(luni: LahutaSystem) -> LahutaSystem:
     names = luni.props.names
     keep = [i for i, nm in enumerate(names) if str(nm).strip() in {"N", "CA", "C", "O"}]
     return luni.filter(keep)
 
-def test_basic_shapes_dtypes_and_hashes(luni: lxx.LahutaSystem, props: lxx.LahutaSystemProperties) -> None:
+def test_basic_shapes_dtypes_and_hashes(luni: LahutaSystem, props: LahutaSystemProperties) -> None:
     assert luni.n_atoms == EXPECTED["n_atoms_file"]
 
     arrays: dict[str, np.ndarray] = {
@@ -116,23 +116,23 @@ def test_basic_shapes_dtypes_and_hashes(luni: lxx.LahutaSystem, props: lxx.Lahut
         assert got_hash == exp_hash, f"{key}: sha256 mismatch"
 
 
-def test_centroid(props: lxx.LahutaSystemProperties) -> None:
+def test_centroid(props: LahutaSystemProperties) -> None:
     centroid = props.positions.mean(axis=0)
     assert centroid.shape == (3,)
     assert np.allclose(centroid, EXPECTED["centroid"], rtol=5e-6, atol=1e-8)
 
 
-def test_topology_build_and_accessors(luni: lxx.LahutaSystem) -> None:
+def test_topology_build_and_accessors(luni: LahutaSystem) -> None:
     # Configure and build
-    luni.enable_only(lxx.TopologyComputers.Standard)
+    luni.enable_only(TopologyComputers.Standard)
     luni.set_search_cutoff_for_bonds(1.9)
     assert luni.build_topology() is True
     assert luni.has_topology_built() is True
 
     # Execute Rings
-    if not luni.is_computation_enabled(lxx.TopologyComputers.Rings):
-        luni.enable_computation(lxx.TopologyComputers.Rings, True)
-    assert luni.execute_computation(lxx.TopologyComputers.Rings) is True
+    if not luni.is_computation_enabled(TopologyComputers.Rings):
+        luni.enable_computation(TopologyComputers.Rings, True)
+    assert luni.execute_computation(TopologyComputers.Rings) is True
 
     # Access RDKit handles
     mol  = luni.get_molecule()
@@ -156,7 +156,7 @@ def _sqrt_distances(ns) -> np.ndarray:
     return np.sqrt(ns.distances)
 
 
-def test_neighbor_search_file_system(luni: lxx.LahutaSystem) -> None:
+def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_file"]
     ns = luni.find_neighbors(cutoff=cfg["cutoff"], res_dif=cfg["res_dif"])
     ns = ns.filter(cfg["cutoff"])
@@ -171,7 +171,7 @@ def test_neighbor_search_file_system(luni: lxx.LahutaSystem) -> None:
     assert np.isclose(mx,   cfg["max"],  rtol=cfg["rtol"], atol=cfg["atol"])
 
 
-def test_neighbor_search_filtered_system(filtered_backbone: lxx.LahutaSystem) -> None:
+def test_neighbor_search_filtered_system(filtered_backbone: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_filtered"]
     ns  = filtered_backbone.find_neighbors(cutoff=cfg["cutoff"], res_dif=cfg["res_dif"])
     ns  = ns.filter(cfg["cutoff"])
@@ -187,7 +187,7 @@ def test_neighbor_search_filtered_system(filtered_backbone: lxx.LahutaSystem) ->
     assert np.isclose(mx,   cfg["max"],  rtol=cfg["rtol"], atol=cfg["atol"])
 
 
-def test_hash_stability_under_basic_copies(props: lxx.LahutaSystemProperties) -> None:
+def test_hash_stability_under_basic_copies(props: LahutaSystemProperties) -> None:
     hyp = pytest.importorskip("hypothesis",            reason="Hypothesis not installed")
     st  = pytest.importorskip("hypothesis.strategies", reason="Hypothesis not installed")
 

@@ -29,17 +29,9 @@ def _require_importable(dist: str, *, min_version: str | None = None) -> None:
 _require_importable("numpy", min_version="2.2")
 _require_importable("orjson", min_version="3.11")
 
-_missing_dependencies: list[str] = []
-if find_spec("cloudpickle") is None:
-    _missing_dependencies.append("cloudpickle")
-
-if _missing_dependencies:
-    deps_str = ", ".join(_missing_dependencies)
-    raise ImportError(f"Lahuta requires {deps_str}. Install with: pip install {' '.join(_missing_dependencies)}")
-
 try:
     # fmt: off
-    from .lib import lahuta as lxx
+    from .lib import lahuta as _lib
     from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
         AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
         FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, InteractionTypeSet, Kind, \
@@ -48,17 +40,17 @@ try:
         PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
         TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, process_files, vdw_radius
 
-    rdkit     = lxx.rdkit
-    metrics   = lxx.metrics
-    neighbors = lxx.neighbors
+    rdkit     = _lib.rdkit
+    metrics   = _lib.metrics
+    neighbors = _lib.neighbors
 
     # must be kept here after the above import to not mess up cold access times
     from .config import logging as logging
     from .neighbors import NearestNeighbors
 
     try:
-        lxx.__version__ = __version__
-        lxx.__version_info__ = version_info.as_tuple()
+        _lib.__version__ = __version__
+        _lib.__version_info__ = version_info.as_tuple()
     except Exception:
         pass
 

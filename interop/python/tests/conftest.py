@@ -109,9 +109,9 @@ def ubi_cif(data_path: Callable[[str], Path]) -> Path:
 
 @pytest.fixture(scope="session")
 def luni(ubi_cif: Path):
-    import lahuta as lxx
+    from lahuta import LahutaSystem
 
-    return lxx.LahutaSystem(str(ubi_cif))
+    return LahutaSystem(str(ubi_cif))
 
 
 @pytest.fixture(scope="session")

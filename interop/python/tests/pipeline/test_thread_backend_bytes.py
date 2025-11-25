@@ -29,7 +29,7 @@ def test_thread_backend_binary_payload_channel() -> None:
     p = Pipeline(FileSource([str(DATA_PATH)]))
     p.add_task(name="bin", task=emit_bytes, in_memory_policy=InMemoryPolicy.Keep, store=False)
 
-    res = p.run(threads=1, backend="threads")
+    res = p.run(threads=1)
     raw = res.raw("bin")
     assert isinstance(raw, tuple) and len(raw) == 1
     assert raw[0] == b"\x00\x01hello\xff"
@@ -46,6 +46,6 @@ def test_thread_backend_store_bytes_roundtrip() -> None:
         name="echo_blob", task=echo_blob, depends=["write_blob"], in_memory_policy=InMemoryPolicy.Keep, store=False
     )
 
-    res = p.run(threads=1, backend="threads")
+    res = p.run(threads=1)
     raw = res.raw("echo_blob")
     assert raw == (b"\xaa\xbb\xcc",)

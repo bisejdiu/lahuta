@@ -32,12 +32,12 @@ from __future__ import annotations
 import gc
 from pathlib import Path
 
-import lahuta as lxx
+from lahuta import LahutaSystem
 
 
 # fmt: off
-def _build_sys(ubi_cif: Path) -> lxx.LahutaSystem:
-    sys = lxx.LahutaSystem(str(ubi_cif))
+def _build_sys(ubi_cif: Path) -> LahutaSystem:
+    sys = LahutaSystem(str(ubi_cif))
     assert sys.build_topology() is True
     return sys
 
@@ -232,9 +232,9 @@ def test_atomrec_survives_after_parents_deleted(ubi_cif: Path, run_child) -> Non
     ubi_path = str(ubi_cif)
     child = f"""
 import gc, sys
-import lahuta as lxx
+from lahuta import LahutaSystem
 
-sys_obj = lxx.LahutaSystem({ubi_path!r})
+sys_obj = LahutaSystem({ubi_path!r})
 assert sys_obj.build_topology() is True
 top = sys_obj.get_topology()
 
@@ -262,10 +262,9 @@ def test_ringrec_atoms_survive_after_parents_deleted(ubi_cif: Path, run_child) -
     ubi_path = str(ubi_cif)
     child = f"""
 import gc, sys
-import lahuta as lxx
-from lahuta import rdkit as rdkit
+from lahuta import LahutaSystem, rdkit as rdkit
 
-sys_obj = lxx.LahutaSystem({ubi_path!r})
+sys_obj = LahutaSystem({ubi_path!r})
 assert sys_obj.build_topology() is True
 top = sys_obj.get_topology()
 
@@ -298,10 +297,9 @@ def test_grouprec_atoms_survive_after_parents_deleted(ubi_cif: Path, run_child) 
     ubi_path = str(ubi_cif)
     child = f"""
 import gc, sys
-import lahuta as lxx
-from lahuta import rdkit as rdkit
+from lahuta import LahutaSystem, rdkit as rdkit
 
-sys_obj = lxx.LahutaSystem({ubi_path!r})
+sys_obj = LahutaSystem({ubi_path!r})
 assert sys_obj.build_topology() is True
 top = sys_obj.get_topology()
 
@@ -336,10 +334,9 @@ def test_atom_monomer_info_survives_after_parents_deleted(ubi_cif: Path, run_chi
     ubi_path = str(ubi_cif)
     child = f"""
 import gc, sys
-import lahuta as lxx
-from lahuta import rdkit as rdkit
+from lahuta import LahutaSystem, rdkit as rdkit
 
-sys_obj = lxx.LahutaSystem({ubi_path!r})
+sys_obj = LahutaSystem({ubi_path!r})
 assert sys_obj.build_topology() is True
 top = sys_obj.get_topology()
 

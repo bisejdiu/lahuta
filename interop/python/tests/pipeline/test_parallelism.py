@@ -36,29 +36,6 @@ class SharedProbe:
                 self._cv.wait_for(lambda: self.arrived >= self.target)
             self.current -= 1
 
-    #
-    # Cloudpickle hits SharedProbe when the wrapper eagerly prepares metadata for
-    # the process backend. The lock/condition objects are not picklable by default,
-    # so we provide explicit state handling that drops them during serialization
-    # and recreates fresh synchronization primitives on restore.  - Besian, October 2025
-    #
-    def __getstate__(self) -> dict[str, int]:
-        state = dict(
-            target=self.target,
-            arrived=self.arrived,
-            current=self.current,
-            max=self.max,
-        )
-        return state
-
-    def __setstate__(self, state: dict[str, int]) -> None:
-        self._lock   = threading.Lock()
-        self._cv     = threading.Condition(self._lock)
-        self.target  = int(state.get("target",  1))
-        self.arrived = int(state.get("arrived", 0))
-        self.current = int(state.get("current", 0))
-        self.max = int(state.get("max", 0))
-
 
 def make_probe_fn(shared: SharedProbe) -> Callable[[Any], dict[str, Any]]:
     from lahuta.lib import lahuta as _lib

@@ -99,9 +99,9 @@ def bench_dataset(
     for k in queries_list:
         Q = pick_queries(positions, k, seed=42 + k)
 
-        def _lxx_search_only() -> object:
-            nn_lxx = NearestNeighbors(radius=radius, algorithm="kd_tree", sort_results=False).fit(positions)
-            return nn_lxx.radius_neighbors(Q, return_distance=False)
+        def _lahuta_search_only() -> object:
+            nn_lahuta = NearestNeighbors(radius=radius, algorithm="kd_tree", sort_results=False).fit(positions)
+            return nn_lahuta.radius_neighbors(Q, return_distance=False)
 
         def _sk_fit_and_query() -> object:
             nn = SKNearestNeighbors(radius=radius, algorithm="kd_tree", metric="euclidean")
@@ -109,7 +109,7 @@ def bench_dataset(
             return nn.radius_neighbors(Q, return_distance=False)
 
         print(f"Queries: k={Q.shape[0]}")
-        time_callable(f"Lahuta NearestNeighbors search-only  [{name}]", _lxx_search_only,  number=1, repeat=repeat)
+        time_callable(f"Lahuta NearestNeighbors search-only  [{name}]", _lahuta_search_only,  number=1, repeat=repeat)
         time_callable(f"sklearn KDTree fit+query   [{name}]",           _sk_fit_and_query, number=1, repeat=repeat)
 
 
