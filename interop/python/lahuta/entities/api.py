@@ -8,10 +8,10 @@ from .selectors import Selector
 
 # fmt: off
 Tester:       TypeAlias = Callable[[int, int, float], _lib.InteractionType]
-Provider:     TypeAlias = Literal["molstar", "arpeggio"]
 SelectorLike: TypeAlias = Selector[_lib.AtomRec] | Selector[_lib.RingRec] | Selector[_lib.GroupRec]
+ContactProviderType: TypeAlias = Literal["molstar", "arpeggio", "getcontacts"]
 
-DEFAULT_PROVIDER: Provider = "molstar"
+DEFAULT_PROVIDER: ContactProviderType = "molstar"
 SUPPORTED_PROVIDERS = frozenset(["molstar", "arpeggio", "getcontacts"])
 
 def _create_search_options(distance_max: float | None = None, opts: _lib.SearchOptions | None = None) -> _lib.SearchOptions:
@@ -135,7 +135,7 @@ def find_contacts(
 
 def compute_contacts(
     topology: _lib.Topology,
-    provider: Provider = DEFAULT_PROVIDER,
+    provider: ContactProviderType = DEFAULT_PROVIDER,
     only: _lib.InteractionType | _lib.InteractionTypeSet | Iterable[_lib.InteractionType] | None = None,
 ) -> _lib.ContactSet:
     """Compute molecular contacts using predefined interactions types and providers.
