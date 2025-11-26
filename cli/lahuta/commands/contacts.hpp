@@ -17,6 +17,7 @@ enum ContactsOptionIndex : unsigned {
   SourceVector,
   SourceFileList,
   SourceDatabase,
+  SourceMD,
   Extension,
   Recursive,
 
