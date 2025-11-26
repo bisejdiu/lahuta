@@ -2,7 +2,6 @@
 #include <chrono>
 #include <ctime>
 #include <filesystem>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -17,17 +16,16 @@
 #include "analysis/contacts/provider.hpp"
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
+#include "cli/run_report.hpp"
 #include "commands/contacts.hpp"
 #include "commands/reporting.hpp"
 #include "db/db.hpp"
-#include "gemmi/third_party/stb_sprintf.h"
 #include "logging.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
-#include "serialization/json.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 
@@ -64,6 +62,7 @@ struct ContactsOptions {
   bool want_json = false;
   bool want_text = false;
   bool want_log  = false;
+  bool save_run_report = false;
   int threads = 8;
   size_t batch_size = 200;
   size_t writer_threads = 1;
@@ -134,68 +133,6 @@ std::string current_timestamp_string() {
   return oss.str();
 }
 
-bool write_run_report_json(const std::string& path, const pipeline::dynamic::StageManager::RunReport& report) {
-  std::ofstream out(path, std::ios::out | std::ios::trunc);
-  if (!out) {
-    Logger::get_logger()->error("Unable to write RunReport JSON to '{}'", path);
-    return false;
-  }
-
-  lahuta::JsonBuilder json(512);
-  json.key("total_seconds").value(report.total_seconds)
-      .key("cpu_seconds").value(report.cpu_seconds)
-      .key("io_seconds").value(report.io_seconds)
-      .key("ingest_seconds").value(report.ingest_seconds)
-      .key("prepare_seconds").value(report.prepare_seconds)
-      .key("flush_seconds").value(report.flush_seconds)
-      .key("setup_seconds").value(report.setup_seconds)
-      .key("compute_seconds").value(report.compute_seconds)
-      .key("items_total").value(report.items_total)
-      .key("items_processed").value(report.items_processed)
-      .key("items_skipped").value(report.items_skipped)
-      .key("stage_count").value(report.stage_count)
-      .key("threads_requested").value(report.threads_requested)
-      .key("threads_used").value(report.threads_used)
-      .key("all_thread_safe").value(report.all_thread_safe)
-      .key("run_token").value(report.run_token)
-      .key("metrics_enabled").value(report.metrics_enabled)
-      .key("peak_inflight_items").value(report.peak_inflight_items)
-      .key("average_queue_depth").value(report.average_queue_depth)
-      .key("permit_wait_total_seconds").value(report.permit_wait_total_seconds)
-      .key("permit_wait_min_seconds").value(report.permit_wait_min_seconds)
-      .key("permit_wait_max_seconds").value(report.permit_wait_max_seconds)
-      .key("permit_wait_avg_seconds").value(report.permit_wait_avg_seconds)
-      .key("permit_wait_events").value(report.permit_wait_events)
-      .key("mux_sink_count").value(report.mux_sink_count)
-      .key("mux_enqueued_msgs").value(report.mux_enqueued_msgs)
-      .key("mux_enqueued_bytes").value(report.mux_enqueued_bytes)
-      .key("mux_written_msgs").value(report.mux_written_msgs)
-      .key("mux_written_bytes").value(report.mux_written_bytes)
-      .key("mux_stall_ns").value(report.mux_stall_ns)
-      .key("mux_drops").value(report.mux_drops)
-      .key("mux_queue_depth_peak").value(report.mux_queue_depth_peak)
-      .key("mux_queue_bytes_peak").value(report.mux_queue_bytes_peak)
-      .key("mux_active_writers_total").value(report.mux_active_writers_total)
-      .key("mux_active_writers_peak").value(report.mux_active_writers_peak);
-
-  json.key("stage_breakdown").begin_array();
-  for (const auto& stage : report.stage_breakdown) {
-    json.begin_object()
-        .key("label").value(stage.label)
-        .key("setup_seconds").value(stage.setup_seconds)
-        .key("compute_seconds").value(stage.compute_seconds)
-        .end_object();
-  }
-  json.end_array();
-
-  out << json.str() << '\n';
-  return true;
-}
-
-std::string make_report_path(std::size_t run_token, const std::string& timestamp) {
-  return "contacts_run_report_" + std::to_string(run_token) + '_' + timestamp + ".json";
-}
-
 } // namespace
 
 namespace contacts_opts {
@@ -248,6 +185,8 @@ const option::Descriptor usage[] = {
    "  --log                        \tOutput results to standard output (logging)."},
   {ContactsOptionIndex::Reporter, 0, "", "reporter", validate::Required,
    "  --reporter <name>            \tSelect pipeline reporter. See help for names."},
+  {ContactsOptionIndex::SaveRunReport, 0, "", "save-run-report", option::Arg::None,
+   "  --save-run-report            \tSave run statistics to a JSON file."},
   {0, 0, "", "", option::Arg::None,
    "\nRuntime Options:"},
   {ContactsOptionIndex::Threads, 0, "t", "threads", validate::Required,
@@ -290,11 +229,13 @@ int ContactsCommand::run(int argc, char* argv[]) {
     auto emit_and_save_report = [&](const pipeline::dynamic::StageManager::RunReport& report) {
       const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
       reporter->emit("contacts", report);
-      const std::string report_path = make_report_path(report.run_token, run_timestamp);
-      if (!write_run_report_json(report_path, report)) {
-        throw std::runtime_error("Failed to persist RunReport JSON");
+      if (cli.save_run_report) {
+        const std::string report_path = make_report_path("contacts", report.run_token, run_timestamp);
+        if (!write_run_report_json(report_path, report)) {
+          throw std::runtime_error("Failed to persist RunReport JSON");
+        }
+        Logger::get_logger()->info("Run report saved to {}", report_path);
       }
-      Logger::get_logger()->info("Run report saved to {}", report_path);
     };
 
     if (options[contacts_opts::ContactsOptionIndex::Reporter]) {
@@ -447,9 +388,10 @@ int ContactsCommand::run(int argc, char* argv[]) {
     cli.is_af2_model = options[contacts_opts::ContactsOptionIndex::IsAf2Model] ? true : false;
 
     // Parse output options
-    cli.want_json   = options[contacts_opts::ContactsOptionIndex::OutputJson] ? true : false;
-    cli.want_text   = options[contacts_opts::ContactsOptionIndex::OutputText] ? true : false;
-    cli.want_log    = options[contacts_opts::ContactsOptionIndex::OutputLog]  ? true : false;
+    cli.want_json        = options[contacts_opts::ContactsOptionIndex::OutputJson]     ? true : false;
+    cli.want_text        = options[contacts_opts::ContactsOptionIndex::OutputText]     ? true : false;
+    cli.want_log         = options[contacts_opts::ContactsOptionIndex::OutputLog]      ? true : false;
+    cli.save_run_report  = options[contacts_opts::ContactsOptionIndex::SaveRunReport]  ? true : false;
 
     if (!cli.want_json && !cli.want_text && !cli.want_log) cli.want_json = true; // json if nothing specified
 
