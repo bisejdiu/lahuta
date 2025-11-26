@@ -30,8 +30,11 @@ struct Serializer<fmt::json, ContactsRes> {
 
     const std::string contact_type_str = interaction_type_set_to_string(v.contact_types, "|");
 
-    builder.key("file_path")   .value(v.file_path)
-           .key("success")     .value(v.success)
+    builder.key("file_path")   .value(v.file_path);
+    if (v.trajectory_file) {
+      builder.key("trajectory_file").value(*v.trajectory_file);
+    }
+    builder.key("success")     .value(v.success)
            .key("provider")    .value(std::string(contact_provider_name(v.provider)))
            .key("contact_type").value(contact_type_str)
            .key("num_contacts").value(v.num_contacts)
@@ -62,6 +65,9 @@ struct Serializer<fmt::json, ContactsRes> {
     JsonReader r{s};
 
     out.file_path = r.get<std::string>("file_path");
+    if (auto traj = r.get_or<std::string>("trajectory_file", ""); !traj.empty()) {
+      out.trajectory_file = traj;
+    }
     out.success   = r.get<bool>("success");
 
     std::string provider_str = r.get<std::string>("provider");
@@ -95,8 +101,11 @@ struct Serializer<fmt::text, ContactsRes> {
     const std::string contact_type_str = interaction_type_set_to_string(v.contact_types, "|");
 
     oss << (v.success ? "1" : "0") << " "
-        << v.file_path << " "
-        << contact_provider_name(v.provider) << " "
+        << v.file_path << " ";
+    if (v.trajectory_file) {
+      oss << "[traj:" << *v.trajectory_file << "] ";
+    }
+    oss << contact_provider_name(v.provider) << " "
         << contact_type_str << " "
         << v.num_contacts << " "
         << v.frame_index  << "\n";
@@ -214,6 +223,13 @@ struct Serializer<fmt::binary, ContactsRes> {
       buffer.append(rhs_names[idx].data(), rhs_names[idx].size());
     }
 
+    const std::string traj = v.trajectory_file.value_or("");
+    const uint32_t traj_len = checked_len(traj.size());
+    append_pod(traj_len);
+    if (traj_len > 0) {
+      buffer.append(traj.data(), traj.size());
+    }
+
     return buffer;
   }
 
@@ -329,6 +345,13 @@ struct Serializer<fmt::binary, ContactsRes> {
 
     result.contacts = ContactSet(std::move(contacts), true);
     result.topology = nullptr;
+
+    const uint32_t traj_len = read_u32(offset);
+    if (traj_len > 0) {
+      require(offset, traj_len);
+      result.trajectory_file = std::string(data + offset, traj_len);
+      offset += traj_len;
+    }
 
     return result;
   }

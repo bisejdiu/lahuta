@@ -17,6 +17,7 @@ struct PipelineItem {
   std::string item_path;
   std::uint64_t conformer_id = 0;
   std::optional<double> timestamp_ps;
+  std::optional<std::string> source_file;  // e.g., trajectory file for MD data
 
   std::shared_ptr<const StreamSession> session;
   std::shared_ptr<FrameHandle> frame;

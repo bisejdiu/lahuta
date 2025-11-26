@@ -2,6 +2,7 @@
 #define LAHUTA_ANALYSIS_CONTACTS_RECORDS_HPP
 
 #include <memory>
+#include <optional>
 #include <string>
 
 #include "analysis/contacts/provider.hpp"
@@ -14,6 +15,7 @@ namespace lahuta::analysis::contacts {
 struct ContactsRecord {
   bool success;
   std::string file_path;
+  std::optional<std::string> trajectory_file;
   contacts::ContactProvider provider;
   InteractionTypeSet contact_types;
   ContactSet contacts;

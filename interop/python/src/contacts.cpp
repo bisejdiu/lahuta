@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -46,6 +47,7 @@ constexpr uint8_t ContactsBinaryVersion = 1;
 struct ContactsRecordColumns {
   bool success = false;
   std::string file_path;
+  std::optional<std::string> trajectory_file;
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
   InteractionTypeSet contact_types = InteractionTypeSet::all();
   std::uint64_t frame_index = 0;
@@ -165,6 +167,13 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
     decoded.rhs_names.emplace_back(std::move(rhs_name));
   }
 
+  const uint32_t traj_len = read_u32();
+  if (traj_len > 0) {
+    ensure_available(offset, traj_len, size);
+    decoded.trajectory_file = std::string(data + offset, traj_len);
+    offset += traj_len;
+  }
+
   return decoded;
 }
 
@@ -191,6 +200,9 @@ py::dict make_contacts_numpy(ContactsRecordColumns decoded) {
   py::dict out;
   out["success"]      = decoded.success;
   out["file_path"]    = decoded.file_path;
+  if (decoded.trajectory_file) {
+    out["trajectory_file"] = *decoded.trajectory_file;
+  }
   out["provider"]     = std::string(contact_provider_name(decoded.provider));
   out["contact_type"] = interaction_type_set_to_string(decoded.contact_types, "|");
   out["num_contacts"] = static_cast<uint32_t>(num_contacts);
@@ -225,6 +237,9 @@ py::dict decode_contacts_to_dict_direct(ContactsRecordColumns decoded) {
   py::dict result;
   result["success"]      = decoded.success;
   result["file_path"]    = decoded.file_path;
+  if (decoded.trajectory_file) {
+    result["trajectory_file"] = *decoded.trajectory_file;
+  }
   result["provider"]     = std::string(contact_provider_name(decoded.provider));
   result["contact_type"] = interaction_type_set_to_string(decoded.contact_types, "|");
   result["num_contacts"] = static_cast<uint32_t>(num_contacts);
@@ -263,6 +278,9 @@ py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
   py::dict result;
   result["success"]      = decoded.success;
   result["file_path"]    = decoded.file_path;
+  if (decoded.trajectory_file) {
+    result["trajectory_file"] = *decoded.trajectory_file;
+  }
   result["provider"]     = std::string(contact_provider_name(decoded.provider));
   result["contact_type"] = interaction_type_set_to_string(decoded.contact_types, "|");
   result["num_contacts"] = static_cast<uint32_t>(num_contacts);

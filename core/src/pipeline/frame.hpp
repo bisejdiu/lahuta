@@ -21,6 +21,7 @@ struct FrameMetadata {
   std::string session_id;
   std::uint64_t conformer_id = 0;
   std::optional<double> timestamp_ps;
+  std::optional<std::string> source_file;  // trajectory file for MD data
 };
 
 struct FrameHandle {

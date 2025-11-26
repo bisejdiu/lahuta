@@ -99,6 +99,9 @@ struct ContactsKernel {
       res.success  = true;
       res.topology = top;
       if (data.frame) res.frame_index = data.frame->index();
+      if (auto fm = data.ctx->frame_metadata(); fm && fm->source_file) {
+        res.trajectory_file = fm->source_file;
+      }
 
       std::string payload;
       switch (p.format) {

@@ -267,6 +267,7 @@ public:
       item.item_path    = ref.path;
       item.conformer_id = static_cast<std::uint64_t>(state.global_index);
       item.timestamp_ps = packet_ptr->timestamp_ps;
+      item.source_file  = state.session->xtc_paths()[state.file_index];
       item.session      = state.session;
       item.frame        = state.session->make_frame(state.global_index, std::move(packet_ptr));
 
