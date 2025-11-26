@@ -3,9 +3,10 @@
 
 #include <filesystem>
 
-#include "db/reader.hpp"
-#include "db/writer.hpp"
-#include "lmdb/lmdb++.h"
+#include <lmdb/lmdb++.h>
+
+#include "reader.hpp"
+#include "writer.hpp"
 
 namespace fs = std::filesystem;
 namespace lahuta {
@@ -41,7 +42,7 @@ public:
   lmdb::dbi &get_dbi() { return m_dbi; }
 
   /// iterate over all keys in the database with a callback function.
-  void for_each_key(const std::function<void(const std::string&)>& func) {
+  void for_each_key(const std::function<void(const std::string &)> &func) {
     // FIX: we are creating a new transaction and cursor for each call to for_each_key.
     auto txn = lmdb::txn::begin(m_env.handle(), nullptr, MDB_RDONLY);
     auto cur = lmdb::cursor::open(txn.handle(), m_dbi.handle());
@@ -50,7 +51,7 @@ public:
     int rc = mdb_cursor_get(cur.handle(), &key, &data, MDB_FIRST);
     while (rc == MDB_SUCCESS) {
       // construct an std::string from the key.
-      std::string key_str(static_cast<const char*>(key.mv_data), key.mv_size);
+      std::string key_str(static_cast<const char *>(key.mv_data), key.mv_size);
       func(key_str);
       rc = mdb_cursor_get(cur.handle(), &key, &data, MDB_NEXT); // Move to the next key.
     }

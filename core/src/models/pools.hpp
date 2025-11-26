@@ -90,13 +90,14 @@ class InfoPool {
 public:
   explicit InfoPool(std::size_t initial_capacity = 1000) : pool_(initial_capacity) {}
 
-  auto *createAtomInfo(const char *atom_name, int serial, const char *res_name, int res_number) {
+  auto *createAtomInfo(const char *atom_name, int serial, const char *res_name, int res_number, double temp_factor = 0.0) {
     RDKit::pAtomPDBResidueInfo *info = pool_.create();
     info->setName(std::string(atom_name));
     info->setSerialNumber(serial);
     info->setResidueName(std::string(res_name));
     info->setResidueNumber(res_number);
     info->setChainId("A"); // Default chain ID
+    info->setTempFactor(temp_factor);
     return info;
   }
 

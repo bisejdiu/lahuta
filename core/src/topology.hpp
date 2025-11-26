@@ -47,7 +47,6 @@ public:
   const std::vector<Rec>& records() const noexcept;
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
-
   [[nodiscard]] bool build(TopologyBuildingOptions tops);
 
   void run_mask(TopologyComputation mask) const {

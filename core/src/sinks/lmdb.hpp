@@ -1,11 +1,9 @@
 #ifndef LAHUTA_PIPELINE_DYNAMIC_SINK_LMDB_HPP
 #define LAHUTA_PIPELINE_DYNAMIC_SINK_LMDB_HPP
 
-#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <mutex>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -20,10 +18,10 @@ namespace lahuta::pipeline::dynamic {
 //
 // LmdbSink: Writes emissions to an LMDB database.
 //
-// - Payload is a binary serialization of analysis::system::ModelRecord
-//   produced by serialization::Serializer<fmt::binary, ModelRecord>.
-// - The key is extracted by reading the file_path field from the serialized
-//   payload header without fully deserializing the model blob.
+// - Payload is a binary serialization of analysis::system::ModelRecord.
+// - Sink deserializes and reserializes into the LMDB value using MDB_RESERVE
+//   so the final value address is known at serialization time. This allows the
+//   ModelPayloadHeader (magic, version, field slices) to be written correctly.
 //
 class LmdbSink : public IDynamicSink {
 public:
@@ -33,22 +31,10 @@ public:
   }
 
   void write(EmissionView e) override {
+    using analysis::system::ModelRecord;
     std::lock_guard<std::mutex> lk(mu_);
-    // Payload layout (see serialization/specializations/model.hpp):
-    // [1 byte success][4 bytes path_len][path][4 bytes blob_len][blob]
-    const char* data = e.payload.data();
-    const std::size_t n = e.payload.size();
-    if (n < 1 + sizeof(uint32_t)) {
-      throw std::runtime_error("LmdbSink: payload too small");
-    }
-    std::size_t off = 1; // skip success
-    uint32_t path_len = 0;
-    std::memcpy(&path_len, data + off, sizeof(path_len));
-    off += sizeof(path_len);
-    if (off + path_len > n) {
-      throw std::runtime_error("LmdbSink: corrupted payload (path_len)");
-    }
-    const std::string_view key{data + off, path_len};
+    const auto rec = serialization::Serializer<fmt::binary, ModelRecord>::deserialize(e.payload.data(), e.payload.size());
+    const std::string& key = rec.file_path;
 
     // Begin txn on first write
     if (!started_) {
@@ -56,8 +42,7 @@ public:
       started_ = true;
     }
 
-    // Write full payload as value under extracted key
-    writer_.put_raw(std::string(key), e.payload, /*commit_now=*/false);
+    writer_.put_model_record(key, rec, /*commit_now=*/false);
     ++since_commit_;
     if (since_commit_ >= batch_size_) {
       writer_.commit_txn();

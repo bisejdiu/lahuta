@@ -11,11 +11,11 @@
 #define __RD_TRANSFORM3D_H__
 
 #include "Transform.h"
+#include "point.h"
 
 #include <Numerics/SquareMatrix.h>
 
 namespace RDGeom {
-class Point3D;
 const unsigned int DIM_3D = 4;
 
 class Transform3D

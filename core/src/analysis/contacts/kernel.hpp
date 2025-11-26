@@ -50,7 +50,7 @@ struct ContactsKernel {
       res.topology      = nullptr;
 
       std::shared_ptr<const Topology> top;
-      if (data.ctx) top = data.ctx->get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+      if (data.ctx) top = data.ctx->topology();
       if (!top) return ComputationResult(ComputationError("Contacts requires topology in context"));
 
       // Correctness guard: ensure atom typing matches provider before computing

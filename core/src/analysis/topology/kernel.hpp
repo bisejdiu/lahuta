@@ -19,7 +19,7 @@ struct BuildTopologyKernel {
     try {
       auto& data = context.data();
       std::shared_ptr<const Luni> sys;
-      if (data.ctx) sys = data.ctx->get_object<const Luni>(pipeline::CTX_SYSTEM_KEY);
+      if (data.ctx) sys = data.ctx->system();
       if (!sys && data.session) {
         auto shared = data.session->get_or_load_system();
         if (shared) {

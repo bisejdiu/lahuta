@@ -187,7 +187,7 @@ public:
     try {
       // system and topology
       auto task_ctx = data.ctx;
-      auto topo = task_ctx ? task_ctx->get_object<const Topology>("topology") : nullptr;
+      auto topo = task_ctx ? task_ctx->topology() : nullptr;
       if (!topo && data.session) {
         TopologyBuildingOptions opts{};
         topo = data.session->get_or_load_topology(opts);
@@ -210,8 +210,7 @@ public:
       }
 
       // conformer view
-      auto conf_ptr =
-          task_ctx ? task_ctx->get_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY) : nullptr;
+      auto conf_ptr = task_ctx ? task_ctx->conformer() : nullptr;
       RDKit::Conformer conf_tmp; // fallback
       if (!conf_ptr && data.frame) {
         auto view = data.frame->load_coordinates();

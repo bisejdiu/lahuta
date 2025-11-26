@@ -10,6 +10,14 @@
 #include <pybind11/pybind11.h>
 #include <rdkit/Geometry/point.h>
 
+#ifdef __has_include
+#  if __has_include(<numpy/arrayobject.h>)
+#    define LAHUTA_HAS_NUMPY_CAPI 1
+#    define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#    include <numpy/arrayobject.h>
+#  endif
+#endif
+
 namespace py = pybind11;
 
 // clang-format off
@@ -34,7 +42,13 @@ inline void require_shape_2d_cols(const np_f64 &arr, int cols, const char *errms
 
 // Marks a NumPy array as read-only
 inline void set_readonly(py::array &arr) {
+#ifdef LAHUTA_HAS_NUMPY_CAPI
+  auto *np = reinterpret_cast<PyArrayObject *>(arr.ptr());
+  if (!np) return;
+  PyArray_CLEARFLAGS(np, NPY_ARRAY_WRITEABLE);
+#else
   arr.attr("setflags")(py::arg("write") = false);
+#endif
 }
 
 // 1D numeric: safe copy

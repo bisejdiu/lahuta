@@ -71,7 +71,7 @@ class _WorkerPipelineContext:
         self._writes[key] = value
 
     def set_json(self, key: str, value: Any) -> None:
-        self.set_text(key, orjson.dumps(value).decode("utf-8"))
+        self.set_text(key, orjson.dumps(value, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8"))
 
     def get_text(self, key: str) -> str | None:
         return self._store.get(key)
@@ -145,6 +145,11 @@ def _as_optional_flags(flags: Any) -> int | None:
         return None
     return value
 
+#
+# Workers always rebuild topology because LMDB-backed DataField views
+# cannot be shared across processes. Once we support copying the requested
+# slices before dispatch, we can skip this rebuild. - Besian, November 2025
+#
 
 def _create_system(item_path: str, system_params: dict[str, Any] | None) -> _lib.LahutaSystem:
     is_model = bool(system_params.get("is_model")) if system_params else False
@@ -243,7 +248,7 @@ def execute_callable(
             payload_text  = None
             payload_bytes = bytes(result)
         else:
-            payload_text = orjson.dumps(result).decode("utf-8")
+            payload_text = orjson.dumps(result, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
             payload_bytes = None
 
         response: dict[str, Any] = {
@@ -275,7 +280,7 @@ def _serialize_error_payload(item_path: str, message: str) -> str:
         "error": {"source": "python", "message": message},
         "path": item_path,
     }
-    return orjson.dumps(payload).decode("utf-8")
+    return orjson.dumps(payload, option=orjson.OPT_SERIALIZE_NUMPY).decode("utf-8")
 
 
 __all__ = ["execute_callable"]

@@ -48,7 +48,7 @@ struct EnsureTypingKernel {
       if (!data.ctx) return ComputationResult(ComputationError("EnsureTyping requires TaskContext"));
 
       // Retrieve current topology and compute current typing mode
-      auto top_c = data.ctx->get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+      auto top_c = data.ctx->topology();
       if (!top_c) return ComputationResult(ComputationError("EnsureTyping requires topology in context"));
 
       AtomTypingMethod current_mode = AtomTypingMethod::Molstar; // default

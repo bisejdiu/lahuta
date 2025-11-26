@@ -249,7 +249,6 @@ void bind_topology(py::module &m) {
         [](Topology &top) -> const Residues& { return top.get_residues(); },
         py::return_value_policy::reference_internal,
         "Get residues container (kept alive by the Topology)")
-
     .def("atom_types_filter_by_fn", [](Topology &top, py::function func) {
         auto pred = [func](const AtomRec &r) {return func(r).cast<bool>();};
         auto recs = top.records<AtomRec>();

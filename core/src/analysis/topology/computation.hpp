@@ -20,7 +20,7 @@ public:
   constexpr static const ComputationLabel label{"topology"};
   using dependencies = Dependencies<Dependency<lahuta::analysis::system::SystemReadComputation, void>>;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& ctx, const BuildTopologyParams& p) { 
+  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& ctx, const BuildTopologyParams& p) {
     return BuildTopologyKernel::execute(ctx, p);
   }
 };

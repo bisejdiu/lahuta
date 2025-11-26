@@ -370,6 +370,7 @@ target_compile_definitions(lahuta_core PUBLIC LAHUTA_USE_EIGEN=1)
 
 if(LAHUTA_BUILD_PYTHON)
   find_package(Python3 REQUIRED COMPONENTS Interpreter Development.Module)
+  find_package(Python3 COMPONENTS NumPy)
 
   # When building outside scikit-build with no prefix default install
   # prefix to the interpreter's site-packages so cmake --install works.
@@ -424,6 +425,12 @@ if(LAHUTA_BUILD_PYTHON)
     pybind11_add_module(lahuta_ext MODULE ${LAHUTA_PY_SOURCES})
     target_include_directories(lahuta_ext PRIVATE ${PY_SRC_DIR})
     target_link_libraries(lahuta_ext PRIVATE lahuta_core spdlog::spdlog_header_only ZLIB::ZLIB)
+    if(TARGET Python3::NumPy)
+      target_link_libraries(lahuta_ext PRIVATE Python3::NumPy)
+      message(STATUS "NumPy C API found. Enabling optimized array operations for lahuta_ext.")
+    else()
+      message(STATUS "NumPy C API not found. Using pybind11 fallback for array operations.")
+    endif()
     target_compile_features(lahuta_ext PRIVATE cxx_std_17)
     set_target_properties(lahuta_ext PROPERTIES OUTPUT_NAME "lahuta")
 
@@ -445,6 +452,9 @@ if(LAHUTA_BUILD_PYTHON)
       pybind11_add_module(mapping_ext MODULE ${LAHUTA_MAPPING_SOURCES})
       target_include_directories(mapping_ext PRIVATE ${PY_SRC_DIR})
       target_link_libraries(mapping_ext PRIVATE lahuta_mapping spdlog::spdlog_header_only ZLIB::ZLIB)
+      if(TARGET Python3::NumPy)
+        target_link_libraries(mapping_ext PRIVATE Python3::NumPy)
+      endif()
       target_compile_features(mapping_ext PRIVATE cxx_std_17)
       set_target_properties(mapping_ext PROPERTIES OUTPUT_NAME "mapping")
       set_target_properties(mapping_ext PROPERTIES

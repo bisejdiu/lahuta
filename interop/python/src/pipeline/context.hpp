@@ -4,16 +4,16 @@
 #include <cstdint>
 #include <string>
 
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
 #include "lahuta.hpp"
-#include "models/dssp.hpp"
-#include "models/metadata.hpp"
-#include "models/plddt.hpp"
+#include "numpy_utils.hpp"
 #include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "pipeline/frame.hpp"
+#include "pipeline/model_payload.hpp"
 #include "topology.hpp"
 
 // clang-format off
@@ -21,6 +21,149 @@ namespace py = pybind11;
 namespace lahuta::bindings {
 using pipeline::dynamic::TaskContext;
 
+class PyModelPayload {
+public:
+  explicit PyModelPayload(std::shared_ptr<const pipeline::ModelPayloadSlices> payload)
+      : payload_(std::move(payload)) {}
+
+  py::object sequence() const {
+    if (!payload_ || !payload_->sequence) return py::none();
+    return py::str(*payload_->sequence);
+  }
+
+  py::object sequence_view() const {
+    if (!payload_ || !payload_->sequence_view) return py::none();
+    const auto &handle = payload_->sequence_view;
+    //
+    // LMDB views are thread-bound. Destroying this capsule off the creating
+    // thread can invalidate the txn. Copy if you need to keep data after the
+    // task.
+    //
+    auto capsule = py::capsule(
+        new std::shared_ptr<const SequenceView>(handle), [](void *p) {
+          delete static_cast<std::shared_ptr<const SequenceView> *>(p);
+        });
+    auto arr = py::array(
+        py::dtype::of<std::uint8_t>(),
+        {static_cast<py::ssize_t>(handle->data.size())}, {py::ssize_t(1)},
+        reinterpret_cast<const std::uint8_t *>(handle->data.data()), capsule);
+    numpy::set_readonly(arr);
+    return arr;
+  }
+
+  py::object plddts() const {
+    if (!payload_ || !payload_->plddts || payload_->plddts->empty())
+      return py::none();
+    const auto &cats = *payload_->plddts;
+    auto arr = py::array_t<std::uint8_t>(static_cast<py::ssize_t>(cats.size()));
+    if (!cats.empty()) {
+      std::memcpy(arr.mutable_data(),
+                  reinterpret_cast<const std::uint8_t *>(cats.data()),
+                  cats.size() * sizeof(std::uint8_t));
+    }
+    return arr;
+  }
+
+  py::object plddts_view() const {
+    if (!payload_ || !payload_->plddts_view) return py::none();
+    const auto &handle = payload_->plddts_view;
+    auto capsule = py::capsule(
+      new std::shared_ptr<const PlddtView>(handle), [](void *p) {
+        delete static_cast<std::shared_ptr<const PlddtView> *>(p);
+      });
+    auto ptr = reinterpret_cast<const std::uint8_t *>(handle->data.data());
+    auto arr = py::array(py::dtype::of<std::uint8_t>(),
+                         {static_cast<py::ssize_t>(handle->data.size())},
+                         {py::ssize_t(sizeof(std::uint8_t))}, ptr, capsule);
+    numpy::set_readonly(arr);
+    return arr;
+  }
+
+  py::object dssp() const {
+    if (!payload_ || !payload_->dssp || payload_->dssp->empty()) return py::none();
+    const auto &vals = *payload_->dssp;
+    auto arr = py::array_t<std::uint8_t>(static_cast<py::ssize_t>(vals.size()));
+    if (!vals.empty()) {
+      std::memcpy(arr.mutable_data(),
+                  reinterpret_cast<const std::uint8_t *>(vals.data()),
+                  vals.size() * sizeof(std::uint8_t));
+    }
+    return arr;
+  }
+
+  py::object dssp_view() const {
+    if (!payload_ || !payload_->dssp_view) return py::none();
+    const auto &handle = payload_->dssp_view;
+    auto capsule = py::capsule(
+      new std::shared_ptr<const DsspView>(handle), [](void *p) {
+        delete static_cast<std::shared_ptr<const DsspView> *>(p);
+      });
+    auto ptr = reinterpret_cast<const std::uint8_t *>(handle->data.data());
+    auto arr = py::array(py::dtype::of<std::uint8_t>(),
+                         {static_cast<py::ssize_t>(handle->data.size())},
+                         {py::ssize_t(sizeof(std::uint8_t))}, ptr, capsule);
+    numpy::set_readonly(arr);
+    return arr;
+  }
+
+  py::object metadata() const {
+    if (!payload_ || !payload_->metadata) return py::none();
+    py::dict out;
+    auto emit = [&out](const char *key, const std::string &value) {
+      if (value.empty()) {
+        out[py::str(key)] = py::none();
+      } else {
+        out[py::str(key)] = py::str(value);
+      }
+    };
+    emit("ncbi_taxonomy_id", payload_->metadata->ncbi_taxonomy_id);
+    emit("organism_scientific", payload_->metadata->organism_scientific);
+    return out;
+  }
+
+  py::object positions_copy() const {
+    if (!payload_) return py::none();
+    // Prefer decoded copy if available
+    if (payload_->positions && !payload_->positions->empty()) {
+      return numpy::positions_copy_f32(*payload_->positions);
+    }
+    // Fallback to copy from zero-copy view into a new numpy array
+    if (payload_->positions_view) {
+      const auto span = payload_->positions_view->data;
+      auto out = py::array_t<float>({static_cast<py::ssize_t>(span.size()), static_cast<py::ssize_t>(3)});
+      auto buf = out.request();
+      std::memcpy(buf.ptr, span.data(), span.size() * sizeof(RDGeom::Point3Df));
+      return out; // is writeable
+    }
+    return py::none();
+  }
+
+  py::object positions_view() const {
+    if (!payload_ || !payload_->positions_view) return py::none();
+    const auto &handle = payload_->positions_view;
+    const auto span = handle->data;
+    const auto *ptr = span.empty() ? nullptr : reinterpret_cast<const float *>(span.data());
+
+    auto capsule = py::capsule(
+        new std::shared_ptr<const CoordinateView>(handle), [](void *p) {
+          delete static_cast<std::shared_ptr<const CoordinateView> *>(p);
+        });
+
+    py::array arr(
+        py::dtype::of<float>(),
+        {static_cast<py::ssize_t>(span.size()), static_cast<py::ssize_t>(3)},
+        {static_cast<py::ssize_t>(3 * sizeof(float)),
+         static_cast<py::ssize_t>(sizeof(float))},
+        ptr, capsule);
+    numpy::set_readonly(arr);
+    return arr;
+  }
+
+private:
+  std::shared_ptr<const pipeline::ModelPayloadSlices> payload_;
+};
+
+// clang-format off
 class PyPipelineContext {
 public:
   PyPipelineContext(TaskContext *ctx, std::string path) : ctx_(ctx), path_(std::move(path)) {}
@@ -52,40 +195,24 @@ public:
     return py::none();
   }
 
-  py::object taxonomy_metadata() const {
-    if (!ctx_) return py::none();
-    auto meta = ctx_->get_object<ModelMetadata>(pipeline::CTX_MODEL_METADATA_KEY);
-    if (!meta) return py::none();
-    py::dict out;
-    if (meta->ncbi_taxonomy_id.empty()) {
-      out["ncbi_taxonomy_id"] = py::none();
-    } else {
-      out["ncbi_taxonomy_id"] = py::str(meta->ncbi_taxonomy_id);
-    }
-    if (meta->organism_scientific.empty()) {
-      out["organism_scientific"] = py::none();
-    } else {
-      out["organism_scientific"] = py::str(meta->organism_scientific);
-    }
-    return out;
-  }
-
   py::object get_system() const {
     if (!ctx_) return py::none();
-    auto sys = ctx_->get_object<const Luni>("system");
+    auto sys = ctx_->system();
     if (!sys) return py::none();
     return py::cast(sys);
   }
 
   py::object get_topology() const {
     if (!ctx_) return py::none();
-    auto top = ctx_->get_object<const Topology>("topology");
+    auto top = ctx_->topology();
     if (!top) return py::none();
     return py::cast(top);
   }
 
+  //
   // Setters to enable DI builders from Python tasks
   // system and topology setters are not exposed.
+  //
   void set_text(const std::string &key, const std::string &value) {
     if (!ctx_) return;
     ctx_->set_text(key, value);
@@ -111,7 +238,7 @@ public:
       py::bytes b = py::bytes(obj);
       ctx_->set_bytes(key, b.cast<std::string>());
     } catch (const py::error_already_set&) {
-      // invalid types are ignored
+      // just ignore
     }
   }
 
@@ -153,28 +280,6 @@ public:
     return py::none();
   }
 
-  py::object plddt_categories() const {
-    if (!ctx_) return py::none();
-    auto cats = ctx_->get_object<const std::vector<pLDDTCategory>>(pipeline::CTX_PLDDT_KEY);
-    if (!cats) return py::none();
-    py::list out(cats->size());
-    for (size_t i = 0; i < cats->size(); ++i) {
-      out[i] = py::int_(static_cast<std::uint8_t>((*cats)[i]));
-    }
-    return out;
-  }
-
-  py::object dssp_assignments() const {
-    if (!ctx_) return py::none();
-    auto dssp = ctx_->get_object<const std::vector<DSSPAssignment>>(pipeline::CTX_DSSP_KEY);
-    if (!dssp) return py::none();
-    py::list out(dssp->size());
-    for (size_t i = 0; i < dssp->size(); ++i) {
-      out[i] = py::int_(static_cast<std::uint8_t>((*dssp)[i]));
-    }
-    return out;
-  }
-
   py::object frame_metadata() const {
     if (auto meta = frame_metadata_ptr()) {
       py::dict out;
@@ -190,26 +295,51 @@ public:
     return py::none();
   }
 
+  py::object model_payload() const {
+    auto payload = payload_ptr();
+    if (!payload) return py::none();
+    if (!cached_payload_) {
+      cached_payload_ = py::cast(std::make_shared<PyModelPayload>(payload));
+    }
+    return cached_payload_;
+  }
+
 private:
   const FrameMetadata* frame_metadata_ptr() const {
     if (!ctx_) return nullptr;
-    auto meta = ctx_->get_object<FrameMetadata>("lahuta.frame");
+    auto meta = ctx_->frame_metadata();
     return meta ? meta.get() : nullptr;
+  }
+
+  std::shared_ptr<const pipeline::ModelPayloadSlices> payload_ptr() const {
+    if (!ctx_) return {};
+    return ctx_->model_payload();
   }
 
   TaskContext *ctx_;
   std::string path_;
+  mutable py::object cached_payload_;
 };
 
 inline void bind_pipeline_context(py::module_ &md) {
+  constexpr const char* txn_help = R"doc( The view is backed by LMDB memory and keeps the database transaction alive while in use. Do not keep this view after your task completes. Copy the data if you need it later.)doc";
+  py::class_<PyModelPayload, std::shared_ptr<PyModelPayload>>(md, "ModelPayload")
+      .def_property_readonly("sequence",       &PyModelPayload::sequence)
+      .def_property_readonly("sequence_view",  &PyModelPayload::sequence_view)
+      .def_property_readonly("plddts",         &PyModelPayload::plddts)
+      .def_property_readonly("plddts_view",    &PyModelPayload::plddts_view)
+      .def_property_readonly("dssp",           &PyModelPayload::dssp)
+      .def_property_readonly("dssp_view",      &PyModelPayload::dssp_view)
+      .def_property_readonly("metadata",       &PyModelPayload::metadata)
+      .def_property_readonly("positions",      &PyModelPayload::positions_copy)
+      .def_property_readonly("positions_view", &PyModelPayload::positions_view);
+
   py::class_<PyPipelineContext>(md, "PipelineContext")
-      .def_property_readonly("path",         &PyPipelineContext::path,         py::doc(R"doc(Return the input item path (e.g., file path).)doc"))
-      .def_property_readonly("conformer_id", &PyPipelineContext::conformer_id, py::doc(R"doc(Return the conformer/frame identifier for the current item.)doc"))
-      .def_property_readonly("session_id",   &PyPipelineContext::session_id,   py::doc(R"doc(Return the session identifier associated with this item.)doc"))
-      .def_property_readonly("timestamp_ps", &PyPipelineContext::timestamp_ps, py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
-      .def_property_readonly("taxonomy",     &PyPipelineContext::taxonomy_metadata, py::doc(R"doc(Model taxonomy metadata for AlphaFold-like inputs (dict with ncbi_taxonomy_id / organism_scientific).)doc"))
-      .def_property_readonly("plddt",        &PyPipelineContext::plddt_categories, py::doc(R"doc(Residue-level pLDDT categories (list of ints, 0=VeryHigh ... 3=VeryLow).)doc"))
-      .def_property_readonly("dssp",         &PyPipelineContext::dssp_assignments, py::doc(R"doc(Residue-level DSSP assignments (list of ints: 0=Coil, 1=Alpha helix, 2=3-10 helix, 3=Pi helix, 4=PolyPro helix, 5=Strand, 6=Turn, 7=Bend).)doc"))
+      .def_property_readonly("path",          &PyPipelineContext::path,          py::doc(R"doc(Return the input item path (e.g., file path).)doc"))
+      .def_property_readonly("conformer_id",  &PyPipelineContext::conformer_id,  py::doc(R"doc(Return the conformer/frame identifier for the current item.)doc"))
+      .def_property_readonly("session_id",    &PyPipelineContext::session_id,    py::doc(R"doc(Return the session identifier associated with this item.)doc"))
+      .def_property_readonly("timestamp_ps",  &PyPipelineContext::timestamp_ps,  py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
+      .def_property_readonly("model_payload", &PyPipelineContext::model_payload, py::doc(R"doc(Structured view over lazily loaded LMDB payload slices.)doc"))
 
       .def("get",          &PyPipelineContext::get)
       .def("get_system",   &PyPipelineContext::get_system)

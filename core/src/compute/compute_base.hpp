@@ -10,6 +10,7 @@
 #include "label.hpp"
 #include "parameters.hpp"
 #include "result.hpp"
+#include "pipeline/data_requirements.hpp"
 
 // clang-format off
 namespace lahuta::topology::compute {
@@ -50,6 +51,8 @@ public:
   /// Optional post-completion hook. Default no-op. Implementations may
   /// augment the result (e.g., append emissions) based on the current context.
   virtual void on_complete(DataContext<DataT, M>&, ComputationResult&) {}
+
+  virtual pipeline::DataFieldSet data_requirements() const { return pipeline::DataFieldSet::none(); }
 
   // execution control
   bool is_enabled() const { return enabled_; }

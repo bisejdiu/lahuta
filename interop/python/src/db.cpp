@@ -22,20 +22,22 @@ void bind_db(py::module_ &m) {
     .def(py::init<const std::string&, std::size_t>(), py::arg("path"), py::arg("max_size_gb") = 500)
     .def("keys", [](LMDBDatabase &db) {
           std::vector<std::string> out;
-          db.for_each_key([&](const std::string &k) { out.push_back(k); });
+          db.for_each_key([&](const std::string &k) {
+            out.push_back(k);
+          });
           return out;
         },
         "Return all keys in the database (eager list)")
     .def("get_raw", [](LMDBDatabase &db, const std::string &key) {
           LMDBReader r(db.get_env(), db.get_dbi());
-          std::string_view raw;
+          std::string raw;
           if (!r.fetch(key, raw)) throw std::runtime_error("Key not found: " + key);
           return py::bytes(raw.data(), raw.size());
         },
         py::arg("key"))
     .def("get_model", [](LMDBDatabase &db, const std::string &key) {
           LMDBReader r(db.get_env(), db.get_dbi());
-          std::string_view raw;
+          std::string raw;
           if (!r.fetch(key, raw)) throw std::runtime_error("Key not found: " + key);
           using serialization::Serializer;
           using lahuta::analysis::system::ModelRecord;

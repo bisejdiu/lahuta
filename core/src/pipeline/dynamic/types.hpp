@@ -8,6 +8,15 @@
 #include <utility>
 #include <vector>
 
+#include <GraphMol/Conformer.h>
+
+#include "lahuta.hpp"
+#include "pipeline/data_requirements.hpp"
+#include "pipeline/dynamic/keys.hpp"
+#include "pipeline/frame.hpp"
+#include "pipeline/model_payload.hpp"
+#include "topology.hpp"
+
 // clang-format off
 namespace lahuta::pipeline::dynamic {
 
@@ -86,6 +95,26 @@ public:
     return it == bytes_.end() ? nullptr : &it->second;
   }
 
+  [[nodiscard]] std::shared_ptr<const pipeline::ModelPayloadSlices> model_payload() const {
+    return get_object<const pipeline::ModelPayloadSlices>(pipeline::CTX_MODEL_PAYLOAD_KEY);
+  }
+
+  [[nodiscard]] std::shared_ptr<const RDKit::Conformer> conformer() const {
+    return get_object<const RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY);
+  }
+
+  [[nodiscard]] std::shared_ptr<const Topology> topology() const {
+    return get_object<const Topology>(pipeline::CTX_TOPOLOGY_KEY);
+  }
+
+  [[nodiscard]] std::shared_ptr<const Luni> system() const {
+    return get_object<const Luni>(pipeline::CTX_SYSTEM_KEY);
+  }
+
+  [[nodiscard]] std::shared_ptr<const FrameMetadata> frame_metadata() const {
+    return get_object<const FrameMetadata>(pipeline::CTX_FRAME_KEY);
+  }
+
   const std::unordered_map<std::string, std::string>& texts() const noexcept { return texts_; }
   const std::unordered_map<std::string, std::string>& bytes() const noexcept { return bytes_; }
 
@@ -152,6 +181,7 @@ class ITask {
 public:
   virtual ~ITask() = default;
   virtual TaskResult run(const std::string& item_path, TaskContext& ctx) = 0;
+  virtual pipeline::DataFieldSet data_requirements() const { return pipeline::DataFieldSet::none(); }
 };
 
 } // namespace lahuta::pipeline::dynamic

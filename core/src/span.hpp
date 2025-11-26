@@ -26,6 +26,7 @@ public:
   constexpr const T& operator[](std::size_t i) const noexcept { return data_[i]; }
 
   [[nodiscard]] constexpr std::size_t size() const noexcept { return size_; }
+  [[nodiscard]] constexpr bool empty() const noexcept { return size_ == 0; }
   [[nodiscard]] constexpr T* data() noexcept { return data_; }
   [[nodiscard]] constexpr const T* data() const noexcept { return data_; }
   [[nodiscard]] constexpr std::size_t size_bytes() const noexcept { return size_ * sizeof(T); }

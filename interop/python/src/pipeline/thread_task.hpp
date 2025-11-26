@@ -35,21 +35,25 @@ public:
     py::gil_scoped_acquire gil;
     auto mod = py::module_::import("orjson");
     dumps_ = mod.attr("dumps");
+    opt_serialize_numpy_ = mod.attr("OPT_SERIALIZE_NUMPY"); // support for numpy serialization
   }
 
   ~PyCallableTask() override {
     if (!Py_IsInitialized() || Py_IsFinalizing()) {
       try { (void) func_.release().ptr(); } catch (...) {}
       try { (void)dumps_.release().ptr(); } catch (...) {}
+      try { (void)opt_serialize_numpy_.release().ptr(); } catch (...) {}
       return;
     }
     try {
       py::gil_scoped_acquire gil;
       func_  = py::object();
       dumps_ = py::object();
+      opt_serialize_numpy_ = py::object();
     } catch (...) {
       try { (void) func_.release().ptr(); } catch (...) {}
       try { (void)dumps_.release().ptr(); } catch (...) {}
+      try { (void)opt_serialize_numpy_.release().ptr(); } catch (...) {}
     }
   }
 
@@ -88,8 +92,13 @@ public:
         payload = b.cast<std::string>();
         if (store_) ctx.set_bytes(store_key_, payload);
       } else {
+        //
         // orjson.dumps returns bytes for JSON-serializable objects
-        py::bytes b = dumps_(resp);
+        // Using OPT_SERIALIZE_NUMPY to automatically convert numpy arrays to lists
+        // Note: orjson.dumps(obj, /, default=None, option=None)
+        // We need to pass None for default and our option value
+        //
+        py::bytes b = dumps_(resp, py::none(), opt_serialize_numpy_);
         payload = b.cast<std::string>();
         if (store_) ctx.set_text(store_key_, payload);
       }
@@ -174,6 +183,7 @@ private:
 
   py::object func_;
   py::object dumps_;
+  py::object opt_serialize_numpy_;
   std::string store_key_;
   std::optional<std::string> emit_channel_;
   bool store_;

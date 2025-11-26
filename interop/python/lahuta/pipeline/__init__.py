@@ -7,6 +7,8 @@ from .params import SystemParams, TopologyParams
 from .tasks import ContactTask
 from .types import FileOutput, InMemoryPolicy, OutputFormat, PipelineContext, ShardedOutput
 
+DataField = _lib.pipeline.DataField
+
 StageManager = _lib.pipeline.StageManager
 ReportingLevel = _lib.pipeline.ReportingLevel
 
@@ -37,4 +39,5 @@ __all__ = (
     "ContactTask",
     "SystemParams",
     "TopologyParams",
+    "DataField",
 )
