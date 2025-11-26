@@ -23,6 +23,7 @@ from lahuta.sources import (
     DatabaseHandleSource,
     DatabaseSource,
     LmdbSource,
+    MdTrajectoriesSource,
     PipelineSource,
 )
 
@@ -74,6 +75,9 @@ class Pipeline:
         # Parameter proxies
         self._system_params   = SystemParams(self._mgr)
         self._topology_params = TopologyParams(self._mgr)
+
+        # hack
+        self._contact_providers: set[_lib.ContactProvider] = set()
 
         # DatabaseHandleSource is only valid for is_model=True
         if isinstance(source, _lib.pipeline.sources.DatabaseHandleSource):
@@ -224,6 +228,15 @@ class Pipeline:
         if isinstance(task, ContactTask):
             if not self._topology_params.enabled:
                 raise ValueError("Topology is disabled. Cannot add ContactsTask which requires 'topology'.")
+
+            if isinstance(self._source, MdTrajectoriesSource) and self._contact_providers and task.provider not in self._contact_providers:
+                existing = next(iter(self._contact_providers))
+                raise ValueError(
+                    f"Cannot add ContactTask with provider '{task.provider.name}' when MD source already has "
+                    f"ContactTask with provider '{existing.name}'. MD trajectories share topology across frames, "
+                    f"and different providers require incompatible atom typing. Use a single provider for a Pipeline run."
+                )
+            self._contact_providers.add(task.provider)
 
             match task.provider:
                 case _lib.ContactProvider.Arpeggio:
