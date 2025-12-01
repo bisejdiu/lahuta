@@ -96,6 +96,10 @@ public:
       }
 
       auto buffer = session_->acquire_buffer();
+      if (!buffer) {
+        throw std::runtime_error("TrajectorySession::acquire_buffer returned null");
+      }
+
       buffer->clear();
       if (packet_->atom_count > 0 && buffer->capacity() < packet_->atom_count) {
         buffer->reserve(packet_->atom_count);
@@ -111,7 +115,7 @@ public:
         throw std::runtime_error("Decoded XTC frame atom count mismatch");
       }
 
-      return std::shared_ptr<const RDGeom::POINT3D_VECT>(buffer, buffer.get());
+      return std::shared_ptr<const RDGeom::POINT3D_VECT>(std::move(buffer));
     }
 
     std::shared_ptr<const TrajectorySession> session_;
@@ -171,13 +175,27 @@ private:
   std::vector<std::string> xtc_paths_;
   StructureFormat format_;
 
-  // Coordinate buffer pool, bounded by max_inflight
+  //
+  // Coordinate buffer pool, bounded by max_inflight.
+  // Returns a shared_ptr with a custom deleter that returns the buffer to the pool.
+  // IMPORTANT: We extract base.get() into a local variable BEFORE passing it to
+  // the shared_ptr constructor. This avoids undefined behavior from unspecified
+  // argument evaluation order: if the lambda (which moves `base`) would be evaluated
+  // before base.get(), we'd get a null pointer. This caused x86-specific crashes
+  // where GCC evaluated the lambda first, unlike ARM/Clang which evaluated left-to-right.
+  // See https://en.cppreference.com/w/cpp/language/eval_order for more information.
+  // Specifically, rule 14 in that reference states: "In a function call, value
+  // computations and side effects of the initialization of every parameter are
+  // indeterminately sequenced with respect to value computations and side effects
+  // of any other parameter."   - Besian, November 2025
+  //
   std::shared_ptr<RDGeom::POINT3D_VECT> acquire_buffer() const {
     std::lock_guard<std::mutex> lk(pool_mutex_);
     if (!coord_pool_.empty()) {
       auto base = coord_pool_.back(); coord_pool_.pop_back();
+      auto* raw = base.get();
       return std::shared_ptr<RDGeom::POINT3D_VECT>(
-        base.get(),
+        raw,
         [weak_self = std::weak_ptr<const TrajectorySession>(shared_from_this()), base = std::move(base)](RDGeom::POINT3D_VECT*) mutable {
           if (auto self = weak_self.lock()) {
             self->release_buffer(std::move(base));
@@ -186,8 +204,9 @@ private:
         });
     }
     auto base = std::shared_ptr<RDGeom::POINT3D_VECT>(new RDGeom::POINT3D_VECT());
+    auto* raw = base.get();
     return std::shared_ptr<RDGeom::POINT3D_VECT>(
-      base.get(),
+      raw,
       [weak_self = std::weak_ptr<const TrajectorySession>(shared_from_this()), base = std::move(base)](RDGeom::POINT3D_VECT*) mutable {
         if (auto self = weak_self.lock()) {
           self->release_buffer(std::move(base));
