@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-import lahuta as lxx
+from lahuta import LahutaSystem, TopologyBuildingOptions
 
 
 # fmt: off
@@ -120,18 +120,18 @@ EXPECTED = {
 }
 
 @pytest.fixture(scope="session")
-def luni(ubi_cif: Path) -> lxx.LahutaSystem:
-    return lxx.LahutaSystem(str(ubi_cif))
+def luni(ubi_cif: Path) -> LahutaSystem:
+    return LahutaSystem(str(ubi_cif))
 
 
-def _ensure_topology(luni: lxx.LahutaSystem) -> None:
+def _ensure_topology(luni: LahutaSystem) -> None:
     # Build with a stable stage selection
-    opts = lxx.TopologyBuildingOptions()
+    opts = TopologyBuildingOptions()
     opts.cutoff = 4.5
     assert luni.build_topology(opts) is True
 
 
-def test_topology_hashes_atoms_rings_groups(luni: lxx.LahutaSystem, capsys: pytest.CaptureFixture[str]) -> None:
+def test_topology_hashes_atoms_rings_groups(luni: LahutaSystem, capsys: pytest.CaptureFixture[str]) -> None:
     _ensure_topology(luni)
     topo = luni.get_topology()
 

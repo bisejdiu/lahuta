@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-import lahuta as lxx
+from lahuta import AtomTypingMethod, ContactProvider
 from lahuta.db import LahutaDB
 from lahuta.pipeline import Pipeline
 from lahuta.pipeline.tasks import ContactTask
@@ -64,7 +64,7 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
     assert model_path.exists(), f"Missing model file: {model_path}"
 
     p_file = Pipeline(FileSource(str(model_path)))
-    p_file.add_task(name="contacts_file", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
+    p_file.add_task(name="contacts_file", task=ContactTask(provider=ContactProvider.Arpeggio))
     out_file = p_file.run(threads=1)
     recs_file = out_file.to_dict("contacts_file")
     assert isinstance(recs_file, list) and len(recs_file) == 1
@@ -75,8 +75,8 @@ def test_arpeggio_contacts_file_vs_db(tmp_path: Path, model_basename: str) -> No
     p_db = Pipeline(DatabaseHandleSource(ldb._db, batch=64))
 
     # Ensure Arpeggio atom typing is selected before building topology in model mode
-    p_db.params("topology").atom_typing_method = lxx.AtomTypingMethod.Arpeggio
-    p_db.add_task(name="contacts_db", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
+    p_db.params("topology").atom_typing_method = AtomTypingMethod.Arpeggio
+    p_db.add_task(name="contacts_db", task=ContactTask(provider=ContactProvider.Arpeggio))
     out_db = p_db.run(threads=1)
     recs_db = out_db.to_dict("contacts_db")
     assert isinstance(recs_db, list) and len(recs_db) >= 1

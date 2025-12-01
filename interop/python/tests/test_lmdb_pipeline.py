@@ -5,9 +5,8 @@ from typing import Any, Callable
 
 import pytest
 
-from lahuta import AtomTypingMethod, TopologyBuildingOptions
+from lahuta import AtomTypingMethod, ContactProvider, LahutaSystem, TopologyBuildingOptions
 from lahuta.db import LahutaDB
-from lahuta.lib import lahuta as lxx
 from lahuta.pipeline import InMemoryPolicy
 from lahuta.pipeline.tasks import ContactTask
 from lahuta.pipeline.wrapper import Pipeline
@@ -49,8 +48,8 @@ def _validate_contact_counts(
     assert total_actual == total_expected, f"Total contacts: expected {total_expected}, got {total_actual}"
 
 
-@pytest.mark.parametrize("provider", [lxx.ContactProvider.MolStar, lxx.ContactProvider.Arpeggio])
-def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactProvider) -> None:
+@pytest.mark.parametrize("provider", [ContactProvider.MolStar, ContactProvider.Arpeggio])
+def test_create_db_and_compute_contacts(tmp_path: Path, provider: ContactProvider) -> None:
     """Test creating a database from directory and computing contacts using different providers."""
     data_dir = Path("core/data/models")
     assert data_dir.exists(), "Test models directory missing"
@@ -64,7 +63,7 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
 
     p_read = Pipeline(DatabaseHandleSource(db))
 
-    task_name = "contacts_molstar" if provider == lxx.ContactProvider.MolStar else "contacts_arpeggio"
+    task_name = "contacts_molstar" if provider == ContactProvider.MolStar else "contacts_arpeggio"
     p_read.add_task(name=task_name, task=ContactTask(provider=provider))
 
     out = p_read.run(threads=2)
@@ -72,7 +71,7 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: lxx.ContactPro
     recs = out.to_dict(task_name)
     assert len(recs) == 2
 
-    if provider == lxx.ContactProvider.MolStar:
+    if provider == ContactProvider.MolStar:
         expected = {
             "AF-P0CL56-F1-model_v4.cif.gz": 57,
             "AF-Q57552-F1-model_v4.cif.gz": 695,
@@ -133,7 +132,7 @@ def test_arpeggio_contacts_file_pipeline() -> None:
     assert data_file.exists(), "Test file missing"
 
     p = Pipeline(FileSource(str(data_file)))
-    p.add_task(name="contacts", task=ContactTask(provider=lxx.ContactProvider.Arpeggio))
+    p.add_task(name="contacts", task=ContactTask(provider=ContactProvider.Arpeggio))
 
     out = p.run(threads=1)
     assert "contacts" in out
@@ -157,7 +156,7 @@ def test_arpeggio_contacts_lahuta_system() -> None:
 
     opts = TopologyBuildingOptions()
     opts.atom_typing_method = AtomTypingMethod.Arpeggio
-    sys = lxx.LahutaSystem(str(data_file))
+    sys = LahutaSystem(str(data_file))
     if not sys.build_topology(opts):
         raise RuntimeError("Failed to build topology")
 

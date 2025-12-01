@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-import lahuta as lxx
+from lahuta import LahutaSystem
 
 
 @pytest.fixture(scope="session")
@@ -21,12 +21,12 @@ def pipeline_test_files(data_dir: Path) -> list[str]:
 
 
 @pytest.fixture(scope="session")
-def cached_luni_systems(pipeline_test_files: list[str]) -> dict[str, lxx.LahutaSystem]:
+def cached_luni_systems(pipeline_test_files: list[str]) -> dict[str, LahutaSystem]:
     """Cache LahutaSystem objects."""
     systems = {}
     for file_path in pipeline_test_files:
         try:
-            systems[file_path] = lxx.LahutaSystem(file_path)
+            systems[file_path] = LahutaSystem(file_path)
         except Exception as e:
             pytest.skip(f"Failed to load {file_path}: {e}")
     return systems

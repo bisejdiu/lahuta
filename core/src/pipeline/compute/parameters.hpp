@@ -29,15 +29,11 @@ enum class ContactsOutputFormat : uint8_t {
   Binary,
 };
 
-// NOTE: When adding fields to this struct, also update the serialization code in:
-//       interop/python/src/pipeline/python_process_task.hpp (PyProcessTask::run method)
 struct SystemReadParams : public ParameterBase<SystemReadParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::SYSTEM_READ;
   bool is_model = false;
 };
 
-// NOTE: When adding fields to this struct, also update the serialization code in:
-//       interop/python/src/pipeline/python_process_task.hpp (PyProcessTask::run method)
 struct BuildTopologyParams : public ParameterBase<BuildTopologyParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = param_ids::BUILD_TOPOLOGY;
   TopologyComputation flags = TopologyComputation::All;

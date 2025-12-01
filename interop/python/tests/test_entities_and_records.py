@@ -4,24 +4,23 @@ from __future__ import annotations
 
 import pytest
 
-import lahuta as lxx
-from lahuta import rdkit as rdkit
+from lahuta import EntityID, Kind, LahutaSystem, Topology, rdkit
 
 
 @pytest.fixture(scope="session")
-def topo(luni: lxx.LahutaSystem) -> lxx.Topology:
+def topo(luni: LahutaSystem) -> Topology:
     assert luni.build_topology() is True
     return luni.get_topology()
 
 
-def test_entities_and_records_rdkit(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_entities_and_records_rdkit(luni: LahutaSystem, topo: Topology) -> None:
     atom_recs = topo.atom_types
     assert isinstance(atom_recs, list) and len(atom_recs) == luni.n_atoms
     a0 = atom_recs[0]
     a0_idx = int(a0.idx())
 
-    eid_atom = lxx.EntityID.make(lxx.Kind.Atom, a0_idx)
-    assert eid_atom.kind == lxx.Kind.Atom and eid_atom.index == a0_idx
+    eid_atom = EntityID.make(Kind.Atom, a0_idx)
+    assert eid_atom.kind == Kind.Atom and eid_atom.index == a0_idx
     assert str(eid_atom).startswith("Atom#")
 
     mol = luni.get_molecule()
@@ -39,7 +38,7 @@ def test_entities_and_records_rdkit(luni: lxx.LahutaSystem, topo: lxx.Topology) 
         assert isinstance(atoms, list) and len(atoms) == r0.size
         assert all(hasattr(a, "getIdx") for a in atoms)
 
-        eid_ring = lxx.EntityID.make(lxx.Kind.Ring, 0)
+        eid_ring = EntityID.make(Kind.Ring, 0)
         assert str(eid_ring).startswith("Ring#0")
 
     groups = topo.groups
@@ -50,11 +49,11 @@ def test_entities_and_records_rdkit(luni: lxx.LahutaSystem, topo: lxx.Topology) 
         assert isinstance(atoms, list) and len(atoms) >= 1
         assert all(hasattr(a, "getIdx") for a in atoms)
 
-        eid_group = lxx.EntityID.make(lxx.Kind.Group, 0)
+        eid_group = EntityID.make(Kind.Group, 0)
         assert str(eid_group).startswith("Group#0")
 
 
-def test_hypothesis_sampling_over_indices(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_hypothesis_sampling_over_indices(luni: LahutaSystem, topo: Topology) -> None:
     hyp = pytest.importorskip("hypothesis", reason="Hypothesis not installed")
     st = pytest.importorskip("hypothesis.strategies", reason="Hypothesis not installed")
 

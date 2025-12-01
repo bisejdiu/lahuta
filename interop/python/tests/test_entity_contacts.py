@@ -6,32 +6,41 @@ from typing import Iterable
 
 import pytest
 
-import lahuta as lxx
+from lahuta import (
+    AtomType,
+    Category,
+    Contact,
+    InteractionType,
+    InteractionTypeSet,
+    Kind,
+    LahutaSystem,
+    Topology,
+)
 from lahuta.entities import atoms, compute_contacts, find_contacts, groups, rings
 
 
 # fmt: off
 @pytest.fixture(scope="session")
-def topo(luni: lxx.LahutaSystem) -> lxx.Topology:
+def topo(luni: LahutaSystem) -> Topology:
     assert luni.build_topology() is True
     return luni.get_topology()
 
 
-def _key(c: lxx.Contact) -> tuple[lxx.Kind, int, lxx.Kind, int, lxx.Category]:
+def _key(c: Contact) -> tuple[Kind, int, Kind, int, Category]:
     d = c.to_dict()
     return d["lhs_kind"], int(d["lhs_index"]), d["rhs_kind"], int(d["rhs_index"]), d["category"]
 
 
-def test_system_sanity(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_system_sanity(luni: LahutaSystem, topo: Topology) -> None:
     assert isinstance(luni.n_atoms, int) and luni.n_atoms == 671
     assert len(topo.atom_types) == 671
     assert len(topo.rings)  >= 1
     assert len(topo.groups) >= 1
 
 
-def test_provider_engine_molstar_counts_and_samples(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_provider_engine_molstar_counts_and_samples(luni: LahutaSystem, topo: Topology) -> None:
     ms_all = compute_contacts(topo, provider="molstar")
-    hbonds = compute_contacts(topo, provider="molstar", only=lxx.InteractionType.HydrogenBond)
+    hbonds = compute_contacts(topo, provider="molstar", only=InteractionType.HydrogenBond)
 
     assert ms_all.size() == 156
     assert hbonds.size() == 102
@@ -40,44 +49,44 @@ def test_provider_engine_molstar_counts_and_samples(luni: lxx.LahutaSystem, topo
     keys_all = {_key(c) for c in ms_all}
     keys_hb  = {_key(c) for c in hbonds}
 
-    def atom_pair(i: int, j: int, cat: lxx.Category) -> tuple[lxx.Kind, int, lxx.Kind, int, lxx.Category]:
-        return (lxx.Kind.Atom, min(i, j), lxx.Kind.Atom, max(i, j), cat)
+    def atom_pair(i: int, j: int, cat: Category) -> tuple[Kind, int, Kind, int, Category]:
+        return (Kind.Atom, min(i, j), Kind.Atom, max(i, j), cat)
 
-    assert atom_pair(4,  76, lxx.Category.HydrogenBond) in keys_all
-    assert atom_pair(8,  72, lxx.Category.HydrogenBond) in keys_all
-    assert atom_pair(28, 52, lxx.Category.WeakHydrogenBond) in keys_all
-    assert atom_pair(29, 37, lxx.Category.HydrogenBond) in keys_all
+    assert atom_pair(4,  76, Category.HydrogenBond) in keys_all
+    assert atom_pair(8,  72, Category.HydrogenBond) in keys_all
+    assert atom_pair(28, 52, Category.WeakHydrogenBond) in keys_all
+    assert atom_pair(29, 37, Category.HydrogenBond) in keys_all
 
-    assert atom_pair(4, 76,  lxx.Category.HydrogenBond) in keys_hb
-    assert atom_pair(8, 72,  lxx.Category.HydrogenBond) in keys_hb
-    assert atom_pair(29, 37, lxx.Category.HydrogenBond) in keys_hb
+    assert atom_pair(4, 76,  Category.HydrogenBond) in keys_hb
+    assert atom_pair(8, 72,  Category.HydrogenBond) in keys_hb
+    assert atom_pair(29, 37, Category.HydrogenBond) in keys_hb
 
 
-def test_compute_contacts_multiple_interactions(topo: lxx.Topology) -> None:
-    hb  = lxx.InteractionType.HydrogenBond
-    whb = lxx.InteractionType.WeakHydrogenBond
+def test_compute_contacts_multiple_interactions(topo: Topology) -> None:
+    hb  = InteractionType.HydrogenBond
+    whb = InteractionType.WeakHydrogenBond
 
     combo = compute_contacts(topo, provider="molstar", only=[hb, whb])
     assert combo.size() > 0
 
     combo_contacts = set(combo)
     categories = {c.type.category for c in combo_contacts}
-    assert lxx.Category.HydrogenBond in categories
-    assert lxx.Category.WeakHydrogenBond in categories
-    assert categories.issubset({lxx.Category.HydrogenBond, lxx.Category.WeakHydrogenBond})
+    assert Category.HydrogenBond in categories
+    assert Category.WeakHydrogenBond in categories
+    assert categories.issubset({Category.HydrogenBond, Category.WeakHydrogenBond})
 
     combo_or = compute_contacts(topo, provider="molstar", only=hb | whb)
     assert set(combo_or) == combo_contacts
 
-    filter_set = lxx.InteractionTypeSet(hb)
+    filter_set = InteractionTypeSet(hb)
     filter_set |= whb
     combo_set = compute_contacts(topo, provider="molstar", only=filter_set)
     assert set(combo_set) == combo_contacts
 
-    nested = compute_contacts(topo, provider="molstar", only=[hb, [whb, hb], (lxx.InteractionTypeSet(whb),)])
+    nested = compute_contacts(topo, provider="molstar", only=[hb, [whb, hb], (InteractionTypeSet(whb),)])
     assert set(nested) == combo_contacts
 
-    def pair_generator() -> Iterable[lxx.InteractionType]:
+    def pair_generator() -> Iterable[InteractionType]:
         yield from (hb, whb)
 
     combo_iter = compute_contacts(topo, provider="molstar", only=pair_generator())
@@ -87,18 +96,18 @@ def test_compute_contacts_multiple_interactions(topo: lxx.Topology) -> None:
     assert set(duplicated) == combo_contacts
 
 
-def test_self_hydrophobic_like_count_and_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
-    sel = atoms(lambda a: a.type.has(lxx.AtomType.Hydrophobic))
+def test_self_hydrophobic_like_count_and_invariants(luni: LahutaSystem, topo: Topology) -> None:
+    sel = atoms(lambda a: a.type.has(AtomType.Hydrophobic))
 
-    def within_45(i: int, j: int, d2: float) -> lxx.InteractionType:
-        return lxx.InteractionType.Hydrophobic if d2 <= 4.5 * 4.5 else lxx.InteractionType.None_
+    def within_45(i: int, j: int, d2: float) -> InteractionType:
+        return InteractionType.Hydrophobic if d2 <= 4.5 * 4.5 else InteractionType.None_
 
     cs = find_contacts(topo, sel, tester=within_45, distance_max=4.5)
     assert cs.size() == 340
 
     keys = {_key(c) for c in cs}
-    assert (lxx.Kind.Atom, 7, lxx.Kind.Atom, 9,  lxx.Category.Hydrophobic) in keys
-    assert (lxx.Kind.Atom, 9, lxx.Kind.Atom, 10, lxx.Category.Hydrophobic) in keys
+    assert (Kind.Atom, 7, Kind.Atom, 9,  Category.Hydrophobic) in keys
+    assert (Kind.Atom, 9, Kind.Atom, 10, Category.Hydrophobic) in keys
 
     hyp = pytest.importorskip("hypothesis",            reason="Hypothesis not installed")
     st  = pytest.importorskip("hypothesis.strategies", reason="Hypothesis not installed")
@@ -106,54 +115,54 @@ def test_self_hydrophobic_like_count_and_invariants(luni: lxx.LahutaSystem, topo
     @hyp.given(st.integers(min_value=0, max_value=max(0, cs.size() - 1)))
     def _check_item(i: int) -> None:
         c = cs[i]
-        assert c.lhs.kind == lxx.Kind.Atom and c.rhs.kind == lxx.Kind.Atom
-        assert c.type.category == lxx.Category.Hydrophobic
+        assert c.lhs.kind == Kind.Atom and c.rhs.kind == Kind.Atom
+        assert c.type.category == Category.Hydrophobic
         assert c.distance_sq <= 4.5 * 4.5 + 1e-6
 
         # Both atoms should be hydrophobic by classification
         a_l = topo.get_atom(c.lhs.index)
         a_r = topo.get_atom(c.rhs.index)
-        assert a_l.type.has(lxx.AtomType.Hydrophobic)
-        assert a_r.type.has(lxx.AtomType.Hydrophobic)
+        assert a_l.type.has(AtomType.Hydrophobic)
+        assert a_r.type.has(AtomType.Hydrophobic)
 
     _check_item()
 
 
-def test_cross_cation_pi_like_count_and_shape(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
-    sel_groups = groups(lambda g: g.a_type == lxx.AtomType.PositiveCharge or g.a_type == lxx.AtomType.NegativeCharge)
+def test_cross_cation_pi_like_count_and_shape(luni: LahutaSystem, topo: Topology) -> None:
+    sel_groups = groups(lambda g: g.a_type == AtomType.PositiveCharge or g.a_type == AtomType.NegativeCharge)
     sel_rings  = rings(lambda r: r.aromatic)
 
     def cation_pi(i: int, j: int, d2: float):
-        return lxx.InteractionType.CationPi if d2 <= 6.0 * 6.0 else lxx.InteractionType.None_
+        return InteractionType.CationPi if d2 <= 6.0 * 6.0 else InteractionType.None_
 
     cs = find_contacts(topo, sel_groups, sel_rings, tester=cation_pi, distance_max=6.0)
     assert cs.size() == 7
 
     # Exemplars by indices (canonical Ring -> Group ordering)
-    pair_keys = {_key(c) for c in cs if c.type.category == lxx.Category.CationPi}
-    assert (lxx.Kind.Ring, 1, lxx.Kind.Group, 2,  lxx.Category.CationPi) in pair_keys
-    assert (lxx.Kind.Ring, 5, lxx.Kind.Group, 7,  lxx.Category.CationPi) in pair_keys
-    assert (lxx.Kind.Ring, 9, lxx.Kind.Group, 10, lxx.Category.CationPi) in pair_keys
+    pair_keys = {_key(c) for c in cs if c.type.category == Category.CationPi}
+    assert (Kind.Ring, 1, Kind.Group, 2,  Category.CationPi) in pair_keys
+    assert (Kind.Ring, 5, Kind.Group, 7,  Category.CationPi) in pair_keys
+    assert (Kind.Ring, 9, Kind.Group, 10, Category.CationPi) in pair_keys
 
     # Shape invariants (orientation may be canonicalized: Ring comes before Group)
     for c in cs:
         kinds = {c.lhs.kind, c.rhs.kind}
-        assert kinds == {lxx.Kind.Ring, lxx.Kind.Group}
-        if c.type.category != lxx.Category.None_:
-            assert c.type.category == lxx.Category.CationPi
+        assert kinds == {Kind.Ring, Kind.Group}
+        if c.type.category != Category.None_:
+            assert c.type.category == Category.CationPi
             assert c.distance_sq >= 0.0
 
 
-def test_self_pi_stacking_like_count(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_self_pi_stacking_like_count(luni: LahutaSystem, topo: Topology) -> None:
     sel_rings = rings(lambda r: r.aromatic)
 
     def pi_stack(i: int, j: int, d2: float):
-        return lxx.InteractionType.PiStacking if d2 <= 6.0 * 6.0 else lxx.InteractionType.None_
+        return InteractionType.PiStacking if d2 <= 6.0 * 6.0 else InteractionType.None_
 
     cs = find_contacts(topo, sel_rings, tester=pi_stack, distance_max=6.0)
     assert cs.size() == 1
 
     c = cs[0]
-    assert c.lhs.kind == lxx.Kind.Ring and c.rhs.kind == lxx.Kind.Ring
-    assert c.type.category == lxx.Category.PiStacking
+    assert c.lhs.kind == Kind.Ring and c.rhs.kind == Kind.Ring
+    assert c.type.category == Category.PiStacking
     assert c.distance_sq >= 0.0

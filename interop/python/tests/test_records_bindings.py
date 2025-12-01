@@ -11,21 +11,21 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-import lahuta as lxx
+from lahuta import LahutaSystem, Topology
 
 from pathlib import Path
 
 
 # fmt: off
 @pytest.fixture(scope="function")
-def topo(ubi_cif: Path) -> lxx.Topology:
+def topo(ubi_cif: Path) -> Topology:
     # Build to Complete to expose all records deterministically
-    sys = lxx.LahutaSystem(str(ubi_cif))
+    sys = LahutaSystem(str(ubi_cif))
     assert sys.build_topology() is True
     return sys.get_topology()
 
 
-def test_atomrec_indices_cover_atoms(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_atomrec_indices_cover_atoms(luni: LahutaSystem, topo: Topology) -> None:
     recs = topo.atom_types
     n = luni.n_atoms
     assert len(recs) == n
@@ -39,7 +39,7 @@ def _is_point3d(obj) -> bool:
     return all(hasattr(obj, f) for f in ("x", "y", "z"))
 
 
-def test_ringrec_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_ringrec_invariants(luni: LahutaSystem, topo: Topology) -> None:
     n = luni.n_atoms
     rings = topo.rings
 
@@ -56,7 +56,7 @@ def test_ringrec_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
         assert _is_point3d(r.center) and _is_point3d(r.normal)
 
 
-def test_grouprec_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None:
+def test_grouprec_invariants(luni: LahutaSystem, topo: Topology) -> None:
     n = luni.n_atoms
     groups = topo.groups
     assert isinstance(groups, list)
@@ -71,7 +71,7 @@ def test_grouprec_invariants(luni: lxx.LahutaSystem, topo: lxx.Topology) -> None
         assert _is_point3d(g.center)
 
 
-def test_atomrec_property_setter_no_crash(topo: lxx.Topology) -> None:
+def test_atomrec_property_setter_no_crash(topo: Topology) -> None:
     # Setting to the same value should be a no-op and not crash.
     recs = topo.atom_types
     if not recs:
@@ -82,7 +82,7 @@ def test_atomrec_property_setter_no_crash(topo: lxx.Topology) -> None:
     assert int(rec0.type) == t0
 
 
-def test_hypothesis_indexed_access(topo: lxx.Topology) -> None:
+def test_hypothesis_indexed_access(topo: Topology) -> None:
     hyp = pytest.importorskip("hypothesis",            reason="Hypothesis not installed")
     st  = pytest.importorskip("hypothesis.strategies", reason="Hypothesis not installed")
 

@@ -21,8 +21,6 @@
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/run_metrics.hpp"
-#include "pipeline/process_pool.hpp"
-#include "pipeline/process_task.hpp"
 #include "pipeline/thread_task.hpp"
 
 // clang-format off
@@ -231,34 +229,6 @@ inline void bind_stage_manager(py::module_ &md) {
         py::arg("channel") = std::optional<std::string>{},
         py::arg("serialize") = true,
         py::arg("store") = true)
-    .def("add_python_process", [](StageManager &mgr,
-                                  const std::string &name,
-                                  const std::vector<std::string> &deps,
-                                  const std::string &module,
-                                  const std::string &qualname,
-                                  py::object serialized_callable,
-                                  std::optional<std::string> channel,
-                                  bool store) {
-          std::optional<std::string> ch = channel.has_value() ? channel : std::optional<std::string>{name};
-          auto& sys_params = mgr.get_system_params();
-          auto& topo_params = mgr.get_topology_params();
-          auto t = std::make_shared<PyProcessTask>(name,
-                                                   module,
-                                                   qualname,
-                                                   std::move(serialized_callable),
-                                                   ch,
-                                                   store,
-                                                   &sys_params,
-                                                   &topo_params);
-          mgr.add_task(name, deps, std::move(t), /*thread_safe=*/true);
-        },
-        py::arg("name"),
-        py::arg("depends") = std::vector<std::string>{},
-        py::arg("module"),
-        py::arg("qualname"),
-        py::arg("serialized_callable") = py::none(),
-        py::arg("channel") = std::optional<std::string>{},
-        py::arg("store") = true)
 
     // sinks
     .def("connect_sink", [](StageManager &mgr,
@@ -363,21 +333,6 @@ inline void bind_stage_manager(py::module_ &md) {
           d["mux_active_writers_peak"]  = report.mux_active_writers_peak;
           return d;
         })
-
-    // Process pool management
-    .def("configure_python_process_pool", [](StageManager&, std::size_t processes) {
-          PyProcessPool::instance().configure(processes);
-        }, py::arg("processes"))
-    .def("shutdown_python_process_pool", [](StageManager&) {
-          PyProcessPool::instance().shutdown();
-          PyProcessTask::set_concurrency_limit(0);
-        })
-    .def("set_python_process_concurrency", [](StageManager&, std::size_t limit) {
-          PyProcessTask::set_concurrency_limit(limit);
-        }, py::arg("limit"))
-    .def("set_python_process_timeout", [](StageManager&, double seconds) {
-          PyProcessTask::set_timeout(seconds);
-        }, py::arg("seconds"))
 
     .def("set_auto_builtins", [](StageManager& mgr, bool on) { mgr.set_auto_builtins(on); })
     .def("get_auto_builtins", [](StageManager& mgr) { return mgr.get_auto_builtins(); })

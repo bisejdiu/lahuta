@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Generic, TypeVar
 
-from ..lib import lahuta as lxx
+from ..lib import lahuta as _lib
 from ..lib.lahuta import AtomRec, GroupRec, RingRec
 
 TRec_co = TypeVar("TRec_co", AtomRec, RingRec, GroupRec, covariant=True)
@@ -14,20 +14,20 @@ TRec_co = TypeVar("TRec_co", AtomRec, RingRec, GroupRec, covariant=True)
 class Selector(Generic[TRec_co]):
     """Selection for a given entity kind with an optional selector."""
 
-    kind: lxx.Kind
+    kind: _lib.Kind
     selector: Callable[[TRec_co], bool] | None = None
 
 
 def atoms(selector:  Callable[[AtomRec], bool] | None = None) ->  Selector[AtomRec]:
-    return Selector(kind=lxx.Kind.Atom, selector=selector)
+    return Selector(kind=_lib.Kind.Atom, selector=selector)
 
 
 def rings(selector:  Callable[[RingRec], bool] | None = None) ->  Selector[RingRec]:
-    return Selector(kind=lxx.Kind.Ring, selector=selector)
+    return Selector(kind=_lib.Kind.Ring, selector=selector)
 
 
 def groups(selector: Callable[[GroupRec], bool] | None = None) -> Selector[GroupRec]:
-    return Selector(kind=lxx.Kind.Group, selector=selector)
+    return Selector(kind=_lib.Kind.Group, selector=selector)
 
 
 __all__ = [

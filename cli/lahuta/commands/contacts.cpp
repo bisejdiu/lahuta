@@ -1,6 +1,7 @@
+#include <algorithm>
 #include <chrono>
 #include <ctime>
-#include <fstream>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -15,17 +16,16 @@
 #include "analysis/contacts/provider.hpp"
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
+#include "cli/run_report.hpp"
 #include "commands/contacts.hpp"
 #include "commands/reporting.hpp"
 #include "db/db.hpp"
-#include "gemmi/third_party/stb_sprintf.h"
 #include "logging.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"
-#include "serialization/json.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 
@@ -41,7 +41,7 @@ static void initialize_runtime(int num_threads) {
 }
 
 struct ContactsOptions {
-  enum class SourceMode { Directory, Vector, FileList, Database };
+  enum class SourceMode { Directory, Vector, FileList, Database, MD };
 
   SourceMode source_mode = SourceMode::Directory;
   std::string directory_path;
@@ -51,13 +51,18 @@ struct ContactsOptions {
   std::string file_list_path;
   std::string database_path;
 
+  // MD fields
+  std::string md_structure_path;                // PDB or GRO file
+  std::vector<std::string> md_trajectory_paths; // XTC files
+
   analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
 
   bool is_af2_model = false;
-  bool want_json   = false;
-  bool want_text   = false;
-  bool want_log    = false;
+  bool want_json = false;
+  bool want_text = false;
+  bool want_log  = false;
+  bool save_run_report = false;
   int threads = 8;
   size_t batch_size = 200;
   size_t writer_threads = 1;
@@ -70,9 +75,44 @@ Source pick_source(const ContactsOptions& cli) {
     case ContactsOptions::SourceMode::Vector:    return cli.file_vector;
     case ContactsOptions::SourceMode::FileList:  return sources::FileList {cli.file_list_path};
     case ContactsOptions::SourceMode::Database:  break; // Handled separately
+    case ContactsOptions::SourceMode::MD:        break; // Handled separately
   }
   throw std::logic_error("Invalid source mode");
 }
+
+bool has_md_extension(const std::string& path, const std::vector<std::string>& extensions) { // case-insensitive
+  std::filesystem::path p(path);
+  std::string ext = p.extension().string();
+  std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+  for (const auto& valid_ext : extensions) {
+    if (ext == valid_ext) return true;
+  }
+  return false;
+}
+
+// MD trajectory source descriptor
+// produces a single IngestDescriptor with MDRef
+class SingleTrajectoryDescriptor final : public lahuta::sources::IDescriptor {
+public:
+  SingleTrajectoryDescriptor(std::string structure, std::vector<std::string> xtcs)
+      : structure_(std::move(structure)), xtcs_(std::move(xtcs)) {}
+
+  std::optional<IngestDescriptor> next() override {
+    if (done_) return std::nullopt;
+    done_ = true;
+    IngestDescriptor desc;
+    desc.id = structure_;
+    desc.origin = MDRef{structure_, xtcs_};
+    return desc;
+  }
+
+  void reset() override { done_ = false; }
+
+private:
+  std::string structure_;
+  std::vector<std::string> xtcs_;
+  bool done_ = false;
+};
 
 namespace {
 
@@ -91,68 +131,6 @@ std::string current_timestamp_string() {
   oss << std::put_time(&tm, "%Y%m%d_%H%M%S")
       << '_' << std::setw(3) << std::setfill('0') << ms.count();
   return oss.str();
-}
-
-bool write_run_report_json(const std::string& path, const pipeline::dynamic::StageManager::RunReport& report) {
-  std::ofstream out(path, std::ios::out | std::ios::trunc);
-  if (!out) {
-    Logger::get_logger()->error("Unable to write RunReport JSON to '{}'", path);
-    return false;
-  }
-
-  lahuta::JsonBuilder json(512);
-  json.key("total_seconds").value(report.total_seconds)
-      .key("cpu_seconds").value(report.cpu_seconds)
-      .key("io_seconds").value(report.io_seconds)
-      .key("ingest_seconds").value(report.ingest_seconds)
-      .key("prepare_seconds").value(report.prepare_seconds)
-      .key("flush_seconds").value(report.flush_seconds)
-      .key("setup_seconds").value(report.setup_seconds)
-      .key("compute_seconds").value(report.compute_seconds)
-      .key("items_total").value(report.items_total)
-      .key("items_processed").value(report.items_processed)
-      .key("items_skipped").value(report.items_skipped)
-      .key("stage_count").value(report.stage_count)
-      .key("threads_requested").value(report.threads_requested)
-      .key("threads_used").value(report.threads_used)
-      .key("all_thread_safe").value(report.all_thread_safe)
-      .key("run_token").value(report.run_token)
-      .key("metrics_enabled").value(report.metrics_enabled)
-      .key("peak_inflight_items").value(report.peak_inflight_items)
-      .key("average_queue_depth").value(report.average_queue_depth)
-      .key("permit_wait_total_seconds").value(report.permit_wait_total_seconds)
-      .key("permit_wait_min_seconds").value(report.permit_wait_min_seconds)
-      .key("permit_wait_max_seconds").value(report.permit_wait_max_seconds)
-      .key("permit_wait_avg_seconds").value(report.permit_wait_avg_seconds)
-      .key("permit_wait_events").value(report.permit_wait_events)
-      .key("mux_sink_count").value(report.mux_sink_count)
-      .key("mux_enqueued_msgs").value(report.mux_enqueued_msgs)
-      .key("mux_enqueued_bytes").value(report.mux_enqueued_bytes)
-      .key("mux_written_msgs").value(report.mux_written_msgs)
-      .key("mux_written_bytes").value(report.mux_written_bytes)
-      .key("mux_stall_ns").value(report.mux_stall_ns)
-      .key("mux_drops").value(report.mux_drops)
-      .key("mux_queue_depth_peak").value(report.mux_queue_depth_peak)
-      .key("mux_queue_bytes_peak").value(report.mux_queue_bytes_peak)
-      .key("mux_active_writers_total").value(report.mux_active_writers_total)
-      .key("mux_active_writers_peak").value(report.mux_active_writers_peak);
-
-  json.key("stage_breakdown").begin_array();
-  for (const auto& stage : report.stage_breakdown) {
-    json.begin_object()
-        .key("label").value(stage.label)
-        .key("setup_seconds").value(stage.setup_seconds)
-        .key("compute_seconds").value(stage.compute_seconds)
-        .end_object();
-  }
-  json.end_array();
-
-  out << json.str() << '\n';
-  return true;
-}
-
-std::string make_report_path(std::size_t run_token, const std::string& timestamp) {
-  return "contacts_run_report_" + std::to_string(run_token) + '_' + timestamp + ".json";
 }
 
 } // namespace
@@ -183,6 +161,8 @@ const option::Descriptor usage[] = {
    "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."},
   {ContactsOptionIndex::SourceDatabase, 0, "", "database", validate::Required,
    "  --database <path>            \tProcess structures from database."},
+  {ContactsOptionIndex::SourceMD, 0, "", "md", validate::Required,
+   "  --md <path>                  \tMD input file. Specify once for structure (PDB/GRO) and once or more for trajectories (XTC)."},
   {ContactsOptionIndex::Extension, 0, "e", "extension", validate::Required,
    "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or comma-separate values (default: .cif, .cif.gz)."},
   {ContactsOptionIndex::Recursive, 0, "r", "recursive", option::Arg::None,
@@ -205,6 +185,8 @@ const option::Descriptor usage[] = {
    "  --log                        \tOutput results to standard output (logging)."},
   {ContactsOptionIndex::Reporter, 0, "", "reporter", validate::Required,
    "  --reporter <name>            \tSelect pipeline reporter. See help for names."},
+  {ContactsOptionIndex::SaveRunReport, 0, "", "save-run-report", option::Arg::None,
+   "  --save-run-report            \tSave run statistics to a JSON file."},
   {0, 0, "", "", option::Arg::None,
    "\nRuntime Options:"},
   {ContactsOptionIndex::Threads, 0, "t", "threads", validate::Required,
@@ -247,11 +229,13 @@ int ContactsCommand::run(int argc, char* argv[]) {
     auto emit_and_save_report = [&](const pipeline::dynamic::StageManager::RunReport& report) {
       const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
       reporter->emit("contacts", report);
-      const std::string report_path = make_report_path(report.run_token, run_timestamp);
-      if (!write_run_report_json(report_path, report)) {
-        throw std::runtime_error("Failed to persist RunReport JSON");
+      if (cli.save_run_report) {
+        const std::string report_path = make_report_path("contacts", report.run_token, run_timestamp);
+        if (!write_run_report_json(report_path, report)) {
+          throw std::runtime_error("Failed to persist RunReport JSON");
+        }
+        Logger::get_logger()->info("Run report saved to {}", report_path);
       }
-      Logger::get_logger()->info("Run report saved to {}", report_path);
     };
 
     if (options[contacts_opts::ContactsOptionIndex::Reporter]) {
@@ -297,9 +281,56 @@ int ContactsCommand::run(int argc, char* argv[]) {
       cli.database_path = options[contacts_opts::ContactsOptionIndex::SourceDatabase].arg;
       source_count++;
     }
+    if (options[contacts_opts::ContactsOptionIndex::SourceMD]) {
+      cli.source_mode = ContactsOptions::SourceMode::MD;
+      // Collect all --md arguments
+      std::vector<std::string> md_files;
+      for (const option::Option* opt = &options[contacts_opts::ContactsOptionIndex::SourceMD];
+           opt != nullptr;
+           opt = opt->next()) {
+        if (opt->arg) md_files.push_back(opt->arg);
+      }
+
+      // Validate and separate structure vs. trajectory files
+      std::vector<std::string> structures;
+      std::vector<std::string> trajectories;
+      for (const auto& file : md_files) {
+        if (!std::filesystem::exists(file)) {
+          Logger::get_logger()->error("MD input file not found: {}", file);
+          return 1;
+        }
+        if (has_md_extension(file, {".pdb", ".gro"})) {
+          structures.push_back(file);
+        } else if (has_md_extension(file, {".xtc"})) {
+          trajectories.push_back(file);
+        } else {
+          Logger::get_logger()->error("Invalid MD file extension: {}. Expected .pdb, .gro, or .xtc", file);
+          return 1;
+        }
+      }
+
+      // Validate: exactly one structure file required
+      if (structures.empty()) {
+        Logger::get_logger()->error("MD mode requires exactly one structure file (.pdb or .gro)");
+        return 1;
+      }
+      if (structures.size() > 1) {
+        Logger::get_logger()->error("MD mode requires exactly one structure file, but {} were provided", structures.size());
+        return 1;
+      }
+
+      if (trajectories.empty()) {
+        Logger::get_logger()->error("MD mode requires at least one trajectory file (.xtc)");
+        return 1;
+      }
+
+      cli.md_structure_path = structures[0];
+      cli.md_trajectory_paths = std::move(trajectories);
+      source_count++;
+    }
 
     if (source_count == 0) {
-      Logger::get_logger()->error("Must specify exactly one source option: --directory, --files, --file-list, or --database");
+      Logger::get_logger()->error("Must specify exactly one source option: --directory, --files, --file-list, --database, or --md");
       return 1;
     }
     if (source_count > 1) {
@@ -357,9 +388,10 @@ int ContactsCommand::run(int argc, char* argv[]) {
     cli.is_af2_model = options[contacts_opts::ContactsOptionIndex::IsAf2Model] ? true : false;
 
     // Parse output options
-    cli.want_json   = options[contacts_opts::ContactsOptionIndex::OutputJson] ? true : false;
-    cli.want_text   = options[contacts_opts::ContactsOptionIndex::OutputText] ? true : false;
-    cli.want_log    = options[contacts_opts::ContactsOptionIndex::OutputLog]  ? true : false;
+    cli.want_json        = options[contacts_opts::ContactsOptionIndex::OutputJson]     ? true : false;
+    cli.want_text        = options[contacts_opts::ContactsOptionIndex::OutputText]     ? true : false;
+    cli.want_log         = options[contacts_opts::ContactsOptionIndex::OutputLog]      ? true : false;
+    cli.save_run_report  = options[contacts_opts::ContactsOptionIndex::SaveRunReport]  ? true : false;
 
     if (!cli.want_json && !cli.want_text && !cli.want_log) cli.want_json = true; // json if nothing specified
 
@@ -397,8 +429,58 @@ int ContactsCommand::run(int argc, char* argv[]) {
     }
 
     bool is_db = (cli.source_mode == ContactsOptions::SourceMode::Database);
+    bool is_md = (cli.source_mode == ContactsOptions::SourceMode::MD);
     const bool use_model_pipeline = cli.is_af2_model || is_db;
-    if (is_db) {
+
+    if (is_md) {
+      Logger::get_logger()->info("MD Structure file: {}", cli.md_structure_path);
+      Logger::get_logger()->info("MD Trajectory files ({}):", cli.md_trajectory_paths.size());
+      for (const auto& xtc : cli.md_trajectory_paths) {
+        Logger::get_logger()->info("  - {}", xtc);
+      }
+
+      auto source = std::make_unique<SingleTrajectoryDescriptor>(cli.md_structure_path, cli.md_trajectory_paths);
+      dynamic::StageManager mgr(std::move(source));
+      mgr.set_auto_builtins(true);
+
+      // Configure built-ins
+      mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
+
+      const bool json_out = (cli.want_json || !cli.want_text);
+      {
+        pipeline::compute::ContactsParams p{};
+        p.provider = cli.provider;
+        p.type     = cli.interaction_types;
+        p.channel  = "contacts";
+        p.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
+                              : pipeline::compute::ContactsOutputFormat::Text;
+        mgr.add_computation(
+          "contacts",
+          {},
+          [label = std::string("contacts"), p]() {
+            return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+          },
+          /*thread_safe=*/true
+        );
+      }
+
+      // Sinks
+      auto sink_cfg = dynamic::get_default_backpressure_config();
+      sink_cfg.writer_threads = cli.writer_threads;
+      if  (json_out && cli.want_json) {
+        mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_json_path), sink_cfg);
+        Logger::get_logger()->info("Contacts JSON sink -> {}", contacts_json_path);
+      }
+      if (!json_out && cli.want_text) {
+        mgr.connect_sink("contacts", std::make_shared<dynamic::NdjsonFileSink>(contacts_text_path), sink_cfg);
+        Logger::get_logger()->info("Contacts text sink -> {}", contacts_text_path);
+      }
+      if (cli.want_log) mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
+
+      mgr.compile();
+      const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      emit_and_save_report(report);
+    } else if (is_db) {
       auto db = std::make_shared<LMDBDatabase>(cli.database_path);
       auto src = dynamic::sources_factory::from_lmdb(db, std::string{}, cli.batch_size);
       dynamic::StageManager mgr(std::move(src));

@@ -20,8 +20,7 @@ except Exception as e:
     )
     raise SystemExit(1)
 
-from lahuta import LahutaSystem, NearestNeighbors
-from lahuta.lib import lahuta as lxx
+from lahuta import FastNS, LahutaSystem, NearestNeighbors
 
 # fmt: off
 DATA_DIR = Path(__file__).resolve().parents[3] / "core" / "data"
@@ -84,12 +83,12 @@ def bench_self(name: str, positions: np.ndarray, radius: float = 6.0, repeat: in
     n = positions.shape[0]
     print(f"Self-search: {name}  n_atoms={n}  radius={radius} A")
 
-    def _lxx_nn_self() -> object:
+    def _lahuta_nn_self() -> object:
         nn = NearestNeighbors(radius=radius, algorithm="kd_tree", sort_results=False).fit(positions)
         return nn.radius_neighbors(return_distance=False)
 
-    def _lxx_ns_self() -> object:
-        ns = lxx.FastNS(positions)
+    def _lahuta_ns_self() -> object:
+        ns = FastNS(positions)
         ns.build(radius)
         return ns.self_search()
 
@@ -98,20 +97,20 @@ def bench_self(name: str, positions: np.ndarray, radius: float = 6.0, repeat: in
         nn.fit(positions)
         return nn.radius_neighbors(positions, return_distance=False)
 
-    time_callable(f"Lahuta NearestNeighbors fit+radius_neighbors self [{name}]", _lxx_nn_self, number=1, repeat=repeat)
-    time_callable(f"Lahuta FastNS build+self_search [{name}]",                   _lxx_ns_self, number=1, repeat=repeat)
-    time_callable(f"sklearn KDTree fit+radius_neighbors self [{name}]",              _sk_self, number=1, repeat=repeat)
+    time_callable(f"Lahuta NearestNeighbors fit+radius_neighbors self [{name}]", _lahuta_nn_self, number=1, repeat=repeat)
+    time_callable(f"Lahuta FastNS build+self_search [{name}]",                   _lahuta_ns_self, number=1, repeat=repeat)
+    time_callable(f"sklearn KDTree fit+radius_neighbors self [{name}]",         _sk_self, number=1, repeat=repeat)
 
-    lxx_idxs = NearestNeighbors(radius=radius, algorithm="kd_tree").fit(positions).radius_neighbors(return_distance=False)
-    lxx_total_links = int(sum(map(len, lxx_idxs)))
-    lxx_unique_pairs = lxx_total_links // 2
+    lahuta_idxs = NearestNeighbors(radius=radius, algorithm="kd_tree").fit(positions).radius_neighbors(return_distance=False)
+    lahuta_total_links = int(sum(map(len, lahuta_idxs)))
+    lahuta_unique_pairs = lahuta_total_links // 2
 
     skl_nn = SKNearestNeighbors(radius=radius, algorithm="kd_tree", metric="euclidean").fit(positions)
     skl_idxs = skl_nn.radius_neighbors(positions, return_distance=False)
     total_links = int(sum(map(len, skl_idxs)))
     sk_unique_pairs = (total_links - n) // 2
 
-    print(f"Pairs (unique, undirected): Lahuta={lxx_unique_pairs:,}  sklearn~={sk_unique_pairs:,}")
+    print(f"Pairs (unique, undirected): Lahuta={lahuta_unique_pairs:,}  sklearn~={sk_unique_pairs:,}")
 
 
 def main() -> None:

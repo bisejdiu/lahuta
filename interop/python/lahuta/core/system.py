@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ..lib import lahuta as lxx
+from ..lib import lahuta as _lib
 
 
 # fmt: off
@@ -28,7 +28,7 @@ class MolecularSystem:
     @classmethod
     def from_file(cls, path: str | Path) -> "MolecularSystem":
         """Create MolecularSystem from structure file."""
-        temp_luni = lxx.LahutaSystem(str(path))
+        temp_luni = _lib.LahutaSystem(str(path))
 
         return cls(
             atom_indices   = temp_luni.props.indices.astype(int).tolist(),
@@ -57,7 +57,7 @@ class MolecularSystem:
         )
 
     @classmethod
-    def from_ir(cls, ir: lxx.IR) -> "MolecularSystem":
+    def from_ir(cls, ir: _lib.IR) -> "MolecularSystem":
         """Create MolecularSystem from intermediate representation."""
         return cls(
             atom_indices   = ir.atom_indices,
@@ -71,9 +71,9 @@ class MolecularSystem:
         )
 
     # NOTE: some of these may be handled directly by lhxx
-    def to_ir(self) -> lxx.IR:
+    def to_ir(self) -> _lib.IR:
         """Convert to intermediate representation for C++ bindings."""
-        return lxx.IR(
+        return _lib.IR(
             self.atom_indices,
             self.atomic_numbers,
             self.atom_names,

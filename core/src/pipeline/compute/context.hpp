@@ -29,6 +29,7 @@ inline void set_frame_metadata(dynamic::TaskContext &ctx, const PipelineItem &it
   meta->session_id   = it.session_id;
   meta->conformer_id = it.conformer_id;
   meta->timestamp_ps = it.timestamp_ps;
+  meta->source_file  = it.source_file;
   ctx.set_object<FrameMetadata>(pipeline::CTX_FRAME_KEY, std::move(meta));
 }
 
