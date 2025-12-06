@@ -98,8 +98,8 @@ find_package(ZLIB REQUIRED)
 if(LAHUTA_VENDOR_BOOST)
   set(LAHUTA_BOOST_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/boost")
   if(NOT EXISTS "${LAHUTA_BOOST_VENDOR_DIR}/boost/version.hpp")
-    message(FATAL_ERROR "Vendored Boost headers not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/boost.\n"
-                        "Ensure submodules are initialized (git submodule update --init --recursive),\n"
+    message(FATAL_ERROR "Vendored Boost headers not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/boost. "
+                        "Ensure submodules are initialized (git submodule update --init --recursive), "
                         "or disable vendoring with -DLAHUTA_VENDOR_BOOST=OFF to use system Boost.")
   endif()
   add_library(Boost::headers INTERFACE IMPORTED)
@@ -138,8 +138,8 @@ check_cxx_source_compiles("#include <boost/graph/adjacency_list.hpp>\nint main()
 set(CMAKE_REQUIRED_FLAGS "${_LAHUTA_SAVE_REQUIRED_FLAGS}")
 unset(CMAKE_REQUIRED_INCLUDES)
 if(NOT HAVE_BGL_HEADERS)
-  message(FATAL_ERROR "Boost Graph headers not found or not visible to the compiler.\n"
-                      "Make sure the submodule exists at core/external/boost (git submodule update --init --recursive).\n"
+  message(FATAL_ERROR "Boost Graph headers not found or not visible to the compiler. "
+                      "Make sure the submodule exists at core/external/boost (git submodule update --init --recursive). "
                       "Otherwise, install Boost >= 1.81 and configure with -DLAHUTA_VENDOR_BOOST=OFF.")
 endif()
 
@@ -153,6 +153,14 @@ target_include_directories(lahuta_shared_headers INTERFACE
 
 add_subdirectory(external/spdlog)
 add_subdirectory(external/gemmi)    # Build gemmi first (zlib alignment)
+
+if(TARGET gemmi_cpp)
+  target_compile_features(gemmi_cpp PUBLIC cxx_std_17)
+endif()
+if(TARGET gemmi_headers)
+  target_compile_features(gemmi_headers INTERFACE cxx_std_17)
+endif()
+
 add_subdirectory(external/rdkit)
 
 if(LAHUTA_BUILD_FOLDSEEK)
@@ -303,6 +311,16 @@ target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/external/lmdb
 )
 
+#
+# Require GCC 9.1+ for full C++17 filesystem support without separate linking
+# Not tested.
+#
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "9.1")
+    message(FATAL_ERROR "GCC ${CMAKE_CXX_COMPILER_VERSION} detected. Lahuta requires GCC 9.1 or later.")
+  endif()
+endif()
+
 set(_lahuta_core_private_libs
   rdkit
   libdistopia
@@ -362,8 +380,8 @@ endif()
 if(LAHUTA_VENDOR_EIGEN)
   set(LAHUTA_EIGEN_VENDOR_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen")
   if(NOT EXISTS "${LAHUTA_EIGEN_VENDOR_DIR}/eigen/Eigen/Core")
-    message(FATAL_ERROR "Vendored Eigen headers not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen.\n"
-                        "Ensure submodules are initialized (git submodule update --init --recursive),\n"
+    message(FATAL_ERROR "Vendored Eigen headers not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen. "
+                        "Ensure submodules are initialized (git submodule update --init --recursive), "
                         "or disable vendoring with -DLAHUTA_VENDOR_EIGEN=OFF to use system Eigen.")
   endif()
   add_subdirectory(external/Eigen)
