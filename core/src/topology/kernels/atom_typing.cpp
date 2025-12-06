@@ -176,7 +176,7 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
 
     for (int atom_idx : ring) {
       atom_indices.push_back(static_cast<std::uint32_t>(atom_idx));
-      atoms.push_back(std::ref(*mol.getAtomWithIdx(atom_idx)));
+      atoms.push_back(std::cref(*mol.getAtomWithIdx(atom_idx)));
     }
 
     // aromaticity check
