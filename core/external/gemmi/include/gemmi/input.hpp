@@ -98,12 +98,16 @@ private:
   const char* cur;
 };
 
+struct FreeDeleter {
+  void operator()(void* ptr) const noexcept { std::free(ptr); }
+};
+
 class CharArray {
-  std::unique_ptr<char, decltype(&std::free)> ptr_;
+  std::unique_ptr<char, FreeDeleter> ptr_;
   size_t size_;
 public:
-  CharArray() : ptr_(nullptr, &std::free), size_(0) {}
-  explicit CharArray(size_t n) : ptr_((char*)std::malloc(n), &std::free), size_(n) {}
+  CharArray() : ptr_(nullptr), size_(0) {}
+  explicit CharArray(size_t n) : ptr_((char*)std::malloc(n)), size_(n) {}
   explicit operator bool() const { return (bool)ptr_; }
   char* data() { return ptr_.get(); }
   const char* data() const { return ptr_.get(); }

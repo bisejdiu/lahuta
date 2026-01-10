@@ -293,6 +293,7 @@ lahuta_configure_core_version(lahuta_core)
 target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/external
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/rdkit
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
   ${CMAKE_CURRENT_SOURCE_DIR}/external/simde
   ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include
@@ -302,15 +303,24 @@ target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/external/lmdb
 )
 
-target_link_libraries(lahuta_core PUBLIC
-  gemmi_cpp
+set(_lahuta_core_private_libs
   rdkit
   libdistopia
-  lmdb
   ZLIB::ZLIB
+)
+set(_lahuta_core_public_libs
+  gemmi_cpp
+  lmdb
   spdlog::spdlog_header_only
   Boost::headers
 )
+
+if(LAHUTA_BUILD_SHARED_CORE)
+  target_link_libraries(lahuta_core PRIVATE ${_lahuta_core_private_libs})
+  target_link_libraries(lahuta_core PUBLIC ${_lahuta_core_public_libs})
+else()
+  target_link_libraries(lahuta_core PUBLIC ${_lahuta_core_private_libs} ${_lahuta_core_public_libs})
+endif()
 
 # Mapping library
 if(LAHUTA_BUILD_FOLDSEEK)
