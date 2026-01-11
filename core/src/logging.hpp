@@ -36,6 +36,7 @@ public:
   LogLevel get_log_level();
 
   void configure_for_spinner(indicators::MinimalProgressSpinner* spinner, std::mutex &spinner_mutex);
+  void configure_with_sink(std::shared_ptr<spdlog::sinks::sink> sink);
 
 private:
   std::shared_ptr<spdlog::logger> logger;

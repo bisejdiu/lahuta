@@ -44,6 +44,15 @@ void Logger::configure_for_spinner(indicators::MinimalProgressSpinner *spinner, 
   spdlog::set_default_logger(new_logger);
 }
 
+void Logger::configure_with_sink(std::shared_ptr<spdlog::sinks::sink> sink) {
+  if (!sink) return;
+  auto new_logger = std::make_shared<spdlog::logger>("console", std::move(sink));
+  if (logger) new_logger->set_level(logger->level());
+  logger = new_logger;
+  spdlog::set_default_logger(new_logger);
+  set_format(current_style);
+}
+
 Logger::Logger() {
   auto existing = spdlog::get("console");
   if (existing) {

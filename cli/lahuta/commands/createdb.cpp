@@ -235,7 +235,9 @@ int CreateDbCommand::run(int argc, char* argv[]) {
       mgr.connect_sink("db", std::make_shared<dynamic::LmdbSink>(db, cli.batch_size));
 
       mgr.compile();
+      auto progress = attach_progress_observer(mgr);
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      if (progress) progress->finish();
       log_pipeline_report("createdb", report);
     }, source_variant);
 

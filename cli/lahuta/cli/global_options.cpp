@@ -24,6 +24,8 @@ const option::Descriptor usage[] = {
    "                               \t  0 = errors only\n"
    "                               \t  1 = info, warnings, and errors\n"
    "                               \t  2 = debug, info, warnings, and errors"},
+  {GlobalOptionIndex::ProgressMs, 0, "", "progress-ms", validate::Required,
+   "  --progress-ms <ms>           \tProgress update interval in milliseconds (0 disables; default: 50)."},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace global_opts
