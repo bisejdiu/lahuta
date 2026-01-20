@@ -66,9 +66,8 @@ private:
         try {
           st.process(std::move(val), em);
         } catch(...) {
-          //
-          // TODO: How do we handle exceptions?
-          //
+          // Swallow worker exceptions to keep high-throughput runs alive even if some items fail.
+          // TODO: introduce explicit fatal vs item-level error policy and surface fatal errors.
         }
         if (in_flight_.fetch_sub(1) == 1) {
           std::scoped_lock lk(m_);
