@@ -13,11 +13,10 @@
 #include "pipeline/pipeline_item.hpp"
 
 using namespace lahuta;
-using namespace lahuta::pipeline;
 using namespace lahuta::pipeline::compute;
 using namespace lahuta::pipeline::dynamic;
-using namespace lahuta::topology::compute;
 
+// clang-format off
 namespace {
 
 struct CountingParams : public ParameterBase<CountingParams> {
