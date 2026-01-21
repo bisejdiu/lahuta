@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <chrono>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <memory>
@@ -14,15 +16,13 @@
 #include "models/plddt.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/data_requirements.hpp"
-#include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/dynamic/progress_observer.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "pipeline/dynamic/types.hpp"
-#include "pipeline/model_payload.hpp"
 #include "serialization/json.hpp"
 #include "sinks/ndjson.hpp"
 #include "spatial/fastns.hpp"
-#include "topology.hpp"
 
 // clang-format off
 namespace {
@@ -64,6 +64,14 @@ void log_pipeline_summary(const char* label, const StageManager::RunReport& repo
                report.run_token);
 }
 
+std::shared_ptr<ProgressRunObserver> attach_progress_observer(StageManager &manager, std::chrono::milliseconds interval) {
+  ProgressObserverConfig config;
+  config.interval = interval;
+  auto observer = std::make_shared<ProgressRunObserver>(std::move(config));
+  manager.set_run_observer(observer);
+  return observer;
+}
+
 class NoOpTask final : public ITask {
 public:
   TaskResult run(const std::string &, TaskContext &) override { return TaskResult{true, {}}; }
@@ -87,13 +95,13 @@ public:
       : cutoff_(cutoff), total_pairs_(std::move(total_pairs)) {}
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
-    auto conformer = ctx.conformer();
-    if (!conformer) {
-      std::cerr << "[neighbors] Missing conformer for '" << item_path << "'\n";
+    auto payload = ctx.model_payload();
+    if (!payload || !payload->positions || payload->positions->empty()) {
+      std::cerr << "[neighbors] Missing positions for '" << item_path << "'\n";
       return TaskResult{false, {}};
     }
 
-    FastNS grid(conformer->getPositions());
+    FastNS grid(*payload->positions);
     if (!grid.build(cutoff_)) {
       std::cerr << "[neighbors] FastNS build failed for '" << item_path << "'\n";
       return TaskResult{false, {}};
@@ -103,6 +111,8 @@ public:
     total_pairs_->fetch_add(static_cast<std::uint64_t>(pairs.size()), std::memory_order_relaxed);
     return TaskResult{true, {}};
   }
+
+  DataFieldSet data_requirements() const override { return DataFieldSet::of({DataField::Positions}); }
 
 private:
   double cutoff_;
@@ -156,17 +166,19 @@ private:
   std::string output_channel_;
 };
 
-int run_noop(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
+int run_noop(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(false);
   manager.add_task("noop", {}, std::make_shared<NoOpTask>(), /*thread_safe=*/true);
 
+  auto progress = attach_progress_observer(manager, dt);
   const auto report = manager.run(threads);
+  progress->finish();
   log_pipeline_summary("noop", report);
   return 0;
 }
 
-int run_topology(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
+int run_topology(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
 
@@ -178,12 +190,14 @@ int run_topology(const std::string &db_path, std::size_t threads, std::size_t ba
 
   manager.add_task("topology_guard", {"topology"}, std::make_shared<TopologyOnlyTask>(), true);
 
+  auto progress = attach_progress_observer(manager, dt);
   const auto report = manager.run(threads);
+  progress->finish();
   log_pipeline_summary("topology", report);
   return 0;
 }
 
-int run_ionic(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
+int run_ionic(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
 
@@ -210,13 +224,15 @@ int run_ionic(const std::string &db_path, std::size_t threads, std::size_t batch
 
   manager.connect_sink(params.channel, std::make_shared<NdjsonFileSink>(OutputFile));
 
+  auto progress = attach_progress_observer(manager, dt);
   const auto report = manager.run(threads);
+  progress->finish();
   log_pipeline_summary("ionic", report);
   Logger::get_logger()->info("[ionic] Results -> {}", OutputFile);
   return 0;
 }
 
-int run_contacts(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
+int run_contacts(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
 
@@ -243,13 +259,15 @@ int run_contacts(const std::string &db_path, std::size_t threads, std::size_t ba
 
   manager.connect_sink(params.channel, std::make_shared<NdjsonFileSink>(OutputFile));
 
+  auto progress = attach_progress_observer(manager, dt);
   const auto report = manager.run(threads);
+  progress->finish();
   log_pipeline_summary("contacts", report);
   Logger::get_logger()->info("[contacts] Results -> {}", OutputFile);
   return 0;
 }
 
-int run_neighbors(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
+int run_neighbors(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   constexpr double NeighborCutoff = 5.0;
   auto total_pairs = std::make_shared<std::atomic<std::uint64_t>>(0);
 
@@ -258,15 +276,17 @@ int run_neighbors(const std::string &db_path, std::size_t threads, std::size_t b
   manager.get_system_params().is_model = true;
 
   auto task = std::make_shared<NeighborCountTask>(NeighborCutoff, total_pairs);
-  manager.add_task("neighbor_counts", {"system"}, std::move(task), /*thread_safe=*/true);
+  manager.add_task("neighbor_counts", {}, std::move(task), /*thread_safe=*/true);
 
+  auto progress = attach_progress_observer(manager, dt);
   const auto report = manager.run(threads);
+  progress->finish();
   log_pipeline_summary("neighbors", report);
   Logger::get_logger()->info("[neighbors] total neighbor pairs={} (cutoff={} A)", total_pairs->load(), NeighborCutoff);
   return 0;
 }
 
-int run_plddt_stats(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
+int run_plddt_stats(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   constexpr char OutputChannel[] = "plddt_stats";
 
   StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
@@ -277,14 +297,16 @@ int run_plddt_stats(const std::string &db_path, std::size_t threads, std::size_t
   manager.connect_sink(OutputChannel, std::make_shared<NdjsonFileSink>(OutputFile));
 
   manager.compile();
+  auto progress = attach_progress_observer(manager, dt);
   const auto report = manager.run(threads);
+  progress->finish();
   log_pipeline_summary("plddt_stats", report);
   Logger::get_logger()->info("[plddt_stats] Results -> {}", OutputFile);
   return 0;
 }
 
 void print_usage(const char *prog) {
-  std::cerr << "Usage: " << prog << " [--example=<name>] <database_path> <threads> [batch_size]\n";
+  std::cerr << "Usage: " << prog << " [--example=<name>] [--progress-ms=<ms>] <database_path> <threads> [batch_size]\n";
   std::cerr << "\nAvailable examples:\n";
   std::cerr << "  noop               - No-op task (default)\n";
   std::cerr << "  topology           - Load topology only\n";
@@ -294,10 +316,12 @@ void print_usage(const char *prog) {
   std::cerr << "  plddt_stats        - Summarize pLDDT scores (output -> output.jsonl)\n";
   std::cerr << "\nOptions:\n";
   std::cerr << "  --example=<name>   - Select example (default: noop)\n";
+  std::cerr << "  --progress-ms=<ms> - Progress report interval in milliseconds (default: 2000)\n";
   std::cerr << "  [batch_size]       - Batch size for LMDB source (default: 512)\n";
   std::cerr << "\nExamples:\n";
   std::cerr << "  " << prog << " --example=noop db.lmdb 4\n";
   std::cerr << "  " << prog << " --example=plddt_stats db.lmdb 4\n";
+  std::cerr << "  " << prog << " --progress-ms=5000 db.lmdb 4\n";
   std::cerr << "  " << prog << " db.lmdb 4              # defaults to noop\n";
 }
 
@@ -312,10 +336,24 @@ int main(int argc, char **argv) {
   }
 
   std::string example = "noop";
+  std::size_t progress_ms = 50;
   int arg_offset = 1;
-  if (std::strncmp(argv[1], "--example=", 10) == 0) {
-    example = argv[1] + 10;
-    arg_offset = 2;
+  for (; arg_offset < argc; ++arg_offset) {
+    const char *arg = argv[arg_offset];
+    if (std::strncmp(arg, "--example=", 10) == 0) {
+      example = arg + 10;
+      continue;
+    }
+    if (std::strncmp(arg, "--progress-ms=", 14) == 0) {
+      progress_ms = std::stoul(arg + 14);
+      continue;
+    }
+    if (std::strcmp(arg, "--progress-ms") == 0 && arg_offset + 1 < argc) {
+      progress_ms = std::stoul(argv[arg_offset + 1]);
+      ++arg_offset;
+      continue;
+    }
+    break;
   }
 
   if (argc < arg_offset + 2) {
@@ -325,26 +363,27 @@ int main(int argc, char **argv) {
 
   const std::string db_path = argv[arg_offset];
   const std::size_t threads = std::max<std::size_t>(1, std::stoul(argv[arg_offset + 1]));
+  const auto dt = std::chrono::milliseconds(progress_ms);
 
   try {
     if (example == "noop") {
       const std::size_t batch_size = (argc > arg_offset + 2) ? std::stoul(argv[arg_offset + 2]) : DefaultBatchSize;
-      return run_noop(db_path, threads, batch_size);
+      return run_noop(db_path, threads, batch_size, dt);
     } else if (example == "topology") {
       const std::size_t batch_size = (argc > arg_offset + 2) ? std::stoul(argv[arg_offset + 2]) : DefaultBatchSize;
-      return run_topology(db_path, threads, batch_size);
+      return run_topology(db_path, threads, batch_size, dt);
     } else if (example == "ionic") {
       const std::size_t batch_size = (argc > arg_offset + 2) ? std::stoul(argv[arg_offset + 2]) : DefaultBatchSize;
-      return run_ionic(db_path, threads, batch_size);
+      return run_ionic(db_path, threads, batch_size, dt);
     } else if (example == "contacts") {
       const std::size_t batch_size = (argc > arg_offset + 2) ? std::stoul(argv[arg_offset + 2]) : DefaultBatchSize;
-      return run_contacts(db_path, threads, batch_size);
+      return run_contacts(db_path, threads, batch_size, dt);
     } else if (example == "neighbors") {
       const std::size_t batch_size = (argc > arg_offset + 2) ? std::stoul(argv[arg_offset + 2]) : DefaultBatchSize;
-      return run_neighbors(db_path, threads, batch_size);
+      return run_neighbors(db_path, threads, batch_size, dt);
     } else if (example == "plddt_stats") {
       const std::size_t batch_size = (argc > arg_offset + 2) ? std::stoul(argv[arg_offset + 2]) : DefaultBatchSize;
-      return run_plddt_stats(db_path, threads, batch_size);
+      return run_plddt_stats(db_path, threads, batch_size, dt);
     }
 
     std::cerr << "Error: Unknown example '" << example << "'\n";

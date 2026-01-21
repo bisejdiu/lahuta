@@ -46,6 +46,10 @@ inline DescriptorPtr from_lmdb(const std::string& env_path, const std::string& d
   return std::make_unique<sources::LMDBAdapter>(env_path, db_name, batch);
 }
 
+inline DescriptorPtr from_lmdb(const std::string& env_path, const std::string& db_name, std::size_t batch, LMDBEnvOptions options) {
+  return std::make_unique<sources::LMDBAdapter>(env_path, db_name, batch, std::move(options));
+}
+
 inline DescriptorPtr from_lmdb(std::shared_ptr<LMDBDatabase> db, const std::string& db_name, std::size_t batch) {
   return std::make_unique<sources::LMDBAdapter>(std::move(db), db_name, batch);
 }

@@ -4,20 +4,26 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <memory>
 #include <string_view>
 
+#include "cli/global_flags.hpp"
 #include "logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
+#include "pipeline/dynamic/progress_observer.hpp"
 
 // clang-format off
 namespace lahuta::cli {
+using StageManager = pipeline::dynamic::StageManager;
+using RunReport    = StageManager::RunReport;
+using ProgRunObs   = pipeline::dynamic::ProgressRunObserver;
 
-inline double compute_throughput(const pipeline::dynamic::StageManager::RunReport& report) {
+inline double compute_throughput(const RunReport& report) {
   if (report.total_seconds <= 0.0 || report.items_processed == 0) return 0.0;
   return static_cast<double>(report.items_processed) / report.total_seconds;
 }
 
-inline void log_pipeline_report_summary(std::string_view label, const pipeline::dynamic::StageManager::RunReport& report) {
+inline void log_pipeline_report_summary(std::string_view label, const RunReport& report) {
   auto logger = Logger::get_logger();
   const double throughput = compute_throughput(report);
 
@@ -47,7 +53,7 @@ inline void log_pipeline_report_summary(std::string_view label, const pipeline::
                report.run_token);
 }
 
-inline void log_pipeline_report_terse(std::string_view label, const pipeline::dynamic::StageManager::RunReport& report) {
+inline void log_pipeline_report_terse(std::string_view label, const RunReport& report) {
   auto logger = Logger::get_logger();
   const double throughput = compute_throughput(report);
   logger->info("{} run complete: total={:.3f}s processed={} skipped={} throughput={:.2f} items/s metrics={}",
@@ -56,7 +62,7 @@ inline void log_pipeline_report_terse(std::string_view label, const pipeline::dy
                report.metrics_enabled ? "on" : "off");
 }
 
-inline void log_pipeline_report_diagnostics(std::string_view label, const pipeline::dynamic::StageManager::RunReport& report) {
+inline void log_pipeline_report_diagnostics(std::string_view label, const RunReport& report) {
   log_pipeline_report_summary(label, report);
 
   if (!report.metrics_enabled) {
@@ -103,7 +109,7 @@ inline void log_pipeline_report_diagnostics(std::string_view label, const pipeli
 struct PipelineReporter {
   std::string_view name;
   std::string_view description;
-  void (*emit)(std::string_view, const pipeline::dynamic::StageManager::RunReport&);
+  void (*emit)(std::string_view, const RunReport&);
 };
 
 inline const std::array<PipelineReporter, 3>& available_pipeline_reporters() {
@@ -126,8 +132,34 @@ inline const PipelineReporter* find_pipeline_reporter(std::string_view name) {
   return it == reporters.end() ? nullptr : &*it;
 }
 
-inline void log_pipeline_report(std::string_view label, const pipeline::dynamic::StageManager::RunReport &report) {
+inline void log_pipeline_report(std::string_view label, const RunReport &report) {
   log_pipeline_report_summary(label, report);
+}
+
+inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager, std::chrono::milliseconds interval) {
+  if (interval.count() == 0) return {};
+  pipeline::dynamic::ProgressObserverConfig config;
+  config.interval = interval;
+  auto observer = std::make_shared<ProgRunObs>(config);
+  manager.set_run_observer(observer);
+  auto logger = Logger::get_logger();
+  std::shared_ptr<spdlog::sinks::sink> base_sink;
+  if (logger && !logger->sinks().empty()) {
+    base_sink = logger->sinks().front();
+    if (auto progress_sink = std::dynamic_pointer_cast<pipeline::dynamic::ProgressAwareSink>(base_sink)) {
+      base_sink = progress_sink->wrapped_sink();
+    }
+  }
+  if (!base_sink) {
+    base_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  }
+  auto sink = std::make_shared<pipeline::dynamic::ProgressAwareSink>(base_sink, observer);
+  Logger::get_instance().configure_with_sink(sink);
+  return observer;
+}
+
+inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager) {
+  return attach_progress_observer(manager, std::chrono::milliseconds(get_global_flags().progress_ms));
 }
 
 } // namespace lahuta::cli

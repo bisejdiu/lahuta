@@ -30,6 +30,7 @@
 #include "pipeline/dynamic/sink_iface.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "runtime.hpp"
+#include "sources/adapters/lmdb.hpp"
 #include "sources/descriptor.hpp"
 #include "sources/realizer.hpp"
 
@@ -341,6 +342,7 @@ public:
     const auto total_begin = std::chrono::steady_clock::now();
 
     const std::size_t requested_threads = std::max<std::size_t>(threads, std::size_t{1});
+    warn_if_lmdb_readers_exhausted(requested_threads);
 
     if (compute_factories_.empty()) compile();
     realizer_.set_requirements(graph_requirements_);
@@ -381,8 +383,7 @@ public:
     if (metrics_enabled) {
       StageRunMetrics metrics(reporting_level_ == ReportingLevel::Debug);
       metrics.configure_stage_breakdown(snapshot.labels.size());
-      std::shared_ptr<IRunObserver> observer_copy = reporting_level_ == ReportingLevel::Debug ? run_observer_ : nullptr;
-      StageExecutor<StageRunMetrics> executor(snapshot, mux_, run_token, metrics, graph_requirements_, std::move(observer_copy));
+      StageExecutor<StageRunMetrics> executor(snapshot, mux_, run_token, metrics, graph_requirements_, run_observer_);
       IngestItemStream item_stream(*src_, realizer_);
       executor.run(item_stream, requested_threads);
 
@@ -394,7 +395,7 @@ public:
       metrics_snapshot = metrics.snapshot();
     } else {
       NullStageRunMetrics metrics;
-      StageExecutor<NullStageRunMetrics> executor(snapshot, mux_, run_token, metrics, graph_requirements_);
+      StageExecutor<NullStageRunMetrics> executor(snapshot, mux_, run_token, metrics, graph_requirements_, run_observer_);
       IngestItemStream item_stream(*src_, realizer_);
       executor.run(item_stream, requested_threads);
 
@@ -561,6 +562,23 @@ public:
   }
 
 private:
+  void warn_if_lmdb_readers_exhausted(std::size_t requested_threads) const {
+    auto *lmdb_src = dynamic_cast<sources::LMDBAdapter*>(src_.get());
+    if (!lmdb_src) return;
+
+    auto max_readers = lmdb_src->max_readers();
+    if (!max_readers || *max_readers == 0) return;
+
+    const std::size_t required_readers = requested_threads + 1; // here +1 for the main thread reading keys.
+    if (required_readers > *max_readers) {
+      throw std::runtime_error(
+        "StageManager: LMDB max_readers (" + std::to_string(*max_readers) +
+        ") is below required_readers (" + std::to_string(required_readers) +
+        ", threads + 1). Increase LAHUTA_LMDB_MAXREADERS, pass LMDBEnvOptions "
+        "when constructing the LMDB source, or reduce the thread count.");
+    }
+  }
+
   struct BuiltinInjectionDecision {
     bool need_system;
     bool need_topology;

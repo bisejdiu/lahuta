@@ -92,6 +92,19 @@ add_library(rdkit STATIC
 
 set_property(TARGET rdkit PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# Disable LTO for parser sources to avoid LTO ODR warnings from generated code.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  set(_rdkit_no_lto_sources
+    GraphMol/SmilesParse/smarts.tab.cpp
+    GraphMol/SmilesParse/smiles.tab.cpp
+    GraphMol/SmilesParse/lex.yysmarts.cpp
+    GraphMol/SmilesParse/lex.yysmiles.cpp
+  )
+  set_source_files_properties(${_rdkit_no_lto_sources}
+    PROPERTIES COMPILE_OPTIONS "-fno-lto"
+  )
+endif()
+
 # Suppress psABI warnings for GCC
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   target_compile_options(rdkit PRIVATE -Wno-psabi)

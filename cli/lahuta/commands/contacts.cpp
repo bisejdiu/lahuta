@@ -481,8 +481,11 @@ int ContactsCommand::run(int argc, char* argv[]) {
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
       emit_and_save_report(report);
     } else if (is_db) {
-      auto db = std::make_shared<LMDBDatabase>(cli.database_path);
-      auto src = dynamic::sources_factory::from_lmdb(db, std::string{}, cli.batch_size);
+      auto src = dynamic::sources_factory::from_lmdb(
+          cli.database_path,
+          std::string{},
+          cli.batch_size,
+          {static_cast<std::size_t>(cli.threads) + 1}); // +1 for the main thread reading keys.
       dynamic::StageManager mgr(std::move(src));
       // Enable conditional built-ins injection for CLI ergonomics
       mgr.set_auto_builtins(true);
@@ -524,7 +527,9 @@ int ContactsCommand::run(int argc, char* argv[]) {
       if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
+      auto progress = attach_progress_observer(mgr);
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+      if (progress) progress->finish();
       emit_and_save_report(report);
     } else {
       Source src_variant = pick_source(cli);
@@ -581,7 +586,9 @@ int ContactsCommand::run(int argc, char* argv[]) {
         if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
+        auto progress = attach_progress_observer(mgr);
         const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
+        if (progress) progress->finish();
         emit_and_save_report(report);
       }, src_variant);
     }

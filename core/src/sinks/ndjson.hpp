@@ -21,7 +21,7 @@ public:
     if (!parent.empty()) {
       std::filesystem::create_directories(parent);
     }
-    out_.open(path_, std::ios::binary | std::ios::app);
+    out_.open(path_, std::ios::binary | std::ios::trunc);
     if (!out_) throw std::runtime_error("cannot open output file: " + path_);
   }
   void write(EmissionView e) override {
