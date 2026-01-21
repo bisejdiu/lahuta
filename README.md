@@ -68,6 +68,7 @@ pip install lahuta
   ```
 
 - Notes and options:
+  - Compiler requirement: GCC **9.1+**
   - `LAHUTA_BUILD_PYTHON=ON` builds the Python shared libraries and installs the Python package into the CMake install prefix. It does not install Python-level dependencies; use `pip` or `conda` to install those (see list in `interop/python/pyproject.toml`).
   - Switch between shared and static linkage for `lahuta_core` with:
     ```bash
