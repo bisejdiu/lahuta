@@ -1,10 +1,6 @@
-#include <cstdint>
 #include <iostream>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 #include "logging.hpp"
 #include "pipeline/data_requirements.hpp"
@@ -47,24 +43,14 @@ void log_pipeline_summary(const char* label, const StageManager::RunReport& repo
 
 class OrganismStatsTask final : public ITask {
 public:
-  struct Snapshot {
-    std::uint64_t total = 0;
-    std::uint64_t missing = 0;
-    std::unordered_map<std::string, std::uint64_t> organism_counts;
-  };
-
   explicit OrganismStatsTask(const std::string &output_channel) : output_channel_(output_channel) {}
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
     auto payload = ctx.model_payload();
-    if (!payload || !payload->metadata) {
-      record_observation({}, {});
-      return {};
-    }
+    if (!payload || !payload->metadata) return {};
 
-    const auto &organism = payload->metadata->organism_scientific;
+    const auto &organism    = payload->metadata->organism_scientific;
     const auto &taxonomy_id = payload->metadata->ncbi_taxonomy_id;
-    record_observation(organism, taxonomy_id);
 
     JsonBuilder json(256);
     json.key("model").value(item_path)
@@ -79,34 +65,8 @@ public:
 
   DataFieldSet data_requirements() const override { return DataFieldSet::of({DataField::Metadata}); }
 
-  Snapshot snapshot() const {
-    std::lock_guard<std::mutex> lock(mutex_);
-    return Snapshot{total_, missing_, organism_counts_};
-  }
-
 private:
-  void record_observation(const std::string &organism, const std::string &taxonomy_id) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    ++total_;
-    if (organism.empty()) {
-      ++missing_;
-      return;
-    }
-
-    // Key with organism name and taxonomy ID
-    std::string organism_key = organism;
-    if (!taxonomy_id.empty()) {
-      organism_key += " (TaxID: " + taxonomy_id + ")";
-    }
-
-    ++organism_counts_[organism_key];
-  }
-
   std::string output_channel_;
-  mutable std::mutex mutex_;
-  std::uint64_t total_ = 0;
-  std::uint64_t missing_ = 0;
-  std::unordered_map<std::string, std::uint64_t> organism_counts_;
 };
 
 int run_organism_data(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
@@ -122,12 +82,7 @@ int run_organism_data(const std::string &db_path, std::size_t threads, std::size
 
   const auto report = manager.run(threads);
   log_pipeline_summary("organism_data", report);
-
-  const auto stats = task->snapshot();
   const auto logger = Logger::get_logger();
-  const auto with_species = stats.total >= stats.missing ? stats.total - stats.missing : 0;
-  logger->info("[organism_stats] models={} with_species={} missing={} unique_species={}",
-               stats.total, with_species, stats.missing, stats.organism_counts.size());
   logger->info("[organism_stats] Results written to {}", OutputFile);
   return 0;
 }
