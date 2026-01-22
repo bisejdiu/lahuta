@@ -57,22 +57,22 @@ char dssp_to_char(DSSPAssignment dssp) {
   return '?';
 }
 
-class DsspStatsTask final : public ITask {
+class DsspDataTask final : public ITask {
 public:
-  explicit DsspStatsTask(const std::string &output_channel) : output_channel_(output_channel) {}
+  explicit DsspDataTask(const std::string &output_channel) : output_channel_(output_channel) {}
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
     auto payload = ctx.model_payload();
-    if (!payload) {
-      throw std::runtime_error("Missing model payload for '" + item_path + "'");
-    }
+    auto logger = Logger::get_logger();
 
-    if (!payload->dssp || payload->dssp->empty()) {
-      throw std::runtime_error("Missing DSSP data for '" + item_path + "'");
+    if (!payload || !payload->dssp || payload->dssp->empty()) {
+      logger->warn("[dssp_data] Missing DSSP data for '{}'", item_path);
+      return {};
     }
 
     if (!payload->plddts || payload->plddts->empty()) {
-      throw std::runtime_error("Missing pLDDT data for '" + item_path + "'");
+      logger->warn("[dssp_data] Missing pLDDT data for '{}'", item_path);
+      return {};
     }
 
     const auto &dssp_vec = *payload->dssp;
@@ -80,10 +80,9 @@ public:
 
     // Validate lengths match
     if (dssp_vec.size() != plddt_vec.size()) {
-      throw std::runtime_error(
-          "DSSP/pLDDT length mismatch for '" + item_path + "': " +
-          "DSSP=" + std::to_string(dssp_vec.size()) + " vs " +
-          "pLDDT=" + std::to_string(plddt_vec.size()));
+      logger->warn("[dssp_data] DSSP/pLDDT length mismatch for '{}': DSSP={} vs pLDDT={}",
+                   item_path, dssp_vec.size(), plddt_vec.size());
+      return {};
     }
 
     std::string dssp_sequence;
@@ -118,7 +117,7 @@ int run_dssp_data(const std::string &db_path, std::size_t threads, std::size_t b
   manager.set_auto_builtins(true);
   manager.get_system_params().is_model = true;
 
-  auto task = std::make_shared<DsspStatsTask>(OutputChannel);
+  auto task = std::make_shared<DsspDataTask>(OutputChannel);
   manager.add_task("dssp_data", {}, task, /*thread_safe=*/true);
   manager.connect_sink(OutputChannel, std::make_shared<NdjsonFileSink>(OutputFile));
 
@@ -160,7 +159,7 @@ int main(int argc, char **argv) {
   try {
     return run_dssp_data(db_path, threads, batch_size);
   } catch (const std::exception &ex) {
-    std::cerr << "[dssp_data] Error: " << ex.what() << '\n';
+    Logger::get_logger()->error("[dssp_data] Fatal error: {}", ex.what());
     return 1;
   }
 }

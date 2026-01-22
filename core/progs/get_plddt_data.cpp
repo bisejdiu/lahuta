@@ -60,12 +60,9 @@ public:
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
     auto payload = ctx.model_payload();
-    if (!payload) {
-      throw std::runtime_error("Missing model payload for '" + item_path + "'");
-    }
-
-    if (!payload->plddts || payload->plddts->empty()) {
-      throw std::runtime_error("Missing pLDDT data for '" + item_path + "'");
+    if (!payload || !payload->plddts || payload->plddts->empty()) {
+      Logger::get_logger()->warn("[plddt_data] Missing pLDDT data for '{}'", item_path);
+      return {};
     }
 
     const auto &plddt_vec = *payload->plddts;
@@ -149,7 +146,7 @@ int main(int argc, char **argv) {
   try {
     return run_plddt_data(db_path, threads, batch_size);
   } catch (const std::exception &ex) {
-    std::cerr << "[plddt_data] Error: " << ex.what() << '\n';
+    Logger::get_logger()->error("[plddt_data] Fatal error: {}", ex.what());
     return 1;
   }
 }

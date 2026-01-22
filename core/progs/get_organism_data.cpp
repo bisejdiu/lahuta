@@ -41,13 +41,16 @@ void log_pipeline_summary(const char* label, const StageManager::RunReport& repo
   }
 }
 
-class OrganismStatsTask final : public ITask {
+class OrganismDataTask final : public ITask {
 public:
-  explicit OrganismStatsTask(const std::string &output_channel) : output_channel_(output_channel) {}
+  explicit OrganismDataTask(const std::string &output_channel) : output_channel_(output_channel) {}
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
     auto payload = ctx.model_payload();
-    if (!payload || !payload->metadata) return {};
+    if (!payload || !payload->metadata) {
+      Logger::get_logger()->warn("[organism_data] Missing metadata for '{}'", item_path);
+      return {};
+    }
 
     const auto &organism    = payload->metadata->organism_scientific;
     const auto &taxonomy_id = payload->metadata->ncbi_taxonomy_id;
@@ -76,7 +79,7 @@ int run_organism_data(const std::string &db_path, std::size_t threads, std::size
   manager.set_auto_builtins(true);
   manager.get_system_params().is_model = true;
 
-  auto task = std::make_shared<OrganismStatsTask>(OutputChannel);
+  auto task = std::make_shared<OrganismDataTask>(OutputChannel);
   manager.add_task("organism_data", {}, task, /*thread_safe=*/true);
   manager.connect_sink(OutputChannel, std::make_shared<NdjsonFileSink>(OutputFile));
 
@@ -104,6 +107,8 @@ void print_usage(const char *prog) {
 } // namespace
 
 int main(int argc, char **argv) {
+  Logger::get_instance().set_log_level(Logger::LogLevel::Info);
+
   if (argc < 3) {
     print_usage(argv[0]);
     return 1;
@@ -113,5 +118,10 @@ int main(int argc, char **argv) {
   const std::size_t threads = std::stoul(argv[2]);
   const std::size_t batch_size = (argc > 3) ? std::stoul(argv[3]) : DefaultBatchSize;
 
-  return run_organism_data(db_path, threads, batch_size);
+  try {
+    return run_organism_data(db_path, threads, batch_size);
+  } catch (const std::exception &ex) {
+    Logger::get_logger()->error("[organism_data] Fatal error: {}", ex.what());
+    return 1;
+  }
 }

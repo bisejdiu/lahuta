@@ -48,12 +48,9 @@ public:
 
   TaskResult run(const std::string &item_path, TaskContext &ctx) override {
     auto payload = ctx.model_payload();
-    if (!payload) {
-      throw std::runtime_error("Missing model payload for '" + item_path + "'");
-    }
-
-    if (!payload->sequence || payload->sequence->empty()) {
-      throw std::runtime_error("Missing sequence data for '" + item_path + "'");
+    if (!payload || !payload->sequence || payload->sequence->empty()) {
+      Logger::get_logger()->warn("[sequence_data] Missing sequence for '{}'", item_path);
+      return {};
     }
 
     const auto &sequence = *payload->sequence;
@@ -127,7 +124,7 @@ int main(int argc, char **argv) {
   try {
     return run_sequence_data(db_path, threads, batch_size);
   } catch (const std::exception &ex) {
-    std::cerr << "[sequence_data] Error: " << ex.what() << '\n';
+    Logger::get_logger()->error("[sequence_data] Fatal error: {}", ex.what());
     return 1;
   }
 }
