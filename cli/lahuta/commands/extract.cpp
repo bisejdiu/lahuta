@@ -85,19 +85,19 @@ std::string current_timestamp_string() {
   return oss.str();
 }
 
-std::shared_ptr<dyn::ITask> build_extract_task(std::string_view field, std::string output_channel, bool allow_model_parse) {
+std::shared_ptr<dyn::ITask> build_extract_task(std::string_view field, std::string output_channel) {
   using namespace analysis::extract;
   if (field == FIELD_SEQUENCE) {
-    return std::make_shared<SequenceExtractTask>(std::move(output_channel), allow_model_parse);
+    return std::make_shared<SequenceExtractTask>(std::move(output_channel));
   }
   if (field == FIELD_PLDDT) {
-    return std::make_shared<PlddtExtractTask>(std::move(output_channel), allow_model_parse);
+    return std::make_shared<PlddtExtractTask>(std::move(output_channel));
   }
   if (field == FIELD_DSSP) {
-    return std::make_shared<DsspExtractTask>(std::move(output_channel), allow_model_parse);
+    return std::make_shared<DsspExtractTask>(std::move(output_channel));
   }
   if (field == FIELD_ORGANISM) {
-    return std::make_shared<OrganismExtractTask>(std::move(output_channel), allow_model_parse);
+    return std::make_shared<OrganismExtractTask>(std::move(output_channel));
   }
   throw std::logic_error("Invalid extract field");
 }
@@ -108,7 +108,8 @@ namespace extract_opts {
 const option::Descriptor usage[] = {
   {ExtractOptionIndex::Unknown, 0, "", "", validate::Unknown,
    "Usage: lahuta extract <field> [options]\n\n"
-   "Extract data from structure files or databases.\n\n"
+   "Extract data from AlphaFold2 model files or databases.\n"
+   "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not supported.\n\n"
    "Available reporters (--reporter <name>):\n"
    "  summary     - Balanced totals and item counts (default; negligible overhead).\n"
    "  terse       - Single-line throughput summary (fastest logging footprint).\n"
@@ -138,7 +139,7 @@ const option::Descriptor usage[] = {
   {0, 0, "", "", option::Arg::None,
    "\nModel Options:"},
   {ExtractOptionIndex::IsAf2Model, 0, "", "is_af2_model", option::Arg::None,
-   "  --is_af2_model               \tInputs are AlphaFold2 models (or AF2-like)."},
+   "  --is_af2_model               \tRequired for file-based sources; inputs are AlphaFold2 models (AF2-like mmCIF)."},
   {0, 0, "", "", option::Arg::None,
    "\nOutput Options:"},
   {ExtractOptionIndex::Output, 0, "o", "output", validate::Required,
@@ -253,6 +254,13 @@ int ExtractCommand::run(int argc, char* argv[]) {
       cli.is_af2_model = true;
     }
 
+    if (cli.source_mode != ExtractOptions::SourceMode::Database && !cli.is_af2_model) {
+      Logger::get_logger()->error(
+          "extract expects AlphaFold2 model inputs. For file-based sources, pass --is_af2_model (or use --database).");
+      option::printUsage(std::cerr, extract_opts::usage);
+      return 1;
+    }
+
     if (options[extract_opts::ExtractOptionIndex::Threads]) {
       cli.threads = std::stoi(options[extract_opts::ExtractOptionIndex::Threads].arg);
       if (cli.threads <= 0) {
@@ -313,8 +321,6 @@ int ExtractCommand::run(int argc, char* argv[]) {
 
     initialize_runtime(cli.threads);
 
-    const bool allow_model_parse = (cli.source_mode != ExtractOptions::SourceMode::Database) && cli.is_af2_model;
-    const bool require_system = (cli.source_mode != ExtractOptions::SourceMode::Database);
 
     auto source = std::unique_ptr<sources::IDescriptor>{};
     switch (cli.source_mode) {
@@ -341,15 +347,9 @@ int ExtractCommand::run(int argc, char* argv[]) {
     }
 
     dyn::StageManager mgr(std::move(source));
-    if (require_system) {
-      // For non-database inputs, build the system but avoid topology.
-      mgr.set_auto_builtins(true);
-      mgr.get_system_params().is_model = cli.is_af2_model;
-    }
 
-    auto task = build_extract_task(field, output_channel, allow_model_parse);
+    auto task = build_extract_task(field, output_channel);
     std::vector<std::string> deps;
-    if (require_system) deps.emplace_back("system");
     mgr.add_task(output_channel, std::move(deps), std::move(task), /*thread_safe=*/true);
 
     auto sink_cfg = dyn::get_default_backpressure_config();

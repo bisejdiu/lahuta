@@ -49,19 +49,18 @@ inline char dssp_to_char(DSSPAssignment dssp) noexcept {
 
 class SequenceExtractTask final : public ITask {
 public:
-  explicit SequenceExtractTask(std::string output_channel, bool allow_model_parse = false)
-      : output_channel_(std::move(output_channel)), allow_model_parse_(allow_model_parse) {}
+  explicit SequenceExtractTask(std::string output_channel)
+      : output_channel_(std::move(output_channel)) {}
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const std::string* sequence = nullptr;
     std::string parsed_sequence;
 
-    // try model payload first
-    if (auto payload = ctx.model_payload(); payload && payload->sequence && !payload->sequence->empty()) {
+    auto payload = ctx.model_payload();
+    if (payload && payload->sequence && !payload->sequence->empty()) {
       sequence = payload->sequence.get();
     }
-    // maybe fallback
-    else if (allow_model_parse_) {
+    else if (!payload) {
       try {
         auto parsed = system::load_model_parser_result(item_path);
         if (!parsed.sequence.empty()) {
@@ -95,22 +94,22 @@ public:
 
 private:
   std::string output_channel_;
-  bool allow_model_parse_;
 };
 
 class PlddtExtractTask final : public ITask {
 public:
-  explicit PlddtExtractTask(std::string output_channel, bool allow_model_parse = false)
-      : output_channel_(std::move(output_channel)), allow_model_parse_(allow_model_parse) {}
+  explicit PlddtExtractTask(std::string output_channel)
+      : output_channel_(std::move(output_channel)) {}
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const std::vector<pLDDTCategory>* plddts = nullptr;
     std::vector<pLDDTCategory> parsed_plddts;
 
-    if (auto payload = ctx.model_payload(); payload && payload->plddts && !payload->plddts->empty()) {
+    auto payload = ctx.model_payload();
+    if (payload && payload->plddts && !payload->plddts->empty()) {
       plddts = payload->plddts.get();
     }
-    else if (allow_model_parse_) {
+    else if (!payload) {
       try {
         auto parsed = system::load_model_parser_result(item_path);
         if (!parsed.plddt_per_residue.empty()) {
@@ -150,22 +149,22 @@ public:
 
 private:
   std::string output_channel_;
-  bool allow_model_parse_;
 };
 
 class DsspExtractTask final : public ITask {
 public:
-  explicit DsspExtractTask(std::string output_channel, bool allow_model_parse = false)
-      : output_channel_(std::move(output_channel)), allow_model_parse_(allow_model_parse) {}
+  explicit DsspExtractTask(std::string output_channel)
+      : output_channel_(std::move(output_channel)) {}
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const std::vector<DSSPAssignment>* dssp = nullptr;
     std::vector<DSSPAssignment> parsed_dssp;
 
-    if (auto payload = ctx.model_payload(); payload && payload->dssp && !payload->dssp->empty()) {
+    auto payload = ctx.model_payload();
+    if (payload && payload->dssp && !payload->dssp->empty()) {
       dssp = payload->dssp.get();
     }
-    else if (allow_model_parse_) {
+    else if (!payload) {
       try {
         auto parsed = system::load_model_parser_result(item_path);
         if (!parsed.dssp_per_residue.empty()) {
@@ -205,22 +204,22 @@ public:
 
 private:
   std::string output_channel_;
-  bool allow_model_parse_;
 };
 
 class OrganismExtractTask final : public ITask {
 public:
-  explicit OrganismExtractTask(std::string output_channel, bool allow_model_parse = false)
-      : output_channel_(std::move(output_channel)), allow_model_parse_(allow_model_parse) {}
+  explicit OrganismExtractTask(std::string output_channel)
+      : output_channel_(std::move(output_channel)) {}
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const ModelMetadata* metadata = nullptr;
     ModelMetadata parsed_metadata;
 
-    if (auto payload = ctx.model_payload(); payload && payload->metadata) {
+    auto payload = ctx.model_payload();
+    if (payload && payload->metadata) {
       metadata = payload->metadata.get();
     }
-    else if (allow_model_parse_) {
+    else if (!payload) {
       try {
         auto parsed = system::load_model_parser_result(item_path);
         parsed_metadata = std::move(parsed.metadata);
@@ -256,7 +255,6 @@ public:
 
 private:
   std::string output_channel_;
-  bool allow_model_parse_;
 };
 
 } // namespace lahuta::analysis::extract

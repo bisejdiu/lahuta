@@ -17,7 +17,7 @@ const option::Descriptor usage[] = {
    "Available subcommands:\n"
    "  contacts [options]            Compute inter-atomic contacts\n"
    "  createdb [options]            Create database from structure files\n"
-   "  extract <field> [options]     Extract data (sequence, plddt, dssp, organism)\n\n"
+   "  extract <field> [options]     Extract data from AlphaFold2 models (sequence, plddt, dssp, organism)\n\n"
    "Main Options:"},
   {GlobalOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help,  -h                  \tPrint this help message and exit."},
