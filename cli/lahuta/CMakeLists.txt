@@ -4,6 +4,7 @@ set(lahuta_sources
   cli/global_options.cpp
   commands/contacts.cpp
   commands/createdb.cpp
+  commands/extract.cpp
 )
 
 add_executable(lahuta ${lahuta_sources})
@@ -24,4 +25,10 @@ if(BUILD_TESTING)
 
   add_test(NAME lahuta_createdb_help COMMAND lahuta createdb --help)
   set_tests_properties(lahuta_createdb_help PROPERTIES PASS_REGULAR_EXPRESSION "Create a database from alphafold2 models.")
+
+  add_test(NAME lahuta_extract_help COMMAND lahuta extract --help)
+  set_tests_properties(lahuta_extract_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta extract")
+
+  add_test(NAME lahuta_extract_sequence_help COMMAND lahuta extract sequence --help)
+  set_tests_properties(lahuta_extract_sequence_help PROPERTIES PASS_REGULAR_EXPRESSION "Extract")
 endif()

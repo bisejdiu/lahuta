@@ -1,8 +1,4 @@
 set(LAHUTA_PROG_SOURCES
-  get_organism_data.cpp
-  get_sequence_data.cpp
-  get_plddt_data.cpp
-  get_dssp_data.cpp
   get_position_data.cpp
 )
 
