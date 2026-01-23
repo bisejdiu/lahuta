@@ -5,6 +5,7 @@ set(lahuta_sources
   commands/contacts.cpp
   commands/createdb.cpp
   commands/extract.cpp
+  commands/positions.cpp
 )
 
 add_executable(lahuta ${lahuta_sources})
@@ -31,4 +32,7 @@ if(BUILD_TESTING)
 
   add_test(NAME lahuta_extract_sequence_help COMMAND lahuta extract --fields sequence --help)
   set_tests_properties(lahuta_extract_sequence_help PROPERTIES PASS_REGULAR_EXPRESSION "Extract")
+
+  add_test(NAME lahuta_positions_help COMMAND lahuta positions --help)
+  set_tests_properties(lahuta_positions_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta positions")
 endif()

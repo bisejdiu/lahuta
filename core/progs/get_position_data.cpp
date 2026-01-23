@@ -23,7 +23,6 @@ using pipeline::DataField;
 using pipeline::DataFieldSet;
 
 constexpr std::size_t DefaultBatchSize = 512;
-const std::string OutputDir = "/Users/bsejdiu/projects/lahuta_dev/lahuta/position_data";
 
 void log_pipeline_summary(const char* label, const StageManager::RunReport& report) {
   auto logger = Logger::get_logger();
@@ -46,20 +45,20 @@ void log_pipeline_summary(const char* label, const StageManager::RunReport& repo
 }
 
 void write_positions_as_float(const std::vector<RDGeom::Point3D>& pts, const std::string& filename) {
-    std::ofstream ofs(filename, std::ios::binary);
-    if (!ofs) throw std::runtime_error("Failed to open file for writing: " + filename);
+  std::ofstream ofs(filename, std::ios::binary);
+  if (!ofs) throw std::runtime_error("Failed to open file for writing: " + filename);
 
-    // Write as flat array of floats to ensure proper memory layout
-    std::vector<float> data;
-    data.reserve(pts.size() * 3);
-    for (const auto& pt : pts) {
-        data.push_back(static_cast<float>(pt.x));
-        data.push_back(static_cast<float>(pt.y));
-        data.push_back(static_cast<float>(pt.z));
-    }
+  // flat array of floats to ensure proper memory layout
+  std::vector<float> data;
+  data.reserve(pts.size() * 3);
+  for (const auto& pt : pts) {
+      data.push_back(static_cast<float>(pt.x));
+      data.push_back(static_cast<float>(pt.y));
+      data.push_back(static_cast<float>(pt.z));
+  }
 
-    ofs.write(reinterpret_cast<const char*>(data.data()),
-              static_cast<std::streamsize>(data.size() * sizeof(float)));
+  ofs.write(reinterpret_cast<const char*>(data.data()),
+            static_cast<std::streamsize>(data.size() * sizeof(float)));
 }
 
 std::string sanitize_filename(const std::string& model_path) {
@@ -111,42 +110,43 @@ private:
   std::string output_dir_;
 };
 
-int run_position_data(const std::string &db_path, std::size_t threads, std::size_t batch_size) {
-  std::filesystem::create_directories(OutputDir);
+int run_position_data(const std::string &db_path, std::size_t threads, std::size_t batch_size, const std::string& output_dir) {
+  std::filesystem::create_directories(output_dir);
   auto logger = Logger::get_logger();
-  logger->info("[position_data] Output directory: {}", OutputDir);
+  logger->info("[position_data] Output directory: {}", output_dir);
   logger->info("[position_data] Data type: float32 (converted from Point3D)");
 
   StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size, {threads + 1}));
   manager.set_auto_builtins(true);
   manager.get_system_params().is_model = true;
 
-  auto task = std::make_shared<PositionDataTask>(OutputDir);
+  auto task = std::make_shared<PositionDataTask>(output_dir);
   manager.add_task("position_data", {}, task, /*thread_safe=*/true);
 
   const auto report = manager.run(threads);
   log_pipeline_summary("position_data", report);
 
-  logger->info("[position_data] Binary files written to {}/", OutputDir);
+  logger->info("[position_data] Binary files written to {}/", output_dir);
   return 0;
 }
 
 void print_usage(const char *prog) {
-  std::cerr << "Usage: " << prog << " <database_path> <threads> [batch_size]\n";
+  std::cerr << "Usage: " << prog << " <database_path> <threads> <output_dir> [batch_size]\n";
   std::cerr << "\nDescription:\n";
   std::cerr << "  Extracts 3D atomic coordinates from a Lahuta LMDB database.\n";
   std::cerr << "  Each model's coordinates are saved as a NumPy-loadable binary file.\n";
   std::cerr << "\nArguments:\n";
   std::cerr << "  <database_path>  - Path to LMDB database directory\n";
   std::cerr << "  <threads>        - Number of worker threads\n";
+  std::cerr << "  <output_dir>     - Output directory for position files\n";
   std::cerr << "  [batch_size]     - Batch size for LMDB source (default: 512)\n";
   std::cerr << "\nOutput:\n";
-  std::cerr << "  Files are written to: " << OutputDir << "/\n";
+  std::cerr << "  Files are written to: <output_dir>/\n";
   std::cerr << "  Format: One binary file per model, structured as Nx3 arrays (float32)\n";
   std::cerr << "  Can be loaded in Python with: np.fromfile(path, dtype=np.float32).reshape(-1, 3)\n";
   std::cerr << "\nExample:\n";
-  std::cerr << "  " << prog << " swissprot_db 16\n";
-  std::cerr << "  " << prog << " swissprot_db 16 1024\n";
+  std::cerr << "  " << prog << " swissprot_db 16 output_dir\n";
+  std::cerr << "  " << prog << " swissprot_db 16 output_dir 1024\n";
 }
 
 } // namespace
@@ -154,17 +154,18 @@ void print_usage(const char *prog) {
 int main(int argc, char **argv) {
   Logger::get_instance().set_log_level(Logger::LogLevel::Info);
 
-  if (argc < 3) {
+  if (argc < 4) {
     print_usage(argv[0]);
     return 1;
   }
 
   const std::string db_path = argv[1];
   const std::size_t threads = std::stoul(argv[2]);
-  const std::size_t batch_size = (argc > 3) ? std::stoul(argv[3]) : DefaultBatchSize;
+  const std::string output_dir = argv[3];
+  const std::size_t batch_size = (argc > 4) ? std::stoul(argv[4]) : DefaultBatchSize;
 
   try {
-    return run_position_data(db_path, threads, batch_size);
+    return run_position_data(db_path, threads, batch_size, output_dir);
   } catch (const std::exception &ex) {
     std::cerr << "[position_data] Error: " << ex.what() << '\n';
     return 1;
