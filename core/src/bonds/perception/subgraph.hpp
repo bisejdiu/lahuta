@@ -3,7 +3,7 @@
 
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "span.hpp"
+#include "utils/span.hpp"
 
 namespace lahuta::bonds::subgraph {
 

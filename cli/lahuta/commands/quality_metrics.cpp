@@ -27,7 +27,7 @@
 #include "serialization/json.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta::cli {

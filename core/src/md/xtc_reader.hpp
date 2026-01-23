@@ -14,7 +14,7 @@
 #include <rdkit/Geometry/point.h>
 
 #include "md/xdr.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta::md {
