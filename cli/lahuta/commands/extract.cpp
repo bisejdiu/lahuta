@@ -1,9 +1,5 @@
-#include <chrono>
-#include <ctime>
-#include <iomanip>
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -14,6 +10,7 @@
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
 #include "cli/run_report.hpp"
+#include "cli/time_utils.hpp"
 #include "commands/extract.hpp"
 #include "commands/reporting.hpp"
 #include "logging.hpp"
@@ -66,23 +63,6 @@ bool is_valid_field(std::string_view field) {
 
 void initialize_runtime(int num_threads) {
   LahutaRuntime::ensure_initialized(static_cast<std::size_t>(num_threads));
-}
-
-std::string current_timestamp_string() {
-  using namespace std::chrono;
-  const auto now = system_clock::now();
-  const auto tt = system_clock::to_time_t(now);
-  std::tm tm{};
-#if defined(_WIN32)
-  localtime_s(&tm, &tt);
-#else
-  localtime_r(&tt, &tm);
-#endif
-  const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % milliseconds(1000);
-  std::ostringstream oss;
-  oss << std::put_time(&tm, "%Y%m%d_%H%M%S")
-      << '_' << std::setw(3) << std::setfill('0') << ms.count();
-  return oss.str();
 }
 
 std::shared_ptr<dyn::ITask> build_extract_task(std::string_view field, std::string output_channel) {
