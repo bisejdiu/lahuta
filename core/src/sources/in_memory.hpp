@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 // clang-format off
 namespace lahuta::sources {

@@ -7,7 +7,7 @@
 
 #include <ctpl/ctpl.h>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "models/factory.hpp"
 
 // clang-format off

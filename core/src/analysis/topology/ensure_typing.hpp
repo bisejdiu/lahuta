@@ -7,7 +7,7 @@
 #include "analysis/topology/computation.hpp"
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/dynamic_computation.hpp"
 #include "pipeline/compute/parameters.hpp"

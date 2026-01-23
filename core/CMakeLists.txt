@@ -211,7 +211,7 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/residues.cpp
   src/aromatics.cpp
   src/luni_props.cpp
-  src/logging.cpp
+  src/logging/logging.cpp
   src/md/element_utils.cpp
   src/md/gro_reader.cpp
   src/md/xdr.cpp

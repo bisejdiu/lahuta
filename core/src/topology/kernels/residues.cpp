@@ -2,7 +2,7 @@
 
 #include "compute/context.hpp"
 #include "compute/result.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
 

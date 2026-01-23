@@ -1,13 +1,13 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
-#include <logging.hpp>
 #include <stdexcept>
 #include <string>
 
 #include <GraphMol/Conformer.h>
 
 #include "lahuta.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/ingestion.hpp"
 #include "pipeline/pipeline_item.hpp"
 #include "sources/nmr.hpp"

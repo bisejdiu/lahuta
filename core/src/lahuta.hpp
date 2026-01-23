@@ -12,7 +12,7 @@
 #include <gemmi/model.hpp>
 #include <rdkit/Geometry/point.h>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "topology.hpp"
 
 //

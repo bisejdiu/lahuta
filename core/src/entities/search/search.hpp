@@ -10,7 +10,7 @@
 #include "entities/search/hit_buffer.hpp"
 #include "entities/search/provider.hpp"
 #include "entities/search/search_impl.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "span.hpp"
 
 // clang-format off

@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "lahuta.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "pipeline/dynamic/types.hpp"

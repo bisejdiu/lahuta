@@ -7,7 +7,7 @@
 
 #include "fseek/ops.hpp"
 #include "fseek/utils.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "prefilter.hpp"
 #include "procs/chunking/chunk_defs.hpp"
 #include "seq.hpp"

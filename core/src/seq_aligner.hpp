@@ -10,7 +10,7 @@
 #include "CalcProbTP.h"
 #include "fseek/align.hpp"
 #include "fseek/ops.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "matcher.hpp"
 #include "seq.hpp"
 

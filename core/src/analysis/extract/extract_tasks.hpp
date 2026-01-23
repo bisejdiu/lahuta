@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "analysis/system/model_loader.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "models/dssp.hpp"
 #include "models/plddt.hpp"
 #include "pipeline/data_requirements.hpp"

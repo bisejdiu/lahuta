@@ -1,6 +1,6 @@
 #include <pybind11/pybind11.h>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 namespace py = pybind11;
 

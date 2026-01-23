@@ -1,6 +1,6 @@
 #include "cli/global_flags.hpp"
 #include "cli/global_options.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 using namespace lahuta::cli;
 

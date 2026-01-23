@@ -1,4 +1,4 @@
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 namespace lahuta {
 

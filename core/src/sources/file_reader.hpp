@@ -6,7 +6,7 @@
 #include <string>
 
 #include "file_reader_util.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 // clang-format off
 namespace lahuta::sources {

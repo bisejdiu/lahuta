@@ -14,7 +14,7 @@
 #include <rdkit/Geometry/point.h>
 
 #include "compute/engine.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/core/emitter.hpp"
 #include "pipeline/core/stage.hpp"

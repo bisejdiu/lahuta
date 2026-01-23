@@ -14,7 +14,7 @@
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
 #include "entities/records.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/manager.hpp"

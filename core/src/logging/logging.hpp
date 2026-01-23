@@ -5,9 +5,7 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
-#include "spinner.hpp"
-
-#define LAHUTA_TRACE EntryExitTraceLogger scoped_logger(__FUNCTION__, __FILE__, __LINE__)
+#include "logging/spinner.hpp"
 
 // clang-format off
 namespace lahuta {
@@ -44,21 +42,6 @@ private:
 
   Logger();
   spdlog::level::level_enum convert_log_level(LogLevel level);
-};
-
-
-class EntryExitTraceLogger {
-public:
-  EntryExitTraceLogger(const std::string &func, const char *file, int line)
-      : func_name(func), file(file), line(line) {
-    spdlog::trace("Entering {} ({}:{})", func_name, file, line);
-  }
-  ~EntryExitTraceLogger() { spdlog::trace("Exiting {} ({}:{})", func_name, file, line); }
-
-private:
-  std::string func_name;
-  const char *file;
-  int line;
 };
 
 } // namespace lahuta

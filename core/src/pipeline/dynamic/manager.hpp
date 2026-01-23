@@ -17,7 +17,7 @@
 
 #include "analysis/system/computation.hpp"
 #include "analysis/topology/computation.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/computations.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"

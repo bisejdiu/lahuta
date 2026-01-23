@@ -12,7 +12,7 @@
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "gemmi/numb.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 // clang-format off
 namespace lahuta {

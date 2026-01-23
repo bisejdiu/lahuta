@@ -5,7 +5,7 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "bonds/bond_order.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "subgraph.hpp"
 #include "template.hpp"
 

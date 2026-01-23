@@ -1,7 +1,7 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "convert.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 namespace lahuta {
 

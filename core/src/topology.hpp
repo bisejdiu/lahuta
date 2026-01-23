@@ -10,7 +10,7 @@
 #include "entities/entity_id.hpp"
 #include "entities/records.hpp"
 #include "entities/view.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "residues.hpp"
 #include "topology/engine.hpp"
 #include "topology_flags.hpp"

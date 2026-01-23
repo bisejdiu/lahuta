@@ -10,7 +10,7 @@
 #include <rdkit/Geometry/point.h>
 
 #include "fastns.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "nsresults_tls.hpp"
 #include "nsutils.hpp"
 

@@ -4,7 +4,7 @@
 #include "aromatics.hpp"
 #include "common.hpp"
 #include "definitions.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "planarity.hpp"
 #include "selections/mol_filters.hpp"
 

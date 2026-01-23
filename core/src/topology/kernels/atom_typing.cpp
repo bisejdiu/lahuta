@@ -10,7 +10,7 @@
 #include "chemistry/group_typing.hpp"
 #include "compute/context.hpp"
 #include "compute/result.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "residues.hpp"
 #include "selections/mol_filters.hpp"
 #include "topology/context.hpp"

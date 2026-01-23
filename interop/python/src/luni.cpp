@@ -11,7 +11,7 @@
 #include "convert.hpp"
 #include "definitions.hpp"
 #include "lahuta.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "numpy_utils.hpp"
 #include "spatial/fastns.hpp"
 #include "spatial/nsresults.hpp"

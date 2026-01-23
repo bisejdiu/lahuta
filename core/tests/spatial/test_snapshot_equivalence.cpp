@@ -9,7 +9,7 @@
 #include "entities/records.hpp"
 #include "entities/search/config.hpp"
 #include "lahuta.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/keys.hpp"
 #include "pipeline/dynamic/types.hpp"
 

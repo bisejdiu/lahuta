@@ -5,7 +5,7 @@
 #include "bonds/perception/subset_merge.hpp"
 #include "compute/engine.hpp"
 #include "compute/result.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "topology/compute.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
