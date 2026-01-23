@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <iterator>
+#include <type_traits>
+#include <utility>
 
 // clang-format off
 namespace lahuta {
@@ -36,6 +38,13 @@ public:
   constexpr const T* begin() const noexcept { return data_; }
   constexpr const T* end()   const noexcept { return data_ + size_; }
 };
+
+// span(vec) -> span<T> / span<const T>
+template <class C>
+span(C&) -> span<std::remove_reference_t<decltype(*std::data(std::declval<C&>()))>>;
+
+template <class C>
+span(const C&) -> span<std::remove_reference_t<decltype(*std::data(std::declval<const C&>()))>>;
 
 } // namespace lahuta
 

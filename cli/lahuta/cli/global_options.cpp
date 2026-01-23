@@ -6,6 +6,7 @@
 #include "commands/createdb.hpp"
 #include "commands/extract.hpp"
 #include "commands/positions.hpp"
+#include "commands/quality_metrics.hpp"
 
 // clang-format off
 namespace lahuta::cli {
@@ -16,10 +17,11 @@ const option::Descriptor usage[] = {
    "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n\n"
    "Lahuta computes inter-atomic contacts using different build-in contact providers.\n\n"
    "Available subcommands:\n"
-   "  contacts  [options]            Compute inter-atomic contacts\n"
-   "  createdb  [options]            Create database from structure files\n"
-   "  extract   [options]            Extract data from AlphaFold2 models\n"
-   "  positions [options]            Extract 3D atomic coordinates to sharded binary files\n\n"
+   "  quality-metrics [options]     Compute per-protein group metrics\n"
+   "  contacts        [options]     Compute inter-atomic contacts\n"
+   "  createdb        [options]     Create database from structure files\n"
+   "  extract         [options]     Extract data from AlphaFold2 models\n"
+   "  positions       [options]     Extract coordinates to NumPy compatible files\n\n"
    "Main Options:"},
   {GlobalOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help,  -h                  \tPrint this help message and exit."},
@@ -36,6 +38,7 @@ const option::Descriptor usage[] = {
 
 [[nodiscard]] const std::unordered_map<std::string, CommandFactory>& get_command_registry() noexcept {
   static const std::unordered_map<std::string, CommandFactory> registry = {
+    {"quality-metrics", &QualityMetricsCommand::create},
     {"contacts",  &ContactsCommand::create},
     {"createdb",  &CreateDbCommand::create},
     {"extract",   &ExtractCommand::create},

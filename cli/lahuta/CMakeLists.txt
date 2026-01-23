@@ -6,6 +6,7 @@ set(lahuta_sources
   commands/createdb.cpp
   commands/extract.cpp
   commands/positions.cpp
+  commands/quality_metrics.cpp
 )
 
 add_executable(lahuta ${lahuta_sources})
@@ -26,6 +27,9 @@ if(BUILD_TESTING)
 
   add_test(NAME lahuta_createdb_help COMMAND lahuta createdb --help)
   set_tests_properties(lahuta_createdb_help PROPERTIES PASS_REGULAR_EXPRESSION "Create a database from alphafold2 models.")
+
+  add_test(NAME lahuta_quality_metrics_help COMMAND lahuta quality-metrics --help)
+  set_tests_properties(lahuta_quality_metrics_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta quality-metrics")
 
   add_test(NAME lahuta_extract_help COMMAND lahuta extract --help)
   set_tests_properties(lahuta_extract_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta extract")
