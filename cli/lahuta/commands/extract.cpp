@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -36,10 +37,12 @@ struct ExtractOptions {
   std::vector<std::string> file_vector;
   std::string file_list_path;
   std::string database_path;
+  std::vector<std::string> fields;
 
   bool is_af2_model = false;
   bool output_stdout = false;
   std::string output_path;
+  bool output_override = false;
   bool save_run_report = false;
   const PipelineReporter* reporter = nullptr;
   int threads = 8;
@@ -59,6 +62,10 @@ bool is_valid_field(std::string_view field) {
          field == FIELD_PLDDT ||
          field == FIELD_DSSP ||
          field == FIELD_ORGANISM;
+}
+
+void parse_fields_argument(std::string_view raw, std::vector<std::string>& out) {
+  detail::split_argument_list(raw, false, out);
 }
 
 void initialize_runtime(int num_threads) {
@@ -87,14 +94,14 @@ std::shared_ptr<dyn::ITask> build_extract_task(std::string_view field, std::stri
 namespace extract_opts {
 const option::Descriptor usage[] = {
   {ExtractOptionIndex::Unknown, 0, "", "", validate::Unknown,
-   "Usage: lahuta extract <field> [options]\n\n"
+   "Usage: lahuta extract --fields <fields> [options]\n\n"
    "Extract data from AlphaFold2 model files or databases.\n"
    "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not supported.\n\n"
    "Available reporters (--reporter <name>):\n"
    "  summary     - Balanced totals and item counts (default; negligible overhead).\n"
    "  terse       - Single-line throughput summary (fastest logging footprint).\n"
    "  diagnostics - Summary plus concurrency and stage breakdown details.\n\n"
-   "Fields:\n"
+   "Fields (repeat --fields or comma-separate):\n"
    "  sequence   Extract amino acid sequences.\n"
    "  plddt      Extract per-residue pLDDT confidence scores.\n"
    "  dssp       Extract secondary structure assignments (DSSP).\n"
@@ -102,6 +109,8 @@ const option::Descriptor usage[] = {
    "Input Options (choose one):"},
   {ExtractOptionIndex::Help, 0, "h", "help", option::Arg::None,
    "  --help, -h                   \tPrint this help message and exit."},
+  {ExtractOptionIndex::Fields, 0, "", "fields", validate::Required,
+   "  --fields <field1,field2>     \tFields to extract (repeat or comma-separate)."},
   {ExtractOptionIndex::SourceDatabase, 0, "", "database", validate::Required,
    "  --database <path>            \tProcess structures from database."},
   {ExtractOptionIndex::SourceDirectory, 0, "d", "directory", validate::Required,
@@ -158,29 +167,46 @@ int ExtractCommand::run(int argc, char* argv[]) {
   }
 
   try {
-    // Extract positional argument (field name)
-    if (parse.nonOptionsCount() < 1) {
-      Logger::get_logger()->error("Missing required <field> argument. Must be one of: sequence, plddt, dssp, organism");
+    if (parse.nonOptionsCount() > 0) {
+      Logger::get_logger()->error("Unexpected positional argument '{}'. Use --fields instead.", parse.nonOption(0));
       option::printUsage(std::cerr, extract_opts::usage);
       return 1;
     }
 
-    const std::string_view field = parse.nonOption(0);
+    std::vector<std::string> field_tokens;
+    for (const option::Option* opt = &options[extract_opts::ExtractOptionIndex::Fields];
+         opt != nullptr;
+         opt = opt->next()) {
+      parse_fields_argument(opt->arg ? opt->arg : "", field_tokens);
+    }
 
-    if (!is_valid_field(field)) {
-      Logger::get_logger()->error("Invalid field '{}'. Must be one of: sequence, plddt, dssp, organism", field);
+    if (field_tokens.empty()) {
+      Logger::get_logger()->error("Missing required --fields option. Must include one or more of: sequence, plddt, dssp, organism");
       option::printUsage(std::cerr, extract_opts::usage);
       return 1;
     }
 
-    const std::string output_channel = std::string(field) + "_data";
+    std::vector<std::string> fields;
+    std::unordered_set<std::string> seen;
+    for (const auto& token : field_tokens) {
+      if (!is_valid_field(token)) {
+        Logger::get_logger()->error("Invalid field '{}'. Must be one of: sequence, plddt, dssp, organism", token);
+        option::printUsage(std::cerr, extract_opts::usage);
+        return 1;
+      }
+      if (seen.insert(token).second) {
+        fields.push_back(token);
+      }
+    }
     const std::string run_timestamp = current_timestamp_string();
 
     ExtractOptions cli;
     const auto default_sink_cfg = dyn::get_default_backpressure_config();
     cli.writer_threads = default_sink_cfg.writer_threads;
-    cli.output_path = output_channel + ".jsonl";
     cli.reporter = &default_pipeline_reporter();
+    cli.output_path.clear();
+    cli.output_override = false;
+    cli.fields = std::move(fields);
 
     // Parse source options
     int source_count = 0;
@@ -278,6 +304,7 @@ int ExtractCommand::run(int argc, char* argv[]) {
         cli.output_path = "-";
       } else {
         cli.output_path = std::string(output_arg);
+        cli.output_override = true;
       }
     }
 
@@ -298,6 +325,11 @@ int ExtractCommand::run(int argc, char* argv[]) {
     }
 
     cli.save_run_report = options[extract_opts::ExtractOptionIndex::SaveRunReport] ? true : false;
+
+    if (cli.fields.size() > 1 && cli.output_override) {
+      Logger::get_logger()->error("--output can only be used with a single field. Omit --output for per-field outputs or use --output - for stdout.");
+      return 1;
+    }
 
     initialize_runtime(cli.threads);
 
@@ -328,18 +360,35 @@ int ExtractCommand::run(int argc, char* argv[]) {
 
     dyn::StageManager mgr(std::move(source));
 
-    auto task = build_extract_task(field, output_channel);
-    std::vector<std::string> deps;
-    mgr.add_task(output_channel, std::move(deps), std::move(task), /*thread_safe=*/true);
-
     auto sink_cfg = dyn::get_default_backpressure_config();
     sink_cfg.writer_threads = cli.writer_threads;
+
+    const bool needs_parse_task = cli.source_mode != ExtractOptions::SourceMode::Database;
+    if (needs_parse_task) {
+      auto parse_task = std::make_shared<analysis::extract::ModelParseTask>();
+      mgr.add_task("parse_model", {}, std::move(parse_task), /*thread_safe=*/true);
+    }
+
+    std::shared_ptr<dyn::LoggingSink> stdout_sink;
     if (cli.output_stdout) {
-      mgr.connect_sink(output_channel, std::make_shared<dyn::LoggingSink>(), sink_cfg);
+      stdout_sink = std::make_shared<dyn::LoggingSink>();
       Logger::get_logger()->info("Extract output sink -> stdout (-)");
-    } else {
-      mgr.connect_sink(output_channel, std::make_shared<dyn::NdjsonFileSink>(cli.output_path), sink_cfg);
-      Logger::get_logger()->info("Extract output sink -> file: {}", cli.output_path);
+    }
+
+    for (const auto& field : cli.fields) {
+      const std::string output_channel = field + "_data";
+      auto task = build_extract_task(field, output_channel);
+      std::vector<std::string> deps;
+      if (needs_parse_task) deps.emplace_back("parse_model");
+      mgr.add_task(output_channel, std::move(deps), std::move(task), /*thread_safe=*/true);
+
+      if (cli.output_stdout) {
+        mgr.connect_sink(output_channel, stdout_sink, sink_cfg);
+      } else {
+        const std::string output_path = cli.output_override ? cli.output_path : output_channel + ".jsonl";
+        mgr.connect_sink(output_channel, std::make_shared<dyn::NdjsonFileSink>(output_path), sink_cfg);
+        Logger::get_logger()->info("Extract output sink -> file: {}", output_path);
+      }
     }
 
     mgr.compile();

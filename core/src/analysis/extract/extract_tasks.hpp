@@ -47,6 +47,28 @@ inline char dssp_to_char(DSSPAssignment dssp) noexcept {
   return '?';
 }
 
+inline constexpr const char* CTX_PARSED_MODEL_KEY = "lahuta.parsed_model";
+
+inline std::shared_ptr<const ModelParserResult> get_cached_model_parser_result(const TaskContext& ctx) {
+  return ctx.get_object<ModelParserResult>(CTX_PARSED_MODEL_KEY);
+}
+
+class ModelParseTask final : public ITask {
+public:
+  TaskResult run(const std::string& item_path, TaskContext& ctx) override {
+    if (ctx.model_payload()) return {};
+    if (get_cached_model_parser_result(ctx)) return {};
+
+    try {
+      auto parsed = system::load_model_parser_result(item_path);
+      ctx.set_object<ModelParserResult>(CTX_PARSED_MODEL_KEY, std::make_shared<ModelParserResult>(std::move(parsed)));
+    } catch (const std::exception& e) {
+      Logger::get_logger()->warn("[extract:parse] Failed to parse '{}': {}", item_path, e.what());
+    }
+    return {};
+  }
+};
+
 class SequenceExtractTask final : public ITask {
 public:
   explicit SequenceExtractTask(std::string output_channel)
@@ -54,22 +76,16 @@ public:
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const std::string* sequence = nullptr;
-    std::string parsed_sequence;
+    std::shared_ptr<const ModelParserResult> parsed;
 
     auto payload = ctx.model_payload();
     if (payload && payload->sequence && !payload->sequence->empty()) {
       sequence = payload->sequence.get();
     }
     else if (!payload) {
-      try {
-        auto parsed = system::load_model_parser_result(item_path);
-        if (!parsed.sequence.empty()) {
-          parsed_sequence = std::move(parsed.sequence);
-          sequence = &parsed_sequence;
-        }
-      } catch (const std::exception& e) {
-        Logger::get_logger()->warn("[extract:sequence] Failed to parse '{}': {}", item_path, e.what());
-        return {};
+      parsed = get_cached_model_parser_result(ctx);
+      if (parsed && !parsed->sequence.empty()) {
+        sequence = &parsed->sequence;
       }
     }
 
@@ -103,22 +119,16 @@ public:
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const std::vector<pLDDTCategory>* plddts = nullptr;
-    std::vector<pLDDTCategory> parsed_plddts;
+    std::shared_ptr<const ModelParserResult> parsed;
 
     auto payload = ctx.model_payload();
     if (payload && payload->plddts && !payload->plddts->empty()) {
       plddts = payload->plddts.get();
     }
     else if (!payload) {
-      try {
-        auto parsed = system::load_model_parser_result(item_path);
-        if (!parsed.plddt_per_residue.empty()) {
-          parsed_plddts = std::move(parsed.plddt_per_residue);
-          plddts = &parsed_plddts;
-        }
-      } catch (const std::exception& e) {
-        Logger::get_logger()->warn("[extract:plddt] Failed to parse '{}': {}", item_path, e.what());
-        return {};
+      parsed = get_cached_model_parser_result(ctx);
+      if (parsed && !parsed->plddt_per_residue.empty()) {
+        plddts = &parsed->plddt_per_residue;
       }
     }
 
@@ -158,22 +168,16 @@ public:
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const std::vector<DSSPAssignment>* dssp = nullptr;
-    std::vector<DSSPAssignment> parsed_dssp;
+    std::shared_ptr<const ModelParserResult> parsed;
 
     auto payload = ctx.model_payload();
     if (payload && payload->dssp && !payload->dssp->empty()) {
       dssp = payload->dssp.get();
     }
     else if (!payload) {
-      try {
-        auto parsed = system::load_model_parser_result(item_path);
-        if (!parsed.dssp_per_residue.empty()) {
-          parsed_dssp = std::move(parsed.dssp_per_residue);
-          dssp = &parsed_dssp;
-        }
-      } catch (const std::exception& e) {
-        Logger::get_logger()->warn("[extract:dssp] Failed to parse '{}': {}", item_path, e.what());
-        return {};
+      parsed = get_cached_model_parser_result(ctx);
+      if (parsed && !parsed->dssp_per_residue.empty()) {
+        dssp = &parsed->dssp_per_residue;
       }
     }
 
@@ -213,20 +217,16 @@ public:
 
   TaskResult run(const std::string& item_path, TaskContext& ctx) override {
     const ModelMetadata* metadata = nullptr;
-    ModelMetadata parsed_metadata;
+    std::shared_ptr<const ModelParserResult> parsed;
 
     auto payload = ctx.model_payload();
     if (payload && payload->metadata) {
       metadata = payload->metadata.get();
     }
     else if (!payload) {
-      try {
-        auto parsed = system::load_model_parser_result(item_path);
-        parsed_metadata = std::move(parsed.metadata);
-        metadata = &parsed_metadata;
-      } catch (const std::exception& e) {
-        Logger::get_logger()->warn("[extract:organism] Failed to parse '{}': {}", item_path, e.what());
-        return {};
+      parsed = get_cached_model_parser_result(ctx);
+      if (parsed) {
+        metadata = &parsed->metadata;
       }
     }
 

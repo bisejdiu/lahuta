@@ -29,6 +29,6 @@ if(BUILD_TESTING)
   add_test(NAME lahuta_extract_help COMMAND lahuta extract --help)
   set_tests_properties(lahuta_extract_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta extract")
 
-  add_test(NAME lahuta_extract_sequence_help COMMAND lahuta extract sequence --help)
+  add_test(NAME lahuta_extract_sequence_help COMMAND lahuta extract --fields sequence --help)
   set_tests_properties(lahuta_extract_sequence_help PROPERTIES PASS_REGULAR_EXPRESSION "Extract")
 endif()

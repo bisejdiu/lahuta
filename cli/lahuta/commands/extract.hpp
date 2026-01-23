@@ -11,6 +11,7 @@ namespace extract_opts {
 enum ExtractOptionIndex : unsigned {
   Unknown,
   Help,
+  Fields,
   SourceDatabase,
   SourceDirectory,
   SourceVector,
