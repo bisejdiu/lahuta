@@ -2,7 +2,7 @@
 #include <rdkit/GraphMol/Rings.h>
 
 #include "aromatics.hpp"
-#include "common.hpp"
+#include "chemistry/common.hpp"
 #include "definitions.hpp"
 #include "logging/logging.hpp"
 #include "planarity.hpp"

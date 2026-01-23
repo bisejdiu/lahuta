@@ -1,6 +1,9 @@
 #ifndef LAHUTA_COMMON_HPP
 #define LAHUTA_COMMON_HPP
 
+#include <algorithm>
+#include <iterator>
+
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <rdkit/GraphMol/RWMol.h>
 
@@ -34,12 +37,6 @@ template <typename Container, typename T> bool contains(const Container &contain
   return std::find(std::begin(container), std::end(container), value) != std::end(container);
 }
 
-struct PairHash {
-  std::size_t operator()(const std::pair<int, int> &p) const {
-    return std::hash<int>()(p.first) ^ (std::hash<int>()(p.second) << 1);
-  }
-};
-
 inline bool is_ring_aromatic(const RDKit::RWMol &mol, const RDKit::INT_VECT &ring) {
   return std::all_of(ring.begin(), ring.end(), [&mol](int idx) {
     return mol.getAtomWithIdx(idx)->getIsAromatic();
@@ -50,45 +47,6 @@ inline bool has_any_aromatic_atom(const RDKit::RWMol &mol, const RDKit::INT_VECT
   return std::any_of(ring.begin(), ring.end(), [&mol](int idx) {
     return mol.getAtomWithIdx(idx)->getIsAromatic();
   });
-}
-
-inline std::vector<int> factorize(const std::vector<std::string> &labels) {
-  std::vector<int> ids(labels.size());
-
-  // hash map from labels to ids
-  std::unordered_map<std::string_view, int> label_to_id;
-  label_to_id.reserve(labels.size());
-
-  int current_id = 0;
-  for (size_t i = 0; i < labels.size(); ++i) {
-    std::string_view label = labels[i];
-    auto it = label_to_id.find(label);
-    if (it == label_to_id.end()) {
-      label_to_id[label] = current_id;
-      ids[i] = current_id;
-      ++current_id;
-    } else {
-      ids[i] = it->second;
-    }
-  }
-
-  return ids;
-}
-
-inline int count_unique(const std::vector<int> &vec) {
-  std::unordered_set<int> unique_elements(vec.begin(), vec.end());
-  return unique_elements.size();
-}
-
-inline int count_unique(const std::vector<std::string> &vec) {
-  std::unordered_set<std::string_view> unique_elements;
-  unique_elements.reserve(vec.size());
-
-  for (const auto &str : vec) {
-    unique_elements.insert(std::string_view(str));
-  }
-
-  return unique_elements.size();
 }
 
 inline void log_atom_info(const RDKit::Atom *atom) {

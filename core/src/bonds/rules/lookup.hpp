@@ -6,7 +6,7 @@
 
 #include <rdkit/GraphMol/MonomerInfo.h>
 
-#include "common.hpp"
+#include "chemistry/common.hpp"
 #include "rules.hpp"
 #include "token_lookup.hpp"
 

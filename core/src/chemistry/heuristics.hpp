@@ -4,7 +4,7 @@
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
 
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "utils.hpp"
 
 // clang-format off

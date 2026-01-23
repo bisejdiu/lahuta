@@ -15,7 +15,7 @@
 #include <gemmi/third_party/fast_float.h>
 
 #include "definitions.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "md/element_utils.hpp"
 #include "md/gro_reader.hpp"
 #include "mmap/MemoryMapped.h"

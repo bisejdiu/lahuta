@@ -2,7 +2,7 @@
 
 #include "contacts/getcontacts/contacts.hpp"
 #include "contacts/getcontacts/utils.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "entities/context.hpp"
 
 // clang-format off

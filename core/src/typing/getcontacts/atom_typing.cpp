@@ -5,7 +5,7 @@
 
 #include "chemistry/types/hydrophobic.hpp"
 #include "definitions.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "typing/getcontacts/atom_typing.hpp"
 #include "typing/types.hpp"
 

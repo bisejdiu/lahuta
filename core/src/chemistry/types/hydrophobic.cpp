@@ -1,5 +1,5 @@
 #include "chemistry/types/hydrophobic.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "typing/types.hpp"
 
 namespace lahuta {

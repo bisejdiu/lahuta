@@ -6,7 +6,7 @@
 #include <mutex>
 #include <vector>
 
-#include "contact_types.hpp"
+#include "contacts/contact_types.hpp"
 #include "entities/entity_id.hpp"
 #include "entities/records.hpp"
 #include "entities/view.hpp"

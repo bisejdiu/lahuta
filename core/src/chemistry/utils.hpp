@@ -5,7 +5,7 @@
 #include <GraphMol/RWMol.h>
 #include <rdkit/GraphMol/MonomerInfo.h>
 
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 
 namespace lahuta {
 

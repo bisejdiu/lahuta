@@ -12,7 +12,7 @@
 
 #include "chemistry/utils.hpp"
 #include "definitions.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "entities/context.hpp"
 
 // clang-format off

@@ -2,7 +2,7 @@
 #define LAHUTA_TOPOLOGY_PARAMETERS_HPP
 
 #include "compute/parameters.hpp"
-#include "contact_types.hpp"
+#include "contacts/contact_types.hpp"
 
 // clang-format off
 namespace lahuta::topology {

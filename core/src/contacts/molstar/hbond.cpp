@@ -1,13 +1,11 @@
 #include <GraphMol/Atom.h>
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RWMol.h>
-#include <common.hpp>
-
+#include "chemistry/common.hpp"
 #include "chemistry/utils.hpp"
-#include "common.hpp"
 #include "contacts/molstar/contacts.hpp"
 #include "contacts/molstar/hbond_geo_validity.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "entities/context.hpp"
 
 // clang-format off
