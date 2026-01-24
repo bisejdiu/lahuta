@@ -5,10 +5,10 @@
 #include <distopia.h>
 
 #include "distances/convert.hpp"
-#include "kd_index.hpp"
 #include "neighbors.hpp"
-#include "nsresults_tls.hpp"
 #include "spatial/fastns.hpp"
+#include "spatial/kd_index.hpp"
+#include "spatial/nsresults_tls.hpp"
 
 // clang-format off
 namespace lahuta::dist {

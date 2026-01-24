@@ -202,8 +202,8 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/bonds/bond_order.cpp
   src/bonds/clean_bonds.cpp
   src/io/convert.cpp
-  src/kd_tree.cpp
-  src/kd_index.cpp
+  src/spatial/kd_tree.cpp
+  src/spatial/kd_index.cpp
   src/lahuta.cpp
   src/selections/visitor.cpp
   src/struct_unit.cpp

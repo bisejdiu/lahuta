@@ -4,10 +4,10 @@
 
 #include <rdkit/Geometry/point.h>
 
-#include "kd_index.hpp"
 #include "nsresults_python.hpp"
 #include "numpy_utils.hpp"
 #include "spatial/fastns.hpp"
+#include "spatial/kd_index.hpp"
 #include "spatial/nsresults.hpp"
 
 namespace py = pybind11;
