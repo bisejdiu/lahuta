@@ -205,7 +205,7 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/kd_tree.cpp
   src/kd_index.cpp
   src/lahuta.cpp
-  src/visitor.cpp
+  src/selections/visitor.cpp
   src/struct_unit.cpp
   src/topology.cpp
   src/residues.cpp
