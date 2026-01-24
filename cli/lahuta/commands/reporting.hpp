@@ -28,29 +28,35 @@ inline void log_pipeline_report_summary(std::string_view label, const RunReport&
   const double throughput = compute_throughput(report);
 
   if (report.metrics_enabled) {
-    logger->info("{} pipeline summary: total={:.3f}s cpu={:.3f}s io={:.3f}s "
-                 "(ingest={:.3f}s prepare={:.3f}s flush={:.3f}s) "
-                 "setup={:.3f}s compute={:.3f}s",
-                 label, report.total_seconds, report.cpu_seconds,
-                 report.io_seconds, report.ingest_seconds, report.prepare_seconds,
-                 report.flush_seconds, report.setup_seconds,
-                 report.compute_seconds);
+    logger->info("{} pipeline summary (in seconds):", label);
+    logger->info("  {:<15} {:>10.3f}", "total:", report.total_seconds);
+    logger->info("  {:<15} {:>10.3f}", "cpu:", report.cpu_seconds);
+    logger->info("  {:<15} {:>10.3f}", "io:", report.io_seconds);
+    logger->info("  {:<15} {:>10.3f}", "ingest:", report.ingest_seconds);
+    logger->info("  {:<15} {:>10.3f}", "prepare:", report.prepare_seconds);
+    logger->info("  {:<15} {:>10.3f}", "flush:", report.flush_seconds);
+    logger->info("  {:<15} {:>10.3f}", "setup:", report.setup_seconds);
+    logger->info("  {:<15} {:>10.3f}", "compute:", report.compute_seconds);
 
-    logger->info("{} pipeline items: total={} processed={} skipped={} "
-                 "throughput={:.2f} items/s",
-                 label, report.items_total, report.items_processed,
-                 report.items_skipped, throughput);
+    logger->info("{} pipeline items:", label);
+    logger->info("  {:<15} {:>10}", "total:", report.items_total);
+    logger->info("  {:<15} {:>10}", "processed:", report.items_processed);
+    logger->info("  {:<15} {:>10}", "skipped:", report.items_skipped);
+    logger->info("  {:<15} {:>10.2f} items/s", "throughput:", throughput);
   } else {
-    logger->info("{} pipeline summary: total={:.3f}s (metrics disabled)",
-                 label, report.total_seconds);
-    logger->info("{} pipeline items: metrics disabled; totals unavailable", label);
+    logger->info("{} pipeline summary:", label);
+    logger->info("  {:<15} {:>10.3f}", "total (s):", report.total_seconds);
+    logger->info("  {:<17} {}", "metrics:", "disabled");
+    logger->info("{} pipeline items:", label);
+    logger->info("  {:<17} {}", "metrics:", "disabled");
   }
 
-  logger->info("{} pipeline resources: stages={} threads_requested={} "
-               "threads_used={} all_thread_safe={} run_token={}",
-               label, report.stage_count, report.threads_requested,
-               report.threads_used, report.all_thread_safe ? "yes" : "no",
-               report.run_token);
+  logger->info("{} pipeline resources:", label);
+  logger->info("  {:<18} {:>7}", "stages:", report.stage_count);
+  logger->info("  {:<18} {:>7}", "threads requested:", report.threads_requested);
+  logger->info("  {:<18} {:>7}", "threads used:", report.threads_used);
+  logger->info("  {:<18} {:>7}", "all thread safe:", report.all_thread_safe ? "yes" : "no");
+  logger->info("  {:<18} {:>7}", "run token:", report.run_token);
 }
 
 inline void log_pipeline_report_terse(std::string_view label, const RunReport& report) {
@@ -71,37 +77,45 @@ inline void log_pipeline_report_diagnostics(std::string_view label, const RunRep
   }
 
   auto logger = Logger::get_logger();
-  logger->info("{} concurrency: peak_inflight={} avg_queue_depth={:.2f}",
-               label, report.peak_inflight_items, report.average_queue_depth);
+  logger->info("{} concurrency:", label);
+  logger->info("  {:<18} {:>7}", "peak inflight:", report.peak_inflight_items);
+  logger->info("  {:<18} {:>7.2f}", "avg queue depth:", report.average_queue_depth);
 
   if (report.permit_wait_events > 0) {
-    logger->info("{} permit waits: events={} total={:.6f}s avg={:.6f}s min={:.6f}s max={:.6f}s",
-                 label,
-                 report.permit_wait_events,
-                 report.permit_wait_total_seconds,
-                 report.permit_wait_avg_seconds,
-                 report.permit_wait_min_seconds,
-                 report.permit_wait_max_seconds);
+    logger->info("{} permit waits:", label);
+    logger->info("  {:<18} {:>7}", "events:", report.permit_wait_events);
+    logger->info("  {:<17} {:>7.6f}", "total (s):", report.permit_wait_total_seconds);
+    logger->info("  {:<17} {:>7.6f}", "avg (s):", report.permit_wait_avg_seconds);
+    logger->info("  {:<17} {:>7.6f}", "min (s):", report.permit_wait_min_seconds);
+    logger->info("  {:<17} {:>7.6f}", "max (s):", report.permit_wait_max_seconds);
   } else {
-    logger->info("{} permit waits: no blocking observed", label);
+    logger->info("{} permit waits:", label);
+    logger->info("  no blocking observed");
   }
 
   const double stall_seconds = std::chrono::duration<double>(std::chrono::nanoseconds(report.mux_stall_ns)).count();
-  logger->info("{} multiplexer: sinks={} enq_msgs={} written_msgs={} drops={} stall={:.6f}s queue_peak={} active_writers(total/peak)={}/{}",
-               label,
-               report.mux_sink_count,
-               report.mux_enqueued_msgs,
-               report.mux_written_msgs,
-               report.mux_drops,
-               stall_seconds,
-               report.mux_queue_depth_peak,
-               report.mux_active_writers_total,
-               report.mux_active_writers_peak);
+  logger->info("{} multiplexer:", label);
+  logger->info("  {:<18} {:>7}", "sinks:", report.mux_sink_count);
+  logger->info("  {:<18} {:>7}", "enq msgs:", report.mux_enqueued_msgs);
+  logger->info("  {:<18} {:>7}", "written msgs:", report.mux_written_msgs);
+  logger->info("  {:<18} {:>7}", "drops:", report.mux_drops);
+  logger->info("  {:<17} {:>7.6f}", "stall (s):", stall_seconds);
+  logger->info("  {:<18} {:>7}", "queue peak:", report.mux_queue_depth_peak);
+  logger->info("  {:<18} {:>7}", "writers total:", report.mux_active_writers_total);
+  logger->info("  {:<18} {:>7}", "writers peak:", report.mux_active_writers_peak);
 
   if (!report.stage_breakdown.empty()) {
     logger->info("{} stage breakdown:", label);
+    std::size_t label_width = 0;
     for (const auto& timing : report.stage_breakdown) {
-      logger->info("  {} setup={:.6f}s compute={:.6f}s", timing.label, timing.setup_seconds, timing.compute_seconds);
+      label_width = std::max(label_width, timing.label.size());
+    }
+    for (const auto& timing : report.stage_breakdown) {
+      logger->info("  {:<{}}  setup={:.6f}s  compute={:.6f}s",
+                   timing.label,
+                   label_width,
+                   timing.setup_seconds,
+                   timing.compute_seconds);
     }
   }
 }
