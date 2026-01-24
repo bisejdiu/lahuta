@@ -5,12 +5,12 @@
 #include <rdkit/GraphMol/Conformer.h>
 
 #include "analysis/system/model_loader.hpp"
-#include "convert.hpp"
+#include "io/convert.hpp"
 #include "lahuta.hpp"
 #include "models/factory.hpp"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
-#include "read_file.hpp"
+#include "io/read_file.hpp"
 #include "selections/mol_filters.hpp"
 
 // clang-format off

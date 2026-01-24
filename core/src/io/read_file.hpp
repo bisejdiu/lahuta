@@ -7,8 +7,8 @@
 #include <gemmi/pdb.hpp>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "convert.hpp"
-#include "read_mmcif.hpp"
+#include "io/convert.hpp"
+#include "io/read_mmcif.hpp"
 
 namespace lahuta {
 using gemmi::CoorFormat;

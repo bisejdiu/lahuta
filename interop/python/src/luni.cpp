@@ -8,7 +8,7 @@
 #include <rdkit/GraphMol/Atom.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "convert.hpp"
+#include "io/convert.hpp"
 #include "definitions.hpp"
 #include "lahuta.hpp"
 #include "logging/logging.hpp"

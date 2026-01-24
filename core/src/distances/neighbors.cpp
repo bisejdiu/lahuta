@@ -4,7 +4,7 @@
 
 #include <distopia.h>
 
-#include "convert.hpp"
+#include "distances/convert.hpp"
 #include "kd_index.hpp"
 #include "neighbors.hpp"
 #include "nsresults_tls.hpp"
