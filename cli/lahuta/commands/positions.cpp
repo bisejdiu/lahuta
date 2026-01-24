@@ -390,7 +390,7 @@ int PositionsCommand::run(int argc, char* argv[]) {
     Logger::get_logger()->info("Positions output tree depth: {}", cli.tree_depth);
 
     mgr.compile();
-    auto progress = attach_progress_observer(mgr);
+    auto progress = attach_progress_observer(mgr, "positions");
     const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
     if (progress) progress->finish();
     const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();

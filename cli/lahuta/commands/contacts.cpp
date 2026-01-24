@@ -505,7 +505,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
-      auto progress = attach_progress_observer(mgr);
+      auto progress = attach_progress_observer(mgr, "contacts");
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
       if (progress) progress->finish();
       emit_and_save_report(report);
@@ -565,7 +565,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
-        auto progress = attach_progress_observer(mgr);
+        auto progress = attach_progress_observer(mgr, "contacts");
         const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
         if (progress) progress->finish();
         emit_and_save_report(report);

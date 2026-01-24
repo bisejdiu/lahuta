@@ -886,7 +886,7 @@ int QualityMetricsCommand::run(int argc, char* argv[]) {
     }
 
     mgr.compile();
-    auto progress = attach_progress_observer(mgr);
+    auto progress = attach_progress_observer(mgr, "quality-metrics");
     const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
     if (progress) progress->finish();
     const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();

@@ -5,6 +5,8 @@
 #include <array>
 #include <chrono>
 #include <memory>
+#include <optional>
+#include <string>
 #include <string_view>
 
 #include "cli/global_flags.hpp"
@@ -156,10 +158,15 @@ inline void log_pipeline_report(std::string_view label, const RunReport &report)
   log_pipeline_report_summary(label, report);
 }
 
-inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager, std::chrono::milliseconds interval) {
+inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager,
+                                                            std::string_view label,
+                                                            std::optional<std::size_t> total_items,
+                                                            std::chrono::milliseconds interval) {
   if (interval.count() == 0) return {};
   pipeline::dynamic::ProgressObserverConfig config;
   config.interval = interval;
+  if (!label.empty()) config.label = std::string(label);
+  config.total_items = total_items;
   auto observer = std::make_shared<ProgRunObs>(config);
   manager.set_run_observer(observer);
   auto logger = Logger::get_logger();
@@ -178,8 +185,30 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   return observer;
 }
 
+inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager,
+                                                            std::string_view label,
+                                                            std::optional<std::size_t> total_items) {
+  return attach_progress_observer(manager,
+                                  label,
+                                  total_items,
+                                  std::chrono::milliseconds(get_global_flags().progress_ms));
+}
+
+inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager,
+                                                            std::string_view label) {
+  return attach_progress_observer(manager,
+                                  label,
+                                  std::nullopt,
+                                  std::chrono::milliseconds(get_global_flags().progress_ms));
+}
+
+inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager, std::chrono::milliseconds interval) {
+  return attach_progress_observer(manager, std::string_view{}, std::nullopt, interval);
+}
+
 inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manager) {
-  return attach_progress_observer(manager, std::chrono::milliseconds(get_global_flags().progress_ms));
+  return attach_progress_observer(manager, std::string_view{}, std::nullopt,
+                                  std::chrono::milliseconds(get_global_flags().progress_ms));
 }
 
 } // namespace lahuta::cli

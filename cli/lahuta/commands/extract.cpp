@@ -333,7 +333,6 @@ int ExtractCommand::run(int argc, char* argv[]) {
 
     initialize_runtime(cli.threads);
 
-
     auto source = std::unique_ptr<sources::IDescriptor>{};
     switch (cli.source_mode) {
       case ExtractOptions::SourceMode::Database:
@@ -393,7 +392,7 @@ int ExtractCommand::run(int argc, char* argv[]) {
     }
 
     mgr.compile();
-    auto progress = attach_progress_observer(mgr);
+    auto progress = attach_progress_observer(mgr, "extract");
     const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
     if (progress) progress->finish();
     const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
