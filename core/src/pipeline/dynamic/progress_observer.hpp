@@ -12,6 +12,7 @@
 #include <string>
 
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/logger.h>
 #include <spdlog/sinks/sink.h>
 
 #include "pipeline/dynamic/run_observer.hpp"
@@ -23,6 +24,8 @@ struct ProgressObserverConfig {
   std::chrono::milliseconds interval{50};
   std::string label{"progress"};
   std::optional<std::size_t> total_items;
+  std::string marker{"progress"};
+  std::shared_ptr<spdlog::logger> progress_logger;
 };
 
 class ProgressRunObserver final : public IRunObserver {
@@ -30,6 +33,8 @@ class ProgressRunObserver final : public IRunObserver {
 public:
   explicit ProgressRunObserver(ProgressObserverConfig config = {})
       : output_(std::cerr),
+        progress_logger_(std::move(config.progress_logger)),
+        marker_(std::move(config.marker)),
         label_(config.label.empty() ? "progress" : std::move(config.label)),
         total_items_(config.total_items),
         enabled_(config.interval.count() > 0) {
@@ -72,7 +77,16 @@ public:
   void finish() {
     if (!enabled_) return;
     if (finished_.exchange(true, std::memory_order_relaxed)) return;
-    clear_line();
+    auto lock = lock_output();
+    const auto count = processed_.load(std::memory_order_relaxed);
+    if (started_.load(std::memory_order_relaxed) || count > 0) {
+      report_locked(count, Clock::now());
+      write_raw("\n");
+    } else {
+      clear_line_locked(true);
+    }
+    last_len_ = 0;
+    last_line_.clear();
   }
 
   std::uint64_t processed() const noexcept {
@@ -120,6 +134,9 @@ private:
     const double rate = last_rate_items_per_sec_ > 0.0 ? last_rate_items_per_sec_ : avg_rate;
 
     buffer_.clear();
+    if (!marker_.empty()) {
+      fmt::format_to(std::back_inserter(buffer_), "[{}] ", marker_);
+    }
     fmt::format_to(std::back_inserter(buffer_), "{}: done={} ok={} skip={} inflight={} rate={:.2f}/s elapsed=",
                    label_, count, ok, skipped, inflight, rate);
     append_duration(buffer_, elapsed);
@@ -136,8 +153,20 @@ private:
     }
 
     last_line_.assign(buffer_.data(), buffer_.size());
-    output_ << '\r' << last_line_ << std::flush;
+    write_line_.clear();
+    write_line_.push_back('\r');
+    write_line_.append(last_line_);
+    write_raw(write_line_);
     last_len_ = last_line_.size();
+  }
+
+  void write_raw(std::string_view text) {
+    if (progress_logger_) {
+      progress_logger_->log(spdlog::level::info, spdlog::string_view_t(text.data(), text.size()));
+      progress_logger_->flush();
+      return;
+    }
+    output_ << text << std::flush;
   }
 
   static void append_duration(fmt::memory_buffer &buf, double seconds) {
@@ -166,9 +195,11 @@ private:
 
   void clear_line_locked(bool reset) {
     if (last_len_ == 0) return;
-    output_ << '\r';
-    for (std::size_t i = 0; i < last_len_; ++i) output_ << ' ';
-    output_ << '\r' << std::flush;
+    write_line_.clear();
+    write_line_.push_back('\r');
+    write_line_.append(last_len_, ' ');
+    write_line_.push_back('\r');
+    write_raw(write_line_);
     if (reset) {
       last_len_ = 0;
       last_line_.clear();
@@ -177,7 +208,10 @@ private:
 
   void reprint_locked() {
     if (last_len_ == 0 || last_line_.empty()) return;
-    output_ << '\r' << last_line_ << std::flush;
+    write_line_.clear();
+    write_line_.push_back('\r');
+    write_line_.append(last_line_);
+    write_raw(write_line_);
   }
 
   std::atomic<std::uint64_t> processed_{0};
@@ -186,6 +220,8 @@ private:
   std::atomic<std::int64_t> next_report_ns_{0};
   std::int64_t interval_ns_{0};
   std::ostream& output_;
+  std::shared_ptr<spdlog::logger> progress_logger_;
+  std::string marker_;
   std::string label_;
   std::optional<std::size_t> total_items_;
   const bool enabled_{true};
@@ -199,6 +235,7 @@ private:
   fmt::memory_buffer buffer_;
   std::size_t last_len_{0};
   std::string last_line_;
+  std::string write_line_;
 };
 
 class ProgressAwareSink : public spdlog::sinks::sink {

@@ -9,6 +9,13 @@
 #include <string>
 #include <string_view>
 
+#include <spdlog/pattern_formatter.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+#ifdef _WIN32
+#include <spdlog/details/windows_include.h>
+#endif
+
 #include "cli/global_flags.hpp"
 #include "logging/logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
@@ -167,8 +174,6 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   config.interval = interval;
   if (!label.empty()) config.label = std::string(label);
   config.total_items = total_items;
-  auto observer = std::make_shared<ProgRunObs>(config);
-  manager.set_run_observer(observer);
   auto logger = Logger::get_logger();
   std::shared_ptr<spdlog::sinks::sink> base_sink;
   if (logger && !logger->sinks().empty()) {
@@ -180,6 +185,37 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   if (!base_sink) {
     base_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   }
+  std::shared_ptr<spdlog::sinks::sink> progress_sink;
+  if (std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(base_sink)) {
+    progress_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+  } else if (std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(base_sink)) {
+    progress_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  } else {
+    progress_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  }
+#ifdef _WIN32
+  if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
+    // Red + Blue = Magenta. INTENSITY makes it bright/readable.
+    color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+  } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
+    color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+  }
+#else
+  if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
+    color_sink->set_color(spdlog::level::info, color_sink->magenta);
+  } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
+    color_sink->set_color(spdlog::level::info, color_sink->magenta);
+  }
+#endif
+  auto progress_logger = std::make_shared<spdlog::logger>("progress", progress_sink);
+  progress_logger->set_level(spdlog::level::trace);
+  progress_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
+    "%^%v%$",
+    spdlog::pattern_time_type::local,
+    ""));
+  config.progress_logger = std::move(progress_logger);
+  auto observer = std::make_shared<ProgRunObs>(config);
+  manager.set_run_observer(observer);
   auto sink = std::make_shared<pipeline::dynamic::ProgressAwareSink>(base_sink, observer);
   Logger::get_instance().configure_with_sink(sink);
   return observer;
