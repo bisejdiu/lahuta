@@ -7,9 +7,9 @@
 
 #include <ctpl/ctpl.h>
 #include <foldseek/matcher.hpp>
+#include <gemmi/model.hpp>
 
-#include "gemmi/model.hpp"
-#include "seq.hpp"
+#include "fseek/seq.hpp"
 
 namespace lahuta {
 

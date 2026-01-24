@@ -10,9 +10,9 @@
 #include "CalcProbTP.h"
 #include "fseek/align.hpp"
 #include "fseek/ops.hpp"
+#include "fseek/seq.hpp"
 #include "logging/logging.hpp"
 #include "matcher.hpp"
-#include "seq.hpp"
 
 namespace lahuta {
 

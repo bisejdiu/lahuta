@@ -16,10 +16,10 @@
 
 #include "backtrace.hpp"
 #include "entities/contact.hpp"
+#include "fseek/seq.hpp"
 #include "lahuta.hpp"
 #include "logging/logging.hpp"
 #include "matcher.hpp"
-#include "seq.hpp"
 #include "topology.hpp"
 
 namespace lahuta {

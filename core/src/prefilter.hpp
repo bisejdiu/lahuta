@@ -7,8 +7,6 @@
 #include <IndexTable.h>
 #include <QueryMatcher.h>
 #include <Sequence.h>
-#include <extract.hpp>
-#include <fseek/ops.hpp>
 #include <substitution_matrix.hpp>
 
 #include "score_matrix.hpp"

@@ -9,7 +9,6 @@
 #include <rdkit/GraphMol/Conformer.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "extract.hpp"
 #include "gemmi/resinfo.hpp"
 #include "lahuta.hpp"
 #include "matcher.hpp"

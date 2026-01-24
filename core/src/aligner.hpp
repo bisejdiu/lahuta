@@ -6,11 +6,11 @@
 #include <spdlog/spdlog.h>
 
 #include "fseek/ops.hpp"
+#include "fseek/seq.hpp"
 #include "fseek/utils.hpp"
 #include "logging/logging.hpp"
 #include "prefilter.hpp"
 #include "procs/chunking/chunk_defs.hpp"
-#include "seq.hpp"
 #include "seq_aligner.hpp"
 #include "seq_aligner_builder.hpp"
 

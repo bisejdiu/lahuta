@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <seq.hpp>
+#include "fseek/seq.hpp"
 
 namespace lahuta::sources {
 
