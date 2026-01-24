@@ -1,10 +1,6 @@
 #include <algorithm>
-#include <chrono>
-#include <ctime>
 #include <filesystem>
-#include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -17,6 +13,7 @@
 #include "cli/arg_validation.hpp"
 #include "cli/extension_utils.hpp"
 #include "cli/run_report.hpp"
+#include "cli/time_utils.hpp"
 #include "commands/contacts.hpp"
 #include "commands/reporting.hpp"
 #include "db/db.hpp"
@@ -113,27 +110,6 @@ private:
   std::vector<std::string> xtcs_;
   bool done_ = false;
 };
-
-namespace {
-
-std::string current_timestamp_string() {
-  using namespace std::chrono;
-  const auto now = system_clock::now();
-  const auto tt = system_clock::to_time_t(now);
-  std::tm tm{};
-#if defined(_WIN32)
-  localtime_s(&tm, &tt);
-#else
-  localtime_r(&tt, &tm);
-#endif
-  const auto ms = duration_cast<milliseconds>(now.time_since_epoch()) % milliseconds(1000);
-  std::ostringstream oss;
-  oss << std::put_time(&tm, "%Y%m%d_%H%M%S")
-      << '_' << std::setw(3) << std::setfill('0') << ms.count();
-  return oss.str();
-}
-
-} // namespace
 
 namespace contacts_opts {
 const option::Descriptor usage[] = {

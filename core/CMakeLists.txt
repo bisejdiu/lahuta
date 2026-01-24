@@ -374,7 +374,6 @@ endif()
 
 if(LAHUTA_BUILD_EXAMPLES)
   add_subdirectory(examples)
-  add_subdirectory(progs)
 endif()
 
 if(LAHUTA_VENDOR_EIGEN)
