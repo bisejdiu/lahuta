@@ -189,6 +189,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   config.interval = interval;
   if (!label.empty()) config.label = std::string(label);
   config.total_items = total_items;
+  const bool want_color = get_global_flags().progress_color;
   auto logger = Logger::get_logger();
   std::shared_ptr<spdlog::sinks::sink> base_sink;
   if (logger && !logger->sinks().empty()) {
@@ -212,14 +213,16 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
 #ifdef _WIN32
   const bool use_stderr = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink) != nullptr;
   const bool use_stdout = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink) != nullptr;
-  if (use_stderr || use_stdout) {
+  if (want_color && (use_stderr || use_stdout)) {
     inline_color = enable_vt_processing(use_stderr);
   }
 #else
-  if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
-    inline_color = color_sink->should_color();
-  } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
-    inline_color = color_sink->should_color();
+  if (want_color) {
+    if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
+      inline_color = color_sink->should_color();
+    } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
+      inline_color = color_sink->should_color();
+    }
   }
 #endif
   if (inline_color) {
@@ -233,7 +236,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
       "%v",
       spdlog::pattern_time_type::local,
       ""));
-  } else {
+  } else if (want_color) {
 #ifdef _WIN32
     if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
       // Red + Blue = Magenta. INTENSITY makes it bright/readable.
@@ -250,6 +253,11 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
 #endif
     progress_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
       "%^%v%$",
+      spdlog::pattern_time_type::local,
+      ""));
+  } else {
+    progress_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
+      "%v",
       spdlog::pattern_time_type::local,
       ""));
   }

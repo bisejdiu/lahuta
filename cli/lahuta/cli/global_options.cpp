@@ -32,6 +32,8 @@ const option::Descriptor usage[] = {
    "                               \t  2 = debug, info, warnings, and errors"},
   {GlobalOptionIndex::ProgressMs, 0, "", "progress-ms", validate::Required,
    "  --progress-ms <ms>           \tProgress update interval in milliseconds (0 disables; default: 50)."},
+  {GlobalOptionIndex::ProgressNoColor, 0, "", "progress-no-color", option::Arg::None,
+   "  --progress-no-color          \tDisable progress output colors."},
   {0, 0, 0, 0, 0, 0}
 };
 } // namespace global_opts

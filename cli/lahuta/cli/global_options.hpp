@@ -19,7 +19,8 @@ enum GlobalOptionIndex : unsigned {
   Unknown,
   Help,
   Verbose,
-  ProgressMs
+  ProgressMs,
+  ProgressNoColor
 };
 } // namespace global_opts
 
