@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "struct_unit.hpp"
+#include "utils/struct_unit.hpp"
 
 namespace lahuta {
 

@@ -3,8 +3,8 @@
 
 #include "entities/records.hpp"
 #include "numpy_utils.hpp"
-#include "struct_unit.hpp"
 #include "topology.hpp"
+#include "utils/struct_unit.hpp"
 
 namespace py = pybind11;
 

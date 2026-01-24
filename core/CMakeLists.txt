@@ -206,11 +206,11 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/spatial/kd_index.cpp
   src/lahuta.cpp
   src/selections/visitor.cpp
-  src/struct_unit.cpp
+  src/utils/struct_unit.cpp
   src/topology.cpp
   src/residues/residues.cpp
   src/rings/aromatics.cpp
-  src/luni_props.cpp
+  src/properties/luni_props.cpp
   src/logging/logging.cpp
   src/md/element_utils.cpp
   src/md/gro_reader.cpp

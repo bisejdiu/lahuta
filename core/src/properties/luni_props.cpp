@@ -1,7 +1,7 @@
 #include <rdkit/GraphMol/PeriodicTable.h>
 
 #include "lahuta.hpp"
-#include "luni_props.hpp"
+#include "properties/luni_props.hpp"
 #include "properties/registry.hpp"
 #include "properties/types.hpp"
 
