@@ -27,6 +27,21 @@ using StageManager = pipeline::dynamic::StageManager;
 using RunReport    = StageManager::RunReport;
 using ProgRunObs   = pipeline::dynamic::ProgressRunObserver;
 
+#ifdef _WIN32
+#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#endif
+
+inline bool enable_vt_processing(bool use_stderr) {
+  HANDLE handle = GetStdHandle(use_stderr ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
+  if (handle == INVALID_HANDLE_VALUE || handle == nullptr) return false;
+  DWORD mode = 0;
+  if (!GetConsoleMode(handle, &mode)) return false;
+  if ((mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0) return true;
+  return SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+}
+#endif
+
 inline double compute_throughput(const RunReport& report) {
   if (report.total_seconds <= 0.0 || report.items_processed == 0) return 0.0;
   return static_cast<double>(report.items_processed) / report.total_seconds;
@@ -193,26 +208,51 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   } else {
     progress_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   }
+  bool inline_color = false;
 #ifdef _WIN32
-  if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
-    // Red + Blue = Magenta. INTENSITY makes it bright/readable.
-    color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
-  } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
-    color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+  const bool use_stderr = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink) != nullptr;
+  const bool use_stdout = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink) != nullptr;
+  if (use_stderr || use_stdout) {
+    inline_color = enable_vt_processing(use_stderr);
   }
 #else
   if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
-    color_sink->set_color(spdlog::level::info, color_sink->magenta);
+    inline_color = color_sink->should_color();
   } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
-    color_sink->set_color(spdlog::level::info, color_sink->magenta);
+    inline_color = color_sink->should_color();
   }
 #endif
+  if (inline_color) {
+    config.color_on = "\033[35m";
+    config.color_off = "\033[0m";
+  }
   auto progress_logger = std::make_shared<spdlog::logger>("progress", progress_sink);
   progress_logger->set_level(spdlog::level::trace);
-  progress_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
-    "%^%v%$",
-    spdlog::pattern_time_type::local,
-    ""));
+  if (inline_color) {
+    progress_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
+      "%v",
+      spdlog::pattern_time_type::local,
+      ""));
+  } else {
+#ifdef _WIN32
+    if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
+      // Red + Blue = Magenta. INTENSITY makes it bright/readable.
+      color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+    } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
+      color_sink->set_color(spdlog::level::info, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_INTENSITY);
+    }
+#else
+    if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(progress_sink)) {
+      color_sink->set_color(spdlog::level::info, color_sink->magenta);
+    } else if (auto color_sink = std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(progress_sink)) {
+      color_sink->set_color(spdlog::level::info, color_sink->magenta);
+    }
+#endif
+    progress_logger->set_formatter(std::make_unique<spdlog::pattern_formatter>(
+      "%^%v%$",
+      spdlog::pattern_time_type::local,
+      ""));
+  }
   config.progress_logger = std::move(progress_logger);
   auto observer = std::make_shared<ProgRunObs>(config);
   manager.set_run_observer(observer);

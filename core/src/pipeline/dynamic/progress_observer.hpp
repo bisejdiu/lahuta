@@ -10,6 +10,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/logger.h>
@@ -25,6 +26,8 @@ struct ProgressObserverConfig {
   std::string label{"progress"};
   std::optional<std::size_t> total_items;
   std::string marker{"progress"};
+  std::string color_on;
+  std::string color_off;
   std::shared_ptr<spdlog::logger> progress_logger;
 };
 
@@ -36,6 +39,8 @@ public:
         progress_logger_(std::move(config.progress_logger)),
         marker_(std::move(config.marker)),
         label_(config.label.empty() ? "progress" : std::move(config.label)),
+        color_on_(std::move(config.color_on)),
+        color_off_(std::move(config.color_off)),
         total_items_(config.total_items),
         enabled_(config.interval.count() > 0) {
     auto interval = config.interval;
@@ -43,6 +48,7 @@ public:
     interval_ns_ = std::chrono::duration_cast<std::chrono::nanoseconds>(interval).count();
     const auto now = Clock::now();
     next_report_ns_.store(to_ns(now) + interval_ns_, std::memory_order_relaxed);
+    colorize_ = !color_on_.empty() && !color_off_.empty();
   }
 
   void on_item_end(std::size_t, const PipelineItem &) override {
@@ -135,20 +141,38 @@ private:
 
     buffer_.clear();
     if (!marker_.empty()) {
-      fmt::format_to(std::back_inserter(buffer_), "[{}] ", marker_);
+      append_colored(buffer_, "[{}]", marker_);
+      fmt::format_to(std::back_inserter(buffer_), " ");
     }
-    fmt::format_to(std::back_inserter(buffer_), "{}: done={} ok={} skip={} inflight={} rate={:.2f}/s elapsed=",
-                   label_, count, ok, skipped, inflight, rate);
+    fmt::format_to(std::back_inserter(buffer_), "{}: done=", label_);
+    append_colored(buffer_, "{}", count);
+    fmt::format_to(std::back_inserter(buffer_), " ok=");
+    append_colored(buffer_, "{}", ok);
+    fmt::format_to(std::back_inserter(buffer_), " skip=");
+    append_colored(buffer_, "{}", skipped);
+    fmt::format_to(std::back_inserter(buffer_), " inflight=");
+    append_colored(buffer_, "{}", inflight);
+    fmt::format_to(std::back_inserter(buffer_), " rate=");
+    append_colored(buffer_, "{:.2f}/s", rate);
+    fmt::format_to(std::back_inserter(buffer_), " elapsed=");
+    append_color_on(buffer_);
     append_duration(buffer_, elapsed);
+    append_color_off(buffer_);
 
     if (total_items_ && *total_items_ > 0) {
       const auto total = *total_items_;
       const double pct = static_cast<double>(count) * 100.0 / static_cast<double>(total);
-      fmt::format_to(std::back_inserter(buffer_), " total={} ({:.1f}%)", total, pct);
+      fmt::format_to(std::back_inserter(buffer_), " total=");
+      append_colored(buffer_, "{}", total);
+      fmt::format_to(std::back_inserter(buffer_), " (");
+      append_colored(buffer_, "{:.1f}%", pct);
+      fmt::format_to(std::back_inserter(buffer_), ")");
       if (rate > 0.0 && count < total) {
         const double eta = static_cast<double>(total - count) / rate;
         fmt::format_to(std::back_inserter(buffer_), " eta=");
+        append_color_on(buffer_);
         append_duration(buffer_, eta);
+        append_color_off(buffer_);
       }
     }
 
@@ -181,6 +205,29 @@ private:
       fmt::format_to(std::back_inserter(buf), "{:02}:{:02}:{:02}", h, m, s);
     } else {
       fmt::format_to(std::back_inserter(buf), "{:02}:{:02}.{:01}", m, s, ms / 100);
+    }
+  }
+
+  template <typename... Args>
+  void append_colored(fmt::memory_buffer &buf, fmt::format_string<Args...> format, Args&&... args) const {
+    if (colorize_) {
+      buf.append(color_on_);
+    }
+    fmt::format_to(std::back_inserter(buf), format, std::forward<Args>(args)...);
+    if (colorize_) {
+      buf.append(color_off_);
+    }
+  }
+
+  void append_color_on(fmt::memory_buffer &buf) const {
+    if (colorize_) {
+      buf.append(color_on_);
+    }
+  }
+
+  void append_color_off(fmt::memory_buffer &buf) const {
+    if (colorize_) {
+      buf.append(color_off_);
     }
   }
 
@@ -223,8 +270,11 @@ private:
   std::shared_ptr<spdlog::logger> progress_logger_;
   std::string marker_;
   std::string label_;
+  std::string color_on_;
+  std::string color_off_;
   std::optional<std::size_t> total_items_;
   const bool enabled_{true};
+  bool colorize_{false};
   std::atomic<bool> finished_{false};
   std::atomic<bool> started_{false};
   std::mutex output_mutex_;
