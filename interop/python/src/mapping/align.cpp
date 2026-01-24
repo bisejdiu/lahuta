@@ -3,8 +3,8 @@
 #include <pybind11/stl.h>
 
 #include "fseek/ops.hpp"
+#include "fseek/prefilter.hpp"
 #include "numpy_utils.hpp"
-#include "prefilter.hpp"
 #include "procs/search_and_align.hpp"
 
 // clang-format off

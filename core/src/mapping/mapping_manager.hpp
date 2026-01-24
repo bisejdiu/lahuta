@@ -6,9 +6,9 @@
 #include <vector>
 
 #include "_defs.hpp"
-#include "aligner.hpp"
 #include "backtrace_parser.hpp"
 #include "equivalence_mapping.hpp"
+#include "fseek/aligner.hpp"
 #include "fseek/seq.hpp"
 
 // clang-format off

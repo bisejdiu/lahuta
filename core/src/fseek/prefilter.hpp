@@ -8,9 +8,10 @@
 #include <QueryMatcher.h>
 #include <Sequence.h>
 #include <substitution_matrix.hpp>
+#include <tantan.h>
 
+#include "fseek/seq.hpp"
 #include "score_matrix.hpp"
-#include "tantan.h"
 
 namespace lahuta {
 

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "fseek/ops.hpp"
-#include "seq_aligner.hpp"
+#include "fseek/seq_aligner.hpp"
 
 namespace lahuta {
 

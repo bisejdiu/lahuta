@@ -6,13 +6,13 @@
 #include <spdlog/spdlog.h>
 
 #include "fseek/ops.hpp"
+#include "fseek/prefilter.hpp"
 #include "fseek/seq.hpp"
+#include "fseek/seq_aligner.hpp"
+#include "fseek/seq_aligner_builder.hpp"
 #include "fseek/utils.hpp"
 #include "logging/logging.hpp"
-#include "prefilter.hpp"
 #include "procs/chunking/chunk_defs.hpp"
-#include "seq_aligner.hpp"
-#include "seq_aligner_builder.hpp"
 
 // clang-format off
 

@@ -6,13 +6,13 @@
 #include <iostream>
 #include <string>
 
+#include <gemmi/resinfo.hpp>
 #include <rdkit/GraphMol/Conformer.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "gemmi/resinfo.hpp"
+#include "fseek/seq_aligner.hpp"
 #include "lahuta.hpp"
 #include "matcher.hpp"
-#include "seq_aligner.hpp"
 
 namespace lahuta {
 
