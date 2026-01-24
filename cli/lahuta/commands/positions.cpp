@@ -371,6 +371,7 @@ int PositionsCommand::run(int argc, char* argv[]) {
     }
 
     dyn::StageManager mgr(std::move(source));
+    mgr.set_reporting_level(reporting_level_for_reporter(cli.reporter));
     mgr.get_system_params().is_model =
         (cli.source_mode == PositionsOptions::SourceMode::Database) ? true : cli.is_af2_model;
 

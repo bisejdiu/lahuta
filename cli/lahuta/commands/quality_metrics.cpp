@@ -840,6 +840,7 @@ int QualityMetricsCommand::run(int argc, char* argv[]) {
     }
 
     dyn::StageManager mgr(std::move(source));
+    mgr.set_reporting_level(reporting_level_for_reporter(cli.reporter));
     auto sink_cfg = dyn::get_default_backpressure_config();
     sink_cfg.writer_threads = cli.writer_threads;
 

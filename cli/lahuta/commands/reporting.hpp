@@ -132,6 +132,12 @@ inline const PipelineReporter* find_pipeline_reporter(std::string_view name) {
   return it == reporters.end() ? nullptr : &*it;
 }
 
+inline StageManager::ReportingLevel reporting_level_for_reporter(const PipelineReporter* reporter) {
+  if (!reporter) return StageManager::ReportingLevel::Basic;
+  return reporter->name == "diagnostics" ? StageManager::ReportingLevel::Debug
+                                         : StageManager::ReportingLevel::Basic;
+}
+
 inline void log_pipeline_report(std::string_view label, const RunReport &report) {
   log_pipeline_report_summary(label, report);
 }
