@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "mapper.hpp"
+#include "mapping/deprecated/mapper.hpp"
 
 namespace py = pybind11;
 

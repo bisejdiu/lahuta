@@ -14,17 +14,16 @@
 #include <entities/records.hpp>
 #include <rdkit/GraphMol/Atom.h>
 
-#include "backtrace.hpp"
 #include "entities/contact.hpp"
 #include "fseek/seq.hpp"
 #include "lahuta.hpp"
 #include "logging/logging.hpp"
+#include "mapping/deprecated/backtrace.hpp"
 #include "matcher.hpp"
-#include "topology.hpp"
 
 namespace lahuta {
 
-constexpr std::size_t GOLDEN_RATIO = 0x9e3779b97f4a7c15ULL;
+constexpr std::size_t _RATIO_ = 0x9e3779b97f4a7c15ULL;
 
 class TopologyMapper {
 public:
@@ -58,7 +57,8 @@ public:
         return atoms;
       }
       case Kind::Atom: {
-        const auto atom_idx = luni_ptr->get_topology()->records<AtomRec>()[entity.index()].atom.get().getIdx();
+        const auto atom_idx =
+            luni_ptr->get_topology()->records<AtomRec>()[entity.index()].atom.get().getIdx();
         return {luni_ptr->get_molecule().getAtomWithIdx(atom_idx)};
       }
       case Kind::Ring: {
@@ -82,7 +82,7 @@ private:
     _map_.assign(mol.getNumAtoms(), std::nullopt);
 
     int start = (type_ == MappingType::Query) ? res.qStartPos : res.dbStartPos;
-    int end   = (type_ == MappingType::Query) ? res.qEndPos   : res.dbEndPos;
+    int end = (type_ == MappingType::Query) ? res.qEndPos : res.dbEndPos;
 
     BacktraceParser parser{res.backtrace};
 
@@ -139,11 +139,11 @@ struct ContactEquivKeyHash {
     std::size_t h = std::hash<int>()(static_cast<int>(key.contact_type));
 
     for (auto val : key.e1_mapped_ids) {
-      h ^= std::hash<unsigned int>()(val) + GOLDEN_RATIO + (h << 6) + (h >> 2);
+      h ^= std::hash<unsigned int>()(val) + _RATIO_ + (h << 6) + (h >> 2);
     }
 
     for (auto val : key.e2_mapped_ids) {
-      h ^= std::hash<unsigned int>()(val) + GOLDEN_RATIO + (h << 6) + (h >> 2);
+      h ^= std::hash<unsigned int>()(val) + _RATIO_ + (h << 6) + (h >> 2);
     }
 
     return h;
@@ -153,11 +153,11 @@ struct ContactEquivKeyHash {
 struct ContactEquivKeyEqual {
   bool operator()(const ContactEquivKey &lhs, const ContactEquivKey &rhs) const {
     // FIX: here we force the contact type to be the same
-    if (lhs.contact_type != rhs.contact_type)                 return false;
+    if (lhs.contact_type != rhs.contact_type) return false;
     if (lhs.e1_mapped_ids.size() != rhs.e1_mapped_ids.size()) return false;
     if (lhs.e2_mapped_ids.size() != rhs.e2_mapped_ids.size()) return false;
-    if (lhs.e1_mapped_ids != rhs.e1_mapped_ids)               return false;
-    if (lhs.e2_mapped_ids != rhs.e2_mapped_ids)               return false;
+    if (lhs.e1_mapped_ids != rhs.e1_mapped_ids) return false;
+    if (lhs.e2_mapped_ids != rhs.e2_mapped_ids) return false;
     return true;
   }
 };
@@ -284,7 +284,12 @@ public:
     if (!te) throw std::runtime_error("No alignment result has been mapped.");
 
     // build an index for c1
-    std::unordered_map<ContactEquivKey, std::vector<const Contact *>, ContactEquivKeyHash, ContactEquivKeyEqual> index;
+    std::unordered_map<
+        ContactEquivKey,
+        std::vector<const Contact *>,
+        ContactEquivKeyHash,
+        ContactEquivKeyEqual>
+        index;
 
     index.reserve(c1.data().size());
     for (auto &contact1 : c1.data()) {
@@ -330,8 +335,8 @@ public:
           auto c2_e1_a = c2_e1.front();
           auto c2_e2_a = c2_e2.front();
 
-          auto m_c1_e1 = te->get_lm(Mapping::Query). get_mapped_resid(c1_e1.front()->getIdx());
-          auto m_c1_e2 = te->get_lm(Mapping::Query). get_mapped_resid(c1_e2.front()->getIdx());
+          auto m_c1_e1 = te->get_lm(Mapping::Query).get_mapped_resid(c1_e1.front()->getIdx());
+          auto m_c1_e2 = te->get_lm(Mapping::Query).get_mapped_resid(c1_e2.front()->getIdx());
           auto m_c2_e1 = te->get_lm(Mapping::Target).get_mapped_resid(c2_e1.front()->getIdx());
           auto m_c2_e2 = te->get_lm(Mapping::Target).get_mapped_resid(c2_e2.front()->getIdx());
 
@@ -344,17 +349,14 @@ public:
           /*  continue;*/
           /*}*/
 
-          std::cout << "info: "
-                    << r1_a1->getResidueName() << " - " << r1_a2->getResidueName() << " "
-                    << r2_a1->getResidueName() << " - " << r2_a2->getResidueName() << " : "
-                    << std::setw(3) << r1_a1->getName() << " - " << std::setw(3) << r1_a2->getName() << " "
-                    << std::setw(3) << r2_a1->getName() << " - " << std::setw(3) << r2_a2->getName() << " : "
-                    << c1_e1_a->getIdx() << " - " << c1_e2_a->getIdx() << " "
-                    << c2_e1_a->getIdx() << " - " << c2_e2_a->getIdx() << " : "
-                    << m_c1_e1.value() << " - " << m_c1_e2.value() << " "
-                    << m_c2_e1.value() << " - " << m_c2_e2.value() << " : "
-                    << (int)c1_candidate->type << " - " << (int)contact2.type << " : "
-                    << std::endl;
+          std::cout << "info: " << r1_a1->getResidueName() << " - " << r1_a2->getResidueName() << " "
+                    << r2_a1->getResidueName() << " - " << r2_a2->getResidueName() << " : " << std::setw(3)
+                    << r1_a1->getName() << " - " << std::setw(3) << r1_a2->getName() << " " << std::setw(3)
+                    << r2_a1->getName() << " - " << std::setw(3) << r2_a2->getName() << " : "
+                    << c1_e1_a->getIdx() << " - " << c1_e2_a->getIdx() << " " << c2_e1_a->getIdx() << " - "
+                    << c2_e2_a->getIdx() << " : " << m_c1_e1.value() << " - " << m_c1_e2.value() << " "
+                    << m_c2_e1.value() << " - " << m_c2_e2.value() << " : " << (int)c1_candidate->type
+                    << " - " << (int)contact2.type << " : " << std::endl;
 
           count++;
           break; // break here means we consider only one contact per residue
