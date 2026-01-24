@@ -35,10 +35,10 @@ try:
     from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
         AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
         FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, InteractionTypeSet, Kind, \
-        LahutaSystem, LahutaSystemProperties, Logger, LuniFileProcessor, LuniPropertyResult, \
+        LahutaSystem, LahutaSystemProperties, Logger, \
         MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
         PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
-        TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, process_files, vdw_radius
+        TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, vdw_radius
 
     rdkit     = _lib.rdkit
     metrics   = _lib.metrics
