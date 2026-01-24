@@ -418,6 +418,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       auto source = std::make_unique<SingleTrajectoryDescriptor>(cli.md_structure_path, cli.md_trajectory_paths);
       dynamic::StageManager mgr(std::move(source));
       mgr.set_auto_builtins(true);
+      mgr.set_reporting_level(reporting_level_for_reporter(cli.reporter));
 
       // Configure built-ins
       mgr.get_topology_params().atom_typing_method = analysis::contacts::typing_for_provider(cli.provider);
@@ -465,6 +466,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       dynamic::StageManager mgr(std::move(src));
       // Enable conditional built-ins injection for CLI ergonomics
       mgr.set_auto_builtins(true);
+      mgr.set_reporting_level(reporting_level_for_reporter(cli.reporter));
 
       // Configure built-ins
       mgr.get_system_params().is_model = use_model_pipeline;
@@ -503,7 +505,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
       if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
       mgr.compile();
-      auto progress = attach_progress_observer(mgr);
+      auto progress = attach_progress_observer(mgr, "contacts");
       const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
       if (progress) progress->finish();
       emit_and_save_report(report);
@@ -524,6 +526,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         dynamic::StageManager mgr(std::move(source_ptr));
         // Enable conditional built-ins injection for CLI ergonomics
         mgr.set_auto_builtins(true);
+        mgr.set_reporting_level(reporting_level_for_reporter(cli.reporter));
 
         // Configure built-ins
         mgr.get_system_params().is_model = use_model_pipeline;
@@ -562,7 +565,7 @@ int ContactsCommand::run(int argc, char* argv[]) {
         if (cli.want_log)  mgr.connect_sink("contacts", std::make_shared<dynamic::LoggingSink>(), sink_cfg);
 
         mgr.compile();
-        auto progress = attach_progress_observer(mgr);
+        auto progress = attach_progress_observer(mgr, "contacts");
         const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
         if (progress) progress->finish();
         emit_and_save_report(report);

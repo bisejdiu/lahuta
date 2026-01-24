@@ -15,6 +15,7 @@ struct GlobalFlags {
   // Default log level is Warn unless overridden by -v
   lahuta::Logger::LogLevel log_level = lahuta::Logger::LogLevel::Info;
   std::size_t progress_ms = 50;
+  bool progress_color = true;
   std::vector<char*> tail;                                             // argv sans globals
   bool help_requested = false;                                         // -h/--help flag
 };
@@ -63,6 +64,9 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
     if (arg.rfind("--progress-ms=", 0) == 0) {
       continue;
     }
+    if (arg == "--progress-no-color") {
+      continue;
+    }
     if (arg == "-h" || arg == "--help") {
       g.help_requested = true;
       continue;
@@ -87,6 +91,9 @@ inline GlobalFlags extract_global_flags(int argc, char* argv[]) {
       continue;
     } else if (arg.rfind("--progress-ms=", 0) == 0) {
       g.progress_ms = parse_progress_ms(arg.substr(14));
+      continue;
+    } else if (arg == "--progress-no-color") {
+      g.progress_color = false;
       continue;
     } else if (arg == "-h" || arg == "--help") {
       if (i < first_non_global) continue;

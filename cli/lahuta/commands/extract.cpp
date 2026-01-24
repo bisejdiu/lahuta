@@ -333,7 +333,6 @@ int ExtractCommand::run(int argc, char* argv[]) {
 
     initialize_runtime(cli.threads);
 
-
     auto source = std::unique_ptr<sources::IDescriptor>{};
     switch (cli.source_mode) {
       case ExtractOptions::SourceMode::Database:
@@ -359,6 +358,7 @@ int ExtractCommand::run(int argc, char* argv[]) {
     }
 
     dyn::StageManager mgr(std::move(source));
+    mgr.set_reporting_level(reporting_level_for_reporter(cli.reporter));
 
     auto sink_cfg = dyn::get_default_backpressure_config();
     sink_cfg.writer_threads = cli.writer_threads;
@@ -392,7 +392,7 @@ int ExtractCommand::run(int argc, char* argv[]) {
     }
 
     mgr.compile();
-    auto progress = attach_progress_observer(mgr);
+    auto progress = attach_progress_observer(mgr, "extract");
     const auto report = mgr.run(static_cast<std::size_t>(cli.threads));
     if (progress) progress->finish();
     const auto* reporter = cli.reporter ? cli.reporter : &default_pipeline_reporter();
