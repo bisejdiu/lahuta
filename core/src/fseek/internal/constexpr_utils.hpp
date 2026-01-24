@@ -1,5 +1,5 @@
-#ifndef LAHUTA_UTILS_HPP
-#define LAHUTA_UTILS_HPP
+#ifndef LAHUTA_CONSTEXPR_UTILS_HPP
+#define LAHUTA_CONSTEXPR_UTILS_HPP
 
 namespace lahuta {
 
@@ -45,4 +45,4 @@ constexpr double log2_approx(double x) { return log_approx(x) / log_approx(2.0);
 
 } // namespace lahuta
 
-#endif // LAHUTA_UTILS_HPP
+#endif // LAHUTA_CONSTEXPR_UTILS_HPP

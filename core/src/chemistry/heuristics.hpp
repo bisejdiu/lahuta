@@ -5,7 +5,7 @@
 #include <GraphMol/RWMol.h>
 
 #include "chemistry/elements.hpp"
-#include "utils.hpp"
+#include "chemistry/utils.hpp"
 
 // clang-format off
 namespace lahuta {

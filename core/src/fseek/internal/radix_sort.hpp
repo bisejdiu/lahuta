@@ -1,9 +1,10 @@
+#ifndef LAHUTA_RADIX_SORT_HPP
+#define LAHUTA_RADIX_SORT_HPP
+
 /*
  * Stable Least Significant Bit (LSB) radix sort for sorting an array of key-value pairs. It is
  * specialized for sorting the MMseqs2 score matrix. It has not been tested for general use.
  */
-#ifndef LAHUTA_RADIX_SORT_HPP
-#define LAHUTA_RADIX_SORT_HPP
 
 #include <algorithm>
 #include <cstddef>

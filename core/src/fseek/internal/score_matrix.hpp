@@ -5,14 +5,14 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
+#include <ctpl/ctpl.h>
 #include <thread>
 
-#include <ctpl/ctpl.h>
+#include <ScoreMatrix.h>
 
-#include "ScoreMatrix.h"
-#include "radix_sort.hpp"
-#include "substitution_matrix.hpp"
-#include "utils.hpp"
+#include "fseek/internal/constexpr_utils.hpp"
+#include "fseek/internal/radix_sort.hpp"
+#include "fseek/internal/substitution_matrix.hpp"
 
 namespace lahuta {
 

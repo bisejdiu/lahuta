@@ -7,11 +7,11 @@
 #include <IndexTable.h>
 #include <QueryMatcher.h>
 #include <Sequence.h>
-#include <substitution_matrix.hpp>
 #include <tantan.h>
 
+#include "fseek/internal/score_matrix.hpp"
+#include "fseek/internal/substitution_matrix.hpp"
 #include "fseek/seq.hpp"
-#include "score_matrix.hpp"
 
 namespace lahuta {
 

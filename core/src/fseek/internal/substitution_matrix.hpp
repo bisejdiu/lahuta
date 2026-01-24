@@ -3,7 +3,6 @@
  * file format. Performance-wise, there isn't much to gain from compile-time evaluation, but it's a fun
  * exercise.
  */
-
 #ifndef LAHUTA_SUBSTITUTION_MATRIX_H
 #define LAHUTA_SUBSTITUTION_MATRIX_H
 
@@ -11,8 +10,8 @@
 #include <climits>
 
 #include "BaseMatrix.h"
+#include "fseek/internal/constexpr_utils.hpp"
 #include "fseek/ops.hpp"
-#include "utils.hpp"
 
 namespace lahuta {
 
