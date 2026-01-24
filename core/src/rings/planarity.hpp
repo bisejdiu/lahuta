@@ -7,7 +7,7 @@
 #include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "rings.hpp"
+#include "rings/utils.hpp"
 
 namespace lahuta {
 
@@ -38,7 +38,7 @@ inline void compute_consecutive_normals(
     const std::vector<RDGeom::Point3D> &positions, const std::vector<int> &ring_atom_ids) {
 
   RDGeom::Point3D center;
-  RingProps::compute_center(&mol, ring_atom_ids, center);
+  ring_props::compute_center(&mol, ring_atom_ids, center);
 
   size_t n = positions.size();
   for (size_t i = 0; i < n; ++i) {

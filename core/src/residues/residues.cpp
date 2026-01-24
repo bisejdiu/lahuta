@@ -1,8 +1,8 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 
-#include "find_rings.hpp"
 #include "residues/definitions.hpp"
 #include "residues/residues.hpp"
+#include "rings/find_rings.hpp"
 
 // clang-format off
 namespace lahuta {

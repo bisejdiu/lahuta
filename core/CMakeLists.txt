@@ -209,7 +209,7 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/struct_unit.cpp
   src/topology.cpp
   src/residues/residues.cpp
-  src/aromatics.cpp
+  src/rings/aromatics.cpp
   src/luni_props.cpp
   src/logging/logging.cpp
   src/md/element_utils.cpp

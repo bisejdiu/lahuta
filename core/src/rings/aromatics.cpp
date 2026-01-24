@@ -1,11 +1,11 @@
 #include <rdkit/GraphMol/MolOps.h>
 #include <rdkit/GraphMol/Rings.h>
 
-#include "aromatics.hpp"
 #include "chemistry/common.hpp"
 #include "logging/logging.hpp"
-#include "planarity.hpp"
 #include "residues/definitions.hpp"
+#include "rings/aromatics.hpp"
+#include "rings/planarity.hpp"
 #include "selections/mol_filters.hpp"
 
 namespace lahuta {
@@ -74,8 +74,8 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
   auto rings = find_and_process_aromatic_residues(mol, residues);
   add_rings_to_mol(mol, rings);
 
-  // if (spdlog::should_log(spdlog::level::debug)) {
-  if (true) { // FIX:
+  auto logger = Logger::get_logger();
+  if (logger && logger->should_log(spdlog::level::info)) {
     auto unk_res = residues.filter(std::not_fn(definitions::is_predefined));
 
     std::unordered_map<std::string, int> residue_counts;
@@ -83,7 +83,7 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
       residue_counts[res.name]++;
     }
     for (const auto &[name, count] : residue_counts) {
-      Logger::get_logger()->debug("unk residue: {}, {}", name, count);
+      logger->info("unk residue: {}, {}", name, count);
     }
   }
 
