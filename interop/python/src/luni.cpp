@@ -9,10 +9,10 @@
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "io/convert.hpp"
-#include "definitions.hpp"
 #include "lahuta.hpp"
 #include "logging/logging.hpp"
 #include "numpy_utils.hpp"
+#include "residues/definitions.hpp"
 #include "spatial/fastns.hpp"
 #include "spatial/nsresults.hpp"
 #include "topology.hpp"

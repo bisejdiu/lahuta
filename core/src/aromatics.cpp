@@ -3,9 +3,9 @@
 
 #include "aromatics.hpp"
 #include "chemistry/common.hpp"
-#include "definitions.hpp"
 #include "logging/logging.hpp"
 #include "planarity.hpp"
+#include "residues/definitions.hpp"
 #include "selections/mol_filters.hpp"
 
 namespace lahuta {

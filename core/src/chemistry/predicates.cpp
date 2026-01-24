@@ -1,5 +1,5 @@
 #include "chemistry/predicates.hpp"
-#include "definitions.hpp"
+#include "residues/definitions.hpp"
 
 namespace lahuta::chemistry {
 

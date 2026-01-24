@@ -5,7 +5,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/typing.h>
 
-#include "residues.hpp"
+#include "residues/residues.hpp"
 #include "topology.hpp"
 #include "topology_flags.hpp"
 

@@ -11,7 +11,7 @@
 #include "entities/records.hpp"
 #include "entities/view.hpp"
 #include "logging/logging.hpp"
-#include "residues.hpp"
+#include "residues/residues.hpp"
 #include "topology/engine.hpp"
 #include "topology_flags.hpp"
 

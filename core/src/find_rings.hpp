@@ -9,7 +9,7 @@
 
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "residues.hpp"
+#include "residues/residues.hpp"
 
 // clang-format off
 

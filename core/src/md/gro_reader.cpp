@@ -14,11 +14,11 @@
 #include <GraphMol/MonomerInfo.h>
 #include <gemmi/third_party/fast_float.h>
 
-#include "definitions.hpp"
 #include "chemistry/elements.hpp"
 #include "md/element_utils.hpp"
 #include "md/gro_reader.hpp"
 #include "mmap/MemoryMapped.h"
+#include "residues/definitions.hpp"
 
 // clang-format off
 namespace lahuta::md {

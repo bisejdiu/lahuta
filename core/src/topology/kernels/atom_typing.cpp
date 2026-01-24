@@ -3,21 +3,21 @@
 #include <optional>
 
 #include <rdkit/GraphMol/RWMol.h>
-#include <typing/flags.hpp>
-#include <valence_model.hpp>
 
 #include "chemistry/atom_typing.hpp"
 #include "chemistry/group_typing.hpp"
 #include "compute/context.hpp"
 #include "compute/result.hpp"
 #include "logging/logging.hpp"
-#include "residues.hpp"
+#include "residues/residues.hpp"
 #include "selections/mol_filters.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
+#include "typing/flags.hpp"
 #include "typing/getcontacts/atom_typing.hpp"
 #include "typing/smarts_matching.hpp"
 #include "typing/types.hpp"
+#include "valence_model.hpp"
 
 namespace {
 

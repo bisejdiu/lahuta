@@ -3,7 +3,7 @@
 
 #include <GraphMol/RWMol.h>
 
-#include "residues.hpp"
+#include "residues/residues.hpp"
 
 namespace lahuta {
 

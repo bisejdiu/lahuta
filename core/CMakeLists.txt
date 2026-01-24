@@ -208,7 +208,7 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/selections/visitor.cpp
   src/struct_unit.cpp
   src/topology.cpp
-  src/residues.cpp
+  src/residues/residues.cpp
   src/aromatics.cpp
   src/luni_props.cpp
   src/logging/logging.cpp

@@ -3,9 +3,9 @@
 
 #include <GraphMol/MonomerInfo.h>
 
-#include "chemistry/types/hydrophobic.hpp"
-#include "definitions.hpp"
 #include "chemistry/elements.hpp"
+#include "chemistry/types/hydrophobic.hpp"
+#include "residues/definitions.hpp"
 #include "typing/getcontacts/atom_typing.hpp"
 #include "typing/types.hpp"
 
