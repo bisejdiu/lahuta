@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <GraphMol/MonomerInfo.h>
-#include <span.hpp>
+#include "utils/span.hpp"
 
 #include "contact.hpp"
 #include "entity_id.hpp"

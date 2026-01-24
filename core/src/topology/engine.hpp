@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "compute/engine.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "topology/compute.hpp"
 #include "topology/parameters.hpp"
 

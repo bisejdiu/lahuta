@@ -6,7 +6,7 @@
 
 #include "bonds/bond_order.hpp"
 #include "bonds/clean_bonds.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "nonstandard_bonds.hpp"
 #include "selections/mol_filters.hpp"
 #include "template.hpp"

@@ -1,7 +1,5 @@
 #include <vector>
 
-#include <logging.hpp>
-
 #include "models/tables.hpp"
 #include "models/topology.hpp"
 

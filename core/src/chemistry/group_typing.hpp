@@ -7,7 +7,7 @@
 
 #include "contacts/aromaticity.hpp"
 #include "entities/records.hpp"
-#include "residues.hpp"
+#include "residues/residues.hpp"
 #include "types/charges.hpp"
 
 // clang-format off

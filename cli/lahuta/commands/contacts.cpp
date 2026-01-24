@@ -17,7 +17,7 @@
 #include "commands/contacts.hpp"
 #include "commands/reporting.hpp"
 #include "db/db.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/manager.hpp"

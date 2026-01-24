@@ -2,7 +2,7 @@
 
 #include "contacts/arpeggio/contacts.hpp"
 #include "contacts/arpeggio/geo.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 #include "entities/context.hpp"
 
 // clang-format off

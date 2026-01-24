@@ -201,17 +201,17 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/bonds/bonds.cpp
   src/bonds/bond_order.cpp
   src/bonds/clean_bonds.cpp
-  src/convert.cpp
-  src/kd_tree.cpp
-  src/kd_index.cpp
+  src/io/convert.cpp
+  src/spatial/kd_tree.cpp
+  src/spatial/kd_index.cpp
   src/lahuta.cpp
-  src/visitor.cpp
-  src/struct_unit.cpp
+  src/selections/visitor.cpp
+  src/utils/struct_unit.cpp
   src/topology.cpp
-  src/residues.cpp
-  src/aromatics.cpp
-  src/luni_props.cpp
-  src/logging.cpp
+  src/residues/residues.cpp
+  src/rings/aromatics.cpp
+  src/properties/luni_props.cpp
+  src/logging/logging.cpp
   src/md/element_utils.cpp
   src/md/gro_reader.cpp
   src/md/xdr.cpp
@@ -229,7 +229,7 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/models/topology/kernels/build.cpp
 
   external/mmap/MemoryMapped.cpp
-  src/valence_model.cpp
+  src/chemistry/valence_model.cpp
 
   src/contacts/aromaticity.cpp
 

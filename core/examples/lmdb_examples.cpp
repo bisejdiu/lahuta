@@ -12,7 +12,7 @@
 #include "analysis/contacts/computation.hpp"
 #include "analysis/contacts/provider.hpp"
 #include "entities/interaction_types.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "models/plddt.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/data_requirements.hpp"

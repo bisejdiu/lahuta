@@ -12,7 +12,7 @@
 #include "commands/createdb.hpp"
 #include "commands/reporting.hpp"
 #include "db/db.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"

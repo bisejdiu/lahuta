@@ -4,7 +4,7 @@
 #include <optional>
 #include <string_view>
 
-#include "contact_types.hpp"
+#include "contacts/contact_types.hpp"
 
 // clang-format off
 namespace lahuta::analysis::contacts {

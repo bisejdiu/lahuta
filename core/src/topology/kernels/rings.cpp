@@ -1,5 +1,5 @@
-#include "aromatics.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
+#include "rings/aromatics.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
 

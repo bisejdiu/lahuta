@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "commands/command.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 namespace lahuta::cli {
 

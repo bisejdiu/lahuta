@@ -5,7 +5,7 @@
 
 #include <gtest/gtest.h>
 
-#include "nsresults_tls.hpp"
+#include "spatial/nsresults_tls.hpp"
 
 // clang-format off
 namespace lahuta {

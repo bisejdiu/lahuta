@@ -1,19 +1,20 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
-#include <logging.hpp>
 #include <stdexcept>
 #include <string>
 
+#include <GraphMol/Conformer.h>
+
+#include "logging/logging.hpp"
 #include "pipeline/ingestion.hpp"
 #include "pipeline/pipeline_item.hpp"
 #include "sources/trajectory.hpp"
 #include "topology.hpp"
-#include <GraphMol/Conformer.h>
 
 namespace {
-constexpr const char *kStructurePath = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.tpr.gro";
-constexpr const char *kXtcPath = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.pbc.xtc";
+constexpr const char *StructurePath = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.tpr.gro";
+constexpr const char *XtcPath = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.pbc.xtc";
 } // namespace
 
 int main() {
@@ -23,7 +24,7 @@ int main() {
   const std::string session_id = "md/example";
   IngestDescriptor descriptor{
       session_id,
-      MDRef{kStructurePath, {kXtcPath}},
+      MDRef{StructurePath, {XtcPath}},
   };
 
   TrajectoryRealizer realizer;

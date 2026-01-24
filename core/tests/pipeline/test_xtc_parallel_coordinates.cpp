@@ -15,7 +15,7 @@
 #include "analysis/system/computation.hpp"
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/ingestion.hpp"

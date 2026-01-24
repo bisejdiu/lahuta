@@ -17,7 +17,7 @@
 #include "commands/positions.hpp"
 #include "commands/reporting.hpp"
 #include "hash/fnv1a.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"
 #include "runtime.hpp"

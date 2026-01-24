@@ -2,7 +2,7 @@
 #include <pybind11/pybind11.h>
 
 #include "bindings.hpp"
-#include "luni_props.hpp"
+#include "properties/luni_props.hpp"
 #include "runtime.hpp"
 #include "version.hpp"
 

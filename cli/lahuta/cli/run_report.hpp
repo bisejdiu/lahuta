@@ -4,7 +4,7 @@
 #include <fstream>
 #include <string>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "serialization/json.hpp"
 

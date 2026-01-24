@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "distances/neighbors.hpp"
-#include "kd_index.hpp"
+#include "spatial/kd_index.hpp"
 #include "test_utils/fp_test_utils.hpp"
 
 // clang-format off

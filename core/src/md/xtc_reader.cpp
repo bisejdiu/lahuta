@@ -34,7 +34,7 @@
 #include "md/detail/bit_reader.hpp"
 #include "md/detail/xtc_smallints.hpp"
 #include "md/xtc_reader.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta::md {

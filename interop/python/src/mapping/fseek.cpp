@@ -3,7 +3,7 @@
 #include <pybind11/stl.h>
 
 #include "fseek/ops.hpp"
-#include "prefilter.hpp"
+#include "fseek/prefilter.hpp"
 
 namespace py = pybind11;
 

@@ -14,7 +14,7 @@
 #include "cli/time_utils.hpp"
 #include "commands/extract.hpp"
 #include "commands/reporting.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/backpressure.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/sources.hpp"

@@ -10,10 +10,10 @@
 #include <GraphMol/MonomerInfo.h>
 #include <GraphMol/RWMol.h>
 
+#include "chemistry/elements.hpp"
 #include "chemistry/utils.hpp"
-#include "definitions.hpp"
-#include "elements.hpp"
 #include "entities/context.hpp"
+#include "residues/definitions.hpp"
 
 // clang-format off
 namespace lahuta::getcontacts::detail {

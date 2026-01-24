@@ -10,7 +10,7 @@
 #include <utility>
 
 #include "db/db.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/ingestion.hpp"
 #include "sources/db_keys.hpp"
 

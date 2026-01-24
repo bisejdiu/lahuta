@@ -3,7 +3,7 @@
 #include "analysis/contacts/provider.hpp"
 #include "cli/arg_validation.hpp"
 #include "entities/interaction_types.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 // clang-format off
 namespace lahuta::cli::validate {

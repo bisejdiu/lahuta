@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "lahuta.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "models/factory.hpp"
 
 // Verifies that constructing a model-fast-path system followed by constructing

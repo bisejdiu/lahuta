@@ -2,7 +2,7 @@
 #define LAHUTA_SYMMETRIC_HPP
 
 #include "chunk_defs.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 // clang-format off
 

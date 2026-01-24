@@ -3,7 +3,7 @@
 
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "definitions.hpp"
+#include "residues/definitions.hpp"
 #include "typing/types.hpp"
 
 namespace lahuta {

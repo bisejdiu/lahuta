@@ -14,7 +14,7 @@
 #include <GraphMol/RWMol.h>
 
 #include "entities/records.hpp"
-#include "residues.hpp"
+#include "residues/residues.hpp"
 
 namespace lahuta {
 

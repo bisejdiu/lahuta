@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "convert.hpp"
+#include "io/convert.hpp"
 #include "lahuta.hpp"
 #include "topology_flags.hpp"
 

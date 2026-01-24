@@ -10,8 +10,8 @@
 #include "entities/search/hit_buffer.hpp"
 #include "entities/search/provider.hpp"
 #include "entities/search/search_impl.hpp"
-#include "logging.hpp"
-#include "span.hpp"
+#include "logging/logging.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta { struct ContactContext;}

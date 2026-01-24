@@ -17,7 +17,7 @@
 #include "cli/time_utils.hpp"
 #include "commands/quality_metrics.hpp"
 #include "commands/reporting.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "models/dssp.hpp"
 #include "models/plddt.hpp"
 #include "pipeline/data_requirements.hpp"
@@ -27,7 +27,7 @@
 #include "serialization/json.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta::cli {

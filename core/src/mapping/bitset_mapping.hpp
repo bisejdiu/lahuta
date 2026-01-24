@@ -16,7 +16,7 @@
 #include "_defs.hpp"
 #include "mapping_manager.hpp"
 #include "mapping_matrix.hpp"
-#include "residues.hpp"
+#include "residues/residues.hpp"
 #include "topology.hpp"
 
 // NOTE: We make copies of the residues in the mapping. Residues are POD objects,

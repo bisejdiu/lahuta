@@ -8,7 +8,7 @@
 #include <string_view>
 
 #include "cli/global_flags.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/manager.hpp"
 #include "pipeline/dynamic/progress_observer.hpp"
 

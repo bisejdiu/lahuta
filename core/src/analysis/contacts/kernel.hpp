@@ -12,7 +12,7 @@
 #include "contacts/engine.hpp"
 #include "contacts/getcontacts/provider.hpp"
 #include "contacts/molstar/provider.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/compute/context.hpp"
 #include "pipeline/compute/parameters.hpp"
 #include "pipeline/dynamic/types.hpp"

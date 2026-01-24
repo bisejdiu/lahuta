@@ -8,7 +8,7 @@
 #include "models/dssp.hpp"
 #include "models/plddt.hpp"
 #include "sources/lmdb_reader_slot.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta {

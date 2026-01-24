@@ -3,7 +3,7 @@
 
 #include <string_view>
 
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 
 namespace lahuta::md {
 

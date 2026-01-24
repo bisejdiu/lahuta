@@ -5,7 +5,7 @@
 #include "bonds.hpp"
 #include "bonds/rules/lookup.hpp"
 #include "bonds/rules/table.hpp"
-#include "common.hpp"
+#include "chemistry/common.hpp"
 #include "selections/mol_filters.hpp"
 
 namespace lahuta {

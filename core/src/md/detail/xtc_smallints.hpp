@@ -31,7 +31,7 @@
 
 #include "md/detail/bit_reader.hpp"
 #include "md/error.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 // clang-format off
 namespace lahuta::md::detail {

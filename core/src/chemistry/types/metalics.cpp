@@ -1,6 +1,7 @@
 #include "chemistry/types/metalics.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 
+// clang-format off
 namespace lahuta {
 
 bool is_transition_metal(int atomic_num) {

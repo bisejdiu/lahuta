@@ -6,7 +6,7 @@
 #include <rdkit/GraphMol/Conformer.h>
 #include <rdkit/GraphMol/ROMol.h>
 
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 
 // clang-format off
 namespace lahuta::arpeggio {

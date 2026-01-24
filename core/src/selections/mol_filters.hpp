@@ -8,7 +8,7 @@
 #include <rdkit/GraphMol/MonomerInfo.h>
 #include <rdkit/GraphMol/RWMol.h>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 namespace lahuta {
 

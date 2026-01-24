@@ -7,7 +7,7 @@
 
 #include "analysis/system/model_loader.hpp"
 #include "analysis/system/records.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "pipeline/dynamic/types.hpp"
 #include "serialization/formats.hpp"
 #include "serialization/serializer.hpp"

@@ -10,9 +10,9 @@
 #include <rdkit/Geometry/point.h>
 
 #include "fastns.hpp"
-#include "logging.hpp"
-#include "nsresults_tls.hpp"
+#include "logging/logging.hpp"
 #include "nsutils.hpp"
+#include "spatial/nsresults_tls.hpp"
 
 // clang-format off
 namespace lahuta {

@@ -1,6 +1,6 @@
 #include <stdexcept>
 
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "topology.hpp"
 
 // clang-format off

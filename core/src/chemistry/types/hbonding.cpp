@@ -2,7 +2,7 @@
 #include "chemistry/predicates.hpp"
 #include "chemistry/types/hbonding.hpp"
 #include "chemistry/utils.hpp"
-#include "elements.hpp"
+#include "chemistry/elements.hpp"
 
 // clang-format off
 namespace lahuta {

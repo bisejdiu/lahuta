@@ -1,5 +1,5 @@
 #include "distances/neighbors.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 #include "spatial/nsresults.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"

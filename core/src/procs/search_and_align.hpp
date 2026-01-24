@@ -1,10 +1,10 @@
 #ifndef LAHUTA_SEARCH_AND_ALIGN_HPP
 #define LAHUTA_SEARCH_AND_ALIGN_HPP
 
-#include "aligner.hpp"
 #include "chunking/chunk_defs.hpp"
 #include "chunking/standard.hpp"
 #include "chunking/symmetric.hpp"
+#include "fseek/aligner.hpp"
 
 // clang-format off
 

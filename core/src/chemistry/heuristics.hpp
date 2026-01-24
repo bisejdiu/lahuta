@@ -4,8 +4,8 @@
 #include <GraphMol/Atom.h>
 #include <GraphMol/RWMol.h>
 
-#include "elements.hpp"
-#include "utils.hpp"
+#include "chemistry/elements.hpp"
+#include "chemistry/utils.hpp"
 
 // clang-format off
 namespace lahuta {

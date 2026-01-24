@@ -11,7 +11,7 @@
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "key.hpp"
-#include "span.hpp"
+#include "utils/span.hpp"
 
 namespace lahuta::bonds {
 
