@@ -1,10 +1,3 @@
-/*
-    This code adapts functionality from the Mol* (mol-star) molecular visualization package,
-    originally in TypeScript, for use in C++ with RDKit in the Lahuta project.
-
-    Mol* is licensed under the MIT License (https://github.com/molstar/molstar),
-    while this adaptation is released under the GNU General Public License (GPL).
-*/
 #ifndef LAHUTA_VALENCE_HPP
 #define LAHUTA_VALENCE_HPP
 
@@ -24,11 +17,9 @@ namespace lahuta {
  * Computes the formal charge, implicit hydrogen count, and hybridization type for each atom in a molecule.
  *
  * - Takes into account each atom's atomic number, degree, valence, and neighboring bonds.
- * - The behavior of the model can be configured via the `assign_charge` and `assign_h` options,
- *   which control whether formal charge and implicit hydrogens are automatically assigned.
  *
  * Usage:
- *   ValenceModel valence_model(true, true);
+ *   ValenceModel valence_model;
  *   valence_model.apply(mol);
  */
 class ValenceModel {
@@ -74,10 +65,6 @@ public:
 
   /// Assigns the formal charge, implicit hydrogen count, and hybridization type for the given atom.
   void molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom);
-
-private:
-  bool assign_charge_;
-  bool assign_h_;
 };
 
 } // namespace lahuta

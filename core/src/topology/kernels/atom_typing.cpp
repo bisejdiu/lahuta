@@ -6,6 +6,7 @@
 
 #include "chemistry/atom_typing.hpp"
 #include "chemistry/group_typing.hpp"
+#include "chemistry/valence_model.hpp"
 #include "compute/context.hpp"
 #include "compute/result.hpp"
 #include "logging/logging.hpp"
@@ -17,7 +18,6 @@
 #include "typing/getcontacts/atom_typing.hpp"
 #include "typing/smarts_matching.hpp"
 #include "typing/types.hpp"
-#include "valence_model.hpp"
 
 namespace {
 

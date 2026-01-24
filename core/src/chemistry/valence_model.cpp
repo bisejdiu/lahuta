@@ -1,6 +1,6 @@
 #include <GraphMol/MonomerInfo.h>
 
-#include "valence_model.hpp"
+#include "chemistry/valence_model.hpp"
 
 namespace lahuta {
 

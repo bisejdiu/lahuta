@@ -229,7 +229,7 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/models/topology/kernels/build.cpp
 
   external/mmap/MemoryMapped.cpp
-  src/valence_model.cpp
+  src/chemistry/valence_model.cpp
 
   src/contacts/aromaticity.cpp
 
