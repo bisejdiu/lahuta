@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <mutex>
 #include <stdexcept>
 
@@ -34,6 +35,7 @@ constexpr std::size_t CROSS_EIGEN_THRESHOLD = 50;
 constexpr std::size_t BRUTE_EIGEN_THRESHOLD = 100;
 
 constexpr double COORD_EPSILON = 1e-10;
+constexpr double SCALE_THRESHOLD = 1.0 / std::numeric_limits<float>::epsilon();
 
 constexpr std::array<std::array<int, DIMENSIONS>, 13> NEIGHBOR_CELLS = {{
   {1, 0,  0}, {1, 1,  0}, {0, 1,  0}, {-1, 1,  0},
@@ -67,7 +69,7 @@ FastNS::FastNS(const RDGeom::POINT3D_VECT &coords) {
 
   if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
     scale_ratio_ = max_abs_coord_ / min_abs_coord_;
-    has_mixed_scales_ = scale_ratio_ > 1e6;
+    has_mixed_scales_ = scale_ratio_ > SCALE_THRESHOLD;
   }
 
   // pack into coords_bbox
@@ -104,7 +106,7 @@ FastNS::FastNS(const std::vector<std::vector<double>> &coords) {
 
   if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
     scale_ratio_ = max_abs_coord_ / min_abs_coord_;
-    has_mixed_scales_ = scale_ratio_ > 1e6;
+    has_mixed_scales_ = scale_ratio_ > SCALE_THRESHOLD;
   }
 
   // pack into coords_bbox
@@ -144,7 +146,7 @@ FastNS::FastNS(const double *coords_ptr, std::size_t npts) {
 
   if (min_abs_coord_ > 0.0 && std::isfinite(min_abs_coord_) && std::isfinite(max_abs_coord_)) {
     scale_ratio_ = max_abs_coord_ / min_abs_coord_;
-    has_mixed_scales_ = scale_ratio_ > 1e6;
+    has_mixed_scales_ = scale_ratio_ > SCALE_THRESHOLD;
   }
 
   coords_bbox.reserve(npts * 3);
