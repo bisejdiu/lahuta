@@ -6,6 +6,7 @@
 // multi-conformer support to avoid stale geometry in these records. Now, geometry is
 // computed on-the-fly via accessors that take a Conformer reference. - Besian, October 2025
 //
+#include <cmath>
 #include <vector>
 
 #include <Geometry/point.h>
@@ -47,6 +48,13 @@ struct RingRec {
     if (n == 0) return c;
     for (const auto &a : atoms) c += conf.getAtomPos(a.get().getIdx());
     c /= static_cast<double>(n);
+    if (n > 1) {
+      // Clamp tiny values to zero to avoid floating-point artifacts from cancellation
+      constexpr double CENTROID_EPSILON = 1e-6;
+      if (std::abs(c.x) < CENTROID_EPSILON) c.x = 0.0;
+      if (std::abs(c.y) < CENTROID_EPSILON) c.y = 0.0;
+      if (std::abs(c.z) < CENTROID_EPSILON) c.z = 0.0;
+    }
     return c;
   }
 
@@ -79,6 +87,13 @@ struct GroupRec {
     if (n == 0) return c;
     for (const auto &a : atoms) c += conf.getAtomPos(a.get().getIdx());
     c /= static_cast<double>(n);
+    if (n > 1) {
+      // Clamp tiny values to zero to avoid floating-point artifacts from cancellation
+      constexpr double CENTROID_EPSILON = 1e-6;
+      if (std::abs(c.x) < CENTROID_EPSILON) c.x = 0.0;
+      if (std::abs(c.y) < CENTROID_EPSILON) c.y = 0.0;
+      if (std::abs(c.z) < CENTROID_EPSILON) c.z = 0.0;
+    }
     return c;
   }
 };
