@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "cli/extension_utils.hpp"
+#include "parsing/extension_utils.hpp"
 
 namespace {
 

@@ -1,8 +1,0 @@
-AlignAfterOpenBracket: AlwaysBreak
-AllowAllArgumentsOnNextLine: false
-AllowShortIfStatementsOnASingleLine: true
-BreakBeforeBinaryOperators: NonAssignment
-BinPackArguments: false
-ColumnLimit: 110
-IndentCaseLabels: true
-
