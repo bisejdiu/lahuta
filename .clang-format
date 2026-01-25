@@ -1,0 +1,23 @@
+# AlignAfterOpenBracket: AlwaysBreak
+AllowAllArgumentsOnNextLine: false
+AllowShortIfStatementsOnASingleLine: true
+# BreakBeforeBinaryOperators: NonAssignment
+BinPackArguments: false
+ColumnLimit: 110
+IndentCaseLabels: true
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: false
+  PadOperators: true
+
+AlignAfterOpenBracket: Align
+AlignOperands: Align
+BreakBeforeBinaryOperators: None
+ContinuationIndentWidth: 4
+
+PenaltyBreakAssignment: 500
+
+AlignArrayOfStructures: Left
+SpaceBeforeParens: Custom

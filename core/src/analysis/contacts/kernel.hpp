@@ -55,9 +55,10 @@ struct ContactsKernel {
 
       // Correctness guard: ensure atom typing matches provider before computing
       try {
-        auto& label  = topology::AtomTypingComputation<>::label;
+        using namespace lahuta::topology;
+        auto& label  = AtomTypingComputation<>::label;
         auto& eng    = const_cast<Topology&>(*top).get_engine();
-        auto* params = eng.get_parameters<topology::AtomTypingParams>(label);
+        auto* params = eng.get_parameters<AtomTypingParams>(label);
 
         auto current_mode = params ? params->mode : AtomTypingMethod::Molstar;
         auto required_mode = typing_for_provider(p.provider);

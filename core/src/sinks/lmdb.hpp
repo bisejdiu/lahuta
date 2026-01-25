@@ -6,6 +6,7 @@
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "db/db.hpp"
 #include "db/writer.hpp"
@@ -26,7 +27,7 @@ namespace lahuta::pipeline::dynamic {
 class LmdbSink : public IDynamicSink {
 public:
   explicit LmdbSink(std::shared_ptr<lahuta::LMDBDatabase> db, std::size_t batch_size)
-    : writer_(db->get_env(), db->get_dbi()), batch_size_(batch_size) {
+    : db_(std::move(db)), writer_(db_->get_env(), db_->get_dbi()), batch_size_(batch_size) {
     if (batch_size_ == 0) batch_size_ = 1;
   }
 
@@ -71,6 +72,7 @@ private:
     }
   }
 
+  std::shared_ptr<lahuta::LMDBDatabase> db_;
   lahuta::LMDBWriter writer_;
   std::size_t batch_size_ = 1024;
   std::size_t since_commit_ = 0;

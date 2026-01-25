@@ -45,7 +45,7 @@ target_compile_features(lahuta_tests PRIVATE cxx_std_17)
 
 target_include_directories(lahuta_tests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/cli/lahuta
+  ${CMAKE_SOURCE_DIR}/cli
 )
 
 if(MSVC)
