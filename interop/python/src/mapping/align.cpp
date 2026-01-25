@@ -5,7 +5,7 @@
 #include "fseek/ops.hpp"
 #include "fseek/prefilter.hpp"
 #include "numpy_utils.hpp"
-#include "procs/search_and_align.hpp"
+#include "fseek/search_and_align.hpp"
 
 // clang-format off
 namespace py = pybind11;

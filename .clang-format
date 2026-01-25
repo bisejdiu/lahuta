@@ -21,3 +21,5 @@ PenaltyBreakAssignment: 500
 
 AlignArrayOfStructures: Left
 SpaceBeforeParens: Custom
+
+AlwaysBreakTemplateDeclarations: true
