@@ -94,11 +94,11 @@ inline void log_pipeline_report_terse(std::string_view label, const RunReport &r
                report.metrics_enabled ? "on" : "off");
 }
 
-inline void log_pipeline_report_diagnostics(std::string_view label, const RunReport &report) {
+inline void log_pipeline_report_detail(std::string_view label, const RunReport &report) {
   log_pipeline_report_summary(label, report);
 
   if (!report.metrics_enabled) {
-    Logger::get_logger()->info("{} diagnostics unavailable because metrics are disabled", label);
+    Logger::get_logger()->info("{} detail unavailable because metrics are disabled", label);
     return;
   }
 
@@ -156,12 +156,12 @@ struct PipelineReporter {
 inline const std::array<PipelineReporter, 3> &available_pipeline_reporters() {
   static const std::array<PipelineReporter, 3> reporters{{
       {"summary",
-       "Balanced totals and item counts (default; negligible overhead).",
+       "Balanced totals and item counts (default, negligible overhead).",
        &log_pipeline_report_summary},
       {"terse", "Single-line throughput summary (fastest logging footprint).", &log_pipeline_report_terse},
-      {"diagnostics",
+      {"detail",
        "Summary plus concurrency, permit, and stage breakdown details.",
-       &log_pipeline_report_diagnostics},
+       &log_pipeline_report_detail},
   }};
   return reporters;
 }
@@ -178,7 +178,7 @@ inline const PipelineReporter *find_pipeline_reporter(std::string_view name) {
 
 inline StageManager::ReportingLevel reporting_level_for_reporter(const PipelineReporter *reporter) {
   if (!reporter) return StageManager::ReportingLevel::Basic;
-  return reporter->name == "diagnostics" ? StageManager::ReportingLevel::Debug
+  return reporter->name == "detail" ? StageManager::ReportingLevel::Debug
                                          : StageManager::ReportingLevel::Basic;
 }
 

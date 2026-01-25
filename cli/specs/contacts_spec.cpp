@@ -129,7 +129,7 @@ public:
                  "Available reporters (--reporter <name>):\n"
                  "  summary     - Concise summary of computation results (negligible overhead).\n"
                  "  terse       - Fastest logging footprint.\n"
-                 "  diagnostics - Detailed diagnostics for in-depth analysis (small overhead)."});
+                 "  detail      - Detailed diagnostics for in-depth analysis (tiny overhead)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDirectory,

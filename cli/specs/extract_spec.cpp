@@ -90,7 +90,7 @@ public:
          "Available reporters (--reporter <name>):\n"
          "  summary     - Balanced totals and item counts (default; negligible overhead).\n"
          "  terse       - Single-line throughput summary (fastest logging footprint).\n"
-         "  diagnostics - Summary plus concurrency and stage breakdown details.\n\n"
+         "  detail      - Summary plus concurrency and stage breakdown details.\n\n"
          "Fields (repeat --fields or comma-separate):\n"
          "  sequence   Extract amino acid sequences.\n"
          "  plddt      Extract per-residue pLDDT confidence scores.\n"
