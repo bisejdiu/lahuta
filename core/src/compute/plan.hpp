@@ -1,5 +1,5 @@
-#ifndef LAHUTA_COMPUTE_PIPELINE_HPP
-#define LAHUTA_COMPUTE_PIPELINE_HPP
+#ifndef LAHUTA_COMPUTE_PLAN_HPP
+#define LAHUTA_COMPUTE_PLAN_HPP
 
 #include "node.hpp"
 #include "registry.hpp"
@@ -7,25 +7,25 @@
 // clang-format off
 namespace lahuta::topology::compute {
 
-/// Represents a sequence of computations that respects dependency ordering.
-/// Validates the execution order at construction time to ensure all dependencies
-/// are satisfied before their dependent computations.
+/// Represents a validated execution plan: a sequence of computations that
+/// respects dependency ordering. Validates the execution order at construction
+/// time to ensure all dependencies are satisfied before their dependents.
 template <typename D, Mut M>
-class Pipeline {
+class ExecutionPlan {
   ExecOrder plan_; // immutable
 public:
-  explicit Pipeline(const Registry<D, M> &registry, std::initializer_list<ComputationLabel> ordered) {
-    // validate dependenxies in O(N) time
+  explicit ExecutionPlan(const Registry<D, M> &registry, std::initializer_list<ComputationLabel> ordered) {
+    // validate dependencies in O(N) time
     Mask satisfied_deps = 0;
     for (auto label : ordered) {
       int node_idx = registry.find(label);
-      if (node_idx < 0) throw std::runtime_error("unknown label in pipeline");
+      if (node_idx < 0) throw std::runtime_error("unknown label in execution plan");
 
       // every dependency of this node must already be in 'satisfied_deps'
       Mask node_deps = registry[node_idx].deps;
       for (int dep_idx = 0; dep_idx < registry.size(); ++dep_idx) {
         if (node_deps & (Mask{1} << dep_idx) && !(satisfied_deps & (Mask{1} << dep_idx))) {
-          throw std::runtime_error("pipeline order violates dependency for " + std::string(registry[node_idx].tag.to_string_view()));
+          throw std::runtime_error("execution plan order violates dependency for " + std::string(registry[node_idx].tag.to_string_view()));
         }
       }
 
@@ -38,4 +38,4 @@ public:
 
 } // namespace lahuta::topology::compute
 
-#endif // LAHUTA_COMPUTE_PIPELINE_HPP
+#endif // LAHUTA_COMPUTE_PLAN_HPP

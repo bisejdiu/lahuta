@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "node.hpp"
-#include "pipeline.hpp"
+#include "plan.hpp"
 #include "registry.hpp"
 #include "runners.hpp"
 
@@ -265,8 +265,8 @@ public:
   template <const ComputationLabel &...Order>
   void run_pipeline() {
     registry.seal();
-    Pipeline<DataT, M> pipe(registry, {Order...}); // create pipeline
-    execute_pipeline(registry, ctx, pipe.plan());  // execute with the micro-runner
+    ExecutionPlan<DataT, M> exec_plan(registry, {Order...});
+    execute_pipeline(registry, ctx, exec_plan.plan());
   }
 
   int find_label(const ComputationLabel& label) const noexcept {
