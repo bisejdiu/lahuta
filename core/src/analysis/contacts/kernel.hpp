@@ -34,8 +34,8 @@ auto compute_with_provider(const P::ContactsParams &p, const C::TopologySnapshot
 }
 } // namespace detail
 
-// Computes contacts using MolStar, Arpeggio, or GetContacts providers and serializes results to JSON or text
-// format.
+// Computes contacts using MolStar, Arpeggio, or GetContacts providers and
+// serializes results to JSON or text format.
 struct ContactsKernel {
   static C::ComputationResult execute(C::DataContext<P::PipelineContext, C::Mut::ReadWrite> &context,
                                       const P::ContactsParams &p) {

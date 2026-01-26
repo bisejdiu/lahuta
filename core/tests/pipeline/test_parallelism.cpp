@@ -114,15 +114,14 @@ struct TestParams : ParameterBase<TestParams> {
 };
 
 // Simple counting computation. Increments a shared counter when executed.
-class CountingComputation : public Computation<PipelineContext, Mut::ReadWrite> {
+class CountingComputation : public Computation<PipelineContext> {
 public:
   CountingComputation(std::string label, std::shared_ptr<std::atomic<int>> counter,
                       std::vector<ComputationLabel> deps = {})
       : label_storage_(std::move(label)), label_(label_storage_), counter_(std::move(counter)),
         deps_(std::move(deps)) {}
 
-  ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite> &,
-                            const ParameterInterface &p) override {
+  ComputationResult execute(DataContext<PipelineContext> &, const ParameterInterface &p) override {
     if (p.type_id() != TestParams::TYPE_ID) return ComputationResult(ComputationError("bad params"));
     ++(*counter_);
     return ComputationResult(true);

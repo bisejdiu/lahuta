@@ -5,6 +5,7 @@
 #include <string>
 
 #include "analysis/topology/computation.hpp"
+#include "compute/context.hpp"
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
 #include "logging/logging.hpp"

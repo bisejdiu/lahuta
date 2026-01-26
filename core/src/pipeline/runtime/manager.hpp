@@ -239,10 +239,9 @@ public:
   // Rationale:
   //   Using a factory decouples StageManager from specific computation types
   //   while letting compute introspect dependencies at compile-time.
-  void add_computation(
-      const std::string &name, std::vector<std::string> deps,
-      std::function<std::unique_ptr<C::Computation<P::PipelineContext, C::Mut::ReadWrite>>()> factory,
-      bool thread_safe = true) {
+  void add_computation(const std::string &name, std::vector<std::string> deps,
+                       std::function<std::unique_ptr<C::Computation<P::PipelineContext>>()> factory,
+                       bool thread_safe = true) {
     if (!factory) throw std::invalid_argument("StageManager.add_computation: factory is null");
     bool fresh        = nodes_.find(name) == nodes_.end();
     std::string label = name;
@@ -659,7 +658,7 @@ private:
     std::vector<std::string> deps;
     std::shared_ptr<ITask> task;
     bool thread_safe = true;
-    std::function<std::unique_ptr<C::Computation<P::PipelineContext, C::Mut::ReadWrite>>()> make_compute;
+    std::function<std::unique_ptr<C::Computation<P::PipelineContext>>()> make_compute;
     P::DataFieldSet requirements = P::DataFieldSet::none();
   };
 
@@ -668,8 +667,7 @@ private:
   Realizer realizer_;
   std::unordered_map<std::string, Node> nodes_;
   std::vector<std::string> targets_;
-  std::vector<std::function<std::unique_ptr<C::Computation<P::PipelineContext, C::Mut::ReadWrite>>()>>
-      compute_factories_;
+  std::vector<std::function<std::unique_ptr<C::Computation<P::PipelineContext>>()>> compute_factories_;
   ChannelMultiplexer mux_;
 
   // Global run epoch: increments every run() call globally to scope TLS reuse

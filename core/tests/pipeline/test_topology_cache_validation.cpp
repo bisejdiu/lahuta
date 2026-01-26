@@ -180,8 +180,7 @@ public:
   static constexpr P::ComputationLabel label{"oracle_check"};
   using dependencies = C::Dependencies<C::Dependency<analysis::BuildTopologyComputation, void>>;
 
-  P::ComputationResult execute_typed(P::DataContext<P::PipelineContext, P::Mut::ReadWrite> &ctx,
-                                     const OracleCheckParams &) {
+  P::ComputationResult execute_typed(P::DataContext<P::PipelineContext> &ctx, const OracleCheckParams &) {
     auto &data = ctx.data();
     try {
       // system and topology

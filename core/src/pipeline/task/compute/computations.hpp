@@ -17,13 +17,13 @@ namespace P = lahuta::pipeline;
 
 // Dynamic RW base used for dynamic tasks: runtime label and runtime deps
 template <typename P>
-class DynamicRWComputation : public C::Computation<PipelineContext, C::Mut::ReadWrite> {
+class DynamicRWComputation : public C::Computation<PipelineContext> {
 public:
   DynamicRWComputation(std::string label, std::vector<std::string> dep_names, P params)
       : label_storage_(std::move(label)), label_(label_storage_), dep_names_(std::move(dep_names)),
         params_(std::move(params)) {}
 
-  C::ComputationResult execute(C::DataContext<PipelineContext, C::Mut::ReadWrite> &context,
+  C::ComputationResult execute(C::DataContext<PipelineContext> &context,
                                const C::ParameterInterface &raw) override {
     if (raw.type_id() != P::TYPE_ID) {
       return C::ComputationResult(C::ComputationError("Invalid parameter type for runtime computation: " +
@@ -46,8 +46,7 @@ public:
   }
 
 protected:
-  virtual C::ComputationResult execute_typed(C::DataContext<PipelineContext, C::Mut::ReadWrite> &,
-                                             const P &) = 0;
+  virtual C::ComputationResult execute_typed(C::DataContext<PipelineContext> &, const P &) = 0;
 
 private:
   std::string label_storage_;
@@ -71,7 +70,7 @@ public:
   }
 
 private:
-  C::ComputationResult execute_typed(C::DataContext<PipelineContext, C::Mut::ReadWrite> &context,
+  C::ComputationResult execute_typed(C::DataContext<PipelineContext> &context,
                                      const DynamicTaskParams &) override {
     auto &data = context.data();
     if (!task_) return C::ComputationResult(C::ComputationError("DynamicTaskComputation: null task"));

@@ -37,8 +37,7 @@ constexpr bool RunningUnderASan = false;
 #endif
 
 // Run a computation and assert success
-static void run_ok(C::ComputeEngine<P::PipelineContext, C::Mut::ReadWrite> &eng,
-                   const C::ComputationLabel &lbl) {
+static void run_ok(C::ComputeEngine<P::PipelineContext> &eng, const C::ComputationLabel &lbl) {
   ASSERT_TRUE(eng.run_from<void>(lbl));
   auto res = eng.get_computation_result(lbl);
   ASSERT_TRUE(res.is_success()) << (res.has_error() ? res.error().get_message() : "unknown error");
@@ -65,7 +64,7 @@ TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
   pcx.ctx = &tctx;
 
   // Build engine and register computations
-  C::ComputeEngine<P::PipelineContext, C::Mut::ReadWrite> eng(pcx);
+  C::ComputeEngine<P::PipelineContext> eng(pcx);
   // system
   P::SystemReadParams sp{};
   sp.is_model = false;
@@ -108,7 +107,7 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   P::TaskContext tctx;
   pcx.ctx = &tctx;
 
-  C::ComputeEngine<P::PipelineContext, C::Mut::ReadWrite> eng(pcx);
+  C::ComputeEngine<P::PipelineContext> eng(pcx);
   P::SystemReadParams sp{};
   sp.is_model = false;
   eng.add(std::make_unique<analysis::SystemReadComputation>(sp));

@@ -20,11 +20,10 @@ struct DummyParams : public ParameterBase<DummyParams> {
 };
 
 // Increments a counter
-class DummyComputation : public Computation<DummyData, Mut::ReadWrite> {
+class DummyComputation : public Computation<DummyData> {
 public:
   DummyComputation(std::string label) : label_store_(std::move(label)), label_(label_store_) {}
-  ComputationResult execute(DataContext<DummyData, Mut::ReadWrite> &ctx,
-                            const ParameterInterface &) override {
+  ComputationResult execute(DataContext<DummyData> &ctx, const ParameterInterface &) override {
     ctx.data().count++;
     return ComputationResult(true);
   }
@@ -45,11 +44,10 @@ struct AParams : public ParameterBase<AParams> {
   int x = 1;
 };
 
-class AComp : public Computation<DummyData, Mut::ReadWrite> {
+class AComp : public Computation<DummyData> {
 public:
   AComp(std::string label, AParams p) : label_store_(std::move(label)), label_(label_store_), p_(p) {}
-  ComputationResult execute(DataContext<DummyData, Mut::ReadWrite> &ctx,
-                            const ParameterInterface &raw) override {
+  ComputationResult execute(DataContext<DummyData> &ctx, const ParameterInterface &raw) override {
     auto &typed      = static_cast<const AParams &>(raw);
     ctx.data().a_val = typed.x;
     return ComputationResult(true);
@@ -66,12 +64,11 @@ private:
   AParams p_;
 };
 
-class BComp : public Computation<DummyData, Mut::ReadWrite> {
+class BComp : public Computation<DummyData> {
 public:
   BComp(std::string label, std::vector<ComputationLabel> deps)
       : label_store_(std::move(label)), label_(label_store_), deps_(std::move(deps)) {}
-  ComputationResult execute(DataContext<DummyData, Mut::ReadWrite> &ctx,
-                            const ParameterInterface &) override {
+  ComputationResult execute(DataContext<DummyData> &ctx, const ParameterInterface &) override {
     ctx.data().b_runs++;
     ctx.data().observed = ctx.data().a_val;
     return ComputationResult(true);
@@ -92,7 +89,7 @@ private:
 
 TEST(ComputeEngineExt, RegistryCapacityAtLeast64) {
   DummyData data{};
-  ComputeEngine<DummyData, Mut::ReadWrite> eng(data);
+  ComputeEngine<DummyData> eng(data);
 
   const int N = 32;
   for (int i = 0; i < N; ++i) {
@@ -105,7 +102,7 @@ TEST(ComputeEngineExt, RegistryCapacityAtLeast64) {
 
 TEST(ComputeEngineExt, ParameterInvalidationDownstreamRecomputes) {
   DummyData data{};
-  ComputeEngine<DummyData, Mut::ReadWrite> eng(data);
+  ComputeEngine<DummyData> eng(data);
 
   const ComputationLabel A{"A"};
   const ComputationLabel B{"B"};
@@ -132,7 +129,7 @@ TEST(ComputeEngineExt, ParameterInvalidationDownstreamRecomputes) {
 
 TEST(ComputeEngineExt, AutoHealEnablesPrereqs) {
   DummyData data{};
-  ComputeEngine<DummyData, Mut::ReadWrite> eng(data);
+  ComputeEngine<DummyData> eng(data);
 
   const ComputationLabel A{"A"};
   const ComputationLabel B{"B"};

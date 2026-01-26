@@ -47,7 +47,7 @@ class ModelTopologyEngine {
 public:
   explicit ModelTopologyEngine(const ModelParserResult& input) {
     data_   = std::make_unique<ModelData>(input);
-    engine_ = std::make_unique<C::ComputeEngine<ModelData, C::Mut::ReadWrite>>(*data_);
+    engine_ = std::make_unique<C::ComputeEngine<ModelData>>(*data_);
 
     register_computations();
 
@@ -105,8 +105,8 @@ public:
     return &(engine_->template get_parameters<P>(label));
   }
 
-  C::ComputeEngine<ModelData, C::Mut::ReadWrite> *get_engine() {
-    return static_cast<C::ComputeEngine<ModelData, C::Mut::ReadWrite> *>(engine_.get());
+  C::ComputeEngine<ModelData> *get_engine() {
+    return static_cast<C::ComputeEngine<ModelData> *>(engine_.get());
   }
 
 private:
@@ -123,7 +123,7 @@ private:
 
 private:
   std::unique_ptr<ModelData> data_;
-  std::unique_ptr<C::ComputeEngine<ModelData, C::Mut::ReadWrite>> engine_;
+  std::unique_ptr<C::ComputeEngine<ModelData>> engine_;
 };
 
 } // namespace lahuta::models::topology

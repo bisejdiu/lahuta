@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "compute/compute_base.hpp"
+#include "compute/context.hpp"
 #include "pipeline/task/compute/context.hpp"
 
 namespace lahuta::pipeline {

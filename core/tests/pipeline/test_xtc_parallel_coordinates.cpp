@@ -119,8 +119,7 @@ public:
   static constexpr P::ComputationLabel label{"coords_capture"};
   using dependencies = C::Dependencies<C::Dependency<analysis::SystemReadComputation, void>>;
 
-  P::ComputationResult execute_typed(P::DataContext<P::PipelineContext, P::Mut::ReadWrite> &ctx,
-                                     const CoordsCaptureParams &) {
+  P::ComputationResult execute_typed(P::DataContext<P::PipelineContext> &ctx, const CoordsCaptureParams &) {
     auto &data = ctx.data();
 
     if (!data.frame) return P::ComputationResult(true);

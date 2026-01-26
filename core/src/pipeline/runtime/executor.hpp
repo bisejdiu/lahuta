@@ -43,9 +43,9 @@ struct CompiledStage {
   // Lifetime: valid for the duration of a single run(). The manager creates
   // this snapshot after compile(). invalidate_compilation() clears/rebuilds
   // the underlying containers before any subsequent run().
-  const std::vector<std::string> *targets = nullptr;
-  const std::vector<std::function<std::unique_ptr<Computation<PipelineContext, Mut::ReadWrite>>()>>
-      *factories = nullptr;
+  const std::vector<std::string> *targets                                                      = nullptr;
+  const std::vector<std::function<std::unique_ptr<Computation<PipelineContext>>()>> *factories = nullptr;
+
   // Pre-resolved labels from targets. Each label stores a string_view that
   // points into the strings in *targets. Because *targets is stable for the
   // duration of a run(), these views remain valid while executing the run.

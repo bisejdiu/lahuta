@@ -21,7 +21,7 @@ struct CountingParams : public P::ParameterBase<CountingParams> {
   static constexpr P::ParameterInterface::TypeId TYPE_ID = 246;
 };
 
-class CountingComputation : public P::Computation<P::PipelineContext, P::Mut::ReadWrite> {
+class CountingComputation : public P::Computation<P::PipelineContext> {
 public:
   explicit CountingComputation(std::string label) : label_buffer_(std::move(label)), label_(label_buffer_) {}
 
@@ -32,7 +32,7 @@ public:
   const P::ComputationLabel &get_label() const override { return label_; }
   std::vector<P::ComputationLabel> get_dependencies() const override { return {}; }
 
-  P::ComputationResult execute(P::DataContext<P::PipelineContext, P::Mut::ReadWrite> &ctx,
+  P::ComputationResult execute(P::DataContext<P::PipelineContext> &ctx,
                                const P::ParameterInterface &) override {
     (void)ctx;
     exec_calls_.fetch_add(1, std::memory_order_relaxed);
@@ -75,8 +75,7 @@ TEST(StageExecutorPlanCacheTest, BuildsEachPlanExactlyOncePerRunToken) {
   using Executor = P::StageExecutor<P::NullStageRunMetrics>;
 
   std::vector<std::string> targets = {"count_stage"};
-  std::vector<std::function<std::unique_ptr<P::Computation<P::PipelineContext, P::Mut::ReadWrite>>()>>
-      factories;
+  std::vector<std::function<std::unique_ptr<P::Computation<P::PipelineContext>>()>> factories;
   factories.emplace_back([] { return std::make_unique<CountingComputation>("count_stage"); });
 
   P::CompiledStage stage{};

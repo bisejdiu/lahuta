@@ -19,7 +19,6 @@
 #include "sinks/ndjson.hpp"
 #include "topology.hpp"
 
-// clang-format off
 namespace {
 
 using namespace lahuta;
@@ -33,7 +32,7 @@ public:
     if (done_) return std::nullopt;
     done_ = true;
     P::IngestDescriptor desc;
-    desc.id = path_;
+    desc.id     = path_;
     desc.origin = P::NMRRef{path_};
     return desc;
   }
@@ -49,7 +48,8 @@ struct FrameSummaryParams : C::ParameterBase<FrameSummaryParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = 200;
 };
 
-class FrameSummaryComputation final : public C::ReadWriteComputation<P::PipelineContext, FrameSummaryParams, FrameSummaryComputation> {
+class FrameSummaryComputation final
+    : public C::ReadWriteComputation<P::PipelineContext, FrameSummaryParams, FrameSummaryComputation> {
 public:
   using Base = ReadWriteComputation<P::PipelineContext, FrameSummaryParams, FrameSummaryComputation>;
   FrameSummaryComputation() : Base(FrameSummaryParams{}) {}
@@ -57,8 +57,9 @@ public:
   static constexpr C::ComputationLabel label{"frame_summary"};
   using dependencies = C::Dependencies<C::Dependency<analysis::BuildTopologyComputation, void>>;
 
-  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext, C::Mut::ReadWrite> &context, const FrameSummaryParams &) {
-    auto &data = context.data();
+  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext> &context,
+                                     const FrameSummaryParams &) {
+    auto &data     = context.data();
     auto *task_ctx = data.ctx;
 
     auto system = task_ctx ? task_ctx->system() : nullptr;
@@ -94,22 +95,23 @@ public:
       same_topology = false;
     }
 
+    // clang-format off
     RDGeom::Point3D first_atom{};
     if (data.frame && data.session) {
       auto coords = data.frame->load_coordinates();
       std::shared_ptr<RDGeom::POINT3D_VECT> slab =
           coords.shared_positions ? std::const_pointer_cast<RDGeom::POINT3D_VECT>(coords.shared_positions)
                                   : std::make_shared<RDGeom::POINT3D_VECT>(std::move(coords.positions));
+      // clang-format on
       RDKit::Conformer conf;
       conf.set3D(true);
       conf.bindExternalPositions(std::move(slab));
       const RDKit::Conformer &cref = conf;
-      first_atom = cref.getAtomPos(0);
+      first_atom                   = cref.getAtomPos(0);
     } else {
       const auto &conf = system->get_conformer();
-      first_atom = conf.getAtomPos(0);
+      first_atom       = conf.getAtomPos(0);
     }
-
     auto frame_meta = task_ctx ? task_ctx->frame_metadata() : nullptr;
 
     static std::once_flag header_once;

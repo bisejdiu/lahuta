@@ -30,8 +30,7 @@ public:
 
   P::DataFieldSet data_requirements() const override { return P::DataFieldSet::of({P::DataField::Metadata}); }
 
-  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext, C::Mut::ReadWrite> &ctx,
-                                     const ProbeParams &) {
+  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext> &ctx, const ProbeParams &) {
     auto session = ctx.data().session;
     if (!session) {
       return C::ComputationResult(C::ComputationError("missing session"));
@@ -64,8 +63,7 @@ public:
     return P::DataFieldSet::of({P::DataField::Positions});
   }
 
-  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext, C::Mut::ReadWrite> &ctx,
-                                     const ProbeParams &) {
+  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext> &ctx, const ProbeParams &) {
     EXPECT_TRUE(ctx.data().frame);
     return C::ComputationResult(true);
   }
@@ -88,8 +86,7 @@ public:
     });
   }
 
-  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext, C::Mut::ReadWrite> &ctx,
-                                     const ProbeParams &) {
+  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext> &ctx, const ProbeParams &) {
     if (!ctx.data().ctx) {
       return C::ComputationResult(C::ComputationError("missing task context"));
     }
