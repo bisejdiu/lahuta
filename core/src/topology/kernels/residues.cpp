@@ -11,7 +11,7 @@ namespace lahuta::topology {
 
 template <typename DataT>
 ComputationResult
-ResidueKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const ResidueComputationParams &params) {
+ResidueKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ResidueComputationParams &params) {
   auto &data = context.data();
   try {
     data.residues->build();
@@ -22,6 +22,6 @@ ResidueKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const R
   }
 }
 
-template ComputationResult ResidueKernel::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const ResidueComputationParams &);
+template ComputationResult ResidueKernel::execute<TopologyContext>(DataContext<TopologyContext, Mut::ReadWrite> &, const ResidueComputationParams &);
 
 } // namespace lahuta::topology
