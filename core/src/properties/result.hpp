@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "properties/types.hpp"
 

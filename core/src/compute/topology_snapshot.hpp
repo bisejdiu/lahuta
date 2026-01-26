@@ -4,7 +4,7 @@
 #include <optional>
 #include <stdexcept>
 
-#include <GraphMol/Conformer.h>
+#include <rdkit/GraphMol/Conformer.h>
 
 #include "pipeline/task/context.hpp"
 #include "topology.hpp"

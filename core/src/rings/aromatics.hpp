@@ -1,7 +1,7 @@
 #ifndef LAHUTA_AROMATICS_HPP
 #define LAHUTA_AROMATICS_HPP
 
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "residues/residues.hpp"
 

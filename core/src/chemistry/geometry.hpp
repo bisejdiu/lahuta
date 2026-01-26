@@ -9,9 +9,9 @@
 #ifndef LAHUTA_CHEMISTRY_GEOMETRY_HPP
 #define LAHUTA_CHEMISTRY_GEOMETRY_HPP
 
-#include <GraphMol/Atom.h>
-#include <GraphMol/MonomerInfo.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 // clang-format off
 namespace lahuta::chemistry {

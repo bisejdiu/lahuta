@@ -4,7 +4,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "properties/descriptor.hpp"
 #include "properties/types.hpp"

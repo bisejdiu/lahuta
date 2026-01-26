@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "properties/registry.hpp"
 #include "properties/types.hpp"

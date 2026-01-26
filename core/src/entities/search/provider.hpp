@@ -3,7 +3,7 @@
 
 #include <type_traits>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "compute/topology_snapshot.hpp"
 #include "entities/records.hpp"

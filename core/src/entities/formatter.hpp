@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-#include <GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
 #include "utils/span.hpp"
 
 #include "contact.hpp"

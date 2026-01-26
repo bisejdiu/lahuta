@@ -1,8 +1,8 @@
 #ifndef LAHUTA_CHEMISTRY_NEIGHBORS_HPP
 #define LAHUTA_CHEMISTRY_NEIGHBORS_HPP
 
-#include <GraphMol/Atom.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 // clang-format off
 using HybridizationType = RDKit::Atom::HybridizationType;

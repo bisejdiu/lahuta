@@ -1,7 +1,7 @@
 #include <cctype>
 #include <unordered_set>
 
-#include <GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "chemistry/elements.hpp"
 #include "chemistry/types/hydrophobic.hpp"

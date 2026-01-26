@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "entities/search/config.hpp"
 #include "entities/search/hit_buffer.hpp"

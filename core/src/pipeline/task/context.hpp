@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include <GraphMol/Conformer.h>
+#include <rdkit/GraphMol/Conformer.h>
 
 #include "lahuta.hpp"
 #include "pipeline/data/frame.hpp"

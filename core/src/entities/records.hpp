@@ -9,7 +9,7 @@
 #include <cmath>
 #include <vector>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 #include <rdkit/GraphMol/Conformer.h>
 
 #include "entities/entity_id.hpp"

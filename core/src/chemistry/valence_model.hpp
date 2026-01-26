@@ -1,11 +1,11 @@
 #ifndef LAHUTA_VALENCE_HPP
 #define LAHUTA_VALENCE_HPP
 
-#include <GraphMol/Atom.h>
-#include <GraphMol/Bond.h>
-#include <GraphMol/MolOps.h>
-#include <GraphMol/PeriodicTable.h>
-#include <GraphMol/ROMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/Bond.h>
+#include <rdkit/GraphMol/MolOps.h>
+#include <rdkit/GraphMol/PeriodicTable.h>
+#include <rdkit/GraphMol/ROMol.h>
 #include <gemmi/elem.hpp>
 
 using Bond = RDKit::Bond;

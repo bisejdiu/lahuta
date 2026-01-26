@@ -10,7 +10,7 @@
 #include <utility>
 #include <vector>
 
-#include <GraphMol/Conformer.h>
+#include <rdkit/GraphMol/Conformer.h>
 #include <rdkit/Geometry/point.h>
 
 #include "compute/engine.hpp"

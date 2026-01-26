@@ -1,7 +1,7 @@
 #ifndef LAHUTA_MODELS_TOPOLOGY_PARAMETERS_HPP
 #define LAHUTA_MODELS_TOPOLOGY_PARAMETERS_HPP
 
-#include <GraphMol/GraphDefs.hpp>
+#include <rdkit/GraphMol/GraphDefs.hpp>
 
 #include "compute/parameters.hpp"
 

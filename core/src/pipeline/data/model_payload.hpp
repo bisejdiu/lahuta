@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "models/dssp.hpp"
 #include "models/metadata.hpp"

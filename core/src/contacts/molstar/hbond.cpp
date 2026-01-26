@@ -1,6 +1,6 @@
-#include <GraphMol/Atom.h>
-#include <GraphMol/MonomerInfo.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/RWMol.h>
 #include "chemistry/common.hpp"
 #include "chemistry/utils.hpp"
 #include "contacts/molstar/contacts.hpp"
