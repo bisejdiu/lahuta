@@ -11,7 +11,7 @@ namespace lahuta::compute {
 // - determines execution order
 // - computes, respects enabled/disabled identifiers, memoizes results
 // - returns the execution order, throws an error if a cycle is detected
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 ExecOrder schedule_and_run(Registry<D, M> &registry, DataContext<D, M> &ctx) {
   ExecOrder exec_order{};
   Mask satisfied_deps = 0, in_progress = 0;
@@ -39,8 +39,8 @@ ExecOrder schedule_and_run(Registry<D, M> &registry, DataContext<D, M> &ctx) {
       node.res    = node.impl->execute(ctx, *params);
       node.done   = true;
     }
-    exec_order.node_indices[exec_order.size++] = node_idx;
-    satisfied_deps |= (Mask{1} << node_idx);
+    exec_order.node_indices[exec_order.size++]  = node_idx;
+    satisfied_deps                             |= (Mask{1} << node_idx);
   };
 
   for (int node_idx = 0; node_idx < registry.size(); ++node_idx) {
@@ -55,7 +55,7 @@ ExecOrder schedule_and_run(Registry<D, M> &registry, DataContext<D, M> &ctx) {
 // - does not check for cycles or dependencies
 // - does not check for enabled/disabled identifiers.
 // - does memoize results
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 void execute_pipeline(Registry<D, M> &registry, DataContext<D, M> &ctx, const ExecOrder &exec_plan) {
   for (u8 plan_idx = 0; plan_idx < exec_plan.size; ++plan_idx) {
     ComputeNode<D, M> &node = registry[exec_plan.node_indices[plan_idx]];
@@ -68,7 +68,7 @@ void execute_pipeline(Registry<D, M> &registry, DataContext<D, M> &ctx, const Ex
 }
 
 // Plan the subgraph reachable from 'root_idx'. Respects 'enabled' flags.
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 ExecOrder plan_from(const Registry<D, M> &registry, int root_idx) {
   ExecOrder exec{};
   if (root_idx < 0) return exec;
@@ -83,14 +83,14 @@ ExecOrder plan_from(const Registry<D, M> &registry, int root_idx) {
       throw std::runtime_error("cycle @ " + std::string(registry[idx].tag.to_string_view()));
 
     in_progress |= (Mask{1} << idx);
-    Mask deps = registry[idx].deps;
+    Mask deps    = registry[idx].deps;
     for (int j = 0; j < registry.size(); ++j) {
       if (deps & (Mask{1} << j)) self(self, j);
     }
     in_progress &= ~(Mask{1} << idx);
 
-    exec.node_indices[exec.size++] = static_cast<u8>(idx);
-    visited |= (Mask{1} << idx);
+    exec.node_indices[exec.size++]  = static_cast<u8>(idx);
+    visited                        |= (Mask{1} << idx);
   };
 
   dfs(dfs, root_idx);
@@ -98,7 +98,7 @@ ExecOrder plan_from(const Registry<D, M> &registry, int root_idx) {
 }
 
 // Execute exactly the subgraph reachable from 'root_idx'. Assumes 'enabled' flags are set.
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 ExecOrder schedule_and_run_from(Registry<D, M> &registry, DataContext<D, M> &ctx, int root_idx) {
   ExecOrder plan = plan_from(registry, root_idx);
 

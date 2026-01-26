@@ -10,7 +10,7 @@
 
 namespace lahuta::compute {
 
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 class Registry {
 public:
   /// add a computation to the registry, returning its index

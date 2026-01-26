@@ -6,11 +6,11 @@
 namespace lahuta::compute {
 
 enum class Mut { ReadOnly, ReadWrite };
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 class ComputeEngine;
 
 /// provides access to the data being operated on and the engine that is executing the computation
-template <typename DataT, Mut M>
+template <typename DataT, Mut M = Mut::ReadWrite>
 class DataContext {
 public:
   explicit DataContext(DataT &data) : data_(data), engine_(nullptr) {}

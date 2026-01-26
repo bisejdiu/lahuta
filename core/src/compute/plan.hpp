@@ -9,7 +9,7 @@ namespace lahuta::compute {
 /// Represents a validated execution plan: a sequence of computations that
 /// respects dependency ordering. Validates the execution order at construction
 /// time to ensure all dependencies are satisfied before their dependents.
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 class ExecutionPlan {
   ExecOrder plan_; // immutable
 public:
@@ -29,8 +29,8 @@ public:
         }
       }
 
-      plan_.node_indices[plan_.size++] = static_cast<u8>(node_idx);
-      satisfied_deps |= (Mask{1} << node_idx);
+      plan_.node_indices[plan_.size++]  = static_cast<u8>(node_idx);
+      satisfied_deps                   |= (Mask{1} << node_idx);
     }
   }
   const ExecOrder &plan() const noexcept { return plan_; }

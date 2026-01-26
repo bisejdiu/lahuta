@@ -36,7 +36,7 @@ struct dependencies_of<T, std::enable_if_t<has_dependencies<T>::value>> {
 
 } // namespace detail
 
-template <typename DataT, Mut M>
+template <typename DataT, Mut M = Mut::ReadWrite>
 class Computation {
 public:
   virtual ~Computation() = default;

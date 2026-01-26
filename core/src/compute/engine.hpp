@@ -25,7 +25,7 @@ struct ResultEntry {
 };
 
 template <typename DataT, Mut M>
-class ComputeEngine {
+class ComputeEngine { // default for M is set in context.hpp forward declaration
 private:
   DataContext<DataT, M> ctx;
   Registry<DataT, M> registry;

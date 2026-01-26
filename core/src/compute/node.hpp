@@ -22,7 +22,7 @@ struct ExecOrder {
   u8 size = 0;
 };
 
-template <typename DataT, Mut M>
+template <typename DataT, Mut M = Mut::ReadWrite>
 struct ComputeNode {
   ComputationLabel tag{""};
   std::unique_ptr<Computation<DataT, M>> impl; // sole owner
