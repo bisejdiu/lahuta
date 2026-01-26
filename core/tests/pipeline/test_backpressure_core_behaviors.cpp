@@ -18,19 +18,19 @@
 
 #include <gtest/gtest.h>
 
-#include "pipeline/dynamic/backpressure.hpp"
-#include "pipeline/dynamic/channel_multiplexer.hpp"
-#include "pipeline/dynamic/sink_iface.hpp"
+#include "pipeline/io/backpressure.hpp"
+#include "pipeline/io/channel_multiplexer.hpp"
+#include "pipeline/io/sink_iface.hpp"
 #include "sinks/memory.hpp"
 #include "sinks/sharded_ndjson.hpp"
+#include "test_utils/common.hpp"
 
-using namespace lahuta::pipeline::dynamic;
+using namespace lahuta::pipeline;
 
-// clang-format off
 namespace {
 
 // Build a QueueNode from text and channel id
-static QueueNode make_node(uint32_t ch_id, const std::string& s) {
+static QueueNode make_node(uint32_t ch_id, const std::string &s) {
   auto buf = std::make_shared<std::string>(s);
   return QueueNode{ch_id, buf, buf->size()};
 }
@@ -48,7 +48,7 @@ public:
   void flush() override {}
   void close() override {}
 
-  uint64_t  writes() const { return writes_   .load(std::memory_order_relaxed); }
+  uint64_t writes() const { return writes_.load(std::memory_order_relaxed); }
   size_t last_size() const { return last_size_.load(std::memory_order_relaxed); }
 
 private:
@@ -62,7 +62,7 @@ class BlockingSink : public IDynamicSink {
 public:
   void write(EmissionView) override {
     std::unique_lock<std::mutex> lk(m_);
-    cv_.wait(lk, [&]{ return released_; });
+    cv_.wait(lk, [&] { return released_; });
   }
   void flush() override {}
   void close() override {}
@@ -96,7 +96,7 @@ public:
 TEST(DynamicBackpressure, BoundedQueueBlocksWhenFullUntilDrained) {
   BoundedQueue q(/*max_msgs=*/1, /*max_bytes=*/1024 * 1024);
   BackpressureConfig cfg;
-  cfg.on_full = OnFull::Block;
+  cfg.on_full          = OnFull::Block;
   cfg.offer_wait_slice = std::chrono::milliseconds(10);
 
   std::atomic<uint64_t> stall_ns{0};
@@ -107,7 +107,7 @@ TEST(DynamicBackpressure, BoundedQueueBlocksWhenFullUntilDrained) {
 
   // Start a thread that will attempt to offer and must block until consumer drains
   std::atomic<bool> offered{false};
-  auto producer = std::thread([&]{
+  auto producer = std::thread([&] {
     bool ok = q.offer(make_node(1, "B"), cfg, &stall_ns, &drops);
     offered.store(ok, std::memory_order_relaxed);
   });
@@ -135,7 +135,8 @@ TEST(DynamicBackpressure, DropPoliciesBehaveAsExpected) {
   // DropLatest
   {
     BoundedQueue q(1, 1024 * 1024);
-    BackpressureConfig cfg; cfg.on_full = OnFull::DropLatest;
+    BackpressureConfig cfg;
+    cfg.on_full = OnFull::DropLatest;
     std::atomic<uint64_t> stall{0}, drops{0};
     ASSERT_TRUE(q.offer(make_node(1, "first"), cfg, &stall, &drops));
     EXPECT_FALSE(q.offer(make_node(1, "second"), cfg, &stall, &drops));
@@ -145,7 +146,8 @@ TEST(DynamicBackpressure, DropPoliciesBehaveAsExpected) {
   // DropOldest ensures newest is kept
   {
     BoundedQueue q(1, 1024 * 1024);
-    BackpressureConfig cfg; cfg.on_full = OnFull::DropOldest;
+    BackpressureConfig cfg;
+    cfg.on_full = OnFull::DropOldest;
     std::atomic<uint64_t> stall{0}, drops{0};
     ASSERT_TRUE(q.offer(make_node(1, "old"), cfg, &stall, &drops));
     EXPECT_TRUE(q.offer(make_node(1, "new"), cfg, &stall, &drops));
@@ -165,10 +167,10 @@ TEST(DynamicBackpressure, DefaultConfigSetterAppliesToNewConnections) {
   } guard{original};
 
   BackpressureConfig custom = original;
-  custom.max_queue_bytes = 512;
-  custom.max_batch_bytes = 512;
-  custom.on_full = OnFull::DropLatest;
-  custom.required = false;
+  custom.max_queue_bytes    = 512;
+  custom.max_batch_bytes    = 512;
+  custom.on_full            = OnFull::DropLatest;
+  custom.required           = false;
   set_default_backpressure_config(custom);
 
   ChannelMultiplexer mux;
@@ -197,8 +199,12 @@ TEST(DynamicBackpressure, SlowSinkDoesNotBlockFastSink) {
   auto slow = std::make_shared<SleepySink>(1); // 1ms per write
   auto fast = std::make_shared<SleepySink>(0);
 
-  BackpressureConfig slow_cfg; slow_cfg.on_full = OnFull::DropLatest; slow_cfg.max_queue_msgs = 64;
-  BackpressureConfig fast_cfg; fast_cfg.on_full = OnFull::Block;      fast_cfg.max_queue_msgs = 64;
+  BackpressureConfig slow_cfg;
+  slow_cfg.on_full        = OnFull::DropLatest;
+  slow_cfg.max_queue_msgs = 64;
+  BackpressureConfig fast_cfg;
+  fast_cfg.on_full        = OnFull::Block;
+  fast_cfg.max_queue_msgs = 64;
 
   mux.connect("ch", slow, slow_cfg);
   mux.connect("ch", fast, fast_cfg);
@@ -219,7 +225,8 @@ TEST(DynamicBackpressure, SlowSinkDoesNotBlockFastSink) {
 // would exceed the byte cap (DropLatest policy), and increments drop counts.
 TEST(DynamicBackpressure, MaxQueueBytesEnforced) {
   BoundedQueue q(/*max_msgs=*/10, /*max_bytes=*/100);
-  BackpressureConfig cfg; cfg.on_full = OnFull::DropLatest;
+  BackpressureConfig cfg;
+  cfg.on_full = OnFull::DropLatest;
   std::atomic<uint64_t> stall{0}, drops{0};
 
   std::string big(80, 'X');
@@ -233,7 +240,7 @@ TEST(DynamicBackpressure, MaxQueueBytesEnforced) {
 TEST(DynamicBackpressure, PopBatchMakesProgressForOversizedEntry) {
   BoundedQueue q(/*max_msgs=*/8, /*max_bytes=*/1024);
   BackpressureConfig cfg;
-  cfg.max_batch_msgs = 4;
+  cfg.max_batch_msgs  = 4;
   cfg.max_batch_bytes = 64;
   std::atomic<uint64_t> stall{0}, drops{0};
 
@@ -249,7 +256,8 @@ TEST(DynamicBackpressure, PopBatchMakesProgressForOversizedEntry) {
 // Items larger than the queue byte budget must be rejected immediately to avoid blocking forever.
 TEST(DynamicBackpressure, OversizedItemRejectedWhenExceedingQueueBytes) {
   BoundedQueue q(/*max_msgs=*/4, /*max_bytes=*/32);
-  BackpressureConfig cfg; cfg.on_full = OnFull::Block;
+  BackpressureConfig cfg;
+  cfg.on_full = OnFull::Block;
   std::atomic<uint64_t> stall{0}, drops{0};
 
   std::string huge(64, 'H');
@@ -283,14 +291,16 @@ TEST(DynamicBackpressure, CleanShutdownDrains) {
 TEST(DynamicBackpressure, TimeoutOnShutdownFailsForRequiredSink) {
   ChannelMultiplexer mux;
   auto blk = std::make_shared<BlockingSink>();
-  BackpressureConfig cfg; cfg.required = true; cfg.max_queue_msgs = 1;
+  BackpressureConfig cfg;
+  cfg.required       = true;
+  cfg.max_queue_msgs = 1;
   mux.connect("a", blk, cfg);
 
   // Emit one record so writer blocks in write()
   mux.emit(Emission{"a", "x"});
 
   // Watchdog releases the sink after a delay to ensure the writer eventually exits
-  std::thread watchdog([blk]{
+  std::thread watchdog([blk] {
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     blk->release();
   });
@@ -310,35 +320,30 @@ TEST(DynamicBackpressure, TimeoutOnShutdownFailsForRequiredSink) {
 // shard files are produced and each file size respects the limit, allowing for
 // the final record boundary.
 TEST(DynamicBackpressure, ShardedSinkRotatesByBytes) {
-  namespace fs = std::filesystem;
-  fs::path tmp = fs::temp_directory_path() / fs::path("lahuta_test_shards");
-  std::error_code ec; fs::create_directories(tmp, ec);
-  // Clean up any previous files
-  for (auto &p : fs::directory_iterator(tmp, ec)) { (void)fs::remove(p.path(), ec); }
+  lahuta::test_utils::TempDir tmp("lahuta_test_shards_");
 
-  auto sink = std::make_shared<ShardedNdjsonSink>(tmp.string(), /*shard_size=*/1000000, /*max_shard_bytes=*/1024);
+  auto sink = std::make_shared<ShardedNdjsonSink>(tmp.path.string(),
+                                                  /*shard_size=*/1000000,
+                                                  /*max_shard_bytes=*/1024);
   ChannelMultiplexer mux;
   mux.connect("s", sink);
 
   // Emit records of 200 bytes to force rotations
   const std::string rec(200, 'A');
-  for (int i = 0; i < 20; ++i) mux.emit(Emission{"s", rec});
+  for (int i = 0; i < 20; ++i)
+    mux.emit(Emission{"s", rec});
   ASSERT_NO_THROW(mux.close_and_flush(std::chrono::seconds(5)));
 
   auto files = sink->files();
   ASSERT_GT(files.size(), 1u);
 
   // Each file size should be <= threshold + one record (allowance at boundary)
-  for (const auto& f : files) {
+  for (const auto &f : files) {
     std::ifstream in(f, std::ios::binary | std::ios::ate);
     ASSERT_TRUE(in.good());
     auto sz = static_cast<size_t>(in.tellg());
     EXPECT_LE(sz, static_cast<size_t>(1024 + rec.size() + 1));
   }
-
-  // Cleanup
-  for (const auto& f : files) { (void)fs::remove(f, ec); }
-  (void)fs::remove(tmp, ec);
 }
 
 // Error propagation from sink writer
@@ -347,7 +352,8 @@ TEST(DynamicBackpressure, ShardedSinkRotatesByBytes) {
 TEST(DynamicBackpressure, WriterExceptionPropagatesOnCloseForRequired) {
   ChannelMultiplexer mux;
   auto bad = std::make_shared<ThrowingSink>();
-  BackpressureConfig cfg; cfg.required = true;
+  BackpressureConfig cfg;
+  cfg.required = true;
   mux.connect("err", bad, cfg);
   mux.emit(Emission{"err", "x"});
   EXPECT_ANY_THROW(mux.close_and_flush(std::chrono::seconds(2)));

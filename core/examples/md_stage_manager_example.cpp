@@ -8,29 +8,27 @@
 #include <GraphMol/Conformer.h>
 
 #include "analysis/contacts/computation.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/ingestion.hpp"
+#include "pipeline/runtime/manager.hpp"
+#include "pipeline/data/ingestion.hpp"
 #include "sinks/ndjson.hpp"
 
 // clang-format off
 namespace {
 
 using namespace lahuta;
-using lahuta::sources::IDescriptor;
-using namespace lahuta::pipeline::dynamic;
-using namespace lahuta::pipeline::compute;
+namespace P = lahuta::pipeline;
 
-class SingleTrajectoryDescriptor final : public IDescriptor {
+class SingleTrajectoryDescriptor final : public P::IDescriptor {
 public:
   SingleTrajectoryDescriptor(std::string structure, std::vector<std::string> xtcs)
       : structure_(std::move(structure)), xtcs_(std::move(xtcs)) {}
 
-  std::optional<IngestDescriptor> next() override {
+  std::optional<P::IngestDescriptor> next() override {
     if (done_) return std::nullopt;
     done_ = true;
-    IngestDescriptor desc;
+    P::IngestDescriptor desc;
     desc.id = structure_;
-    desc.origin = MDRef{structure_, xtcs_};
+    desc.origin = P::MDRef{structure_, xtcs_};
     return desc;
   }
 
@@ -114,20 +112,20 @@ int main(int argc, char* argv[]) {
 
   Logger::get_instance().set_log_level(Logger::LogLevel::Warn);
   auto source = std::make_unique<SingleTrajectoryDescriptor>(structure_path, xtc_files);
-  StageManager manager(std::move(source));
+  P::StageManager manager(std::move(source));
   manager.set_auto_builtins(true);
 
-  ContactsParams p{};
-  p.provider = analysis::contacts::ContactProvider::MolStar;
+  P::ContactsParams p{};
+  p.provider = analysis::ContactProvider::MolStar;
   manager.add_computation(
       "contacts",
       {},
       [label = std::string("contacts"), p]() {
-        return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+        return std::make_unique<analysis::ContactsComputation>(label, p);
       },
       /*thread_safe=*/true);
 
-  auto contacts_data_sink = std::make_shared<lahuta::pipeline::dynamic::NdjsonFileSink>(output_file);
+  auto contacts_data_sink = std::make_shared<P::NdjsonFileSink>(output_file);
   manager.connect_sink("contacts", contacts_data_sink);
 
   manager.run(16);

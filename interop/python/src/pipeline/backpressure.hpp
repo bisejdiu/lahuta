@@ -5,49 +5,46 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "pipeline/dynamic/backpressure.hpp"
+#include "pipeline/io/backpressure.hpp"
 
 namespace py = pybind11;
 namespace lahuta::bindings {
-using namespace lahuta::pipeline::dynamic;
+namespace P = lahuta::pipeline;
 
-inline void bind_backpressure(py::module_& md) {
-  py::enum_<OnFull>(md, "OnFull", "Policy when a sink queue is full")
-      .value("Block", OnFull::Block)
-      .value("DropLatest", OnFull::DropLatest)
-      .value("DropOldest", OnFull::DropOldest)
+inline void bind_backpressure(py::module_ &md) {
+  py::enum_<P::OnFull>(md, "OnFull", "Policy when a sink queue is full")
+      .value("Block", P::OnFull::Block)
+      .value("DropLatest", P::OnFull::DropLatest)
+      .value("DropOldest", P::OnFull::DropOldest)
       .export_values();
 
-  py::class_<BackpressureConfig>(md, "BackpressureConfig", "Sink backpressure configuration")
+  py::class_<P::BackpressureConfig>(md, "BackpressureConfig", "Sink backpressure configuration")
       .def(py::init<>())
-      .def_readwrite("max_queue_msgs",   &BackpressureConfig::max_queue_msgs)
-      .def_readwrite("max_queue_bytes",  &BackpressureConfig::max_queue_bytes)
-      .def_readwrite("max_batch_msgs",   &BackpressureConfig::max_batch_msgs)
-      .def_readwrite("max_batch_bytes",  &BackpressureConfig::max_batch_bytes)
-      .def_readwrite("writer_threads",   &BackpressureConfig::writer_threads)
-      .def_readwrite("offer_wait_slice", &BackpressureConfig::offer_wait_slice)
-      .def_readwrite("on_full",          &BackpressureConfig::on_full)
-      .def_readwrite("required",         &BackpressureConfig::required)
-      .def("validate", [](const BackpressureConfig& cfg) { validate_config(cfg); });
+      .def_readwrite("max_queue_msgs", &P::BackpressureConfig::max_queue_msgs)
+      .def_readwrite("max_queue_bytes", &P::BackpressureConfig::max_queue_bytes)
+      .def_readwrite("max_batch_msgs", &P::BackpressureConfig::max_batch_msgs)
+      .def_readwrite("max_batch_bytes", &P::BackpressureConfig::max_batch_bytes)
+      .def_readwrite("writer_threads", &P::BackpressureConfig::writer_threads)
+      .def_readwrite("offer_wait_slice", &P::BackpressureConfig::offer_wait_slice)
+      .def_readwrite("on_full", &P::BackpressureConfig::on_full)
+      .def_readwrite("required", &P::BackpressureConfig::required)
+      .def("validate", [](const P::BackpressureConfig &cfg) { P::validate_config(cfg); });
 
   md.def(
       "get_default_backpressure_config",
-      []() { return get_default_backpressure_config(); },
-      "Return a copy of the default sink backpressure configuration."
-  );
+      []() { return P::get_default_backpressure_config(); },
+      "Return a copy of the default sink backpressure configuration.");
 
   md.def(
       "set_default_backpressure_config",
-      [](const BackpressureConfig& cfg) { set_default_backpressure_config(cfg); },
-      "Set the default sink backpressure configuration used for new sinks."
-  );
+      [](const P::BackpressureConfig &cfg) { P::set_default_backpressure_config(cfg); },
+      "Set the default sink backpressure configuration used for new sinks.");
 
   md.def(
       "set_default_max_queue_bytes",
-      [](std::size_t bytes) { set_default_max_queue_bytes(bytes); },
+      [](std::size_t bytes) { P::set_default_max_queue_bytes(bytes); },
       py::arg("bytes"),
-      "Update only the byte capacity of the default sink queue (clamps batch bytes accordingly)."
-  );
+      "Update only the byte capacity of the default sink queue (clamps batch bytes accordingly).");
 }
 
 } // namespace lahuta::bindings

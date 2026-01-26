@@ -2,13 +2,12 @@
 
 #include <gtest/gtest.h>
 
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/dynamic/sources.hpp"
+#include "pipeline/runtime/api.hpp"
 
-using namespace lahuta::pipeline::dynamic;
+using namespace lahuta::pipeline;
 
 TEST(DynamicPipelineReporting, ReportingLevelsToggleMetrics) {
-  auto src = sources_factory::from_vector(std::vector<std::string>{"item_a", "item_b"});
+  auto src = from_vector(std::vector<std::string>{"item_a", "item_b"});
   StageManager mgr(std::move(src));
   mgr.set_auto_builtins(false);
   mgr.compile();

@@ -6,38 +6,37 @@
 
 #include "compute/compute_base.hpp"
 #include "compute/parameters.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/dynamic/channel_multiplexer.hpp"
-#include "pipeline/dynamic/executor.hpp"
-#include "pipeline/dynamic/run_metrics.hpp"
-#include "pipeline/pipeline_item.hpp"
+#include "pipeline/data/pipeline_item.hpp"
+#include "pipeline/io/channel_multiplexer.hpp"
+#include "pipeline/metrics/run_metrics.hpp"
+#include "pipeline/runtime/executor.hpp"
+#include "pipeline/task/compute/context.hpp"
 
 using namespace lahuta;
-using namespace lahuta::pipeline::compute;
-using namespace lahuta::pipeline::dynamic;
+namespace P = lahuta::pipeline;
 
-// clang-format off
 namespace {
 
-struct CountingParams : public ParameterBase<CountingParams> {
-  static constexpr ParameterInterface::TypeId TYPE_ID = 246;
+struct CountingParams : public P::ParameterBase<CountingParams> {
+  static constexpr P::ParameterInterface::TypeId TYPE_ID = 246;
 };
 
-class CountingComputation : public Computation<PipelineContext, Mut::ReadWrite> {
+class CountingComputation : public P::Computation<P::PipelineContext, P::Mut::ReadWrite> {
 public:
   explicit CountingComputation(std::string label) : label_buffer_(std::move(label)), label_(label_buffer_) {}
 
-  std::unique_ptr<ParameterInterface> get_parameters() const override {
+  std::unique_ptr<P::ParameterInterface> get_parameters() const override {
     return std::make_unique<CountingParams>();
   }
 
-  const ComputationLabel &get_label() const override { return label_; }
-  std::vector<ComputationLabel> get_dependencies() const override { return {}; }
+  const P::ComputationLabel &get_label() const override { return label_; }
+  std::vector<P::ComputationLabel> get_dependencies() const override { return {}; }
 
-  ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite> &ctx, const ParameterInterface &) override {
+  P::ComputationResult execute(P::DataContext<P::PipelineContext, P::Mut::ReadWrite> &ctx,
+                               const P::ParameterInterface &) override {
     (void)ctx;
     exec_calls_.fetch_add(1, std::memory_order_relaxed);
-    return ComputationResult(true);
+    return P::ComputationResult(true);
   }
 
   static void reset() { exec_calls_.store(0, std::memory_order_relaxed); }
@@ -45,15 +44,15 @@ public:
 
 private:
   std::string label_buffer_;
-  ComputationLabel label_;
+  P::ComputationLabel label_;
   inline static std::atomic<int> exec_calls_{0};
 };
 
 struct VectorSource {
-  std::vector<PipelineItem> items;
+  std::vector<P::PipelineItem> items;
   std::size_t index = 0;
 
-  std::optional<PipelineItem> next() {
+  std::optional<P::PipelineItem> next() {
     if (index >= items.size()) return std::nullopt;
     return items[index++];
   }
@@ -73,21 +72,22 @@ VectorSource make_source(std::size_t count) {
 } // namespace
 
 TEST(StageExecutorPlanCacheTest, BuildsEachPlanExactlyOncePerRunToken) {
-  using Executor = StageExecutor<NullStageRunMetrics>;
+  using Executor = P::StageExecutor<P::NullStageRunMetrics>;
 
   std::vector<std::string> targets = {"count_stage"};
-  std::vector<std::function<std::unique_ptr<Computation<PipelineContext, Mut::ReadWrite>>()>> factories;
+  std::vector<std::function<std::unique_ptr<P::Computation<P::PipelineContext, P::Mut::ReadWrite>>()>>
+      factories;
   factories.emplace_back([] { return std::make_unique<CountingComputation>("count_stage"); });
 
-  CompiledStage stage{};
-  stage.targets = &targets;
-  stage.factories = &factories;
-  stage.labels = {ComputationLabel{targets[0].c_str()}};
+  P::CompiledStage stage{};
+  stage.targets         = &targets;
+  stage.factories       = &factories;
+  stage.labels          = {P::ComputationLabel{targets[0].c_str()}};
   stage.all_thread_safe = true;
 
-  ChannelMultiplexer mux;
-  NullStageRunMetrics metrics;
-  const auto requirements = pipeline::DataFieldSet::none();
+  P::ChannelMultiplexer mux;
+  P::NullStageRunMetrics metrics;
+  const auto requirements = P::DataFieldSet::none();
 
   g_plan_builds.store(0, std::memory_order_relaxed);
   CountingComputation::reset();

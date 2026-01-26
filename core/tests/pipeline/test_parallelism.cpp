@@ -6,11 +6,10 @@
 
 #include <gtest/gtest.h>
 
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/dynamic/sources.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/runtime/api.hpp"
+#include "pipeline/task/api.hpp"
 
-using namespace lahuta::pipeline::dynamic;
+using namespace lahuta::pipeline;
 
 namespace {
 
@@ -18,9 +17,9 @@ namespace {
 struct Probe {
   std::mutex m;
   std::condition_variable cv;
-  int target = 1;         // number of arrivals to release barrier
-  int arrived = 0;        // number of threads that reached barrier
-  int current = 0;        // current in-flight in run()
+  int target         = 1; // number of arrivals to release barrier
+  int arrived        = 0; // number of threads that reached barrier
+  int current        = 0; // current in-flight in run()
   int max_concurrent = 0; // peak concurrency observed
 };
 
@@ -62,17 +61,17 @@ std::vector<std::string> make_items(int n) {
 
 TEST(DynamicPipelineParallelism, RunsInParallelAcrossItems) {
   const int threads = 4;
-  const int items = threads;
+  const int items   = threads;
 
   // Source with N items
-  auto src = sources_factory::from_vector(make_items(items));
+  auto src = from_vector(make_items(items));
   StageManager mgr(std::move(src));
   mgr.set_auto_builtins(false); // keep graph minimal
 
   // Task: thread-safe, uses barrier to ensure all threads arrive before proceeding
-  auto probe = std::make_shared<Probe>();
+  auto probe    = std::make_shared<Probe>();
   probe->target = threads;
-  auto task = std::make_shared<BarrierProbeTask>(probe);
+  auto task     = std::make_shared<BarrierProbeTask>(probe);
   mgr.add_task("probe", /*deps=*/{}, task, /*thread_safe=*/true);
 
   mgr.compile();
@@ -88,15 +87,15 @@ TEST(DynamicPipelineParallelism, RunsInParallelAcrossItems) {
 
 TEST(DynamicPipelineParallelism, CollapsesWhenTaskMarkedUnsafe) {
   const int threads = 4;
-  const int items = threads * 2;
+  const int items   = threads * 2;
 
-  auto src2 = sources_factory::from_vector(make_items(items));
+  auto src2 = from_vector(make_items(items));
   StageManager mgr(std::move(src2));
   mgr.set_auto_builtins(false);
 
-  auto probe = std::make_shared<Probe>();
+  auto probe    = std::make_shared<Probe>();
   probe->target = 1; // do not wait for others, expect serialized execution
-  auto task = std::make_shared<BarrierProbeTask>(probe);
+  auto task     = std::make_shared<BarrierProbeTask>(probe);
   mgr.add_task("probe", /*deps=*/{}, task, /*thread_safe=*/false);
 
   mgr.compile();
@@ -108,8 +107,7 @@ TEST(DynamicPipelineParallelism, CollapsesWhenTaskMarkedUnsafe) {
 }
 
 namespace {
-using namespace lahuta::topology::compute;
-using namespace lahuta::pipeline::compute;
+using namespace lahuta::compute;
 
 struct TestParams : ParameterBase<TestParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = 250;
@@ -118,13 +116,13 @@ struct TestParams : ParameterBase<TestParams> {
 // Simple counting computation. Increments a shared counter when executed.
 class CountingComputation : public Computation<PipelineContext, Mut::ReadWrite> {
 public:
-  CountingComputation(
-      std::string label, std::shared_ptr<std::atomic<int>> counter, std::vector<ComputationLabel> deps = {})
+  CountingComputation(std::string label, std::shared_ptr<std::atomic<int>> counter,
+                      std::vector<ComputationLabel> deps = {})
       : label_storage_(std::move(label)), label_(label_storage_), counter_(std::move(counter)),
         deps_(std::move(deps)) {}
 
-  ComputationResult
-  execute(DataContext<PipelineContext, Mut::ReadWrite> &, const ParameterInterface &p) override {
+  ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite> &,
+                            const ParameterInterface &p) override {
     if (p.type_id() != TestParams::TYPE_ID) return ComputationResult(ComputationError("bad params"));
     ++(*counter_);
     return ComputationResult(true);
@@ -145,9 +143,9 @@ private:
 
 TEST(DynamicPipelineParallelism, MemoizationAcrossTargetsRunsOncePerItem) {
   const int threads = 3;
-  const int items = 7;
+  const int items   = 7;
 
-  auto src3 = sources_factory::from_vector(make_items(items));
+  auto src3 = from_vector(make_items(items));
   StageManager mgr(std::move(src3));
   mgr.set_auto_builtins(false);
 

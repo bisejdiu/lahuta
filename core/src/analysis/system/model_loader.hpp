@@ -12,10 +12,9 @@
 #include "models/parser.hpp"
 #include "models/topology.hpp"
 
-// clang-format off
-namespace lahuta::analysis::system {
+namespace lahuta::analysis {
 
-inline ModelParserResult load_model_parser_result(const std::string& path) {
+inline ModelParserResult load_model_parser_result(const std::string &path) {
   gemmi::MaybeGzipped input(path);
   if (input.is_compressed()) {
     gemmi::CharArray buffer = input.uncompress_into_buffer();
@@ -27,20 +26,21 @@ inline ModelParserResult load_model_parser_result(const std::string& path) {
     throw std::runtime_error("Failed to open model file: " + path);
   }
 
-  const char* data = reinterpret_cast<const char*>(mm.getData());
-  auto size = static_cast<std::size_t>(mm.size());
+  const char *data = reinterpret_cast<const char *>(mm.getData());
+  auto size        = static_cast<std::size_t>(mm.size());
   return parse_model(data, size);
 }
 
-inline ModelRecord build_model_record(const std::string& path) {
+inline ModelRecord build_model_record(const std::string &path) {
   ModelRecord rec;
   rec.file_path = path;
-  rec.data = load_model_parser_result(path);
-  rec.success = true;
+  rec.data      = load_model_parser_result(path);
+  rec.success   = true;
   return rec;
 }
 
-inline std::shared_ptr<RDKit::RWMol> build_model_molecule(const ModelParserResult& parsed, ModelTopologyMethod method = ModelTopologyMethod::CSR) {
+inline std::shared_ptr<RDKit::RWMol>
+build_model_molecule(const ModelParserResult &parsed, ModelTopologyMethod method = ModelTopologyMethod::CSR) {
   std::shared_ptr<RDKit::RWMol> mol;
   if (!build_model_topology(mol, parsed, method)) {
     throw std::runtime_error("Failed to build model topology");
@@ -48,6 +48,6 @@ inline std::shared_ptr<RDKit::RWMol> build_model_molecule(const ModelParserResul
   return mol;
 }
 
-} // namespace lahuta::analysis::system
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_SYSTEM_MODEL_LOADER_HPP

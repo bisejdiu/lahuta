@@ -16,16 +16,14 @@
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/ingestion.hpp"
-#include "sources/descriptor.hpp"
+#include "pipeline/data/ingestion.hpp"
+#include "pipeline/ingest/descriptor.hpp"
+#include "pipeline/runtime/manager.hpp"
+#include "pipeline/task/compute/context.hpp"
 
 using namespace lahuta;
-using namespace lahuta::topology::compute;
-using namespace lahuta::pipeline::compute;
-
-// clang-format off
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 namespace {
 
 namespace fs = std::filesystem;
@@ -50,7 +48,7 @@ static fs::path locate_simulation_file(const std::string &filename) {
 
 static fs::path pdb_path, xtc_path;
 
-struct SingleTrajectoryDescriptor final : sources::IDescriptor {
+struct SingleTrajectoryDescriptor final : P::IDescriptor {
   std::string structure;
   std::vector<std::string> xtcs;
   bool done{false};
@@ -58,12 +56,12 @@ struct SingleTrajectoryDescriptor final : sources::IDescriptor {
   SingleTrajectoryDescriptor(std::string s, std::vector<std::string> x)
       : structure(std::move(s)), xtcs(std::move(x)) {}
 
-  std::optional<IngestDescriptor> next() override {
+  std::optional<P::IngestDescriptor> next() override {
     if (done) return std::nullopt;
     done = true;
-    IngestDescriptor d;
-    d.id = structure;
-    d.origin = MDRef{structure, xtcs};
+    P::IngestDescriptor d;
+    d.id     = structure;
+    d.origin = P::MDRef{structure, xtcs};
     return d;
   }
 
@@ -90,7 +88,8 @@ struct CoordinateCollector {
   }
 };
 
-static std::vector<unsigned> select_random_unique_indices(std::size_t num_atoms, std::size_t k, uint64_t seed) {
+static std::vector<unsigned> select_random_unique_indices(std::size_t num_atoms, std::size_t k,
+                                                          uint64_t seed) {
   std::vector<unsigned> idxs;
   if (num_atoms == 0 || k == 0) return idxs;
   const std::size_t pick = std::min<std::size_t>(k, num_atoms);
@@ -106,23 +105,25 @@ static std::vector<unsigned> select_random_unique_indices(std::size_t num_atoms,
   return idxs;
 }
 
-struct CoordsCaptureParams : ParameterBase<CoordsCaptureParams> {
-  static constexpr ParameterInterface::TypeId TYPE_ID = 204; // local test id
+struct CoordsCaptureParams : P::ParameterBase<CoordsCaptureParams> {
+  static constexpr P::ParameterInterface::TypeId TYPE_ID = 204; // local test id
 };
 
-class CoordsCaptureComputation final : public ReadWriteComputation<PipelineContext, CoordsCaptureParams, CoordsCaptureComputation> {
+class CoordsCaptureComputation final
+    : public P::ReadWriteComputation<P::PipelineContext, CoordsCaptureParams, CoordsCaptureComputation> {
 public:
-  using Base = ReadWriteComputation<PipelineContext, CoordsCaptureParams, CoordsCaptureComputation>;
+  using Base = P::ReadWriteComputation<P::PipelineContext, CoordsCaptureParams, CoordsCaptureComputation>;
   explicit CoordsCaptureComputation(std::shared_ptr<CoordinateCollector> collector)
       : Base(CoordsCaptureParams{}), collector_(std::move(collector)) {}
 
-  static constexpr ComputationLabel label{"coords_capture"};
-  using dependencies = Dependencies<Dependency<analysis::system::SystemReadComputation, void>>;
+  static constexpr P::ComputationLabel label{"coords_capture"};
+  using dependencies = C::Dependencies<C::Dependency<analysis::SystemReadComputation, void>>;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &ctx, const CoordsCaptureParams &) {
+  P::ComputationResult execute_typed(P::DataContext<P::PipelineContext, P::Mut::ReadWrite> &ctx,
+                                     const CoordsCaptureParams &) {
     auto &data = ctx.data();
 
-    if (!data.frame) return ComputationResult(true);
+    if (!data.frame) return P::ComputationResult(true);
 
     // Build a conformer view bound to this frame's coordinates
     auto view = data.frame->load_coordinates();
@@ -134,7 +135,7 @@ public:
     const RDKit::Conformer &cref = conf; // const-view to avoid mutating accessors
 
     std::call_once(collector_->indices_once, [&] {
-      const std::size_t natoms = static_cast<std::size_t>(cref.getNumAtoms());
+      const std::size_t natoms     = static_cast<std::size_t>(cref.getNumAtoms());
       collector_->selected_indices = select_random_unique_indices(natoms, 100, /*seed=*/8351);
     });
 
@@ -148,7 +149,7 @@ public:
       collector_->coords_by_conformer_id.emplace(data.conformer_id, std::move(coords));
     }
     ++collector_->frames;
-    return ComputationResult(true);
+    return P::ComputationResult(true);
   }
 
 private:
@@ -170,8 +171,9 @@ TEST(ParallelXtcCoordinates, ConsistencyAcrossThreads) {
   auto baseline = std::make_shared<CoordinateCollector>();
   baseline->reset();
   {
-    auto src = std::make_unique<SingleTrajectoryDescriptor>(std::string(pdb_path), std::vector<std::string>{std::string(xtc_path)});
-    pipeline::dynamic::StageManager mgr(std::move(src));
+    auto src = std::make_unique<SingleTrajectoryDescriptor>(std::string(pdb_path),
+                                                            std::vector<std::string>{std::string(xtc_path)});
+    P::StageManager mgr(std::move(src));
     mgr.set_auto_builtins(true);
     mgr.add_computation("coords_capture", {"system"}, [baseline] {
       return std::make_unique<CoordsCaptureComputation>(baseline);
@@ -191,8 +193,9 @@ TEST(ParallelXtcCoordinates, ConsistencyAcrossThreads) {
     auto trial = std::make_shared<CoordinateCollector>();
     trial->reset();
 
-    auto src = std::make_unique<SingleTrajectoryDescriptor>(std::string(pdb_path), std::vector<std::string>{std::string(xtc_path)});
-    pipeline::dynamic::StageManager mgr(std::move(src));
+    auto src = std::make_unique<SingleTrajectoryDescriptor>(std::string(pdb_path),
+                                                            std::vector<std::string>{std::string(xtc_path)});
+    P::StageManager mgr(std::move(src));
     mgr.set_auto_builtins(true);
     mgr.add_computation("coords_capture", {"system"}, [trial] {
       return std::make_unique<CoordsCaptureComputation>(trial);
@@ -200,7 +203,8 @@ TEST(ParallelXtcCoordinates, ConsistencyAcrossThreads) {
     mgr.run(static_cast<std::size_t>(t));
 
     // Basic invariants
-    ASSERT_EQ(trial->frames.load(), baseline_frames) << "Thread count " << t << " produced different frame count";
+    ASSERT_EQ(trial->frames.load(), baseline_frames)
+        << "Thread count " << t << " produced different frame count";
     ASSERT_EQ(trial->selected_indices, baseline_indices) << "Selected indices differ across runs";
     ASSERT_EQ(trial->coords_by_conformer_id.size(), baseline_map.size()) << "Map size mismatch for t=" << t;
 
@@ -212,8 +216,8 @@ TEST(ParallelXtcCoordinates, ConsistencyAcrossThreads) {
       const auto &b = it->second;
       ASSERT_EQ(a.size(), b.size()) << "Vector size mismatch at frame id=" << kv.first << " for t=" << t;
       for (std::size_t i = 0; i < a.size(); ++i) {
-        EXPECT_LE(sq_distance(a[i], b[i]), tol) << "Coordinate mismatch at frame id=" << kv.first
-                                                << ", idx=" << i << " for t=" << t;
+        EXPECT_LE(sq_distance(a[i], b[i]), tol)
+            << "Coordinate mismatch at frame id=" << kv.first << ", idx=" << i << " for t=" << t;
       }
     }
   }

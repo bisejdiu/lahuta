@@ -5,26 +5,29 @@
 #include "analysis/topology/kernel.hpp"
 #include "compute/compute_impl.hpp"
 #include "compute/dependency.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/compute/parameters.hpp"
+#include "pipeline/task/compute/context.hpp"
+#include "pipeline/task/compute/parameters.hpp"
 
-// clang-format off
-namespace lahuta::analysis::topology {
-using namespace lahuta::pipeline::compute;
+namespace lahuta::analysis {
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 
-class BuildTopologyComputation : public ReadWriteComputation<PipelineContext, BuildTopologyParams, BuildTopologyComputation> {
+class BuildTopologyComputation
+    : public C::ReadWriteComputation<P::PipelineContext, P::BuildTopologyParams, BuildTopologyComputation> {
 public:
-  using Base = ReadWriteComputation<PipelineContext, BuildTopologyParams, BuildTopologyComputation>;
+  using Base = C::ReadWriteComputation<P::PipelineContext, P::BuildTopologyParams, BuildTopologyComputation>;
   using Base::Base;
 
-  constexpr static const ComputationLabel label{"topology"};
-  using dependencies = Dependencies<Dependency<lahuta::analysis::system::SystemReadComputation, void>>;
+  constexpr static const C::ComputationLabel label{"topology"};
+  using dependencies = C::Dependencies<C::Dependency<SystemReadComputation, void>>;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& ctx, const BuildTopologyParams& p) {
+  using RWContext = C::DataContext<P::PipelineContext, C::Mut::ReadWrite>;
+
+  C::ComputationResult execute_typed(RWContext &ctx, const P::BuildTopologyParams &p) {
     return BuildTopologyKernel::execute(ctx, p);
   }
 };
 
-} // namespace lahuta::analysis::topology
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_TOPOLOGY_COMPUTATION_HPP

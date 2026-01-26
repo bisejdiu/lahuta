@@ -5,14 +5,15 @@
 #include <utility>
 
 #include "analysis/extract/extract_tasks.hpp"
-#include "tasks/positions_task.hpp"
+#include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "pipeline/ingest/factory.hpp"
 #include "schemas/shared_options.hpp"
 #include "specs/command_spec.hpp"
-#include "logging/logging.hpp"
-#include "pipeline/dynamic/sources.hpp"
+#include "tasks/positions_task.hpp"
 
 namespace lahuta::cli {
+namespace P = lahuta::pipeline;
 namespace {
 
 namespace positions_opts {
@@ -181,26 +182,25 @@ public:
       using Mode = SourceConfig::Mode;
       switch (cfg.source.mode) {
         case Mode::Database: {
-          auto source = pipeline::dynamic::sources_factory::from_lmdb(
-              cfg.source.database_path,
-              std::string{},
-              cfg.runtime.batch_size,
-              {static_cast<std::size_t>(cfg.runtime.threads) + 1});
+          auto source = P::from_lmdb(cfg.source.database_path,
+                                     std::string{},
+                                     cfg.runtime.batch_size,
+                                     {static_cast<std::size_t>(cfg.runtime.threads) + 1});
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Directory: {
-          auto source = pipeline::dynamic::sources_factory::from_directory(cfg.source.directory_path,
-                                                                           cfg.source.extensions,
-                                                                           cfg.source.recursive,
-                                                                           cfg.runtime.batch_size);
+          auto source = P::from_directory(cfg.source.directory_path,
+                                          cfg.source.extensions,
+                                          cfg.source.recursive,
+                                          cfg.runtime.batch_size);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Vector: {
-          auto source = pipeline::dynamic::sources_factory::from_vector(cfg.source.file_vector);
+          auto source = P::from_vector(cfg.source.file_vector);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::FileList: {
-          auto source = pipeline::dynamic::sources_factory::from_filelist(cfg.source.file_list_path);
+          auto source = P::from_filelist(cfg.source.file_list_path);
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
@@ -211,7 +211,7 @@ public:
     if (needs_parse_task) {
       PipelineTask parse_task;
       parse_task.name        = "parse_model";
-      parse_task.task        = std::make_shared<analysis::extract::ModelParseTask>();
+      parse_task.task        = std::make_shared<analysis::ModelParseTask>();
       parse_task.thread_safe = true;
       plan.tasks.push_back(std::move(parse_task));
     }

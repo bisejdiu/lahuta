@@ -6,8 +6,7 @@
 #include "compute/label.hpp"
 #include "compute/result.hpp"
 
-// clang-format off
-namespace lahuta::topology::compute {
+namespace lahuta::compute {
 
 struct UnitComputation {
   static std::vector<ComputationLabel> labels() { return {}; }
@@ -16,23 +15,23 @@ struct UnitComputation {
 template <typename ComputationT, typename ResultT>
 struct Dependency {
   using computation_type = ComputationT;
-  using result_type = ResultT;
+  using result_type      = ResultT;
 
   static ComputationLabel label() { return ComputationT::label; }
 
   /// extract typed result
-  static ResultT result(const ComputationResult& r) {
+  static ResultT result(const ComputationResult &r) { //
     return r.get_value<ResultT>();
   }
 };
 
 template <typename... Deps>
 struct Dependencies {
-  static std::vector<ComputationLabel> labels() {
+  static std::vector<ComputationLabel> labels() { //
     return {Deps::label()...};
   }
 };
 
-} // namespace lahuta::topology::compute
+} // namespace lahuta::compute
 
 #endif // LAHUTA_COMPUTE_DEPENDENCY_HPP

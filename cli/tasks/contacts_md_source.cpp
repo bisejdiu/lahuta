@@ -6,10 +6,12 @@
 #include <utility>
 #include <vector>
 
+#include "pipeline/data/ingestion.hpp"
 #include "tasks/contacts_md_source.hpp"
-#include "pipeline/ingestion.hpp"
 
 namespace lahuta::cli::contacts {
+namespace P = lahuta::pipeline;
+
 namespace {
 
 bool has_md_extension(const std::string &path, const std::vector<std::string> &extensions) {
@@ -22,17 +24,17 @@ bool has_md_extension(const std::string &path, const std::vector<std::string> &e
   return false;
 }
 
-class SingleTrajectoryDescriptor final : public sources::IDescriptor {
+class SingleTrajectoryDescriptor final : public P::IDescriptor {
 public:
   SingleTrajectoryDescriptor(std::string structure, std::vector<std::string> xtcs)
       : structure_(std::move(structure)), xtcs_(std::move(xtcs)) {}
 
-  std::optional<IngestDescriptor> next() override {
+  std::optional<P::IngestDescriptor> next() override {
     if (done_) return std::nullopt;
     done_ = true;
-    IngestDescriptor desc;
+    P::IngestDescriptor desc;
     desc.id     = structure_;
-    desc.origin = MDRef{structure_, xtcs_};
+    desc.origin = P::MDRef{structure_, xtcs_};
     return desc;
   }
 
@@ -80,8 +82,8 @@ MdInputs parse_md_inputs(const std::vector<std::string> &md_files) {
   return inputs;
 }
 
-std::shared_ptr<sources::IDescriptor> make_md_source_descriptor(std::string structure_path,
-                                                                std::vector<std::string> trajectory_paths) {
+std::shared_ptr<P::IDescriptor> make_md_source_descriptor(std::string structure_path,
+                                                          std::vector<std::string> trajectory_paths) {
   return std::make_shared<SingleTrajectoryDescriptor>(std::move(structure_path), std::move(trajectory_paths));
 }
 

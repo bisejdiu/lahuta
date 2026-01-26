@@ -19,9 +19,8 @@
 
 namespace py = pybind11;
 namespace lahuta::bindings {
-using namespace lahuta::pipeline::dynamic;
+namespace P = lahuta::pipeline;
 
-// clang-format off
 namespace {
 
 inline std::chrono::milliseconds seconds_to_ms(double seconds) {
@@ -39,12 +38,12 @@ inline std::chrono::milliseconds seconds_to_ms(double seconds) {
 } // namespace
 
 // Test-only sink that sleeps during write() to simulate slow I/O
-class SlowSink : public IDynamicSink {
+class SlowSink : public P::IDynamicSink {
 public:
   explicit SlowSink(double sleep_seconds, double flush_sleep_seconds = 0.0)
       : write_sleep_(seconds_to_ms(sleep_seconds)), flush_sleep_(seconds_to_ms(flush_sleep_seconds)) {}
 
-  void write(EmissionView e) override {
+  void write(P::EmissionView e) override {
     (void)e;
     if (write_sleep_.count() > 0) {
       std::this_thread::sleep_for(write_sleep_);
@@ -71,40 +70,49 @@ private:
   std::chrono::milliseconds flush_sleep_;
 };
 
-// clang-format off
-inline void bind_sinks(py::module_& md) {
-  py::class_<IDynamicSink, std::shared_ptr<IDynamicSink>> _(md, "Sink");
+inline void bind_sinks(py::module_ &md) {
+  py::class_<P::IDynamicSink, std::shared_ptr<P::IDynamicSink>> _(md, "Sink");
 
-  py::class_<MemorySink, IDynamicSink, std::shared_ptr<MemorySink>>(md, "MemorySink")
-    .def(py::init<>())
-    .def("result", &MemorySink::result, R"doc(Return collected payloads.)doc")
-    .def("result_bytes", [](const MemorySink& s) {
-          py::list out;
-          for (const auto& buf : s.result_bytes()) {
-            out.append(py::bytes(buf));
-          }
-          return out;
-        }, R"doc(Return collected payloads as bytes.)doc")
-    .def("clear",  &MemorySink::clear,  R"doc(Clear collected payloads.)doc");
+  py::class_<P::MemorySink, P::IDynamicSink, std::shared_ptr<P::MemorySink>>(md, "MemorySink")
+      .def(py::init<>())
+      .def("result", &P::MemorySink::result, R"doc(Return collected payloads.)doc")
+      .def(
+          "result_bytes",
+          [](const P::MemorySink &s) {
+            py::list out;
+            for (const auto &buf : s.result_bytes()) {
+              out.append(py::bytes(buf));
+            }
+            return out;
+          },
+          R"doc(Return collected payloads as bytes.)doc")
+      .def("clear", &P::MemorySink::clear, R"doc(Clear collected payloads.)doc");
 
-  py::class_<NdjsonFileSink, IDynamicSink, std::shared_ptr<NdjsonFileSink>>(md, "NdjsonSink")
-    .def(py::init<std::string>(), py::arg("path"))
-    .def("file", &NdjsonFileSink::file);
+  py::class_<P::NdjsonFileSink, P::IDynamicSink, std::shared_ptr<P::NdjsonFileSink>>(md, "NdjsonSink")
+      .def(py::init<std::string>(), py::arg("path"))
+      .def("file", &P::NdjsonFileSink::file);
 
-  py::class_<ShardedNdjsonSink, IDynamicSink, std::shared_ptr<ShardedNdjsonSink>>(md, "ShardedNdjsonSink")
-    .def(py::init<std::string, std::size_t>(), py::arg("out_dir"), py::arg("shard_size"))
-    .def(py::init<std::string, std::size_t, std::size_t>(), py::arg("out_dir"), py::arg("shard_size"), py::arg("max_shard_bytes"))
-    .def("files", &ShardedNdjsonSink::files);
+  py::class_<P::ShardedNdjsonSink, P::IDynamicSink, std::shared_ptr<P::ShardedNdjsonSink>>(
+      md,
+      "ShardedNdjsonSink")
+      .def(py::init<std::string, std::size_t>(), py::arg("out_dir"), py::arg("shard_size"))
+      .def(py::init<std::string, std::size_t, std::size_t>(),
+           py::arg("out_dir"),
+           py::arg("shard_size"),
+           py::arg("max_shard_bytes"))
+      .def("files", &P::ShardedNdjsonSink::files);
 
-  py::class_<LmdbSink, IDynamicSink, std::shared_ptr<LmdbSink>>(md, "LmdbSink")
-    .def(py::init<std::shared_ptr<lahuta::LMDBDatabase>, std::size_t>(),
-         py::arg("db"), py::arg("batch_size") = 1024u);
+  py::class_<P::LmdbSink, P::IDynamicSink, std::shared_ptr<P::LmdbSink>>(md, "LmdbSink")
+      .def(py::init<std::shared_ptr<lahuta::LMDBDatabase>, std::size_t>(),
+           py::arg("db"),
+           py::arg("batch_size") = 1024u);
 
-  py::class_<SlowSink, IDynamicSink, std::shared_ptr<SlowSink>>(md, "SlowSink")
-    .def(py::init<double, double>(),
-         py::arg("sleep_seconds"), py::arg("flush_sleep_seconds") = 0.0,
-         R"doc(Test sink that sleeps during write()/flush. Used for flush-timeout testing.)doc")
-    .def("count", &SlowSink::count, R"doc(Return number of writes completed.)doc");
+  py::class_<SlowSink, P::IDynamicSink, std::shared_ptr<SlowSink>>(md, "SlowSink")
+      .def(py::init<double, double>(),
+           py::arg("sleep_seconds"),
+           py::arg("flush_sleep_seconds") = 0.0,
+           R"doc(Test sink that sleeps during write()/flush. Used for flush-timeout testing.)doc")
+      .def("count", &SlowSink::count, R"doc(Return number of writes completed.)doc");
 }
 
 } // namespace lahuta::bindings

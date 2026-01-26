@@ -4,8 +4,7 @@
 #include "node.hpp"
 #include "registry.hpp"
 
-// clang-format off
-namespace lahuta::topology::compute {
+namespace lahuta::compute {
 
 /// Represents a validated execution plan: a sequence of computations that
 /// respects dependency ordering. Validates the execution order at construction
@@ -25,7 +24,8 @@ public:
       Mask node_deps = registry[node_idx].deps;
       for (int dep_idx = 0; dep_idx < registry.size(); ++dep_idx) {
         if (node_deps & (Mask{1} << dep_idx) && !(satisfied_deps & (Mask{1} << dep_idx))) {
-          throw std::runtime_error("execution plan order violates dependency for " + std::string(registry[node_idx].tag.to_string_view()));
+          throw std::runtime_error("execution plan order violates dependency for " +
+                                   std::string(registry[node_idx].tag.to_string_view()));
         }
       }
 
@@ -36,6 +36,6 @@ public:
   const ExecOrder &plan() const noexcept { return plan_; }
 };
 
-} // namespace lahuta::topology::compute
+} // namespace lahuta::compute
 
 #endif // LAHUTA_COMPUTE_PLAN_HPP

@@ -8,10 +8,11 @@
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 template <typename DataT>
-ComputationResult
-ModelBondsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelBondsParams &params) {
+C::ComputationResult
+ModelBondsKernel::execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelBondsParams &params) {
   auto &data = context.data();
 
   try {
@@ -49,9 +50,9 @@ ModelBondsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Mod
       add_terminal_oxt_bond(seq.back(), data);
     }
 
-    return ComputationResult(true);
+    return C::ComputationResult(true);
   } catch (const std::exception &e) {
-    return ComputationResult(ComputationError(std::string("Error creating model bonds: ") + e.what()));
+    return C::ComputationResult(C::ComputationError(std::string("Error creating model bonds: ") + e.what()));
   }
 }
 
@@ -85,6 +86,6 @@ void ModelBondsKernel::add_terminal_oxt_bond(char aa_type, ModelData &data) {
   data.bonds.push_back(c_oxt_bond);
 }
 
-template ComputationResult ModelBondsKernel::execute<ModelData>(DataContext<ModelData, Mut::ReadWrite> &, const ModelBondsParams &);
+template C::ComputationResult ModelBondsKernel::execute<ModelData>(C::DataContext<ModelData, C::Mut::ReadWrite> &, const ModelBondsParams &);
 
 } // namespace lahuta::models::topology

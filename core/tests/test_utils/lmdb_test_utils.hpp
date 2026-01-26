@@ -5,9 +5,7 @@
 
 #include <cstdint>
 #include <cstring>
-#include <filesystem>
 #include <memory>
-#include <random>
 #include <string>
 #include <string_view>
 
@@ -17,48 +15,26 @@
 #include "db/db.hpp"
 #include "db/model_payload.hpp"
 #include "models/parser.hpp"
+#include "test_utils/common.hpp"
 
 namespace lahuta::test_utils {
 
-struct TempDir {
-  fs::path path;
-  explicit TempDir(const std::string &prefix) {
-    auto base = fs::temp_directory_path();
-    std::random_device rd;
-    std::mt19937_64 rng(rd());
-    for (int attempt = 0; attempt < 128; ++attempt) {
-      auto candidate = base / (prefix + std::to_string(rng()));
-      std::error_code ec;
-      if (fs::create_directory(candidate, ec)) {
-        path = candidate;
-        return;
-      }
-    }
-    throw std::runtime_error("TempDir: unable to allocate directory");
-  }
-  ~TempDir() {
-    if (path.empty()) return;
-    std::error_code ec;
-    fs::remove_all(path, ec);
-  }
-};
-
 inline ModelParserResult make_sample_record() {
   ModelParserResult rec;
-  rec.sequence = "ACDEFGHIK";
-  rec.metadata.ncbi_taxonomy_id = "9606";
+  rec.sequence                     = "ACDEFGHIK";
+  rec.metadata.ncbi_taxonomy_id    = "9606";
   rec.metadata.organism_scientific = "Homo sapiens";
   rec.coords.resize(2);
-  rec.coords[0] = RDGeom::Point3D(1.0, 2.0, 3.0);
-  rec.coords[1] = RDGeom::Point3D(-1.0, 0.5, 4.25);
+  rec.coords[0]         = RDGeom::Point3D(1.0, 2.0, 3.0);
+  rec.coords[1]         = RDGeom::Point3D(-1.0, 0.5, 4.25);
   rec.plddt_per_residue = {lahuta::pLDDTCategory::High, lahuta::pLDDTCategory::Low};
-  rec.dssp_per_residue = {lahuta::DSSPAssignment::AlphaHelix, lahuta::DSSPAssignment::Strand};
+  rec.dssp_per_residue  = {lahuta::DSSPAssignment::AlphaHelix, lahuta::DSSPAssignment::Strand};
   return rec;
 }
 
-inline std::shared_ptr<LMDBDatabase>
-build_sample_db(const fs::path &dir, const std::string &key, analysis::system::ModelRecord rec) {
-  auto db = std::make_shared<LMDBDatabase>(dir.string());
+inline std::shared_ptr<LMDBDatabase> build_sample_db(const fs::path &dir, const std::string &key,
+                                                     analysis::ModelRecord rec) {
+  auto db     = std::make_shared<LMDBDatabase>(dir.string());
   auto writer = db->get_writer();
   writer.begin_txn();
   writer.put_model_record(key, rec, true);
@@ -66,20 +42,20 @@ build_sample_db(const fs::path &dir, const std::string &key, analysis::system::M
 }
 
 inline std::shared_ptr<LMDBDatabase> build_corrupt_db(const fs::path &dir, const std::string &key) {
-  auto db = std::make_shared<LMDBDatabase>(dir.string());
+  auto db     = std::make_shared<LMDBDatabase>(dir.string());
   auto writer = db->get_writer();
   writer.begin_txn();
-  analysis::system::ModelRecord rec;
-  rec.success = true;
+  analysis::ModelRecord rec;
+  rec.success   = true;
   rec.file_path = key;
-  rec.data = make_sample_record();
+  rec.data      = make_sample_record();
   writer.put_model_record(key, rec, true, [](char *data, std::size_t size) {
     std::size_t offset = 0;
     if (size < 1 + sizeof(std::uint32_t)) {
       return;
     }
-    offset += 1; // success byte
-    uint32_t path_len = 0;
+    offset            += 1; // success byte
+    uint32_t path_len  = 0;
     std::memcpy(&path_len, data + offset, sizeof(path_len));
     offset += sizeof(path_len);
     if (offset + path_len + sizeof(uint32_t) > size) {
@@ -90,7 +66,7 @@ inline std::shared_ptr<LMDBDatabase> build_corrupt_db(const fs::path &dir, const
     if (offset + sizeof(ModelPayloadHeader) > size) {
       return;
     }
-    auto *header = reinterpret_cast<ModelPayloadHeader *>(data + offset);
+    auto *header         = reinterpret_cast<ModelPayloadHeader *>(data + offset);
     header->coord_count += 32; // Inflate count so decode_coordinates() will fail
   });
   return db;
@@ -101,8 +77,8 @@ inline ModelPayloadView payload_view_from_record(std::string_view raw) {
   if (raw.size() < HeaderSize) {
     throw std::runtime_error("record too small");
   }
-  std::size_t offset = 0;
-  offset += 1; // success flag
+  std::size_t offset  = 0;
+  offset             += 1; // success flag
 
   std::uint32_t path_len = 0;
   std::memcpy(&path_len, raw.data() + offset, sizeof(path_len));

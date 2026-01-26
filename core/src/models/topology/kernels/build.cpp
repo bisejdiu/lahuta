@@ -8,10 +8,11 @@
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 template <typename DataT>
-ComputationResult
-ModelBuildKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelBuildParams &params) {
+C::ComputationResult
+ModelBuildKernel::execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelBuildParams &params) {
   auto &data = context.data();
 
   try {
@@ -30,9 +31,9 @@ ModelBuildKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Mod
     build_ringinfo(data);
     correct_disulfide_atom_properties(data);
 
-    return ComputationResult(true);
+    return C::ComputationResult(true);
   } catch (const std::exception &e) {
-    return ComputationResult(ComputationError(std::string("Error in model atom typing: ") + e.what()));
+    return C::ComputationResult(C::ComputationError(std::string("Error in model atom typing: ") + e.what()));
   }
 }
 
@@ -92,6 +93,6 @@ void ModelBuildKernel::correct_disulfide_atom_properties(ModelData &data) {
   }
 }
 
-template ComputationResult ModelBuildKernel::execute<ModelData>(DataContext<ModelData, Mut::ReadWrite> &, const ModelBuildParams &);
+template C::ComputationResult ModelBuildKernel::execute<ModelData>(C::DataContext<ModelData, C::Mut::ReadWrite> &, const ModelBuildParams &);
 
 } // namespace lahuta::models::topology

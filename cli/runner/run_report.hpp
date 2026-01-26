@@ -5,18 +5,18 @@
 #include <string>
 
 #include "logging/logging.hpp"
-#include "pipeline/dynamic/manager.hpp"
+#include "pipeline/runtime/manager.hpp"
 #include "serialization/json.hpp"
 
 namespace lahuta::cli {
+namespace P = lahuta::pipeline;
 
 inline std::string make_report_path(const std::string &prefix, std::size_t run_token,
                                     const std::string &timestamp) {
   return prefix + "_run_report_" + std::to_string(run_token) + '_' + timestamp + ".json";
 }
 
-inline bool write_run_report_json(const std::string &path,
-                                  const pipeline::dynamic::StageManager::RunReport &report) {
+inline bool write_run_report_json(const std::string &path, const P::StageManager::RunReport &report) {
   std::ofstream out(path, std::ios::out | std::ios::trunc);
   if (!out) {
     Logger::get_logger()->error("Unable to write RunReport JSON to '{}'", path);

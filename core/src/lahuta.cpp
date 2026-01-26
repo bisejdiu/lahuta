@@ -6,14 +6,13 @@
 
 #include "analysis/system/model_loader.hpp"
 #include "io/convert.hpp"
+#include "io/read_file.hpp"
 #include "lahuta.hpp"
 #include "models/factory.hpp"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
-#include "io/read_file.hpp"
 #include "selections/mol_filters.hpp"
 
-// clang-format off
 namespace lahuta {
 
 std::shared_ptr<Luni::TopologyBuildState> Luni::ensure_topology_state() const {
@@ -24,7 +23,8 @@ std::shared_ptr<Luni::TopologyBuildState> Luni::ensure_topology_state() const {
   return topology_state_;
 }
 
-Luni::TopologyWriteGuard::TopologyWriteGuard(std::shared_ptr<TopologyBuildState> state) : state_(std::move(state)), lock_() {
+Luni::TopologyWriteGuard::TopologyWriteGuard(std::shared_ptr<TopologyBuildState> state)
+    : state_(std::move(state)), lock_() {
   if (!state_) return;
 
   lock_ = std::unique_lock<std::mutex>(state_->modify_mutex, std::defer_lock);
@@ -37,6 +37,7 @@ Luni::TopologyWriteGuard Luni::acquire_topology_write_guard() const {
   return TopologyWriteGuard(ensure_topology_state());
 }
 
+// clang-format off
 Luni::Luni(Luni&& other) noexcept
   : mol             (std::move(other.mol)),
     topology        (std::move(other.topology)),
@@ -63,6 +64,7 @@ Luni& Luni::operator=(Luni&& other) noexcept {
   return *this;
 }
 
+// clang-format on
 Luni::Luni(std::string file_name) : file_name_(file_name) {
   Logger::get_logger()->debug("Processing file: {}", file_name_);
   mol = read_and_make_molecule(gemmi::MaybeGzipped(file_name_));
@@ -94,12 +96,13 @@ Luni::Luni(std::string file_name, ModelFileTag) : file_name_(file_name) {
     InfoPoolFactory::initialize(1);
     BondPoolFactory::initialize(1);
     AtomPoolFactory::initialize(1);
-  } catch (...) {}
+  } catch (...) {
+  }
 
   model_origin_ = true;
   try {
-    auto parsed = analysis::system::load_model_parser_result(file_name_);
-    mol = analysis::system::build_model_molecule(parsed, ModelTopologyMethod::CSR);
+    auto parsed = analysis::load_model_parser_result(file_name_);
+    mol         = analysis::build_model_molecule(parsed, ModelTopologyMethod::CSR);
   } catch (const std::exception &e) {
     Logger::get_logger()->critical("Exception processing file {}: {}", file_name_, e.what());
   } catch (...) {
@@ -123,14 +126,16 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
   auto state = ensure_topology_state();
   std::unique_lock<std::mutex> state_lock(state->mutex);
   if (topology_built_.load(std::memory_order_acquire)) {
-    Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
+    Logger::get_logger()->debug(
+        "Topology already built, skipping rebuild to prevent molecule state corruption");
     return true;
   }
 
   while (state->building) {
     state->cv.wait(state_lock, [state]() { return !state->building; });
     if (topology_built_.load(std::memory_order_acquire)) {
-      Logger::get_logger()->debug("Topology already built, skipping rebuild to prevent molecule state corruption");
+      Logger::get_logger()->debug(
+          "Topology already built, skipping rebuild to prevent molecule state corruption");
       return true;
     }
   }
@@ -220,7 +225,8 @@ const std::vector<std::string> Luni::chainlabels() const {
   });
 }
 
-template <typename T> std::vector<T> Luni::atom_attrs(std::function<T(const RDKit::Atom *)> func) const {
+template <typename T>
+std::vector<T> Luni::atom_attrs(std::function<T(const RDKit::Atom *)> func) const {
   std::vector<T> attrs;
   attrs.reserve(mol->getNumAtoms());
   for (const auto atom : mol->atoms()) {
@@ -257,7 +263,7 @@ Luni Luni::filter(std::vector<int> &atom_indices) const {
   auto new_mol = filter_with_bonds(*mol, atom_indices);
   new_mol.updatePropertyCache(false);
 
-  auto new_luni = Luni::create(std::make_shared<RDKit::RWMol>(new_mol));
+  auto new_luni                 = Luni::create(std::make_shared<RDKit::RWMol>(new_mol));
   new_luni.is_in_filtered_state = true;
   return new_luni;
 }

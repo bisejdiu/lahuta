@@ -27,8 +27,8 @@
 
 namespace py = pybind11;
 
-// clang-format off
 namespace lahuta::bindings {
+namespace C = lahuta::compute;
 
 namespace {
 
@@ -48,9 +48,9 @@ struct ContactsRecordColumns {
   bool success = false;
   std::string file_path;
   std::optional<std::string> trajectory_file;
-  analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
-  InteractionTypeSet contact_types = InteractionTypeSet::all();
-  std::uint64_t frame_index = 0;
+  analysis::ContactProvider provider = analysis::ContactProvider::MolStar;
+  InteractionTypeSet contact_types   = InteractionTypeSet::all();
+  std::uint64_t frame_index          = 0;
   std::vector<std::uint64_t> lhs_ids;
   std::vector<std::uint64_t> rhs_ids;
   std::vector<float> distances;
@@ -71,8 +71,8 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
 
   auto read_u8 = [&](void) -> uint8_t {
     ensure_available(offset, sizeof(uint8_t), size);
-    uint8_t value = static_cast<uint8_t>(data[offset]);
-    offset += sizeof(uint8_t);
+    uint8_t value  = static_cast<uint8_t>(data[offset]);
+    offset        += sizeof(uint8_t);
     return value;
   };
 
@@ -112,10 +112,10 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
     throw std::runtime_error("decode_contacts_binary: unsupported version");
   }
 
-  decoded.success = read_u8() != 0;
-  decoded.provider = static_cast<analysis::contacts::ContactProvider>(read_u8());
+  decoded.success  = read_u8() != 0;
+  decoded.provider = static_cast<analysis::ContactProvider>(read_u8());
 
-  const uint8_t filter_mode = read_u8();
+  const uint8_t filter_mode   = read_u8();
   const uint32_t filter_count = read_u32();
   InteractionTypeSet filters;
   if (filter_mode == 0) {
@@ -141,22 +141,22 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
   decoded.frame_index = read_u64();
 
   const uint32_t num_contacts = read_u32();
-  decoded.lhs_ids   .reserve(num_contacts);
-  decoded.rhs_ids   .reserve(num_contacts);
-  decoded.distances .reserve(num_contacts);
+  decoded.lhs_ids.reserve(num_contacts);
+  decoded.rhs_ids.reserve(num_contacts);
+  decoded.distances.reserve(num_contacts);
   decoded.type_codes.reserve(num_contacts);
-  decoded.lhs_names .reserve(num_contacts);
-  decoded.rhs_names .reserve(num_contacts);
+  decoded.lhs_names.reserve(num_contacts);
+  decoded.rhs_names.reserve(num_contacts);
 
   for (uint32_t i = 0; i < num_contacts; ++i) {
-    const uint64_t lhs_raw = read_u64();
-    const uint64_t rhs_raw = read_u64();
-    const float dist = read_f32();
+    const uint64_t lhs_raw   = read_u64();
+    const uint64_t rhs_raw   = read_u64();
+    const float dist         = read_f32();
     const uint32_t type_code = read_u32();
 
-    decoded.lhs_ids   .push_back(lhs_raw);
-    decoded.rhs_ids   .push_back(rhs_raw);
-    decoded.distances .push_back(dist);
+    decoded.lhs_ids.push_back(lhs_raw);
+    decoded.rhs_ids.push_back(rhs_raw);
+    decoded.distances.push_back(dist);
     decoded.type_codes.push_back(type_code);
 
     std::string lhs_name;
@@ -170,8 +170,8 @@ ContactsRecordColumns decode_contacts_binary_payload(const char *data, std::size
   const uint32_t traj_len = read_u32();
   if (traj_len > 0) {
     ensure_available(offset, traj_len, size);
-    decoded.trajectory_file = std::string(data + offset, traj_len);
-    offset += traj_len;
+    decoded.trajectory_file  = std::string(data + offset, traj_len);
+    offset                  += traj_len;
   }
 
   return decoded;
@@ -198,8 +198,8 @@ py::dict make_contacts_numpy(ContactsRecordColumns decoded) {
   contacts["type"]     = string_array_1d(type_strings);
 
   py::dict out;
-  out["success"]      = decoded.success;
-  out["file_path"]    = decoded.file_path;
+  out["success"]   = decoded.success;
+  out["file_path"] = decoded.file_path;
   if (decoded.trajectory_file) {
     out["trajectory_file"] = *decoded.trajectory_file;
   }
@@ -235,8 +235,8 @@ py::dict decode_contacts_to_dict_direct(ContactsRecordColumns decoded) {
 
   // Build result dict with metadata
   py::dict result;
-  result["success"]      = decoded.success;
-  result["file_path"]    = decoded.file_path;
+  result["success"]   = decoded.success;
+  result["file_path"] = decoded.file_path;
   if (decoded.trajectory_file) {
     result["trajectory_file"] = *decoded.trajectory_file;
   }
@@ -276,8 +276,8 @@ py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
   contacts["type"]     = std::move(type_list);
 
   py::dict result;
-  result["success"]      = decoded.success;
-  result["file_path"]    = decoded.file_path;
+  result["success"]   = decoded.success;
+  result["file_path"] = decoded.file_path;
   if (decoded.trajectory_file) {
     result["trajectory_file"] = *decoded.trajectory_file;
   }
@@ -291,7 +291,7 @@ py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
 }
 
 py::dict decode_contacts_binary(py::bytes payload) {
-  char* data = nullptr;
+  char *data     = nullptr;
   Py_ssize_t len = 0;
   if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
     throw py::value_error("decode_contacts_binary: expected bytes");
@@ -313,7 +313,7 @@ py::dict decode_contacts_binary(py::bytes payload) {
 }
 
 py::dict decode_contacts_binary_direct(py::bytes payload) {
-  char* data = nullptr;
+  char *data     = nullptr;
   Py_ssize_t len = 0;
   if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
     throw py::value_error("decode_contacts_binary_direct: expected bytes");
@@ -336,7 +336,7 @@ py::dict decode_contacts_binary_direct(py::bytes payload) {
 }
 
 py::dict decode_contacts_binary_columnar(py::bytes payload) {
-  char* data = nullptr;
+  char *data     = nullptr;
   Py_ssize_t len = 0;
   if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
     throw py::value_error("decode_contacts_binary_columnar: expected bytes");
@@ -359,9 +359,7 @@ py::dict decode_contacts_binary_columnar(py::bytes payload) {
     return empty;
   }
 
-  ContactsRecordColumns decoded = decode_contacts_binary_payload(
-    data, static_cast<std::size_t>(len)
-  );
+  ContactsRecordColumns decoded = decode_contacts_binary_payload(data, static_cast<std::size_t>(len));
 
   return decode_contacts_to_dict_columnar(std::move(decoded));
 }
@@ -376,7 +374,7 @@ py::list decode_contacts_batch_parallel(py::list payloads, bool columnar) {
   py::list results(num_payloads);
 
   struct PayloadInfo {
-    const char* data;
+    const char *data;
     std::size_t size;
   };
 
@@ -384,8 +382,8 @@ py::list decode_contacts_batch_parallel(py::list payloads, bool columnar) {
 
   for (std::size_t i = 0; i < num_payloads; ++i) {
     py::bytes payload = py::cast<py::bytes>(payloads[i]);
-    char* data = nullptr;
-    Py_ssize_t len = 0;
+    char *data        = nullptr;
+    Py_ssize_t len    = 0;
 
     if (PyBytes_AsStringAndSize(payload.ptr(), &data, &len) != 0) {
       throw py::value_error("decode_contacts_batch_parallel: expected bytes in list");
@@ -394,7 +392,8 @@ py::list decode_contacts_batch_parallel(py::list payloads, bool columnar) {
     payload_infos[i] = {data, static_cast<std::size_t>(len)};
   }
 
-  const unsigned int num_threads = std::min(std::max(1u, std::thread::hardware_concurrency()), static_cast<unsigned int>(num_payloads));
+  const unsigned int num_threads = std::min(std::max(1u, std::thread::hardware_concurrency()),
+                                            static_cast<unsigned int>(num_payloads));
 
   py::gil_scoped_release release;
 
@@ -406,21 +405,18 @@ py::list decode_contacts_batch_parallel(py::list payloads, bool columnar) {
 
   for (unsigned int t = 0; t < num_threads; ++t) {
     const std::size_t start_idx = t * chunk_size;
-    const std::size_t end_idx = std::min(start_idx + chunk_size, num_payloads);
+    const std::size_t end_idx   = std::min(start_idx + chunk_size, num_payloads);
 
     if (start_idx >= num_payloads) break;
 
     threads.emplace_back([&payload_infos, &decoded_batch, start_idx, end_idx]() {
       for (std::size_t i = start_idx; i < end_idx; ++i) {
-        decoded_batch[i] = decode_contacts_binary_payload(
-          payload_infos[i].data,
-          payload_infos[i].size
-        );
+        decoded_batch[i] = decode_contacts_binary_payload(payload_infos[i].data, payload_infos[i].size);
       }
     });
   }
 
-  for (auto& thread : threads) {
+  for (auto &thread : threads) {
     thread.join();
   }
 
@@ -440,302 +436,408 @@ py::list decode_contacts_batch_parallel(py::list payloads, bool columnar) {
 
 void bind_contacts(py::module_ &m) {
 
+  // clang-format off
   m.def("decode_contacts_binary",          &decode_contacts_binary,          py::arg("payload")); // numpy output
   m.def("decode_contacts_binary_direct",   &decode_contacts_binary_direct,   py::arg("payload")); // list of dicts output, columnar=False
   m.def("decode_contacts_binary_columnar", &decode_contacts_binary_columnar, py::arg("payload")); // dict of lists output, columnar=True
   m.def("decode_contacts_batch_parallel",  &decode_contacts_batch_parallel,  py::arg("payloads"), py::arg("columnar") = true); // parallel batch decode
 
-  py::enum_<analysis::contacts::ContactProvider>(m, "ContactProvider")
-    .value("MolStar",     analysis::contacts::ContactProvider::MolStar)
-    .value("Arpeggio",    analysis::contacts::ContactProvider::Arpeggio)
-    .value("GetContacts", analysis::contacts::ContactProvider::GetContacts);
+  py::enum_<analysis::ContactProvider>(m, "ContactProvider")
+      .value("MolStar",     analysis::ContactProvider::MolStar)
+      .value("Arpeggio",    analysis::ContactProvider::Arpeggio)
+      .value("GetContacts", analysis::ContactProvider::GetContacts);
 
   py::enum_<Category>(m, "Category")
-    .value("None_",                 Category::None)
-    .value("Generic",               Category::Generic)
-    .value("Hydrophobic",           Category::Hydrophobic)
-    .value("Halogen",               Category::Halogen)
-    .value("HydrogenBond",          Category::HydrogenBond)
-    .value("WeakHydrogenBond",      Category::WeakHydrogenBond)
-    .value("PolarHydrogenBond",     Category::PolarHydrogenBond)
-    .value("WeakPolarHydrogenBond", Category::WeakPolarHydrogenBond)
-    .value("Aromatic",              Category::Aromatic)
-    .value("Ionic",                 Category::Ionic)
-    .value("MetalCoordination",     Category::MetalCoordination)
-    .value("CationPi",              Category::CationPi)
-    .value("PiStacking",            Category::PiStacking)
-    .value("Carbonyl",              Category::Carbonyl)
-    .value("VanDerWaals",           Category::VanDerWaals)
-    .value("DonorPi",               Category::DonorPi)
-    .value("SulphurPi",             Category::SulphurPi)
-    .value("CarbonPi",              Category::CarbonPi);
+      .value("None_",                 Category::None)
+      .value("Generic",               Category::Generic)
+      .value("Hydrophobic",           Category::Hydrophobic)
+      .value("Halogen",               Category::Halogen)
+      .value("HydrogenBond",          Category::HydrogenBond)
+      .value("WeakHydrogenBond",      Category::WeakHydrogenBond)
+      .value("PolarHydrogenBond",     Category::PolarHydrogenBond)
+      .value("WeakPolarHydrogenBond", Category::WeakPolarHydrogenBond)
+      .value("Aromatic",              Category::Aromatic)
+      .value("Ionic",                 Category::Ionic)
+      .value("MetalCoordination",     Category::MetalCoordination)
+      .value("CationPi",              Category::CationPi)
+      .value("PiStacking",            Category::PiStacking)
+      .value("Carbonyl",              Category::Carbonyl)
+      .value("VanDerWaals",           Category::VanDerWaals)
+      .value("DonorPi",               Category::DonorPi)
+      .value("SulphurPi",             Category::SulphurPi)
+      .value("CarbonPi",              Category::CarbonPi);
 
   py::enum_<Flavor>(m, "Flavor")
-    .value("Default",  Flavor::Default)
-    .value("Parallel", Flavor::Parallel)
-    .value("TShape",   Flavor::TShape);
+      .value("Default",  Flavor::Default)
+      .value("Parallel", Flavor::Parallel)
+      .value("TShape",   Flavor::TShape);
 
   py::class_<InteractionType>(m, "InteractionType")
-    .def(py::init<Category, Flavor>(),
-         py::arg_v("category", Category::None, "Category.None_"),
-         py::arg_v("flavor",   Flavor::Default, "Flavor.Default"))
-    .def_readonly_static("All",                   &InteractionType::All)
-    .def_readonly_static("None_",                 &InteractionType::None)
-    .def_readonly_static("Generic",               &InteractionType::Generic)
-    .def_readonly_static("Hydrophobic",           &InteractionType::Hydrophobic)
-    .def_readonly_static("Halogen",               &InteractionType::Halogen)
-    .def_readonly_static("Ionic",                 &InteractionType::Ionic)
-    .def_readonly_static("CationPi",              &InteractionType::CationPi)
-    .def_readonly_static("HydrogenBond",          &InteractionType::HydrogenBond)
-    .def_readonly_static("WeakHydrogenBond",      &InteractionType::WeakHydrogenBond)
-    .def_readonly_static("PolarHydrogenBond",     &InteractionType::PolarHydrogenBond)
-    .def_readonly_static("WeakPolarHydrogenBond", &InteractionType::WeakPolarHydrogenBond)
-    .def_readonly_static("MetalCoordination",     &InteractionType::MetalCoordination)
-    .def_readonly_static("Aromatic",              &InteractionType::Aromatic)
-    .def_readonly_static("PiStacking",            &InteractionType::PiStacking)
-    .def_readonly_static("PiStackingP",           &InteractionType::PiStackingP)
-    .def_readonly_static("PiStackingT",           &InteractionType::PiStackingT)
-    .def_readonly_static("Carbonyl",              &InteractionType::Carbonyl)
-    .def_readonly_static("VanDerWaals",           &InteractionType::VanDerWaals)
-    .def_readonly_static("DonorPi",               &InteractionType::DonorPi)
-    .def_readonly_static("SulphurPi",             &InteractionType::SulphurPi)
-    .def_readonly_static("CarbonPi",              &InteractionType::CarbonPi)
+      .def(py::init<Category, Flavor>(),
+           py::arg_v("category", Category::None, "Category.None_"),
+           py::arg_v("flavor",   Flavor::Default, "Flavor.Default"))
+      .def_readonly_static("All",                   &InteractionType::All)
+      .def_readonly_static("None_",                 &InteractionType::None)
+      .def_readonly_static("Generic",               &InteractionType::Generic)
+      .def_readonly_static("Hydrophobic",           &InteractionType::Hydrophobic)
+      .def_readonly_static("Halogen",               &InteractionType::Halogen)
+      .def_readonly_static("Ionic",                 &InteractionType::Ionic)
+      .def_readonly_static("CationPi",              &InteractionType::CationPi)
+      .def_readonly_static("HydrogenBond",          &InteractionType::HydrogenBond)
+      .def_readonly_static("WeakHydrogenBond",      &InteractionType::WeakHydrogenBond)
+      .def_readonly_static("PolarHydrogenBond",     &InteractionType::PolarHydrogenBond)
+      .def_readonly_static("WeakPolarHydrogenBond", &InteractionType::WeakPolarHydrogenBond)
+      .def_readonly_static("MetalCoordination",     &InteractionType::MetalCoordination)
+      .def_readonly_static("Aromatic",              &InteractionType::Aromatic)
+      .def_readonly_static("PiStacking",            &InteractionType::PiStacking)
+      .def_readonly_static("PiStackingP",           &InteractionType::PiStackingP)
+      .def_readonly_static("PiStackingT",           &InteractionType::PiStackingT)
+      .def_readonly_static("Carbonyl",              &InteractionType::Carbonyl)
+      .def_readonly_static("VanDerWaals",           &InteractionType::VanDerWaals)
+      .def_readonly_static("DonorPi",               &InteractionType::DonorPi)
+      .def_readonly_static("SulphurPi",             &InteractionType::SulphurPi)
+      .def_readonly_static("CarbonPi",              &InteractionType::CarbonPi)
 
-    .def_property_readonly("category", [](const InteractionType &self){ return self.category; })
-    .def_property_readonly("flavor",   [](const InteractionType &self){ return self.flavor; })
+      .def_property_readonly("category", [](const InteractionType &self){ return self.category; })
+      .def_property_readonly("flavor",   [](const InteractionType &self){ return self.flavor; })
+      // clang-format on
 
-    .def("__str__",  [](const InteractionType& self) { return interaction_type_to_string(self); })
-    .def("__repr__", [](const InteractionType& self) { return "InteractionType(" + interaction_type_to_string(self) + ")"; })
-    .def(
-      "__int__",
-      [](const InteractionType& self) { return static_cast<unsigned int>(static_cast<std::uint32_t>(self)); },
-      R"doc(
+      .def("__str__", [](const InteractionType &self) { return interaction_type_to_string(self); })
+      .def("__repr__",
+           [](const InteractionType &self) {
+             return "InteractionType(" + interaction_type_to_string(self) + ")";
+           })
+      .def(
+          "__int__",
+          [](const InteractionType &self) {
+            return static_cast<unsigned int>(static_cast<std::uint32_t>(self));
+          },
+          R"doc(
 Return the 32-bit packed code for this InteractionType.
 
 Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
 )doc")
 
-    .def("__hash__", [](const InteractionType& self) {
-        return static_cast<std::size_t>(static_cast<std::uint32_t>(self));
-      })
-    .def("__eq__", [](const InteractionType& self, py::object other) -> py::object {
-        if (py::isinstance<InteractionType>(other)) {
-          auto o = other.cast<InteractionType>();
-          return py::bool_(self == o);
-        }
-        return py::reinterpret_borrow<py::object>(Py_NotImplemented);
-      })
-    .def("__ne__", [](const InteractionType& self, py::object other) -> py::object {
-        if (py::isinstance<InteractionType>(other)) {
-          auto o = other.cast<InteractionType>();
-          return py::bool_(self != o);
-        }
-        return py::reinterpret_borrow<py::object>(Py_NotImplemented);
-      })
-    .def("__or__", [](const InteractionType& lhs, const InteractionType& rhs) {
-        return InteractionTypeSet{lhs, rhs};
-      }, py::is_operator())
-    .def("__or__", [](const InteractionType& lhs, const InteractionTypeSet& rhs) {
-        InteractionTypeSet out = rhs;
-        out |= lhs;
-        return out;
-      }, py::is_operator())
-    .def("__ror__", [](const InteractionType& rhs, const InteractionType& lhs) {
-        return InteractionTypeSet{lhs, rhs};
-      }, py::is_operator())
-    .def("__ror__", [](const InteractionType& rhs, const InteractionTypeSet& lhs) {
-        InteractionTypeSet out = lhs;
-        out |= rhs;
-        return out;
-      }, py::is_operator());
+      .def("__hash__",
+           [](const InteractionType &self) {
+             return static_cast<std::size_t>(static_cast<std::uint32_t>(self));
+           })
+      .def("__eq__",
+           [](const InteractionType &self, py::object other) -> py::object {
+             if (py::isinstance<InteractionType>(other)) {
+               auto o = other.cast<InteractionType>();
+               return py::bool_(self == o);
+             }
+             return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+           })
+      .def("__ne__",
+           [](const InteractionType &self, py::object other) -> py::object {
+             if (py::isinstance<InteractionType>(other)) {
+               auto o = other.cast<InteractionType>();
+               return py::bool_(self != o);
+             }
+             return py::reinterpret_borrow<py::object>(Py_NotImplemented);
+           })
+      .def(
+          "__or__",
+          [](const InteractionType &lhs, const InteractionType &rhs) { return InteractionTypeSet{lhs, rhs}; },
+          py::is_operator())
+      .def(
+          "__or__",
+          [](const InteractionType &lhs, const InteractionTypeSet &rhs) {
+            InteractionTypeSet out  = rhs;
+            out                    |= lhs;
+            return out;
+          },
+          py::is_operator())
+      .def(
+          "__ror__",
+          [](const InteractionType &rhs, const InteractionType &lhs) { return InteractionTypeSet{lhs, rhs}; },
+          py::is_operator())
+      .def(
+          "__ror__",
+          [](const InteractionType &rhs, const InteractionTypeSet &lhs) {
+            InteractionTypeSet out  = lhs;
+            out                    |= rhs;
+            return out;
+          },
+          py::is_operator());
 
   py::class_<InteractionTypeSet>(m, "InteractionTypeSet")
-    .def(py::init<>())
-    .def(py::init<InteractionType>())
-    .def(py::init<std::initializer_list<InteractionType>>())
-    .def_static("all", []() { return InteractionTypeSet::all(); })
-    .def("is_all", &InteractionTypeSet::is_all)
-    .def("empty", &InteractionTypeSet::empty)
-    .def("members", [](const InteractionTypeSet& self) {
-        auto members = self.members();
-        py::list out;
-        for (auto type : members) out.append(type);
-        return out;
-      })
-    .def("__len__", [](const InteractionTypeSet& self) { return static_cast<std::size_t>(self.count()); })
-    .def("__contains__", [](const InteractionTypeSet& self, const InteractionType& value) {
-        return self.contains(value);
-      })
-    .def("__or__", [](const InteractionTypeSet& lhs, const InteractionTypeSet& rhs) {
-        auto out = lhs;
-        out |= rhs;
-        return out;
-      }, py::is_operator())
-    .def("__or__", [](const InteractionTypeSet& lhs, const InteractionType& rhs) {
-        auto out = lhs;
-        out |= rhs;
-        return out;
-      }, py::is_operator())
-    .def("__ror__", [](const InteractionTypeSet& rhs, const InteractionTypeSet& lhs) {
-        auto out = lhs;
-        out |= rhs;
-        return out;
-      }, py::is_operator())
-    .def("__ror__", [](const InteractionTypeSet& rhs, const InteractionType& lhs) {
-        auto out = rhs;
-        out |= lhs;
-        return out;
-      }, py::is_operator())
-    .def("__ior__", [](InteractionTypeSet& lhs, const InteractionTypeSet& rhs) -> InteractionTypeSet& {
-        lhs |= rhs;
-        return lhs;
-      }, py::is_operator())
-    .def("__ior__", [](InteractionTypeSet& lhs, const InteractionType& rhs) -> InteractionTypeSet& {
-        lhs |= rhs;
-        return lhs;
-      }, py::is_operator())
-    .def("__str__", [](const InteractionTypeSet& self) {
-        return interaction_type_set_to_string(self, "|");
-      })
-    .def("__repr__", [](const InteractionTypeSet& self) {
+      .def(py::init<>())
+      .def(py::init<InteractionType>())
+      .def(py::init<std::initializer_list<InteractionType>>())
+      .def_static("all", []() { return InteractionTypeSet::all(); })
+      .def("is_all", &InteractionTypeSet::is_all)
+      .def("empty", &InteractionTypeSet::empty)
+      .def("members",
+           [](const InteractionTypeSet &self) {
+             auto members = self.members();
+             py::list out;
+             for (auto type : members)
+               out.append(type);
+             return out;
+           })
+      .def("__len__", [](const InteractionTypeSet &self) { return static_cast<std::size_t>(self.count()); })
+      .def("__contains__",
+           [](const InteractionTypeSet &self, const InteractionType &value) { return self.contains(value); })
+      .def(
+          "__or__",
+          [](const InteractionTypeSet &lhs, const InteractionTypeSet &rhs) {
+            auto out  = lhs;
+            out      |= rhs;
+            return out;
+          },
+          py::is_operator())
+      .def(
+          "__or__",
+          [](const InteractionTypeSet &lhs, const InteractionType &rhs) {
+            auto out  = lhs;
+            out      |= rhs;
+            return out;
+          },
+          py::is_operator())
+      .def(
+          "__ror__",
+          [](const InteractionTypeSet &rhs, const InteractionTypeSet &lhs) {
+            auto out  = lhs;
+            out      |= rhs;
+            return out;
+          },
+          py::is_operator())
+      .def(
+          "__ror__",
+          [](const InteractionTypeSet &rhs, const InteractionType &lhs) {
+            auto out  = rhs;
+            out      |= lhs;
+            return out;
+          },
+          py::is_operator())
+      .def(
+          "__ior__",
+          [](InteractionTypeSet &lhs, const InteractionTypeSet &rhs) -> InteractionTypeSet & {
+            lhs |= rhs;
+            return lhs;
+          },
+          py::is_operator())
+      .def(
+          "__ior__",
+          [](InteractionTypeSet &lhs, const InteractionType &rhs) -> InteractionTypeSet & {
+            lhs |= rhs;
+            return lhs;
+          },
+          py::is_operator())
+      .def("__str__",
+           [](const InteractionTypeSet &self) { return interaction_type_set_to_string(self, "|"); })
+      .def("__repr__", [](const InteractionTypeSet &self) {
         return std::string("InteractionTypeSet(") + interaction_type_set_to_string(self, "|") + ")";
       });
 
   // A contact between two entities with distance and interaction type
-    py::class_<Contact>(m, "Contact")
+  py::class_<Contact>(m, "Contact")
       .def(py::init<EntityID, EntityID, float, InteractionType>(),
-           py::arg("lhs"), py::arg("rhs"), py::arg("distance_sq"), py::arg("type"))
+           py::arg("lhs"),
+           py::arg("rhs"),
+           py::arg("distance_sq"),
+           py::arg("type"))
       .def_property(
-        "lhs",
-        [](const Contact &self) { return self.lhs; },
-        [](Contact &self, const EntityID &value) { self.lhs = value; },
-        "Left entity (EntityID)"
-      )
+          "lhs",
+          [](const Contact &self) { return self.lhs; },
+          [](Contact &self, const EntityID &value) { self.lhs = value; },
+          "Left entity (EntityID)")
       .def_property(
-        "rhs",
-        [](const Contact &self) { return self.rhs; },
-        [](Contact &self, const EntityID &value) { self.rhs = value; },
-        "Right entity (EntityID)"
-      )
-      .def_property("distance_sq",
-        [](const Contact &self) { return self.distance; },
-        [](Contact &self, float value) { self.distance = value; },
-        "Distance squared between entities (A^2)" )
-      .def_property("type", 
-        [](const Contact &self) { return self.type; },
-        [](Contact &self, const InteractionType &value) { self.type = value; },
-        "Interaction type (InteractionType)")
+          "rhs",
+          [](const Contact &self) { return self.rhs; },
+          [](Contact &self, const EntityID &value) { self.rhs = value; },
+          "Right entity (EntityID)")
+      .def_property(
+          "distance_sq",
+          [](const Contact &self) { return self.distance; },
+          [](Contact &self, float value) { self.distance = value; },
+          "Distance squared between entities (A^2)")
+      .def_property(
+          "type",
+          [](const Contact &self) { return self.type; },
+          [](Contact &self, const InteractionType &value) { self.type = value; },
+          "Interaction type (InteractionType)")
 
-      .def("__hash__", [](const Contact& c) {
-          size_t h1 = std::hash<uint64_t>{}(c.lhs.raw);
-          size_t h2 = std::hash<uint64_t>{}(c.rhs.raw);
-          size_t h3 = std::hash<uint32_t>{}(static_cast<uint32_t>(c.type));
-          return (h1 ^ (h2 << 1)) ^ (h3 << 2);
-      })
-      .def("__eq__", [](const Contact &self, py::object other) -> bool {
-        if (!py::isinstance<Contact>(other)) return false;
-        return self == other.cast<Contact>();
-      }, py::is_operator())
-      .def("__ne__", [](const Contact &self, py::object other) -> bool {
-        if (!py::isinstance<Contact>(other)) return true;
-        return self != other.cast<Contact>();
-      }, py::is_operator())
-      .def("__lt__", &Contact::operator<,  py::is_operator())
-      .def("__repr__", [](const Contact &self) {
-        return py::str("Contact(lhs={}, rhs={}, type={}, distance_sq={})")
-          .format(self.lhs.to_string(), self.rhs.to_string(), interaction_type_to_string(self.type), self.distance);
-      })
-      .def("__str__", [](const Contact &self) {
-        return py::str("Contact(lhs={}, rhs={}, type={}, distance_sq={})")
-          .format(self.lhs.to_string(), self.rhs.to_string(), interaction_type_to_string(self.type), self.distance);
-      })
-      .def("to_dict", [](const Contact &self) {
-        py::dict d;
-        d[py::str("lhs_kind")]    = self.lhs.kind();
-        d[py::str("lhs_index")]   = self.lhs.index();
-        d[py::str("rhs_kind")]    = self.rhs.kind();
-        d[py::str("rhs_index")]   = self.rhs.index();
-        d[py::str("distance_sq")] = self.distance;
-        d[py::str("type")]        = self.type;
-        d[py::str("category")]    = self.type.category;
-        d[py::str("flavor")]      = self.type.flavor;
-        return d;
-      }, "Return a dict representation suitable for testing/serialization")
-      ;
+      .def("__hash__",
+           [](const Contact &c) {
+             size_t h1 = std::hash<uint64_t>{}(c.lhs.raw);
+             size_t h2 = std::hash<uint64_t>{}(c.rhs.raw);
+             size_t h3 = std::hash<uint32_t>{}(static_cast<uint32_t>(c.type));
+             return (h1 ^ (h2 << 1)) ^ (h3 << 2);
+           })
+      .def(
+          "__eq__",
+          [](const Contact &self, py::object other) -> bool {
+            if (!py::isinstance<Contact>(other)) return false;
+            return self == other.cast<Contact>();
+          },
+          py::is_operator())
+      .def(
+          "__ne__",
+          [](const Contact &self, py::object other) -> bool {
+            if (!py::isinstance<Contact>(other)) return true;
+            return self != other.cast<Contact>();
+          },
+          py::is_operator())
+      .def("__lt__", &Contact::operator<, py::is_operator())
+      .def("__repr__",
+           [](const Contact &self) {
+             return py::str("Contact(lhs={}, rhs={}, type={}, distance_sq={})")
+                 .format(self.lhs.to_string(),
+                         self.rhs.to_string(),
+                         interaction_type_to_string(self.type),
+                         self.distance);
+           })
+      .def("__str__",
+           [](const Contact &self) {
+             return py::str("Contact(lhs={}, rhs={}, type={}, distance_sq={})")
+                 .format(self.lhs.to_string(),
+                         self.rhs.to_string(),
+                         interaction_type_to_string(self.type),
+                         self.distance);
+           })
+      .def(
+          "to_dict",
+          [](const Contact &self) {
+            py::dict d;
+            d[py::str("lhs_kind")]    = self.lhs.kind();
+            d[py::str("lhs_index")]   = self.lhs.index();
+            d[py::str("rhs_kind")]    = self.rhs.kind();
+            d[py::str("rhs_index")]   = self.rhs.index();
+            d[py::str("distance_sq")] = self.distance;
+            d[py::str("type")]        = self.type;
+            d[py::str("category")]    = self.type.category;
+            d[py::str("flavor")]      = self.type.flavor;
+            return d;
+          },
+          "Return a dict representation suitable for testing/serialization");
 
   // Ordered container for Contact obj with set operations and no duplicates
   py::class_<ContactSet>(m, "ContactSet")
-    .def(py::init<>())
-    .def("data",         [](ContactSet &self) { return self.data(); })
-    .def("insert",       py::overload_cast<const ContactSet &>(&ContactSet::insert), py::arg("contacts"))
-    .def("insert",       py::overload_cast<const Contact    &>(&ContactSet::insert), py::arg("contact" ))
+      .def(py::init<>())
+      .def("data", [](ContactSet &self) { return self.data(); })
+      .def("insert", py::overload_cast<const ContactSet &>(&ContactSet::insert), py::arg("contacts"))
+      .def("insert", py::overload_cast<const Contact &>(&ContactSet::insert), py::arg("contact"))
 
-    .def("set_union",         &ContactSet::set_union, py::arg("other"))
-    .def("set_intersection",  &ContactSet::set_intersection, py::arg("other"))
-    .def("set_difference",    &ContactSet::set_difference, py::arg("other"))
-    .def("set_symmetric_difference", &ContactSet::set_symmetric_difference, py::arg("other"))
+      .def("set_union", &ContactSet::set_union, py::arg("other"))
+      .def("set_intersection", &ContactSet::set_intersection, py::arg("other"))
+      .def("set_difference", &ContactSet::set_difference, py::arg("other"))
+      .def("set_symmetric_difference", &ContactSet::set_symmetric_difference, py::arg("other"))
 
-    .def("size",         &ContactSet::size)
-    .def("empty",        &ContactSet::empty)
-    .def("make_generic", &ContactSet::make_generic)
+      .def("size", &ContactSet::size)
+      .def("empty", &ContactSet::empty)
+      .def("make_generic", &ContactSet::make_generic)
 
-    .def("__len__",      &ContactSet::size)
-    .def("__and__",  [](const ContactSet &a, const ContactSet &b) { return a &  b; }, py::is_operator())
-    .def("__or__",   [](const ContactSet &a, const ContactSet &b) { return a |  b; }, py::is_operator())
-    .def("__sub__",  [](const ContactSet &a, const ContactSet &b) { return a -  b; }, py::is_operator())
-    .def("__xor__",  [](const ContactSet &a, const ContactSet &b) { return a ^  b; }, py::is_operator())
-    .def("__iand__", [](      ContactSet &a, const ContactSet &b) { return a &= b; }, py::is_operator())
-    .def("__ior__",  [](      ContactSet &a, const ContactSet &b) { return a |= b; }, py::is_operator())
-    .def("__isub__", [](      ContactSet &a, const ContactSet &b) { return a -= b; }, py::is_operator())
-    .def("__ixor__", [](      ContactSet &a, const ContactSet &b) { return a ^= b; }, py::is_operator())
+      .def("__len__", &ContactSet::size)
+      .def(
+          "__and__",
+          [](const ContactSet &a, const ContactSet &b) { return a & b; },
+          py::is_operator())
+      .def(
+          "__or__",
+          [](const ContactSet &a, const ContactSet &b) { return a | b; },
+          py::is_operator())
+      .def(
+          "__sub__",
+          [](const ContactSet &a, const ContactSet &b) { return a - b; },
+          py::is_operator())
+      .def(
+          "__xor__",
+          [](const ContactSet &a, const ContactSet &b) { return a ^ b; },
+          py::is_operator())
+      .def(
+          "__iand__",
+          [](ContactSet &a, const ContactSet &b) { return a &= b; },
+          py::is_operator())
+      .def(
+          "__ior__",
+          [](ContactSet &a, const ContactSet &b) { return a |= b; },
+          py::is_operator())
+      .def(
+          "__isub__",
+          [](ContactSet &a, const ContactSet &b) { return a -= b; },
+          py::is_operator())
+      .def(
+          "__ixor__",
+          [](ContactSet &a, const ContactSet &b) { return a ^= b; },
+          py::is_operator())
 
-    .def("__getitem__", [](const ContactSet &self, int index) -> Contact {
-      if (index < 0 || static_cast<size_t>(index) >= self.size()) throw py::index_error("Index out of range");
-      return self.data()[static_cast<size_t>(index)];
-    })
-    .def("__iter__", [](const ContactSet &self) { return py::make_iterator(self.begin(), self.end()); }, py::keep_alive<0, 1>());
+      .def("__getitem__",
+           [](const ContactSet &self, int index) -> Contact {
+             if (index < 0 || static_cast<size_t>(index) >= self.size())
+               throw py::index_error("Index out of range");
+             return self.data()[static_cast<size_t>(index)];
+           })
+      .def(
+          "__iter__",
+          [](const ContactSet &self) { return py::make_iterator(self.begin(), self.end()); },
+          py::keep_alive<0, 1>());
 
   using MsEngine = InteractionEngine<MolStarContactProvider>;
   using AgEngine = InteractionEngine<ArpeggioContactProvider>;
   using GcEngine = InteractionEngine<GetContactsProvider>;
 
   py::class_<MsEngine>(m, "MolStarContactsEngine")
-    .def(py::init<>())
-    .def("compute", [](const MsEngine& eng, const Topology& topo) {
-        auto ts = compute::snapshot_of(topo, topo.conformer());
-        return eng.compute(ts);
-      }, py::arg("topology"))
-    .def("compute", [](const MsEngine& eng, const Topology& topo, py::object only) {
-        auto ts = compute::snapshot_of(topo, topo.conformer());
-        auto filter = parse_optional_python_interactions(only);
-        if (!filter || filter->is_all()) return eng.compute(ts);
-        return eng.compute(ts, std::move(filter));
-      }, py::arg("topology"), py::arg("only") = py::none());
+      .def(py::init<>())
+      .def(
+          "compute",
+          [](const MsEngine &eng, const Topology &topo) {
+            auto ts = C::snapshot_of(topo, topo.conformer());
+            return eng.compute(ts);
+          },
+          py::arg("topology"))
+      .def(
+          "compute",
+          [](const MsEngine &eng, const Topology &topo, py::object only) {
+            auto ts     = C::snapshot_of(topo, topo.conformer());
+            auto filter = parse_optional_python_interactions(only);
+            if (!filter || filter->is_all()) return eng.compute(ts);
+            return eng.compute(ts, std::move(filter));
+          },
+          py::arg("topology"),
+          py::arg("only") = py::none());
 
   py::class_<AgEngine>(m, "ArpeggioContactsEngine")
-    .def(py::init<>())
-    .def("compute", [](const AgEngine& eng, const Topology& topo) {
-        auto ts = compute::snapshot_of(topo, topo.conformer());
-        return eng.compute(ts);
-      }, py::arg("topology"))
-    .def("compute", [](const AgEngine& eng, const Topology& topo, py::object only) {
-        auto ts = compute::snapshot_of(topo, topo.conformer());
-        auto filter = parse_optional_python_interactions(only);
-        if (!filter || filter->is_all()) return eng.compute(ts);
-        return eng.compute(ts, std::move(filter));
-      }, py::arg("topology"), py::arg("only") = py::none());
+      .def(py::init<>())
+      .def(
+          "compute",
+          [](const AgEngine &eng, const Topology &topo) {
+            auto ts = C::snapshot_of(topo, topo.conformer());
+            return eng.compute(ts);
+          },
+          py::arg("topology"))
+      .def(
+          "compute",
+          [](const AgEngine &eng, const Topology &topo, py::object only) {
+            auto ts     = C::snapshot_of(topo, topo.conformer());
+            auto filter = parse_optional_python_interactions(only);
+            if (!filter || filter->is_all()) return eng.compute(ts);
+            return eng.compute(ts, std::move(filter));
+          },
+          py::arg("topology"),
+          py::arg("only") = py::none());
 
   py::class_<GcEngine>(m, "GetContactsEngine")
-    .def(py::init<>())
-    .def("compute", [](const GcEngine& eng, const Topology& topo) {
-        auto ts = compute::snapshot_of(topo, topo.conformer());
-        return eng.compute(ts);
-      }, py::arg("topology"))
-    .def("compute", [](const GcEngine& eng, const Topology& topo, py::object only) {
-        auto ts = compute::snapshot_of(topo, topo.conformer());
-        auto filter = parse_optional_python_interactions(only);
-        if (!filter || filter->is_all()) return eng.compute(ts);
-        return eng.compute(ts, std::move(filter));
-      }, py::arg("topology"), py::arg("only") = py::none());
+      .def(py::init<>())
+      .def(
+          "compute",
+          [](const GcEngine &eng, const Topology &topo) {
+            auto ts = C::snapshot_of(topo, topo.conformer());
+            return eng.compute(ts);
+          },
+          py::arg("topology"))
+      .def(
+          "compute",
+          [](const GcEngine &eng, const Topology &topo, py::object only) {
+            auto ts     = C::snapshot_of(topo, topo.conformer());
+            auto filter = parse_optional_python_interactions(only);
+            if (!filter || filter->is_all()) return eng.compute(ts);
+            return eng.compute(ts, std::move(filter));
+          },
+          py::arg("topology"),
+          py::arg("only") = py::none());
 }
 } // namespace lahuta::bindings

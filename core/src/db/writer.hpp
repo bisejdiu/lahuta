@@ -7,7 +7,6 @@
 #include <lmdb/lmdb++.h>
 
 #include "analysis/system/records.hpp"
-#include "db/model_payload.hpp"
 #include "models/parser.hpp"
 #include "serialization/serializer.hpp"
 
@@ -44,7 +43,7 @@ public:
   }
 
   bool store(const std::string &key, const ModelParserResult &data, bool commit = true) {
-    analysis::system::ModelRecord rec;
+    analysis::ModelRecord rec;
     rec.success   = true;
     rec.file_path = key;
     rec.data      = data;
@@ -59,13 +58,12 @@ public:
     return ok;
   }
 
-  bool put_model_record(const std::string& key,
-                        const analysis::system::ModelRecord& rec,
-                        bool commit_now = true,
-                        const std::function<void(char*, std::size_t)>& mutate = {}) {
+  bool put_model_record(const std::string &key, const analysis::ModelRecord &rec, bool commit_now = true,
+                        const std::function<void(char *, std::size_t)> &mutate = {}) {
     ensure_txn();
 
-    const auto value_size = serialization::Serializer<fmt::binary, analysis::system::ModelRecord>::serialized_size(rec);
+    const auto value_size = serialization::Serializer<fmt::binary, analysis::ModelRecord>::serialized_size(
+        rec);
     MDB_val key_val{key.size(), const_cast<char *>(key.data())};
     MDB_val data_val{value_size, nullptr};
     bool ok = lmdb::dbi_put(m_txn.handle(), m_dbi.handle(), &key_val, &data_val, MDB_RESERVE);
@@ -74,7 +72,7 @@ public:
       return false;
     }
     std::memset(data_val.mv_data, 0, value_size);
-    serialization::Serializer<fmt::binary, analysis::system::ModelRecord>::serialize_into_buffer(
+    serialization::Serializer<fmt::binary, analysis::ModelRecord>::serialize_into_buffer(
         rec,
         static_cast<char *>(data_val.mv_data),
         value_size);

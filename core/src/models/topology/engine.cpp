@@ -1,8 +1,9 @@
-#include "models/topology/compute.hpp"
 #include "models/topology/engine.hpp"
+#include "models/topology/compute.hpp"
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 void ModelTopologyEngine::initialize(const ModelTopologyBuildingOptions &opts) {
 
@@ -46,7 +47,7 @@ bool ModelTopologyEngine::is_computation_enabled(lahuta::models::ModelTopologyCo
   return is_computation_available(label);
 }
 
-const ComputationLabel& ModelTopologyEngine::get_label(lahuta::models::ModelTopologyComputation comp) {
+const C::ComputationLabel& ModelTopologyEngine::get_label(lahuta::models::ModelTopologyComputation comp) {
   switch (comp) {
     case ModelTopologyComputation::Atoms:      return ModelAtomsComputation<>::label;
     case ModelTopologyComputation::Bonds:      return ModelBondsComputation<>::label;

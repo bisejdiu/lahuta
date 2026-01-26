@@ -4,31 +4,34 @@
 #include "analysis/system/kernel.hpp"
 #include "compute/compute_impl.hpp"
 #include "compute/dependency.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/compute/parameters.hpp"
-#include "pipeline/data_requirements.hpp"
+#include "pipeline/data/data_requirements.hpp"
+#include "pipeline/task/compute/context.hpp"
+#include "pipeline/task/compute/parameters.hpp"
 
-// clang-format off
-namespace lahuta::analysis::system {
-using namespace lahuta::topology::compute;
+namespace lahuta::analysis {
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 
-class SystemReadComputation : public ReadWriteComputation<PipelineContext, SystemReadParams, SystemReadComputation> {
+class SystemReadComputation
+    : public C::ReadWriteComputation<P::PipelineContext, P::SystemReadParams, SystemReadComputation> {
 public:
-  using Base = ReadWriteComputation<PipelineContext, SystemReadParams, SystemReadComputation>;
+  using Base = C::ReadWriteComputation<P::PipelineContext, P::SystemReadParams, SystemReadComputation>;
   using Base::Base;
 
-  constexpr static const ComputationLabel label{"system"};
-  using dependencies = UnitComputation;
+  constexpr static const C::ComputationLabel label{"system"};
+  using dependencies = C::UnitComputation;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite>& ctx, const SystemReadParams& p) {
+  using RWContext = C::DataContext<P::PipelineContext, C::Mut::ReadWrite>;
+
+  C::ComputationResult execute_typed(RWContext &ctx, const P::SystemReadParams &p) {
     return SystemReadKernel::execute(ctx, p);
   }
 
-  pipeline::DataFieldSet data_requirements() const override {
-    return pipeline::DataFieldSet::of({pipeline::DataField::Sequence, pipeline::DataField::Positions, pipeline::DataField::Plddt});
+  P::DataFieldSet data_requirements() const override {
+    return P::DataFieldSet::of({P::DataField::Sequence, P::DataField::Positions, P::DataField::Plddt});
   }
 };
 
-} // namespace lahuta::analysis::system
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_SYSTEM_COMPUTATION_HPP

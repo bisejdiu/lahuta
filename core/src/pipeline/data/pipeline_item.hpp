@@ -1,0 +1,28 @@
+#ifndef LAHUTA_PIPELINE_DATA_PIPELINE_ITEM_HPP
+#define LAHUTA_PIPELINE_DATA_PIPELINE_ITEM_HPP
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+
+#include "pipeline/data/frame.hpp"
+
+namespace lahuta::pipeline {
+
+struct StreamSession;
+
+struct PipelineItem {
+  std::string session_id;
+  std::string item_path;
+  std::uint64_t conformer_id = 0;
+  std::optional<double> timestamp_ps;
+  std::optional<std::string> source_file; // e.g., trajectory file for MD data
+
+  std::shared_ptr<const StreamSession> session;
+  std::shared_ptr<FrameHandle> frame;
+};
+
+} // namespace lahuta::pipeline
+
+#endif // LAHUTA_PIPELINE_DATA_PIPELINE_ITEM_HPP

@@ -1,10 +1,10 @@
 #include <stdexcept>
 
+#include "pipeline/ingest/factory.hpp"
 #include "runner/pipeline_plan.hpp"
-#include "pipeline/dynamic/sources.hpp"
 
 namespace lahuta::cli {
-namespace dyn = pipeline::dynamic;
+namespace P = lahuta::pipeline;
 
 PipelinePlan::SourcePtr PipelinePlan::resolve_source() const {
   if (source_factory) {
@@ -13,13 +13,13 @@ PipelinePlan::SourcePtr PipelinePlan::resolve_source() const {
   return source;
 }
 
-std::unique_ptr<dyn::StageManager> PipelinePlan::build_manager() const {
+std::unique_ptr<P::StageManager> PipelinePlan::build_manager() const {
   auto resolved = resolve_source();
   if (!resolved) {
     throw std::runtime_error("PipelinePlan requires a source descriptor");
   }
 
-  auto manager = std::make_unique<dyn::StageManager>(std::move(resolved));
+  auto manager = std::make_unique<P::StageManager>(std::move(resolved));
   manager->set_auto_builtins(auto_builtins);
 
   if (reporting_level.has_value()) {
@@ -59,8 +59,8 @@ std::unique_ptr<dyn::StageManager> PipelinePlan::build_manager() const {
 
 PipelinePlan PipelinePlan::make_noop() {
   PipelinePlan plan;
-  plan.source          = std::shared_ptr<sources::IDescriptor>(dyn::sources_factory::from_vector({}));
-  plan.reporting_level = dyn::StageManager::ReportingLevel::Basic;
+  plan.source          = std::shared_ptr<P::IDescriptor>(P::from_vector({}));
+  plan.reporting_level = P::StageManager::ReportingLevel::Basic;
   plan.threads         = 1;
   return plan;
 }

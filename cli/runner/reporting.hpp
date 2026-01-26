@@ -13,23 +13,22 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 
 #ifdef _WIN32
-#include <spdlog/details/windows_include.h>
+#  include <spdlog/details/windows_include.h>
 #endif
 
-#include "runner/global_flags.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/dynamic/progress_observer.hpp"
+#include "pipeline/runtime/api.hpp"
+#include "runner/global_flags.hpp"
 
 namespace lahuta::cli {
-using StageManager = pipeline::dynamic::StageManager;
-using RunReport    = StageManager::RunReport;
-using ProgRunObs   = pipeline::dynamic::ProgressRunObserver;
+using StageManager = pipeline::StageManager;
+using RunReport    = pipeline::StageManager::RunReport;
+using ProgRunObs   = pipeline::ProgressRunObserver;
 
 #ifdef _WIN32
-#ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
-#define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
-#endif
+#  ifndef ENABLE_VIRTUAL_TERMINAL_PROCESSING
+#    define ENABLE_VIRTUAL_TERMINAL_PROCESSING 0x0004
+#  endif
 
 inline bool enable_vt_processing(bool use_stderr) {
   HANDLE handle = GetStdHandle(use_stderr ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
@@ -154,15 +153,19 @@ struct PipelineReporter {
 };
 
 inline const std::array<PipelineReporter, 3> &available_pipeline_reporters() {
-  static const std::array<PipelineReporter, 3> reporters{{
-      {"summary",
-       "Balanced totals and item counts (default, negligible overhead).",
-       &log_pipeline_report_summary},
-      {"terse", "Single-line throughput summary (fastest logging footprint).", &log_pipeline_report_terse},
-      {"detail",
-       "Summary plus concurrency, permit, and stage breakdown details.",
-       &log_pipeline_report_detail},
-  }};
+  static const std::array<PipelineReporter, 3> reporters{
+      {
+       {"summary",
+           "Balanced totals and item counts (default, negligible overhead).",
+           &log_pipeline_report_summary},
+       {"terse",
+           "Single-line throughput summary (fastest logging footprint).",
+           &log_pipeline_report_terse},
+       {"detail",
+           "Summary plus concurrency, permit, and stage breakdown details.",
+           &log_pipeline_report_detail},
+       }
+  };
   return reporters;
 }
 
@@ -179,7 +182,7 @@ inline const PipelineReporter *find_pipeline_reporter(std::string_view name) {
 inline StageManager::ReportingLevel reporting_level_for_reporter(const PipelineReporter *reporter) {
   if (!reporter) return StageManager::ReportingLevel::Basic;
   return reporter->name == "detail" ? StageManager::ReportingLevel::Debug
-                                         : StageManager::ReportingLevel::Basic;
+                                    : StageManager::ReportingLevel::Basic;
 }
 
 inline void log_pipeline_report(std::string_view label, const RunReport &report) {
@@ -190,7 +193,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
                                                             std::optional<std::size_t> total_items,
                                                             std::chrono::milliseconds interval) {
   if (interval.count() == 0) return {};
-  pipeline::dynamic::ProgressObserverConfig config;
+  pipeline::ProgressObserverConfig config;
   config.interval = interval;
   if (!label.empty()) config.label = std::string(label);
   config.total_items    = total_items;
@@ -199,7 +202,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   std::shared_ptr<spdlog::sinks::sink> base_sink;
   if (logger && !logger->sinks().empty()) {
     base_sink = logger->sinks().front();
-    if (auto progress_sink = std::dynamic_pointer_cast<pipeline::dynamic::ProgressAwareSink>(base_sink)) {
+    if (auto progress_sink = std::dynamic_pointer_cast<pipeline::ProgressAwareSink>(base_sink)) {
       base_sink = progress_sink->wrapped_sink();
     }
   }
@@ -268,7 +271,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   config.progress_logger = std::move(progress_logger);
   auto observer          = std::make_shared<ProgRunObs>(config);
   manager.set_run_observer(observer);
-  auto sink = std::make_shared<pipeline::dynamic::ProgressAwareSink>(base_sink, observer);
+  auto sink = std::make_shared<pipeline::ProgressAwareSink>(base_sink, observer);
   Logger::get_instance().configure_with_sink(sink);
   return observer;
 }

@@ -6,25 +6,25 @@
 
 #include <GraphMol/Conformer.h>
 
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/task/context.hpp"
 #include "topology.hpp"
 
-// clang-format off
 namespace lahuta::compute {
+namespace P = lahuta::pipeline;
 
 // Immutable view pairing a Topology with the active coordinates
 struct TopologySnapshot {
-  const Topology& topo;
-  const RDKit::Conformer& conf;
+  const Topology &topo;
+  const RDKit::Conformer &conf;
 };
 
 // Construct from a conformer
-inline TopologySnapshot snapshot_of(const Topology& topo, const RDKit::Conformer& conf) {
+inline TopologySnapshot snapshot_of(const Topology &topo, const RDKit::Conformer &conf) {
   return TopologySnapshot{topo, conf};
 }
 
 // Construct from a Topology and optional TaskContext
-inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynamic::TaskContext* tctx = nullptr) {
+inline TopologySnapshot snapshot_of(const Topology &topo, const P::TaskContext *tctx = nullptr) {
   if (tctx) {
     if (auto conf = tctx->conformer()) {
       return TopologySnapshot{topo, *conf};
@@ -34,7 +34,7 @@ inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynami
 }
 
 // Non-null TaskContext reference
-inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynamic::TaskContext& tctx) {
+inline TopologySnapshot snapshot_of(const Topology &topo, const P::TaskContext &tctx) {
   if (auto conf = tctx.conformer()) {
     return TopologySnapshot{topo, *conf};
   }
@@ -42,7 +42,7 @@ inline TopologySnapshot snapshot_of(const Topology& topo, const pipeline::dynami
 }
 
 // Return a snapshot if Topology exists in context, otherwise std::nullopt.
-inline std::optional<TopologySnapshot> try_topology_snapshot(const pipeline::dynamic::TaskContext& tctx) {
+inline std::optional<TopologySnapshot> try_topology_snapshot(const P::TaskContext &tctx) {
   auto top = tctx.topology();
   if (!top) return std::nullopt;
   if (auto conf = tctx.conformer()) {
@@ -52,7 +52,7 @@ inline std::optional<TopologySnapshot> try_topology_snapshot(const pipeline::dyn
 }
 
 // Require a snapshot from context, throws if Topology is missing.
-inline TopologySnapshot require_topology_snapshot(const pipeline::dynamic::TaskContext& tctx) {
+inline TopologySnapshot require_topology_snapshot(const P::TaskContext &tctx) {
   auto top = tctx.topology();
   if (!top) throw std::runtime_error("Topology not found in TaskContext");
   if (auto conf = tctx.conformer()) {

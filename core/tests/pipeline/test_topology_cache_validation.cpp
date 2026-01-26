@@ -15,15 +15,14 @@
 #include "compute/result.hpp"
 #include "entities/records.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/dynamic/keys.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/ingestion.hpp"
-#include "sources/descriptor.hpp"
+#include "pipeline/data/ingestion.hpp"
+#include "pipeline/ingest/descriptor.hpp"
+#include "pipeline/runtime/manager.hpp"
+#include "pipeline/task/compute/context.hpp"
 
 using namespace lahuta;
-using namespace lahuta::topology::compute;
-using namespace lahuta::pipeline::compute;
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 
 namespace {
 
@@ -48,7 +47,7 @@ static fs::path locate_simulation_file(const std::string &filename) {
   return {};
 }
 
-struct SingleTrajectoryDescriptor final : sources::IDescriptor {
+struct SingleTrajectoryDescriptor final : P::IDescriptor {
   std::string structure;
   std::vector<std::string> xtcs;
   bool done{false};
@@ -56,12 +55,12 @@ struct SingleTrajectoryDescriptor final : sources::IDescriptor {
   SingleTrajectoryDescriptor(std::string s, std::vector<std::string> x)
       : structure(std::move(s)), xtcs(std::move(x)) {}
 
-  std::optional<IngestDescriptor> next() override {
+  std::optional<P::IngestDescriptor> next() override {
     if (done) return std::nullopt;
     done = true;
-    IngestDescriptor d;
-    d.id = structure;
-    d.origin = MDRef{structure, xtcs};
+    P::IngestDescriptor d;
+    d.id     = structure;
+    d.origin = P::MDRef{structure, xtcs};
     return d;
   }
 
@@ -107,9 +106,9 @@ struct TopologyOracle {
 
   void reset() {
     std::scoped_lock lk(mtx);
-    initialized = false;
-    centers_ready = false;
-    positions_ready = false;
+    initialized       = false;
+    centers_ready     = false;
+    positions_ready   = false;
     frame_index_ready = false;
     residues.clear();
     rings.clear();
@@ -154,10 +153,10 @@ static RDGeom::Point3D direct_center(const RDKit::Conformer &conf, const std::ve
 static RDGeom::Point3D direct_normal_first3(const RDKit::Conformer &conf, const std::vector<unsigned> &idxs) {
   RDGeom::Point3D n{0.0, 0.0, 0.0};
   if (idxs.size() < 3) return n;
-  auto p0 = conf.getAtomPos(idxs[0]);
-  auto p1 = conf.getAtomPos(idxs[1]);
-  auto p2 = conf.getAtomPos(idxs[2]);
-  n = (p1 - p0).crossProduct(p2 - p0);
+  auto p0          = conf.getAtomPos(idxs[0]);
+  auto p1          = conf.getAtomPos(idxs[1]);
+  auto p2          = conf.getAtomPos(idxs[2]);
+  n                = (p1 - p0).crossProduct(p2 - p0);
   const double len = std::sqrt(n.lengthSq());
   if (len > 0.0) n /= len;
   return n;
@@ -168,36 +167,36 @@ static double sq_distance(const RDGeom::Point3D &a, const RDGeom::Point3D &b) {
   return dx * dx + dy * dy + dz * dz;
 }
 
-struct OracleCheckParams : ParameterBase<OracleCheckParams> {
-  static constexpr ParameterInterface::TypeId TYPE_ID = 203; // local test id (fits in uint8)
+struct OracleCheckParams : P::ParameterBase<OracleCheckParams> {
+  static constexpr P::ParameterInterface::TypeId TYPE_ID = 203; // local test id (fits in uint8)
 };
 
 class OracleCheckComputation final
-    : public ReadWriteComputation<PipelineContext, OracleCheckParams, OracleCheckComputation> {
+    : public P::ReadWriteComputation<P::PipelineContext, OracleCheckParams, OracleCheckComputation> {
 public:
-  using Base = ReadWriteComputation<PipelineContext, OracleCheckParams, OracleCheckComputation>;
+  using Base = P::ReadWriteComputation<P::PipelineContext, OracleCheckParams, OracleCheckComputation>;
   OracleCheckComputation() : Base(OracleCheckParams{}) {}
 
-  static constexpr ComputationLabel label{"oracle_check"};
-  using dependencies = Dependencies<Dependency<analysis::topology::BuildTopologyComputation, void>>;
+  static constexpr P::ComputationLabel label{"oracle_check"};
+  using dependencies = C::Dependencies<C::Dependency<analysis::BuildTopologyComputation, void>>;
 
-  ComputationResult
-  execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &ctx, const OracleCheckParams &) {
+  P::ComputationResult execute_typed(P::DataContext<P::PipelineContext, P::Mut::ReadWrite> &ctx,
+                                     const OracleCheckParams &) {
     auto &data = ctx.data();
     try {
       // system and topology
       auto task_ctx = data.ctx;
-      auto topo = task_ctx ? task_ctx->topology() : nullptr;
+      auto topo     = task_ctx ? task_ctx->topology() : nullptr;
       if (!topo && data.session) {
         TopologyBuildingOptions opts{};
         topo = data.session->get_or_load_topology(opts);
       }
-      if (!topo) return ComputationResult(ComputationError("oracle_check requires topology"));
+      if (!topo) return P::ComputationResult(C::ComputationError("oracle_check requires topology"));
 
       // Validate topology object identity
       {
         auto current_topo_ptr = topo.get();
-        auto expected_ptr = g_oracle.last_topology_ptr.load();
+        auto expected_ptr     = g_oracle.last_topology_ptr.load();
 
         if (expected_ptr == nullptr) {
           // First frame - store the topology pointer
@@ -205,7 +204,7 @@ public:
         } else if (current_topo_ptr != expected_ptr) {
           // Topology object changed across frames, caching failed
           ++g_oracle.errors;
-          return ComputationResult(ComputationError("Topology object identity changed across frames"));
+          return P::ComputationResult(C::ComputationError("Topology object identity changed across frames"));
         }
       }
 
@@ -213,10 +212,12 @@ public:
       auto conf_ptr = task_ctx ? task_ctx->conformer() : nullptr;
       RDKit::Conformer conf_tmp; // fallback
       if (!conf_ptr && data.frame) {
-        auto view = data.frame->load_coordinates();
-        std::shared_ptr<RDGeom::POINT3D_VECT> slab =
-            view.shared_positions ? std::const_pointer_cast<RDGeom::POINT3D_VECT>(view.shared_positions)
-                                  : std::make_shared<RDGeom::POINT3D_VECT>(std::move(view.positions));
+        auto view                                  = data.frame->load_coordinates();
+        std::shared_ptr<RDGeom::POINT3D_VECT> slab = view.shared_positions
+                                                         ? std::const_pointer_cast<RDGeom::POINT3D_VECT>(
+                                                               view.shared_positions)
+                                                         : std::make_shared<RDGeom::POINT3D_VECT>(
+                                                               std::move(view.positions));
         conf_tmp.set3D(true);
         conf_tmp.bindExternalPositions(std::move(slab));
       }
@@ -239,8 +240,11 @@ public:
           const auto &res = topo->get_residues().get_residues();
           g_oracle.residues.reserve(res.size());
           for (const auto &r : res) {
-            TopologyOracle::ResidueRec
-                rr{r.chain_id, r.number, r.name, r.alt_loc, residue_atoms_to_indices(r.atoms)};
+            TopologyOracle::ResidueRec rr{r.chain_id,
+                                          r.number,
+                                          r.name,
+                                          r.alt_loc,
+                                          residue_atoms_to_indices(r.atoms)};
             g_oracle.residues.push_back(std::move(rr));
           }
           // rings
@@ -253,11 +257,9 @@ public:
           const auto &group_recs = topo->records<GroupRec>();
           g_oracle.groups.reserve(group_recs.size());
           for (const auto &g : group_recs) {
-            g_oracle.groups.push_back(
-                TopologyOracle::GroupRecO{
-                    static_cast<uint32_t>(g.a_type),
-                    static_cast<int>(g.type),
-                    atoms_to_indices(g.atoms)});
+            g_oracle.groups.push_back(TopologyOracle::GroupRecO{static_cast<uint32_t>(g.a_type),
+                                                                static_cast<int>(g.type),
+                                                                atoms_to_indices(g.atoms)});
           }
           g_oracle.initialized = true;
         }
@@ -296,16 +298,16 @@ public:
           for (size_t i = 0; i < ring_recs.size(); ++i) {
             const auto &r = ring_recs[i];
             const auto &o = g_oracle.rings[i];
-            auto idxs = atoms_to_indices(r.atoms);
+            auto idxs     = atoms_to_indices(r.atoms);
             if (idxs != o.atom_idxs || r.aromatic != o.aromatic) {
               ++g_oracle.errors;
               break;
             }
             // recompute geometry
-            auto c1 = r.center(conf);
-            auto n1 = r.normal(conf);
-            auto c2 = direct_center(conf, idxs);
-            auto n2 = direct_normal_first3(conf, idxs);
+            auto c1          = r.center(conf);
+            auto n1          = r.normal(conf);
+            auto c2          = direct_center(conf, idxs);
+            auto n2          = direct_normal_first3(conf, idxs);
             const double tol = 1e-6;
             if (sq_distance(c1, c2) > 1e-4) {
               ++g_oracle.errors;
@@ -324,10 +326,10 @@ public:
             std::scoped_lock lk(g_oracle.mtx);
             if (!g_oracle.centers_ready) {
               g_oracle.last_ring_centers = std::move(current_centers);
-              g_oracle.centers_ready = true;
+              g_oracle.centers_ready     = true;
             } else if (current_centers.size() == g_oracle.last_ring_centers.size()) {
               const double move_tol = 1e-12;
-              bool ring_moved = false;
+              bool ring_moved       = false;
               for (size_t i = 0; i < current_centers.size(); ++i) {
                 if (sq_distance(current_centers[i], g_oracle.last_ring_centers[i]) > move_tol) {
                   ring_moved = true;
@@ -350,9 +352,9 @@ public:
           for (size_t i = 0; i < group_recs.size(); ++i) {
             const auto &g = group_recs[i];
             const auto &o = g_oracle.groups[i];
-            auto idxs = atoms_to_indices(g.atoms);
-            if (static_cast<uint32_t>(g.a_type) != o.a_type || static_cast<int>(g.type) != o.type
-                || idxs != o.atom_idxs) {
+            auto idxs     = atoms_to_indices(g.atoms);
+            if (static_cast<uint32_t>(g.a_type) != o.a_type || static_cast<int>(g.type) != o.type ||
+                idxs != o.atom_idxs) {
               ++g_oracle.errors;
               break;
             }
@@ -370,10 +372,10 @@ public:
         const auto frame_idx = data.frame->index();
         std::scoped_lock lk(g_oracle.mtx);
         if (!g_oracle.frame_index_ready) {
-          g_oracle.last_frame_index = frame_idx;
+          g_oracle.last_frame_index  = frame_idx;
           g_oracle.frame_index_ready = true;
         } else if (g_oracle.last_frame_index != frame_idx) {
-          frame_moved = true;
+          frame_moved               = true;
           g_oracle.last_frame_index = frame_idx;
         }
       }
@@ -388,10 +390,10 @@ public:
 
         std::scoped_lock lk(g_oracle.mtx);
         if (!g_oracle.positions_ready) {
-          g_oracle.last_positions = std::move(current_positions);
+          g_oracle.last_positions  = std::move(current_positions);
           g_oracle.positions_ready = true;
         } else if (g_oracle.last_positions.size() == current_positions.size()) {
-          const double pos_tol = 1e-12;
+          const double pos_tol   = 1e-12;
           bool coordinates_moved = false;
           for (size_t i = 0; i < current_positions.size(); ++i) {
             if (sq_distance(current_positions[i], g_oracle.last_positions[i]) > pos_tol) {
@@ -411,9 +413,9 @@ public:
       }
 
       ++g_oracle.frames;
-      return ComputationResult(true);
+      return P::ComputationResult(true);
     } catch (const std::exception &e) {
-      return ComputationResult(ComputationError(std::string("oracle_check exception: ") + e.what()));
+      return P::ComputationResult(C::ComputationError(std::string("oracle_check exception: ") + e.what()));
     }
   }
 };
@@ -436,7 +438,7 @@ TEST(TopologyCacheValidation, GPCRMD_Trajectory_Threads) {
     auto src = std::make_unique<SingleTrajectoryDescriptor>(
         structure_path.string(),
         std::vector<std::string>{trajectory_path.string()});
-    pipeline::dynamic::StageManager mgr(std::move(src));
+    P::StageManager mgr(std::move(src));
     mgr.set_auto_builtins(true);
     mgr.add_computation("oracle_check", {"topology"}, [] {
       return std::make_unique<OracleCheckComputation>();

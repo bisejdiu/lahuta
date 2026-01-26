@@ -10,10 +10,11 @@
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 template <typename DataT>
-ComputationResult
-ModelAtomsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelAtomsParams &params) {
+C::ComputationResult
+ModelAtomsKernel::execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelAtomsParams &params) {
   auto &data = context.data();
 
   try {
@@ -39,9 +40,9 @@ ModelAtomsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Mod
       fix_termini_atoms(seq.back(), num_residues, data);
     }
 
-    return ComputationResult(true);
+    return C::ComputationResult(true);
   } catch (const std::exception &e) {
-    return ComputationResult(ComputationError(std::string("Error creating model atoms: ") + e.what()));
+    return C::ComputationResult(C::ComputationError(std::string("Error creating model atoms: ") + e.what()));
   }
 }
 
@@ -120,6 +121,6 @@ void ModelAtomsKernel::fix_termini_atoms(char aa_type, int num_residues, ModelDa
   ++data.atom_idx;
 }
 
-template ComputationResult ModelAtomsKernel::execute<ModelData>(DataContext<ModelData, Mut::ReadWrite> &, const ModelAtomsParams &);
+template C::ComputationResult ModelAtomsKernel::execute<ModelData>(C::DataContext<ModelData, C::Mut::ReadWrite> &, const ModelAtomsParams &);
 
 } // namespace lahuta::models::topology

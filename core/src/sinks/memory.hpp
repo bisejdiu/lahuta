@@ -1,15 +1,14 @@
-#ifndef LAHUTA_PIPELINE_DYNAMIC_SINK_MEMORY_HPP
-#define LAHUTA_PIPELINE_DYNAMIC_SINK_MEMORY_HPP
+#ifndef LAHUTA_PIPELINE_SINK_MEMORY_HPP
+#define LAHUTA_PIPELINE_SINK_MEMORY_HPP
 
 #include <mutex>
 #include <string>
 #include <vector>
 
-#include "pipeline/dynamic/sink_iface.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/io/sink_iface.hpp"
+#include "pipeline/task/emission.hpp"
 
-// clang-format off
-namespace lahuta::pipeline::dynamic {
+namespace lahuta::pipeline {
 
 class MemorySink : public IDynamicSink {
 public:
@@ -37,6 +36,6 @@ private:
   std::vector<std::string> out_;
 };
 
-} // namespace lahuta::pipeline::dynamic
+} // namespace lahuta::pipeline
 
-#endif // LAHUTA_PIPELINE_DYNAMIC_SINK_MEMORY_HPP
+#endif // LAHUTA_PIPELINE_SINK_MEMORY_HPP

@@ -7,22 +7,23 @@
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 template <typename DataT>
-ComputationResult
-ModelPositionsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelPositionsParams &params) {
+C::ComputationResult
+ModelPositionsKernel::execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelPositionsParams &params) {
   auto &data = context.data();
 
   try {
     if (!data.conf) data.conf = std::make_unique<RDKit::Conformer>();
     data.conf->setAllAtomPositions(data.input_data->consume_coords());
 
-    return ComputationResult(true);
+    return C::ComputationResult(true);
   } catch (const std::exception &e) {
-    return ComputationResult(ComputationError(std::string("Error setting model positions: ") + e.what()));
+    return C::ComputationResult(C::ComputationError(std::string("Error setting model positions: ") + e.what()));
   }
 }
 
-template ComputationResult ModelPositionsKernel::execute<ModelData>(DataContext<ModelData, Mut::ReadWrite> &, const ModelPositionsParams &);
+template C::ComputationResult ModelPositionsKernel::execute<ModelData>(C::DataContext<ModelData, C::Mut::ReadWrite> &, const ModelPositionsParams &);
 
 } // namespace lahuta::models::topology

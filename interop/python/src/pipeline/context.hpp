@@ -8,22 +8,18 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "lahuta.hpp"
 #include "numpy_utils.hpp"
-#include "pipeline/dynamic/keys.hpp"
-#include "pipeline/dynamic/types.hpp"
-#include "pipeline/frame.hpp"
-#include "pipeline/model_payload.hpp"
-#include "topology.hpp"
+#include "pipeline/data/frame.hpp"
+#include "pipeline/data/model_payload.hpp"
+#include "pipeline/task/context.hpp"
 
-// clang-format off
 namespace py = pybind11;
 namespace lahuta::bindings {
-using pipeline::dynamic::TaskContext;
+namespace P = lahuta::pipeline;
 
 class PyModelPayload {
 public:
-  explicit PyModelPayload(std::shared_ptr<const pipeline::ModelPayloadSlices> payload)
+  explicit PyModelPayload(std::shared_ptr<const P::ModelPayloadSlices> payload)
       : payload_(std::move(payload)) {}
 
   py::object sequence() const {
@@ -39,23 +35,22 @@ public:
     // thread can invalidate the txn. Copy if you need to keep data after the
     // task.
     //
-    auto capsule = py::capsule(
-        new std::shared_ptr<const SequenceView>(handle), [](void *p) {
-          delete static_cast<std::shared_ptr<const SequenceView> *>(p);
-        });
-    auto arr = py::array(
-        py::dtype::of<std::uint8_t>(),
-        {static_cast<py::ssize_t>(handle->data.size())}, {py::ssize_t(1)},
-        reinterpret_cast<const std::uint8_t *>(handle->data.data()), capsule);
+    auto capsule = py::capsule(new std::shared_ptr<const P::SequenceView>(handle), [](void *p) {
+      delete static_cast<std::shared_ptr<const P::SequenceView> *>(p);
+    });
+    auto arr     = py::array(py::dtype::of<std::uint8_t>(),
+                             {static_cast<py::ssize_t>(handle->data.size())},
+                             {py::ssize_t(1)},
+                         reinterpret_cast<const std::uint8_t *>(handle->data.data()),
+                         capsule);
     numpy::set_readonly(arr);
     return arr;
   }
 
   py::object plddts() const {
-    if (!payload_ || !payload_->plddts || payload_->plddts->empty())
-      return py::none();
+    if (!payload_ || !payload_->plddts || payload_->plddts->empty()) return py::none();
     const auto &cats = *payload_->plddts;
-    auto arr = py::array_t<std::uint8_t>(static_cast<py::ssize_t>(cats.size()));
+    auto arr         = py::array_t<std::uint8_t>(static_cast<py::ssize_t>(cats.size()));
     if (!cats.empty()) {
       std::memcpy(arr.mutable_data(),
                   reinterpret_cast<const std::uint8_t *>(cats.data()),
@@ -67,14 +62,14 @@ public:
   py::object plddts_view() const {
     if (!payload_ || !payload_->plddts_view) return py::none();
     const auto &handle = payload_->plddts_view;
-    auto capsule = py::capsule(
-      new std::shared_ptr<const PlddtView>(handle), [](void *p) {
-        delete static_cast<std::shared_ptr<const PlddtView> *>(p);
-      });
-    auto ptr = reinterpret_cast<const std::uint8_t *>(handle->data.data());
-    auto arr = py::array(py::dtype::of<std::uint8_t>(),
-                         {static_cast<py::ssize_t>(handle->data.size())},
-                         {py::ssize_t(sizeof(std::uint8_t))}, ptr, capsule);
+    auto capsule       = py::capsule(new std::shared_ptr<const P::PlddtView>(handle),
+                               [](void *p) { delete static_cast<std::shared_ptr<const P::PlddtView> *>(p); });
+    auto ptr           = reinterpret_cast<const std::uint8_t *>(handle->data.data());
+    auto arr           = py::array(py::dtype::of<std::uint8_t>(),
+                                   {static_cast<py::ssize_t>(handle->data.size())},
+                                   {py::ssize_t(sizeof(std::uint8_t))},
+                         ptr,
+                         capsule);
     numpy::set_readonly(arr);
     return arr;
   }
@@ -82,7 +77,7 @@ public:
   py::object dssp() const {
     if (!payload_ || !payload_->dssp || payload_->dssp->empty()) return py::none();
     const auto &vals = *payload_->dssp;
-    auto arr = py::array_t<std::uint8_t>(static_cast<py::ssize_t>(vals.size()));
+    auto arr         = py::array_t<std::uint8_t>(static_cast<py::ssize_t>(vals.size()));
     if (!vals.empty()) {
       std::memcpy(arr.mutable_data(),
                   reinterpret_cast<const std::uint8_t *>(vals.data()),
@@ -94,14 +89,14 @@ public:
   py::object dssp_view() const {
     if (!payload_ || !payload_->dssp_view) return py::none();
     const auto &handle = payload_->dssp_view;
-    auto capsule = py::capsule(
-      new std::shared_ptr<const DsspView>(handle), [](void *p) {
-        delete static_cast<std::shared_ptr<const DsspView> *>(p);
-      });
-    auto ptr = reinterpret_cast<const std::uint8_t *>(handle->data.data());
-    auto arr = py::array(py::dtype::of<std::uint8_t>(),
-                         {static_cast<py::ssize_t>(handle->data.size())},
-                         {py::ssize_t(sizeof(std::uint8_t))}, ptr, capsule);
+    auto capsule       = py::capsule(new std::shared_ptr<const P::DsspView>(handle),
+                               [](void *p) { delete static_cast<std::shared_ptr<const P::DsspView> *>(p); });
+    auto ptr           = reinterpret_cast<const std::uint8_t *>(handle->data.data());
+    auto arr           = py::array(py::dtype::of<std::uint8_t>(),
+                                   {static_cast<py::ssize_t>(handle->data.size())},
+                                   {py::ssize_t(sizeof(std::uint8_t))},
+                         ptr,
+                         capsule);
     numpy::set_readonly(arr);
     return arr;
   }
@@ -141,32 +136,29 @@ public:
   py::object positions_view() const {
     if (!payload_ || !payload_->positions_view) return py::none();
     const auto &handle = payload_->positions_view;
-    const auto span = handle->data;
-    const auto *ptr = span.empty() ? nullptr : reinterpret_cast<const float *>(span.data());
+    const auto span    = handle->data;
+    const auto *ptr    = span.empty() ? nullptr : reinterpret_cast<const float *>(span.data());
 
-    auto capsule = py::capsule(
-        new std::shared_ptr<const CoordinateView>(handle), [](void *p) {
-          delete static_cast<std::shared_ptr<const CoordinateView> *>(p);
-        });
+    auto capsule = py::capsule(new std::shared_ptr<const P::CoordinateView>(handle), [](void *p) {
+      delete static_cast<std::shared_ptr<const P::CoordinateView> *>(p);
+    });
 
-    py::array arr(
-        py::dtype::of<float>(),
-        {static_cast<py::ssize_t>(span.size()), static_cast<py::ssize_t>(3)},
-        {static_cast<py::ssize_t>(3 * sizeof(float)),
-         static_cast<py::ssize_t>(sizeof(float))},
-        ptr, capsule);
+    py::array arr(py::dtype::of<float>(),
+                  {static_cast<py::ssize_t>(span.size()), static_cast<py::ssize_t>(3)},
+                  {static_cast<py::ssize_t>(3 * sizeof(float)), static_cast<py::ssize_t>(sizeof(float))},
+                  ptr,
+                  capsule);
     numpy::set_readonly(arr);
     return arr;
   }
 
 private:
-  std::shared_ptr<const pipeline::ModelPayloadSlices> payload_;
+  std::shared_ptr<const P::ModelPayloadSlices> payload_;
 };
 
-// clang-format off
 class PyPipelineContext {
 public:
-  PyPipelineContext(TaskContext *ctx, std::string path) : ctx_(ctx), path_(std::move(path)) {}
+  PyPipelineContext(P::TaskContext *ctx, std::string path) : ctx_(ctx), path_(std::move(path)) {}
 
   std::string path() const { return path_; }
 
@@ -223,9 +215,9 @@ public:
     py::gil_scoped_acquire gil;
     try {
       static py::object dumps = py::module_::import("json").attr("dumps");
-      std::string payload = dumps(std::move(obj), py::arg("ensure_ascii") = false).cast<std::string>();
+      std::string payload     = dumps(std::move(obj), py::arg("ensure_ascii") = false).cast<std::string>();
       ctx_->set_text(key, std::move(payload));
-    } catch (const py::error_already_set&) {
+    } catch (const py::error_already_set &) {
       // ignore
     }
   }
@@ -237,7 +229,7 @@ public:
       // Accept bytes-like (bytes, bytearray, memoryview), py::bytes will coerce
       py::bytes b = py::bytes(obj);
       ctx_->set_bytes(key, b.cast<std::string>());
-    } catch (const py::error_already_set&) {
+    } catch (const py::error_already_set &) {
       // just ignore
     }
   }
@@ -248,7 +240,7 @@ public:
     return py::none();
   }
 
-  py::object get_json(const std::string& key) const {
+  py::object get_json(const std::string &key) const {
     if (!ctx_) return py::none();
 
     auto s = ctx_->get_text(key);
@@ -256,12 +248,12 @@ public:
 
     try {
       return py::module_::import("json").attr("loads")(py::str(*s));
-    } catch (const py::error_already_set&) {
+    } catch (const py::error_already_set &) {
       return py::none();
     }
   }
 
-  py::object get(const std::string& key) const {
+  py::object get(const std::string &key) const {
     if (!ctx_) return py::none();
 
     auto s = ctx_->get_text(key);
@@ -269,7 +261,7 @@ public:
 
     try {
       return py::module_::import("json").attr("loads")(py::str(*s));
-    } catch (const py::error_already_set&) {
+    } catch (const py::error_already_set &) {
       return py::str(*s);
     }
   }
@@ -283,7 +275,7 @@ public:
   py::object frame_metadata() const {
     if (auto meta = frame_metadata_ptr()) {
       py::dict out;
-      out["session_id"] = meta->session_id;
+      out["session_id"]   = meta->session_id;
       out["conformer_id"] = py::int_(meta->conformer_id);
       if (meta->timestamp_ps.has_value()) {
         out["timestamp_ps"] = py::float_(*meta->timestamp_ps);
@@ -305,23 +297,24 @@ public:
   }
 
 private:
-  const FrameMetadata* frame_metadata_ptr() const {
+  const P::FrameMetadata *frame_metadata_ptr() const {
     if (!ctx_) return nullptr;
     auto meta = ctx_->frame_metadata();
     return meta ? meta.get() : nullptr;
   }
 
-  std::shared_ptr<const pipeline::ModelPayloadSlices> payload_ptr() const {
+  std::shared_ptr<const P::ModelPayloadSlices> payload_ptr() const {
     if (!ctx_) return {};
     return ctx_->model_payload();
   }
 
-  TaskContext *ctx_;
+  P::TaskContext *ctx_;
   std::string path_;
   mutable py::object cached_payload_;
 };
 
 inline void bind_pipeline_context(py::module_ &md) {
+  // clang-format off
   constexpr const char* txn_help = R"doc( The view is backed by LMDB memory and keeps the database transaction alive while in use. Do not keep this view after your task completes. Copy the data if you need it later.)doc";
   py::class_<PyModelPayload, std::shared_ptr<PyModelPayload>>(md, "ModelPayload")
       .def_property_readonly("sequence",       &PyModelPayload::sequence)
