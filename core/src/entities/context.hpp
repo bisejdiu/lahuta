@@ -8,6 +8,7 @@
 #include "topology.hpp"
 
 namespace lahuta {
+namespace C = lahuta::compute;
 
 class ContactContext {
 public:
@@ -17,11 +18,12 @@ public:
   // or even std::any to retain the object safely across layers.
   //
   template <typename ParamsT>
-  ContactContext(const compute::TopologySnapshot &tf_, const ParamsT &p)
+  ContactContext(const C::TopologySnapshot &tf_, const ParamsT &p)
       : ts(tf_), params(static_cast<const void *>(&p)), params_type(&typeid(ParamsT)), topology(tf_.topo) {}
 
-  template <typename ParamsT> const ParamsT &get_params() const {
-    assert(params      != nullptr && "ContactContext params is null");
+  template <typename ParamsT>
+  const ParamsT &get_params() const {
+    assert(params != nullptr && "ContactContext params is null");
     assert(params_type != nullptr && "ContactContext params_type is null");
     assert(*params_type == typeid(ParamsT) && "ContactContext: parameter type mismatch");
     return *static_cast<const ParamsT *>(params);
@@ -31,7 +33,7 @@ public:
   const RDKit::RWMol &molecule() const { return ts.topo.molecule(); }
 
 public:
-  const compute::TopologySnapshot ts;
+  const C::TopologySnapshot ts;
   const Topology &topology; // convenience alias
 
   // Opaque params with runtime type tag for safe retrieval

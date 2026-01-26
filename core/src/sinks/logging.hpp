@@ -1,15 +1,14 @@
-#ifndef LAHUTA_PIPELINE_DYNAMIC_SINK_LOGGING_HPP
-#define LAHUTA_PIPELINE_DYNAMIC_SINK_LOGGING_HPP
+#ifndef LAHUTA_PIPELINE_SINK_LOGGING_HPP
+#define LAHUTA_PIPELINE_SINK_LOGGING_HPP
 
 #include <cstdio>
 #include <mutex>
 #include <string_view>
 
-#include "pipeline/dynamic/sink_iface.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/io/sink_iface.hpp"
+#include "pipeline/task/emission.hpp"
 
-// clang-format off
-namespace lahuta::pipeline::dynamic {
+namespace lahuta::pipeline {
 
 class LoggingSink : public IDynamicSink {
 public:
@@ -29,6 +28,6 @@ private:
   std::mutex mu_;
 };
 
-} // namespace lahuta::pipeline::dynamic
+} // namespace lahuta::pipeline
 
-#endif // LAHUTA_PIPELINE_DYNAMIC_SINK_LOGGING_HPP
+#endif // LAHUTA_PIPELINE_SINK_LOGGING_HPP

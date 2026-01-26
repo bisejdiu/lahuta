@@ -1,8 +1,8 @@
 #ifndef LAHUTA_CONTACT_UTILS_HPP
 #define LAHUTA_CONTACT_UTILS_HPP
 
-#include <GraphMol/Atom.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
 #include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "chemistry/elements.hpp"

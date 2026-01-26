@@ -5,7 +5,7 @@
 #include <memory>
 #include <string_view>
 
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 namespace lahuta::md {
 

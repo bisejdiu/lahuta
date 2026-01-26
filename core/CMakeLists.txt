@@ -301,7 +301,6 @@ lahuta_configure_core_version(lahuta_core)
 target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/external
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/rdkit
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
   ${CMAKE_CURRENT_SOURCE_DIR}/external/simde
   ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include

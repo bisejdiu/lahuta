@@ -10,6 +10,7 @@
 #include "lahuta.hpp"
 
 using namespace lahuta;
+namespace C = lahuta::compute;
 
 int main(int argc, char **argv) {
   if (argc != 2 || std::string(argv[1]) == "--help") {
@@ -33,7 +34,7 @@ int main(int argc, char **argv) {
   topo.assign_typing(AtomTypingMethod::GetContacts);
 
   InteractionEngine<GetContactsProvider> engine;
-  auto snapshot = compute::snapshot_of(topo, topo.conformer());
+  auto snapshot       = C::snapshot_of(topo, topo.conformer());
   ContactSet contacts = engine.compute(snapshot);
 
   std::cout << "Computed " << contacts.size() << " contacts via GetContacts provider." << std::endl;
@@ -41,7 +42,7 @@ int main(int argc, char **argv) {
   EntityResolver resolver(topo);
   const auto resolved = resolver.resolve_all(contacts);
   for (std::size_t i = 0; i < resolved.size(); ++i) {
-    const auto &pair = resolved[i];
+    const auto &pair    = resolved[i];
     const auto &contact = contacts.data()[i];
     std::cout << ContactTableFormatter::format_entity_compact(topo, pair.first) << " \t"
               << ContactTableFormatter::format_entity_compact(topo, pair.second) << " \t"

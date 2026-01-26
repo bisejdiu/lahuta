@@ -6,11 +6,11 @@
 
 #include "contacts/contact_types.hpp"
 
-// clang-format off
-namespace lahuta::analysis::contacts {
+namespace lahuta::analysis {
 
 enum class ContactProvider { MolStar, Arpeggio, GetContacts };
 
+// clang-format off
 inline constexpr std::string_view contact_provider_name(ContactProvider provider) noexcept {
   switch (provider) {
     case ContactProvider::MolStar:     return "molstar";
@@ -37,6 +37,6 @@ inline constexpr AtomTypingMethod typing_for_provider(ContactProvider provider) 
   }
 }
 
-} // namespace lahuta::analysis::contacts
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_CONTACTS_PROVIDER_HPP

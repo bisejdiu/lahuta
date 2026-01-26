@@ -1,4 +1,4 @@
-#include <GraphMol/MonomerInfo.h>
+#include <rdkit/GraphMol/MonomerInfo.h>
 
 #include "chemistry/valence_model.hpp"
 

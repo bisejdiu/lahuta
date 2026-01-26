@@ -10,14 +10,15 @@
 
 #include <gtest/gtest.h>
 
-#include "pipeline/dynamic/channel_multiplexer.hpp"
-#include "pipeline/dynamic/sink_iface.hpp"
+#include "pipeline/io/channel_multiplexer.hpp"
+#include "pipeline/io/sink_iface.hpp"
 #include "sinks/memory.hpp"
 #include "sinks/sharded_ndjson.hpp"
+#include "test_utils/common.hpp"
 
-using namespace lahuta::pipeline::dynamic;
+using namespace lahuta::pipeline;
+using namespace lahuta::test_utils;
 
-// clang-format off
 namespace {
 class ThrowingSink : public IDynamicSink {
 public:
@@ -48,12 +49,9 @@ TEST(DynamicBackpressure_EdgeCases, EmitIgnoredAfterClose) {
 // Count-based rotation produces expected number of shards and line counts
 // With shard_size=2 and 5 records, we expect shards with 2,2,1 lines.
 TEST(DynamicBackpressure_EdgeCases, ShardedSinkRotatesByCount) {
-  namespace fs = std::filesystem;
-  fs::path dir = fs::temp_directory_path() / fs::path("lahuta_test_shards_count");
-  std::error_code ec; fs::create_directories(dir, ec);
-  for (auto &p : fs::directory_iterator(dir, ec)) { (void)fs::remove(p.path(), ec); }
+  TempDir dir("lahuta_test_shards_count_");
 
-  auto sink = std::make_shared<ShardedNdjsonSink>(dir.string(), /*shard_size=*/2);
+  auto sink = std::make_shared<ShardedNdjsonSink>(dir.path.string(), /*shard_size=*/2);
   ChannelMultiplexer mux;
   mux.connect("s", sink);
 
@@ -70,20 +68,20 @@ TEST(DynamicBackpressure_EdgeCases, ShardedSinkRotatesByCount) {
 
   // Expect 2,2,1 lines across shards
   std::vector<size_t> counts;
-  for (const auto& f : files) {
+  for (const auto &f : files) {
     std::ifstream in(f);
     ASSERT_TRUE(in.good());
-    size_t n = 0; std::string line;
-    while (std::getline(in, line)) ++n;
+    size_t n = 0;
+    std::string line;
+    while (std::getline(in, line)) {
+      ++n;
+    }
     counts.push_back(n);
   }
   ASSERT_EQ(counts.size(), 3u);
   EXPECT_EQ(counts[0], 2u);
   EXPECT_EQ(counts[1], 2u);
   EXPECT_EQ(counts[2], 1u);
-
-  for (const auto& f : files) { (void)fs::remove(f, ec); }
-  (void)fs::remove(dir, ec);
 }
 
 // Writer throws but required=false: close_and_flush should succeed
@@ -92,7 +90,8 @@ TEST(DynamicBackpressure_EdgeCases, ShardedSinkRotatesByCount) {
 TEST(DynamicBackpressure_EdgeCases, NonRequiredSinkFailureDoesNotAbort) {
   ChannelMultiplexer mux;
   auto bad = std::make_shared<ThrowingSink>();
-  BackpressureConfig cfg; cfg.required = false;
+  BackpressureConfig cfg;
+  cfg.required = false;
   mux.connect("err", bad, cfg);
   mux.emit(Emission{"err", "x"});
   EXPECT_NO_THROW(mux.close_and_flush(std::chrono::seconds(2)));

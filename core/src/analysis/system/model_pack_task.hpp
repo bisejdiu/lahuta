@@ -8,31 +8,29 @@
 #include "analysis/system/model_loader.hpp"
 #include "analysis/system/records.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/task/api.hpp"
 #include "serialization/formats.hpp"
 #include "serialization/serializer.hpp"
 
-// clang-format off
-namespace lahuta::analysis::system {
-using namespace lahuta::pipeline::dynamic;
+namespace lahuta::analysis {
+namespace P = lahuta::pipeline;
 
 // ModelPackTask
 // Emission on channel `channel_` containing a binary-serialized ModelRecord
-class ModelPackTask : public ITask {
+class ModelPackTask : public P::ITask {
 public:
   explicit ModelPackTask(std::string channel = "db") : channel_(std::move(channel)) {}
 
-  TaskResult run(const std::string& item_path, TaskContext& /*ctx*/) override {
-    using WriterRes = analysis::system::ModelRecord;
+  P::TaskResult run(const std::string &item_path, P::TaskContext & /*ctx*/) override {
     try {
-      WriterRes rec = build_model_record(item_path);
+      ModelRecord rec = build_model_record(item_path);
       // Thread-local payload buffer to reduce repeated allocations.
       static thread_local std::string tls_payload;
-      serialization::Serializer<fmt::binary, WriterRes>::serialize_into(rec, tls_payload);
+      serialization::Serializer<fmt::binary, ModelRecord>::serialize_into(rec, tls_payload);
       std::string payload;
       payload.swap(tls_payload);
-      return TaskResult{true, std::vector<Emission>{{channel_, std::move(payload)}}};
-    } catch (const std::exception& e) {
+      return P::TaskResult{true, std::vector<P::Emission>{{channel_, std::move(payload)}}};
+    } catch (const std::exception &e) {
       Logger::get_logger()->error("Error processing file {}: {}", item_path, e.what());
       return {false, {}};
     }
@@ -42,6 +40,6 @@ private:
   std::string channel_;
 };
 
-} // namespace lahuta::analysis::system
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_SYSTEM_MODEL_PACK_TASK_HPP

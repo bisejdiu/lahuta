@@ -1,7 +1,7 @@
 #ifndef LAHUTA_PROPERTY_ANALYZER_HPP
 #define LAHUTA_PROPERTY_ANALYZER_HPP
 
-#include <Geometry/point.h>
+#include <rdkit/Geometry/point.h>
 
 #include "properties/query.hpp"
 #include "properties/registry.hpp"

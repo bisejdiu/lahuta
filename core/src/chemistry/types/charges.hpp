@@ -10,8 +10,8 @@
 
 #include <vector>
 
-#include <GraphMol/Atom.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "entities/records.hpp"
 #include "residues/residues.hpp"

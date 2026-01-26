@@ -1,10 +1,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
-#include <random>
-#include <sstream>
 #include <string>
-#include <system_error>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -12,46 +9,24 @@
 #include "analysis/contacts/computation.hpp"
 #include "analysis/system/model_pack_task.hpp"
 #include "db/db.hpp"
-#include "pipeline/compute/parameters.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/dynamic/sink_iface.hpp"
-#include "pipeline/dynamic/sources.hpp"
+#include "pipeline/runtime/api.hpp"
+#include "pipeline/task/api.hpp"
 #include "runtime.hpp"
 #include "sinks/lmdb.hpp"
+#include "test_utils/common.hpp"
 
 using namespace lahuta;
 using namespace lahuta::pipeline;
 
-// clang-format off
 namespace {
 namespace fs = std::filesystem;
-
-static fs::path make_unique_temp_directory(const std::string& prefix) {
-  auto temp_dir = fs::temp_directory_path();
-  std::random_device rd;
-  std::mt19937_64 rng(rd());
-  std::uniform_int_distribution<uint64_t> dist;
-
-  for (int attempt = 0; attempt < 128; ++attempt) {
-    std::ostringstream name;
-    name << prefix << std::hex << dist(rng);
-    auto candidate = temp_dir / name.str();
-
-    std::error_code ec;
-    if (fs::create_directory(candidate, ec)) return candidate;
-    if (!ec) continue; // directory already existed
-    if (ec != std::make_error_code(std::errc::file_exists)) {
-      throw std::system_error(ec, "make_unique_temp_directory: failed to create '" + candidate.string() + "'");
-    }
-  }
-  throw std::runtime_error("make_unique_temp_directory: exhausted attempts to create unique directory");
-}
+using namespace lahuta::test_utils;
 
 // Simple in-memory sink collecting payloads from a single "contacts" channel
-class CollectorSink : public dynamic::IDynamicSink {
+class CollectorSink : public IDynamicSink {
 public:
   std::vector<std::string> payloads;
-  void write(dynamic::EmissionView e) override { payloads.emplace_back(e.payload); }
+  void write(EmissionView e) override { payloads.emplace_back(e.payload); }
   void close() override {}
   void flush() override {}
 };
@@ -59,12 +34,14 @@ public:
 // Very naive impl: looks for "num_contacts":<number>
 static std::optional<std::size_t> extract_num_contacts(const std::string &json) {
   const std::string key = "\"num_contacts\":";
-  auto pos = json.find(key);
+  auto pos              = json.find(key);
   if (pos == std::string::npos) return std::nullopt;
   pos += key.size();
-  while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos]))) ++pos;
+  while (pos < json.size() && std::isspace(static_cast<unsigned char>(json[pos])))
+    ++pos;
   std::size_t end = pos;
-  while (end < json.size() && std::isdigit(static_cast<unsigned char>(json[end]))) ++end;
+  while (end < json.size() && std::isdigit(static_cast<unsigned char>(json[end])))
+    ++end;
   if (end == pos) return std::nullopt;
   try {
     return static_cast<std::size_t>(std::stoull(json.substr(pos, end - pos)));
@@ -79,14 +56,13 @@ static void build_database_from_directory(const fs::path &data_dir, const fs::pa
 
   auto db = std::make_shared<LMDBDatabase>(db_path.string());
 
-  auto src = dynamic::sources_factory::from_directory(
-      data_dir.string(), ".cif.gz", /*recursive=*/false, /*batch_size=*/50);
-  dynamic::StageManager mgr(std::move(src));
+  auto src = from_directory(data_dir.string(), ".cif.gz", /*recursive=*/false, /*batch_size=*/50);
+  StageManager mgr(std::move(src));
 
-  auto task = std::make_shared<analysis::system::ModelPackTask>("db");
-  mgr.add_task("createdb", /*deps*/{}, task, /*thread_safe=*/true);
+  auto task = std::make_shared<analysis::ModelPackTask>("db");
+  mgr.add_task("createdb", /*deps*/ {}, task, /*thread_safe=*/true);
 
-  mgr.connect_sink("db", std::make_shared<dynamic::LmdbSink>(db, 50));
+  mgr.connect_sink("db", std::make_shared<LmdbSink>(db, 50));
 
   mgr.compile();
   mgr.run(static_cast<std::size_t>(threads));
@@ -94,24 +70,24 @@ static void build_database_from_directory(const fs::path &data_dir, const fs::pa
 
 // Run the compute pipeline over ALL keys in the LMDB at db_path, and collect contacts.
 static std::shared_ptr<CollectorSink> run_contacts_pipeline_over_db(const fs::path &db_path, int threads) {
-  auto src = dynamic::sources_factory::from_lmdb(db_path.string(), std::string{}, 64);
-  dynamic::StageManager mgr(std::move(src));
+  auto src = from_lmdb(db_path.string(), std::string{}, 64);
+  StageManager mgr(std::move(src));
 
   mgr.set_auto_builtins(true);
-  mgr.get_system_params().is_model = true;
+  mgr.get_system_params().is_model             = true;
   mgr.get_topology_params().atom_typing_method = AtomTypingMethod::Arpeggio;
 
   {
-    pipeline::compute::ContactsParams p{};
-    p.provider = analysis::contacts::ContactProvider::Arpeggio;
-    p.type = InteractionType::All;
-    p.channel = "contacts";
-    p.format = pipeline::compute::ContactsOutputFormat::Json;
+    ContactsParams p{};
+    p.provider = analysis::ContactProvider::Arpeggio;
+    p.type     = InteractionType::All;
+    p.channel  = "contacts";
+    p.format   = ContactsOutputFormat::Json;
     mgr.add_computation(
         "contacts",
         {},
         [label = std::string("contacts"), p]() {
-          return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+          return std::make_unique<analysis::ContactsComputation>(label, p);
         },
         /*thread_safe=*/true);
   }
@@ -141,13 +117,7 @@ TEST(ModelDatabasePipeline, MultiItemDbParameterizedRunsDoNotCrash) {
   ASSERT_TRUE(fs::exists(data_dir / "AF-P0CL56-F1-model_v4.cif.gz"));
   ASSERT_TRUE(fs::exists(data_dir / "AF-Q57552-F1-model_v4.cif.gz"));
 
-  fs::path base;
-  ASSERT_NO_THROW(base = make_unique_temp_directory("lahuta_test_db_param_"));
-
-  auto cleanup = [&]() {
-    std::error_code ec;
-    fs::remove_all(base, ec);
-  };
+  TempDir base("lahuta_test_db_param_");
 
   std::vector<std::string> targets = {
       "AF-P0CL56-F1-model_v4.cif.gz",
@@ -158,7 +128,7 @@ TEST(ModelDatabasePipeline, MultiItemDbParameterizedRunsDoNotCrash) {
 
   for (std::size_t i = 0; i < targets.size(); ++i) {
     SCOPED_TRACE(testing::Message() << "param run #" << (i + 1));
-    fs::path db_path = base / (std::string("run") + std::to_string(i + 1));
+    fs::path db_path = base.path / (std::string("run") + std::to_string(i + 1));
 
     ASSERT_NO_THROW(build_database_from_directory(data_dir, db_path, threads));
 
@@ -182,8 +152,6 @@ TEST(ModelDatabasePipeline, MultiItemDbParameterizedRunsDoNotCrash) {
     EXPECT_TRUE(found_target) << "Did not find target model in outputs: " << targets[i];
   }
 
-  cleanup();
-
   EXPECT_EQ(failures, 0) << "One of the parameterized runs failed. Could be a regression.";
 }
 
@@ -199,33 +167,28 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
   fs::path target = data_dir / "AF-P0CL56-F1-model_v4.cif.gz";
   ASSERT_TRUE(fs::exists(target));
 
-  fs::path base;
-  ASSERT_NO_THROW(base = make_unique_temp_directory("lahuta_test_db_single_"));
-  auto cleanup = [&]() {
-    std::error_code ec;
-    fs::remove_all(base, ec);
-  };
+  TempDir base("lahuta_test_db_single_");
 
-  ASSERT_NO_THROW(build_database_from_directory(data_dir, base, threads));
+  ASSERT_NO_THROW(build_database_from_directory(data_dir, base.path, threads));
 
-  auto src2 = dynamic::sources_factory::from_vector(std::vector<std::string>{target.string()});
-  dynamic::StageManager mgr(std::move(src2));
+  auto src2 = from_vector(std::vector<std::string>{target.string()});
+  StageManager mgr(std::move(src2));
 
   mgr.set_auto_builtins(true);
-  mgr.get_system_params().is_model = true;
+  mgr.get_system_params().is_model             = true;
   mgr.get_topology_params().atom_typing_method = AtomTypingMethod::Arpeggio;
 
   {
-    pipeline::compute::ContactsParams p{};
-    p.provider = analysis::contacts::ContactProvider::Arpeggio;
-    p.type = InteractionType::All;
-    p.channel = "contacts";
-    p.format = pipeline::compute::ContactsOutputFormat::Json;
+    ContactsParams p{};
+    p.provider = analysis::ContactProvider::Arpeggio;
+    p.type     = InteractionType::All;
+    p.channel  = "contacts";
+    p.format   = ContactsOutputFormat::Json;
     mgr.add_computation(
         "contacts",
         {},
         [label = std::string("contacts"), p]() {
-          return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+          return std::make_unique<analysis::ContactsComputation>(label, p);
         },
         /*thread_safe=*/true);
   }
@@ -238,9 +201,10 @@ TEST(ModelDatabasePipeline, SingleItemDbPipelineProcessesOneModel) {
   ASSERT_FALSE(sink->payloads.empty());
   bool found = false;
   for (const auto &payload : sink->payloads) {
-    if (payload.find(target.filename().string()) != std::string::npos) { found = true; break; }
+    if (payload.find(target.filename().string()) != std::string::npos) {
+      found = true;
+      break;
+    }
   }
   EXPECT_TRUE(found) << "Single-item pipeline did not produce contacts for the target.";
-
-  cleanup();
 }

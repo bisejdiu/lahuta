@@ -1,7 +1,7 @@
 #include <cmath>
 #include <optional>
 
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "contacts/getcontacts/contacts.hpp"
 #include "contacts/getcontacts/utils.hpp"

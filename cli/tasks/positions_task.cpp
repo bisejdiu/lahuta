@@ -8,18 +8,14 @@
 #include <Geometry/point.h>
 
 #include "analysis/extract/extract_tasks.hpp"
-#include "tasks/positions_task.hpp"
 #include "hash/fnv1a.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/data_requirements.hpp"
+#include "pipeline/data/data_requirements.hpp"
+#include "tasks/positions_task.hpp"
 
 namespace lahuta::cli::positions {
+namespace P = lahuta::pipeline;
 namespace {
-
-using pipeline::DataField;
-using pipeline::DataFieldSet;
-using pipeline::dynamic::TaskContext;
-using pipeline::dynamic::TaskResult;
 
 std::string sanitize_model_name(std::string_view model_path) {
   std::filesystem::path path(model_path);
@@ -72,19 +68,19 @@ void write_positions_as_float(const RDGeom::POINT3D_VECT &pts, const std::filesy
             static_cast<std::streamsize>(data.size() * sizeof(float)));
 }
 
-class PositionsTask final : public pipeline::dynamic::ITask {
+class PositionsTask final : public P::ITask {
 public:
   explicit PositionsTask(std::filesystem::path output_dir, int tree_depth)
       : output_dir_(std::move(output_dir)), tree_depth_(tree_depth) {}
 
-  TaskResult run(const std::string &item_path, TaskContext &ctx) override {
+  P::TaskResult run(const std::string &item_path, P::TaskContext &ctx) override {
     auto payload                          = ctx.model_payload();
     const RDGeom::POINT3D_VECT *positions = nullptr;
     std::shared_ptr<const ModelParserResult> parsed;
     if (payload && payload->positions && !payload->positions->empty()) {
       positions = payload->positions.get();
     } else if (!payload) {
-      parsed = analysis::extract::get_cached_model_parser_result(ctx);
+      parsed = analysis::get_cached_model_parser_result(ctx);
       if (parsed && parsed->coords_size() > 0) {
         positions = &parsed->coords;
       }
@@ -98,20 +94,20 @@ public:
     return write_positions_from_vector(item_path, *positions);
   }
 
-  DataFieldSet data_requirements() const override { return DataFieldSet::of({DataField::Positions}); }
+  P::DataFieldSet data_requirements() const override { return P::DataFieldSet::of({P::DataField::Positions}); }
 
 private:
-  TaskResult write_positions_from_vector(const std::string &item_path,
-                                         const RDGeom::POINT3D_VECT &positions) {
+  P::TaskResult write_positions_from_vector(const std::string &item_path,
+                                            const RDGeom::POINT3D_VECT &positions) {
     const std::string model_name = sanitize_model_name(item_path);
     if (model_name.empty()) {
       Logger::get_logger()->error("[positions] Empty model name for '{}'", item_path);
-      return TaskResult{false, {}};
+      return P::TaskResult{false, {}};
     }
 
     const auto output_path = output_path_for_model(output_dir_, model_name, tree_depth_);
 
-    TaskResult result;
+    P::TaskResult result;
     try {
       std::filesystem::create_directories(output_path.parent_path());
       write_positions_as_float(positions, output_path);
@@ -130,8 +126,7 @@ private:
 
 } // namespace
 
-std::shared_ptr<pipeline::dynamic::ITask> make_positions_task(std::filesystem::path output_dir,
-                                                              int tree_depth) {
+std::shared_ptr<P::ITask> make_positions_task(std::filesystem::path output_dir, int tree_depth) {
   return std::make_shared<PositionsTask>(std::move(output_dir), tree_depth);
 }
 

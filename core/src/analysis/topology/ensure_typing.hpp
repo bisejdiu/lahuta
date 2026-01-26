@@ -5,12 +5,13 @@
 #include <string>
 
 #include "analysis/topology/computation.hpp"
+#include "compute/context.hpp"
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/compute/dynamic_computation.hpp"
-#include "pipeline/compute/parameters.hpp"
+#include "pipeline/task/compute/context.hpp"
+#include "pipeline/task/compute/dynamic_computation.hpp"
+#include "pipeline/task/compute/parameters.hpp"
 #include "topology.hpp"
 #include "topology/compute.hpp"
 
@@ -31,38 +32,41 @@
 //
 // A correctness guard in ContactsKernel also ensures the right typing at point-of-use.
 //
-namespace lahuta::analysis::topology {
-using namespace lahuta::topology::compute;
+namespace lahuta::analysis {
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 
-// clang-format off
 struct EnsureTypingKernel {
-  static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const EnsureTypingParams& p) {
-    auto& data = context.data();
+  static C::ComputationResult execute(C::DataContext<P::PipelineContext, C::Mut::ReadWrite> &context,
+                                      const P::EnsureTypingParams &p) {
+    auto &data = context.data();
 
     try {
       if (!p.desired) {
         Logger::get_logger()->info("EnsureTyping: desired unset - skipping");
-        return ComputationResult(true);
+        return C::ComputationResult(true);
       }
 
-      if (!data.ctx) return ComputationResult(ComputationError("EnsureTyping requires TaskContext"));
+      if (!data.ctx) return C::ComputationResult(C::ComputationError("EnsureTyping requires TaskContext"));
 
       // Retrieve current topology and compute current typing mode
       auto top_c = data.ctx->topology();
-      if (!top_c) return ComputationResult(ComputationError("EnsureTyping requires topology in context"));
+      if (!top_c) {
+        return C::ComputationResult(C::ComputationError("EnsureTyping requires topology in context"));
+      }
 
       AtomTypingMethod current_mode = AtomTypingMethod::Molstar; // default
 
       {
         using namespace lahuta::topology;
-        auto& eng = const_cast<Topology&>(*top_c).get_engine();
-        auto* params = eng.get_parameters<AtomTypingParams>(AtomTypingComputation<>::label);
+        auto &eng    = const_cast<Topology &>(*top_c).get_engine();
+        auto *params = eng.get_parameters<AtomTypingParams>(AtomTypingComputation<>::label);
         if (params) current_mode = params->mode;
       }
 
-      const std::string* sentinel = data.ctx->get_text("atom_typing_mode");
-      auto desired_mode  = *p.desired;
-      auto desired_label = contact_computer_name(desired_mode);
+      const std::string *sentinel = data.ctx->get_text("atom_typing_mode");
+      auto desired_mode           = *p.desired;
+      auto desired_label          = contact_computer_name(desired_mode);
 
       auto ensure_now = [&](std::shared_ptr<Topology> top_mut) {
         Logger::get_logger()->info("EnsureTyping: retyping to {}", contact_computer_name(desired_mode));
@@ -76,31 +80,32 @@ struct EnsureTypingKernel {
           auto top_mut = std::const_pointer_cast<Topology>(top_c);
           ensure_now(std::move(top_mut));
         }
-        return ComputationResult(true);
+        return C::ComputationResult(true);
       }
 
       // Subsequent touches: only retype if current != desired and sentinel != desired
       if (*sentinel == desired_label && current_mode != desired_mode) {
-          auto top_mut = std::const_pointer_cast<Topology>(top_c);
-          ensure_now(std::move(top_mut));
+        auto top_mut = std::const_pointer_cast<Topology>(top_c);
+        ensure_now(std::move(top_mut));
       }
 
-      return ComputationResult(true);
-    } catch (const std::exception& e) {
-      return ComputationResult(ComputationError(std::string("EnsureTyping failed: ") + e.what()));
+      return C::ComputationResult(true);
+    } catch (const std::exception &e) {
+      return C::ComputationResult(C::ComputationError(std::string("EnsureTyping failed: ") + e.what()));
     } catch (...) {
-      return ComputationResult(ComputationError("EnsureTyping failed"));
+      return C::ComputationResult(C::ComputationError("EnsureTyping failed"));
     }
   }
 };
 
-class EnsureTypingComputation : public DynamicLabelComputation<EnsureTypingParams, EnsureTypingKernel, EnsureTypingComputation> {
+class EnsureTypingComputation
+    : public P::DynamicLabelComputation<P::EnsureTypingParams, EnsureTypingKernel, EnsureTypingComputation> {
 public:
-  using Base = DynamicLabelComputation<EnsureTypingParams, EnsureTypingKernel, EnsureTypingComputation>;
+  using Base = P::DynamicLabelComputation<P::EnsureTypingParams, EnsureTypingKernel, EnsureTypingComputation>;
   using Base::DynamicLabelComputation;
-  using dependencies = Dependencies<Dependency<BuildTopologyComputation, void>>;
+  using dependencies = C::Dependencies<C::Dependency<BuildTopologyComputation, void>>;
 };
 
-} // namespace lahuta::analysis::topology
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_TOPOLOGY_ENSURE_TYPING_HPP

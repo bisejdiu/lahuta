@@ -8,16 +8,15 @@
 #include "compute/compute_base.hpp"
 #include "node.hpp"
 
-// clang-format off
-namespace lahuta::topology::compute {
+namespace lahuta::compute {
 
-template <typename D, Mut M>
+template <typename D, Mut M = Mut::ReadWrite>
 class Registry {
 public:
   /// add a computation to the registry, returning its index
   int add(std::unique_ptr<Computation<D, M>> computation) {
-    if (size_    >= MAX_N_COMPUTATIONS) throw std::runtime_error("MAX_N_COMPUTATIONS reached");
-    int node_idx  = find(computation->get_label());
+    if (size_ >= MAX_N_COMPUTATIONS) throw std::runtime_error("MAX_N_COMPUTATIONS reached");
+    int node_idx = find(computation->get_label());
     if (node_idx >= 0) throw std::runtime_error("duplicate computation");
 
     node_idx   = size_++;
@@ -29,15 +28,15 @@ public:
     return node_idx;
   }
 
- /// seal the registry, i.e. fill in the (forward & reverse) dependencies
+  /// seal the registry, i.e. fill in the (forward & reverse) dependencies
   void seal() {
     for (int node_idx = 0; node_idx < size_; ++node_idx)
       for (auto dep_label : nodes[node_idx].impl->get_dependencies()) {
         int dep_idx = find(dep_label);
         if (dep_idx < 0) throw std::runtime_error("missing dependency");
 
-        nodes[node_idx].deps  |= (Mask{1} << dep_idx);
-        nodes[dep_idx].rdeps  |= (Mask{1} << node_idx);
+        nodes[node_idx].deps |= (Mask{1} << dep_idx);
+        nodes[dep_idx].rdeps |= (Mask{1} << node_idx);
       }
   }
 
@@ -57,6 +56,6 @@ private:
   u8 size_ = 0;
 };
 
-} // namespace lahuta::topology::compute
+} // namespace lahuta::compute
 
 #endif // LAHUTA_COMPUTE_REGISTRY_HPP

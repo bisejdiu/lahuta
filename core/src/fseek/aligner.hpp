@@ -12,7 +12,7 @@
 #include "fseek/seq_aligner_builder.hpp"
 #include "fseek/utils.hpp"
 #include "logging/logging.hpp"
-#include "procs/chunking/chunk_defs.hpp"
+#include "tiling/chunk_defs.hpp"
 
 // clang-format off
 

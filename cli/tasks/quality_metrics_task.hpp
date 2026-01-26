@@ -9,9 +9,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/task/task.hpp"
 
 namespace lahuta::cli::quality_metrics {
+namespace P = lahuta::pipeline;
 
 struct GroupSpec {
   std::string name;
@@ -51,7 +52,7 @@ void finalize_group_keys(std::vector<GroupSpec> &plddt_groups, std::vector<Group
 [[nodiscard]] std::vector<OverlapSpec> build_overlap_specs(const std::vector<GroupSpec> &plddt_groups,
                                                            const std::vector<GroupSpec> &dssp_groups);
 
-[[nodiscard]] std::shared_ptr<pipeline::dynamic::ITask>
+[[nodiscard]] std::shared_ptr<P::ITask>
 make_quality_metrics_task(std::shared_ptr<const QualityMetricsConfig> config);
 
 } // namespace lahuta::cli::quality_metrics

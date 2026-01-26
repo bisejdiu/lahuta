@@ -8,8 +8,7 @@
 
 #include "error.hpp"
 
-// clang-format off
-namespace lahuta::topology::compute {
+namespace lahuta::compute {
 
 /// encodes the result of a computation
 class ComputationResult {
@@ -17,6 +16,7 @@ private:
   class ResultBase {
   public:
     virtual ~ResultBase() = default;
+
     virtual const std::type_info &get_type() const = 0;
   };
 
@@ -32,7 +32,7 @@ private:
     T value_;
   };
 
-  std::shared_ptr<ResultBase>     result_;
+  std::shared_ptr<ResultBase> result_;
   std::optional<ComputationError> error_;
 
 public:
@@ -43,15 +43,13 @@ public:
 
   template <typename T>
   explicit ComputationResult(T value)
-      : result_(std::make_shared<TypedResult<T>>(std::move(value))),
-        error_(std::nullopt) {}
+      : result_(std::make_shared<TypedResult<T>>(std::move(value))), error_(std::nullopt) {}
 
-  explicit ComputationResult(ComputationError error)
-      : result_(nullptr), error_(std::move(error)) {}
+  explicit ComputationResult(ComputationError error) : result_(nullptr), error_(std::move(error)) {}
 
   bool is_success() const { return !has_error(); }
-  bool has_error()  const { return error_.has_value(); }
-  bool has_value()  const { return result_ != nullptr; }
+  bool has_error() const { return error_.has_value(); }
+  bool has_value() const { return result_ != nullptr; }
 
   /// Get the error if one exists
   const ComputationError &error() const {
@@ -62,8 +60,10 @@ public:
   /// Get the value. Throws if the result is an error or uninitialized.
   template <typename T>
   const T &get_value() const {
-    if (has_error()) throw std::runtime_error("Cannot access value on error result: " + error().get_message());
-    if (!result_)    throw std::runtime_error("Accessing uninitialized result");
+    if (has_error()) {
+      throw std::runtime_error("Cannot access value on error result: " + error().get_message());
+    }
+    if (!result_) throw std::runtime_error("Accessing uninitialized result");
     if (result_->get_type() != typeid(T)) throw std::bad_cast();
 
     auto *typed = static_cast<const TypedResult<T> *>(result_.get());
@@ -73,7 +73,7 @@ public:
   /// Get the type of the value. Throws if the result is an error or uninitialized.
   const std::type_info &get_type() const {
     if (has_error()) throw std::runtime_error("Cannot get type of error result");
-    if (!result_)    throw std::runtime_error("Accessing uninitialized result");
+    if (!result_) throw std::runtime_error("Accessing uninitialized result");
 
     return result_->get_type();
   }
@@ -82,7 +82,7 @@ public:
   template <typename T>
   T move_value() {
     if (has_error()) throw std::runtime_error("Cannot move value from error result");
-    if (!result_)    throw std::runtime_error("Accessing uninitialized result");
+    if (!result_) throw std::runtime_error("Accessing uninitialized result");
     if (result_->get_type() != typeid(T)) throw std::bad_cast();
 
     auto *typed = static_cast<TypedResult<T> *>(result_.get());
@@ -90,6 +90,6 @@ public:
   }
 };
 
-} // namespace lahuta::topology::compute
+} // namespace lahuta::compute
 
 #endif // LAHUTA_COMPUTE_RESULT_HPP

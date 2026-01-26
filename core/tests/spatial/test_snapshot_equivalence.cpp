@@ -10,13 +10,14 @@
 #include "entities/search/config.hpp"
 #include "lahuta.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/dynamic/keys.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/task/context.hpp"
+#include "pipeline/task/keys.hpp"
 
-// clang-format off
 namespace {
 
 using namespace lahuta;
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 
 struct _EmptyParams final {};
 
@@ -30,7 +31,7 @@ static std::filesystem::path core_data_dir() {
 
 TEST(FindersSnapshotEquivalence, AtomHydrophobicSelf) {
   Logger::get_logger()->set_level(spdlog::level::info);
-  namespace fs = std::filesystem;
+  namespace fs  = std::filesystem;
   fs::path data = core_data_dir() / "fubi.cif";
 
   Luni sys(data.string());
@@ -39,24 +40,27 @@ TEST(FindersSnapshotEquivalence, AtomHydrophobicSelf) {
   ASSERT_TRUE(top != nullptr);
 
   // Predicates and tester (simple hydrophobic-like within 4.5A)
-  auto pred_atom = +[](const AtomRec &rec) { return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic; };
-  auto tester = +[](uint32_t, uint32_t, float d2, const ContactContext&) {
+  auto pred_atom = +[](const AtomRec &rec) {
+    return (rec.type & AtomType::Hydrophobic) == AtomType::Hydrophobic;
+  };
+  auto tester = +[](uint32_t, uint32_t, float d2, const ContactContext &) {
     return d2 <= 4.5f * 4.5f ? InteractionType::Hydrophobic : InteractionType::None;
   };
-  search::SearchOptions opts; opts.distance_max = 4.5;
+  search::SearchOptions opts;
+  opts.distance_max = 4.5;
 
   _EmptyParams params;
 
   // Path A: explicit snapshot from topology default conformer
-  auto tf_exp = compute::snapshot_of(*top, top->conformer());
+  auto tf_exp = C::snapshot_of(*top, top->conformer());
   ContactContext ctx_exp(tf_exp, params);
   ContactSet a = find_contacts(ctx_exp, pred_atom, opts, tester);
 
   // Path B: per-frame-style snapshot via TaskContext carrying a conformer
-  pipeline::dynamic::TaskContext tctx;
+  P::TaskContext tctx;
   auto conf_ptr = std::make_shared<RDKit::Conformer>(top->conformer());
-  tctx.set_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY, conf_ptr);
-  auto tf_frame = compute::snapshot_of(*top, &tctx);
+  tctx.set_object<RDKit::Conformer>(P::CTX_CONFORMER_KEY, conf_ptr);
+  auto tf_frame = C::snapshot_of(*top, &tctx);
   ContactContext ctx_frame(tf_frame, params);
   ContactSet b = find_contacts(ctx_frame, pred_atom, opts, tester);
 
@@ -66,7 +70,7 @@ TEST(FindersSnapshotEquivalence, AtomHydrophobicSelf) {
 
 TEST(ContactsEngineSnapshotEquivalence, MolStarProvider) {
   Logger::get_logger()->set_level(spdlog::level::info);
-  namespace fs = std::filesystem;
+  namespace fs  = std::filesystem;
   fs::path data = core_data_dir() / "fubi.cif";
 
   Luni sys(data.string());
@@ -77,15 +81,15 @@ TEST(ContactsEngineSnapshotEquivalence, MolStarProvider) {
   InteractionEngine<MolStarContactProvider> engine;
 
   // Path A: explicit snapshot
-  auto tf_exp = compute::snapshot_of(*top, top->conformer());
+  auto tf_exp  = C::snapshot_of(*top, top->conformer());
   ContactSet a = engine.compute(tf_exp);
 
   // Path B: per-frame-style snapshot via TaskContext conformer
-  pipeline::dynamic::TaskContext tctx;
+  P::TaskContext tctx;
   auto conf_ptr = std::make_shared<RDKit::Conformer>(top->conformer());
-  tctx.set_object<RDKit::Conformer>(pipeline::CTX_CONFORMER_KEY, conf_ptr);
-  auto tf_frame = compute::snapshot_of(*top, &tctx);
-  ContactSet b = engine.compute(tf_frame);
+  tctx.set_object<RDKit::Conformer>(P::CTX_CONFORMER_KEY, conf_ptr);
+  auto tf_frame = C::snapshot_of(*top, &tctx);
+  ContactSet b  = engine.compute(tf_frame);
 
   EXPECT_EQ(a.size(), b.size());
   EXPECT_TRUE((a ^ b).empty());

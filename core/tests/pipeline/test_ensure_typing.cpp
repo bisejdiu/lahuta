@@ -15,15 +15,13 @@
 #include "analysis/topology/computation.hpp"
 #include "analysis/topology/ensure_typing.hpp"
 #include "compute/engine.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/compute/parameters.hpp"
+#include "pipeline/task/compute/context.hpp"
+#include "pipeline/task/compute/parameters.hpp"
 
 using namespace lahuta;
-using namespace lahuta::pipeline::compute;
-using lahuta::topology::compute::ComputeEngine;
-using lahuta::topology::compute::Mut;
+namespace P = lahuta::pipeline;
+namespace C = lahuta::compute;
 
-// clang-format off
 namespace {
 
 #if defined(__has_feature)
@@ -39,52 +37,57 @@ constexpr bool RunningUnderASan = false;
 #endif
 
 // Run a computation and assert success
-static void run_ok(ComputeEngine<PipelineContext, Mut::ReadWrite>& eng, const ComputationLabel& lbl) {
+static void run_ok(C::ComputeEngine<P::PipelineContext> &eng, const C::ComputationLabel &lbl) {
   ASSERT_TRUE(eng.run_from<void>(lbl));
   auto res = eng.get_computation_result(lbl);
   ASSERT_TRUE(res.is_success()) << (res.has_error() ? res.error().get_message() : "unknown error");
 }
 
 // Fetch current atom typing mode from topology via engine
-static bool current_is_molstar(const Topology& top) {
-  auto& eng = const_cast<Topology&>(top).get_engine();
-  const auto& lbl = ::lahuta::topology::AtomTypingComputation<>::label;
-  auto* p = eng.get_parameters<::lahuta::topology::AtomTypingParams>(lbl);
+static bool current_is_molstar(const Topology &top) {
+  auto &eng       = const_cast<Topology &>(top).get_engine();
+  const auto &lbl = ::lahuta::topology::AtomTypingComputation<>::label;
+  auto *p         = eng.get_parameters<::lahuta::topology::AtomTypingParams>(lbl);
   return p ? (p->mode == AtomTypingMethod::Molstar) : true;
 }
 
 TEST(EnsureTypingTest, SwitchesToArpeggioFromDefaultMolstar) {
-  PipelineContext pcx;
+  P::PipelineContext pcx;
 
   namespace fs = std::filesystem;
   fs::path here(__FILE__);
-  fs::path core_dir = here.parent_path().parent_path().parent_path(); // core/tests/.. -> core/
+  fs::path core_dir  = here.parent_path().parent_path().parent_path(); // core/tests/.. -> core/
   fs::path item_path = core_dir / "data" / "fubi.cif";
 
   pcx.item_path = item_path.string();
-  lahuta::pipeline::dynamic::TaskContext tctx; pcx.ctx = &tctx;
+  P::TaskContext tctx;
+  pcx.ctx = &tctx;
 
   // Build engine and register computations
-  ComputeEngine<PipelineContext, Mut::ReadWrite> eng(pcx);
+  C::ComputeEngine<P::PipelineContext> eng(pcx);
   // system
-  SystemReadParams sp{}; sp.is_model = false;
-  eng.add(std::make_unique<analysis::system::SystemReadComputation>(sp));
+  P::SystemReadParams sp{};
+  sp.is_model = false;
+  eng.add(std::make_unique<analysis::SystemReadComputation>(sp));
   // topology (default typing = Molstar)
-  BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = AtomTypingMethod::Molstar;
-  eng.add(std::make_unique<analysis::topology::BuildTopologyComputation>(tp));
+  P::BuildTopologyParams tp{};
+  tp.flags              = TopologyComputation::All;
+  tp.atom_typing_method = AtomTypingMethod::Molstar;
+  eng.add(std::make_unique<analysis::BuildTopologyComputation>(tp));
   // ensure arpeggio
-  EnsureTypingParams ep{}; ep.desired = AtomTypingMethod::Arpeggio;
-  eng.add(std::make_unique<analysis::topology::EnsureTypingComputation>(std::string("ensure_typing_arpeggio"), ep));
+  P::EnsureTypingParams ep{};
+  ep.desired = AtomTypingMethod::Arpeggio;
+  eng.add(std::make_unique<analysis::EnsureTypingComputation>(std::string("ensure_typing_arpeggio"), ep));
 
   // Execute in order
-  run_ok(eng, analysis::system::SystemReadComputation::label);
-  run_ok(eng, analysis::topology::BuildTopologyComputation::label);
-  run_ok(eng, ComputationLabel{"ensure_typing_arpeggio"});
+  run_ok(eng, analysis::SystemReadComputation::label);
+  run_ok(eng, analysis::BuildTopologyComputation::label);
+  run_ok(eng, C::ComputationLabel{"ensure_typing_arpeggio"});
 
   auto topo = tctx.topology();
   ASSERT_TRUE(topo);
   EXPECT_FALSE(current_is_molstar(*topo));
-  const std::string* s = tctx.get_text("atom_typing_mode");
+  const std::string *s = tctx.get_text("atom_typing_mode");
   ASSERT_NE(s, nullptr);
   EXPECT_EQ(*s, "Arpeggio");
 }
@@ -94,31 +97,36 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
     GTEST_SKIP() << "Ring perception by RDKit is flaky when AddressSanitizer is enabled.";
   }
 
-  PipelineContext pcx;
+  P::PipelineContext pcx;
   namespace fs = std::filesystem;
   fs::path here(__FILE__);
-  fs::path core_dir = here.parent_path().parent_path().parent_path(); // core/tests/.. -> core/
+  fs::path core_dir  = here.parent_path().parent_path().parent_path(); // core/tests/.. -> core/
   fs::path item_path = core_dir / "data" / "1kx2_small.cif";
-  pcx.item_path = item_path.string();
+  pcx.item_path      = item_path.string();
 
-  lahuta::pipeline::dynamic::TaskContext tctx; pcx.ctx = &tctx;
+  P::TaskContext tctx;
+  pcx.ctx = &tctx;
 
-  ComputeEngine<PipelineContext, Mut::ReadWrite> eng(pcx);
-  SystemReadParams sp{}; sp.is_model = false;
-  eng.add(std::make_unique<analysis::system::SystemReadComputation>(sp));
-  BuildTopologyParams tp{}; tp.flags = TopologyComputation::All; tp.atom_typing_method = AtomTypingMethod::Molstar;
-  eng.add(std::make_unique<analysis::topology::BuildTopologyComputation>(tp));
-  EnsureTypingParams ep{}; ep.desired = AtomTypingMethod::Molstar;
-  eng.add(std::make_unique<analysis::topology::EnsureTypingComputation>(std::string("ensure_typing_molstar"), ep));
+  C::ComputeEngine<P::PipelineContext> eng(pcx);
+  P::SystemReadParams sp{};
+  sp.is_model = false;
+  eng.add(std::make_unique<analysis::SystemReadComputation>(sp));
+  P::BuildTopologyParams tp{};
+  tp.flags              = TopologyComputation::All;
+  tp.atom_typing_method = AtomTypingMethod::Molstar;
+  eng.add(std::make_unique<analysis::BuildTopologyComputation>(tp));
+  P::EnsureTypingParams ep{};
+  ep.desired = AtomTypingMethod::Molstar;
+  eng.add(std::make_unique<analysis::EnsureTypingComputation>(std::string("ensure_typing_molstar"), ep));
 
-  run_ok(eng, analysis::system::SystemReadComputation::label);
-  run_ok(eng, analysis::topology::BuildTopologyComputation::label);
-  run_ok(eng, ComputationLabel{"ensure_typing_molstar"});
+  run_ok(eng, analysis::SystemReadComputation::label);
+  run_ok(eng, analysis::BuildTopologyComputation::label);
+  run_ok(eng, C::ComputationLabel{"ensure_typing_molstar"});
 
   auto topo = tctx.topology();
   ASSERT_TRUE(topo);
   EXPECT_TRUE(current_is_molstar(*topo));
-  const std::string* s = tctx.get_text("atom_typing_mode");
+  const std::string *s = tctx.get_text("atom_typing_mode");
   ASSERT_NE(s, nullptr);
   EXPECT_EQ(*s, "MolStar");
 }

@@ -5,9 +5,10 @@
 #include <string>
 #include <vector>
 
-#include "sources/descriptor.hpp"
+#include "pipeline/ingest/descriptor.hpp"
 
 namespace lahuta::cli::contacts {
+namespace P = lahuta::pipeline;
 
 struct MdInputs {
   std::string structure_path;
@@ -16,7 +17,7 @@ struct MdInputs {
 
 [[nodiscard]] MdInputs parse_md_inputs(const std::vector<std::string> &md_files);
 
-[[nodiscard]] std::shared_ptr<lahuta::sources::IDescriptor>
+[[nodiscard]] std::shared_ptr<P::IDescriptor>
 make_md_source_descriptor(std::string structure_path, std::vector<std::string> trajectory_paths);
 
 } // namespace lahuta::cli::contacts

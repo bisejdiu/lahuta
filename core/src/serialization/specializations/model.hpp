@@ -11,16 +11,15 @@
 #include "serialization/formats.hpp"
 #include "serialization/serializer_impl.hpp"
 
-// clang-format off
 namespace serialization {
 using namespace lahuta;
 
-template<>
+template <>
 struct Serializer<fmt::binary, ModelParserResult> {
-  using Record = ModelParserResult;
+  using Record                             = ModelParserResult;
   static constexpr std::size_t CoordStride = CoordinateStride;
 
-  static std::size_t coords_reserved_bytes(const Record& r) {
+  static std::size_t coords_reserved_bytes(const Record &r) {
     if (r.coords.empty()) return 0;
     return r.coords.size() * CoordStride;
   }
@@ -43,7 +42,7 @@ struct Serializer<fmt::binary, ModelParserResult> {
     const auto taxonomy_len = static_cast<std::uint32_t>(r.metadata.ncbi_taxonomy_id.size());
     const auto organism_len = static_cast<std::uint32_t>(r.metadata.organism_scientific.size());
     const auto plddt_bytes  = static_cast<std::uint32_t>(r.plddt_per_residue.size() * sizeof(pLDDTCategory));
-    const auto dssp_bytes   = static_cast<std::uint32_t>(r.dssp_per_residue.size()  * sizeof(DSSPAssignment));
+    const auto dssp_bytes   = static_cast<std::uint32_t>(r.dssp_per_residue.size() * sizeof(DSSPAssignment));
 
     ModelPayloadHeader header{};
     header.magic           = ModelPayloadMagic;
@@ -55,8 +54,8 @@ struct Serializer<fmt::binary, ModelParserResult> {
     std::uint32_t cursor   = static_cast<std::uint32_t>(sizeof(ModelPayloadHeader));
     const auto total_bytes = static_cast<std::uint32_t>(serialized_size(r));
 
-    auto assign_field = [&](ModelPayloadField field, const char* data, std::uint32_t len) {
-      auto& slice = header.slices[static_cast<std::size_t>(field)];
+    auto assign_field = [&](ModelPayloadField field, const char *data, std::uint32_t len) {
+      auto &slice  = header.slices[static_cast<std::size_t>(field)];
       slice.length = len;
       if (len == 0) {
         slice.offset = 0;
@@ -69,7 +68,7 @@ struct Serializer<fmt::binary, ModelParserResult> {
 
     assign_field(ModelPayloadField::Sequence, r.sequence.data(), seq_len);
 
-    auto& coord_slice = header.slices[static_cast<std::size_t>(ModelPayloadField::Coordinates)];
+    auto &coord_slice = header.slices[static_cast<std::size_t>(ModelPayloadField::Coordinates)];
     const auto reserved_coords_bytes = static_cast<std::uint32_t>(coords_reserved_bytes(r));
     if (reserved_coords_bytes == 0) {
       coord_slice.offset = 0;
@@ -79,16 +78,22 @@ struct Serializer<fmt::binary, ModelParserResult> {
       coord_slice.length = coords_bytes;
 
       for (std::size_t i = 0; i < r.coords.size(); ++i) {
-        float triple[3] = {static_cast<float>(r.coords[i].x), static_cast<float>(r.coords[i].y), static_cast<float>(r.coords[i].z)};
-        std::memcpy(dest + coord_slice.offset + static_cast<std::uint32_t>(i * CoordStride), triple, sizeof(triple));
+        float triple[3] = {static_cast<float>(r.coords[i].x),
+                           static_cast<float>(r.coords[i].y),
+                           static_cast<float>(r.coords[i].z)};
+        std::memcpy(dest + coord_slice.offset + static_cast<std::uint32_t>(i * CoordStride),
+                    triple,
+                    sizeof(triple));
       }
       cursor += reserved_coords_bytes;
     }
 
+    // clang-format off
     assign_field(ModelPayloadField::TaxonomyId,         r.metadata.ncbi_taxonomy_id.data(),    taxonomy_len);
     assign_field(ModelPayloadField::OrganismScientific, r.metadata.organism_scientific.data(), organism_len);
     assign_field(ModelPayloadField::PlddtCategories, reinterpret_cast<const char*>(r.plddt_per_residue.data()), plddt_bytes);
     assign_field(ModelPayloadField::DsspAssignments, reinterpret_cast<const char*>(r.dssp_per_residue.data()),  dssp_bytes);
+    // clang-format on
 
     if (cursor != total_bytes) throw std::runtime_error("Model payload serialization size mismatch");
 
@@ -114,10 +119,11 @@ struct Serializer<fmt::binary, ModelParserResult> {
     auto organism = view.organism_scientific();
     r.metadata.organism_scientific.assign(organism.begin(), organism.end());
 
-    auto coords_bytes = view.coords_bytes();
+    auto coords_bytes             = view.coords_bytes();
     const std::size_t coord_count = view.coord_count();
     if (coord_count > 0) {
-      if (coords_bytes.size() != coord_count * CoordStride) throw std::runtime_error("Corrupted coordinate payload");
+      if (coords_bytes.size() != coord_count * CoordStride)
+        throw std::runtime_error("Corrupted coordinate payload");
       r.coords.resize(coord_count);
       for (std::size_t i = 0; i < coord_count; ++i) {
         float triple[3];
@@ -156,30 +162,32 @@ struct Serializer<fmt::binary, ModelParserResult> {
   static Record deserialize(const std::string &s) { return deserialize(s.data(), s.size()); }
 };
 
-// Binary serialization for analysis::system::ModelRecord
-template<>
-struct Serializer<fmt::binary, analysis::system::ModelRecord> {
-  using Rec = analysis::system::ModelRecord;
+// Binary serialization for analysis::ModelRecord
+template <>
+struct Serializer<fmt::binary, analysis::ModelRecord> {
+  using Rec = analysis::ModelRecord;
 
-  static std::size_t serialized_size(const Rec& r) {
-    const uint32_t path_len  = static_cast<uint32_t>(r.file_path.size());
-    const uint32_t blob_len  = static_cast<uint32_t>(Serializer<fmt::binary, ModelParserResult>::serialized_size(r.data));
+  static std::size_t serialized_size(const Rec &r) {
+    const uint32_t path_len = static_cast<uint32_t>(r.file_path.size());
+    const uint32_t blob_len = static_cast<uint32_t>(
+        Serializer<fmt::binary, ModelParserResult>::serialized_size(r.data));
     return 1 + sizeof(uint32_t) + path_len + sizeof(uint32_t) + blob_len;
   }
 
   // Serialize into an existing buffer, resizing it exactly once, no intermmediate allocations.
-  static void serialize_into(const Rec& r, std::string& out) {
+  static void serialize_into(const Rec &r, std::string &out) {
     out.resize(serialized_size(r));
     serialize_into_buffer(r, out.data(), out.size());
   }
 
-  static void serialize_into_buffer(const Rec& r, char* dest, std::size_t buffer_size) {
+  static void serialize_into_buffer(const Rec &r, char *dest, std::size_t buffer_size) {
     const auto total = serialized_size(r);
     if (buffer_size < total) throw std::runtime_error("ModelRecord buffer too small");
 
-    char* p = dest;
-    const uint32_t path_len  = static_cast<uint32_t>(r.file_path.size());
-    const uint32_t blob_len  = static_cast<uint32_t>(Serializer<fmt::binary, ModelParserResult>::serialized_size(r.data));
+    char *p                 = dest;
+    const uint32_t path_len = static_cast<uint32_t>(r.file_path.size());
+    const uint32_t blob_len = static_cast<uint32_t>(
+        Serializer<fmt::binary, ModelParserResult>::serialized_size(r.data));
 
     *p++ = static_cast<char>(r.success ? 1 : 0);
     std::memcpy(p, &path_len, sizeof(path_len));
@@ -203,7 +211,7 @@ struct Serializer<fmt::binary, analysis::system::ModelRecord> {
   static Rec deserialize(const char *data, std::size_t size) {
     Rec r;
     size_t off = 0;
-    r.success = static_cast<unsigned char>(data[off++]);
+    r.success  = static_cast<unsigned char>(data[off++]);
     uint32_t path_len;
     std::memcpy(&path_len, data + off, sizeof(path_len));
     off += sizeof(path_len);
@@ -212,8 +220,8 @@ struct Serializer<fmt::binary, analysis::system::ModelRecord> {
     // model blob
     uint32_t blob_len;
     std::memcpy(&blob_len, data + off, sizeof(blob_len));
-    off += sizeof(blob_len);
-    r.data = Serializer<fmt::binary, ModelParserResult>::deserialize(data + off, blob_len);
+    off    += sizeof(blob_len);
+    r.data  = Serializer<fmt::binary, ModelParserResult>::deserialize(data + off, blob_len);
     return r;
   }
   static Rec deserialize(const std::string &s) { return deserialize(s.data(), s.size()); }
@@ -221,4 +229,4 @@ struct Serializer<fmt::binary, analysis::system::ModelRecord> {
 
 } // namespace serialization
 
-#endif // LAHUTA_SERIALIZATION_MODEL_SERIALIZER_HPP 
+#endif // LAHUTA_SERIALIZATION_MODEL_SERIALIZER_HPP

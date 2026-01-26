@@ -8,13 +8,14 @@
 
 #include "lahuta.hpp"
 #include "logging/logging.hpp"
-#include "pipeline/ingestion.hpp"
-#include "pipeline/pipeline_item.hpp"
-#include "sources/nmr.hpp"
+#include "pipeline/data/ingestion.hpp"
+#include "pipeline/data/pipeline_item.hpp"
+#include "pipeline/ingest/nmr.hpp"
 #include "topology.hpp"
 
 int main() {
   using namespace lahuta;
+  using namespace lahuta::pipeline;
 
   lahuta::Logger::get_instance().set_log_level(lahuta::Logger::LogLevel::Debug);
   const std::string session_id = "nmr/2LNL";

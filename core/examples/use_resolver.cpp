@@ -1,26 +1,26 @@
-#include <contacts/engine.hpp>
-#include <contacts/molstar/provider.hpp>
-#include "compute/topology_snapshot.hpp"
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <variant>
 
+#include <GraphMol/MonomerInfo.h>
+
+#include "compute/topology_snapshot.hpp"
+#include "contacts/engine.hpp"
+#include "contacts/molstar/provider.hpp"
 #include "entities/interaction_types.hpp"
 #include "entities/resolver.hpp"
 #include "lahuta.hpp"
-#include <GraphMol/MonomerInfo.h>
-#include <rdkit/GraphMol/RDKitBase.h>
 
 using namespace lahuta;
+namespace C = lahuta::compute;
 
-// clang-format off
 static std::string atom_tuple(const RDKit::Atom &atom) {
 
   const auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
   if (!info) return std::to_string(atom.getIdx()) + "-UNK-UNK-0";
 
-  const int res_num = info->getResidueNumber();
+  const int res_num           = info->getResidueNumber();
   const std::string atom_name = info->getName();
   const std::string res_name  = info->getResidueName();
   std::ostringstream oss;
@@ -31,8 +31,8 @@ static std::string atom_tuple(const RDKit::Atom &atom) {
 static std::string describe_entity(const EntityRef &v) {
   return std::visit(
       [](const auto &ref) -> std::string {
-        using RefT = std::decay_t<decltype(ref)>;
-        using RawT = std::remove_cv_t<typename RefT::type>; // reference_wrapper<T>, strip const
+        using RefT      = std::decay_t<decltype(ref)>;
+        using RawT      = std::remove_cv_t<typename RefT::type>; // reference_wrapper<T>, strip const
         const auto &rec = ref.get();
         if constexpr (std::is_same_v<RawT, AtomRec>) {
           return atom_tuple(rec.atom.get());
@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
   const auto &top = luni.get_topology();
 
   InteractionEngine<MolStarContactProvider> engine;
-  auto ts = compute::snapshot_of(*top, top->conformer());
+  auto ts             = C::snapshot_of(*top, top->conformer());
   ContactSet contacts = engine.compute(ts);
 
   EntityResolver resolver(*top);
@@ -82,7 +82,7 @@ int main(int argc, char **argv) {
 
   const std::size_t limit = std::min<std::size_t>(resolved.size(), 10000);
   for (std::size_t i = 0; i < limit; ++i) {
-    const auto &c = contacts.data()[i];
+    const auto &c    = contacts.data()[i];
     const auto &pair = resolved[i];
     std::cout << describe_entity(pair.first) << " " << describe_entity(pair.second) << " "
               << interaction_type_to_string(c.type) << " " << c.distance << "\n";

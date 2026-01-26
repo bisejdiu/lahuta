@@ -7,46 +7,48 @@
 #include "analysis/system/model_loader.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/compute/parameters.hpp"
-#include "pipeline/dynamic/keys.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/task/compute/context.hpp"
+#include "pipeline/task/compute/parameters.hpp"
+#include "pipeline/task/context.hpp"
+#include "pipeline/task/keys.hpp"
 
-// clang-format off
-namespace lahuta::analysis::system {
-using namespace lahuta::pipeline::compute;
+namespace lahuta::analysis {
+namespace C = lahuta::compute;
+namespace P = lahuta::pipeline;
 
 struct SystemReadKernel {
-  static ComputationResult execute(DataContext<PipelineContext, Mut::ReadWrite>& context, const SystemReadParams& p) {
-    try {
-      auto& data = context.data();
+  using RWContext = C::DataContext<P::PipelineContext, C::Mut::ReadWrite>;
 
-      std::shared_ptr<const Luni> sys;
+  static C::ComputationResult execute(RWContext &context, const P::SystemReadParams &p) {
+    try {
+      auto &data = context.data();
+
+      std::shared_ptr<const Luni> system;
 
       if (data.session) {
-        sys = data.session->get_or_load_system();
+        system = data.session->get_or_load_system();
       } else if (p.is_model) {
         auto parsed = load_model_parser_result(data.item_path);
-        auto s = Luni::from_model_data(parsed);
-        sys = std::make_shared<Luni>(std::move(s));
+        auto s      = Luni::from_model_data(parsed);
+        system      = std::make_shared<Luni>(std::move(s));
       } else {
-        sys = std::make_shared<Luni>(data.item_path);
+        system = std::make_shared<Luni>(data.item_path);
       }
 
-      if (!sys) return ComputationResult(ComputationError("SystemRead failed: null system"));
+      if (!system) return C::ComputationResult(C::ComputationError("SystemRead failed: null system"));
 
       if (data.ctx) {
-        data.ctx->set_object<const Luni>(pipeline::CTX_SYSTEM_KEY, sys);
+        data.ctx->set_object<const Luni>(P::CTX_SYSTEM_KEY, system);
       }
-      return ComputationResult(true);
-    } catch (const std::exception& e) {
-      return ComputationResult(ComputationError(std::string("SystemRead failed: ") + e.what()));
+      return C::ComputationResult(true);
+    } catch (const std::exception &e) {
+      return C::ComputationResult(C::ComputationError(std::string("SystemRead failed: ") + e.what()));
     } catch (...) {
-      return ComputationResult(ComputationError("SystemRead failed"));
+      return C::ComputationResult(C::ComputationError("SystemRead failed"));
     }
   }
 };
 
-} // namespace lahuta::analysis::system
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_SYSTEM_KERNEL_HPP

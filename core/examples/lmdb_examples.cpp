@@ -14,12 +14,9 @@
 #include "entities/interaction_types.hpp"
 #include "logging/logging.hpp"
 #include "models/plddt.hpp"
-#include "pipeline/compute/parameters.hpp"
-#include "pipeline/data_requirements.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/dynamic/progress_observer.hpp"
-#include "pipeline/dynamic/sources.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/data/data_requirements.hpp"
+#include "pipeline/runtime/api.hpp"
+#include "pipeline/task/api.hpp"
 #include "serialization/json.hpp"
 #include "sinks/ndjson.hpp"
 #include "spatial/fastns.hpp"
@@ -28,9 +25,7 @@
 namespace {
 
 using namespace lahuta;
-using namespace lahuta::pipeline::dynamic;
-using pipeline::DataField;
-using pipeline::DataFieldSet;
+using namespace lahuta::pipeline;
 
 constexpr std::size_t DefaultBatchSize = 512;
 constexpr char OutputFile[] = "output.jsonl";
@@ -167,7 +162,7 @@ private:
 };
 
 int run_noop(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
-  StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
+  StageManager manager(from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(false);
   manager.add_task("noop", {}, std::make_shared<NoOpTask>(), /*thread_safe=*/true);
 
@@ -179,7 +174,7 @@ int run_noop(const std::string &db_path, std::size_t threads, std::size_t batch_
 }
 
 int run_topology(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
-  StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
+  StageManager manager(from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
 
   auto &sys_params = manager.get_system_params();
@@ -198,7 +193,7 @@ int run_topology(const std::string &db_path, std::size_t threads, std::size_t ba
 }
 
 int run_ionic(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
-  StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
+  StageManager manager(from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
 
   auto &sys_params = manager.get_system_params();
@@ -206,19 +201,19 @@ int run_ionic(const std::string &db_path, std::size_t threads, std::size_t batch
 
   auto &topo_params = manager.get_topology_params();
   topo_params.flags = TopologyComputation::All;
-  topo_params.atom_typing_method = analysis::contacts::typing_for_provider(analysis::contacts::ContactProvider::MolStar);
+  topo_params.atom_typing_method = analysis::typing_for_provider(analysis::ContactProvider::MolStar);
 
-  pipeline::compute::ContactsParams params{};
-  params.provider = analysis::contacts::ContactProvider::MolStar;
+  ContactsParams params{};
+  params.provider = analysis::ContactProvider::MolStar;
   params.type = InteractionTypeSet{InteractionType::Ionic};
   params.channel = "ionic";
-  params.format = pipeline::compute::ContactsOutputFormat::Json;
+  params.format = ContactsOutputFormat::Json;
 
   manager.add_computation(
       "ionic",
       {},
       [params]() {
-        return std::make_unique<analysis::contacts::ContactsComputation>("ionic", params);
+        return std::make_unique<analysis::ContactsComputation>("ionic", params);
       },
       /*thread_safe=*/true);
 
@@ -233,7 +228,7 @@ int run_ionic(const std::string &db_path, std::size_t threads, std::size_t batch
 }
 
 int run_contacts(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
-  StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
+  StageManager manager(from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
 
   auto &sys_params = manager.get_system_params();
@@ -241,19 +236,19 @@ int run_contacts(const std::string &db_path, std::size_t threads, std::size_t ba
 
   auto &topo_params = manager.get_topology_params();
   topo_params.flags = TopologyComputation::All;
-  topo_params.atom_typing_method = analysis::contacts::typing_for_provider(analysis::contacts::ContactProvider::MolStar);
+  topo_params.atom_typing_method = analysis::typing_for_provider(analysis::ContactProvider::MolStar);
 
-  pipeline::compute::ContactsParams params{};
-  params.provider = analysis::contacts::ContactProvider::MolStar;
+  ContactsParams params{};
+  params.provider = analysis::ContactProvider::MolStar;
   params.type = InteractionTypeSet::all();
   params.channel = "contacts";
-  params.format = pipeline::compute::ContactsOutputFormat::Json;
+  params.format = ContactsOutputFormat::Json;
 
   manager.add_computation(
       "contacts",
       {},
       [params]() {
-        return std::make_unique<analysis::contacts::ContactsComputation>("contacts", params);
+        return std::make_unique<analysis::ContactsComputation>("contacts", params);
       },
       /*thread_safe=*/true);
 
@@ -271,7 +266,7 @@ int run_neighbors(const std::string &db_path, std::size_t threads, std::size_t b
   constexpr double NeighborCutoff = 5.0;
   auto total_pairs = std::make_shared<std::atomic<std::uint64_t>>(0);
 
-  StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
+  StageManager manager(from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
   manager.get_system_params().is_model = true;
 
@@ -289,7 +284,7 @@ int run_neighbors(const std::string &db_path, std::size_t threads, std::size_t b
 int run_plddt_stats(const std::string &db_path, std::size_t threads, std::size_t batch_size, std::chrono::milliseconds dt) {
   constexpr char OutputChannel[] = "plddt_stats";
 
-  StageManager manager(sources_factory::from_lmdb(db_path, std::string{}, batch_size));
+  StageManager manager(from_lmdb(db_path, std::string{}, batch_size));
   manager.set_auto_builtins(true);
   manager.get_system_params().is_model = true;
 

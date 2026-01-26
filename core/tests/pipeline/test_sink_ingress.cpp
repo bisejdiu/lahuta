@@ -10,11 +10,10 @@
 
 #include <gtest/gtest.h>
 
-#include "pipeline/dynamic/backpressure.hpp"
-#include "pipeline/dynamic/sink_iface.hpp"
+#include "pipeline/io/backpressure.hpp"
+#include "pipeline/io/sink_iface.hpp"
 
-// clang-format off
-using namespace lahuta::pipeline::dynamic;
+using namespace lahuta::pipeline;
 namespace {
 
 class RecordingSink : public IDynamicSink { // records writes and flags flush/close calls.
@@ -24,7 +23,7 @@ public:
     writes.emplace_back(std::string(v.payload));
   }
   void flush() override { flushed.store(true, std::memory_order_release); }
-  void close() override { closed.store (true, std::memory_order_release); }
+  void close() override { closed.store(true, std::memory_order_release); }
 
   std::vector<std::string> writes;
   std::atomic<bool> flushed{false};
@@ -41,8 +40,8 @@ BackpressureConfig small_cfg() {
   cfg.max_batch_msgs   = 8;
   cfg.max_batch_bytes  = 1 * 1024 * 1024;
   cfg.offer_wait_slice = std::chrono::milliseconds{5};
-  cfg.on_full = OnFull::Block;
-  cfg.required = true;
+  cfg.on_full          = OnFull::Block;
+  cfg.required         = true;
   return cfg;
 }
 
@@ -51,9 +50,9 @@ TEST(SinkIngress, BasicDrainAndJoin) {
   SinkIngress ingress(sink, small_cfg());
   ingress.start();
 
-  auto payload = std::make_shared<const std::string>(std::string(128, 'x'));
+  auto payload             = std::make_shared<const std::string>(std::string(128, 'x'));
   constexpr uint32_t ch_id = 1;
-  const std::size_t count = 10;
+  const std::size_t count  = 10;
   for (std::size_t i = 0; i < count; ++i) {
     ASSERT_TRUE(ingress.offer(ch_id, payload, payload->size()));
   }
@@ -229,7 +228,7 @@ public:
   }
 
   void flush() override { flushed_.store(true, std::memory_order_release); }
-  void close() override { closed_ .store(true, std::memory_order_release); }
+  void close() override { closed_.store(true, std::memory_order_release); }
 
   std::size_t thread_count() const {
     std::lock_guard<std::mutex> lk(m_);
@@ -238,14 +237,14 @@ public:
 
   std::size_t write_count() const { return write_count_.load(std::memory_order_relaxed); }
   bool flushed() const { return flushed_.load(std::memory_order_acquire); }
-  bool closed () const { return closed_ .load(std::memory_order_acquire); }
+  bool closed() const { return closed_.load(std::memory_order_acquire); }
 
 private:
   mutable std::mutex m_;
   std::set<std::thread::id> writer_threads_;
   std::atomic<std::size_t> write_count_{0};
   std::atomic<bool> flushed_{false};
-  std::atomic<bool> closed_ {false};
+  std::atomic<bool> closed_{false};
 };
 
 class FailOnFirstWriteSink : public IDynamicSink {
@@ -267,13 +266,13 @@ private:
 };
 
 TEST(SinkIngress, SingleWriterUsesDefaultThreadCount) {
-  auto sink = std::make_shared<ThreadTrackingSink>();
-  auto cfg = small_cfg();
+  auto sink          = std::make_shared<ThreadTrackingSink>();
+  auto cfg           = small_cfg();
   cfg.max_batch_msgs = 1;
   SinkIngress ingress(sink, cfg);
   ingress.start();
 
-  auto payload = std::make_shared<const std::string>("x");
+  auto payload             = std::make_shared<const std::string>("x");
   constexpr int total_msgs = 32;
   for (int i = 0; i < total_msgs; ++i) {
     ASSERT_TRUE(ingress.offer(1, payload, payload->size()));
@@ -290,8 +289,8 @@ TEST(SinkIngress, SingleWriterUsesDefaultThreadCount) {
 }
 
 TEST(SinkIngress, ConfigurableWriterThreads) {
-  auto sink = std::make_shared<ThreadTrackingSink>();
-  auto cfg = small_cfg();
+  auto sink          = std::make_shared<ThreadTrackingSink>();
+  auto cfg           = small_cfg();
   cfg.writer_threads = 3;
   cfg.max_batch_msgs = 1;
 
@@ -299,7 +298,7 @@ TEST(SinkIngress, ConfigurableWriterThreads) {
   ingress.start();
 
   constexpr int total_msgs = 90;
-  auto payload = std::make_shared<const std::string>("x");
+  auto payload             = std::make_shared<const std::string>("x");
   for (int i = 0; i < total_msgs; ++i) {
     ASSERT_TRUE(ingress.offer(1, payload, payload->size()));
   }
@@ -316,8 +315,8 @@ TEST(SinkIngress, ConfigurableWriterThreads) {
 }
 
 TEST(SinkIngress, WriterFailureClosesQueue) {
-  auto sink = std::make_shared<FailOnFirstWriteSink>();
-  auto cfg = small_cfg();
+  auto sink          = std::make_shared<FailOnFirstWriteSink>();
+  auto cfg           = small_cfg();
   cfg.writer_threads = 4;
   cfg.max_batch_msgs = 1;
 

@@ -1,5 +1,3 @@
-#include "specs/command_spec.hpp"
-
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -8,20 +6,21 @@
 
 #include "analysis/contacts/computation.hpp"
 #include "analysis/contacts/provider.hpp"
-#include "tasks/contacts_md_source.hpp"
 #include "entities/interaction_types.hpp"
+#include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "pipeline/runtime/api.hpp"
+#include "pipeline/task/api.hpp"
 #include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
-#include "logging/logging.hpp"
-#include "pipeline/compute/parameters.hpp"
-#include "pipeline/dynamic/backpressure.hpp"
-#include "pipeline/dynamic/sources.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
+#include "specs/command_spec.hpp"
+#include "tasks/contacts_md_source.hpp"
 
 namespace lahuta::cli {
+namespace P = lahuta::pipeline;
 namespace {
 
 // Contacts-specific argument validators
@@ -42,7 +41,7 @@ option::ArgStatus Provider(const option::Option &option, bool msg) {
   }
 
   const std::string_view provider{option.arg};
-  if (analysis::contacts::contact_provider_from_string(provider).has_value()) {
+  if (analysis::contact_provider_from_string(provider).has_value()) {
     return option::ARG_OK;
   }
 
@@ -95,12 +94,12 @@ struct ContactsConfig {
   contacts::MdInputs md_inputs;
   RuntimeConfig runtime;
   ReportConfig report;
-  analysis::contacts::ContactProvider provider = analysis::contacts::ContactProvider::MolStar;
-  InteractionTypeSet interaction_types         = InteractionTypeSet::all();
-  bool is_af2_model                            = false;
-  bool want_json                               = false;
-  bool want_text                               = false;
-  bool want_log                                = false;
+  analysis::ContactProvider provider   = analysis::ContactProvider::MolStar;
+  InteractionTypeSet interaction_types = InteractionTypeSet::all();
+  bool is_af2_model                    = false;
+  bool want_json                       = false;
+  bool want_text                       = false;
+  bool want_log                        = false;
   std::string run_timestamp;
   std::string contacts_json_path;
   std::string contacts_text_path;
@@ -115,8 +114,7 @@ public:
     runtime_spec_.include_writer_threads = true;
     runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 200;
-    runtime_spec_.default_writer_threads = pipeline::dynamic::get_default_backpressure_config()
-                                               .writer_threads;
+    runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
     schema_.add({0,
                  "",
@@ -265,7 +263,7 @@ public:
 
     if (args.has(contacts_opts::Provider)) {
       const std::string provider_arg = args.get_string(contacts_opts::Provider);
-      if (auto provider = analysis::contacts::contact_provider_from_string(provider_arg)) {
+      if (auto provider = analysis::contact_provider_from_string(provider_arg)) {
         config.provider = *provider;
       } else {
         throw std::runtime_error("Invalid provider '" + provider_arg +
@@ -319,7 +317,7 @@ public:
     plan.threads                            = static_cast<std::size_t>(cfg.runtime.threads);
     plan.auto_builtins                      = true;
     plan.override_topology_params           = true;
-    plan.topology_params.atom_typing_method = analysis::contacts::typing_for_provider(cfg.provider);
+    plan.topology_params.atom_typing_method = analysis::typing_for_provider(cfg.provider);
     plan.success_message                    = "Contact computation completed successfully!";
 
     const bool is_md              = cfg.source_mode == ContactsSourceMode::MD;
@@ -350,26 +348,25 @@ public:
                                                      cfg.md_inputs.trajectory_paths);
         }
         case Mode::Database: {
-          auto source = pipeline::dynamic::sources_factory::from_lmdb(
-              cfg.source.database_path,
-              std::string{},
-              cfg.runtime.batch_size,
-              {static_cast<std::size_t>(cfg.runtime.threads) + 1});
+          auto source = P::from_lmdb(cfg.source.database_path,
+                                     std::string{},
+                                     cfg.runtime.batch_size,
+                                     {static_cast<std::size_t>(cfg.runtime.threads) + 1});
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Directory: {
-          auto source = pipeline::dynamic::sources_factory::from_directory(cfg.source.directory_path,
-                                                                           cfg.source.extensions,
-                                                                           cfg.source.recursive,
-                                                                           cfg.runtime.batch_size);
+          auto source = P::from_directory(cfg.source.directory_path,
+                                          cfg.source.extensions,
+                                          cfg.source.recursive,
+                                          cfg.runtime.batch_size);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Vector: {
-          auto source = pipeline::dynamic::sources_factory::from_vector(cfg.source.file_vector);
+          auto source = P::from_vector(cfg.source.file_vector);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::FileList: {
-          auto source = pipeline::dynamic::sources_factory::from_filelist(cfg.source.file_list_path);
+          auto source = P::from_filelist(cfg.source.file_list_path);
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
@@ -378,28 +375,27 @@ public:
 
     const bool json_out = cfg.want_json || !cfg.want_text;
 
-    pipeline::compute::ContactsParams params;
+    P::ContactsParams params;
     params.provider = cfg.provider;
     params.type     = cfg.interaction_types;
     params.channel  = "contacts";
-    params.format   = json_out ? pipeline::compute::ContactsOutputFormat::Json
-                               : pipeline::compute::ContactsOutputFormat::Text;
+    params.format   = json_out ? P::ContactsOutputFormat::Json : P::ContactsOutputFormat::Text;
 
     PipelineComputation computation;
     computation.name    = "contacts";
     computation.factory = [params]() {
-      return std::make_unique<analysis::contacts::ContactsComputation>("contacts", params);
+      return std::make_unique<analysis::ContactsComputation>("contacts", params);
     };
     computation.thread_safe = true;
     plan.computations.push_back(std::move(computation));
 
-    auto sink_cfg           = pipeline::dynamic::get_default_backpressure_config();
+    auto sink_cfg           = P::get_default_backpressure_config();
     sink_cfg.writer_threads = cfg.runtime.writer_threads;
 
     if (json_out && cfg.want_json) {
       PipelineSink sink;
       sink.channel      = "contacts";
-      sink.sink         = std::make_shared<pipeline::dynamic::NdjsonFileSink>(cfg.contacts_json_path);
+      sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.contacts_json_path);
       sink.backpressure = sink_cfg;
       plan.sinks.push_back(std::move(sink));
       Logger::get_logger()->info("Contacts JSON sink -> {}", cfg.contacts_json_path);
@@ -407,7 +403,7 @@ public:
     if (!json_out && cfg.want_text) {
       PipelineSink sink;
       sink.channel      = "contacts";
-      sink.sink         = std::make_shared<pipeline::dynamic::NdjsonFileSink>(cfg.contacts_text_path);
+      sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.contacts_text_path);
       sink.backpressure = sink_cfg;
       plan.sinks.push_back(std::move(sink));
       Logger::get_logger()->info("Contacts text sink -> {}", cfg.contacts_text_path);
@@ -415,7 +411,7 @@ public:
     if (cfg.want_log) {
       PipelineSink sink;
       sink.channel      = "contacts";
-      sink.sink         = std::make_shared<pipeline::dynamic::LoggingSink>();
+      sink.sink         = std::make_shared<P::LoggingSink>();
       sink.backpressure = sink_cfg;
       plan.sinks.push_back(std::move(sink));
     }

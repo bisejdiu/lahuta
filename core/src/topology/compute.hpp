@@ -25,7 +25,7 @@ public:
 };
 
 template <typename DataT = TopologyContext>
-class ResidueComputation : public KernelizedROComputation<
+class ResidueComputation : public KernelizedRWComputation<
     DataT,
     ResidueComputationParams,
     ResidueKernel,
@@ -33,11 +33,11 @@ class ResidueComputation : public KernelizedROComputation<
 public:
     constexpr static const ComputationLabel label{"residues"};
     using dependencies = UnitComputation;
-    using ResidueComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+    using ResidueComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
 template <typename DataT = TopologyContext>
-class BondComputation : public KernelizedROComputation<
+class BondComputation : public KernelizedRWComputation<
     DataT,
     BondComputationParams,
     BondKernel,
@@ -45,11 +45,11 @@ class BondComputation : public KernelizedROComputation<
 public:
     constexpr static const ComputationLabel label{"bonds"};
     using dependencies = Dependencies<Dependency<NeighborSearchComputation<DataT>, std::shared_ptr<lahuta::NSResults>>>;
-    using BondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+    using BondComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
 template <typename DataT = TopologyContext>
-class NonStandardBondComputation : public KernelizedROComputation<
+class NonStandardBondComputation : public KernelizedRWComputation<
     DataT,
     NonStandardBondComputationParams,
     NonStandardBondKernel,
@@ -57,7 +57,7 @@ class NonStandardBondComputation : public KernelizedROComputation<
 public:
     constexpr static const ComputationLabel label{"nonstandard_bonds"};
     using dependencies = Dependencies<Dependency<BondComputation<DataT>, lahuta::BondAssignmentResult>>;
-    using NonStandardBondComputation<DataT>::KernelizedROComputation::KernelizedROComputation;
+    using NonStandardBondComputation<DataT>::KernelizedRWComputation::KernelizedRWComputation;
 };
 
 template <typename DataT = TopologyContext>

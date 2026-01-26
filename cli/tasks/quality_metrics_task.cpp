@@ -6,22 +6,18 @@
 #include <vector>
 
 #include "analysis/extract/extract_tasks.hpp"
-#include "tasks/quality_metrics_task.hpp"
-#include "parsing/extension_utils.hpp"
 #include "logging/logging.hpp"
 #include "models/dssp.hpp"
 #include "models/plddt.hpp"
-#include "pipeline/data_requirements.hpp"
+#include "parsing/extension_utils.hpp"
+#include "pipeline/data/data_requirements.hpp"
 #include "serialization/json.hpp"
+#include "tasks/quality_metrics_task.hpp"
 #include "utils/span.hpp"
 
 namespace lahuta::cli::quality_metrics {
+namespace P = lahuta::pipeline;
 namespace {
-
-using pipeline::DataField;
-using pipeline::DataFieldSet;
-using pipeline::dynamic::TaskContext;
-using pipeline::dynamic::TaskResult;
 
 struct SegmentStats {
   std::size_t segment_count         = 0;
@@ -140,12 +136,12 @@ SegmentStats compute_segment_stats(span<const pLDDTCategory> plddt, std::uint32_
   return stats;
 }
 
-class QualityMetricsTask final : public pipeline::dynamic::ITask {
+class QualityMetricsTask final : public P::ITask {
 public:
   explicit QualityMetricsTask(std::shared_ptr<const QualityMetricsConfig> config)
       : config_(std::move(config)) {}
 
-  TaskResult run(const std::string &item_path, TaskContext &ctx) override {
+  P::TaskResult run(const std::string &item_path, P::TaskContext &ctx) override {
     auto payload = ctx.model_payload();
     std::shared_ptr<const ModelParserResult> parsed;
 
@@ -161,7 +157,7 @@ public:
         dssp_span = span(*payload->dssp);
       }
     } else {
-      parsed = analysis::extract::get_cached_model_parser_result(ctx);
+      parsed = analysis::get_cached_model_parser_result(ctx);
       if (parsed) {
         if (!parsed->plddt_per_residue.empty()) {
           plddt_span = span(std::as_const(parsed->plddt_per_residue));
@@ -312,17 +308,17 @@ public:
       }
     }
 
-    TaskResult result;
+    P::TaskResult result;
     result.ok = true;
-    result.emits.push_back(pipeline::dynamic::Emission{std::string(OutputChannel), json.str()});
+    result.emits.push_back(P::Emission{std::string(OutputChannel), json.str()});
     return result;
   }
 
-  DataFieldSet data_requirements() const override {
-    DataFieldSet fields = DataFieldSet::none();
-    if (!config_->plddt_groups.empty()) fields |= DataField::Plddt;
-    if (!config_->dssp_groups.empty()) fields |= DataField::Dssp;
-    fields |= DataField::Metadata;
+  P::DataFieldSet data_requirements() const override {
+    P::DataFieldSet fields = P::DataFieldSet::none();
+    if (!config_->plddt_groups.empty()) fields |= P::DataField::Plddt;
+    if (!config_->dssp_groups.empty()) fields |= P::DataField::Dssp;
+    fields |= P::DataField::Metadata;
     return fields;
   }
 
@@ -461,8 +457,7 @@ std::vector<OverlapSpec> build_overlap_specs(const std::vector<GroupSpec> &plddt
   return overlaps;
 }
 
-std::shared_ptr<pipeline::dynamic::ITask>
-make_quality_metrics_task(std::shared_ptr<const QualityMetricsConfig> config) {
+std::shared_ptr<P::ITask> make_quality_metrics_task(std::shared_ptr<const QualityMetricsConfig> config) {
   return std::make_shared<QualityMetricsTask>(std::move(config));
 }
 

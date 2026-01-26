@@ -9,11 +9,12 @@
 #include <vector>
 
 #include "db/db.hpp"
-#include "sources/lmdb.hpp"
+#include "pipeline/ingest/lmdb.hpp"
 #include "test_utils/fp_test_utils.hpp"
 
 namespace fs = std::filesystem;
 namespace lahuta::tests {
+namespace P = lahuta::pipeline;
 
 TEST(LmdbLazyLoading, PositionsViewMatchesCopyOnSampledKeys) {
   const char *env_path = std::getenv("LAHUTA_TEST_DB");
@@ -42,16 +43,16 @@ TEST(LmdbLazyLoading, PositionsViewMatchesCopyOnSampledKeys) {
   std::sample(keys.begin(), keys.end(), std::back_inserter(sampled), sample_size, rng);
 
   for (const auto &key : sampled) {
-    LMDBRef ref{db_path_str, /*db_name=*/"", key, db};
-    auto req = pipeline::DataFieldSet::of({pipeline::DataField::Positions, pipeline::DataField::PositionsView});
-    auto session = std::make_shared<LMDBSession>(ref, "eq_test", req);
-    auto slices = session->model_payload(req);
+    P::LMDBRef ref{db_path_str, /*db_name=*/"", key, db};
+    auto req     = P::DataFieldSet::of({P::DataField::Positions, P::DataField::PositionsView});
+    auto session = std::make_shared<P::LMDBSession>(ref, "eq_test", req);
+    auto slices  = session->model_payload(req);
 
     ASSERT_TRUE(slices.positions) << "Positions should load positions copy for key: " << key;
     ASSERT_TRUE(slices.positions_view) << "Positions should load positions_view for key: " << key;
 
     const auto &copy_data = *slices.positions;
-    const auto view_span = slices.positions_view->data;
+    const auto view_span  = slices.positions_view->data;
     ASSERT_EQ(copy_data.size(), view_span.size()) << "Size mismatch for key: " << key;
 
     for (std::size_t i = 0; i < copy_data.size(); ++i) {

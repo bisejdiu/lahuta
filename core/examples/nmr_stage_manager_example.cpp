@@ -13,32 +13,27 @@
 #include "compute/dependency.hpp"
 #include "compute/result.hpp"
 #include "lahuta.hpp"
-#include "pipeline/compute/context.hpp"
-#include "pipeline/dynamic/manager.hpp"
-#include "pipeline/ingestion.hpp"
-#include "pipeline/stream_session.hpp"
+#include "pipeline/data/ingestion.hpp"
+#include "pipeline/runtime/manager.hpp"
+#include "pipeline/task/compute/context.hpp"
 #include "sinks/ndjson.hpp"
 #include "topology.hpp"
 
-// clang-format off
 namespace {
 
 using namespace lahuta;
-using lahuta::IngestDescriptor;
-using namespace lahuta::topology::compute;
-using namespace lahuta::pipeline::compute;
-using lahuta::sources::IDescriptor;
+namespace P = lahuta::pipeline;
 
-class SingleNMRDescriptor final : public IDescriptor {
+class SingleNMRDescriptor final : public P::IDescriptor {
 public:
   explicit SingleNMRDescriptor(std::string path) : path_(std::move(path)) {}
 
-  std::optional<IngestDescriptor> next() override {
+  std::optional<P::IngestDescriptor> next() override {
     if (done_) return std::nullopt;
     done_ = true;
-    IngestDescriptor desc;
-    desc.id = path_;
-    desc.origin = NMRRef{path_};
+    P::IngestDescriptor desc;
+    desc.id     = path_;
+    desc.origin = P::NMRRef{path_};
     return desc;
   }
 
@@ -49,20 +44,22 @@ private:
   bool done_ = false;
 };
 
-struct FrameSummaryParams : ParameterBase<FrameSummaryParams> {
+struct FrameSummaryParams : C::ParameterBase<FrameSummaryParams> {
   static constexpr ParameterInterface::TypeId TYPE_ID = 200;
 };
 
-class FrameSummaryComputation final : public ReadWriteComputation<PipelineContext, FrameSummaryParams, FrameSummaryComputation> {
+class FrameSummaryComputation final
+    : public C::ReadWriteComputation<P::PipelineContext, FrameSummaryParams, FrameSummaryComputation> {
 public:
-  using Base = ReadWriteComputation<PipelineContext, FrameSummaryParams, FrameSummaryComputation>;
+  using Base = ReadWriteComputation<P::PipelineContext, FrameSummaryParams, FrameSummaryComputation>;
   FrameSummaryComputation() : Base(FrameSummaryParams{}) {}
 
-  static constexpr ComputationLabel label{"frame_summary"};
-  using dependencies = Dependencies<Dependency<analysis::topology::BuildTopologyComputation, void>>;
+  static constexpr C::ComputationLabel label{"frame_summary"};
+  using dependencies = C::Dependencies<C::Dependency<analysis::BuildTopologyComputation, void>>;
 
-  ComputationResult execute_typed(DataContext<PipelineContext, Mut::ReadWrite> &context, const FrameSummaryParams &) {
-    auto &data = context.data();
+  C::ComputationResult execute_typed(C::DataContext<P::PipelineContext> &context,
+                                     const FrameSummaryParams &) {
+    auto &data     = context.data();
     auto *task_ctx = data.ctx;
 
     auto system = task_ctx ? task_ctx->system() : nullptr;
@@ -73,7 +70,7 @@ public:
       }
     }
     if (!system) {
-      return ComputationResult(ComputationError("FrameSummaryComputation requires a system"));
+      return C::ComputationResult(C::ComputationError("FrameSummaryComputation requires a system"));
     }
 
     auto topology_ptr = task_ctx ? task_ctx->topology() : nullptr;
@@ -98,22 +95,23 @@ public:
       same_topology = false;
     }
 
+    // clang-format off
     RDGeom::Point3D first_atom{};
     if (data.frame && data.session) {
       auto coords = data.frame->load_coordinates();
       std::shared_ptr<RDGeom::POINT3D_VECT> slab =
           coords.shared_positions ? std::const_pointer_cast<RDGeom::POINT3D_VECT>(coords.shared_positions)
                                   : std::make_shared<RDGeom::POINT3D_VECT>(std::move(coords.positions));
+      // clang-format on
       RDKit::Conformer conf;
       conf.set3D(true);
       conf.bindExternalPositions(std::move(slab));
       const RDKit::Conformer &cref = conf;
-      first_atom = cref.getAtomPos(0);
+      first_atom                   = cref.getAtomPos(0);
     } else {
       const auto &conf = system->get_conformer();
-      first_atom = conf.getAtomPos(0);
+      first_atom       = conf.getAtomPos(0);
     }
-
     auto frame_meta = task_ctx ? task_ctx->frame_metadata() : nullptr;
 
     static std::once_flag header_once;
@@ -143,7 +141,7 @@ public:
     oss << " first_atom=(" << first_atom.x << ", " << first_atom.y << ", " << first_atom.z << ")";
 
     std::cout << oss.str() << std::endl;
-    return ComputationResult(true);
+    return C::ComputationResult(true);
   }
 
 private:
@@ -159,19 +157,19 @@ int main(int argc, char **argv) {
   std::string input = argc > 1 ? argv[1] : "core/data/2LNL.cif.gz";
 
   auto source = std::make_unique<SingleNMRDescriptor>(input);
-  pipeline::dynamic::StageManager manager(std::move(source));
+  P::StageManager manager(std::move(source));
   manager.set_auto_builtins(true);
 
-  ContactsParams p{};
+  P::ContactsParams p{};
   manager.add_computation(
       "contacts",
       {},
       [label = std::string("contacts"), p]() {
-        return std::make_unique<analysis::contacts::ContactsComputation>(label, p);
+        return std::make_unique<analysis::ContactsComputation>(label, p);
       },
       /*thread_safe=*/true);
 
-  auto contacts_data_sink = std::make_shared<lahuta::pipeline::dynamic::NdjsonFileSink>("contacts_data.json");
+  auto contacts_data_sink = std::make_shared<P::NdjsonFileSink>("contacts_data.json");
   manager.connect_sink("contacts", contacts_data_sink);
 
   manager.add_computation("frame_summary", {"topology"}, [] {

@@ -1,8 +1,8 @@
 #ifndef LAHUTA_HEURISTICS_HPP
 #define LAHUTA_HEURISTICS_HPP
 
-#include <GraphMol/Atom.h>
-#include <GraphMol/RWMol.h>
+#include <rdkit/GraphMol/Atom.h>
+#include <rdkit/GraphMol/RWMol.h>
 
 #include "chemistry/elements.hpp"
 #include "chemistry/utils.hpp"

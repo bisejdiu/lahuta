@@ -3,12 +3,11 @@
 
 #include <cstdint>
 
-// clang-format off
-namespace lahuta::topology::compute {
+namespace lahuta::compute {
 
-using u16  = std::uint16_t;
-using u8   = std::uint8_t;
+using u16 = std::uint16_t;
+using u8  = std::uint8_t;
 
-} // namespace lahuta::topology::compute
+} // namespace lahuta::compute
 
 #endif // LAHUTA_COMPUTE_DEFS_HPP

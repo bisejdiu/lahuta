@@ -14,11 +14,12 @@ struct AminoAcidEdges;
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 struct ModelAtomsKernel {
   template <typename DataT>
-  static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelAtomsParams &params);
+  static C::ComputationResult
+  execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelAtomsParams &params);
 
 private:
   static void create_atoms_for_residue(int residue_idx, char aa_type, ModelData &data);
@@ -27,8 +28,8 @@ private:
 
 struct ModelBondsKernel {
   template <typename DataT>
-  static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelBondsParams &params);
+  static C::ComputationResult
+  execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelBondsParams &params);
 
 private:
   static void add_intra_residue_bonds(const class AminoAcidEdges &edges, int residue_start_idx, ModelData &data);
@@ -38,14 +39,14 @@ private:
 
 struct ModelPositionsKernel {
   template <typename DataT>
-  static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelPositionsParams &params);
+  static C::ComputationResult
+  execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelPositionsParams &params);
 };
 
 struct ModelAromaticsKernel {
   template <typename DataT>
-  static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelAromaticsParams &params);
+  static C::ComputationResult
+  execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelAromaticsParams &params);
 
 private:
   template <typename ArrayN>
@@ -54,14 +55,14 @@ private:
 
 struct ModelDisulfidesKernel {
   template <typename DataT>
-  static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelDisulfidesParams &params);
+  static C::ComputationResult
+  execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelDisulfidesParams &params);
 };
 
 struct ModelBuildKernel {
   template <typename DataT>
-  static ComputationResult
-  execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelBuildParams &params);
+  static C::ComputationResult
+  execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelBuildParams &params);
 
 private:
   static void canonicalize_bond_indices(ModelData &data);

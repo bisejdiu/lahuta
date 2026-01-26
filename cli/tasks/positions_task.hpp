@@ -4,12 +4,12 @@
 #include <filesystem>
 #include <memory>
 
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/task/task.hpp"
 
 namespace lahuta::cli::positions {
+namespace P = lahuta::pipeline;
 
-[[nodiscard]] std::shared_ptr<pipeline::dynamic::ITask> make_positions_task(std::filesystem::path output_dir,
-                                                                            int tree_depth);
+[[nodiscard]] std::shared_ptr<P::ITask> make_positions_task(std::filesystem::path output_dir, int tree_depth);
 
 } // namespace lahuta::cli::positions
 

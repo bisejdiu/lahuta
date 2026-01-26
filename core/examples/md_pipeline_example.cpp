@@ -7,20 +7,23 @@
 #include <GraphMol/Conformer.h>
 
 #include "logging/logging.hpp"
-#include "pipeline/ingestion.hpp"
-#include "pipeline/pipeline_item.hpp"
-#include "sources/trajectory.hpp"
+#include "pipeline/data/ingestion.hpp"
+#include "pipeline/data/pipeline_item.hpp"
+#include "pipeline/ingest/trajectory.hpp"
 #include "topology.hpp"
 
 namespace {
 constexpr const char *StructurePath = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.tpr.gro";
-constexpr const char *XtcPath = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.pbc.xtc";
+constexpr const char *XtcPath       = "/Users/bsejdiu/Downloads/Atomistic_md_r1_cdl.pbc.xtc";
 } // namespace
 
 int main() {
   using namespace lahuta;
+  using namespace lahuta::pipeline;
+  using namespace RDGeom;
+  using SPtrPV = std::shared_ptr<POINT3D_VECT>;
 
-  lahuta::Logger::get_instance().set_log_level(lahuta::Logger::LogLevel::Debug);
+  Logger::get_instance().set_log_level(Logger::LogLevel::Debug);
   const std::string session_id = "md/example";
   IngestDescriptor descriptor{
       session_id,
@@ -67,21 +70,19 @@ int main() {
       // }
     }
 
-    auto coordinates = item->frame->load_coordinates();
-    std::shared_ptr<RDGeom::POINT3D_VECT> slab =
-        coordinates.shared_positions
-            ? std::const_pointer_cast<RDGeom::POINT3D_VECT>(coordinates.shared_positions)
-            : std::make_shared<RDGeom::POINT3D_VECT>(std::move(coordinates.positions));
+    auto coords = item->frame->load_coordinates();
+    SPtrPV slab = coords.shared_positions ? std::const_pointer_cast<POINT3D_VECT>(coords.shared_positions)
+                                          : std::make_shared<POINT3D_VECT>(std::move(coords.positions));
     RDKit::Conformer conformer;
     conformer.set3D(true);
     conformer.bindExternalPositions(std::move(slab));
     const RDKit::Conformer &cref = conformer; // const-view for read-only access
-    const auto &positions = cref.getPositions();
+    const auto &positions        = cref.getPositions();
     if (positions.empty()) {
       throw std::runtime_error("Trajectory frame produced no coordinates");
     }
 
-    auto end = std::chrono::high_resolution_clock::now();
+    auto end                                       = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> diff = end - start;
     std::cout << "Frame " << std::setw(6) << item->conformer_id << " loaded in " << std::fixed
               << std::setprecision(2) << diff.count() << " ms ";

@@ -1,25 +1,26 @@
-# AlignAfterOpenBracket: AlwaysBreak
-AllowAllArgumentsOnNextLine: false
-AllowShortIfStatementsOnASingleLine: true
-# BreakBeforeBinaryOperators: NonAssignment
-BinPackArguments: false
+BasedOnStyle: LLVM
 ColumnLimit: 110
+
+ContinuationIndentWidth: 4
 IndentCaseLabels: true
+IndentPPDirectives: AfterHash
+
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: Left
 AlignConsecutiveAssignments:
   Enabled: true
   AcrossEmptyLines: false
   AcrossComments: false
-  AlignCompound: false
+  AlignCompound: true
   PadOperators: true
-
-AlignAfterOpenBracket: Align
 AlignOperands: Align
+
+AllowAllArgumentsOnNextLine: false
+AllowShortIfStatementsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: true
+BinPackArguments: false
 BreakBeforeBinaryOperators: None
-ContinuationIndentWidth: 4
 
-PenaltyBreakAssignment: 500
-
-AlignArrayOfStructures: Left
 SpaceBeforeParens: Custom
 
-AlwaysBreakTemplateDeclarations: true
+PenaltyBreakAssignment: 500

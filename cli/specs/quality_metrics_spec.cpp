@@ -7,18 +7,18 @@
 #include <vector>
 
 #include "analysis/extract/extract_tasks.hpp"
-#include "tasks/quality_metrics_task.hpp"
+#include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
-#include "specs/command_spec.hpp"
-#include "logging/logging.hpp"
-#include "pipeline/dynamic/backpressure.hpp"
-#include "pipeline/dynamic/sources.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
+#include "specs/command_spec.hpp"
+#include "tasks/quality_metrics_task.hpp"
 
 namespace lahuta::cli {
+namespace P = lahuta::pipeline;
 namespace {
 
 namespace quality_metrics_opts {
@@ -51,8 +51,7 @@ public:
     runtime_spec_.include_writer_threads = true;
     runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
-    runtime_spec_.default_writer_threads = pipeline::dynamic::get_default_backpressure_config()
-                                               .writer_threads;
+    runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
     schema_.add({0,
                  "",
@@ -308,40 +307,39 @@ public:
       using Mode = SourceConfig::Mode;
       switch (cfg.source.mode) {
         case Mode::Database: {
-          auto source = pipeline::dynamic::sources_factory::from_lmdb(
-              cfg.source.database_path,
-              std::string{},
-              cfg.runtime.batch_size,
-              {static_cast<std::size_t>(cfg.runtime.threads) + 1});
+          auto source = P::from_lmdb(cfg.source.database_path,
+                                     std::string{},
+                                     cfg.runtime.batch_size,
+                                     {static_cast<std::size_t>(cfg.runtime.threads) + 1});
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Directory: {
-          auto source = pipeline::dynamic::sources_factory::from_directory(cfg.source.directory_path,
-                                                                           cfg.source.extensions,
-                                                                           cfg.source.recursive,
-                                                                           cfg.runtime.batch_size);
+          auto source = P::from_directory(cfg.source.directory_path,
+                                          cfg.source.extensions,
+                                          cfg.source.recursive,
+                                          cfg.runtime.batch_size);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Vector: {
-          auto source = pipeline::dynamic::sources_factory::from_vector(cfg.source.file_vector);
+          auto source = P::from_vector(cfg.source.file_vector);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::FileList: {
-          auto source = pipeline::dynamic::sources_factory::from_filelist(cfg.source.file_list_path);
+          auto source = P::from_filelist(cfg.source.file_list_path);
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
       throw std::runtime_error("quality-metrics does not support this source mode");
     };
 
-    auto sink_cfg           = pipeline::dynamic::get_default_backpressure_config();
+    auto sink_cfg           = P::get_default_backpressure_config();
     sink_cfg.writer_threads = cfg.runtime.writer_threads;
 
     const bool needs_parse_task = cfg.source.mode != SourceConfig::Mode::Database;
     if (needs_parse_task) {
       PipelineTask parse_task;
       parse_task.name        = "parse_model";
-      parse_task.task        = std::make_shared<analysis::extract::ModelParseTask>();
+      parse_task.task        = std::make_shared<analysis::ModelParseTask>();
       parse_task.thread_safe = true;
       plan.tasks.push_back(std::move(parse_task));
     }
@@ -359,10 +357,10 @@ public:
     sink.channel      = std::string(quality_metrics::OutputChannel);
     sink.backpressure = sink_cfg;
     if (cfg.output_stdout) {
-      sink.sink = std::make_shared<pipeline::dynamic::LoggingSink>();
+      sink.sink = std::make_shared<P::LoggingSink>();
       Logger::get_logger()->info("Quality-metrics output sink -> stdout (-)");
     } else {
-      sink.sink = std::make_shared<pipeline::dynamic::NdjsonFileSink>(cfg.output_path);
+      sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
       Logger::get_logger()->info("Quality-metrics output sink -> file: {}", cfg.output_path);
     }
     plan.sinks.push_back(std::move(sink));

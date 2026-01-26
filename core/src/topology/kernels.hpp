@@ -29,14 +29,14 @@ struct NeighborSearchKernel {
 struct BondKernel {
   template <typename DataT>
   static ComputationResult
-  execute(const DataContext<DataT, Mut::ReadOnly> &context, const BondComputationParams &params);
+  execute(DataContext<DataT, Mut::ReadWrite> &context, const BondComputationParams &params);
   static void fix_bonds(RDKit::RWMol &mol);
 };
 
 struct NonStandardBondKernel {
   template <typename DataT>
   static ComputationResult
-  execute(const DataContext<DataT, Mut::ReadOnly> &context, const NonStandardBondComputationParams &params);
+  execute(DataContext<DataT, Mut::ReadWrite> &context, const NonStandardBondComputationParams &params);
 
 private:
   static void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map);
@@ -45,7 +45,7 @@ private:
 struct ResidueKernel {
   template <typename DataT>
   static ComputationResult
-  execute(const DataContext<DataT, Mut::ReadOnly> &context, const ResidueComputationParams &params);
+  execute(DataContext<DataT, Mut::ReadWrite> &context, const ResidueComputationParams &params);
 };
 
 struct RingKernel {

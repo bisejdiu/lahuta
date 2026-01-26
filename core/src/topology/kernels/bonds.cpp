@@ -14,7 +14,7 @@
 namespace lahuta::topology {
 
 template <typename DataT>
-ComputationResult BondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const BondComputationParams &params) {
+ComputationResult BondKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const BondComputationParams &params) {
 
   auto &data = context.data();
   auto &mol  = *data.mol;
@@ -64,7 +64,7 @@ void BondKernel::fix_bonds(RDKit::RWMol &mol) {
 }
 
 template <typename DataT>
-ComputationResult NonStandardBondKernel::execute(const DataContext<DataT, Mut::ReadOnly> &context, const NonStandardBondComputationParams &params) {
+ComputationResult NonStandardBondKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const NonStandardBondComputationParams &params) {
   auto &data = context.data();
   auto &mol  = *data.mol;
 
@@ -122,7 +122,7 @@ void NonStandardBondKernel::merge_bonds(RDKit::RWMol &target, RDKit::RWMol &sour
   bonds::subset_merge::merge_bonds(target, source, index_map);
 }
 
-template ComputationResult BondKernel           ::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const BondComputationParams &);
-template ComputationResult NonStandardBondKernel::execute<TopologyContext>(const DataContext<TopologyContext, Mut::ReadOnly> &, const NonStandardBondComputationParams &);
+template ComputationResult BondKernel           ::execute<TopologyContext>(DataContext<TopologyContext, Mut::ReadWrite> &, const BondComputationParams &);
+template ComputationResult NonStandardBondKernel::execute<TopologyContext>(DataContext<TopologyContext, Mut::ReadWrite> &, const NonStandardBondComputationParams &);
 
 } // namespace lahuta::topology

@@ -10,18 +10,17 @@
 #include "models/topology/data.hpp"
 #include "models/topology/parameters.hpp"
 
-// clang-format off
 namespace lahuta::models {
 
 enum class ModelTopologyComputation : uint8_t { // TODO: needs more testing
-  None           = 0,
-  Atoms          = 1 << 0,
-  Bonds          = 1 << 1,
-  Positions      = 1 << 2,
-  Aromatics      = 1 << 3,
-  Disulfides     = 1 << 4,
-  BuildMol       = 1 << 5,
-  All            = Atoms | Bonds | Positions | Aromatics | Disulfides | BuildMol
+  None       = 0,
+  Atoms      = 1 << 0,
+  Bonds      = 1 << 1,
+  Positions  = 1 << 2,
+  Aromatics  = 1 << 3,
+  Disulfides = 1 << 4,
+  BuildMol   = 1 << 5,
+  All        = Atoms | Bonds | Positions | Aromatics | Disulfides | BuildMol
 };
 
 inline ModelTopologyComputation operator|(ModelTopologyComputation a, ModelTopologyComputation b) {
@@ -34,20 +33,21 @@ inline bool has_flag(ModelTopologyComputation flags, ModelTopologyComputation fl
 
 struct ModelTopologyBuildingOptions {
   RDKit::GraphType graph_type = RDKit::GraphType::CSRMolGraph;
-  bool auto_heal = true;
+  bool auto_heal              = true;
+
   ModelTopologyComputation enabled_computations = ModelTopologyComputation::All;
 };
 
 } // namespace lahuta::models
 
 namespace lahuta::models::topology {
-using namespace ::lahuta::topology::compute;
 
+// clang-format off
 class ModelTopologyEngine {
 public:
   explicit ModelTopologyEngine(const ModelParserResult& input) {
     data_   = std::make_unique<ModelData>(input);
-    engine_ = std::make_unique<ComputeEngine<ModelData, Mut::ReadWrite>>(*data_);
+    engine_ = std::make_unique<C::ComputeEngine<ModelData>>(*data_);
 
     register_computations();
 
@@ -64,9 +64,9 @@ public:
   /// Execute all enabled computations
   bool execute() {
     try {
-      auto results = engine_->w_execute_all();
-      auto is_success = [](const ResultEntry &entry) { return entry.result.is_success(); };
-      bool success = !results.empty() && std::all_of(results.begin(), results.end(), is_success);
+      auto results    = engine_->w_execute_all();
+      auto is_success = [](const C::ResultEntry &entry) { return entry.result.is_success(); };
+      bool success    = !results.empty() && std::all_of(results.begin(), results.end(), is_success);
 
       return success;
     } catch (const std::exception &e) {
@@ -75,11 +75,13 @@ public:
     }
   }
 
-  bool execute_computation(const ComputationLabel &label) {
+  bool execute_computation(const C::ComputationLabel &label) {
     try {
       return engine_->run<void>(label);
     } catch (const std::exception &e) {
-      Logger::get_logger()->error("Error executing model computation {}: {}", label.to_string_view(), e.what());
+      Logger::get_logger()->error("Error executing model computation {}: {}",
+                                  label.to_string_view(),
+                                  e.what());
       return false;
     }
   }
@@ -87,26 +89,24 @@ public:
   ModelData &get_data() { return *data_; }
   const ModelData &get_data() const { return *data_; }
 
-  void enable(const ComputationLabel &label, bool enabled) {
-    engine_->enable(label, enabled);
-  }
+  void enable(const C::ComputationLabel &label, bool enabled) { engine_->enable(label, enabled); }
 
   void enable_computation(ModelTopologyComputation comp, bool enabled);
   void enable_only(ModelTopologyComputation comps);
   bool is_computation_enabled(ModelTopologyComputation comp) const;
 
-  bool is_computation_available(const ComputationLabel &label) const {
+  bool is_computation_available(const C::ComputationLabel &label) const {
     int idx = engine_->find_label(label);
     return idx >= 0 && engine_->is_enabled(idx);
   }
 
   template <typename P>
-  P *get_parameters(const ComputationLabel &label) {
+  P *get_parameters(const C::ComputationLabel &label) {
     return &(engine_->template get_parameters<P>(label));
   }
 
-  ComputeEngine<ModelData, Mut::ReadWrite> *get_engine() {
-    return static_cast<ComputeEngine<ModelData, Mut::ReadWrite> *>(engine_.get());
+  C::ComputeEngine<ModelData> *get_engine() {
+    return static_cast<C::ComputeEngine<ModelData> *>(engine_.get());
   }
 
 private:
@@ -119,11 +119,11 @@ private:
     engine_->add(std::make_unique<ModelBuildComputation<>>(ModelBuildParams{}));
   }
 
-  static const ComputationLabel& get_label(ModelTopologyComputation comp);
+  static const C::ComputationLabel &get_label(ModelTopologyComputation comp);
 
 private:
   std::unique_ptr<ModelData> data_;
-  std::unique_ptr<ComputeEngine<ModelData, Mut::ReadWrite>> engine_;
+  std::unique_ptr<C::ComputeEngine<ModelData>> engine_;
 };
 
 } // namespace lahuta::models::topology

@@ -6,15 +6,16 @@
 
 #include "analysis/system/model_pack_task.hpp"
 #include "db/db.hpp"
+#include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "pipeline/ingest/factory.hpp"
 #include "schemas/shared_options.hpp"
-#include "specs/command_spec.hpp"
-#include "logging/logging.hpp"
-#include "pipeline/dynamic/sources.hpp"
 #include "sinks/lmdb.hpp"
+#include "specs/command_spec.hpp"
 
 namespace lahuta::cli {
+namespace P = lahuta::pipeline;
 namespace {
 
 namespace createdb_opts {
@@ -158,18 +159,18 @@ public:
       using Mode = SourceConfig::Mode;
       switch (cfg.source.mode) {
         case Mode::Directory: {
-          auto source = pipeline::dynamic::sources_factory::from_directory(cfg.source.directory_path,
-                                                                           cfg.source.extensions,
-                                                                           cfg.source.recursive,
-                                                                           cfg.runtime.batch_size);
+          auto source = P::from_directory(cfg.source.directory_path,
+                                          cfg.source.extensions,
+                                          cfg.source.recursive,
+                                          cfg.runtime.batch_size);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Vector: {
-          auto source = pipeline::dynamic::sources_factory::from_vector(cfg.source.file_vector);
+          auto source = P::from_vector(cfg.source.file_vector);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::FileList: {
-          auto source = pipeline::dynamic::sources_factory::from_filelist(cfg.source.file_list_path);
+          auto source = P::from_filelist(cfg.source.file_list_path);
           return PipelinePlan::SourcePtr(std::move(source));
         }
         case Mode::Database:
@@ -180,13 +181,13 @@ public:
 
     PipelineTask task;
     task.name        = "createdb";
-    task.task        = std::make_shared<analysis::system::ModelPackTask>("db");
+    task.task        = std::make_shared<analysis::ModelPackTask>("db");
     task.thread_safe = true;
     plan.tasks.push_back(std::move(task));
 
     PipelineSink sink;
     sink.channel = "db";
-    sink.sink    = std::make_shared<pipeline::dynamic::LmdbSink>(db, cfg.runtime.batch_size);
+    sink.sink    = std::make_shared<P::LmdbSink>(db, cfg.runtime.batch_size);
     plan.sinks.push_back(std::move(sink));
 
     return plan;

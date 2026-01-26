@@ -9,10 +9,11 @@
 
 // clang-format off
 namespace lahuta::models::topology {
+namespace C = lahuta::compute;
 
 template <typename DataT>
-ComputationResult
-ModelAromaticsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const ModelAromaticsParams &params) {
+C::ComputationResult
+ModelAromaticsKernel::execute(C::DataContext<DataT, C::Mut::ReadWrite> &context, const ModelAromaticsParams &params) {
   auto &data = context.data();
 
   try {
@@ -43,9 +44,9 @@ ModelAromaticsKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const
       atom_idx += static_cast<int>(entry.size);
     }
 
-    return ComputationResult(true);
+    return C::ComputationResult(true);
   } catch (const std::exception &e) {
-    return ComputationResult(ComputationError(std::string("Error processing model aromatics: ") + e.what()));
+    return C::ComputationResult(C::ComputationError(std::string("Error processing model aromatics: ") + e.what()));
   }
 }
 
@@ -66,6 +67,6 @@ void ModelAromaticsKernel::process_aromatic_residue(int residue_start_idx, const
   data.aromatic_atom_indices.push_back(std::move(ring_atom_indices));
 }
 
-template ComputationResult ModelAromaticsKernel::execute<ModelData>(DataContext<ModelData, Mut::ReadWrite> &, const ModelAromaticsParams &);
+template C::ComputationResult ModelAromaticsKernel::execute<ModelData>(C::DataContext<ModelData, C::Mut::ReadWrite> &, const ModelAromaticsParams &);
 
 } // namespace lahuta::models::topology

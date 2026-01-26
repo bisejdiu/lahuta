@@ -5,7 +5,7 @@
 
 #include "models/parser.hpp"
 
-namespace lahuta::analysis::system {
+namespace lahuta::analysis {
 
 struct ModelRecord {
   bool success;
@@ -13,6 +13,6 @@ struct ModelRecord {
   ModelParserResult data;
 };
 
-} // namespace lahuta::analysis::system
+} // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_SYSTEM_RECORDS_HPP

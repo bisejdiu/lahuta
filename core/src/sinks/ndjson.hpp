@@ -1,5 +1,5 @@
-#ifndef LAHUTA_PIPELINE_DYNAMIC_SINK_NDJSON_HPP
-#define LAHUTA_PIPELINE_DYNAMIC_SINK_NDJSON_HPP
+#ifndef LAHUTA_PIPELINE_SINK_NDJSON_HPP
+#define LAHUTA_PIPELINE_SINK_NDJSON_HPP
 
 #include <filesystem>
 #include <fstream>
@@ -7,16 +7,14 @@
 #include <string>
 #include <string_view>
 
-#include "pipeline/dynamic/sink_iface.hpp"
-#include "pipeline/dynamic/types.hpp"
+#include "pipeline/io/sink_iface.hpp"
+#include "pipeline/task/emission.hpp"
 
-// clang-format off
-namespace lahuta::pipeline::dynamic {
+namespace lahuta::pipeline {
 
 class NdjsonFileSink : public IDynamicSink {
 public:
-  explicit NdjsonFileSink(std::string file_path)
-    : path_(std::move(file_path)) {
+  explicit NdjsonFileSink(std::string file_path) : path_(std::move(file_path)) {
     auto parent = std::filesystem::path(path_).parent_path();
     if (!parent.empty()) {
       std::filesystem::create_directories(parent);
@@ -45,6 +43,6 @@ private:
   mutable std::mutex mu_;
 };
 
-} // namespace lahuta::pipeline::dynamic
+} // namespace lahuta::pipeline
 
-#endif // LAHUTA_PIPELINE_DYNAMIC_SINK_NDJSON_HPP
+#endif // LAHUTA_PIPELINE_SINK_NDJSON_HPP

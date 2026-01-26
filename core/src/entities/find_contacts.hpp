@@ -9,14 +9,13 @@
 #include "contact.hpp"
 #include "context.hpp"
 #include "entity_id.hpp"
-#include "pipeline/function_traits.hpp"
+#include "pipeline/dsl/function_traits.hpp"
 #include "records.hpp"
 #include "search/hit_buffer.hpp"
 #include "search/provider.hpp"
 #include "search/search.hpp"
 #include "topology.hpp"
 
-// clang-format off
 namespace lahuta {
 
 namespace {
@@ -35,23 +34,23 @@ ContactSet make_contacts(const Topology &topo, const search::NeighborResult &nr)
 }
 } // namespace
 
-
 // get raw record type from predicate
-template<typename F>
+template <typename F>
 using raw_predicate_arg_t = std::decay_t<util::function_arg_t<std::decay_t<F>, 0>>;
 
-template<typename F, typename Rec>
+// clang-format off
+template <typename F, typename Rec>
 using is_predicate_on = std::integral_constant<bool,
-  std::is_invocable<F, const Rec&>::value &&
-  std::is_convertible<std::invoke_result_t<F, const Rec&>, bool>::value>;
+  std::is_invocable<F, const Rec &>::value && //
+  std::is_convertible<std::invoke_result_t<F, const Rec &>, bool>::value>;
 
 template<
   typename Pred,
   typename Tester,
   typename Rec = raw_predicate_arg_t<Pred>,
   std::enable_if_t<is_predicate_on<Pred, Rec>::value &&
-                   std::is_invocable_r_v<InteractionType, Tester, std::uint32_t, std::uint32_t, float, const ContactContext&>, int> = 0>
-ContactSet find_contacts(const ContactContext& ctx, const Pred pred, const search::SearchOptions opts, Tester&& tester) {
+                   std::is_invocable_r_v<InteractionType, Tester, std::uint32_t, std::uint32_t, float, const ContactContext &>, int> = 0>
+ContactSet find_contacts(const ContactContext &ctx, const Pred pred, const search::SearchOptions opts, Tester &&tester) {
   using namespace search;
 
   const auto &recs = ctx.ts.topo.records<Rec>();
@@ -62,8 +61,8 @@ ContactSet find_contacts(const ContactContext& ctx, const Pred pred, const searc
 
 template<
   typename PredA, typename PredB, typename Tester,
-  std::enable_if_t<std::is_invocable_r_v<InteractionType, Tester, std::uint32_t, std::uint32_t, float, const ContactContext&>, int> = 0>
-ContactSet find_contacts(const ContactContext& ctx, const PredA pred_a, const PredB pred_b, const search::SearchOptions opts, Tester &&tester) {
+  std::enable_if_t<std::is_invocable_r_v<InteractionType, Tester, std::uint32_t, std::uint32_t, float, const ContactContext &>, int> = 0>
+ContactSet find_contacts(const ContactContext &ctx, const PredA pred_a, const PredB pred_b, const search::SearchOptions opts, Tester &&tester) {
 
   using namespace search;
   using RecA = raw_predicate_arg_t<PredA>;

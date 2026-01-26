@@ -12,23 +12,23 @@
 #include <vector>
 
 #include "node.hpp"
-#include "pipeline.hpp"
+#include "plan.hpp"
 #include "registry.hpp"
 #include "runners.hpp"
 
-// clang-format off
-namespace lahuta::topology::compute {
+namespace lahuta::compute {
+namespace C = lahuta::compute;
 
 struct ResultEntry {
-  ComputationLabel  label;
+  ComputationLabel label;
   ComputationResult result;
 };
 
 template <typename DataT, Mut M>
-class ComputeEngine {
+class ComputeEngine { // default for M is set in context.hpp forward declaration
 private:
   DataContext<DataT, M> ctx;
-  Registry<DataT, M>    registry;
+  Registry<DataT, M> registry;
   bool auto_heal_ = true;
 
   void run_impl(ComputationLabel root) {
@@ -108,7 +108,7 @@ public:
   }
 
   /// Execute a precomputed plan without re-planning.
-  void execute_plan(const ExecOrder& plan) {
+  void execute_plan(const ExecOrder &plan) { //
     execute_pipeline(registry, ctx, plan);
   }
 
@@ -127,7 +127,7 @@ public:
     enable_chain(root);
     int idx = registry.find(root);
     if (idx < 0) throw std::runtime_error("unknown label");
-    return lahuta::topology::compute::plan_from(registry, idx);
+    return C::plan_from(registry, idx);
   }
 
   // Execute exactly the subgraph reachable from 'root'. Applies auto-heal.
@@ -137,7 +137,7 @@ public:
     enable_chain(root);
     int idx = registry.find(root);
     if (idx < 0) throw std::runtime_error("unknown label");
-    (void) lahuta::topology::compute::schedule_and_run_from(registry, ctx, idx);
+    (void)C::schedule_and_run_from(registry, ctx, idx);
     auto &node = registry[idx];
     return node.done && node.res.is_success();
   }
@@ -150,8 +150,11 @@ public:
     auto &node = registry[idx];
     if (!node.done || !node.res.is_success()) return std::nullopt;
 
-    try { return node.res.template get_value<R>(); }
-    catch (...) { return std::nullopt; }
+    try {
+      return node.res.template get_value<R>();
+    } catch (...) {
+      return std::nullopt;
+    }
   }
 
   /// Get the result of a computation by label. Triggers on-complete hook once.
@@ -166,8 +169,9 @@ public:
     if (!node.postprocessed && node.impl) {
       try {
         node.impl->on_complete(ctx, node.res);
-      // hook failing is not an issue
-      } catch (...) {}
+        // hook failing is not an issue
+      } catch (...) {
+      }
       node.postprocessed = true;
     }
     return node.res;
@@ -186,8 +190,9 @@ public:
     // auto-heal the entire graph once
     if (auto_heal_) {
       for (int node_idx = 0; node_idx < registry.size(); ++node_idx)
-        if (registry[node_idx].enabled)
-          enable_chain(registry[node_idx].tag);   // may enable more nodes
+        if (registry[node_idx].enabled) {
+          enable_chain(registry[node_idx].tag); // may enable more nodes
+        }
     }
 
     // run every enabled node
@@ -212,27 +217,29 @@ public:
 
     if (auto_heal_) {
       for (int node_idx = 0; node_idx < registry.size(); ++node_idx)
-        if (registry[node_idx].enabled)
+        if (registry[node_idx].enabled) {
           enable_chain(registry[node_idx].tag);
+        }
     }
 
     // run every enabled node
     for (int node_idx = 0; node_idx < registry.size(); ++node_idx)
-        if (registry[node_idx].enabled)
-            run_impl(registry[node_idx].tag);
+      if (registry[node_idx].enabled) {
+        run_impl(registry[node_idx].tag);
+      }
 
     // move results out + reset engine state
     std::vector<ResultEntry> result;
     result.reserve(registry.size());
 
     for (int node_idx = 0; node_idx < registry.size(); ++node_idx) {
-        if (!registry[node_idx].enabled) continue;
+      if (!registry[node_idx].enabled) continue;
 
-        result.push_back({registry[node_idx].tag, std::move(registry[node_idx].res)});
+      result.push_back({registry[node_idx].tag, std::move(registry[node_idx].res)});
 
-        // clear cached state so next run recomputes
-        registry[node_idx].res  = {};
-        registry[node_idx].done = false;
+      // clear cached state so next run recomputes
+      registry[node_idx].res  = {};
+      registry[node_idx].done = false;
     }
     return result;
   }
@@ -265,11 +272,11 @@ public:
   template <const ComputationLabel &...Order>
   void run_pipeline() {
     registry.seal();
-    Pipeline<DataT, M> pipe(registry, {Order...}); // create pipeline
-    execute_pipeline(registry, ctx, pipe.plan());  // execute with the micro-runner
+    ExecutionPlan<DataT, M> exec_plan(registry, {Order...});
+    execute_pipeline(registry, ctx, exec_plan.plan());
   }
 
-  int find_label(const ComputationLabel& label) const noexcept {
+  int find_label(const ComputationLabel &label) const noexcept { //
     return registry.find(label);
   }
 
@@ -278,12 +285,12 @@ public:
   }
 
   /// check if a computation is available, i.e. enabled, returns true if yes
-  bool is_computation_available(const ComputationLabel& lbl) const noexcept {
+  bool is_computation_available(const ComputationLabel &lbl) const noexcept {
     int idx = find_label(lbl);
     return is_enabled(idx);
   }
 };
 
-} // namespace lahuta::topology::compute
+} // namespace lahuta::compute
 
 #endif // LAHUTA_COMPUTE_ENGINE_HPP
