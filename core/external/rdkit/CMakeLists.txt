@@ -111,7 +111,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 target_include_directories(rdkit PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR} # rdkit headers
+  ${CMAKE_CURRENT_SOURCE_DIR}    # for rdkit internal includes like <RDGeneral/...>
+  ${CMAKE_CURRENT_SOURCE_DIR}/.. # for our includes using <rdkit/...>
 )
 # Get Boost from parent
 target_link_libraries(rdkit PUBLIC Boost::headers)

@@ -2,10 +2,13 @@
 #define LAHUTA_PIPELINE_TASK_COMPUTE_PARAMETERS_HPP
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 
 #include "analysis/contacts/provider.hpp"
+#include "analysis/sasa/records.hpp"
+#include "analysis/sasa/sasa.hpp"
 #include "compute/parameters.hpp"
 #include "entities/interaction_types.hpp"
 #include "topology_flags.hpp"
@@ -20,6 +23,7 @@ constexpr C::ParameterInterface::TypeId BUILD_TOPOLOGY = 31;
 constexpr C::ParameterInterface::TypeId CONTACTS       = 32;
 constexpr C::ParameterInterface::TypeId DYNAMIC_TASK   = 33;
 constexpr C::ParameterInterface::TypeId ENSURE_TYPING  = 34;
+constexpr C::ParameterInterface::TypeId SASA_SR        = 35;
 } // namespace param_ids
 
 enum class ContactsOutputFormat : uint8_t {
@@ -48,6 +52,16 @@ struct ContactsParams : public C::ParameterBase<ContactsParams> {
   InteractionTypeSet type            = InteractionTypeSet::all();
   std::string channel                = "contacts";
   ContactsOutputFormat format        = ContactsOutputFormat::Json;
+};
+
+struct SasaSrParams : public C::ParameterBase<SasaSrParams> {
+  static constexpr C::ParameterInterface::TypeId TYPE_ID = param_ids::SASA_SR;
+
+  analysis::SasaParams params;
+  std::string channel = std::string(analysis::SasaSrOutputChannel);
+  bool include_total = false;
+  std::size_t log_every = 2000;
+  std::shared_ptr<analysis::SasaSrCounters> counters;
 };
 
 // Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference

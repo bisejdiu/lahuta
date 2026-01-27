@@ -18,19 +18,13 @@
 #include "tasks/quality_metrics_task.hpp"
 
 namespace lahuta::cli {
+namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
 namespace quality_metrics_opts {
 constexpr unsigned BaseIndex = 200;
-enum OptionIndex : unsigned {
-  PlddtGroup = BaseIndex,
-  DsspGroup,
-  SegmentGroup,
-  SegmentMin,
-  NoOverlap,
-  Output
-};
+enum : unsigned { PlddtGroup = BaseIndex, DsspGroup, SegmentGroup, SegmentMin, NoOverlap, Output };
 } // namespace quality_metrics_opts
 
 struct QualityMetricsCliConfig {
@@ -339,7 +333,7 @@ public:
     if (needs_parse_task) {
       PipelineTask parse_task;
       parse_task.name        = "parse_model";
-      parse_task.task        = std::make_shared<analysis::ModelParseTask>();
+      parse_task.task        = std::make_shared<A::ModelParseTask>();
       parse_task.thread_safe = true;
       plan.tasks.push_back(std::move(parse_task));
     }

@@ -16,6 +16,7 @@
 #include "utils/span.hpp"
 
 namespace lahuta::cli::quality_metrics {
+namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
@@ -116,8 +117,8 @@ SegmentStats compute_segment_stats(span<const pLDDTCategory> plddt, std::uint32_
       continue;
     }
     if (current > 0) {
-      stats.segment_count += 1;
-      stats.max_segment_len = std::max(stats.max_segment_len, current);
+      stats.segment_count   += 1;
+      stats.max_segment_len  = std::max(stats.max_segment_len, current);
       if (current >= long_threshold) {
         stats.long_segment_residues += current;
       }
@@ -126,8 +127,8 @@ SegmentStats compute_segment_stats(span<const pLDDTCategory> plddt, std::uint32_
   }
 
   if (current > 0) {
-    stats.segment_count += 1;
-    stats.max_segment_len = std::max(stats.max_segment_len, current);
+    stats.segment_count   += 1;
+    stats.max_segment_len  = std::max(stats.max_segment_len, current);
     if (current >= long_threshold) {
       stats.long_segment_residues += current;
     }
@@ -157,7 +158,7 @@ public:
         dssp_span = span(*payload->dssp);
       }
     } else {
-      parsed = analysis::get_cached_model_parser_result(ctx);
+      parsed = A::get_cached_model_parser_result(ctx);
       if (parsed) {
         if (!parsed->plddt_per_residue.empty()) {
           plddt_span = span(std::as_const(parsed->plddt_per_residue));

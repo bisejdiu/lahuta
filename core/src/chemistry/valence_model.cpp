@@ -35,7 +35,7 @@ bool ValenceModel::is_conjugated_and_not_excluded(const RDKit::Atom &atom_b, con
 
 bool ValenceModel::is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &atom) const {
   unsigned int atomic_num = atom.getAtomicNum();
-  bool is_hetero = (atomic_num == 7 || atomic_num == 8);
+  bool is_hetero          = (atomic_num == 7 || atomic_num == 8);
 
   if (is_hetero && atom.getDegree() == 4) {
     return false;
@@ -58,7 +58,7 @@ bool ValenceModel::is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &ato
   return false;
 }
 
-int ValenceModel::get_element_count(RDKit::ROMol &mol, RDKit::Atom &atom, int element) const {
+int ValenceModel::get_element_count(const RDKit::ROMol &mol, const RDKit::Atom &atom, int element) const {
   int count = 0;
   for (const auto &bond : mol.atomBonds(&atom)) {
     auto other_atom = bond->getOtherAtom(&atom);
@@ -71,10 +71,10 @@ int ValenceModel::get_element_count(RDKit::ROMol &mol, RDKit::Atom &atom, int el
 
 bool ValenceModel::is_bound_to_sulfur_or_metal(const RDKit::ROMol &mol, RDKit::Atom *atom) const {
   for (const auto &bond : mol.atomBonds(atom)) {
-    RDKit::Atom *other_atom = bond->getOtherAtom(atom);
+    RDKit::Atom *other_atom       = bond->getOtherAtom(atom);
     unsigned int other_atomic_num = other_atom->getAtomicNum();
 
-    auto name = other_atom->getSymbol();
+    auto name   = other_atom->getSymbol();
     gemmi::El e = gemmi::find_element(name.c_str());
 
     if (other_atomic_num == 16 || gemmi::is_metal(e)) {
@@ -95,8 +95,8 @@ bool ValenceModel::has_neighbor_with_double_bonded_oxygen(const RDKit::ROMol &mo
     for (const auto &bond_b : mol.atomBonds(other_atom_a)) {
       RDKit::Atom *other_atom_b = bond_b->getOtherAtom(other_atom_a);
 
-      if (other_atom_b != atom && other_atom_b->getAtomicNum() == 8
-          && bond_b->getBondType() == RDKit::Bond::DOUBLE) {
+      if (other_atom_b != atom && other_atom_b->getAtomicNum() == 8 &&
+          bond_b->getBondType() == RDKit::Bond::DOUBLE) {
         return true;
       }
     }
@@ -130,12 +130,12 @@ HybridizationType ValenceModel::assign_geometry(int total_coordination) const {
 //      is context dependent (more accurate).
 void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom) {
 
-  const int h_count = atom.getNumExplicitHs();
+  const int h_count             = get_element_count(mol, atom, 1);
   const unsigned int atomic_num = atom.getAtomicNum();
-  int charge = atom.getFormalCharge();
+  int charge                    = atom.getFormalCharge();
 
   const bool assign_charge_flag = charge == 0;
-  const bool assign_h_flag = h_count == 0;
+  const bool assign_h_flag      = h_count == 0;
 
   const int degree  = atom.getDegree();
   const int valence = atom.getExplicitValence();
@@ -144,7 +144,7 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
   const bool multi_bond = (valence - degree > 0);
 
   int implicit_h = 0;
-  auto geom = HybridizationType::UNSPECIFIED;
+  auto geom      = HybridizationType::UNSPECIFIED;
 
   switch (atomic_num) {
     case 1:
@@ -159,7 +159,9 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
         }
       }
       // FIX: remove parentheses
-      { atom.setFormalCharge(charge); }
+      {
+        atom.setFormalCharge(charge);
+      }
       break;
 
     case 6:

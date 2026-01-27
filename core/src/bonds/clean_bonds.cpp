@@ -9,12 +9,15 @@
 #include <rdkit/GraphMol/PeriodicTable.h>
 
 #include "clean_bonds.hpp"
+#include "utils/math_constants.hpp"
 
 // clang-format off
 namespace lahuta {
+
+using lahuta::Pi;
+
 namespace {
 
-constexpr double Pi = 3.14159265358979323846;
 constexpr double RadiansToDegrees = 180.0 / Pi;
 constexpr double AngleCutoffDeg   = 40.0;
 constexpr double NormEpsilon      = 1e-12;

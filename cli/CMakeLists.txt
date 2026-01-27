@@ -8,10 +8,17 @@ set(lahuta_sources
   runner/pipeline_plan.cpp
   runner/command_runner.cpp
   specs/contacts_spec.cpp
+  specs/compaction_rg_spec.cpp
+  specs/shape_metrics_spec.cpp
   specs/createdb_spec.cpp
   specs/extract_spec.cpp
   specs/positions_spec.cpp
   specs/quality_metrics_spec.cpp
+  specs/sasa_sr_spec.cpp
+  tasks/compaction_rg_task.cpp
+  tasks/compaction_rg_summary_sink.cpp
+  tasks/shape_metrics_task.cpp
+  tasks/shape_metrics_summary_sink.cpp
   tasks/contacts_md_source.cpp
   tasks/positions_task.cpp
   tasks/quality_metrics_task.cpp
@@ -47,4 +54,13 @@ if(BUILD_TESTING)
 
   add_test(NAME lahuta_positions_help COMMAND lahuta positions --help)
   set_tests_properties(lahuta_positions_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta positions")
+
+  add_test(NAME lahuta_compaction_rg_help COMMAND lahuta compaction-rg --help)
+  set_tests_properties(lahuta_compaction_rg_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta compaction-rg")
+
+  add_test(NAME lahuta_shape_metrics_help COMMAND lahuta shape-metrics --help)
+  set_tests_properties(lahuta_shape_metrics_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta shape-metrics")
+
+  add_test(NAME lahuta_sasa_sr_help COMMAND lahuta sasa-sr --help)
+  set_tests_properties(lahuta_sasa_sr_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta sasa-sr")
 endif()

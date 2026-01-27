@@ -17,12 +17,13 @@
 #include "specs/command_spec.hpp"
 
 namespace lahuta::cli {
+namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
 namespace extract_opts {
 constexpr unsigned BaseIndex = 200;
-enum OptionIndex : unsigned { Fields = BaseIndex, Output };
+enum : unsigned { Fields = BaseIndex, Output };
 } // namespace extract_opts
 
 constexpr std::string_view FIELD_SEQUENCE = "sequence";
@@ -272,7 +273,7 @@ public:
     if (needs_parse_task) {
       PipelineTask parse_task;
       parse_task.name        = "parse_model";
-      parse_task.task        = std::make_shared<analysis::ModelParseTask>();
+      parse_task.task        = std::make_shared<A::ModelParseTask>();
       parse_task.thread_safe = true;
       plan.tasks.push_back(std::move(parse_task));
     }
