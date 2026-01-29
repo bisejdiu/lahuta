@@ -5,6 +5,7 @@
 #include <stdexcept>
 
 #include "analysis/sasa/methods/bitmask.hpp"
+#include "analysis/sasa/methods/bitmask_simd.hpp"
 #include "utils/math_constants.hpp"
 
 namespace lahuta::analysis {
@@ -15,6 +16,18 @@ template <typename CoordAccessor>
 double BitmaskMethod::compute_impl(const ComputeContext<CoordAccessor> &ctx) const {
   const double r_i = ctx.radius();
   if (r_i <= 0.0) return 0.0;
+
+  if (ctx.use_simd) {
+    if (lut_.n_points == 64) {
+      return simd::compute_bitmask_64_batched(lut_, ctx);
+    }
+    if (lut_.n_points == 128) {
+      return simd::compute_bitmask_128_batched(lut_, ctx);
+    }
+    if (lut_.n_points == 256) {
+      return simd::compute_bitmask_256_batched(lut_, ctx);
+    }
+  }
 
   const double r_i_sq     = ctx.radius_sq();
   const std::size_t start = ctx.neighbor_start();

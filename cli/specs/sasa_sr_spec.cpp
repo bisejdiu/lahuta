@@ -23,12 +23,13 @@ namespace {
 
 namespace sasa_sr_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned {
+enum : unsigned { //
   OutputDir = BaseIndex,
   ProbeRadius,
   Points,
   IncludeTotal,
-  UseBitmask
+  UseBitmask,
+  NoSimd
 };
 } // namespace sasa_sr_opts
 
@@ -37,10 +38,11 @@ struct SasaSrCliConfig {
   RuntimeConfig runtime;
   ReportConfig report;
   std::filesystem::path output_dir;
-  double probe_radius   = 1.4;
-  std::size_t n_points  = 128;
-  bool include_total    = false;
-  bool use_bitmask      = false;
+  double probe_radius  = 1.4;
+  std::size_t n_points = 128;
+  bool include_total   = false;
+  bool use_bitmask     = false;
+  bool use_simd        = true;
   P::SasaSrParams params;
 };
 
@@ -138,6 +140,11 @@ public:
                  "use-bitmask",
                  option::Arg::None,
                  "  --use-bitmask                \tEnable bitmask fast path (64/128/256 points)."});
+    schema_.add({sasa_sr_opts::NoSimd,
+                 "",
+                 "no-simd",
+                 option::Arg::None,
+                 "  --no-simd                    \tDisable SIMD optimizations for bitmask."});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
@@ -199,6 +206,7 @@ public:
 
     config.include_total = args.get_flag(sasa_sr_opts::IncludeTotal);
     config.use_bitmask   = args.get_flag(sasa_sr_opts::UseBitmask);
+    config.use_simd      = !args.get_flag(sasa_sr_opts::NoSimd);
     if (config.output_dir.empty()) {
       throw std::runtime_error("Output directory cannot be empty.");
     }
@@ -221,10 +229,11 @@ public:
     params.params.probe_radius = config.probe_radius;
     params.params.n_points     = config.n_points;
     params.params.use_bitmask  = config.use_bitmask;
-    params.include_total = config.include_total;
-    params.channel       = std::string(A::SasaSrOutputChannel);
-    params.counters      = std::make_shared<A::SasaSrCounters>();
-    config.params        = std::move(params);
+    params.params.use_simd     = config.use_simd;
+    params.include_total       = config.include_total;
+    params.channel             = std::string(A::SasaSrOutputChannel);
+    params.counters            = std::make_shared<A::SasaSrCounters>();
+    config.params              = std::move(params);
 
     return std::make_any<SasaSrCliConfig>(std::move(config));
   }

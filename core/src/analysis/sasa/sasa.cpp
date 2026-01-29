@@ -128,7 +128,8 @@ SasaResult compute_impl(const AtomView &atoms, const CoordAccessor &coords, cons
                                       coords,
                                       neighbors,
                                       span<const double>(expanded_radii),
-                                      span<const double>(expanded_radii_sq)};
+                                      span<const double>(expanded_radii_sq),
+                                      params.use_simd};
 
     // Method selection priority: bitmask > standard
     if (bitmask_method) {

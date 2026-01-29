@@ -16,6 +16,7 @@ struct SasaParams {
   SpherePointCount n_points = 100;
   bool skip_same_id         = true;
   bool use_bitmask          = true;
+  bool use_simd             = true;
 };
 
 struct AtomView {

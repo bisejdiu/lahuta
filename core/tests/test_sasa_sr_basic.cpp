@@ -6,6 +6,7 @@
 #include "analysis/sasa/sasa.hpp"
 #include "utils/math_constants.hpp"
 #include "utils/span.hpp"
+#include "test_utils/sasa_test_utils.hpp"
 
 namespace {
 
@@ -34,54 +35,63 @@ TEST(SasaSr, SingleSphereExactArea) {
   std::vector<RDGeom::Point3D> coords = {RDGeom::Point3D(0.0, 0.0, 0.0)};
   std::vector<double> radii           = {1.5};
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.5;
-  params.n_points     = 128;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.5;
+  base.n_points     = 128;
 
-  const auto atoms  = make_atoms(coords, radii);
-  const auto result = lahuta::analysis::compute_sasa(atoms, params);
+  const auto atoms = make_atoms(coords, radii);
 
   const double expected = sphere_area(2.0);
-  ASSERT_EQ(result.per_atom.size(), 1u);
-  EXPECT_NEAR(result.per_atom[0], expected, 1e-12);
-  EXPECT_NEAR(result.total, expected, 1e-12);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params = lahuta::tests::apply_sasa_method(base, method);
+    const auto result = lahuta::analysis::compute_sasa(atoms, params);
+    ASSERT_EQ(result.per_atom.size(), 1u);
+    EXPECT_NEAR(result.per_atom[0], expected, 1e-12);
+    EXPECT_NEAR(result.total, expected, 1e-12);
+  }
 }
 
 TEST(SasaSr, TwoNonOverlappingSpheresFullArea) {
   std::vector<RDGeom::Point3D> coords = {RDGeom::Point3D(0.0, 0.0, 0.0), RDGeom::Point3D(10.0, 0.0, 0.0)};
   std::vector<double> radii           = {1.0, 1.0};
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.5;
-  params.n_points     = 128;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.5;
+  base.n_points     = 128;
 
-  const auto atoms  = make_atoms(coords, radii);
-  const auto result = lahuta::analysis::compute_sasa(atoms, params);
+  const auto atoms = make_atoms(coords, radii);
 
   const double expected = sphere_area(1.5);
-  ASSERT_EQ(result.per_atom.size(), 2u);
-  EXPECT_NEAR(result.per_atom[0], expected, 1e-12);
-  EXPECT_NEAR(result.per_atom[1], expected, 1e-12);
-  EXPECT_NEAR(result.total, 2.0 * expected, 1e-12);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params = lahuta::tests::apply_sasa_method(base, method);
+    const auto result = lahuta::analysis::compute_sasa(atoms, params);
+    ASSERT_EQ(result.per_atom.size(), 2u);
+    EXPECT_NEAR(result.per_atom[0], expected, 1e-12);
+    EXPECT_NEAR(result.per_atom[1], expected, 1e-12);
+    EXPECT_NEAR(result.total, 2.0 * expected, 1e-12);
+  }
 }
 
 TEST(SasaSr, FullOcclusionSmallInsideLarge) {
   std::vector<RDGeom::Point3D> coords = {RDGeom::Point3D(0.0, 0.0, 0.0), RDGeom::Point3D(0.1, 0.0, 0.0)};
   std::vector<double> radii           = {1.0, 3.0};
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.0;
-  params.n_points     = 256;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.0;
+  base.n_points     = 256;
 
-  const auto atoms  = make_atoms(coords, radii);
-  const auto result = lahuta::analysis::compute_sasa(atoms, params);
+  const auto atoms = make_atoms(coords, radii);
 
-  ASSERT_EQ(result.per_atom.size(), 2u);
-  EXPECT_NEAR(result.per_atom[0], 0.0, 1e-12);
-  EXPECT_NEAR(result.per_atom[1], sphere_area(3.0), 1e-12);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params = lahuta::tests::apply_sasa_method(base, method);
+    const auto result = lahuta::analysis::compute_sasa(atoms, params);
+    ASSERT_EQ(result.per_atom.size(), 2u);
+    EXPECT_NEAR(result.per_atom[0], 0.0, 1e-12);
+    EXPECT_NEAR(result.per_atom[1], sphere_area(3.0), 1e-12);
+  }
 }
 
 TEST(SasaSr, PartialOverlapEqualSpheresMatchesCapArea) {
@@ -90,19 +100,22 @@ TEST(SasaSr, PartialOverlapEqualSpheresMatchesCapArea) {
   std::vector<RDGeom::Point3D> coords = {RDGeom::Point3D(0.0, 0.0, 0.0), RDGeom::Point3D(d, 0.0, 0.0)};
   std::vector<double> radii           = {r, r};
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.0;
-  params.n_points     = 256;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.0;
+  base.n_points     = 256;
 
-  const auto atoms  = make_atoms(coords, radii);
-  const auto result = lahuta::analysis::compute_sasa(atoms, params);
+  const auto atoms = make_atoms(coords, radii);
 
   const double expected  = expected_overlap_area_equal_spheres(r, d);
   const double tolerance = expected * 0.06;
-  ASSERT_EQ(result.per_atom.size(), 2u);
-  EXPECT_NEAR(result.per_atom[0], expected, tolerance);
-  EXPECT_NEAR(result.per_atom[1], expected, tolerance);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params = lahuta::tests::apply_sasa_method(base, method);
+    const auto result = lahuta::analysis::compute_sasa(atoms, params);
+    ASSERT_EQ(result.per_atom.size(), 2u);
+    EXPECT_NEAR(result.per_atom[0], expected, tolerance);
+    EXPECT_NEAR(result.per_atom[1], expected, tolerance);
+  }
 }
 
 TEST(SasaSr, TangentEqualSpheresNearFullArea) {
@@ -111,18 +124,21 @@ TEST(SasaSr, TangentEqualSpheresNearFullArea) {
   std::vector<RDGeom::Point3D> coords = {RDGeom::Point3D(0.0, 0.0, 0.0), RDGeom::Point3D(d, 0.0, 0.0)};
   std::vector<double> radii           = {r, r};
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.0;
-  params.n_points     = 256;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.0;
+  base.n_points     = 256;
 
-  const auto atoms  = make_atoms(coords, radii);
-  const auto result = lahuta::analysis::compute_sasa(atoms, params);
+  const auto atoms = make_atoms(coords, radii);
 
   const double expected       = sphere_area(r);
-  const double area_per_point = expected / static_cast<double>(params.n_points);
+  const double area_per_point = expected / static_cast<double>(base.n_points);
   const double tolerance      = 2.0 * area_per_point;
-  ASSERT_EQ(result.per_atom.size(), 2u);
-  EXPECT_NEAR(result.per_atom[0], expected, tolerance);
-  EXPECT_NEAR(result.per_atom[1], expected, tolerance);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params = lahuta::tests::apply_sasa_method(base, method);
+    const auto result = lahuta::analysis::compute_sasa(atoms, params);
+    ASSERT_EQ(result.per_atom.size(), 2u);
+    EXPECT_NEAR(result.per_atom[0], expected, tolerance);
+    EXPECT_NEAR(result.per_atom[1], expected, tolerance);
+  }
 }

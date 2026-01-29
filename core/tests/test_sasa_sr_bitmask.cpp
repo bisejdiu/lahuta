@@ -6,6 +6,7 @@
 #include "analysis/sasa/sasa.hpp"
 #include "utils/math_constants.hpp"
 #include "utils/span.hpp"
+#include "test_utils/sasa_test_utils.hpp"
 
 namespace {
 
@@ -32,25 +33,31 @@ TEST(SasaSrBitmask, MatchesPointsWithinTolerance) {
 
   const auto atoms = make_atoms(coords, radii);
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.5;
-  params.n_points     = 256;
-  params.use_bitmask  = false;
-  const auto baseline = lahuta::analysis::compute_sasa(atoms, params);
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.5;
+  base.n_points     = 256;
+  base.use_bitmask  = false;
+  base.use_simd     = false;
+  const auto baseline = lahuta::analysis::compute_sasa(atoms, base);
 
-  params.use_bitmask = true;
-  const auto bitmask = lahuta::analysis::compute_sasa(atoms, params);
+  const double total_full = sphere_area(radii[0] + base.probe_radius) +
+                            sphere_area(radii[1] + base.probe_radius) +
+                            sphere_area(radii[2] + base.probe_radius) +
+                            sphere_area(radii[3] + base.probe_radius);
 
-  ASSERT_EQ(baseline.per_atom.size(), bitmask.per_atom.size());
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    if (!method.use_bitmask) continue;
+    SCOPED_TRACE(method.name);
+    const auto params  = lahuta::tests::apply_sasa_method(base, method);
+    const auto bitmask = lahuta::analysis::compute_sasa(atoms, params);
 
-  for (std::size_t i = 0; i < baseline.per_atom.size(); ++i) {
-    const double full_area = sphere_area(radii[i] + params.probe_radius);
-    const double tol       = full_area * 0.1;
-    EXPECT_NEAR(bitmask.per_atom[i], baseline.per_atom[i], tol);
+    ASSERT_EQ(baseline.per_atom.size(), bitmask.per_atom.size());
+
+    for (std::size_t i = 0; i < baseline.per_atom.size(); ++i) {
+      const double full_area = sphere_area(radii[i] + params.probe_radius);
+      const double tol       = full_area * 0.1;
+      EXPECT_NEAR(bitmask.per_atom[i], baseline.per_atom[i], tol);
+    }
+    EXPECT_NEAR(bitmask.total, baseline.total, total_full * 0.1);
   }
-  const double total_full = sphere_area(radii[0] + params.probe_radius) +
-                            sphere_area(radii[1] + params.probe_radius) +
-                            sphere_area(radii[2] + params.probe_radius) +
-                            sphere_area(radii[3] + params.probe_radius);
-  EXPECT_NEAR(bitmask.total, baseline.total, total_full * 0.1);
 }

@@ -17,6 +17,7 @@ struct ComputeContext {
   const NeighborList &neighbors;
   span<const double> expanded_radii;
   span<const double> expanded_radii_sq;
+  bool use_simd = true;
 
   [[nodiscard]] std::size_t neighbor_start() const noexcept {
     assert(atom_index < neighbors.offsets.size());

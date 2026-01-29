@@ -7,6 +7,7 @@
 #include "analysis/sasa/sasa.hpp"
 #include "utils/math_constants.hpp"
 #include "utils/span.hpp"
+#include "test_utils/sasa_test_utils.hpp"
 
 namespace {
 
@@ -62,29 +63,32 @@ TEST(SasaSrPrecision, FloatQuantizedInputsMatchWithinTolerance) {
   const auto coords_q = quantize_points(coords);
   const auto radii_q  = quantize_radii(radii);
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.5;
-  params.n_points     = 256;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.5;
+  base.n_points     = 256;
 
   const auto atoms_d  = make_atoms(coords, radii);
   const auto atoms_qd = make_atoms(coords_q, radii_q);
 
-  const auto result_d  = lahuta::analysis::compute_sasa(atoms_d, params);
-  const auto result_qd = lahuta::analysis::compute_sasa(atoms_qd, params);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params   = lahuta::tests::apply_sasa_method(base, method);
+    const auto result_d = lahuta::analysis::compute_sasa(atoms_d, params);
+    const auto result_qd = lahuta::analysis::compute_sasa(atoms_qd, params);
 
-  ASSERT_EQ(result_d.per_atom.size(), result_qd.per_atom.size());
+    ASSERT_EQ(result_d.per_atom.size(), result_qd.per_atom.size());
 
-  constexpr double rel_tol = 0.01;
-  double total_tol         = 0.0;
-  for (std::size_t i = 0; i < result_d.per_atom.size(); ++i) {
-    const double full_area  = sphere_area(radii[i] + params.probe_radius);
-    const double tol        = full_area * rel_tol;
-    total_tol              += tol;
-    EXPECT_NEAR(result_qd.per_atom[i], result_d.per_atom[i], tol);
+    constexpr double rel_tol = 0.01;
+    double total_tol         = 0.0;
+    for (std::size_t i = 0; i < result_d.per_atom.size(); ++i) {
+      const double full_area = sphere_area(radii[i] + params.probe_radius);
+      const double tol       = full_area * rel_tol;
+      total_tol             += tol;
+      EXPECT_NEAR(result_qd.per_atom[i], result_d.per_atom[i], tol);
+    }
+
+    EXPECT_NEAR(result_qd.total, result_d.total, total_tol);
   }
-
-  EXPECT_NEAR(result_qd.total, result_d.total, total_tol);
 }
 
 TEST(SasaSrDeterminism, SameOutputAcrossRuns) {
@@ -97,20 +101,23 @@ TEST(SasaSrDeterminism, SameOutputAcrossRuns) {
 
   const auto atoms = make_atoms(coords, radii);
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.5;
-  params.n_points     = 256;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.5;
+  base.n_points     = 256;
 
-  const auto base = lahuta::analysis::compute_sasa(atoms, params);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params = lahuta::tests::apply_sasa_method(base, method);
+    const auto ref    = lahuta::analysis::compute_sasa(atoms, params);
 
-  for (int iter = 0; iter < 3; ++iter) {
-    const auto res = lahuta::analysis::compute_sasa(atoms, params);
-    ASSERT_EQ(res.per_atom.size(), base.per_atom.size());
-    for (std::size_t i = 0; i < res.per_atom.size(); ++i) {
-      EXPECT_NEAR(res.per_atom[i], base.per_atom[i], 1e-12);
+    for (int iter = 0; iter < 3; ++iter) {
+      const auto res = lahuta::analysis::compute_sasa(atoms, params);
+      ASSERT_EQ(res.per_atom.size(), ref.per_atom.size());
+      for (std::size_t i = 0; i < res.per_atom.size(); ++i) {
+        EXPECT_NEAR(res.per_atom[i], ref.per_atom[i], 1e-12);
+      }
+      EXPECT_NEAR(res.total, ref.total, 1e-12);
     }
-    EXPECT_NEAR(res.total, base.total, 1e-12);
   }
 }
 
@@ -123,38 +130,42 @@ TEST(SasaSrRegression, FixedStructureMatchesGoldenOutputs) {
   };
   std::vector<double> radii = {2.0, 2.0, 1.5, 1.0};
 
-  lahuta::analysis::SasaParams params;
-  params.probe_radius = 0.5;
-  params.n_points     = 256;
-  params.use_bitmask  = true;
+  lahuta::analysis::SasaParams base;
+  base.probe_radius = 0.5;
+  base.n_points     = 256;
 
-  const auto atoms  = make_atoms(coords, radii);
-  const auto result = lahuta::analysis::compute_sasa(atoms, params);
+  const auto atoms = make_atoms(coords, radii);
 
-  const double r_overlap        = 2.0 + params.probe_radius;
-  const double expected_overlap = expected_overlap_area_equal_spheres(r_overlap, 3.0);
-  const double expected_far_1   = sphere_area(1.5 + params.probe_radius);
-  const double expected_far_2   = sphere_area(1.0 + params.probe_radius);
+  for (const auto &method : lahuta::tests::sasa_method_cases()) {
+    SCOPED_TRACE(method.name);
+    const auto params  = lahuta::tests::apply_sasa_method(base, method);
+    const auto result  = lahuta::analysis::compute_sasa(atoms, params);
 
-  const std::vector<double> expected = {
-      expected_overlap,
-      expected_overlap,
-      expected_far_1,
-      expected_far_2,
-  };
+    const double r_overlap        = 2.0 + params.probe_radius;
+    const double expected_overlap = expected_overlap_area_equal_spheres(r_overlap, 3.0);
+    const double expected_far_1   = sphere_area(1.5 + params.probe_radius);
+    const double expected_far_2   = sphere_area(1.0 + params.probe_radius);
 
-  ASSERT_EQ(result.per_atom.size(), expected.size());
+    const std::vector<double> expected = {
+        expected_overlap,
+        expected_overlap,
+        expected_far_1,
+        expected_far_2,
+    };
 
-  constexpr double rel_tol = 0.05;
-  double expected_total    = 0.0;
-  for (std::size_t i = 0; i < expected.size(); ++i) {
-    expected_total       += expected[i];
-    const double denom    = std::max(1e-12, std::abs(expected[i]));
-    const double rel_err  = std::abs(result.per_atom[i] - expected[i]) / denom;
-    EXPECT_LE(rel_err, rel_tol);
+    ASSERT_EQ(result.per_atom.size(), expected.size());
+
+    constexpr double rel_tol = 0.05;
+    double expected_total    = 0.0;
+    for (std::size_t i = 0; i < expected.size(); ++i) {
+      expected_total      += expected[i];
+      const double denom   = std::max(1e-12, std::abs(expected[i]));
+      const double rel_err = std::abs(result.per_atom[i] - expected[i]) / denom;
+      EXPECT_LE(rel_err, rel_tol);
+    }
+
+    const double total_denom   = std::max(1e-12, std::abs(expected_total));
+    const double total_rel_err = std::abs(result.total - expected_total) / total_denom;
+    EXPECT_LE(total_rel_err, rel_tol);
   }
-
-  const double total_denom   = std::max(1e-12, std::abs(expected_total));
-  const double total_rel_err = std::abs(result.total - expected_total) / total_denom;
-  EXPECT_LE(total_rel_err, rel_tol);
 }
