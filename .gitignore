@@ -19,6 +19,7 @@ core/external/Eigen/eigen
 
 # IDEs and editors
 .vscode
+.idea
 
 # local notebooks
 # notebooks/
