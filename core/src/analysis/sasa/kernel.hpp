@@ -314,15 +314,6 @@ struct SasaSrKernel {
     out.push_back(P::Emission{p.channel, std::move(payload)});
 
     counters->written.fetch_add(1, std::memory_order_relaxed);
-    if (p.log_every > 0 && (processed % p.log_every == 0)) {
-      Logger::get_logger()->info(
-          "[sasa-sr] Processed {} records (wrote {}, missing seq {}, missing pos {}, mismatch {})",
-          processed,
-          counters->written.load(std::memory_order_relaxed),
-          counters->missing_sequence.load(std::memory_order_relaxed),
-          counters->missing_positions.load(std::memory_order_relaxed),
-          counters->atom_mismatch.load(std::memory_order_relaxed));
-    }
 
     return C::ComputationResult(std::move(out));
   }

@@ -27,7 +27,6 @@ enum : unsigned {
   OutputDir = BaseIndex,
   ProbeRadius,
   Points,
-  LogEvery,
   IncludeTotal,
   UseBitmask
 };
@@ -40,7 +39,6 @@ struct SasaSrCliConfig {
   std::filesystem::path output_dir;
   double probe_radius   = 1.4;
   std::size_t n_points  = 128;
-  std::size_t log_every = 2000;
   bool include_total    = false;
   bool use_bitmask      = false;
   P::SasaSrParams params;
@@ -135,12 +133,6 @@ public:
                  validate::Required,
                  "  --points <N>                 \tNumber of sphere points per atom (default: 128; "
                  "bitmask fast path uses 64/128/256)."});
-    schema_.add(
-        {sasa_sr_opts::LogEvery,
-         "",
-         "log-every",
-         validate::Required,
-         "  --log-every <N>              \tLog progress every N records (default: 2000, 0 disables)."});
     schema_.add({sasa_sr_opts::UseBitmask,
                  "",
                  "use-bitmask",
@@ -205,14 +197,6 @@ public:
       config.n_points = static_cast<std::size_t>(raw);
     }
 
-    if (args.has(sasa_sr_opts::LogEvery)) {
-      const auto raw = std::stoll(args.get_string(sasa_sr_opts::LogEvery));
-      if (raw < 0) {
-        throw std::runtime_error("--log-every must be >= 0.");
-      }
-      config.log_every = static_cast<std::size_t>(raw);
-    }
-
     config.include_total = args.get_flag(sasa_sr_opts::IncludeTotal);
     config.use_bitmask   = args.get_flag(sasa_sr_opts::UseBitmask);
     if (config.output_dir.empty()) {
@@ -237,7 +221,6 @@ public:
     params.params.probe_radius = config.probe_radius;
     params.params.n_points     = config.n_points;
     params.params.use_bitmask  = config.use_bitmask;
-    params.log_every     = config.log_every;
     params.include_total = config.include_total;
     params.channel       = std::string(A::SasaSrOutputChannel);
     params.counters      = std::make_shared<A::SasaSrCounters>();

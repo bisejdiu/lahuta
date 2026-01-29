@@ -60,7 +60,6 @@ struct SasaSrParams : public C::ParameterBase<SasaSrParams> {
   analysis::SasaParams params;
   std::string channel = std::string(analysis::SasaSrOutputChannel);
   bool include_total = false;
-  std::size_t log_every = 2000;
   std::shared_ptr<analysis::SasaSrCounters> counters;
 };
 
