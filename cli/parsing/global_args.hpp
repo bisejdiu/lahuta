@@ -25,7 +25,7 @@ inline std::string build_global_usage(const CommandSpecRegistry &registry) {
                       "Lahuta runs structural analysis, such as contacts computations, at scale.\n\n"
                       "Available subcommands:\n";
 
-  const std::size_t name_pad = max_name_len + 1;
+  const std::size_t name_pad = max_name_len + 2;
   for (const auto &[name, spec] : registry) {
     if (!spec) continue;
 
@@ -34,7 +34,6 @@ inline std::string build_global_usage(const CommandSpecRegistry &registry) {
     if (name_pad > name.size()) {
       usage.append(name_pad - name.size(), ' ');
     }
-    usage.append("[options]     ");
     usage.append(spec->summary());
     usage.push_back('\n');
   }
