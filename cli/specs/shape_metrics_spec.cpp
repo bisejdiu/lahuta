@@ -20,6 +20,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Compute tensor-based shape metrics with pLDDT/DSSP trimming.";
+
 namespace shape_metrics_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { OutputDir = BaseIndex, MinHighFraction };
@@ -49,11 +51,13 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 "Usage: lahuta shape-metrics [--output-dir <dir>] [options]\n\n"
-                 "Compute tensor-based shape metrics (Rg, asphericity, kappa^2) with\n"
-                 "pLDDT/DSSP trimming of low-confidence coil/turn/bend tails.\n\n"
-                 "Outputs: per_protein_shape_metrics.jsonl (NDJSON) in the output directory.\n"
-                 "Note: file-based inputs must be AF2 model files (mmCIF)."});
+                 std::string("Usage: lahuta shape-metrics [--output-dir <dir>] [options]\n\n")
+                     .append(Summary)
+                     .append("\n"
+                             "Metrics include Rg, asphericity, and kappa^2. Trimming removes\n"
+                             "low-confidence coil/turn/bend tails.\n\n"
+                             "Outputs: per_protein_shape_metrics.jsonl (NDJSON) in the output directory.\n"
+                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -123,9 +127,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "shape-metrics"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Compute tensor-based shape metrics with pLDDT/DSSP trimming.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 

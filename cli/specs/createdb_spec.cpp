@@ -19,6 +19,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Create a database from alphafold2 models.";
+
 namespace createdb_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { OutputPath = BaseIndex, MaxSize };
@@ -61,12 +63,8 @@ public:
     runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 1000;
 
-    schema_.add({0,
-                 "",
-                 "",
-                 validate::Unknown,
-                 "Usage: lahuta createdb [options]\n\n"
-                 "Create a database from alphafold2 models."});
+    schema_.add(
+        {0, "", "", validate::Unknown, std::string("Usage: lahuta createdb [options]\n\n").append(Summary)});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);
@@ -95,9 +93,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "createdb"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Create a database from alphafold2 models.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 

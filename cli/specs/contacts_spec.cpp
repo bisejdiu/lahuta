@@ -24,6 +24,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Compute inter-atomic contacts.";
+
 // Contacts-specific argument validators
 namespace contacts_validate {
 
@@ -114,14 +116,15 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 "Usage: lahuta contacts [options]\n"
-                 "Author: Besian I. Sejdiu (@bisejdiu)\n\n"
-                 "Compute inter-atomic contacts.\n\n"
-                 "<<< Detailed help will be added soon. >>>\n\n"
-                 "Available reporters (--reporter <name>):\n"
-                 "  summary     - Concise summary of computation results (negligible overhead).\n"
-                 "  terse       - Fastest logging footprint.\n"
-                 "  detail      - Detailed diagnostics for in-depth analysis (tiny overhead)."});
+                 std::string("Usage: lahuta contacts [options]\n"
+                             "Author: Besian I. Sejdiu (@bisejdiu)\n\n")
+                     .append(Summary)
+                     .append("\n\n"
+                             "<<< Detailed help will be added soon. >>>\n\n"
+                             "Available reporters (--reporter <name>):\n"
+                             "  summary     - Concise summary of computation results (negligible overhead).\n"
+                             "  terse       - Fastest logging footprint.\n"
+                             "  detail      - Detailed diagnostics for in-depth analysis (tiny overhead).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDirectory,
@@ -209,7 +212,7 @@ public:
   }
 
   [[nodiscard]] std::string_view name() const override { return "contacts"; }
-  [[nodiscard]] std::string_view summary() const override { return "Compute inter-atomic contacts."; }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 
   [[nodiscard]] std::any parse_config(const ParsedArgs &args) const override {

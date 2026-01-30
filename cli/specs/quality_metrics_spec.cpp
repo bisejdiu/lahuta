@@ -22,6 +22,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Compute per-protein group metrics for pLDDT and DSSP signals.";
+
 namespace quality_metrics_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { PlddtGroup = BaseIndex, DsspGroup, SegmentGroup, SegmentMin, NoOverlap, Output };
@@ -47,34 +49,37 @@ public:
     runtime_spec_.default_batch_size     = 512;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
-    schema_.add({0,
-                 "",
-                 "",
-                 validate::Unknown,
-                 "Usage: lahuta quality-metrics [options]\n\n"
-                 "Computes per-protein fractions for user-defined pLDDT and DSSP groups, plus\n"
-                 "optional segment statistics for pLDDT groups and overlap fractions between\n"
-                 "pLDDT and DSSP groups.\n"
-                 "Segment statistics measure how many consecutive residues fall in a pLDDT\n"
-                 "group, the longest run, and the fraction in long runs.\n"
-                 "Overlap fractions report how often a residue is in both a pLDDT group and a\n"
-                 "DSSP group (for example, poor-confidence coil).\n\n"
-                 "For example, if you group Low and VeryLow as \"poor\", the output tells\n"
-                 "you what fraction of each protein is poor-confidence, plus how much of that\n"
-                 "poor-confidence region falls in coils or helices.\n\n"
-                 "Valid pLDDT values are: VeryHigh, High, Low, VeryLow.\n"
-                 "Valid  DSSP values are: Coil, AlphaHelix, Helix3_10, HelixPi,\n"
-                 "                        PolyProlineHelix, Strand, Turn, Bend.\n\n"
-                 "Examples:\n"
-                 "  lahuta quality-metrics -d dir/ --is_af2_model --output metrics.jsonl\n"
-                 "  lahuta quality-metrics -d dir/ --is_af2_model --plddt-group poor=Low,VeryLow\n"
-                 "    --segment-group poor\n"
-                 "  lahuta quality-metrics --directory /path/to/models --is_af2_model \\\n"
-                 "    --plddt-group poor=Low,VeryLow --segment-group poor \\\n"
-                 "    --dssp-group coil=Coil,Turn,Bend \\\n"
-                 "    --dssp-group helix=AlphaHelix,Helix3_10,HelixPi,PolyProlineHelix \\\n"
-                 "    --dssp-group strand=Strand \\\n"
-                 "    --output metrics.jsonl"});
+    schema_.add(
+        {0,
+         "",
+         "",
+         validate::Unknown,
+         std::string("Usage: lahuta quality-metrics [options]\n\n")
+             .append(Summary)
+             .append("\n"
+                     "Computes per-protein fractions for user-defined pLDDT and DSSP groups, plus\n"
+                     "optional segment statistics for pLDDT groups and overlap fractions between\n"
+                     "pLDDT and DSSP groups.\n"
+                     "Segment statistics measure how many consecutive residues fall in a pLDDT\n"
+                     "group, the longest run, and the fraction in long runs.\n"
+                     "Overlap fractions report how often a residue is in both a pLDDT group and a\n"
+                     "DSSP group (for example, poor-confidence coil).\n\n"
+                     "For example, if you group Low and VeryLow as \"poor\", the output tells\n"
+                     "you what fraction of each protein is poor-confidence, plus how much of that\n"
+                     "poor-confidence region falls in coils or helices.\n\n"
+                     "Valid pLDDT values are: VeryHigh, High, Low, VeryLow.\n"
+                     "Valid  DSSP values are: Coil, AlphaHelix, Helix3_10, HelixPi,\n"
+                     "                        PolyProlineHelix, Strand, Turn, Bend.\n\n"
+                     "Examples:\n"
+                     "  lahuta quality-metrics -d dir/ --is_af2_model --output metrics.jsonl\n"
+                     "  lahuta quality-metrics -d dir/ --is_af2_model --plddt-group poor=Low,VeryLow\n"
+                     "    --segment-group poor\n"
+                     "  lahuta quality-metrics --directory /path/to/models --is_af2_model \\\n"
+                     "    --plddt-group poor=Low,VeryLow --segment-group poor \\\n"
+                     "    --dssp-group coil=Coil,Turn,Bend \\\n"
+                     "    --dssp-group helix=AlphaHelix,Helix3_10,HelixPi,PolyProlineHelix \\\n"
+                     "    --dssp-group strand=Strand \\\n"
+                     "    --output metrics.jsonl")});
 
     schema_.add({0, "", "", option::Arg::None, "\nMetric Group Options:"});
     schema_.add({quality_metrics_opts::PlddtGroup,
@@ -165,9 +170,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "quality-metrics"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Compute per-protein group metrics for pLDDT and DSSP signals.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 

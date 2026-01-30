@@ -17,6 +17,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Extract 3D atomic coordinates from model files or databases.";
+
 namespace positions_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { Output = BaseIndex, TreeDepth };
@@ -39,16 +41,19 @@ public:
     runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
 
-    schema_.add({0,
-                 "",
-                 "",
-                 validate::Unknown,
-                 "Usage: lahuta positions --output <dir> [options]\n\n"
-                 "Extract 3D atomic coordinates from model files or databases.\n"
+    schema_.add(
+        {0,
+         "",
+         "",
+         validate::Unknown,
+         std::string("Usage: lahuta positions --output <dir> [options]\n\n")
+             .append(Summary)
+             .append(
+                 "\n"
                  "If you are running this on millions of files, use a --tree-depth of 2 to not hit any OS "
                  "filesystem issues.\n"
                  "Binary format: float32 XYZ triplets.\n"
-                 "Python: np.fromfile(path, dtype=np.float32).reshape(-1, 3)"});
+                 "Python: np.fromfile(path, dtype=np.float32).reshape(-1, 3)")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -112,9 +117,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "positions"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Extract 3D atomic coordinates from model files or databases.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 
