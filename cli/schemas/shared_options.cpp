@@ -2,9 +2,9 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "runner/reporting.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "runner/reporting.hpp"
 #include "schemas/shared_options.hpp"
 
 namespace lahuta::cli {
@@ -97,6 +97,11 @@ void add_global_options(OptionSchema &schema) {
               "help",
               option::Arg::None,
               "  --help,  -h                  \tPrint this help message and exit."});
+  schema.add({shared_opts::GlobalVersion,
+              "",
+              "version",
+              option::Arg::None,
+              "  --version                    \tPrint version information and exit."});
   schema.add({shared_opts::GlobalVerbose,
               "v",
               "verbose",
@@ -106,8 +111,7 @@ void add_global_options(OptionSchema &schema) {
               "",
               "progress-ms",
               validate::Required,
-              "  --progress-ms <ms>           \tProgress update interval in milliseconds (0 disables; "
-              "default: 50)."});
+              "  --progress-ms <ms>           \tProgress update in ms (0 disables, default: 50)."});
   schema.add({shared_opts::GlobalProgressNoColor,
               "",
               "progress-no-color",
@@ -201,7 +205,8 @@ void add_report_options(OptionSchema &schema) {
 
 GlobalConfig parse_global_config(const ParsedArgs &args) {
   GlobalConfig config;
-  config.help_requested = args.get_flag(shared_opts::GlobalHelp);
+  config.help_requested    = args.get_flag(shared_opts::GlobalHelp);
+  config.version_requested = args.get_flag(shared_opts::GlobalVersion);
 
   if (args.has(shared_opts::GlobalVerbose)) {
     const std::string level = args.get_string(shared_opts::GlobalVerbose);

@@ -76,6 +76,9 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
     if (arg == "-h" || arg == "--help") {
       continue;
     }
+    if (arg == "--version") {
+      continue;
+    }
     first_non_global = i;
     break;
   }
@@ -109,6 +112,12 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
       continue;
     }
     if (arg == "-h" || arg == "--help") {
+      if (i < first_non_global) {
+        split.global_args.push_back(argv[i]);
+        continue;
+      }
+    }
+    if (arg == "--version") {
       if (i < first_non_global) {
         split.global_args.push_back(argv[i]);
         continue;
