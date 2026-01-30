@@ -109,9 +109,9 @@ void add_global_options(OptionSchema &schema) {
               "  --verbose, -v <level>        \tSet verbosity level (0, 1, or 2)."});
   schema.add({shared_opts::GlobalProgressMs,
               "",
-              "progress-ms",
+              "progress",
               validate::Required,
-              "  --progress-ms <ms>           \tProgress update in ms (0 disables, default: 50)."});
+              "  --progress <ms>              \tProgress update in ms (0 disables, default: 50)."});
   schema.add({shared_opts::GlobalProgressNoColor,
               "",
               "progress-no-color",
@@ -224,7 +224,7 @@ GlobalConfig parse_global_config(const ParsedArgs &args) {
   }
 
   if (args.has(shared_opts::GlobalProgressMs)) {
-    config.progress_ms = parse_size_t(args.get_string(shared_opts::GlobalProgressMs), "--progress-ms", true);
+    config.progress_ms = parse_size_t(args.get_string(shared_opts::GlobalProgressMs), "--progress", true);
   }
 
   if (args.has(shared_opts::GlobalProgressNoColor)) {

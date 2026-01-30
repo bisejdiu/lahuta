@@ -60,14 +60,14 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
       ++i;
       continue;
     }
-    if (arg == "--progress-ms") {
+    if (arg == "--progress") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '--progress-ms' expects <ms> (0 disables)");
+        throw std::runtime_error("Option '--progress' expects <ms> (0 disables)");
       }
       ++i;
       continue;
     }
-    if (arg.rfind("--progress-ms=", 0) == 0) {
+    if (arg.rfind("--progress=", 0) == 0) {
       continue;
     }
     if (arg == "--progress-no-color") {
@@ -94,16 +94,16 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
       ++i;
       continue;
     }
-    if (arg == "--progress-ms") {
+    if (arg == "--progress") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '--progress-ms' expects <ms> (0 disables)");
+        throw std::runtime_error("Option '--progress' expects <ms> (0 disables)");
       }
       split.global_args.push_back(argv[i]);
       split.global_args.push_back(argv[i + 1]);
       ++i;
       continue;
     }
-    if (arg.rfind("--progress-ms=", 0) == 0) {
+    if (arg.rfind("--progress=", 0) == 0) {
       split.global_args.push_back(argv[i]);
       continue;
     }
