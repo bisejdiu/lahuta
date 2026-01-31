@@ -217,6 +217,12 @@ add_library(lahuta_core ${_lahuta_core_library_type}
   src/md/xdr.cpp
   src/md/xtc_reader.cpp
 
+  src/analysis/compaction/rg_utils.cpp
+  src/analysis/compaction/shape_metrics_utils.cpp
+  src/analysis/sasa/sasa.cpp
+  src/analysis/sasa/methods/standard.cpp
+  src/analysis/sasa/methods/bitmask.cpp
+
   src/models/topology.cpp
   src/models/parser.cpp
   src/models/topology_impl.cpp
@@ -301,6 +307,7 @@ lahuta_configure_core_version(lahuta_core)
 target_include_directories(lahuta_core PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}/external
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/rdkit  # for RDKit internal includes (<RDGeneral/...>)
   ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
   ${CMAKE_CURRENT_SOURCE_DIR}/external/simde
   ${CMAKE_CURRENT_SOURCE_DIR}/external/gemmi/include

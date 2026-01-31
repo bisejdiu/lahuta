@@ -28,9 +28,12 @@ using CommandSpecRegistry = std::map<std::string, const CommandSpec *>;
 
 [[nodiscard]] const CommandSpec &get_contacts_spec() noexcept;
 [[nodiscard]] const CommandSpec &get_createdb_spec() noexcept;
+[[nodiscard]] const CommandSpec &get_compaction_rg_spec() noexcept;
+[[nodiscard]] const CommandSpec &get_shape_metrics_spec() noexcept;
 [[nodiscard]] const CommandSpec &get_extract_spec() noexcept;
 [[nodiscard]] const CommandSpec &get_positions_spec() noexcept;
 [[nodiscard]] const CommandSpec &get_quality_metrics_spec() noexcept;
+[[nodiscard]] const CommandSpec &get_sasa_sr_spec() noexcept;
 
 [[nodiscard]] inline const CommandSpecRegistry &get_command_specs() noexcept {
   static const CommandSpecRegistry registry = []() {
@@ -41,8 +44,14 @@ using CommandSpecRegistry = std::map<std::string, const CommandSpec *>;
     map.emplace(std::string(extract.name()), &extract);
     const auto &positions = get_positions_spec();
     map.emplace(std::string(positions.name()), &positions);
+    const auto &compaction_rg = get_compaction_rg_spec();
+    map.emplace(std::string(compaction_rg.name()), &compaction_rg);
+    const auto &shape_metrics = get_shape_metrics_spec();
+    map.emplace(std::string(shape_metrics.name()), &shape_metrics);
     const auto &quality_metrics = get_quality_metrics_spec();
     map.emplace(std::string(quality_metrics.name()), &quality_metrics);
+    const auto &sasa_sr = get_sasa_sr_spec();
+    map.emplace(std::string(sasa_sr.name()), &sasa_sr);
     const auto &contacts = get_contacts_spec();
     map.emplace(std::string(contacts.name()), &contacts);
     return map;

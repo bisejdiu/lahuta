@@ -1,14 +1,14 @@
 #ifndef LAHUTA_VALENCE_HPP
 #define LAHUTA_VALENCE_HPP
 
+#include <gemmi/elem.hpp>
 #include <rdkit/GraphMol/Atom.h>
 #include <rdkit/GraphMol/Bond.h>
 #include <rdkit/GraphMol/MolOps.h>
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include <rdkit/GraphMol/ROMol.h>
-#include <gemmi/elem.hpp>
 
-using Bond = RDKit::Bond;
+using Bond              = RDKit::Bond;
 using HybridizationType = RDKit::Atom::HybridizationType;
 
 namespace lahuta {
@@ -49,7 +49,7 @@ public:
   bool is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &atom) const;
 
   // Returns the number of bonds the given atom has to atoms of the specified element.
-  int get_element_count(RDKit::ROMol &mol, RDKit::Atom &atom, int element) const;
+  int get_element_count(const RDKit::ROMol &mol, const RDKit::Atom &atom, int element) const;
 
   /// True if the atom is bound to sulfur or a metal.
   bool is_bound_to_sulfur_or_metal(const RDKit::ROMol &mol, RDKit::Atom *atom) const;

@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
+#include "logging/logging.hpp"
 #include "parsing/parsed_args.hpp"
 #include "schemas/option_schema.hpp"
-#include "logging/logging.hpp"
 
 namespace lahuta::cli {
 
@@ -15,7 +15,7 @@ struct PipelineReporter;
 
 namespace shared_opts {
 constexpr unsigned BaseIndex = 100;
-enum OptionIndex : unsigned {
+enum : unsigned {
   GlobalHelp = BaseIndex,
   GlobalVerbose,
   GlobalProgressMs,

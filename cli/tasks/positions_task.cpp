@@ -14,6 +14,7 @@
 #include "tasks/positions_task.hpp"
 
 namespace lahuta::cli::positions {
+namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
@@ -80,7 +81,7 @@ public:
     if (payload && payload->positions && !payload->positions->empty()) {
       positions = payload->positions.get();
     } else if (!payload) {
-      parsed = analysis::get_cached_model_parser_result(ctx);
+      parsed = A::get_cached_model_parser_result(ctx);
       if (parsed && parsed->coords_size() > 0) {
         positions = &parsed->coords;
       }
@@ -94,7 +95,9 @@ public:
     return write_positions_from_vector(item_path, *positions);
   }
 
-  P::DataFieldSet data_requirements() const override { return P::DataFieldSet::of({P::DataField::Positions}); }
+  P::DataFieldSet data_requirements() const override {
+    return P::DataFieldSet::of({P::DataField::Positions});
+  }
 
 private:
   P::TaskResult write_positions_from_vector(const std::string &item_path,

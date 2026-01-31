@@ -15,12 +15,13 @@
 #include "specs/command_spec.hpp"
 
 namespace lahuta::cli {
+namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
 namespace createdb_opts {
 constexpr unsigned BaseIndex = 200;
-enum OptionIndex : unsigned { OutputPath = BaseIndex, MaxSize };
+enum : unsigned { OutputPath = BaseIndex, MaxSize };
 } // namespace createdb_opts
 
 constexpr std::size_t DefaultMaxSizeGb = 500;
@@ -181,7 +182,7 @@ public:
 
     PipelineTask task;
     task.name        = "createdb";
-    task.task        = std::make_shared<analysis::ModelPackTask>("db");
+    task.task        = std::make_shared<A::ModelPackTask>("db");
     task.thread_safe = true;
     plan.tasks.push_back(std::move(task));
 

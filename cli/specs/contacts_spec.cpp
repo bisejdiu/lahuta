@@ -20,6 +20,7 @@
 #include "tasks/contacts_md_source.hpp"
 
 namespace lahuta::cli {
+namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
@@ -41,7 +42,7 @@ option::ArgStatus Provider(const option::Option &option, bool msg) {
   }
 
   const std::string_view provider{option.arg};
-  if (analysis::contact_provider_from_string(provider).has_value()) {
+  if (A::contact_provider_from_string(provider).has_value()) {
     return option::ARG_OK;
   }
 
@@ -76,14 +77,7 @@ option::ArgStatus ContactType(const option::Option &option, bool msg) {
 
 namespace contacts_opts {
 constexpr unsigned BaseIndex = 200;
-enum OptionIndex : unsigned {
-  SourceMD = BaseIndex,
-  Provider,
-  InteractionType,
-  OutputJson,
-  OutputText,
-  OutputLog
-};
+enum : unsigned { SourceMD = BaseIndex, Provider, InteractionType, OutputJson, OutputText, OutputLog };
 } // namespace contacts_opts
 
 enum class ContactsSourceMode { Directory, Vector, FileList, Database, MD };
@@ -94,7 +88,7 @@ struct ContactsConfig {
   contacts::MdInputs md_inputs;
   RuntimeConfig runtime;
   ReportConfig report;
-  analysis::ContactProvider provider   = analysis::ContactProvider::MolStar;
+  A::ContactProvider provider          = A::ContactProvider::MolStar;
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
   bool is_af2_model                    = false;
   bool want_json                       = false;
@@ -263,7 +257,7 @@ public:
 
     if (args.has(contacts_opts::Provider)) {
       const std::string provider_arg = args.get_string(contacts_opts::Provider);
-      if (auto provider = analysis::contact_provider_from_string(provider_arg)) {
+      if (auto provider = A::contact_provider_from_string(provider_arg)) {
         config.provider = *provider;
       } else {
         throw std::runtime_error("Invalid provider '" + provider_arg +
@@ -317,7 +311,7 @@ public:
     plan.threads                            = static_cast<std::size_t>(cfg.runtime.threads);
     plan.auto_builtins                      = true;
     plan.override_topology_params           = true;
-    plan.topology_params.atom_typing_method = analysis::typing_for_provider(cfg.provider);
+    plan.topology_params.atom_typing_method = A::typing_for_provider(cfg.provider);
     plan.success_message                    = "Contact computation completed successfully!";
 
     const bool is_md              = cfg.source_mode == ContactsSourceMode::MD;
@@ -383,9 +377,7 @@ public:
 
     PipelineComputation computation;
     computation.name    = "contacts";
-    computation.factory = [params]() {
-      return std::make_unique<analysis::ContactsComputation>("contacts", params);
-    };
+    computation.factory = [params]() { return std::make_unique<A::ContactsComputation>("contacts", params); };
     computation.thread_safe = true;
     plan.computations.push_back(std::move(computation));
 

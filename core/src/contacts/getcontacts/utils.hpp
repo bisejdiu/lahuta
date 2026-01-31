@@ -14,13 +14,14 @@
 #include "chemistry/utils.hpp"
 #include "entities/context.hpp"
 #include "residues/definitions.hpp"
+#include "utils/math_constants.hpp"
 
 // clang-format off
 namespace lahuta::getcontacts::detail {
 
+using lahuta::Pi;
 
 inline double rad_to_deg(double rad) noexcept {
-  constexpr double Pi = 3.14159265358979323846264338327950288;
   return rad * (180.0 / Pi);
 }
 
