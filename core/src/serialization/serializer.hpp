@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include "serializer_impl.hpp"
 #include "specializations/contacts.hpp"
+#include "specializations/dssp.hpp"
 #include "specializations/model.hpp"
 #include "specializations/sasa_sr.hpp"
 // IWYU pragma: end_exports

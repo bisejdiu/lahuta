@@ -7,6 +7,7 @@
 #include <string>
 
 #include "analysis/contacts/provider.hpp"
+#include "analysis/dssp/records.hpp"
 #include "analysis/sasa/records.hpp"
 #include "analysis/sasa/sasa.hpp"
 #include "compute/parameters.hpp"
@@ -24,6 +25,7 @@ constexpr C::ParameterInterface::TypeId CONTACTS       = 32;
 constexpr C::ParameterInterface::TypeId DYNAMIC_TASK   = 33;
 constexpr C::ParameterInterface::TypeId ENSURE_TYPING  = 34;
 constexpr C::ParameterInterface::TypeId SASA_SR        = 35;
+constexpr C::ParameterInterface::TypeId DSSP           = 36;
 } // namespace param_ids
 
 enum class ContactsOutputFormat : uint8_t {
@@ -59,8 +61,17 @@ struct SasaSrParams : public C::ParameterBase<SasaSrParams> {
 
   analysis::SasaParams params;
   std::string channel = std::string(analysis::SasaSrOutputChannel);
-  bool include_total = false;
+  bool include_total  = false;
   std::shared_ptr<analysis::SasaSrCounters> counters;
+};
+
+struct DsspParams : public C::ParameterBase<DsspParams> {
+  static constexpr C::ParameterInterface::TypeId TYPE_ID = param_ids::DSSP;
+
+  std::string channel    = std::string(analysis::DsspOutputChannel);
+  bool prefer_pi_helices = true;
+  int pp_stretch_length  = 2;
+  bool strict            = false;
 };
 
 // Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference

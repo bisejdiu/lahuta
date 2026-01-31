@@ -12,6 +12,10 @@
 #include "models/plddt.hpp"
 
 // clang-format off
+namespace gemmi {
+struct Structure;
+} // namespace gemmi
+
 namespace lahuta {
 
 struct ModelParserResult {
@@ -38,6 +42,7 @@ struct ModelParserResult {
 };
 
 ModelParserResult parse_model(const char *data, size_t size);
+ModelParserResult parse_model(const gemmi::Structure &st);
 
 } // namespace lahuta
 

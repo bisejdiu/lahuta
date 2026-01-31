@@ -22,7 +22,7 @@ namespace lahuta {
 
 //
 // Current Limitations:
-// - Only CIF files are supported
+// - Only CIF files are supported directly, PDB is converted using gemmi
 //
 
 //

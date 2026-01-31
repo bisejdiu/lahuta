@@ -11,6 +11,7 @@ set(lahuta_sources
   specs/compaction_rg_spec.cpp
   specs/shape_metrics_spec.cpp
   specs/createdb_spec.cpp
+  specs/dssp_spec.cpp
   specs/extract_spec.cpp
   specs/positions_spec.cpp
   specs/quality_metrics_spec.cpp

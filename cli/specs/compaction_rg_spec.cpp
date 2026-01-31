@@ -20,6 +20,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Compute radius of gyration with pLDDT/DSSP trimming.";
+
 namespace compaction_rg_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { OutputDir = BaseIndex, MinHighFraction };
@@ -49,12 +51,16 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 "Usage: lahuta compaction-rg [--output-dir <dir>] [options]\n\n"
-                 "Compute per-protein radius of gyration with low-confidence trimming.\n"
-                 "Trimming removes N/C termini that are both low-confidence (pLDDT) and\n"
-                 "unstructured (DSSP coil/turn/bend).\n\n"
-                 "Outputs: per_protein_rg.jsonl (NDJSON) in the output directory.\n"
-                 "Note: file-based inputs must be AF2 model files (mmCIF)."});
+                std::string("Usage: lahuta compaction-rg [--output-dir <dir>] [options]\n"
+                            "Author: ")
+                    .append(Author)
+                    .append("\n\n")
+                    .append(Summary)
+                     .append("\n"
+                             "Trimming removes N/C termini that are both low-confidence (pLDDT) and\n"
+                             "unstructured (DSSP coil/turn/bend).\n\n"
+                             "Outputs: per_protein_rg.jsonl (NDJSON) in the output directory.\n"
+                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -124,9 +130,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "compaction-rg"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Compute radius of gyration with pLDDT/DSSP trimming.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 

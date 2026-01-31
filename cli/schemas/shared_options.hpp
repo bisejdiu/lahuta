@@ -17,6 +17,7 @@ namespace shared_opts {
 constexpr unsigned BaseIndex = 100;
 enum : unsigned {
   GlobalHelp = BaseIndex,
+  GlobalVersion,
   GlobalVerbose,
   GlobalProgressMs,
   GlobalProgressNoColor,
@@ -40,6 +41,7 @@ struct GlobalConfig {
   std::size_t progress_ms            = 50;
   bool progress_color                = true;
   bool help_requested                = false;
+  bool version_requested             = false;
 };
 
 struct SourceOptionSpec {

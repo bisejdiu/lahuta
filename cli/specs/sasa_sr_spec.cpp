@@ -21,6 +21,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Compute Shrake-Rupley solvent accessible surface area.";
+
 namespace sasa_sr_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { //
@@ -61,12 +63,16 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 "Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n\n"
-                 "Compute Shrake-Rupley solvent accessible surface area (SASA).\n"
-                 "Outputs: per_protein_sasa_sr.jsonl (NDJSON) in the output directory.\n"
-                 "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"
-                 "atom-index-atom_name-residue_id-residue_name-chain_id.\n"
-                 "Note: file-based inputs must be AF2 model files (mmCIF)."});
+                std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n"
+                            "Author: ")
+                    .append(Author)
+                    .append("\n\n")
+                    .append(Summary)
+                     .append("\n"
+                             "Outputs: per_protein_sasa_sr.jsonl (NDJSON) in the output directory.\n"
+                             "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"
+                             "atom-index-atom_name-residue_id-residue_name-chain_id.\n"
+                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -156,9 +162,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "sasa-sr"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Compute Shrake-Rupley solvent accessible surface area.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 

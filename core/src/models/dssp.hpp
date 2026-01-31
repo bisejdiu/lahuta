@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-// clang-format off
 namespace lahuta {
 
 //
@@ -11,16 +10,20 @@ namespace lahuta {
 // rather than canonical DSSP output. I plan to generalize this to true
 // DSSP semantics (H, B, E, G, I, T, S, Coil).  - Besian, October 2025
 //
+// It now includes canonical DSSP codes (H, B, E, G, I, T, S, P, Coil).
+// Exisitng values are preserved. - Besian, January 2026
+//
 
 enum class DSSPAssignment : std::uint8_t {
-  Coil = 0,
-  AlphaHelix,        // H
-  Helix3_10,         // G
-  HelixPi,           // I
-  PolyProlineHelix,  // P (left-handed polyproline)
-  Strand,            // E
-  Turn,              // T
-  Bend               // S
+  Coil             = 0,
+  AlphaHelix       = 1, // H
+  Helix3_10        = 2, // G
+  HelixPi          = 3, // I
+  PolyProlineHelix = 4, // P (left-handed polyproline)
+  Strand           = 5, // E
+  Turn             = 6, // T
+  Bend             = 7, // S
+  BetaBridge       = 8  // B
 };
 
 static_assert(sizeof(DSSPAssignment) == sizeof(std::uint8_t), "DSSPAssignment must remain 1 byte");

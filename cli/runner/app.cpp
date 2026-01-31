@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "logging/logging.hpp"
+#include "version.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/global_args.hpp"
 #include "parsing/parsed_args.hpp"
@@ -53,6 +54,11 @@ int run(int argc, char *argv[]) {
 
     if (global_config.help_requested) {
       option::printUsage(std::cout, descriptors.data());
+      return 0;
+    }
+
+    if (global_config.version_requested) {
+      std::cout << "lahuta " << lahuta::version << '\n';
       return 0;
     }
 

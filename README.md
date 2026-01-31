@@ -135,6 +135,14 @@ Report issues in the [issues](https://github.com/bisejdiu/lahuta/issues) section
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Acknowledgments
+
+Lahuta includes implementations inspired by and validated against the following projects:
+
+- **DSSP**: Secondary structure assignment follows the algorithm described by Kabsch & Sander and implemented in [PDB-REDO/dssp](https://github.com/PDB-REDO/dssp) (BSD-2-Clause License).
+- **SASA**: Solvent accessible surface area calculation uses the Shrake-Rupley algorithm, with reference to [FreeSASA](https://github.com/mittinatten/freesasa) (MIT License) and [RustSASA](https://github.com/maxcampbell/rustsasa) (MIT License) for validation and optimization strategies.
+
+See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) for full attribution details.
 
 [github-ci-core]: https://github.com/bisejdiu/lahuta/actions/workflows/ci-core.yml/badge.svg?branch=main
 [github-ci-python]: https://github.com/bisejdiu/lahuta/actions/workflows/ci-python.yml/badge.svg?branch=main

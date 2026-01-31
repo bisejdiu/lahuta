@@ -1,6 +1,18 @@
 #ifndef LAHUTA_ANALYSIS_SASA_SASA_HPP
 #define LAHUTA_ANALYSIS_SASA_SASA_HPP
 
+// Solvent Accessible Surface Area (SASA) calculation using Shrake-Rupley algorithm.
+//
+// Algorithm reference:
+//   Shrake A, Rupley JA. "Environment and exposure to solvent of protein atoms.
+//   Lysozyme and insulin." J Mol Biol. 1973;79(2):351-71.
+//
+// Implementation validated against and informed by:
+//   - FreeSASA (https://github.com/mittinatten/freesasa)
+//     Copyright (c) 2016 Simon Mitternacht, MIT License
+//   - RustSASA (https://github.com/maxall41/RustSASA)
+//     Copyright (c) 2024 Maxwell Campbell, MIT License
+
 #include <cstddef>
 #include <vector>
 

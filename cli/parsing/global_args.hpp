@@ -21,11 +21,14 @@ inline std::string build_global_usage(const CommandSpecRegistry &registry) {
     if (spec) max_name_len = std::max(max_name_len, name.size());
   }
 
-  std::string usage = "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n\n"
-                      "Lahuta runs structural analysis, such as contacts computations, at scale.\n\n"
-                      "Available subcommands:\n";
+  std::string usage = "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n"
+                      "Author: ";
+  usage.append(Author);
+  usage.append("\n\n"
+               "Lahuta runs structural analysis, such as contacts computations, at scale.\n\n"
+               "Available subcommands:\n");
 
-  const std::size_t name_pad = max_name_len + 1;
+  const std::size_t name_pad = max_name_len + 2;
   for (const auto &[name, spec] : registry) {
     if (!spec) continue;
 
@@ -34,7 +37,6 @@ inline std::string build_global_usage(const CommandSpecRegistry &registry) {
     if (name_pad > name.size()) {
       usage.append(name_pad - name.size(), ' ');
     }
-    usage.append("[options]     ");
     usage.append(spec->summary());
     usage.push_back('\n');
   }
@@ -61,20 +63,23 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
       ++i;
       continue;
     }
-    if (arg == "--progress-ms") {
+    if (arg == "--progress") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '--progress-ms' expects <ms> (0 disables)");
+        throw std::runtime_error("Option '--progress' expects <ms> (0 disables)");
       }
       ++i;
       continue;
     }
-    if (arg.rfind("--progress-ms=", 0) == 0) {
+    if (arg.rfind("--progress=", 0) == 0) {
       continue;
     }
     if (arg == "--progress-no-color") {
       continue;
     }
     if (arg == "-h" || arg == "--help") {
+      continue;
+    }
+    if (arg == "--version") {
       continue;
     }
     first_non_global = i;
@@ -92,16 +97,16 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
       ++i;
       continue;
     }
-    if (arg == "--progress-ms") {
+    if (arg == "--progress") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '--progress-ms' expects <ms> (0 disables)");
+        throw std::runtime_error("Option '--progress' expects <ms> (0 disables)");
       }
       split.global_args.push_back(argv[i]);
       split.global_args.push_back(argv[i + 1]);
       ++i;
       continue;
     }
-    if (arg.rfind("--progress-ms=", 0) == 0) {
+    if (arg.rfind("--progress=", 0) == 0) {
       split.global_args.push_back(argv[i]);
       continue;
     }
@@ -110,6 +115,12 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
       continue;
     }
     if (arg == "-h" || arg == "--help") {
+      if (i < first_non_global) {
+        split.global_args.push_back(argv[i]);
+        continue;
+      }
+    }
+    if (arg == "--version") {
       if (i < first_non_global) {
         split.global_args.push_back(argv[i]);
         continue;

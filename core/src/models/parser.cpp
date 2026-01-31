@@ -2,14 +2,35 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <stdexcept>
 #include <string_view>
+#include <vector>
+
+#include <gemmi/model.hpp>
+#include <gemmi/resinfo.hpp>
 
 #include "models/fast_lookup.hpp"
 #include "models/parser.hpp"
+#include "models/tables.hpp"
 #include "simde/x86/avx2.h"
 
-// clang-format off
 namespace lahuta {
+
+namespace {
+
+char require_standard_amino_acid(const gemmi::Residue &res) {
+  auto info = gemmi::find_tabulated_residue(res.name);
+  if (!info.found() || !info.is_amino_acid()) {
+    throw std::runtime_error("Non-amino acid residue '" + res.name + "' is not supported in model parsing");
+  }
+  if (!info.is_standard() || info.one_letter_code == ' ') {
+    throw std::runtime_error("Non-standard amino acid residue '" + res.name +
+                             "' is not supported in model parsing");
+  }
+  return info.one_letter_code;
+}
+
+} // namespace
 
 //
 // Returns the offset where the required_count-th '#' appears,
@@ -17,20 +38,20 @@ namespace lahuta {
 // It is not that efficient (e.g., '#' always appear at the start of the line). Nevertheless,
 // this is already too deep in the microbenchmark region to be worth spending more time on.
 //
-inline size_t skip_hashes_avx2(const char* data, size_t size, int required_count) {
+inline size_t skip_hashes_avx2(const char *data, size_t size, int required_count) {
 
   const size_t simd_width = 32;
-  size_t offset = 0;
-  int hash_count = 0;
+  size_t offset           = 0;
+  int hash_count          = 0;
 
   // Create a 32-byte vector filled with '#' (0x23).
   simde__m256i hashVec = simde_mm256_set1_epi8('#');
 
   while ((offset + simd_width) <= size) {
-    simde__m256i chunk = simde_mm256_loadu_si256(reinterpret_cast<const simde__m256i*>(data + offset));
+    simde__m256i chunk = simde_mm256_loadu_si256(reinterpret_cast<const simde__m256i *>(data + offset));
 
     simde__m256i cmp = simde_mm256_cmpeq_epi8(chunk, hashVec);
-    uint32_t mask = static_cast<uint32_t>(simde_mm256_movemask_epi8(cmp));
+    uint32_t mask    = static_cast<uint32_t>(simde_mm256_movemask_epi8(cmp));
 
     if (mask == 0) {
       offset += simd_width;
@@ -65,27 +86,29 @@ inline size_t skip_hashes_avx2(const char* data, size_t size, int required_count
   return size;
 }
 
-inline bool is_space_char(char c) {
-  return c == ' ' || c == '\t' || c == '\r';
-}
+inline bool is_space_char(char c) { return c == ' ' || c == '\t' || c == '\r'; }
 
-template<std::size_t N>
-inline std::size_t tokenize_cif_line(const char* begin, const char* end, std::array<std::string_view, N>& tokens) {
+template <std::size_t N>
+inline std::size_t tokenize_cif_line(const char *begin, const char *end,
+                                     std::array<std::string_view, N> &tokens) {
   std::size_t count = 0;
-  const char* p = begin;
+  const char *p     = begin;
   while (p < end && count < N) {
-    while (p < end && is_space_char(*p)) ++p;
+    while (p < end && is_space_char(*p))
+      ++p;
     if (p >= end) break;
     if (*p == '#') break;
-    const char* token_start = p;
+    const char *token_start = p;
     if (*p == '\'' || *p == '"') {
       const char quote = *p++;
-      token_start = p;
-      while (p < end && *p != quote) ++p;
+      token_start      = p;
+      while (p < end && *p != quote)
+        ++p;
       tokens[count++] = std::string_view(token_start, static_cast<std::size_t>(p - token_start));
       if (p < end) ++p;
     } else {
-      while (p < end && !is_space_char(*p) && *p != '\n') ++p;
+      while (p < end && !is_space_char(*p) && *p != '\n')
+        ++p;
       tokens[count++] = std::string_view(token_start, static_cast<std::size_t>(p - token_start));
     }
   }
@@ -95,7 +118,7 @@ inline std::size_t tokenize_cif_line(const char* begin, const char* end, std::ar
 inline int parse_int_sv(std::string_view sv) {
   if (sv.empty()) return 0;
   if (sv[0] == '?' || sv[0] == '.') return 0;
-  bool negative = false;
+  bool negative   = false;
   std::size_t idx = 0;
   if (sv[idx] == '-') {
     negative = true;
@@ -110,10 +133,11 @@ inline int parse_int_sv(std::string_view sv) {
   return negative ? -value : value;
 }
 
-inline void assign_dssp_range(std::vector<DSSPAssignment>& assignments, int start_seq_id, int end_seq_id, DSSPAssignment type) {
+inline void assign_dssp_range(std::vector<DSSPAssignment> &assignments, int start_seq_id, int end_seq_id,
+                              DSSPAssignment type) {
   if (assignments.empty() || start_seq_id <= 0 || end_seq_id < start_seq_id) return;
   const std::size_t seq_len = assignments.size();
-  std::size_t start = static_cast<std::size_t>(start_seq_id - 1);
+  std::size_t start         = static_cast<std::size_t>(start_seq_id - 1);
   if (start >= seq_len) return;
   std::size_t end = static_cast<std::size_t>(end_seq_id - 1);
   if (end >= seq_len) {
@@ -138,27 +162,33 @@ inline DSSPAssignment classify_struct_conf_type(std::string_view type) {
   return DSSPAssignment::Coil;
 }
 
-inline const char* find_loop_data_start(const char* data, size_t size, const char* first_marker, const char* last_marker) {
-  const char* start = std::strstr(data, first_marker);
+inline const char *find_loop_data_start(const char *data, size_t size, const char *first_marker,
+                                        const char *last_marker) {
+  const char *start = std::strstr(data, first_marker);
   if (!start) return nullptr;
-  const char* last = std::strstr(start, last_marker);
+  const char *last = std::strstr(start, last_marker);
   if (!last) return nullptr;
-  const char* end = data + size;
-  const char* newline = static_cast<const char*>(std::memchr(last, '\n', end - last));
+  const char *end     = data + size;
+  const char *newline = static_cast<const char *>(std::memchr(last, '\n', end - last));
   if (!newline) return nullptr;
   ++newline;
   if (newline >= end) return nullptr;
   return newline;
 }
 
-inline void parse_struct_conf_entries(const char* data, size_t size, std::vector<DSSPAssignment>& assignments) {
+inline void parse_struct_conf_entries(const char *data, size_t size,
+                                      std::vector<DSSPAssignment> &assignments) {
   if (assignments.empty()) return;
-  const char* end = data + size;
-  const char* line = find_loop_data_start(data, size, "_struct_conf.beg_auth_asym_id", "_struct_conf.pdbx_end_PDB_ins_code");
+  const char *end  = data + size;
+  const char *line = find_loop_data_start(data,
+                                          size,
+                                          "_struct_conf.beg_auth_asym_id",
+                                          "_struct_conf.pdbx_end_PDB_ins_code");
   if (!line) return;
   while (line < end) {
-    const char* trimmed = line;
-    while (trimmed < end && is_space_char(*trimmed)) ++trimmed;
+    const char *trimmed = line;
+    while (trimmed < end && is_space_char(*trimmed))
+      ++trimmed;
     if (trimmed >= end) break;
     if (*trimmed == '#') break;
     if (*trimmed == '\n') {
@@ -166,7 +196,7 @@ inline void parse_struct_conf_entries(const char* data, size_t size, std::vector
       continue;
     }
     if ((end - trimmed) >= 5 && std::memcmp(trimmed, "loop_", 5) == 0) break;
-    const char* line_end = static_cast<const char*>(std::memchr(trimmed, '\n', end - trimmed));
+    const char *line_end = static_cast<const char *>(std::memchr(trimmed, '\n', end - trimmed));
     if (!line_end) line_end = end;
     std::array<std::string_view, 20> tokens;
     const std::size_t count = tokenize_cif_line(trimmed, line_end, tokens);
@@ -183,16 +213,19 @@ inline void parse_struct_conf_entries(const char* data, size_t size, std::vector
   }
 }
 
-inline void parse_struct_sheet_range_entries(const char* data, size_t size, std::vector<DSSPAssignment>& assignments) {
+inline void parse_struct_sheet_range_entries(const char *data, size_t size,
+                                             std::vector<DSSPAssignment> &assignments) {
   if (assignments.empty()) return;
-  const char* end = data + size;
-  const char* line = find_loop_data_start(data, size,
+  const char *end  = data + size;
+  const char *line = find_loop_data_start(data,
+                                          size,
                                           "_struct_sheet_range.sheet_id",
                                           "_struct_sheet_range.end_auth_seq_id");
   if (!line) return;
   while (line < end) {
-    const char* trimmed = line;
-    while (trimmed < end && is_space_char(*trimmed)) ++trimmed;
+    const char *trimmed = line;
+    while (trimmed < end && is_space_char(*trimmed))
+      ++trimmed;
     if (trimmed >= end) break;
     if (*trimmed == '#') break;
     if (*trimmed == '\n') {
@@ -200,7 +233,7 @@ inline void parse_struct_sheet_range_entries(const char* data, size_t size, std:
       continue;
     }
     if ((end - trimmed) >= 5 && std::memcmp(trimmed, "loop_", 5) == 0) break;
-    const char* line_end = static_cast<const char*>(std::memchr(trimmed, '\n', end - trimmed));
+    const char *line_end = static_cast<const char *>(std::memchr(trimmed, '\n', end - trimmed));
     if (!line_end) line_end = end;
     std::array<std::string_view, 20> tokens;
     const std::size_t count = tokenize_cif_line(trimmed, line_end, tokens);
@@ -214,23 +247,22 @@ inline void parse_struct_sheet_range_entries(const char* data, size_t size, std:
   }
 }
 
-
-inline auto extract_marker_value(const char* data, size_t size, const char* marker) {
+inline auto extract_marker_value(const char *data, size_t size, const char *marker) {
   std::string result;
 
-  const char* marker_pos = std::strstr(data, marker);
+  const char *marker_pos = std::strstr(data, marker);
   if (!marker_pos) return result;
 
   // move pointer to after the marker.
-  const char* p = marker_pos + std::strlen(marker);
+  const char *p = marker_pos + std::strlen(marker);
 
-  const char* q = p;
+  const char *q = p;
   while (q < data + size && (*q == ' ' || *q == '\t')) { // first non-space character.
     ++q;
   }
 
   if (q < data + size && *q != '\n') { // value is inline
-    const char* end_line = static_cast<const char*>(std::memchr(q, '\n', (data + size) - q));
+    const char *end_line = static_cast<const char *>(std::memchr(q, '\n', (data + size) - q));
     if (!end_line) {
       end_line = data + size;
     }
@@ -238,7 +270,7 @@ inline auto extract_marker_value(const char* data, size_t size, const char* mark
     return std::string(q, length);
   }
 
-  const char* newline = static_cast<const char*>(std::memchr(p, '\n', (data + size) - p));
+  const char *newline = static_cast<const char *>(std::memchr(p, '\n', (data + size) - p));
   if (!newline) return result;
 
   p = newline + 1;
@@ -250,7 +282,7 @@ inline auto extract_marker_value(const char* data, size_t size, const char* mark
   // ';' enclosed multi-line value.
   result.reserve(345);
   while (p < data + size) {
-    const char* line_end = static_cast<const char*>(std::memchr(p, '\n', (data + size) - p));
+    const char *line_end = static_cast<const char *>(std::memchr(p, '\n', (data + size) - p));
     if (!line_end) {
       result.append(p, (data + size) - p);
       break;
@@ -277,9 +309,9 @@ inline std::string strip_cif_quotes(std::string value) {
   return value;
 }
 
-inline double parse_fixed_float(const char* start) {
+inline double parse_fixed_float(const char *start) {
   bool negative = false;
-  const char* p = start;
+  const char *p = start;
   if (*p == '-') {
     negative = true;
     ++p;
@@ -293,7 +325,7 @@ inline double parse_fixed_float(const char* start) {
     ++p;
     double factor = 0.1;
     while (*p >= '0' && *p <= '9') {
-      value += static_cast<double>(*p - '0') * factor;
+      value  += static_cast<double>(*p - '0') * factor;
       factor *= 0.1;
       ++p;
     }
@@ -304,12 +336,12 @@ inline double parse_fixed_float(const char* start) {
 ModelParserResult parse_model(const char *data, size_t size) {
   ModelParserResult output;
   const char *const end = data + size;
-  const char *p = data;
+  const char *p         = data;
 
   // difficult to benchmark
   // 34 is much more precise, but is inconsistent and some files fail.
   // p = data + skip_hashes_avx2(data, size, 1);
-  output.sequence = extract_marker_value(data, size, "_struct_ref.pdbx_seq_one_letter_code");
+  output.sequence                  = extract_marker_value(data, size, "_struct_ref.pdbx_seq_one_letter_code");
   output.metadata.ncbi_taxonomy_id = strip_cif_quotes(
       extract_marker_value(data, size, "_ma_target_ref_db_details.ncbi_taxonomy_id"));
   output.metadata.organism_scientific = strip_cif_quotes(
@@ -326,49 +358,56 @@ ModelParserResult parse_model(const char *data, size_t size) {
   if (p + 4 >= end) return output;
 
   // we need to detect column positions from first ATOM line
-  const char* first_atom = p;
+  const char *first_atom = p;
 
   // find the '?' character which precedes the coordinates
-  const char* q_mark = static_cast<const char*>(std::memchr(first_atom, '?', end - first_atom));
+  const char *q_mark = static_cast<const char *>(std::memchr(first_atom, '?', end - first_atom));
   if (!q_mark) return {};
 
   // skip '?' and any spaces after it
-  const char* coord_start = q_mark + 1;
-  while (coord_start < end && *coord_start == ' ') coord_start++;
+  const char *coord_start = q_mark + 1;
+  while (coord_start < end && *coord_start == ' ')
+    coord_start++;
 
   // find x, y, and z column offsets
   int x_offset = coord_start - first_atom;
 
   // find y
-  const char* y_pos = coord_start;
-  while (y_pos < end && ((*y_pos >= '0' && *y_pos <= '9') || *y_pos == '-' || *y_pos == '.')) y_pos++; // xkip x value (digits, minus sign, period)
-  while (y_pos < end && *y_pos == ' ') y_pos++; // skip whitespace to get to y start
+  const char *y_pos = coord_start;
+  while (y_pos < end && ((*y_pos >= '0' && *y_pos <= '9') || *y_pos == '-' || *y_pos == '.'))
+    y_pos++; // xkip x value (digits, minus sign, period)
+  while (y_pos < end && *y_pos == ' ')
+    y_pos++; // skip whitespace to get to y start
   int y_offset = y_pos - first_atom;
 
   // find z
-  const char* z_pos = y_pos;
-  while (z_pos < end && ((*z_pos >= '0' && *z_pos <= '9') || *z_pos == '-' || *z_pos == '.')) z_pos++;
-  while (z_pos < end && *z_pos == ' ') z_pos++;
+  const char *z_pos = y_pos;
+  while (z_pos < end && ((*z_pos >= '0' && *z_pos <= '9') || *z_pos == '-' || *z_pos == '.'))
+    z_pos++;
+  while (z_pos < end && *z_pos == ' ')
+    z_pos++;
   int z_offset = z_pos - first_atom;
 
   // pLDDT
-  const char* plddt_pos = z_pos;
+  const char *plddt_pos = z_pos;
   for (int i = 0; i < 2; ++i) {
-      while (plddt_pos < end && *plddt_pos != ' ') ++plddt_pos;
-      while (plddt_pos < end && *plddt_pos == ' ') ++plddt_pos;
+    while (plddt_pos < end && *plddt_pos != ' ')
+      ++plddt_pos;
+    while (plddt_pos < end && *plddt_pos == ' ')
+      ++plddt_pos;
   }
   ptrdiff_t plddt_offset = plddt_pos - first_atom;
 
   // find the end of first line to determine line length
-  const char* line_end = static_cast<const char*>(std::memchr(first_atom, '\n', end - first_atom));
+  const char *line_end = static_cast<const char *>(std::memchr(first_atom, '\n', end - first_atom));
   if (!line_end) line_end = end;
 
   size_t line_length = line_end - first_atom + 1; // +1 to include newline
   if (plddt_pos >= line_end) plddt_offset = -1;
 
   // count ATOM records to reserve space for coordinates
-  size_t atom_count = 0;
-  const char* counter = first_atom;
+  size_t atom_count   = 0;
+  const char *counter = first_atom;
 
   for (const auto &c : output.sequence) {
     atom_count += StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(c)];
@@ -377,31 +416,32 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
   output.coords.reserve(atom_count);
   output.plddt_per_residue.assign(output.sequence.size(), pLDDTCategory::VeryLow);
-  output.dssp_per_residue .assign(output.sequence.size(), DSSPAssignment::Coil);
+  output.dssp_per_residue.assign(output.sequence.size(), DSSPAssignment::Coil);
   parse_struct_conf_entries(data, size, output.dssp_per_residue);
   parse_struct_sheet_range_entries(data, size, output.dssp_per_residue);
 
-  size_t residue_index = 0;
+  size_t residue_index    = 0;
   size_t atoms_in_residue = 0;
   if (!output.sequence.empty()) {
     atoms_in_residue = StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(output.sequence[0])];
     if (atoms_in_residue == 0) atoms_in_residue = 1;
   }
   size_t atoms_seen_in_residue = 0;
-  bool recorded_plddt = false;
+  bool recorded_plddt          = false;
 
   // 1. all atom recods are the same length
   // 2. atom records are consecutive
   // 3. positions have consistent offsets within the file
   const char *atom_ptr = first_atom;
   for (size_t i = 0; i < atom_count; i++) {
-    if (atom_ptr + 4 >= end || atom_ptr[0] != 'A' || atom_ptr[1] != 'T' || atom_ptr[2] != 'O' || atom_ptr[3] != 'M') {
+    if (atom_ptr + 4 >= end || atom_ptr[0] != 'A' || atom_ptr[1] != 'T' || atom_ptr[2] != 'O' ||
+        atom_ptr[3] != 'M') {
       break;
     }
 
     // x position
-    double x = 0.0;
-    bool x_negative = false;
+    double x            = 0.0;
+    bool x_negative     = false;
     const char *x_start = atom_ptr + x_offset;
 
     // check sign
@@ -422,15 +462,15 @@ ModelParserResult parse_model(const char *data, size_t size) {
     // parse decimal part
     double fraction = 0.1;
     while (*x_start >= '0' && *x_start <= '9') {
-      x += (*x_start - '0') * fraction;
+      x        += (*x_start - '0') * fraction;
       fraction *= 0.1;
       x_start++;
     }
     if (x_negative) x = -x;
 
     // y position
-    double y = 0.0;
-    bool y_negative = false;
+    double y            = 0.0;
+    bool y_negative     = false;
     const char *y_start = atom_ptr + y_offset;
 
     if (*y_start == '-') {
@@ -447,7 +487,7 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
     fraction = 0.1;
     while (*y_start >= '0' && *y_start <= '9') {
-      y += (*y_start - '0') * fraction;
+      y        += (*y_start - '0') * fraction;
       fraction *= 0.1;
       y_start++;
     }
@@ -455,8 +495,8 @@ ModelParserResult parse_model(const char *data, size_t size) {
     if (y_negative) y = -y;
 
     // z position
-    double z = 0.0;
-    bool z_negative = false;
+    double z            = 0.0;
+    bool z_negative     = false;
     const char *z_start = atom_ptr + z_offset;
 
     if (*z_start == '-') {
@@ -473,7 +513,7 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
     fraction = 0.1;
     while (*z_start >= '0' && *z_start <= '9') {
-      z += (*z_start - '0') * fraction;
+      z        += (*z_start - '0') * fraction;
       fraction *= 0.1;
       z_start++;
     }
@@ -485,9 +525,9 @@ ModelParserResult parse_model(const char *data, size_t size) {
     if (!recorded_plddt && plddt_offset >= 0 && residue_index < output.plddt_per_residue.size()) {
       const char *b_start = atom_ptr + plddt_offset;
       if (b_start < atom_ptr + line_length) {
-        double plddt_score = parse_fixed_float(b_start);
+        double plddt_score                      = parse_fixed_float(b_start);
         output.plddt_per_residue[residue_index] = categorize_plddt(plddt_score);
-        recorded_plddt = true;
+        recorded_plddt                          = true;
       }
     }
 
@@ -496,10 +536,10 @@ ModelParserResult parse_model(const char *data, size_t size) {
       if (atoms_seen_in_residue >= atoms_in_residue) {
         residue_index++;
         atoms_seen_in_residue = 0;
-        recorded_plddt = false;
+        recorded_plddt        = false;
         if (residue_index < output.sequence.size()) {
-          atoms_in_residue =
-              StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(output.sequence[residue_index])];
+          atoms_in_residue = StandardAminoAcidAtomSizeTable[static_cast<unsigned char>(
+              output.sequence[residue_index])];
           if (atoms_in_residue == 0) atoms_in_residue = 1;
         } else {
           atoms_in_residue = 0;
@@ -508,6 +548,73 @@ ModelParserResult parse_model(const char *data, size_t size) {
     }
 
     atom_ptr += line_length;
+  }
+
+  return output;
+}
+
+ModelParserResult parse_model(const gemmi::Structure &st) {
+  if (st.models.size() != 1) {
+    throw std::runtime_error("Model parser: expected exactly one model");
+  }
+
+  const auto &model = st.models.front();
+  if (model.chains.size() != 1) {
+    throw std::runtime_error("Model parser: expected exactly one chain");
+  }
+
+  const auto &chain = model.chains.front();
+  if (chain.name != "A") {
+    throw std::runtime_error("Model parser: expected single chain 'A'");
+  }
+
+  const std::size_t residue_count = chain.residues.size();
+  if (residue_count == 0) {
+    throw std::runtime_error("Model parser: chain contains no residues");
+  }
+
+  ModelParserResult output;
+  output.sequence.resize(residue_count);
+  output.plddt_per_residue.assign(residue_count, pLDDTCategory::VeryLow);
+  output.dssp_per_residue.assign(residue_count, DSSPAssignment::Coil);
+  output.coords.reserve(residue_count * 15 + 1);
+
+  size_t expected_atoms = 1; // terminal OXT
+
+  for (std::size_t res_idx = 0; res_idx < residue_count; ++res_idx) {
+    const auto &res = chain.residues[res_idx];
+    const char aa   = require_standard_amino_acid(res);
+
+    output.sequence[res_idx] = aa;
+
+    const auto &entry  = StandardAminoAcidDataTable[aa];
+    expected_atoms    += entry.size;
+
+    const std::size_t atom_count         = res.atoms.size();
+    const bool is_last_residue           = (res_idx + 1 == residue_count);
+    const std::size_t expected_res_atoms = entry.size + (is_last_residue ? 1 : 0);
+    if (atom_count != expected_res_atoms) {
+      throw std::runtime_error("Model parser: unexpected atom count in residue '" + res.name + "'");
+    }
+
+    const std::size_t atoms_to_copy = is_last_residue ? (atom_count - 1) : atom_count;
+    for (std::size_t atom_idx = 0; atom_idx < atoms_to_copy; ++atom_idx) {
+      const auto &atom = res.atoms[atom_idx];
+      output.coords.emplace_back(atom.pos.x, atom.pos.y, atom.pos.z);
+    }
+
+    output.plddt_per_residue[res_idx] = categorize_plddt(res.atoms[1].b_iso); // CA atom
+  }
+
+  const auto &last_res  = chain.residues.back();
+  const auto &last_atom = last_res.atoms.back();
+  if (last_atom.name != "OXT") {
+    throw std::runtime_error("Model parser: missing terminal OXT atom");
+  }
+  output.coords.emplace_back(last_atom.pos.x, last_atom.pos.y, last_atom.pos.z);
+
+  if (output.coords.size() != expected_atoms) {
+    throw std::runtime_error("Model parser: coordinate count mismatch");
   }
 
   return output;

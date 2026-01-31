@@ -21,6 +21,8 @@ namespace A = lahuta::analysis;
 namespace P = lahuta::pipeline;
 namespace {
 
+constexpr std::string_view Summary = "Extract data from AlphaFold2 model files or databases.";
+
 namespace extract_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { Fields = BaseIndex, Output };
@@ -82,18 +84,23 @@ public:
          "",
          "",
          validate::Unknown,
-         "Usage: lahuta extract --fields <fields> [options]\n\n"
-         "Extract data from AlphaFold2 model files or databases.\n"
-         "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not supported.\n\n"
-         "Available reporters (--reporter <name>):\n"
-         "  summary     - Balanced totals and item counts (default; negligible overhead).\n"
-         "  terse       - Single-line throughput summary (fastest logging footprint).\n"
-         "  detail      - Summary plus concurrency and stage breakdown details.\n\n"
-         "Fields (repeat --fields or comma-separate):\n"
-         "  sequence   Extract amino acid sequences.\n"
-         "  plddt      Extract per-residue pLDDT confidence scores.\n"
-         "  dssp       Extract secondary structure assignments (DSSP).\n"
-         "  organism   Extract organism metadata."});
+         std::string("Usage: lahuta extract --fields <fields> [options]\n"
+                     "Author: ")
+             .append(Author)
+             .append("\n\n")
+             .append(Summary)
+             .append("\n"
+                     "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not "
+                     "supported.\n\n"
+                     "Available reporters (--reporter <name>):\n"
+                     "  summary     - Balanced totals and item counts (default; negligible overhead).\n"
+                     "  terse       - Single-line throughput summary (fastest logging footprint).\n"
+                     "  detail      - Summary plus concurrency and stage breakdown details.\n\n"
+                     "Fields (repeat --fields or comma-separate):\n"
+                     "  sequence   Extract amino acid sequences.\n"
+                     "  plddt      Extract per-residue pLDDT confidence scores.\n"
+                     "  dssp       Extract secondary structure assignments (DSSP).\n"
+                     "  organism   Extract organism metadata.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({extract_opts::Fields,
@@ -161,9 +168,7 @@ public:
 
   [[nodiscard]] std::string_view name() const override { return "extract"; }
 
-  [[nodiscard]] std::string_view summary() const override {
-    return "Extract data from AlphaFold2 model files or databases.";
-  }
+  [[nodiscard]] std::string_view summary() const override { return Summary; }
 
   [[nodiscard]] const OptionSchema &schema() const override { return schema_; }
 
