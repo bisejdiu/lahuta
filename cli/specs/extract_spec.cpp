@@ -84,7 +84,10 @@ public:
          "",
          "",
          validate::Unknown,
-         std::string("Usage: lahuta extract --fields <fields> [options]\n\n")
+         std::string("Usage: lahuta extract --fields <fields> [options]\n"
+                     "Author: ")
+             .append(Author)
+             .append("\n\n")
              .append(Summary)
              .append("\n"
                      "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not "

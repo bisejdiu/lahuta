@@ -51,7 +51,10 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta shape-metrics [--output-dir <dir>] [options]\n\n")
+                 std::string("Usage: lahuta shape-metrics [--output-dir <dir>] [options]\n"
+                             "Author: ")
+                     .append(Author)
+                     .append("\n\n")
                      .append(Summary)
                      .append("\n"
                              "Metrics include Rg, asphericity, and kappa^2. Trimming removes\n"

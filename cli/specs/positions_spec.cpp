@@ -46,8 +46,11 @@ public:
          "",
          "",
          validate::Unknown,
-         std::string("Usage: lahuta positions --output <dir> [options]\n\n")
-             .append(Summary)
+        std::string("Usage: lahuta positions --output <dir> [options]\n"
+                    "Author: ")
+            .append(Author)
+            .append("\n\n")
+            .append(Summary)
              .append(
                  "\n"
                  "If you are running this on millions of files, use a --tree-depth of 2 to not hit any OS "

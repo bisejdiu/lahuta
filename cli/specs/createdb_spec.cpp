@@ -63,8 +63,15 @@ public:
     runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 1000;
 
-    schema_.add(
-        {0, "", "", validate::Unknown, std::string("Usage: lahuta createdb [options]\n\n").append(Summary)});
+    schema_.add({0,
+                 "",
+                 "",
+                 validate::Unknown,
+                 std::string("Usage: lahuta createdb [options]\n"
+                             "Author: ")
+                     .append(Author)
+                     .append("\n\n")
+                     .append(Summary)});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);

@@ -63,8 +63,11 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n\n")
-                     .append(Summary)
+                std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n"
+                            "Author: ")
+                    .append(Author)
+                    .append("\n\n")
+                    .append(Summary)
                      .append("\n"
                              "Outputs: per_protein_sasa_sr.jsonl (NDJSON) in the output directory.\n"
                              "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"

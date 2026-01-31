@@ -54,7 +54,10 @@ public:
          "",
          "",
          validate::Unknown,
-         std::string("Usage: lahuta quality-metrics [options]\n\n")
+         std::string("Usage: lahuta quality-metrics [options]\n"
+                     "Author: ")
+             .append(Author)
+             .append("\n\n")
              .append(Summary)
              .append("\n"
                      "Computes per-protein fractions for user-defined pLDDT and DSSP groups, plus\n"

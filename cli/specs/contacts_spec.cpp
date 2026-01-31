@@ -117,7 +117,9 @@ public:
                  "",
                  validate::Unknown,
                  std::string("Usage: lahuta contacts [options]\n"
-                             "Author: Besian I. Sejdiu (@bisejdiu)\n\n")
+                             "Author: ")
+                     .append(Author)
+                     .append("\n\n")
                      .append(Summary)
                      .append("\n\n"
                              "<<< Detailed help will be added soon. >>>\n\n"

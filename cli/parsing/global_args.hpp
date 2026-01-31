@@ -21,9 +21,12 @@ inline std::string build_global_usage(const CommandSpecRegistry &registry) {
     if (spec) max_name_len = std::max(max_name_len, name.size());
   }
 
-  std::string usage = "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n\n"
-                      "Lahuta runs structural analysis, such as contacts computations, at scale.\n\n"
-                      "Available subcommands:\n";
+  std::string usage = "Usage: lahuta [global-options] <subcommand> [subcommand-options]\n"
+                      "Author: ";
+  usage.append(Author);
+  usage.append("\n\n"
+               "Lahuta runs structural analysis, such as contacts computations, at scale.\n\n"
+               "Available subcommands:\n");
 
   const std::size_t name_pad = max_name_len + 2;
   for (const auto &[name, spec] : registry) {

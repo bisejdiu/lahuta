@@ -51,8 +51,11 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta compaction-rg [--output-dir <dir>] [options]\n\n")
-                     .append(Summary)
+                std::string("Usage: lahuta compaction-rg [--output-dir <dir>] [options]\n"
+                            "Author: ")
+                    .append(Author)
+                    .append("\n\n")
+                    .append(Summary)
                      .append("\n"
                              "Trimming removes N/C termini that are both low-confidence (pLDDT) and\n"
                              "unstructured (DSSP coil/turn/bend).\n\n"

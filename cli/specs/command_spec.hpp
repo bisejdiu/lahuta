@@ -12,12 +12,15 @@
 
 namespace lahuta::cli {
 
+constexpr std::string_view Author = "Besian I. Sejdiu (@bisejdiu)";
+
 class CommandSpec {
 public:
   virtual ~CommandSpec() = default;
 
-  [[nodiscard]] virtual std::string_view name() const      = 0;
-  [[nodiscard]] virtual std::string_view summary() const   = 0;
+  [[nodiscard]] virtual std::string_view name() const    = 0;
+  [[nodiscard]] virtual std::string_view summary() const = 0;
+  [[nodiscard]] virtual std::string_view author() const { return Author; }
   [[nodiscard]] virtual const OptionSchema &schema() const = 0;
 
   [[nodiscard]] virtual std::any parse_config(const ParsedArgs &args) const   = 0;
