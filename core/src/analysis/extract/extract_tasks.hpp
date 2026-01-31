@@ -34,14 +34,15 @@ inline char dssp_to_char(DSSPAssignment dssp) noexcept {
     case DSSPAssignment::Helix3_10:        return 'G';
     case DSSPAssignment::HelixPi:          return 'I';
     case DSSPAssignment::PolyProlineHelix: return 'P';
+    case DSSPAssignment::BetaBridge:       return 'B';
     case DSSPAssignment::Strand:           return 'E';
     case DSSPAssignment::Turn:             return 'T';
     case DSSPAssignment::Bend:             return 'S';
   }
   return '?';
 }
-
 // clang-format on
+
 inline constexpr const char *CTX_PARSED_MODEL_KEY = "lahuta.parsed_model";
 
 inline std::shared_ptr<const ModelParserResult> get_cached_model_parser_result(const P::TaskContext &ctx) {

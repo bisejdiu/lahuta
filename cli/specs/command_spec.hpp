@@ -37,6 +37,7 @@ using CommandSpecRegistry = std::map<std::string, const CommandSpec *>;
 [[nodiscard]] const CommandSpec &get_positions_spec() noexcept;
 [[nodiscard]] const CommandSpec &get_quality_metrics_spec() noexcept;
 [[nodiscard]] const CommandSpec &get_sasa_sr_spec() noexcept;
+[[nodiscard]] const CommandSpec &get_dssp_spec() noexcept;
 
 [[nodiscard]] inline const CommandSpecRegistry &get_command_specs() noexcept {
   static const CommandSpecRegistry registry = []() {
@@ -55,6 +56,8 @@ using CommandSpecRegistry = std::map<std::string, const CommandSpec *>;
     map.emplace(std::string(quality_metrics.name()), &quality_metrics);
     const auto &sasa_sr = get_sasa_sr_spec();
     map.emplace(std::string(sasa_sr.name()), &sasa_sr);
+    const auto &dssp = get_dssp_spec();
+    map.emplace(std::string(dssp.name()), &dssp);
     const auto &contacts = get_contacts_spec();
     map.emplace(std::string(contacts.name()), &contacts);
     return map;
