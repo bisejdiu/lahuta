@@ -6,6 +6,8 @@
 #include <string>
 
 #include <gemmi/gz.hpp>
+#include <gemmi/mmread.hpp>
+#include <gemmi/pdb.hpp>
 #include <mmap/MemoryMapped.h>
 
 #include "analysis/system/records.hpp"
@@ -16,6 +18,12 @@ namespace lahuta::analysis {
 
 inline ModelParserResult load_model_parser_result(const std::string &path) {
   gemmi::MaybeGzipped input(path);
+  const auto format = gemmi::coor_format_from_ext(input.basepath());
+  if (format == gemmi::CoorFormat::Pdb) {
+    auto st = gemmi::read_pdb(input);
+    return parse_model(st);
+  }
+
   if (input.is_compressed()) {
     gemmi::CharArray buffer = input.uncompress_into_buffer();
     return parse_model(buffer.data(), buffer.size());
