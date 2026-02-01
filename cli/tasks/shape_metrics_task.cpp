@@ -61,7 +61,7 @@ public:
     counters_->bump_processed();
 
     if (!plddts) {
-      Logger::get_logger()->warn("[shape-metrics] Missing pLDDT data for '{}'", item_path);
+      Logger::get_logger()->warn("[shape-metrics:input] Missing pLDDT data for '{}'", item_path);
       return {};
     }
 
@@ -167,7 +167,7 @@ public:
       const double trimmed_rg_unweighted = A::radius_of_gyration(trimmed_coords);
       trimmed_rg_norm = A::normalized_rg(trimmed_rg_unweighted, trim_result.trimmed_length());
     } catch (const std::exception &e) {
-      Logger::get_logger()->warn("[shape-metrics] Failed to compute shape metrics for '{}': {}",
+      Logger::get_logger()->warn("[shape-metrics:compute] Failed to compute shape metrics for '{}': {}",
                                  item_path,
                                  e.what());
       return {};

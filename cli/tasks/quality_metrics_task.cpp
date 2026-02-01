@@ -170,11 +170,11 @@ public:
     }
 
     if (!config_->plddt_groups.empty() && plddt_span.empty()) {
-      Logger::get_logger()->warn("[quality-metrics] Missing pLDDT data for '{}'", item_path);
+      Logger::get_logger()->warn("[quality-metrics:input] Missing pLDDT data for '{}'", item_path);
       return {};
     }
     if (!config_->dssp_groups.empty() && dssp_span.empty()) {
-      Logger::get_logger()->warn("[quality-metrics] Missing DSSP data for '{}'", item_path);
+      Logger::get_logger()->warn("[quality-metrics:input] Missing DSSP data for '{}'", item_path);
       return {};
     }
 
@@ -185,7 +185,7 @@ public:
       length = dssp_span.size();
 
     if (!plddt_span.empty() && !dssp_span.empty() && plddt_span.size() != dssp_span.size()) {
-      Logger::get_logger()->warn("[quality-metrics] Length mismatch for '{}': pLDDT={} DSSP={}",
+      Logger::get_logger()->warn("[quality-metrics:input] Length mismatch for '{}': pLDDT={} DSSP={}",
                                  item_path,
                                  plddt_span.size(),
                                  dssp_span.size());
@@ -193,7 +193,7 @@ public:
     }
 
     if (length == 0) {
-      Logger::get_logger()->warn("[quality-metrics] Empty model payload for '{}'", item_path);
+      Logger::get_logger()->warn("[quality-metrics:input] Empty model payload for '{}'", item_path);
       return {};
     }
 

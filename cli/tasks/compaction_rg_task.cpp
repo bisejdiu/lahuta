@@ -58,7 +58,7 @@ public:
     }
 
     if (!plddts) {
-      Logger::get_logger()->warn("[compaction-rg] Missing pLDDT data for '{}'", item_path);
+      Logger::get_logger()->warn("[compaction-rg:input] Missing pLDDT data for '{}'", item_path);
       return {};
     }
 
