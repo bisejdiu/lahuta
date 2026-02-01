@@ -75,7 +75,7 @@ public:
                  validate::Required,
                  "  --output-dir, -o <dir>       \tOutput directory for DSSP JSONL (default: .)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nDSSP Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({dssp_opts::NoPreferPi,
                  "",
                  "no-prefer-pi",
@@ -87,6 +87,7 @@ public:
                  validate::Required,
                  "  --pp-stretch-length <n>      \tPPII helix stretch length (2 or 3, default: 2)."});
 
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});

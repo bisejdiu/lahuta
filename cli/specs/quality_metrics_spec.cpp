@@ -84,7 +84,54 @@ public:
                      "    --dssp-group strand=Strand \\\n"
                      "    --output metrics.jsonl")});
 
-    schema_.add({0, "", "", option::Arg::None, "\nMetric Group Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
+    schema_.add({shared_opts::SourceDatabase,
+                 "",
+                 "database",
+                 validate::Required,
+                 "  --database <path>            \tProcess structures from database."});
+    schema_.add({shared_opts::SourceDirectory,
+                 "d",
+                 "directory",
+                 validate::Required,
+                 "  --directory, -d <path>       \tProcess all files in directory."});
+    schema_.add({shared_opts::SourceVector,
+                 "f",
+                 "files",
+                 validate::Required,
+                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
+    schema_.add({shared_opts::SourceFileList,
+                 "l",
+                 "file-list",
+                 validate::Required,
+                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
+    schema_.add({shared_opts::SourceExtension,
+                 "e",
+                 "extension",
+                 validate::Required,
+                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
+                 "comma-separate values (default: .cif, .cif.gz, .pdb, .pdb.gz)."});
+    schema_.add({shared_opts::SourceRecursive,
+                 "r",
+                 "recursive",
+                 option::Arg::None,
+                 "  --recursive, -r              \tRecursively search subdirectories."});
+    schema_.add({shared_opts::SourceIsAf2Model,
+                 "",
+                 "is_af2_model",
+                 option::Arg::None,
+                 "  --is_af2_model               \tRequired for file-based sources; inputs are AlphaFold2 "
+                 "models (AF2-like mmCIF)."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
+    schema_.add({quality_metrics_opts::Output,
+                 "o",
+                 "output",
+                 validate::Required,
+                 "  --output, -o <path>          \tWrite NDJSON to file (default: "
+                 "per_protein_metrics.jsonl). Use '-' for stdout."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({quality_metrics_opts::PlddtGroup,
                  "",
                  "plddt-group",
@@ -112,56 +159,7 @@ public:
                  option::Arg::None,
                  "  --no-overlap                 \tDisable pLDDT x DSSP overlap metrics."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
-    schema_.add({shared_opts::SourceDatabase,
-                 "",
-                 "database",
-                 validate::Required,
-                 "  --database <path>            \tProcess structures from database."});
-    schema_.add({shared_opts::SourceDirectory,
-                 "d",
-                 "directory",
-                 validate::Required,
-                 "  --directory, -d <path>       \tProcess all files in directory."});
-    schema_.add({shared_opts::SourceVector,
-                 "f",
-                 "files",
-                 validate::Required,
-                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
-    schema_.add({shared_opts::SourceFileList,
-                 "l",
-                 "file-list",
-                 validate::Required,
-                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
-    schema_.add({shared_opts::SourceExtension,
-                 "e",
-                 "extension",
-                 validate::Required,
-                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
-                 "comma-separate values (default: .cif, .cif.gz, .pdb, .pdb.gz)."});
-    schema_.add({shared_opts::SourceRecursive,
-                 "r",
-                 "recursive",
-                 option::Arg::None,
-                 "  --recursive, -r              \tRecursively search subdirectories."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nModel Options:"});
-    schema_.add({shared_opts::SourceIsAf2Model,
-                 "",
-                 "is_af2_model",
-                 option::Arg::None,
-                 "  --is_af2_model               \tRequired for file-based sources; inputs are AlphaFold2 "
-                 "models (AF2-like mmCIF)."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({quality_metrics_opts::Output,
-                 "o",
-                 "output",
-                 validate::Required,
-                 "  --output, -o <path>          \tWrite NDJSON to file (default: "
-                 "per_protein_metrics.jsonl). Use '-' for stdout."});
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});

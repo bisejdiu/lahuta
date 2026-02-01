@@ -145,20 +145,6 @@ public:
                  "  --md <path>                  \tMD input file. Specify once for structure (PDB/GRO) and "
                  "once or more for trajectories (XTC)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
-    schema_.add({contacts_opts::Provider,
-                 "p",
-                 "provider",
-                 contacts_validate::Provider,
-                 "  --provider, -p <provider>    \tContact provider: 'molstar', 'arpeggio', or 'getcontacts' "
-                 "(default: molstar)."});
-    schema_.add({contacts_opts::InteractionType,
-                 "i",
-                 "interaction",
-                 contacts_validate::ContactType,
-                 "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', "
-                 "etc. Repeat or comma-separate to combine.\n"});
-
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
     schema_.add({contacts_opts::OutputJson,
                  "",
@@ -175,6 +161,22 @@ public:
                  "log",
                  option::Arg::None,
                  "  --log                        \tOutput results to standard output (logging)."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
+    schema_.add({contacts_opts::Provider,
+                 "p",
+                 "provider",
+                 contacts_validate::Provider,
+                 "  --provider, -p <provider>    \tContact provider: 'molstar', 'arpeggio', or 'getcontacts' "
+                 "(default: molstar)."});
+    schema_.add({contacts_opts::InteractionType,
+                 "i",
+                 "interaction",
+                 contacts_validate::ContactType,
+                 "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', "
+                 "etc. Repeat or comma-separate to combine.\n"});
+
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});

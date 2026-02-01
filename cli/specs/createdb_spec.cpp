@@ -77,7 +77,7 @@ public:
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);
 
-    schema_.add({0, "", "", option::Arg::None, "\nDatabase Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
     schema_.add({createdb_opts::OutputPath,
                  "o",
                  "output",
@@ -90,11 +90,11 @@ public:
                  validate::Required,
                  "  --max-size, -m <size>        \tMaximum database size in GB (default: 500)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nPerformance Options:"});
-    add_runtime_options(schema_, runtime_spec_);
-
     schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
+
+    schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
+    add_runtime_options(schema_, runtime_spec_);
 
     schema_.add({0, "", "", option::Arg::None, "\nGlobal Options:"});
     add_global_options(schema_);

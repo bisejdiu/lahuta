@@ -96,7 +96,6 @@ public:
                  validate::Required,
                  "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
     schema_.add({shared_opts::SourceExtension,
                  "e",
                  "extension",
@@ -109,7 +108,6 @@ public:
                  option::Arg::None,
                  "  --recursive, -r              \tRecursively search subdirectories."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nModel Options:"});
     schema_.add({shared_opts::SourceIsAf2Model,
                  "",
                  "is_af2_model",
@@ -129,7 +127,7 @@ public:
                  option::Arg::None,
                  "  --include-total              \tInclude total SASA in JSON output."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nAlgorithm Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({sasa_sr_opts::ProbeRadius,
                  "",
                  "probe-radius",
@@ -151,6 +149,8 @@ public:
                  "no-simd",
                  option::Arg::None,
                  "  --no-simd                    \tDisable SIMD optimizations for bitmask."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
