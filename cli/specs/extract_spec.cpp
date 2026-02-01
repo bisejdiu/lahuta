@@ -153,13 +153,13 @@ public:
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <path>          \tWrite NDJSON to file (default: <field>_data.jsonl). Use "
+                 "  --output, -o <path>          \tWrite JSONL to file (default: <field>_data.jsonl). Use "
                  "'-' for stdout."});
     schema_.add({extract_opts::OutputStdout,
                  "",
                  "stdout",
                  option::Arg::None,
-                 "  --stdout                     \tWrite NDJSON to stdout (same as --output -)."});
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
     schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 

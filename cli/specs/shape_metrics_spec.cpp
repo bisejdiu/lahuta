@@ -58,7 +58,7 @@ public:
                      .append("\n"
                              "Metrics include Rg, asphericity, and kappa^2. Trimming removes\n"
                              "low-confidence coil/turn/bend tails.\n\n"
-                             "Outputs: per_protein_shape_metrics.jsonl (NDJSON) in the output directory.\n"
+                             "Outputs: per_protein_shape_metrics.jsonl (JSONL) in the output directory.\n"
                              "Note: file-based inputs must be AF2 model files (mmCIF).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
@@ -107,7 +107,7 @@ public:
                  "o",
                  "output-dir",
                  validate::Required,
-                 "  --output-dir, -o <dir>       \tOutput directory for NDJSON results (default: .)."});
+                 "  --output-dir, -o <dir>       \tOutput directory for JSONL results (default: .)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({shape_metrics_opts::MinHighFraction,

@@ -68,7 +68,7 @@ public:
                      .append("\n\n")
                      .append(Summary)
                      .append("\n"
-                             "Outputs: per_protein_sasa_sr.jsonl (NDJSON) in the output directory.\n"
+                             "Outputs: per_protein_sasa_sr.jsonl (JSONL) in the output directory.\n"
                              "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"
                              "atom-index-atom_name-residue_id-residue_name-chain_id.\n"
                              "Note: file-based inputs must be AF2 model files (mmCIF).")});

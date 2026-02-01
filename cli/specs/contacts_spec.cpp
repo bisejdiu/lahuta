@@ -151,13 +151,13 @@ public:
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <path>          \tWrite NDJSON to file (default: "
+                 "  --output, -o <path>          \tWrite JSONL to file (default: "
                  "contacts_<timestamp>.jsonl). Use '-' for stdout."});
     schema_.add({contacts_opts::OutputStdout,
                  "",
                  "stdout",
                  option::Arg::None,
-                 "  --stdout                     \tWrite NDJSON to stdout (same as --output -)."});
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({contacts_opts::Provider,

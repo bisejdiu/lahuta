@@ -62,7 +62,7 @@ public:
                      .append("\n\n")
                      .append(Summary)
                      .append("\n"
-                             "Outputs: per_residue_dssp.jsonl (NDJSON) in the output directory.\n")});
+                             "Outputs: per_residue_dssp.jsonl (JSONL) in the output directory.\n")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);
