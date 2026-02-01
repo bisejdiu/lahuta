@@ -65,20 +65,20 @@ struct ContactsKernel {
         auto current_mode  = params ? params->mode : AtomTypingMethod::Molstar;
         auto required_mode = typing_for_provider(p.provider);
         if (current_mode != required_mode) {
-          Logger::get_logger()->debug("ContactsKernel: switching atom typing to {} for contacts computation",
+          Logger::get_logger()->debug("[contacts:typing] Switching atom typing to {}",
                                       contact_provider_name(p.provider));
           auto &topo_mut = const_cast<Topology &>(*top);
 
           topo_mut.assign_typing(required_mode);
         }
       } catch (const std::exception &e) {
-        Logger::get_logger()->error("ContactsKernel: typing guard failed: {}", e.what());
+        Logger::get_logger()->warn("[contacts:typing] Typing guard failed: {}", e.what());
       }
 
       auto ts = data.ctx ? C::require_topology_snapshot(*data.ctx) : C::snapshot_of(*top);
 
       Logger::get_logger()->debug(
-          "ContactsKernel: Starting contact computation using {} provider for {} contacts",
+          "[contacts:compute] Starting contact computation using {} provider for {} contacts",
           contact_provider_name(p.provider),
           interaction_type_set_to_string(p.type));
 
@@ -93,11 +93,11 @@ struct ContactsKernel {
           res.contacts = detail::compute_with_provider<MolStarContactProvider>(p, ts);
           break;
         default:
-          return C::ComputationResult(C::ComputationError("ContactsKernel: unsupported provider"));
+          return C::ComputationResult(C::ComputationError("Contacts unsupported provider"));
       }
 
       Logger::get_logger()->debug(
-          "ContactsKernel: Completed contact computation using {} provider, found {} contacts",
+          "[contacts:compute] Completed contact computation using {} provider, found {} contacts",
           contact_provider_name(p.provider),
           res.contacts.size());
 
@@ -121,7 +121,7 @@ struct ContactsKernel {
           payload = serialization::Serializer<fmt::text, ContactsRecord>::serialize(res);
           break;
         default:
-          throw std::runtime_error("ContactsKernel: unsupported output format");
+          throw std::runtime_error("Contacts unsupported output format");
       }
 
       P::EmissionList out;

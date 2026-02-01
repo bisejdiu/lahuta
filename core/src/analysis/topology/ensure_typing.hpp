@@ -42,7 +42,7 @@ struct EnsureTypingKernel {
 
     try {
       if (!p.desired) {
-        Logger::get_logger()->info("EnsureTyping: desired unset - skipping");
+        Logger::get_logger()->info("[ensure-typing] Desired unset - skipping");
         return C::ComputationResult(true);
       }
 
@@ -68,7 +68,7 @@ struct EnsureTypingKernel {
       auto desired_label          = contact_computer_name(desired_mode);
 
       auto ensure_now = [&](std::shared_ptr<Topology> top_mut) {
-        Logger::get_logger()->info("EnsureTyping: retyping to {}", contact_computer_name(desired_mode));
+        Logger::get_logger()->info("[ensure-typing] Retyping to {}", contact_computer_name(desired_mode));
         top_mut->assign_typing(desired_mode);
       };
 

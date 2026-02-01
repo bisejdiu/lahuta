@@ -31,7 +31,7 @@ public:
       payload.swap(tls_payload);
       return P::TaskResult{true, std::vector<P::Emission>{{channel_, std::move(payload)}}};
     } catch (const std::exception &e) {
-      Logger::get_logger()->error("Error processing file {}: {}", item_path, e.what());
+      Logger::get_logger()->error("[model-pack] Error processing file {}: {}", item_path, e.what());
       return {false, {}};
     }
   }
