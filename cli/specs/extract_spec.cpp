@@ -179,12 +179,16 @@ public:
     config.runtime = parse_runtime_config(args, runtime_spec_);
     config.report  = parse_report_config(args);
 
+    (void)require_arg(args,
+                      extract_opts::Fields,
+                      "--fields",
+                      "Missing required --fields option. Must include one or more of: sequence, plddt, dssp, "
+                      "organism");
+
     std::vector<std::string> field_tokens;
-    if (args.has(extract_opts::Fields)) {
-      const auto raw_values = args.get_all_strings(extract_opts::Fields);
-      for (const auto &raw : raw_values) {
-        parse_fields_argument(raw, field_tokens);
-      }
+    const auto raw_values = args.get_all_strings(extract_opts::Fields);
+    for (const auto &raw : raw_values) {
+      parse_fields_argument(raw, field_tokens);
     }
 
     if (field_tokens.empty()) {

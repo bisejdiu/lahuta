@@ -60,9 +60,8 @@ std::string build_writer_threads_help(std::size_t default_writer_threads) {
 }
 
 std::size_t parse_size_t(std::string_view value, std::string_view label, bool allow_zero) {
-  if (value.empty()) {
-    throw CliUsageError(std::string(label) + " requires a value.");
-  }
+  if (value.empty()) throw CliUsageError(std::string(label) + " requires a value.");
+
   std::size_t parsed = 0;
   try {
     parsed = std::stoull(std::string(value));
@@ -76,18 +75,15 @@ std::size_t parse_size_t(std::string_view value, std::string_view label, bool al
 }
 
 int parse_int(std::string_view value, std::string_view label) {
-  if (value.empty()) {
-    throw CliUsageError(std::string(label) + " requires a value.");
-  }
+  if (value.empty()) throw CliUsageError(std::string(label) + " requires a value.");
+
   int parsed = 0;
   try {
     parsed = std::stoi(std::string(value));
   } catch (const std::exception &) {
     throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
-  if (parsed <= 0) {
-    throw CliUsageError(std::string(label) + " must be positive");
-  }
+  if (parsed <= 0) throw CliUsageError(std::string(label) + " must be positive");
   return parsed;
 }
 
@@ -95,9 +91,7 @@ int parse_int(std::string_view value, std::string_view label) {
 
 std::filesystem::path validate_output_dir(const std::string &output_arg) {
   std::filesystem::path output_dir(output_arg);
-  if (output_dir.empty()) {
-    throw CliUsageError("Output directory cannot be empty.");
-  }
+  if (output_dir.empty()) throw CliUsageError("Output directory cannot be empty.");
 
   std::error_code ec;
   if (std::filesystem::exists(output_dir, ec)) {
@@ -113,6 +107,23 @@ std::filesystem::path validate_output_dir(const std::string &output_arg) {
     }
   }
   return output_dir;
+}
+
+std::string require_arg(const ParsedArgs &args, int option, std::string_view label,
+                        std::string_view missing_message, std::string_view empty_message) {
+
+  if (!args.has(option)) {
+    if (!missing_message.empty()) throw CliUsageError(std::string(missing_message));
+    throw CliUsageError("Missing required " + std::string(label) + " option.");
+  }
+
+  const auto values = args.get_all_strings(option);
+  for (const auto &value : values) {
+    if (!value.empty()) return value;
+  }
+
+  if (!empty_message.empty()) throw CliUsageError(std::string(empty_message));
+  throw CliUsageError(std::string(label) + " requires a value.");
 }
 
 void add_global_options(OptionSchema &schema) {
@@ -366,9 +377,8 @@ ReportConfig parse_report_config(const ParsedArgs &args) {
 
   if (args.has(shared_opts::ReportReporter)) {
     const std::string name = args.get_string(shared_opts::ReportReporter);
-    if (name.empty()) {
-      throw CliUsageError("--reporter requires a value.");
-    }
+    if (name.empty()) throw CliUsageError("--reporter requires a value.");
+
     if (const auto *reporter = find_pipeline_reporter(name)) {
       config.reporter = reporter;
     } else {

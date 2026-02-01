@@ -10,6 +10,7 @@
 #include "parsing/extension_utils.hpp"
 #include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
+#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/lmdb.hpp"
 #include "specs/command_spec.hpp"
@@ -81,7 +82,8 @@ public:
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <path>          \tOutput database path."});
+                 "  --output, -o <path>          \tOutput database path "
+                 "(default: createdb_<timestamp>)."});
     schema_.add({createdb_opts::MaxSize,
                  "m",
                  "max-size",
@@ -110,12 +112,13 @@ public:
     config.runtime = parse_runtime_config(args, runtime_spec_);
     config.report  = parse_report_config(args);
 
-    if (!args.has(createdb_opts::OutputPath)) {
-      throw CliUsageError("Database output path is required (--output)");
-    }
-    config.database_path = args.get_string(createdb_opts::OutputPath);
-    if (config.database_path.empty()) {
-      throw CliUsageError("Database output path is required (--output)");
+    if (args.has(createdb_opts::OutputPath)) {
+      config.database_path = args.get_string(createdb_opts::OutputPath);
+      if (config.database_path.empty()) {
+        throw CliUsageError("--output requires a value.");
+      }
+    } else {
+      config.database_path = "createdb_" + current_timestamp_string();
     }
 
     if (args.has(createdb_opts::MaxSize)) {

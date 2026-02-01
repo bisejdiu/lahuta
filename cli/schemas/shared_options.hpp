@@ -99,6 +99,11 @@ void add_report_options(OptionSchema &schema);
 [[nodiscard]] RuntimeConfig parse_runtime_config(const ParsedArgs &args, const RuntimeOptionSpec &spec);
 [[nodiscard]] ReportConfig parse_report_config(const ParsedArgs &args);
 [[nodiscard]] std::filesystem::path validate_output_dir(const std::string &output_arg);
+[[nodiscard]] std::string require_arg(const ParsedArgs &args,
+                                      int option,
+                                      std::string_view label,
+                                      std::string_view missing_message = {},
+                                      std::string_view empty_message = {});
 
 } // namespace lahuta::cli
 
