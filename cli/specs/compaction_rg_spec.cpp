@@ -185,6 +185,7 @@ public:
     plan.save_run_report   = cfg.report.save_run_report;
     plan.run_report_prefix = "compaction-rg";
     plan.threads           = static_cast<std::size_t>(cfg.runtime.threads);
+    plan.success_message   = "Compaction-rg computation completed successfully!";
 
     plan.source_factory = [cfg]() -> PipelinePlan::SourcePtr {
       using Mode = SourceConfig::Mode;

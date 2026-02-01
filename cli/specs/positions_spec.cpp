@@ -129,6 +129,7 @@ public:
     plan.report_label           = "positions";
     plan.threads                = static_cast<std::size_t>(cfg.runtime.threads);
     plan.override_system_params = true;
+    plan.success_message        = "Positions extraction completed successfully!";
     plan.system_params.is_model = (cfg.source.mode == SourceConfig::Mode::Database) ? true
                                                                                     : cfg.source.is_af2_model;
 
