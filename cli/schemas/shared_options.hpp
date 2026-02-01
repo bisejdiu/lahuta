@@ -2,6 +2,7 @@
 #define LAHUTA_CLI_SHARED_OPTIONS_HPP
 
 #include <cstddef>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -97,6 +98,7 @@ void add_report_options(OptionSchema &schema);
 [[nodiscard]] RuntimeConfig parse_runtime_config(const ParsedArgs &args);
 [[nodiscard]] RuntimeConfig parse_runtime_config(const ParsedArgs &args, const RuntimeOptionSpec &spec);
 [[nodiscard]] ReportConfig parse_report_config(const ParsedArgs &args);
+[[nodiscard]] std::filesystem::path validate_output_dir(const std::string &output_arg);
 
 } // namespace lahuta::cli
 

@@ -155,10 +155,8 @@ public:
       if (output_arg.empty()) {
         throw CliUsageError("--output-dir requires a value.");
       }
-      config.output_dir = std::filesystem::path(output_arg);
     } else {
-      config.output_dir = std::filesystem::path(".");
-      output_arg        = config.output_dir.string();
+      output_arg = ".";
     }
 
     if (args.has(compaction_rg_opts::MinHighFraction)) {
@@ -168,23 +166,7 @@ public:
       }
     }
 
-    if (config.output_dir.empty()) {
-      throw CliUsageError("Output directory cannot be empty.");
-    }
-
-    std::error_code ec;
-    if (std::filesystem::exists(config.output_dir, ec)) {
-      if (ec) {
-        throw CliUsageError("Unable to access output directory: " + output_arg);
-      }
-      if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw CliUsageError("Output path is not a directory: " + output_arg);
-      }
-    } else {
-      if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw CliUsageError("Unable to create output directory: " + output_arg);
-      }
-    }
+    config.output_dir = validate_output_dir(output_arg);
 
     auto counters               = std::make_shared<compaction_rg::CompactionRgCounters>();
     auto task_cfg               = std::make_shared<compaction_rg::CompactionRgConfig>();

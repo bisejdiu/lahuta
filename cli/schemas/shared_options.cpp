@@ -1,4 +1,5 @@
 #include <exception>
+#include <filesystem>
 #include <sstream>
 #include <string_view>
 
@@ -91,6 +92,28 @@ int parse_int(std::string_view value, std::string_view label) {
 }
 
 } // namespace
+
+std::filesystem::path validate_output_dir(const std::string &output_arg) {
+  std::filesystem::path output_dir(output_arg);
+  if (output_dir.empty()) {
+    throw CliUsageError("Output directory cannot be empty.");
+  }
+
+  std::error_code ec;
+  if (std::filesystem::exists(output_dir, ec)) {
+    if (ec) {
+      throw CliUsageError("Unable to access output directory: " + output_arg);
+    }
+    if (!std::filesystem::is_directory(output_dir, ec)) {
+      throw CliUsageError("Output path is not a directory: " + output_arg);
+    }
+  } else {
+    if (!std::filesystem::create_directories(output_dir, ec) || ec) {
+      throw CliUsageError("Unable to create output directory: " + output_arg);
+    }
+  }
+  return output_dir;
+}
 
 void add_global_options(OptionSchema &schema) {
   schema.add({shared_opts::GlobalHelp,

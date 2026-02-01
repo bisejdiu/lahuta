@@ -108,8 +108,6 @@ public:
     if (output_arg.empty()) {
       throw CliUsageError("--output requires a value.");
     }
-    config.output_dir = std::filesystem::path(output_arg);
-
     if (args.has(positions_opts::TreeDepth)) {
       config.tree_depth = std::stoi(args.get_string(positions_opts::TreeDepth));
       if (config.tree_depth < 0 || config.tree_depth > 2) {
@@ -117,23 +115,7 @@ public:
       }
     }
 
-    if (config.output_dir.empty()) {
-      throw CliUsageError("Output directory cannot be empty.");
-    }
-
-    std::error_code ec;
-    if (std::filesystem::exists(config.output_dir, ec)) {
-      if (ec) {
-        throw CliUsageError("Unable to access output directory: " + output_arg);
-      }
-      if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw CliUsageError("Output path is not a directory: " + output_arg);
-      }
-    } else {
-      if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw CliUsageError("Unable to create output directory: " + output_arg);
-      }
-    }
+    config.output_dir = validate_output_dir(output_arg);
 
     return std::make_any<PositionsConfig>(std::move(config));
   }
