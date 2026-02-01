@@ -8,8 +8,8 @@
 #include "analysis/dssp/records.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
-#include "parsing/usage_error.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "runner/time_utils.hpp"
@@ -29,8 +29,7 @@ constexpr unsigned BaseIndex = 240;
 enum : unsigned { //
   OutputDir = BaseIndex,
   NoPreferPi,
-  PpStretchLength,
-  Strict
+  PpStretchLength
 };
 } // namespace dssp_opts
 
@@ -87,11 +86,6 @@ public:
                  "pp-stretch-length",
                  validate::Required,
                  "  --pp-stretch-length <n>      \tPPII helix stretch length (2 or 3, default: 2)."});
-    schema_.add({dssp_opts::Strict,
-                 "",
-                 "strict",
-                 option::Arg::None,
-                 "  --strict                     \tFail the task when DSSP data is missing."});
 
     add_report_options(schema_);
 
@@ -141,7 +135,6 @@ public:
     P::DsspParams params;
     params.channel           = std::string(A::DsspOutputChannel);
     params.prefer_pi_helices = !args.get_flag(dssp_opts::NoPreferPi);
-    params.strict            = args.get_flag(dssp_opts::Strict);
 
     if (args.has(dssp_opts::PpStretchLength)) {
       const auto raw = std::stoll(args.get_string(dssp_opts::PpStretchLength));

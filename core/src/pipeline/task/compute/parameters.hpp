@@ -71,7 +71,6 @@ struct DsspParams : public C::ParameterBase<DsspParams> {
   std::string channel    = std::string(analysis::DsspOutputChannel);
   bool prefer_pi_helices = true;
   int pp_stretch_length  = 2;
-  bool strict            = false;
 };
 
 // Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference

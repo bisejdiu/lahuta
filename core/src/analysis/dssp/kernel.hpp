@@ -25,7 +25,6 @@
 #include "analysis/extract/extract_tasks.hpp"
 #include "analysis/system/model_loader.hpp"
 #include "compute/result.hpp"
-#include "logging/logging.hpp"
 #include "pipeline/task/compute/context.hpp"
 #include "pipeline/task/compute/parameters.hpp"
 #include "pipeline/task/context.hpp"
@@ -109,11 +108,7 @@ struct DsspKernel {
 
       if (!built) {
         const std::string message = "DSSP residue build failed for '" + data.item_path + "': " + error;
-        if (p.strict) {
-          return C::ComputationResult(C::ComputationError(message));
-        }
-        Logger::get_logger()->warn("[dssp] {}", message);
-        return C::ComputationResult(P::EmissionList{});
+        return C::ComputationResult(C::ComputationError(message));
       }
 
       compute_backbone_geometry(residues);
