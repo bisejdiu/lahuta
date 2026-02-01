@@ -13,6 +13,7 @@ option::ArgStatus Required(const option::Option &option, bool msg);
 option::ArgStatus Verbosity(const option::Option &option, bool msg);
 inline option::ArgStatus Ignore(const option::Option &, bool) { return option::ARG_IGNORE; }
 
+void add_error(std::string message);
 void reset_errors();
 [[nodiscard]] bool has_errors();
 [[nodiscard]] std::vector<std::string> take_errors();

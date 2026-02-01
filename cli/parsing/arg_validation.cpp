@@ -19,6 +19,8 @@ inline std::string_view opt_name(const option::Option &opt) noexcept {
 
 } // namespace
 
+void add_error(std::string message) { error_buffer().push_back(std::move(message)); }
+
 void reset_errors() { error_buffer().clear(); }
 
 bool has_errors() { return !error_buffer().empty(); }

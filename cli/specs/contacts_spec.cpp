@@ -29,8 +29,6 @@ constexpr std::string_view Summary = "Compute inter-atomic contacts.";
 // Contacts-specific argument validators
 namespace contacts_validate {
 
-inline constexpr std::string_view HELP_SUFFIX = " (run lahuta contacts -h for more information)";
-
 inline std::string_view opt_name(const option::Option &opt) noexcept {
   return {opt.name, static_cast<std::size_t>(opt.namelen)};
 }
@@ -38,7 +36,10 @@ inline std::string_view opt_name(const option::Option &opt) noexcept {
 option::ArgStatus Provider(const option::Option &option, bool msg) {
   if (!option.arg) {
     if (msg) {
-      Logger::get_logger()->error("Option '{}' requires a provider{}", opt_name(option), HELP_SUFFIX);
+      std::string message = "Option '";
+      message.append(opt_name(option));
+      message.append("' requires a provider");
+      validate::add_error(std::move(message));
     }
     return option::ARG_ILLEGAL;
   }
@@ -49,9 +50,10 @@ option::ArgStatus Provider(const option::Option &option, bool msg) {
   }
 
   if (msg) {
-    Logger::get_logger()->error("Invalid provider '{}'. Must be 'arpeggio', 'molstar', or 'getcontacts'{}",
-                                provider,
-                                HELP_SUFFIX);
+    std::string message = "Invalid provider '";
+    message.append(provider);
+    message.append("'. Must be 'arpeggio', 'molstar', or 'getcontacts'");
+    validate::add_error(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }
@@ -59,7 +61,10 @@ option::ArgStatus Provider(const option::Option &option, bool msg) {
 option::ArgStatus ContactType(const option::Option &option, bool msg) {
   if (!option.arg) {
     if (msg) {
-      Logger::get_logger()->error("Option '{}' requires a contact type{}", opt_name(option), HELP_SUFFIX);
+      std::string message = "Option '";
+      message.append(opt_name(option));
+      message.append("' requires a contact type");
+      validate::add_error(std::move(message));
     }
     return option::ARG_ILLEGAL;
   }
@@ -70,7 +75,10 @@ option::ArgStatus ContactType(const option::Option &option, bool msg) {
   }
 
   if (msg) {
-    Logger::get_logger()->error("Invalid contact type '{}'{}", type, HELP_SUFFIX);
+    std::string message = "Invalid contact type '";
+    message.append(type);
+    message.append("'");
+    validate::add_error(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }
