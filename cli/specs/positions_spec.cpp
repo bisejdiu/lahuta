@@ -59,39 +59,7 @@ public:
                  "Python: np.fromfile(path, dtype=np.float32).reshape(-1, 3)")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
-    schema_.add({shared_opts::SourceDatabase,
-                 "",
-                 "database",
-                 validate::Required,
-                 "  --database <path>            \tProcess structures from database."});
-    schema_.add({shared_opts::SourceDirectory,
-                 "d",
-                 "directory",
-                 validate::Required,
-                 "  --directory, -d <path>       \tProcess all files in directory."});
-    schema_.add({shared_opts::SourceVector,
-                 "f",
-                 "files",
-                 validate::Required,
-                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
-    schema_.add({shared_opts::SourceFileList,
-                 "l",
-                 "file-list",
-                 validate::Required,
-                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
-    schema_.add({shared_opts::SourceExtension,
-                 "e",
-                 "extension",
-                 validate::Required,
-                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
-                 "comma-separate values (default: .cif, .cif.gz, .pdb, .pdb.gz)."});
-    schema_.add({shared_opts::SourceRecursive,
-                 "r",
-                 "recursive",
-                 option::Arg::None,
-                 "  --recursive, -r              \tRecursively search subdirectories."});
+    add_source_options(schema_, source_spec_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRequired:"});
     schema_.add({positions_opts::Output,
@@ -107,12 +75,6 @@ public:
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
     add_runtime_options(schema_, runtime_spec_);
-    schema_.add({shared_opts::SourceIsAf2Model,
-                 "",
-                 "is_af2_model",
-                 option::Arg::None,
-                 "  --is_af2_model               \tTreat file inputs as AlphaFold2 models (ignored for "
-                 "--database)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nGlobal Options:"});
     add_global_options(schema_);

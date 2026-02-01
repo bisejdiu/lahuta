@@ -129,45 +129,13 @@ public:
                              "  detail      - Detailed diagnostics for in-depth analysis (tiny overhead).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
-    schema_.add({shared_opts::SourceDirectory,
-                 "d",
-                 "directory",
-                 validate::Required,
-                 "  --directory, -d <path>       \tProcess all files in directory."});
-    schema_.add({shared_opts::SourceVector,
-                 "f",
-                 "files",
-                 validate::Required,
-                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
-    schema_.add({shared_opts::SourceFileList,
-                 "l",
-                 "file-list",
-                 validate::Required,
-                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
-    schema_.add({shared_opts::SourceDatabase,
-                 "",
-                 "database",
-                 validate::Required,
-                 "  --database <path>            \tProcess structures from database."});
+    add_source_options(schema_, source_spec_);
     schema_.add({contacts_opts::SourceMD,
                  "",
                  "md",
                  validate::Required,
                  "  --md <path>                  \tMD input file. Specify once for structure (PDB/GRO) and "
                  "once or more for trajectories (XTC)."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
-    schema_.add({shared_opts::SourceExtension,
-                 "e",
-                 "extension",
-                 validate::Required,
-                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
-                 "comma-separate values (default: .cif, .cif.gz)."});
-    schema_.add({shared_opts::SourceRecursive,
-                 "r",
-                 "recursive",
-                 option::Arg::None,
-                 "  --recursive, -r              \tRecursively search subdirectories."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({contacts_opts::Provider,
@@ -182,11 +150,6 @@ public:
                  contacts_validate::ContactType,
                  "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', "
                  "etc. Repeat or comma-separate to combine.\n"});
-    schema_.add({shared_opts::SourceIsAf2Model,
-                 "",
-                 "is_af2_model",
-                 option::Arg::None,
-                 "  --is_af2_model               \tInputs are AlphaFold2 models (or AF2-like)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
     schema_.add({contacts_opts::OutputJson,
