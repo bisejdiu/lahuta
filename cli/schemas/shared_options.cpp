@@ -1,9 +1,10 @@
+#include <exception>
 #include <sstream>
-#include <stdexcept>
 #include <string_view>
 
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "runner/reporting.hpp"
 #include "schemas/shared_options.hpp"
 
@@ -59,32 +60,32 @@ std::string build_writer_threads_help(std::size_t default_writer_threads) {
 
 std::size_t parse_size_t(std::string_view value, std::string_view label, bool allow_zero) {
   if (value.empty()) {
-    throw std::runtime_error(std::string(label) + " requires a value.");
+    throw CliUsageError(std::string(label) + " requires a value.");
   }
   std::size_t parsed = 0;
   try {
     parsed = std::stoull(std::string(value));
   } catch (const std::exception &) {
-    throw std::runtime_error("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
+    throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
   if (!allow_zero && parsed == 0) {
-    throw std::runtime_error(std::string(label) + " must be positive");
+    throw CliUsageError(std::string(label) + " must be positive");
   }
   return parsed;
 }
 
 int parse_int(std::string_view value, std::string_view label) {
   if (value.empty()) {
-    throw std::runtime_error(std::string(label) + " requires a value.");
+    throw CliUsageError(std::string(label) + " requires a value.");
   }
   int parsed = 0;
   try {
     parsed = std::stoi(std::string(value));
   } catch (const std::exception &) {
-    throw std::runtime_error("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
+    throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
   if (parsed <= 0) {
-    throw std::runtime_error(std::string(label) + " must be positive");
+    throw CliUsageError(std::string(label) + " must be positive");
   }
   return parsed;
 }
@@ -217,9 +218,9 @@ GlobalConfig parse_global_config(const ParsedArgs &args) {
     } else if (level == "2") {
       config.log_level = lahuta::Logger::LogLevel::Debug;
     } else if (level.empty()) {
-      throw std::runtime_error("Option '-v/--verbose' expects <level> (0,1,2)");
+      throw CliUsageError("Option '-v/--verbose' expects <level> (0,1,2)");
     } else {
-      throw std::runtime_error("Invalid verbosity level '" + level + "'. Must be 0, 1 or 2");
+      throw CliUsageError("Invalid verbosity level '" + level + "'. Must be 0, 1 or 2");
     }
   }
 
@@ -281,10 +282,10 @@ SourceConfig parse_source_config(const ParsedArgs &args, const SourceOptionSpec 
     if (spec.allow_file_list) {
       allowed.emplace_back("--file-list");
     }
-    throw std::runtime_error("Must specify exactly one source option: " + join_option_list(allowed));
+    throw CliUsageError("Must specify exactly one source option: " + join_option_list(allowed));
   }
   if (source_count > 1) {
-    throw std::runtime_error("Cannot specify multiple source options");
+    throw CliUsageError("Cannot specify multiple source options");
   }
 
   if (spec.allow_directory && args.has(shared_opts::SourceExtension)) {
@@ -343,12 +344,12 @@ ReportConfig parse_report_config(const ParsedArgs &args) {
   if (args.has(shared_opts::ReportReporter)) {
     const std::string name = args.get_string(shared_opts::ReportReporter);
     if (name.empty()) {
-      throw std::runtime_error("--reporter requires a value.");
+      throw CliUsageError("--reporter requires a value.");
     }
     if (const auto *reporter = find_pipeline_reporter(name)) {
       config.reporter = reporter;
     } else {
-      throw std::runtime_error("Unknown reporter '" + name + "'");
+      throw CliUsageError("Unknown reporter '" + name + "'");
     }
   }
 

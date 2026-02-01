@@ -1,7 +1,6 @@
 #include <cmath>
 #include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -10,6 +9,7 @@
 #include "analysis/sasa/computation.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
@@ -63,11 +63,11 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n"
-                            "Author: ")
-                    .append(Author)
-                    .append("\n\n")
-                    .append(Summary)
+                 std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n"
+                             "Author: ")
+                     .append(Author)
+                     .append("\n\n")
+                     .append(Summary)
                      .append("\n"
                              "Outputs: per_protein_sasa_sr.jsonl (NDJSON) in the output directory.\n"
                              "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"
@@ -177,15 +177,15 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("sasa-sr expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("sasa-sr expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
     std::string output_arg;
     if (args.has(sasa_sr_opts::OutputDir)) {
       output_arg = args.get_string(sasa_sr_opts::OutputDir);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output-dir requires a value.");
+        throw CliUsageError("--output-dir requires a value.");
       }
       config.output_dir = std::filesystem::path(output_arg);
     } else {
@@ -196,14 +196,14 @@ public:
     if (args.has(sasa_sr_opts::ProbeRadius)) {
       config.probe_radius = std::stod(args.get_string(sasa_sr_opts::ProbeRadius));
       if (!std::isfinite(config.probe_radius) || config.probe_radius < 0.0) {
-        throw std::runtime_error("--probe-radius must be finite and >= 0.");
+        throw CliUsageError("--probe-radius must be finite and >= 0.");
       }
     }
 
     if (args.has(sasa_sr_opts::Points)) {
       const auto raw = std::stoll(args.get_string(sasa_sr_opts::Points));
       if (raw <= 0) {
-        throw std::runtime_error("--points must be > 0.");
+        throw CliUsageError("--points must be > 0.");
       }
       config.n_points = static_cast<std::size_t>(raw);
     }
@@ -212,20 +212,20 @@ public:
     config.use_bitmask   = args.get_flag(sasa_sr_opts::UseBitmask);
     config.use_simd      = !args.get_flag(sasa_sr_opts::NoSimd);
     if (config.output_dir.empty()) {
-      throw std::runtime_error("Output directory cannot be empty.");
+      throw CliUsageError("Output directory cannot be empty.");
     }
 
     std::error_code ec;
     if (std::filesystem::exists(config.output_dir, ec)) {
       if (ec) {
-        throw std::runtime_error("Unable to access output directory: " + output_arg);
+        throw CliUsageError("Unable to access output directory: " + output_arg);
       }
       if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
+        throw CliUsageError("Output path is not a directory: " + output_arg);
       }
     } else {
       if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
+        throw CliUsageError("Unable to create output directory: " + output_arg);
       }
     }
 
@@ -277,7 +277,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("sasa-sr does not support this source mode");
+      throw CliUsageError("sasa-sr does not support this source mode");
     };
 
     const bool needs_parse_task = cfg.source.mode != SourceConfig::Mode::Database;

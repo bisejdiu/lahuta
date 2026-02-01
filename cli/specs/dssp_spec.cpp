@@ -1,6 +1,5 @@
 #include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -9,6 +8,7 @@
 #include "analysis/dssp/records.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "parsing/extension_utils.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
@@ -119,7 +119,7 @@ public:
     std::string output_arg;
     if (args.has(dssp_opts::OutputDir)) {
       output_arg = args.get_string(dssp_opts::OutputDir);
-      if (output_arg.empty()) throw std::runtime_error("--output-dir requires a value.");
+      if (output_arg.empty()) throw CliUsageError("--output-dir requires a value.");
       config.output_dir = std::filesystem::path(output_arg);
     } else {
       config.output_dir = std::filesystem::path(".");
@@ -128,13 +128,13 @@ public:
 
     std::error_code ec;
     if (std::filesystem::exists(config.output_dir, ec)) {
-      if (ec) throw std::runtime_error("Unable to access output directory: " + output_arg);
+      if (ec) throw CliUsageError("Unable to access output directory: " + output_arg);
       if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
+        throw CliUsageError("Output path is not a directory: " + output_arg);
       }
     } else {
       if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
+        throw CliUsageError("Unable to create output directory: " + output_arg);
       }
     }
 
@@ -146,7 +146,7 @@ public:
     if (args.has(dssp_opts::PpStretchLength)) {
       const auto raw = std::stoll(args.get_string(dssp_opts::PpStretchLength));
       if (raw != 2 && raw != 3) {
-        throw std::runtime_error("--pp-stretch-length must be 2 or 3.");
+        throw CliUsageError("--pp-stretch-length must be 2 or 3.");
       }
       params.pp_stretch_length = static_cast<int>(raw);
     }
@@ -203,7 +203,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("dssp does not support this source mode");
+      throw CliUsageError("dssp does not support this source mode");
     };
 
     PipelineComputation computation;

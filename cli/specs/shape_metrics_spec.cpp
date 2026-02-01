@@ -1,6 +1,5 @@
 #include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -8,6 +7,7 @@
 #include "analysis/extract/extract_tasks.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/ndjson.hpp"
@@ -145,15 +145,15 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("shape-metrics expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("shape-metrics expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
     std::string output_arg;
     if (args.has(shape_metrics_opts::OutputDir)) {
       output_arg = args.get_string(shape_metrics_opts::OutputDir);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output-dir requires a value.");
+        throw CliUsageError("--output-dir requires a value.");
       }
       config.output_dir = std::filesystem::path(output_arg);
     } else {
@@ -164,25 +164,25 @@ public:
     if (args.has(shape_metrics_opts::MinHighFraction)) {
       config.min_high_fraction = std::stod(args.get_string(shape_metrics_opts::MinHighFraction));
       if (config.min_high_fraction < 0.0 || config.min_high_fraction > 1.0) {
-        throw std::runtime_error("--min-high-fraction must be between 0 and 1.");
+        throw CliUsageError("--min-high-fraction must be between 0 and 1.");
       }
     }
 
     if (config.output_dir.empty()) {
-      throw std::runtime_error("Output directory cannot be empty.");
+      throw CliUsageError("Output directory cannot be empty.");
     }
 
     std::error_code ec;
     if (std::filesystem::exists(config.output_dir, ec)) {
       if (ec) {
-        throw std::runtime_error("Unable to access output directory: " + output_arg);
+        throw CliUsageError("Unable to access output directory: " + output_arg);
       }
       if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
+        throw CliUsageError("Output path is not a directory: " + output_arg);
       }
     } else {
       if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
+        throw CliUsageError("Unable to create output directory: " + output_arg);
       }
     }
 
@@ -230,7 +230,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("shape-metrics does not support this source mode");
+      throw CliUsageError("shape-metrics does not support this source mode");
     };
 
     auto sink_cfg           = P::get_default_backpressure_config();

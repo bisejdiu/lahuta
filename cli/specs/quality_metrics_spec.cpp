@@ -1,5 +1,4 @@
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_set>
@@ -9,6 +8,7 @@
 #include "analysis/extract/extract_tasks.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "parsing/extension_utils.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
@@ -220,7 +220,7 @@ public:
         for (const auto &token : tokens) {
           const std::string name = quality_metrics::normalize_group_name(token);
           if (name.empty()) {
-            throw std::runtime_error("Invalid segment group name '" + token + "'.");
+            throw CliUsageError("Invalid segment group name '" + token + "'.");
           }
           segment_group_names.insert(name);
         }
@@ -238,7 +238,7 @@ public:
       }
       for (const auto &name : segment_group_names) {
         if (available.count(name) == 0) {
-          throw std::runtime_error("Segment group '" + name + "' does not match any pLDDT group.");
+          throw CliUsageError("Segment group '" + name + "' does not match any pLDDT group.");
         }
       }
       for (auto &group : plddt_groups) {
@@ -253,14 +253,14 @@ public:
     if (args.has(quality_metrics_opts::SegmentMin)) {
       segment_min = std::stoull(args.get_string(quality_metrics_opts::SegmentMin));
       if (segment_min == 0) {
-        throw std::runtime_error("--segment-min must be positive");
+        throw CliUsageError("--segment-min must be positive");
       }
     }
 
     if (args.has(quality_metrics_opts::Output)) {
       const std::string output_arg = args.get_string(quality_metrics_opts::Output);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output requires a value.");
+        throw CliUsageError("--output requires a value.");
       }
       if (output_arg == "-") {
         config.output_stdout = true;
@@ -275,8 +275,8 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("quality-metrics expects AlphaFold2 model inputs. For file-based sources, "
-                               "pass --is_af2_model (or use --database).");
+      throw CliUsageError("quality-metrics expects AlphaFold2 model inputs. For file-based sources, "
+                          "pass --is_af2_model (or use --database).");
     }
 
     auto metrics_config              = std::make_shared<quality_metrics::QualityMetricsConfig>();
@@ -329,7 +329,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("quality-metrics does not support this source mode");
+      throw CliUsageError("quality-metrics does not support this source mode");
     };
 
     auto sink_cfg           = P::get_default_backpressure_config();

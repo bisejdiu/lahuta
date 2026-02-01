@@ -1,4 +1,3 @@
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -10,6 +9,7 @@
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "pipeline/task/api.hpp"
 #include "runner/time_utils.hpp"
@@ -230,11 +230,11 @@ public:
                                      args.has(shared_opts::SourceDatabase);
 
     if (!has_md && !has_standard_source) {
-      throw std::runtime_error(
+      throw CliUsageError(
           "Must specify exactly one source option: --directory, --files, --file-list, --database, or --md");
     }
     if (has_md && has_standard_source) {
-      throw std::runtime_error("Cannot specify multiple source options");
+      throw CliUsageError("Cannot specify multiple source options");
     }
 
     if (has_md) {
@@ -265,8 +265,8 @@ public:
       if (auto provider = A::contact_provider_from_string(provider_arg)) {
         config.provider = *provider;
       } else {
-        throw std::runtime_error("Invalid provider '" + provider_arg +
-                                 "'. Must be 'molstar', 'arpeggio', or 'getcontacts'");
+        throw CliUsageError("Invalid provider '" + provider_arg +
+                            "'. Must be 'molstar', 'arpeggio', or 'getcontacts'");
       }
     }
 
@@ -278,7 +278,7 @@ public:
         auto parsed = parse_interaction_type_sequence(raw, ',');
         if (!parsed) parsed = parse_interaction_type_sequence(raw, '|');
         if (!parsed) {
-          throw std::runtime_error("Invalid interaction type specification '" + raw + "'");
+          throw CliUsageError("Invalid interaction type specification '" + raw + "'");
         }
         if (!has_selection) {
           selected      = *parsed;
@@ -369,7 +369,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("contacts does not support this source mode");
+      throw CliUsageError("contacts does not support this source mode");
     };
 
     const bool json_out = cfg.want_json || !cfg.want_text;

@@ -1,8 +1,9 @@
 #include <iostream>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "logging/logging.hpp"
-#include "version.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/global_args.hpp"
 #include "parsing/parsed_args.hpp"
@@ -12,6 +13,23 @@
 #include "schemas/option_schema.hpp"
 #include "schemas/shared_options.hpp"
 #include "specs/command_spec.hpp"
+#include "version.hpp"
+
+namespace {
+
+void log_usage_error(const lahuta::cli::CliUsageError &error, std::string_view command = {}) {
+  const auto &messages     = error.messages();
+  const std::string suffix = lahuta::cli::usage_help_suffix(command);
+  if (messages.empty()) {
+    lahuta::Logger::get_logger()->error("{}{}", error.what(), suffix);
+    return;
+  }
+  for (const auto &message : messages) {
+    lahuta::Logger::get_logger()->error("{}{}", message, suffix);
+  }
+}
+
+} // namespace
 
 namespace lahuta::cli {
 
@@ -32,6 +50,7 @@ int run(int argc, char *argv[]) {
                         const_cast<const char **>(split.global_args.data()));
     std::vector<option::Option> options(stats.options_max);
     std::vector<option::Option> buffer(stats.buffer_max);
+    validate::reset_errors();
     option::Parser parse(true,
                          descriptors.data(),
                          global_argc,
@@ -39,7 +58,13 @@ int run(int argc, char *argv[]) {
                          options.data(),
                          buffer.data());
 
-    if (parse.error()) return 1;
+    if (parse.error() || validate::has_errors()) {
+      auto errors = validate::take_errors();
+      if (errors.empty()) {
+        errors.emplace_back("Invalid global options");
+      }
+      throw CliUsageError(std::move(errors));
+    }
 
     ParsedArgs args(parse, options.data());
     const GlobalConfig global_config = parse_global_config(args);
@@ -63,22 +88,21 @@ int run(int argc, char *argv[]) {
     }
 
     if (split.tail.empty()) {
-      Logger::get_logger()->error("No subcommand provided (run lahuta --help for usage)");
+      Logger::get_logger()->error("No subcommand provided{}", usage_help_suffix());
       return 1;
     }
 
     const std::string_view subcommand{split.tail[0]};
 
     if (subcommand.empty() || subcommand.front() == '-') {
-      Logger::get_logger()->error("Expected subcommand before '{}'. Run lahuta --help for usage.",
-                                  subcommand);
+      Logger::get_logger()->error("Expected subcommand before '{}'{}", subcommand, usage_help_suffix());
       return 1;
     }
 
     const auto it = registry.find(std::string{subcommand});
 
     if (it == registry.end()) {
-      Logger::get_logger()->error("Unknown subcommand '{}' (run lahuta -h for more information)", subcommand);
+      Logger::get_logger()->error("Unknown subcommand '{}'{}", subcommand, usage_help_suffix());
       return 1;
     }
 
@@ -87,8 +111,11 @@ int run(int argc, char *argv[]) {
     const char *const *sub_argv = split.tail.data() + 1;
     return CommandRunner::run(*it->second, sub_argc, sub_argv);
 
+  } catch (const CliUsageError &e) {
+    log_usage_error(e);
+    return 1;
   } catch (const std::exception &e) {
-    Logger::get_logger()->error("{} (run lahuta -h for more information)", e.what());
+    Logger::get_logger()->error("{}{}", e.what(), usage_help_suffix());
     return 1;
   }
 }

@@ -10,6 +10,7 @@
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/logging.hpp"
@@ -187,15 +188,14 @@ public:
     }
 
     if (field_tokens.empty()) {
-      throw std::runtime_error(
+      throw CliUsageError(
           "Missing required --fields option. Must include one or more of: sequence, plddt, dssp, organism");
     }
 
     std::unordered_set<std::string> seen;
     for (const auto &token : field_tokens) {
       if (!is_valid_field(token)) {
-        throw std::runtime_error("Invalid field '" + token +
-                                 "'. Must be one of: sequence, plddt, dssp, organism");
+        throw CliUsageError("Invalid field '" + token + "'. Must be one of: sequence, plddt, dssp, organism");
       }
       if (seen.insert(token).second) {
         config.fields.push_back(token);
@@ -205,7 +205,7 @@ public:
     if (args.has(extract_opts::Output)) {
       const std::string output_arg = args.get_string(extract_opts::Output);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output requires a value.");
+        throw CliUsageError("--output requires a value.");
       }
       if (output_arg == "-") {
         config.output_stdout = true;
@@ -217,8 +217,8 @@ public:
     }
 
     if (config.fields.size() > 1 && config.output_override) {
-      throw std::runtime_error("--output can only be used with a single field. Omit --output for per-field "
-                               "outputs or use --output - for stdout.");
+      throw CliUsageError("--output can only be used with a single field. Omit --output for per-field "
+                          "outputs or use --output - for stdout.");
     }
 
     if (config.source.mode == SourceConfig::Mode::Database) {
@@ -226,8 +226,8 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("extract expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("extract expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
     return std::make_any<ExtractConfig>(std::move(config));
@@ -268,7 +268,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("extract does not support this source mode");
+      throw CliUsageError("extract does not support this source mode");
     };
 
     auto sink_cfg           = P::get_default_backpressure_config();

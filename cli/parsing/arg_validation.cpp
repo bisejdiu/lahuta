@@ -1,18 +1,16 @@
-#include "parsing/arg_validation.hpp"
-
 #include <string>
+#include <utility>
+#include <vector>
 
-#include "logging/logging.hpp"
+#include "parsing/arg_validation.hpp"
 
 namespace lahuta::cli::validate {
 
 namespace {
 
-template <typename... Args>
-void log_error(std::string_view format_str, std::string_view suffix, Args &&...args) {
-  std::string full_format{format_str};
-  full_format.append(suffix);
-  lahuta::Logger::get_logger()->error(SPDLOG_FMT_RUNTIME(full_format), std::forward<Args>(args)...);
+std::vector<std::string> &error_buffer() {
+  static thread_local std::vector<std::string> errors;
+  return errors;
 }
 
 inline std::string_view opt_name(const option::Option &opt) noexcept {
@@ -21,9 +19,23 @@ inline std::string_view opt_name(const option::Option &opt) noexcept {
 
 } // namespace
 
+void reset_errors() { error_buffer().clear(); }
+
+bool has_errors() { return !error_buffer().empty(); }
+
+std::vector<std::string> take_errors() {
+  auto &errors = error_buffer();
+  auto copy    = std::move(errors);
+  errors.clear();
+  return copy;
+}
+
 option::ArgStatus Unknown(const option::Option &option, bool msg) {
   if (msg) {
-    log_error("Unknown option '{}'", HELP_MSG_SUFFIX, opt_name(option));
+    std::string message = "Unknown option '";
+    message.append(opt_name(option));
+    message.append("'");
+    error_buffer().push_back(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }
@@ -31,7 +43,10 @@ option::ArgStatus Unknown(const option::Option &option, bool msg) {
 option::ArgStatus Required(const option::Option &option, bool msg) {
   if (option.arg != nullptr) return option::ARG_OK;
   if (msg) {
-    log_error("Option '{}' requires an argument", HELP_MSG_SUFFIX, opt_name(option));
+    std::string message = "Option '";
+    message.append(opt_name(option));
+    message.append("' requires an argument");
+    error_buffer().push_back(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }
@@ -39,7 +54,10 @@ option::ArgStatus Required(const option::Option &option, bool msg) {
 option::ArgStatus Verbosity(const option::Option &option, bool msg) {
   if (!option.arg) {
     if (msg) {
-      log_error("Option '{}' requires a verbosity level (0, 1, or 2)", HELP_MSG_SUFFIX, opt_name(option));
+      std::string message = "Option '";
+      message.append(opt_name(option));
+      message.append("' requires a verbosity level (0, 1, or 2)");
+      error_buffer().push_back(std::move(message));
     }
     return option::ARG_ILLEGAL;
   }
@@ -48,10 +66,10 @@ option::ArgStatus Verbosity(const option::Option &option, bool msg) {
   if (level == "0" || level == "1" || level == "2") return option::ARG_OK;
 
   if (msg) {
-    log_error(
-        "Invalid verbosity level '{}'. Must be 0 (errors only), 1 (info+), or 2 (debug+)",
-        HELP_MSG_SUFFIX,
-        level);
+    std::string message = "Invalid verbosity level '";
+    message.append(level);
+    message.append("'. Must be 0 (errors only), 1 (info+), or 2 (debug+)");
+    error_buffer().push_back(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }

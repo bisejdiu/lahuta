@@ -1,5 +1,4 @@
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -9,6 +8,7 @@
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/lmdb.hpp"
@@ -38,16 +38,16 @@ struct CreateDbConfig {
 
 std::size_t parse_size_option(std::string_view value, std::string_view label) {
   if (value.empty()) {
-    throw std::runtime_error(std::string(label) + " requires a value.");
+    throw CliUsageError(std::string(label) + " requires a value.");
   }
   std::size_t parsed = 0;
   try {
     parsed = std::stoull(std::string(value));
   } catch (const std::exception &) {
-    throw std::runtime_error("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
+    throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
   if (parsed == 0) {
-    throw std::runtime_error(std::string(label) + " must be positive");
+    throw CliUsageError(std::string(label) + " must be positive");
   }
   return parsed;
 }
@@ -111,11 +111,11 @@ public:
     config.report  = parse_report_config(args);
 
     if (!args.has(createdb_opts::OutputPath)) {
-      throw std::runtime_error("Database output path is required (--output)");
+      throw CliUsageError("Database output path is required (--output)");
     }
     config.database_path = args.get_string(createdb_opts::OutputPath);
     if (config.database_path.empty()) {
-      throw std::runtime_error("Database output path is required (--output)");
+      throw CliUsageError("Database output path is required (--output)");
     }
 
     if (args.has(createdb_opts::MaxSize)) {
@@ -180,7 +180,7 @@ public:
         case Mode::Database:
           break;
       }
-      throw std::runtime_error("createdb does not support database sources");
+      throw CliUsageError("createdb does not support database sources");
     };
 
     PipelineTask task;

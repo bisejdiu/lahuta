@@ -1,5 +1,4 @@
 #include <filesystem>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -7,6 +6,7 @@
 #include "analysis/extract/extract_tasks.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "schemas/shared_options.hpp"
 #include "specs/command_spec.hpp"
@@ -46,11 +46,11 @@ public:
          "",
          "",
          validate::Unknown,
-        std::string("Usage: lahuta positions --output <dir> [options]\n"
-                    "Author: ")
-            .append(Author)
-            .append("\n\n")
-            .append(Summary)
+         std::string("Usage: lahuta positions --output <dir> [options]\n"
+                     "Author: ")
+             .append(Author)
+             .append("\n\n")
+             .append(Summary)
              .append(
                  "\n"
                  "If you are running this on millions of files, use a --tree-depth of 2 to not hit any OS "
@@ -134,42 +134,42 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("positions expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("positions expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
     if (!args.has(positions_opts::Output)) {
-      throw std::runtime_error("Missing required --output option.");
+      throw CliUsageError("Missing required --output option.");
     }
 
     const std::string output_arg = args.get_string(positions_opts::Output);
     if (output_arg.empty()) {
-      throw std::runtime_error("--output requires a value.");
+      throw CliUsageError("--output requires a value.");
     }
     config.output_dir = std::filesystem::path(output_arg);
 
     if (args.has(positions_opts::TreeDepth)) {
       config.tree_depth = std::stoi(args.get_string(positions_opts::TreeDepth));
       if (config.tree_depth < 0 || config.tree_depth > 2) {
-        throw std::runtime_error("--tree-depth must be 0, 1, or 2.");
+        throw CliUsageError("--tree-depth must be 0, 1, or 2.");
       }
     }
 
     if (config.output_dir.empty()) {
-      throw std::runtime_error("Output directory cannot be empty.");
+      throw CliUsageError("Output directory cannot be empty.");
     }
 
     std::error_code ec;
     if (std::filesystem::exists(config.output_dir, ec)) {
       if (ec) {
-        throw std::runtime_error("Unable to access output directory: " + output_arg);
+        throw CliUsageError("Unable to access output directory: " + output_arg);
       }
       if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
+        throw CliUsageError("Output path is not a directory: " + output_arg);
       }
     } else {
       if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
+        throw CliUsageError("Unable to create output directory: " + output_arg);
       }
     }
 
@@ -211,7 +211,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("positions does not support this source mode");
+      throw CliUsageError("positions does not support this source mode");
     };
 
     const bool needs_parse_task = cfg.source.mode != SourceConfig::Mode::Database;
