@@ -30,7 +30,6 @@
 // - First touch: Set sentinel to desired mode, retype if current != desired
 // - Subsequent touches: Only retype if sentinel matches desired AND current != desired
 //
-// A correctness guard in ContactsKernel also ensures the right typing at point-of-use.
 //
 namespace lahuta::analysis {
 namespace C = lahuta::compute;

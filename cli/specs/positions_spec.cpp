@@ -8,6 +8,7 @@
 #include "parsing/arg_validation.hpp"
 #include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
+#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "specs/command_spec.hpp"
 #include "tasks/positions_task.hpp"
@@ -46,7 +47,7 @@ public:
          "",
          "",
          validate::Unknown,
-         std::string("Usage: lahuta positions --output <dir> [options]\n"
+         std::string("Usage: lahuta positions [--output <dir>] [options]\n"
                      "Author: ")
              .append(Author)
              .append("\n\n")
@@ -61,12 +62,13 @@ public:
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);
 
-    schema_.add({0, "", "", option::Arg::None, "\nRequired:"});
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
     schema_.add({positions_opts::Output,
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <dir>           \tOutput directory for sharded binary files."});
+                 "  --output, -o <dir>           \tOutput directory for sharded binary files "
+                 "(default: positions_<timestamp>)."});
     schema_.add({positions_opts::TreeDepth,
                  "",
                  "tree-depth",
@@ -100,13 +102,14 @@ public:
                           "--is_af2_model (or use --database).");
     }
 
-    if (!args.has(positions_opts::Output)) {
-      throw CliUsageError("Missing required --output option.");
-    }
-
-    const std::string output_arg = args.get_string(positions_opts::Output);
-    if (output_arg.empty()) {
-      throw CliUsageError("--output requires a value.");
+    std::string output_arg;
+    if (args.has(positions_opts::Output)) {
+      output_arg = args.get_string(positions_opts::Output);
+      if (output_arg.empty()) {
+        throw CliUsageError("--output requires a value.");
+      }
+    } else {
+      output_arg = "positions_" + current_timestamp_string();
     }
     if (args.has(positions_opts::TreeDepth)) {
       config.tree_depth = std::stoi(args.get_string(positions_opts::TreeDepth));
