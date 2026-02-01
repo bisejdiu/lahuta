@@ -26,7 +26,7 @@ constexpr std::string_view Summary = "Extract data from AlphaFold2 model files o
 
 namespace extract_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { Fields = BaseIndex, Output };
+enum : unsigned { Fields = BaseIndex, Output, OutputStdout };
 } // namespace extract_opts
 
 constexpr std::string_view FIELD_SEQUENCE = "sequence";
@@ -155,6 +155,11 @@ public:
                  validate::Required,
                  "  --output, -o <path>          \tWrite NDJSON to file (default: <field>_data.jsonl). Use "
                  "'-' for stdout."});
+    schema_.add({extract_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite NDJSON to stdout (same as --output -)."});
     schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
@@ -204,6 +209,8 @@ public:
       }
     }
 
+    config.output_stdout = args.get_flag(extract_opts::OutputStdout);
+
     if (args.has(extract_opts::Output)) {
       const std::string output_arg = args.get_string(extract_opts::Output);
       if (output_arg.empty()) {
@@ -211,11 +218,14 @@ public:
       }
       if (output_arg == "-") {
         config.output_stdout = true;
-        config.output_path   = "-";
       } else {
         config.output_path     = output_arg;
         config.output_override = true;
       }
+    }
+
+    if (config.output_stdout && config.output_override) {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
     }
 
     if (config.fields.size() > 1 && config.output_override) {

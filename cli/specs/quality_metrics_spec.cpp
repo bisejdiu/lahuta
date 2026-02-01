@@ -8,8 +8,8 @@
 #include "analysis/extract/extract_tasks.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
-#include "parsing/usage_error.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/logging.hpp"
@@ -26,7 +26,15 @@ constexpr std::string_view Summary = "Compute per-protein group metrics for pLDD
 
 namespace quality_metrics_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { PlddtGroup = BaseIndex, DsspGroup, SegmentGroup, SegmentMin, NoOverlap, Output };
+enum : unsigned {
+  PlddtGroup = BaseIndex,
+  DsspGroup,
+  SegmentGroup,
+  SegmentMin,
+  NoOverlap,
+  Output,
+  OutputStdout
+};
 } // namespace quality_metrics_opts
 
 struct QualityMetricsCliConfig {
@@ -129,6 +137,11 @@ public:
                  validate::Required,
                  "  --output, -o <path>          \tWrite NDJSON to file (default: "
                  "per_protein_metrics.jsonl). Use '-' for stdout."});
+    schema_.add({quality_metrics_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite NDJSON to stdout (same as --output -)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({quality_metrics_opts::PlddtGroup,
@@ -254,6 +267,8 @@ public:
       }
     }
 
+    config.output_stdout = args.get_flag(quality_metrics_opts::OutputStdout);
+
     if (args.has(quality_metrics_opts::Output)) {
       const std::string output_arg = args.get_string(quality_metrics_opts::Output);
       if (output_arg.empty()) {
@@ -265,6 +280,10 @@ public:
       } else {
         config.output_path = output_arg;
       }
+    }
+
+    if (config.output_stdout && args.has(quality_metrics_opts::Output) && config.output_path != "-") {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
     }
 
     if (config.source.mode == SourceConfig::Mode::Database) {

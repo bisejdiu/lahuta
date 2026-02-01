@@ -87,7 +87,13 @@ option::ArgStatus ContactType(const option::Option &option, bool msg) {
 
 namespace contacts_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { SourceMD = BaseIndex, Provider, InteractionType, OutputJson, OutputText, OutputLog };
+enum : unsigned { //
+  SourceMD = BaseIndex,
+  Provider,
+  InteractionType,
+  OutputPath,
+  OutputStdout
+};
 } // namespace contacts_opts
 
 enum class ContactsSourceMode { Directory, Vector, FileList, Database, MD };
@@ -101,12 +107,8 @@ struct ContactsConfig {
   A::ContactProvider provider          = A::ContactProvider::MolStar;
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
   bool is_af2_model                    = false;
-  bool want_json                       = false;
-  bool want_text                       = false;
-  bool want_log                        = false;
-  std::string run_timestamp;
-  std::string contacts_json_path;
-  std::string contacts_text_path;
+  bool output_stdout                   = false;
+  std::string output_path;
 };
 
 class ContactsSpec final : public CommandSpec {
@@ -145,21 +147,17 @@ public:
                  "once or more for trajectories (XTC)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({contacts_opts::OutputJson,
+    schema_.add({contacts_opts::OutputPath,
+                 "o",
+                 "output",
+                 validate::Required,
+                 "  --output, -o <path>          \tWrite NDJSON to file (default: "
+                 "contacts_<timestamp>.jsonl). Use '-' for stdout."});
+    schema_.add({contacts_opts::OutputStdout,
                  "",
-                 "json",
+                 "stdout",
                  option::Arg::None,
-                 "  --json                       \tOutput results in JSON format."});
-    schema_.add({contacts_opts::OutputText,
-                 "",
-                 "text",
-                 option::Arg::None,
-                 "  --text                       \tOutput results in text format."});
-    schema_.add({contacts_opts::OutputLog,
-                 "",
-                 "log",
-                 option::Arg::None,
-                 "  --log                        \tOutput results to standard output (logging)."});
+                 "  --stdout                     \tWrite NDJSON to stdout (same as --output -)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({contacts_opts::Provider,
@@ -264,16 +262,28 @@ public:
       }
     }
 
-    config.want_json = args.get_flag(contacts_opts::OutputJson);
-    config.want_text = args.get_flag(contacts_opts::OutputText);
-    config.want_log  = args.get_flag(contacts_opts::OutputLog);
-    if (!config.want_json && !config.want_text && !config.want_log) {
-      config.want_json = true;
+    config.output_stdout = args.get_flag(contacts_opts::OutputStdout);
+
+    std::string output_arg;
+    if (args.has(contacts_opts::OutputPath)) {
+      output_arg = args.get_string(contacts_opts::OutputPath);
+      if (output_arg.empty()) {
+        throw CliUsageError("--output requires a value.");
+      }
+      if (output_arg == "-") {
+        config.output_stdout = true;
+      } else {
+        config.output_path = output_arg;
+      }
     }
 
-    config.run_timestamp      = current_timestamp_string();
-    config.contacts_json_path = "contacts_" + config.run_timestamp + ".jsonl";
-    config.contacts_text_path = "contacts_" + config.run_timestamp + ".txt";
+    if (config.output_stdout && !output_arg.empty() && output_arg != "-") {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
+    if (!config.output_stdout && config.output_path.empty()) {
+      config.output_path = "contacts_" + current_timestamp_string() + ".jsonl";
+    }
 
     return std::make_any<ContactsConfig>(std::move(config));
   }
@@ -344,13 +354,11 @@ public:
       throw CliUsageError("contacts does not support this source mode");
     };
 
-    const bool json_out = cfg.want_json || !cfg.want_text;
-
     P::ContactsParams params;
     params.provider = cfg.provider;
     params.type     = cfg.interaction_types;
     params.channel  = "contacts";
-    params.format   = json_out ? P::ContactsOutputFormat::Json : P::ContactsOutputFormat::Text;
+    params.format   = P::ContactsOutputFormat::Json;
 
     PipelineComputation computation;
     computation.name    = "contacts";
@@ -361,29 +369,17 @@ public:
     auto sink_cfg           = P::get_default_backpressure_config();
     sink_cfg.writer_threads = cfg.runtime.writer_threads;
 
-    if (json_out && cfg.want_json) {
-      PipelineSink sink;
-      sink.channel      = "contacts";
-      sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.contacts_json_path);
-      sink.backpressure = sink_cfg;
-      plan.sinks.push_back(std::move(sink));
-      Logger::get_logger()->info("Contacts JSON sink -> {}", cfg.contacts_json_path);
+    PipelineSink sink;
+    sink.channel      = "contacts";
+    sink.backpressure = sink_cfg;
+    if (cfg.output_stdout) {
+      sink.sink = std::make_shared<P::LoggingSink>();
+      Logger::get_logger()->info("Contacts output sink -> stdout (-)");
+    } else {
+      sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+      Logger::get_logger()->info("Contacts output sink -> file: {}", cfg.output_path);
     }
-    if (!json_out && cfg.want_text) {
-      PipelineSink sink;
-      sink.channel      = "contacts";
-      sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.contacts_text_path);
-      sink.backpressure = sink_cfg;
-      plan.sinks.push_back(std::move(sink));
-      Logger::get_logger()->info("Contacts text sink -> {}", cfg.contacts_text_path);
-    }
-    if (cfg.want_log) {
-      PipelineSink sink;
-      sink.channel      = "contacts";
-      sink.sink         = std::make_shared<P::LoggingSink>();
-      sink.backpressure = sink_cfg;
-      plan.sinks.push_back(std::move(sink));
-    }
+    plan.sinks.push_back(std::move(sink));
 
     return plan;
   }
