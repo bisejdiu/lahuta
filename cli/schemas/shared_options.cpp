@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <sstream>
 #include <string_view>
+#include <thread>
 
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
@@ -10,6 +11,15 @@
 #include "schemas/shared_options.hpp"
 
 namespace lahuta::cli {
+
+int default_thread_count() {
+  const auto count = std::thread::hardware_concurrency();
+  if (count > 0) return static_cast<int>(count);
+  return 8;
+}
+
+RuntimeOptionSpec::RuntimeOptionSpec() : default_threads(default_thread_count()) {}
+
 namespace {
 
 SourceOptionSpec default_source_spec() {

@@ -72,6 +72,8 @@ struct RuntimeOptionSpec {
   int default_threads                = 8;
   std::size_t default_batch_size     = 512;
   std::size_t default_writer_threads = 1;
+
+  RuntimeOptionSpec();
 };
 
 struct RuntimeConfig {
@@ -104,6 +106,7 @@ void add_report_options(OptionSchema &schema);
                                       std::string_view label,
                                       std::string_view missing_message = {},
                                       std::string_view empty_message = {});
+[[nodiscard]] int default_thread_count();
 
 } // namespace lahuta::cli
 

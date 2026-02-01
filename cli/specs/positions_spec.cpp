@@ -39,7 +39,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz", ".pdb", ".pdb.gz"};
 
     runtime_spec_.include_writer_threads = false;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
 
     schema_.add(

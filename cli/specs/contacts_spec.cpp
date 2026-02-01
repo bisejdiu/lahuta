@@ -116,7 +116,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz"};
 
     runtime_spec_.include_writer_threads = true;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 200;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
