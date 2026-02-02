@@ -296,11 +296,12 @@ public:
     data_sink.channel      = cfg.params.channel;
     data_sink.backpressure = sink_cfg;
     data_sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
-    Logger::get_logger()->info("SASA-SR output -> {}", cfg.output_path);
     plan.sinks.push_back(std::move(data_sink));
 
+    Logger::get_logger()->info("Writing to: {}", cfg.output_path);
     Logger::get_logger()->info("SASA-SR probe radius: {}", cfg.params.params.probe_radius);
     Logger::get_logger()->info("SASA-SR points: {}", cfg.params.params.n_points);
+    plan.output_files.push_back(cfg.output_path);
     return plan;
   }
 

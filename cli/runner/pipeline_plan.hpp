@@ -55,6 +55,7 @@ struct PipelinePlan {
   bool save_run_report = false;
   std::string run_report_prefix;
   std::string success_message;
+  std::vector<std::string> output_files;
   std::vector<PipelineTask> tasks;
   std::vector<PipelineComputation> computations;
   std::vector<PipelineSink> sinks;

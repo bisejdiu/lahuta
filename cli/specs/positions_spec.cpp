@@ -176,8 +176,9 @@ public:
     positions_task.thread_safe = true;
     plan.tasks.push_back(std::move(positions_task));
 
-    Logger::get_logger()->info("Positions output directory: {}", cfg.output_dir.string());
-    Logger::get_logger()->info("Positions output tree depth: {}", cfg.tree_depth);
+    Logger::get_logger()->info("Writing to: {}/", cfg.output_dir.string());
+    Logger::get_logger()->info("Tree depth: {}", cfg.tree_depth);
+    plan.output_files.push_back(cfg.output_dir.string() + "/");
 
     return plan;
   }

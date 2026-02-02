@@ -373,10 +373,11 @@ public:
     sink.backpressure = sink_cfg;
     if (cfg.output_stdout) {
       sink.sink = std::make_shared<P::LoggingSink>();
-      Logger::get_logger()->info("Contacts output sink -> stdout (-)");
+      Logger::get_logger()->info("Writing to: stdout");
     } else {
       sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
-      Logger::get_logger()->info("Contacts output sink -> file: {}", cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
     }
     plan.sinks.push_back(std::move(sink));
 

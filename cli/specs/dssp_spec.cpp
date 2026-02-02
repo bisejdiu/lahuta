@@ -221,7 +221,8 @@ public:
     sink.backpressure = sink_cfg;
     plan.sinks.push_back(std::move(sink));
 
-    Logger::get_logger()->info("DSSP JSONL sink -> {}", cfg.output_path);
+    Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+    plan.output_files.push_back(cfg.output_path);
 
     return plan;
   }

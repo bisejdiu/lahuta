@@ -242,7 +242,6 @@ public:
     data_sink.channel      = std::string(compaction_rg::OutputChannel);
     data_sink.backpressure = sink_cfg;
     data_sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
-    Logger::get_logger()->info("Compaction-rg output -> {}", cfg.output_path);
     plan.sinks.push_back(std::move(data_sink));
 
     PipelineSink summary_sink;
@@ -250,8 +249,12 @@ public:
     summary_sink.backpressure = sink_cfg;
     summary_sink.sink         = compaction_rg::make_compaction_rg_summary_sink(cfg.summary_path,
                                                                        cfg.task_config->counters);
-    Logger::get_logger()->info("Compaction-rg summary -> {}", cfg.summary_path.string());
     plan.sinks.push_back(std::move(summary_sink));
+
+    Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+    Logger::get_logger()->info("Writing to: {}", cfg.summary_path.string());
+    plan.output_files.push_back(cfg.output_path);
+    plan.output_files.push_back(cfg.summary_path.string());
 
     return plan;
   }

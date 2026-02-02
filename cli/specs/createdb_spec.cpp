@@ -153,11 +153,11 @@ public:
       case SourceConfig::Mode::Database:
         break;
     }
-    Logger::get_logger()->info("Database path: {}", cfg.database_path);
+    Logger::get_logger()->info("Writing to: {}/", cfg.database_path);
     Logger::get_logger()->info("Batch size: {}", cfg.runtime.batch_size);
     Logger::get_logger()->info("Threads: {}", cfg.runtime.threads);
     Logger::get_logger()->info("Max size: {} GB", cfg.max_size_gb);
-    Logger::get_logger()->debug("Processing files ...");
+    plan.output_files.push_back(cfg.database_path + "/");
 
     auto db = std::make_shared<LMDBDatabase>(cfg.database_path, cfg.max_size_gb);
 

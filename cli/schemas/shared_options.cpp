@@ -120,6 +120,8 @@ std::filesystem::path validate_output_dir(const std::string &output_arg) {
 }
 
 std::string ensure_jsonl_extension(const std::string &path) {
+  if (path == "-") return path;
+
   std::filesystem::path p(path);
   if (p.extension() == ".jsonl") {
     return path;

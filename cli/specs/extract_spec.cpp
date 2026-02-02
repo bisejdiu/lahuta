@@ -300,7 +300,7 @@ public:
     std::shared_ptr<P::LoggingSink> stdout_sink;
     if (cfg.output_stdout) {
       stdout_sink = std::make_shared<P::LoggingSink>();
-      Logger::get_logger()->info("Extract output sink -> stdout (-)");
+      Logger::get_logger()->info("Writing to: stdout");
     }
 
     for (const auto &field : cfg.fields) {
@@ -322,7 +322,8 @@ public:
       } else {
         const std::string output_path = cfg.output_override ? cfg.output_path : output_channel + ".jsonl";
         sink.sink                     = std::make_shared<P::NdjsonFileSink>(output_path);
-        Logger::get_logger()->info("Extract output sink -> file: {}", output_path);
+        Logger::get_logger()->info("Writing to: {}", output_path);
+        plan.output_files.push_back(output_path);
       }
       plan.sinks.push_back(std::move(sink));
     }

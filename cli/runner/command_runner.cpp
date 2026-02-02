@@ -165,6 +165,9 @@ int CommandRunner::run(const CommandSpec &spec, int argc, const char *const *arg
       if (!plan.success_message.empty()) {
         Logger::get_logger()->info("{}", plan.success_message);
       }
+      for (const auto &path : plan.output_files) {
+        Logger::get_logger()->info("Output written to: {}", path);
+      }
 
       return 0;
     } catch (const std::exception &e) {
