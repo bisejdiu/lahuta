@@ -30,6 +30,7 @@ enum : unsigned { //
   ProbeRadius,
   Points,
   IncludeTotal,
+  ShowAtomInfo,
   UseBitmask,
   NoSimd
 };
@@ -40,11 +41,12 @@ struct SasaSrCliConfig {
   RuntimeConfig runtime;
   ReportConfig report;
   std::filesystem::path output_dir;
-  double probe_radius  = 1.4;
-  std::size_t n_points = 128;
-  bool include_total   = false;
-  bool use_bitmask     = false;
-  bool use_simd        = true;
+  double probe_radius   = 1.4;
+  std::size_t n_points  = 128;
+  bool include_total    = false;
+  bool show_atom_info   = false;
+  bool use_bitmask      = false;
+  bool use_simd         = true;
   P::SasaSrParams params;
 };
 
@@ -69,9 +71,9 @@ public:
                      .append(Summary)
                      .append("\n"
                              "Outputs: per_protein_sasa_sr.jsonl (JSONL) in the output directory.\n"
-                             "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"
-                             "atom-index-atom_name-residue_id-residue_name-chain_id.\n"
-                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
+                             "Default output: {\"model\":\"...\",\"sasa\":[...]} with per-atom SASA values.\n"
+                             "Use --show-atom-info for labeled output with atom identifiers.\n"
+                             "Note: file-based inputs must be AF2 model files.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -125,6 +127,11 @@ public:
                  "include-total",
                  option::Arg::None,
                  "  --include-total              \tInclude total SASA in JSON output."});
+    schema_.add({sasa_sr_opts::ShowAtomInfo,
+                 "",
+                 "show-atom-info",
+                 option::Arg::None,
+                 "  --show-atom-info             \tInclude atom labels in output (default: values only)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({sasa_sr_opts::ProbeRadius,
@@ -205,10 +212,11 @@ public:
       config.n_points = static_cast<std::size_t>(raw);
     }
 
-    config.include_total = args.get_flag(sasa_sr_opts::IncludeTotal);
-    config.use_bitmask   = args.get_flag(sasa_sr_opts::UseBitmask);
-    config.use_simd      = !args.get_flag(sasa_sr_opts::NoSimd);
-    config.output_dir = validate_output_dir(output_arg);
+    config.include_total  = args.get_flag(sasa_sr_opts::IncludeTotal);
+    config.show_atom_info = args.get_flag(sasa_sr_opts::ShowAtomInfo);
+    config.use_bitmask    = args.get_flag(sasa_sr_opts::UseBitmask);
+    config.use_simd       = !args.get_flag(sasa_sr_opts::NoSimd);
+    config.output_dir     = validate_output_dir(output_arg);
 
     P::SasaSrParams params;
     params.params.probe_radius = config.probe_radius;
@@ -216,6 +224,7 @@ public:
     params.params.use_bitmask  = config.use_bitmask;
     params.params.use_simd     = config.use_simd;
     params.include_total       = config.include_total;
+    params.show_atom_info      = config.show_atom_info;
     params.channel             = std::string(A::SasaSrOutputChannel);
     params.counters            = std::make_shared<A::SasaSrCounters>();
     config.params              = std::move(params);

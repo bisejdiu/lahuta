@@ -91,7 +91,7 @@ public:
              .append("\n\n")
              .append(Summary)
              .append("\n"
-                     "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not "
+                     "Note: file-based inputs must be AF2 model files. Generic structures are not "
                      "supported.\n\n"
                      "Available reporters (--reporter <name>):\n"
                      "  summary     - Balanced totals and item counts (default; negligible overhead).\n"

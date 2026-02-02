@@ -59,8 +59,9 @@ struct SasaSrParams : public C::ParameterBase<SasaSrParams> {
   static constexpr C::ParameterInterface::TypeId TYPE_ID = param_ids::SASA_SR;
 
   analysis::SasaParams params;
-  std::string channel = std::string(analysis::SasaSrOutputChannel);
-  bool include_total  = false;
+  std::string channel  = std::string(analysis::SasaSrOutputChannel);
+  bool include_total   = false;
+  bool show_atom_info  = false;
   std::shared_ptr<analysis::SasaSrCounters> counters;
 };
 

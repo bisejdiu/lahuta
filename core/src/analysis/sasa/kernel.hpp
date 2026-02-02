@@ -292,11 +292,12 @@ struct SasaSrKernel {
     auto result = compute_sasa(atoms, local_params);
 
     SasaSrRecord record;
-    record.model_path    = data.item_path;
-    record.labels        = std::move(scratch.labels);
-    record.per_atom      = std::move(result.per_atom);
-    record.total         = result.total;
-    record.include_total = p.include_total;
+    record.model_path     = data.item_path;
+    record.labels         = std::move(scratch.labels);
+    record.per_atom       = std::move(result.per_atom);
+    record.total          = result.total;
+    record.include_total  = p.include_total;
+    record.show_atom_info = p.show_atom_info;
 
     auto payload = serialization::Serializer<fmt::json, SasaSrRecord>::serialize(record);
 

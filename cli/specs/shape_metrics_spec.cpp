@@ -59,7 +59,7 @@ public:
                              "Metrics include Rg, asphericity, and kappa^2. Trimming removes\n"
                              "low-confidence coil/turn/bend tails.\n\n"
                              "Outputs: per_protein_shape_metrics.jsonl (JSONL) in the output directory.\n"
-                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
+                             "Note: file-based inputs must be AF2 model files.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,

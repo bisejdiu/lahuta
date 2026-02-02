@@ -59,7 +59,7 @@ public:
                              "Trimming removes N/C termini that are both low-confidence (pLDDT) and\n"
                              "unstructured (DSSP coil/turn/bend).\n\n"
                              "Outputs: per_protein_rg.jsonl (JSONL) in the output directory.\n"
-                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
+                             "Note: file-based inputs must be AF2 model files.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
