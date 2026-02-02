@@ -119,6 +119,16 @@ std::filesystem::path validate_output_dir(const std::string &output_arg) {
   return output_dir;
 }
 
+std::string ensure_jsonl_extension(const std::string &path) {
+  std::filesystem::path p(path);
+  if (p.extension() == ".jsonl") {
+    return path;
+  }
+
+  p.replace_extension(".jsonl");
+  return p.string();
+}
+
 std::string require_arg(const ParsedArgs &args, int option, std::string_view label,
                         std::string_view missing_message, std::string_view empty_message) {
 

@@ -11,7 +11,7 @@ namespace lahuta::cli::shape_metrics {
 namespace P = lahuta::pipeline;
 
 [[nodiscard]] std::shared_ptr<P::IDynamicSink>
-make_shape_metrics_summary_sink(std::filesystem::path output_dir,
+make_shape_metrics_summary_sink(std::filesystem::path output_path,
                                 std::shared_ptr<ShapeMetricsCounters> counters);
 
 } // namespace lahuta::cli::shape_metrics

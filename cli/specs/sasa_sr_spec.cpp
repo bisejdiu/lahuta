@@ -1,5 +1,4 @@
 #include <cmath>
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -26,7 +25,7 @@ constexpr std::string_view Summary = "Compute Shrake-Rupley solvent accessible s
 namespace sasa_sr_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { //
-  OutputDir = BaseIndex,
+  Output = BaseIndex,
   ProbeRadius,
   Points,
   IncludeTotal,
@@ -40,7 +39,7 @@ struct SasaSrCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
-  std::filesystem::path output_dir;
+  std::string output_path;
   double probe_radius   = 1.4;
   std::size_t n_points  = 128;
   bool include_total    = false;
@@ -64,13 +63,13 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n"
+                 std::string("Usage: lahuta sasa-sr [--output <file>] [options]\n"
                              "Author: ")
                      .append(Author)
                      .append("\n\n")
                      .append(Summary)
                      .append("\n"
-                             "Outputs: per_protein_sasa_sr.jsonl (JSONL) in the output directory.\n"
+                             "Outputs: SASA values in JSONL format.\n"
                              "Default output: {\"model\":\"...\",\"sasa\":[...]} with per-atom SASA values.\n"
                              "Use --show-atom-info for labeled output with atom identifiers.\n"
                              "Note: file-based inputs must be AF2 model files.")});
@@ -117,11 +116,11 @@ public:
                  "models (AF2-like mmCIF)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({sasa_sr_opts::OutputDir,
+    schema_.add({sasa_sr_opts::Output,
                  "o",
-                 "output-dir",
+                 "output",
                  validate::Required,
-                 "  --output-dir, -o <dir>       \tOutput directory for per-model JSON files (default: .)."});
+                 "  --output, -o <file>          \tOutput file for SASA JSONL (default: sasa_sr.jsonl)."});
     schema_.add({sasa_sr_opts::IncludeTotal,
                  "",
                  "include-total",
@@ -187,14 +186,14 @@ public:
                           "--is_af2_model (or use --database).");
     }
 
-    std::string output_arg;
-    if (args.has(sasa_sr_opts::OutputDir)) {
-      output_arg = args.get_string(sasa_sr_opts::OutputDir);
-      if (output_arg.empty()) {
-        throw CliUsageError("--output-dir requires a value.");
+    if (args.has(sasa_sr_opts::Output)) {
+      config.output_path = args.get_string(sasa_sr_opts::Output);
+      if (config.output_path.empty()) {
+        throw CliUsageError("--output requires a value.");
       }
+      config.output_path = ensure_jsonl_extension(config.output_path);
     } else {
-      output_arg = ".";
+      config.output_path = "sasa_sr.jsonl";
     }
 
     if (args.has(sasa_sr_opts::ProbeRadius)) {
@@ -216,7 +215,6 @@ public:
     config.show_atom_info = args.get_flag(sasa_sr_opts::ShowAtomInfo);
     config.use_bitmask    = args.get_flag(sasa_sr_opts::UseBitmask);
     config.use_simd       = !args.get_flag(sasa_sr_opts::NoSimd);
-    config.output_dir     = validate_output_dir(output_arg);
 
     P::SasaSrParams params;
     params.params.probe_radius = config.probe_radius;
@@ -297,9 +295,8 @@ public:
     PipelineSink data_sink;
     data_sink.channel      = cfg.params.channel;
     data_sink.backpressure = sink_cfg;
-    const auto output_path = (cfg.output_dir / "per_protein_sasa_sr.jsonl").string();
-    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(output_path);
-    Logger::get_logger()->info("SASA-SR output -> {}", output_path);
+    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+    Logger::get_logger()->info("SASA-SR output -> {}", cfg.output_path);
     plan.sinks.push_back(std::move(data_sink));
 
     Logger::get_logger()->info("SASA-SR probe radius: {}", cfg.params.params.probe_radius);

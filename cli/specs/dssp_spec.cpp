@@ -1,4 +1,3 @@
-#include <filesystem>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -13,7 +12,6 @@
 #include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
-#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/ndjson.hpp"
 #include "specs/command_spec.hpp"
@@ -28,7 +26,7 @@ constexpr std::string_view Summary = "Compute DSSP secondary-structure assignmen
 namespace dssp_opts {
 constexpr unsigned BaseIndex = 240;
 enum : unsigned { //
-  OutputDir = BaseIndex,
+  Output = BaseIndex,
   NoPreferPi,
   PpStretchLength
 };
@@ -38,7 +36,6 @@ struct DsspCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
-  std::filesystem::path output_dir;
   std::string output_path;
   P::DsspParams params;
 };
@@ -57,23 +54,23 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta dssp [--output-dir <dir>] [options]\n"
+                 std::string("Usage: lahuta dssp [--output <file>] [options]\n"
                              "Author: ")
                      .append(Author)
                      .append("\n\n")
                      .append(Summary)
                      .append("\n"
-                             "Outputs: per_residue_dssp.jsonl (JSONL) in the output directory.\n")});
+                             "Outputs: DSSP assignments in JSONL format.\n")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({dssp_opts::OutputDir,
+    schema_.add({dssp_opts::Output,
                  "o",
-                 "output-dir",
+                 "output",
                  validate::Required,
-                 "  --output-dir, -o <dir>       \tOutput directory for DSSP JSONL (default: .)."});
+                 "  --output, -o <file>          \tOutput file for DSSP JSONL (default: dssp.jsonl)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({dssp_opts::NoPreferPi,
@@ -111,14 +108,13 @@ public:
       config.source.is_af2_model = true;
     }
 
-    std::string output_arg;
-    if (args.has(dssp_opts::OutputDir)) {
-      output_arg = args.get_string(dssp_opts::OutputDir);
-      if (output_arg.empty()) throw CliUsageError("--output-dir requires a value.");
+    if (args.has(dssp_opts::Output)) {
+      config.output_path = args.get_string(dssp_opts::Output);
+      if (config.output_path.empty()) throw CliUsageError("--output requires a value.");
+      config.output_path = ensure_jsonl_extension(config.output_path);
     } else {
-      output_arg = ".";
+      config.output_path = "dssp.jsonl";
     }
-    config.output_dir = validate_output_dir(output_arg);
 
     P::DsspParams params;
     params.channel           = std::string(A::DsspOutputChannel);
@@ -132,8 +128,7 @@ public:
       params.pp_stretch_length = static_cast<int>(raw);
     }
 
-    config.params      = std::move(params);
-    config.output_path = (config.output_dir / ("dssp_" + current_timestamp_string() + ".jsonl")).string();
+    config.params = std::move(params);
 
     return std::make_any<DsspCliConfig>(std::move(config));
   }

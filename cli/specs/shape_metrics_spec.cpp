@@ -24,14 +24,15 @@ constexpr std::string_view Summary = "Compute tensor-based shape metrics with pL
 
 namespace shape_metrics_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { OutputDir = BaseIndex, MinHighFraction };
+enum : unsigned { Output = BaseIndex, MinHighFraction };
 } // namespace shape_metrics_opts
 
 struct ShapeMetricsCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
-  std::filesystem::path output_dir;
+  std::string output_path;
+  std::filesystem::path summary_path;
   double min_high_fraction = 0.80;
   std::shared_ptr<const shape_metrics::ShapeMetricsConfig> task_config;
 };
@@ -50,7 +51,7 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta shape-metrics [--output-dir <dir>] [options]\n"
+                 std::string("Usage: lahuta shape-metrics [--output <file>] [options]\n"
                              "Author: ")
                      .append(Author)
                      .append("\n\n")
@@ -58,7 +59,7 @@ public:
                      .append("\n"
                              "Metrics include Rg, asphericity, and kappa^2. Trimming removes\n"
                              "low-confidence coil/turn/bend tails.\n\n"
-                             "Outputs: per_protein_shape_metrics.jsonl (JSONL) in the output directory.\n"
+                             "Outputs: Shape metrics in JSONL format (+ summary JSON in same directory).\n"
                              "Note: file-based inputs must be AF2 model files.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
@@ -103,11 +104,11 @@ public:
                  "models (AF2-like mmCIF)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({shape_metrics_opts::OutputDir,
+    schema_.add({shape_metrics_opts::Output,
                  "o",
-                 "output-dir",
+                 "output",
                  validate::Required,
-                 "  --output-dir, -o <dir>       \tOutput directory for JSONL results (default: .)."});
+                 "  --output, -o <file>          \tOutput file for shape metrics JSONL (default: shape_metrics.jsonl)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({shape_metrics_opts::MinHighFraction,
@@ -147,15 +148,19 @@ public:
                           "--is_af2_model (or use --database).");
     }
 
-    std::string output_arg;
-    if (args.has(shape_metrics_opts::OutputDir)) {
-      output_arg = args.get_string(shape_metrics_opts::OutputDir);
-      if (output_arg.empty()) {
-        throw CliUsageError("--output-dir requires a value.");
+    if (args.has(shape_metrics_opts::Output)) {
+      config.output_path = args.get_string(shape_metrics_opts::Output);
+      if (config.output_path.empty()) {
+        throw CliUsageError("--output requires a value.");
       }
+      config.output_path = ensure_jsonl_extension(config.output_path);
     } else {
-      output_arg = ".";
+      config.output_path = "shape_metrics.jsonl";
     }
+
+    // Derive summary path from output path: foo.jsonl -> foo_summary.json
+    std::filesystem::path output_fs(config.output_path);
+    config.summary_path = output_fs.parent_path() / (output_fs.stem().string() + "_summary.json");
 
     if (args.has(shape_metrics_opts::MinHighFraction)) {
       config.min_high_fraction = std::stod(args.get_string(shape_metrics_opts::MinHighFraction));
@@ -163,8 +168,6 @@ public:
         throw CliUsageError("--min-high-fraction must be between 0 and 1.");
       }
     }
-
-    config.output_dir = validate_output_dir(output_arg);
 
     auto counters               = std::make_shared<shape_metrics::ShapeMetricsCounters>();
     auto task_cfg               = std::make_shared<shape_metrics::ShapeMetricsConfig>();
@@ -238,18 +241,16 @@ public:
     PipelineSink data_sink;
     data_sink.channel      = std::string(shape_metrics::OutputChannel);
     data_sink.backpressure = sink_cfg;
-    const auto output_path = (cfg.output_dir / "per_protein_shape_metrics.jsonl").string();
-    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(output_path);
-    Logger::get_logger()->info("Shape-metrics output -> {}", output_path);
+    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+    Logger::get_logger()->info("Shape-metrics output -> {}", cfg.output_path);
     plan.sinks.push_back(std::move(data_sink));
 
     PipelineSink summary_sink;
     summary_sink.channel      = std::string(shape_metrics::OutputChannel);
     summary_sink.backpressure = sink_cfg;
-    summary_sink.sink         = shape_metrics::make_shape_metrics_summary_sink(cfg.output_dir,
+    summary_sink.sink         = shape_metrics::make_shape_metrics_summary_sink(cfg.summary_path,
                                                                        cfg.task_config->counters);
-    Logger::get_logger()->info("Shape-metrics summary -> {}",
-                               (cfg.output_dir / "shape_metrics_summary.json").string());
+    Logger::get_logger()->info("Shape-metrics summary -> {}", cfg.summary_path.string());
     plan.sinks.push_back(std::move(summary_sink));
 
     return plan;

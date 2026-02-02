@@ -11,7 +11,7 @@ namespace lahuta::cli::compaction_rg {
 namespace P = lahuta::pipeline;
 
 [[nodiscard]] std::shared_ptr<P::IDynamicSink>
-make_compaction_rg_summary_sink(std::filesystem::path output_dir,
+make_compaction_rg_summary_sink(std::filesystem::path output_path,
                                 std::shared_ptr<CompactionRgCounters> counters);
 
 } // namespace lahuta::cli::compaction_rg
