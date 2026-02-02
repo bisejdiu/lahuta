@@ -13,6 +13,7 @@
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
+#include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 #include "specs/command_spec.hpp"
 
@@ -27,6 +28,7 @@ namespace dssp_opts {
 constexpr unsigned BaseIndex = 240;
 enum : unsigned { //
   Output = BaseIndex,
+  OutputStdout,
   NoPreferPi,
   PpStretchLength
 };
@@ -36,6 +38,7 @@ struct DsspCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
+  bool output_stdout = false;
   std::string output_path;
   P::DsspParams params;
 };
@@ -70,7 +73,13 @@ public:
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <file>          \tOutput file for DSSP JSONL (default: dssp.jsonl)."});
+                 "  --output, -o <file>          \tOutput file for DSSP JSONL (default: dssp.jsonl). "
+                 "Use '-' for stdout."});
+    schema_.add({dssp_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({dssp_opts::NoPreferPi,
@@ -108,11 +117,23 @@ public:
       config.source.is_af2_model = true;
     }
 
+    config.output_stdout = args.get_flag(dssp_opts::OutputStdout);
+
     if (args.has(dssp_opts::Output)) {
-      config.output_path = args.get_string(dssp_opts::Output);
-      if (config.output_path.empty()) throw CliUsageError("--output requires a value.");
-      config.output_path = ensure_jsonl_extension(config.output_path);
-    } else {
+      const auto output_arg = args.get_string(dssp_opts::Output);
+      if (output_arg.empty()) throw CliUsageError("--output requires a value.");
+      if (output_arg == "-") {
+        config.output_stdout = true;
+      } else {
+        config.output_path = ensure_jsonl_extension(output_arg);
+      }
+    }
+
+    if (config.output_stdout && !config.output_path.empty()) {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
+    if (!config.output_stdout && config.output_path.empty()) {
       config.output_path = "dssp.jsonl";
     }
 
@@ -217,12 +238,16 @@ public:
 
     PipelineSink sink;
     sink.channel      = cfg.params.channel;
-    sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
     sink.backpressure = sink_cfg;
+    if (cfg.output_stdout) {
+      sink.sink = std::make_shared<P::LoggingSink>();
+      Logger::get_logger()->info("Writing to: stdout");
+    } else {
+      sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
+    }
     plan.sinks.push_back(std::move(sink));
-
-    Logger::get_logger()->info("Writing to: {}", cfg.output_path);
-    plan.output_files.push_back(cfg.output_path);
 
     return plan;
   }

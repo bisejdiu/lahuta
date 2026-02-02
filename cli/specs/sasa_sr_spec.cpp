@@ -12,6 +12,7 @@
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
+#include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 #include "specs/command_spec.hpp"
 
@@ -26,6 +27,7 @@ namespace sasa_sr_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { //
   Output = BaseIndex,
+  OutputStdout,
   ProbeRadius,
   Points,
   IncludeTotal,
@@ -39,6 +41,7 @@ struct SasaSrCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
+  bool output_stdout    = false;
   std::string output_path;
   double probe_radius   = 1.4;
   std::size_t n_points  = 128;
@@ -120,7 +123,13 @@ public:
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <file>          \tOutput file for SASA JSONL (default: sasa_sr.jsonl)."});
+                 "  --output, -o <file>          \tOutput file for SASA JSONL (default: sasa_sr.jsonl). "
+                 "Use '-' for stdout."});
+    schema_.add({sasa_sr_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
     schema_.add({sasa_sr_opts::IncludeTotal,
                  "",
                  "include-total",
@@ -186,13 +195,25 @@ public:
                           "--is_af2_model (or use --database).");
     }
 
+    config.output_stdout = args.get_flag(sasa_sr_opts::OutputStdout);
+
     if (args.has(sasa_sr_opts::Output)) {
-      config.output_path = args.get_string(sasa_sr_opts::Output);
-      if (config.output_path.empty()) {
+      const auto output_arg = args.get_string(sasa_sr_opts::Output);
+      if (output_arg.empty()) {
         throw CliUsageError("--output requires a value.");
       }
-      config.output_path = ensure_jsonl_extension(config.output_path);
-    } else {
+      if (output_arg == "-") {
+        config.output_stdout = true;
+      } else {
+        config.output_path = ensure_jsonl_extension(output_arg);
+      }
+    }
+
+    if (config.output_stdout && !config.output_path.empty()) {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
+    if (!config.output_stdout && config.output_path.empty()) {
       config.output_path = "sasa_sr.jsonl";
     }
 
@@ -295,13 +316,18 @@ public:
     PipelineSink data_sink;
     data_sink.channel      = cfg.params.channel;
     data_sink.backpressure = sink_cfg;
-    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+    if (cfg.output_stdout) {
+      data_sink.sink = std::make_shared<P::LoggingSink>();
+      Logger::get_logger()->info("Writing to: stdout");
+    } else {
+      data_sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
+    }
     plan.sinks.push_back(std::move(data_sink));
 
-    Logger::get_logger()->info("Writing to: {}", cfg.output_path);
     Logger::get_logger()->info("SASA-SR probe radius: {}", cfg.params.params.probe_radius);
     Logger::get_logger()->info("SASA-SR points: {}", cfg.params.params.n_points);
-    plan.output_files.push_back(cfg.output_path);
     return plan;
   }
 
