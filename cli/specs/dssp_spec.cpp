@@ -6,6 +6,7 @@
 
 #include "analysis/dssp/computation.hpp"
 #include "analysis/dssp/records.hpp"
+#include "analysis/extract/extract_tasks.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
@@ -145,12 +146,16 @@ public:
     plan.save_run_report   = cfg.report.save_run_report;
     plan.run_report_prefix = "dssp";
     plan.threads           = static_cast<std::size_t>(cfg.runtime.threads);
-    plan.auto_builtins     = true;
     plan.success_message   = "DSSP computation completed successfully!";
 
-    plan.override_system_params = true;
-    plan.system_params.is_model = (cfg.source.is_af2_model ||
-                                   cfg.source.mode == SourceConfig::Mode::Database);
+    const bool use_model_pipeline = (cfg.source.is_af2_model ||
+                                     cfg.source.mode == SourceConfig::Mode::Database);
+
+    plan.auto_builtins = !use_model_pipeline;
+    if (!use_model_pipeline) {
+      plan.override_system_params = true;
+      plan.system_params.is_model = false;
+    }
 
     if (cfg.source.mode == SourceConfig::Mode::Directory) {
       Logger::get_logger()->info("Source directory: {}", cfg.source.directory_path);
@@ -186,11 +191,29 @@ public:
       throw CliUsageError("dssp does not support this source mode");
     };
 
+    const bool needs_parse_task = use_model_pipeline && cfg.source.mode != SourceConfig::Mode::Database;
+    if (needs_parse_task) {
+      PipelineTask parse_task;
+      parse_task.name        = "parse_model";
+      parse_task.task        = std::make_shared<A::ModelParseTask>();
+      parse_task.thread_safe = true;
+      plan.tasks.push_back(std::move(parse_task));
+    }
+
     PipelineComputation computation;
-    computation.name    = "dssp";
-    computation.factory = [params = cfg.params]() {
-      return std::make_unique<A::DsspComputation>("dssp", params);
-    };
+    computation.name = "dssp";
+    if (use_model_pipeline) {
+      computation.factory = [params = cfg.params]() {
+        return std::make_unique<A::DsspModelComputation>("dssp", params);
+      };
+    } else {
+      computation.factory = [params = cfg.params]() {
+        return std::make_unique<A::DsspComputation>("dssp", params);
+      };
+    }
+    if (needs_parse_task) {
+      computation.deps.emplace_back("parse_model");
+    }
     computation.thread_safe = true;
     plan.computations.push_back(std::move(computation));
 

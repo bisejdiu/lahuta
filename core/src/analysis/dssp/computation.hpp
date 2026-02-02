@@ -22,6 +22,17 @@ public:
   }
 };
 
+class DsspModelComputation
+    : public P::DynamicLabelComputation<P::DsspParams, DsspKernel, DsspModelComputation> {
+public:
+  using Base = P::DynamicLabelComputation<P::DsspParams, DsspKernel, DsspModelComputation>;
+  using Base::DynamicLabelComputation;
+
+  P::DataFieldSet data_requirements() const override {
+    return P::DataFieldSet::of({P::DataField::Sequence, P::DataField::Positions});
+  }
+};
+
 } // namespace lahuta::analysis
 
 #endif // LAHUTA_ANALYSIS_DSSP_COMPUTATION_HPP
