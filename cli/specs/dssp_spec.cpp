@@ -6,7 +6,7 @@
 
 #include "analysis/dssp/computation.hpp"
 #include "analysis/dssp/records.hpp"
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"

@@ -22,7 +22,7 @@
 #include "analysis/dssp/precompute.hpp"
 #include "analysis/dssp/records.hpp"
 #include "analysis/dssp/secondary.hpp"
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "compute/result.hpp"
 #include "pipeline/task/compute/context.hpp"
 #include "pipeline/task/compute/parameters.hpp"
@@ -88,7 +88,7 @@ struct DsspKernel {
 
       std::shared_ptr<const ModelParserResult> parsed;
       if (!built && data.ctx) {
-        parsed = get_cached_model_parser_result(*data.ctx);
+        parsed = get_parsed_model_result(*data.ctx);
       }
       if (!built && parsed && !parsed->sequence.empty() && parsed->coords_size() > 0) {
         sequence = parsed->sequence;

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "analysis/compaction/rg_utils.hpp"
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "pipeline/data/data_requirements.hpp"
 #include "serialization/json.hpp"
@@ -48,7 +48,7 @@ public:
         positions = payload->positions.get();
       }
     } else {
-      parsed = A::get_cached_model_parser_result(ctx);
+      parsed = A::get_parsed_model_result(ctx);
       if (parsed) {
         if (!parsed->sequence.empty()) sequence = &parsed->sequence;
         if (!parsed->plddt_per_residue.empty()) plddts = &parsed->plddt_per_residue;

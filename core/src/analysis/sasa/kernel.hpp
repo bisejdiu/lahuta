@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "analysis/compaction/rg_utils.hpp"
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "analysis/sasa/protor_radii.hpp"
 #include "analysis/sasa/records.hpp"
 #include "analysis/sasa/sasa.hpp"
@@ -212,7 +212,7 @@ struct SasaSrKernel {
         positions = model_payload->positions.get();
       }
     } else if (data.ctx) {
-      parsed = get_cached_model_parser_result(*data.ctx);
+      parsed = get_parsed_model_result(*data.ctx);
       if (parsed) {
         if (!parsed->sequence.empty()) sequence = parsed->sequence;
         if (parsed->coords_size() > 0) positions = &parsed->coords;

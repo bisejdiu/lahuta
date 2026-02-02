@@ -7,7 +7,7 @@
 
 #include <Geometry/point.h>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "hash/fnv1a.hpp"
 #include "logging/logging.hpp"
 #include "pipeline/data/data_requirements.hpp"
@@ -81,7 +81,7 @@ public:
     if (payload && payload->positions && !payload->positions->empty()) {
       positions = payload->positions.get();
     } else if (!payload) {
-      parsed = A::get_cached_model_parser_result(ctx);
+      parsed = A::get_parsed_model_result(ctx);
       if (parsed && parsed->coords_size() > 0) {
         positions = &parsed->coords;
       }

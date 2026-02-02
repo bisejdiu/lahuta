@@ -4,7 +4,7 @@
 #include <string_view>
 #include <utility>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/usage_error.hpp"

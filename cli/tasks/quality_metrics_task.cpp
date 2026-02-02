@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "models/dssp.hpp"
 #include "models/plddt.hpp"
@@ -158,7 +158,7 @@ public:
         dssp_span = span(*payload->dssp);
       }
     } else {
-      parsed = A::get_cached_model_parser_result(ctx);
+      parsed = A::get_parsed_model_result(ctx);
       if (parsed) {
         if (!parsed->plddt_per_residue.empty()) {
           plddt_span = span(std::as_const(parsed->plddt_per_residue));
