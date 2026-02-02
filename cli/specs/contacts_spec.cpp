@@ -12,7 +12,6 @@
 #include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "pipeline/task/api.hpp"
-#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
@@ -152,7 +151,7 @@ public:
                  "output",
                  validate::Required,
                  "  --output, -o <path>          \tWrite JSONL to file (default: "
-                 "contacts_<timestamp>.jsonl). Use '-' for stdout."});
+                 "contacts.jsonl). Use '-' for stdout."});
     schema_.add({contacts_opts::OutputStdout,
                  "",
                  "stdout",
@@ -282,7 +281,7 @@ public:
     }
 
     if (!config.output_stdout && config.output_path.empty()) {
-      config.output_path = "contacts_" + current_timestamp_string() + ".jsonl";
+      config.output_path = "contacts.jsonl";
     }
 
     return std::make_any<ContactsConfig>(std::move(config));
