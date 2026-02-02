@@ -7,7 +7,7 @@
 
 #include <Geometry/point.h>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "hash/fnv1a.hpp"
 #include "logging/logging.hpp"
 #include "pipeline/data/data_requirements.hpp"
@@ -81,14 +81,14 @@ public:
     if (payload && payload->positions && !payload->positions->empty()) {
       positions = payload->positions.get();
     } else if (!payload) {
-      parsed = A::get_cached_model_parser_result(ctx);
+      parsed = A::get_parsed_model_result(ctx);
       if (parsed && parsed->coords_size() > 0) {
         positions = &parsed->coords;
       }
     }
 
     if (!positions || positions->empty()) {
-      Logger::get_logger()->warn("[positions] Missing position data for '{}'", item_path);
+      Logger::get_logger()->warn("[positions:input] Missing position data for '{}'", item_path);
       return {};
     }
 
@@ -104,7 +104,7 @@ private:
                                             const RDGeom::POINT3D_VECT &positions) {
     const std::string model_name = sanitize_model_name(item_path);
     if (model_name.empty()) {
-      Logger::get_logger()->error("[positions] Empty model name for '{}'", item_path);
+      Logger::get_logger()->error("[positions:input] Empty model name for '{}'", item_path);
       return P::TaskResult{false, {}};
     }
 
@@ -114,10 +114,14 @@ private:
     try {
       std::filesystem::create_directories(output_path.parent_path());
       write_positions_as_float(positions, output_path);
-      Logger::get_logger()->debug("[positions] Wrote {} atoms to {}", positions.size(), output_path.string());
+      Logger::get_logger()->debug("[positions:write] Wrote {} atoms to {}",
+                                  positions.size(),
+                                  output_path.string());
       result.ok = true;
     } catch (const std::exception &e) {
-      Logger::get_logger()->error("[positions] Failed to write '{}': {}", output_path.string(), e.what());
+      Logger::get_logger()->error("[positions:write] Failed to write '{}': {}",
+                                  output_path.string(),
+                                  e.what());
       result.ok = false;
     }
     return result;

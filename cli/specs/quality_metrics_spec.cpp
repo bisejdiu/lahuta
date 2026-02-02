@@ -1,15 +1,15 @@
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/logging.hpp"
@@ -26,7 +26,15 @@ constexpr std::string_view Summary = "Compute per-protein group metrics for pLDD
 
 namespace quality_metrics_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { PlddtGroup = BaseIndex, DsspGroup, SegmentGroup, SegmentMin, NoOverlap, Output };
+enum : unsigned {
+  PlddtGroup = BaseIndex,
+  DsspGroup,
+  SegmentGroup,
+  SegmentMin,
+  NoOverlap,
+  Output,
+  OutputStdout
+};
 } // namespace quality_metrics_opts
 
 struct QualityMetricsCliConfig {
@@ -45,7 +53,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz", ".pdb", ".pdb.gz"};
 
     runtime_spec_.include_writer_threads = true;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
@@ -84,7 +91,59 @@ public:
                      "    --dssp-group strand=Strand \\\n"
                      "    --output metrics.jsonl")});
 
-    schema_.add({0, "", "", option::Arg::None, "\nMetric Group Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
+    schema_.add({shared_opts::SourceDatabase,
+                 "",
+                 "database",
+                 validate::Required,
+                 "  --database <path>            \tProcess structures from database."});
+    schema_.add({shared_opts::SourceDirectory,
+                 "d",
+                 "directory",
+                 validate::Required,
+                 "  --directory, -d <path>       \tProcess all files in directory."});
+    schema_.add({shared_opts::SourceVector,
+                 "f",
+                 "files",
+                 validate::Required,
+                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
+    schema_.add({shared_opts::SourceFileList,
+                 "l",
+                 "file-list",
+                 validate::Required,
+                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
+    schema_.add({shared_opts::SourceExtension,
+                 "e",
+                 "extension",
+                 validate::Required,
+                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
+                 "comma-separate values (default: .cif, .cif.gz, .pdb, .pdb.gz)."});
+    schema_.add({shared_opts::SourceRecursive,
+                 "r",
+                 "recursive",
+                 option::Arg::None,
+                 "  --recursive, -r              \tRecursively search subdirectories."});
+    schema_.add({shared_opts::SourceIsAf2Model,
+                 "",
+                 "is_af2_model",
+                 option::Arg::None,
+                 "  --is_af2_model               \tRequired for file-based sources; inputs are AlphaFold2 "
+                 "models (AF2-like mmCIF)."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
+    schema_.add({quality_metrics_opts::Output,
+                 "o",
+                 "output",
+                 validate::Required,
+                 "  --output, -o <path>          \tWrite JSONL to file (default: "
+                 "per_protein_metrics.jsonl). Use '-' for stdout."});
+    schema_.add({quality_metrics_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({quality_metrics_opts::PlddtGroup,
                  "",
                  "plddt-group",
@@ -112,56 +171,7 @@ public:
                  option::Arg::None,
                  "  --no-overlap                 \tDisable pLDDT x DSSP overlap metrics."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
-    schema_.add({shared_opts::SourceDatabase,
-                 "",
-                 "database",
-                 validate::Required,
-                 "  --database <path>            \tProcess structures from database."});
-    schema_.add({shared_opts::SourceDirectory,
-                 "d",
-                 "directory",
-                 validate::Required,
-                 "  --directory, -d <path>       \tProcess all files in directory."});
-    schema_.add({shared_opts::SourceVector,
-                 "f",
-                 "files",
-                 validate::Required,
-                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
-    schema_.add({shared_opts::SourceFileList,
-                 "l",
-                 "file-list",
-                 validate::Required,
-                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
-    schema_.add({shared_opts::SourceExtension,
-                 "e",
-                 "extension",
-                 validate::Required,
-                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
-                 "comma-separate values (default: .cif, .cif.gz, .pdb, .pdb.gz)."});
-    schema_.add({shared_opts::SourceRecursive,
-                 "r",
-                 "recursive",
-                 option::Arg::None,
-                 "  --recursive, -r              \tRecursively search subdirectories."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nModel Options:"});
-    schema_.add({shared_opts::SourceIsAf2Model,
-                 "",
-                 "is_af2_model",
-                 option::Arg::None,
-                 "  --is_af2_model               \tRequired for file-based sources; inputs are AlphaFold2 "
-                 "models (AF2-like mmCIF)."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({quality_metrics_opts::Output,
-                 "o",
-                 "output",
-                 validate::Required,
-                 "  --output, -o <path>          \tWrite NDJSON to file (default: "
-                 "per_protein_metrics.jsonl). Use '-' for stdout."});
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
@@ -220,7 +230,7 @@ public:
         for (const auto &token : tokens) {
           const std::string name = quality_metrics::normalize_group_name(token);
           if (name.empty()) {
-            throw std::runtime_error("Invalid segment group name '" + token + "'.");
+            throw CliUsageError("Invalid segment group name '" + token + "'.");
           }
           segment_group_names.insert(name);
         }
@@ -238,7 +248,7 @@ public:
       }
       for (const auto &name : segment_group_names) {
         if (available.count(name) == 0) {
-          throw std::runtime_error("Segment group '" + name + "' does not match any pLDDT group.");
+          throw CliUsageError("Segment group '" + name + "' does not match any pLDDT group.");
         }
       }
       for (auto &group : plddt_groups) {
@@ -253,14 +263,16 @@ public:
     if (args.has(quality_metrics_opts::SegmentMin)) {
       segment_min = std::stoull(args.get_string(quality_metrics_opts::SegmentMin));
       if (segment_min == 0) {
-        throw std::runtime_error("--segment-min must be positive");
+        throw CliUsageError("--segment-min must be positive");
       }
     }
+
+    config.output_stdout = args.get_flag(quality_metrics_opts::OutputStdout);
 
     if (args.has(quality_metrics_opts::Output)) {
       const std::string output_arg = args.get_string(quality_metrics_opts::Output);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output requires a value.");
+        throw CliUsageError("--output requires a value.");
       }
       if (output_arg == "-") {
         config.output_stdout = true;
@@ -270,13 +282,17 @@ public:
       }
     }
 
+    if (config.output_stdout && args.has(quality_metrics_opts::Output) && config.output_path != "-") {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
     if (config.source.mode == SourceConfig::Mode::Database) {
       config.source.is_af2_model = true;
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("quality-metrics expects AlphaFold2 model inputs. For file-based sources, "
-                               "pass --is_af2_model (or use --database).");
+      throw CliUsageError("quality-metrics expects AlphaFold2 model inputs. For file-based sources, "
+                          "pass --is_af2_model (or use --database).");
     }
 
     auto metrics_config              = std::make_shared<quality_metrics::QualityMetricsConfig>();
@@ -302,6 +318,7 @@ public:
     plan.save_run_report   = cfg.report.save_run_report;
     plan.run_report_prefix = "quality-metrics";
     plan.threads           = static_cast<std::size_t>(cfg.runtime.threads);
+    plan.success_message   = "Quality-metrics computation completed successfully!";
 
     plan.source_factory = [cfg]() -> PipelinePlan::SourcePtr {
       using Mode = SourceConfig::Mode;
@@ -329,7 +346,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("quality-metrics does not support this source mode");
+      throw CliUsageError("quality-metrics does not support this source mode");
     };
 
     auto sink_cfg           = P::get_default_backpressure_config();
@@ -358,10 +375,11 @@ public:
     sink.backpressure = sink_cfg;
     if (cfg.output_stdout) {
       sink.sink = std::make_shared<P::LoggingSink>();
-      Logger::get_logger()->info("Quality-metrics output sink -> stdout (-)");
+      Logger::get_logger()->info("Writing to: stdout");
     } else {
       sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
-      Logger::get_logger()->info("Quality-metrics output sink -> file: {}", cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
     }
     plan.sinks.push_back(std::move(sink));
 

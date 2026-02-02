@@ -1,5 +1,4 @@
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -9,7 +8,9 @@
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
+#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/lmdb.hpp"
 #include "specs/command_spec.hpp"
@@ -38,16 +39,16 @@ struct CreateDbConfig {
 
 std::size_t parse_size_option(std::string_view value, std::string_view label) {
   if (value.empty()) {
-    throw std::runtime_error(std::string(label) + " requires a value.");
+    throw CliUsageError(std::string(label) + " requires a value.");
   }
   std::size_t parsed = 0;
   try {
     parsed = std::stoull(std::string(value));
   } catch (const std::exception &) {
-    throw std::runtime_error("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
+    throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
   if (parsed == 0) {
-    throw std::runtime_error(std::string(label) + " must be positive");
+    throw CliUsageError(std::string(label) + " must be positive");
   }
   return parsed;
 }
@@ -60,7 +61,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz"};
 
     runtime_spec_.include_writer_threads = false;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 1000;
 
     schema_.add({0,
@@ -76,23 +76,24 @@ public:
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     add_source_options(schema_, source_spec_);
 
-    schema_.add({0, "", "", option::Arg::None, "\nDatabase Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
     schema_.add({createdb_opts::OutputPath,
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <path>          \tOutput database path."});
+                 "  --output, -o <path>          \tOutput database path "
+                 "(default: createdb_<timestamp>)."});
     schema_.add({createdb_opts::MaxSize,
                  "m",
                  "max-size",
                  validate::Required,
                  "  --max-size, -m <size>        \tMaximum database size in GB (default: 500)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nPerformance Options:"});
-    add_runtime_options(schema_, runtime_spec_);
-
     schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
+
+    schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
+    add_runtime_options(schema_, runtime_spec_);
 
     schema_.add({0, "", "", option::Arg::None, "\nGlobal Options:"});
     add_global_options(schema_);
@@ -110,12 +111,13 @@ public:
     config.runtime = parse_runtime_config(args, runtime_spec_);
     config.report  = parse_report_config(args);
 
-    if (!args.has(createdb_opts::OutputPath)) {
-      throw std::runtime_error("Database output path is required (--output)");
-    }
-    config.database_path = args.get_string(createdb_opts::OutputPath);
-    if (config.database_path.empty()) {
-      throw std::runtime_error("Database output path is required (--output)");
+    if (args.has(createdb_opts::OutputPath)) {
+      config.database_path = args.get_string(createdb_opts::OutputPath);
+      if (config.database_path.empty()) {
+        throw CliUsageError("--output requires a value.");
+      }
+    } else {
+      config.database_path = "createdb_" + current_timestamp_string();
     }
 
     if (args.has(createdb_opts::MaxSize)) {
@@ -151,11 +153,11 @@ public:
       case SourceConfig::Mode::Database:
         break;
     }
-    Logger::get_logger()->info("Database path: {}", cfg.database_path);
+    Logger::get_logger()->info("Writing to: {}/", cfg.database_path);
     Logger::get_logger()->info("Batch size: {}", cfg.runtime.batch_size);
     Logger::get_logger()->info("Threads: {}", cfg.runtime.threads);
     Logger::get_logger()->info("Max size: {} GB", cfg.max_size_gb);
-    Logger::get_logger()->debug("Processing files ...");
+    plan.output_files.push_back(cfg.database_path + "/");
 
     auto db = std::make_shared<LMDBDatabase>(cfg.database_path, cfg.max_size_gb);
 
@@ -180,7 +182,7 @@ public:
         case Mode::Database:
           break;
       }
-      throw std::runtime_error("createdb does not support database sources");
+      throw CliUsageError("createdb does not support database sources");
     };
 
     PipelineTask task;

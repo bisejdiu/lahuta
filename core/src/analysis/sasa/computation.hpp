@@ -12,6 +12,10 @@ class SasaSrComputation
 public:
   using Base = P::DynamicLabelComputation<P::SasaSrParams, SasaSrKernel, SasaSrComputation>;
   using Base::DynamicLabelComputation;
+
+  P::DataFieldSet data_requirements() const override {
+    return P::DataFieldSet::of({P::DataField::Sequence, P::DataField::Positions});
+  }
 };
 
 } // namespace lahuta::analysis

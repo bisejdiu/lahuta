@@ -12,12 +12,11 @@
 #include <vector>
 
 #include "analysis/compaction/rg_utils.hpp"
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "analysis/sasa/protor_radii.hpp"
 #include "analysis/sasa/records.hpp"
 #include "analysis/sasa/sasa.hpp"
 #include "compute/result.hpp"
-#include "logging/logging.hpp"
 #include "models/tables.hpp"
 #include "pipeline/task/compute/context.hpp"
 #include "pipeline/task/compute/parameters.hpp"
@@ -213,7 +212,7 @@ struct SasaSrKernel {
         positions = model_payload->positions.get();
       }
     } else if (data.ctx) {
-      parsed = get_cached_model_parser_result(*data.ctx);
+      parsed = get_parsed_model_result(*data.ctx);
       if (parsed) {
         if (!parsed->sequence.empty()) sequence = parsed->sequence;
         if (parsed->coords_size() > 0) positions = &parsed->coords;
@@ -230,13 +229,13 @@ struct SasaSrKernel {
 
     if (sequence.empty()) {
       counters->missing_sequence.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Missing sequence for '{}'", data.item_path);
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(
+          C::ComputationError("SASA-SR missing sequence for '" + data.item_path + "'"));
     }
     if (!positions || positions->empty()) {
       counters->missing_positions.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Missing positions for '{}'", data.item_path);
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(
+          C::ComputationError("SASA-SR missing positions for '" + data.item_path + "'"));
     }
 
     std::size_t expected_atoms = 0;
@@ -247,46 +246,40 @@ struct SasaSrKernel {
       }
     } catch (const std::exception &e) {
       counters->invalid_residue.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Invalid sequence for '{}': {}", data.item_path, e.what());
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(C::ComputationError("SASA-SR invalid sequence for '" + data.item_path +
+                                                      "': " + std::string(e.what())));
     }
 
     if (positions->size() != expected_atoms) {
       counters->atom_mismatch.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Atom count mismatch for '{}': positions={} expected={}",
-                                 data.item_path,
-                                 positions->size(),
-                                 expected_atoms);
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(C::ComputationError("SASA-SR atom count mismatch for '" + data.item_path +
+                                                      "': positions=" + std::to_string(positions->size()) +
+                                                      " expected=" + std::to_string(expected_atoms)));
     }
 
     auto &scratch = thread_scratch();
     std::string error;
     if (!build_atom_radii(sequence, scratch.radii, error)) {
       counters->invalid_residue.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Radii mapping failed for '{}': {}", data.item_path, error);
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(
+          C::ComputationError("SASA-SR radii mapping failed for '" + data.item_path + "': " + error));
     }
     if (!build_atom_labels(sequence, scratch.labels, error)) {
       counters->invalid_residue.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Label mapping failed for '{}': {}", data.item_path, error);
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(
+          C::ComputationError("SASA-SR label mapping failed for '" + data.item_path + "': " + error));
     }
     if (scratch.radii.size() != positions->size()) {
       counters->atom_mismatch.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Radii mismatch for '{}': radii={} positions={}",
-                                 data.item_path,
-                                 scratch.radii.size(),
-                                 positions->size());
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(C::ComputationError("SASA-SR radii mismatch for '" + data.item_path +
+                                                      "': radii=" + std::to_string(scratch.radii.size()) +
+                                                      " positions=" + std::to_string(positions->size())));
     }
     if (scratch.labels.size() != positions->size()) {
       counters->atom_mismatch.fetch_add(1, std::memory_order_relaxed);
-      Logger::get_logger()->warn("[sasa-sr] Label mismatch for '{}': labels={} positions={}",
-                                 data.item_path,
-                                 scratch.labels.size(),
-                                 positions->size());
-      return C::ComputationResult(P::EmissionList{});
+      return C::ComputationResult(C::ComputationError("SASA-SR label mismatch for '" + data.item_path +
+                                                      "': labels=" + std::to_string(scratch.labels.size()) +
+                                                      " positions=" + std::to_string(positions->size())));
     }
 
     SasaParams local_params = p.params;
@@ -299,11 +292,12 @@ struct SasaSrKernel {
     auto result = compute_sasa(atoms, local_params);
 
     SasaSrRecord record;
-    record.model_path    = data.item_path;
-    record.labels        = std::move(scratch.labels);
-    record.per_atom      = std::move(result.per_atom);
-    record.total         = result.total;
-    record.include_total = p.include_total;
+    record.model_path     = data.item_path;
+    record.labels         = std::move(scratch.labels);
+    record.per_atom       = std::move(result.per_atom);
+    record.total          = result.total;
+    record.include_total  = p.include_total;
+    record.show_atom_info = p.show_atom_info;
 
     auto payload = serialization::Serializer<fmt::json, SasaSrRecord>::serialize(record);
 

@@ -7,9 +7,11 @@
 #include <vector>
 
 #include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/logging.hpp"
@@ -25,7 +27,7 @@ constexpr std::string_view Summary = "Extract data from AlphaFold2 model files o
 
 namespace extract_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { Fields = BaseIndex, Output };
+enum : unsigned { Fields = BaseIndex, Output, OutputStdout };
 } // namespace extract_opts
 
 constexpr std::string_view FIELD_SEQUENCE = "sequence";
@@ -75,7 +77,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz", ".pdb", ".pdb.gz"};
 
     runtime_spec_.include_writer_threads = true;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
@@ -90,7 +91,7 @@ public:
              .append("\n\n")
              .append(Summary)
              .append("\n"
-                     "Note: file-based inputs must be AF2 model files (mmCIF). Generic structures are not "
+                     "Note: file-based inputs must be AF2 model files. Generic structures are not "
                      "supported.\n\n"
                      "Available reporters (--reporter <name>):\n"
                      "  summary     - Balanced totals and item counts (default; negligible overhead).\n"
@@ -129,7 +130,6 @@ public:
                  validate::Required,
                  "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
     schema_.add({shared_opts::SourceExtension,
                  "e",
                  "extension",
@@ -142,7 +142,6 @@ public:
                  option::Arg::None,
                  "  --recursive, -r              \tRecursively search subdirectories."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nModel Options:"});
     schema_.add({shared_opts::SourceIsAf2Model,
                  "",
                  "is_af2_model",
@@ -155,8 +154,14 @@ public:
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <path>          \tWrite NDJSON to file (default: <field>_data.jsonl). Use "
+                 "  --output, -o <path>          \tWrite JSONL to file (default: <field>_data.jsonl). Use "
                  "'-' for stdout."});
+    schema_.add({extract_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
@@ -178,47 +183,55 @@ public:
     config.runtime = parse_runtime_config(args, runtime_spec_);
     config.report  = parse_report_config(args);
 
+    (void)require_arg(args,
+                      extract_opts::Fields,
+                      "--fields",
+                      "Missing required --fields option. Must include one or more of: sequence, plddt, dssp, "
+                      "organism");
+
     std::vector<std::string> field_tokens;
-    if (args.has(extract_opts::Fields)) {
-      const auto raw_values = args.get_all_strings(extract_opts::Fields);
-      for (const auto &raw : raw_values) {
-        parse_fields_argument(raw, field_tokens);
-      }
+    const auto raw_values = args.get_all_strings(extract_opts::Fields);
+    for (const auto &raw : raw_values) {
+      parse_fields_argument(raw, field_tokens);
     }
 
     if (field_tokens.empty()) {
-      throw std::runtime_error(
+      throw CliUsageError(
           "Missing required --fields option. Must include one or more of: sequence, plddt, dssp, organism");
     }
 
     std::unordered_set<std::string> seen;
     for (const auto &token : field_tokens) {
       if (!is_valid_field(token)) {
-        throw std::runtime_error("Invalid field '" + token +
-                                 "'. Must be one of: sequence, plddt, dssp, organism");
+        throw CliUsageError("Invalid field '" + token + "'. Must be one of: sequence, plddt, dssp, organism");
       }
       if (seen.insert(token).second) {
         config.fields.push_back(token);
       }
     }
 
+    config.output_stdout = args.get_flag(extract_opts::OutputStdout);
+
     if (args.has(extract_opts::Output)) {
       const std::string output_arg = args.get_string(extract_opts::Output);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output requires a value.");
+        throw CliUsageError("--output requires a value.");
       }
       if (output_arg == "-") {
         config.output_stdout = true;
-        config.output_path   = "-";
       } else {
         config.output_path     = output_arg;
         config.output_override = true;
       }
     }
 
+    if (config.output_stdout && config.output_override) {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
     if (config.fields.size() > 1 && config.output_override) {
-      throw std::runtime_error("--output can only be used with a single field. Omit --output for per-field "
-                               "outputs or use --output - for stdout.");
+      throw CliUsageError("--output can only be used with a single field. Omit --output for per-field "
+                          "outputs or use --output - for stdout.");
     }
 
     if (config.source.mode == SourceConfig::Mode::Database) {
@@ -226,8 +239,8 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("extract expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("extract expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
     return std::make_any<ExtractConfig>(std::move(config));
@@ -241,6 +254,7 @@ public:
     plan.save_run_report   = cfg.report.save_run_report;
     plan.run_report_prefix = "extract";
     plan.threads           = static_cast<std::size_t>(cfg.runtime.threads);
+    plan.success_message   = "Extraction completed successfully!";
 
     plan.source_factory = [cfg]() -> PipelinePlan::SourcePtr {
       using Mode = SourceConfig::Mode;
@@ -268,7 +282,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("extract does not support this source mode");
+      throw CliUsageError("extract does not support this source mode");
     };
 
     auto sink_cfg           = P::get_default_backpressure_config();
@@ -286,7 +300,7 @@ public:
     std::shared_ptr<P::LoggingSink> stdout_sink;
     if (cfg.output_stdout) {
       stdout_sink = std::make_shared<P::LoggingSink>();
-      Logger::get_logger()->info("Extract output sink -> stdout (-)");
+      Logger::get_logger()->info("Writing to: stdout");
     }
 
     for (const auto &field : cfg.fields) {
@@ -308,7 +322,8 @@ public:
       } else {
         const std::string output_path = cfg.output_override ? cfg.output_path : output_channel + ".jsonl";
         sink.sink                     = std::make_shared<P::NdjsonFileSink>(output_path);
-        Logger::get_logger()->info("Extract output sink -> file: {}", output_path);
+        Logger::get_logger()->info("Writing to: {}", output_path);
+        plan.output_files.push_back(output_path);
       }
       plan.sinks.push_back(std::move(sink));
     }

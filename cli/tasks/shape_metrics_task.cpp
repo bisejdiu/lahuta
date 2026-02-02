@@ -6,7 +6,7 @@
 
 #include "analysis/compaction/rg_utils.hpp"
 #include "analysis/compaction/shape_metrics_utils.hpp"
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "pipeline/data/data_requirements.hpp"
 #include "serialization/json.hpp"
@@ -49,7 +49,7 @@ public:
         positions = payload->positions.get();
       }
     } else {
-      parsed = A::get_cached_model_parser_result(ctx);
+      parsed = A::get_parsed_model_result(ctx);
       if (parsed) {
         if (!parsed->sequence.empty()) sequence = &parsed->sequence;
         if (!parsed->plddt_per_residue.empty()) plddts = &parsed->plddt_per_residue;
@@ -61,7 +61,7 @@ public:
     counters_->bump_processed();
 
     if (!plddts) {
-      Logger::get_logger()->warn("[shape-metrics] Missing pLDDT data for '{}'", item_path);
+      Logger::get_logger()->warn("[shape-metrics:input] Missing pLDDT data for '{}'", item_path);
       return {};
     }
 
@@ -167,7 +167,7 @@ public:
       const double trimmed_rg_unweighted = A::radius_of_gyration(trimmed_coords);
       trimmed_rg_norm = A::normalized_rg(trimmed_rg_unweighted, trim_result.trimmed_length());
     } catch (const std::exception &e) {
-      Logger::get_logger()->warn("[shape-metrics] Failed to compute shape metrics for '{}': {}",
+      Logger::get_logger()->warn("[shape-metrics:compute] Failed to compute shape metrics for '{}': {}",
                                  item_path,
                                  e.what());
       return {};

@@ -22,10 +22,8 @@
 #include "analysis/dssp/precompute.hpp"
 #include "analysis/dssp/records.hpp"
 #include "analysis/dssp/secondary.hpp"
-#include "analysis/extract/extract_tasks.hpp"
-#include "analysis/system/model_loader.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "compute/result.hpp"
-#include "logging/logging.hpp"
 #include "pipeline/task/compute/context.hpp"
 #include "pipeline/task/compute/parameters.hpp"
 #include "pipeline/task/context.hpp"
@@ -45,7 +43,6 @@ struct DsspKernel {
       std::vector<DsspResidue> residues;
       std::string error;
 
-      // Use raw pointers for read-only access to avoid atomic ref-count overhead
       const P::ModelPayloadSlices *payload = data.ctx ? data.ctx->model_payload().get() : nullptr;
       const Topology *topology             = data.ctx ? data.ctx->topology().get() : nullptr;
       const RDKit::Conformer *conformer    = data.ctx ? data.ctx->conformer().get() : nullptr;
@@ -91,11 +88,7 @@ struct DsspKernel {
 
       std::shared_ptr<const ModelParserResult> parsed;
       if (!built && data.ctx) {
-        parsed = get_cached_model_parser_result(*data.ctx);
-      }
-      if (!built && !parsed) {
-        auto parsed_local = load_model_parser_result(data.item_path);
-        parsed            = std::make_shared<ModelParserResult>(std::move(parsed_local));
+        parsed = get_parsed_model_result(*data.ctx);
       }
       if (!built && parsed && !parsed->sequence.empty() && parsed->coords_size() > 0) {
         sequence = parsed->sequence;
@@ -106,14 +99,17 @@ struct DsspKernel {
           built = true;
         }
       }
+      if (!built && error.empty()) {
+        if (parsed) {
+          error = "cached model parse missing sequence/coords";
+        } else {
+          error = "no cached model parse; run parse_model or provide topology/payload";
+        }
+      }
 
       if (!built) {
         const std::string message = "DSSP residue build failed for '" + data.item_path + "': " + error;
-        if (p.strict) {
-          return C::ComputationResult(C::ComputationError(message));
-        }
-        Logger::get_logger()->warn("[dssp] {}", message);
-        return C::ComputationResult(P::EmissionList{});
+        return C::ComputationResult(C::ComputationError(message));
       }
 
       compute_backbone_geometry(residues);

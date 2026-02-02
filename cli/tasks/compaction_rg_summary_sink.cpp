@@ -13,21 +13,20 @@ namespace {
 
 class CompactionRgSummarySink final : public P::IDynamicSink {
 public:
-  CompactionRgSummarySink(std::filesystem::path output_dir, std::shared_ptr<CompactionRgCounters> counters)
-      : output_dir_(std::move(output_dir)), counters_(std::move(counters)) {}
+  CompactionRgSummarySink(std::filesystem::path output_path, std::shared_ptr<CompactionRgCounters> counters)
+      : output_path_(std::move(output_path)), counters_(std::move(counters)) {}
 
   void write(P::EmissionView) override {}
 
   void close() override {
     if (!counters_) return;
-    if (!output_dir_.empty()) {
+    if (output_path_.has_parent_path() && !output_path_.parent_path().empty()) {
       std::error_code ec;
-      std::filesystem::create_directories(output_dir_, ec);
+      std::filesystem::create_directories(output_path_.parent_path(), ec);
     }
-    const auto path = output_dir_ / "rg_summary.json";
-    std::ofstream out(path, std::ios::out | std::ios::trunc);
+    std::ofstream out(output_path_, std::ios::out | std::ios::trunc);
     if (!out) {
-      throw std::runtime_error("Unable to write compaction-rg summary to '" + path.string() + "'");
+      throw std::runtime_error("Unable to write compaction-rg summary to '" + output_path_.string() + "'");
     }
 
     const auto totals = counters_->snapshot();
@@ -63,16 +62,16 @@ public:
   }
 
 private:
-  std::filesystem::path output_dir_;
+  std::filesystem::path output_path_;
   std::shared_ptr<CompactionRgCounters> counters_;
 };
 
 } // namespace
 
 std::shared_ptr<P::IDynamicSink>
-make_compaction_rg_summary_sink(std::filesystem::path output_dir,
+make_compaction_rg_summary_sink(std::filesystem::path output_path,
                                 std::shared_ptr<CompactionRgCounters> counters) {
-  return std::make_shared<CompactionRgSummarySink>(std::move(output_dir), std::move(counters));
+  return std::make_shared<CompactionRgSummarySink>(std::move(output_path), std::move(counters));
 }
 
 } // namespace lahuta::cli::compaction_rg

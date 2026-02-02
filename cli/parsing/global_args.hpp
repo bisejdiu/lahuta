@@ -1,11 +1,11 @@
 #ifndef LAHUTA_CLI_GLOBAL_ARGS_HPP
 #define LAHUTA_CLI_GLOBAL_ARGS_HPP
 
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include "parsing/usage_error.hpp"
 #include "specs/command_spec.hpp"
 
 namespace lahuta::cli {
@@ -58,14 +58,14 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
     const std::string_view arg{argv[i]};
     if (arg == "-v" || arg == "--verbose") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '-v/--verbose' expects <level> (0,1,2)");
+        throw CliUsageError("Option '-v/--verbose' expects <level> (0,1,2)");
       }
       ++i;
       continue;
     }
     if (arg == "--progress") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '--progress' expects <ms> (0 disables)");
+        throw CliUsageError("Option '--progress' expects <ms> (0 disables)");
       }
       ++i;
       continue;
@@ -90,7 +90,7 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
     const std::string_view arg{argv[i]};
     if (arg == "-v" || arg == "--verbose") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '-v/--verbose' expects <level> (0,1,2)");
+        throw CliUsageError("Option '-v/--verbose' expects <level> (0,1,2)");
       }
       split.global_args.push_back(argv[i]);
       split.global_args.push_back(argv[i + 1]);
@@ -99,7 +99,7 @@ inline GlobalArgSplit split_global_args(int argc, char *argv[]) {
     }
     if (arg == "--progress") {
       if (i + 1 >= argc) {
-        throw std::runtime_error("Option '--progress' expects <ms> (0 disables)");
+        throw CliUsageError("Option '--progress' expects <ms> (0 disables)");
       }
       split.global_args.push_back(argv[i]);
       split.global_args.push_back(argv[i + 1]);

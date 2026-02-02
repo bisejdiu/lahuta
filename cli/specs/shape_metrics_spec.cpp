@@ -1,15 +1,16 @@
 #include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
+#include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 #include "specs/command_spec.hpp"
 #include "tasks/shape_metrics_summary_sink.hpp"
@@ -24,14 +25,16 @@ constexpr std::string_view Summary = "Compute tensor-based shape metrics with pL
 
 namespace shape_metrics_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { OutputDir = BaseIndex, MinHighFraction };
+enum : unsigned { Output = BaseIndex, OutputStdout, MinHighFraction };
 } // namespace shape_metrics_opts
 
 struct ShapeMetricsCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
-  std::filesystem::path output_dir;
+  bool output_stdout = false;
+  std::string output_path;
+  std::filesystem::path summary_path;
   double min_high_fraction = 0.80;
   std::shared_ptr<const shape_metrics::ShapeMetricsConfig> task_config;
 };
@@ -43,7 +46,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz", ".pdb", ".pdb.gz"};
 
     runtime_spec_.include_writer_threads = true;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
@@ -51,7 +53,7 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                 std::string("Usage: lahuta shape-metrics [--output-dir <dir>] [options]\n"
+                 std::string("Usage: lahuta shape-metrics [--output <file>] [options]\n"
                              "Author: ")
                      .append(Author)
                      .append("\n\n")
@@ -59,8 +61,8 @@ public:
                      .append("\n"
                              "Metrics include Rg, asphericity, and kappa^2. Trimming removes\n"
                              "low-confidence coil/turn/bend tails.\n\n"
-                             "Outputs: per_protein_shape_metrics.jsonl (NDJSON) in the output directory.\n"
-                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
+                             "Outputs: Shape metrics in JSONL format (+ summary JSON in same directory).\n"
+                             "Note: file-based inputs must be AF2 model files.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -84,7 +86,6 @@ public:
                  validate::Required,
                  "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
     schema_.add({shared_opts::SourceExtension,
                  "e",
                  "extension",
@@ -97,7 +98,6 @@ public:
                  option::Arg::None,
                  "  --recursive, -r              \tRecursively search subdirectories."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nModel Options:"});
     schema_.add({shared_opts::SourceIsAf2Model,
                  "",
                  "is_af2_model",
@@ -106,19 +106,26 @@ public:
                  "models (AF2-like mmCIF)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({shape_metrics_opts::OutputDir,
+    schema_.add({shape_metrics_opts::Output,
                  "o",
-                 "output-dir",
+                 "output",
                  validate::Required,
-                 "  --output-dir, -o <dir>       \tOutput directory for NDJSON results (default: .)."});
+                 "  --output, -o <file>          \tOutput file for shape metrics JSONL (default: "
+                 "shape_metrics.jsonl). Use '-' for stdout."});
+    schema_.add({shape_metrics_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nAlgorithm Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({shape_metrics_opts::MinHighFraction,
                  "",
                  "min-high-fraction",
                  validate::Required,
                  "  --min-high-fraction <f>      \tMinimum high-confidence fraction after trimming "
                  "(default: 0.80)."});
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
@@ -145,44 +152,45 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("shape-metrics expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("shape-metrics expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
-    std::string output_arg;
-    if (args.has(shape_metrics_opts::OutputDir)) {
-      output_arg = args.get_string(shape_metrics_opts::OutputDir);
+    config.output_stdout = args.get_flag(shape_metrics_opts::OutputStdout);
+
+    if (args.has(shape_metrics_opts::Output)) {
+      const auto output_arg = args.get_string(shape_metrics_opts::Output);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output-dir requires a value.");
+        throw CliUsageError("--output requires a value.");
       }
-      config.output_dir = std::filesystem::path(output_arg);
+      if (output_arg == "-") {
+        config.output_stdout = true;
+      } else {
+        config.output_path = ensure_jsonl_extension(output_arg);
+      }
+    }
+
+    if (config.output_stdout && !config.output_path.empty()) {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
+    if (!config.output_stdout && config.output_path.empty()) {
+      config.output_path = "shape_metrics.jsonl";
+    }
+
+    // Get summary path from output path: foo.jsonl -> foo_summary.json
+    // For stdout mode, use default summary path
+    if (config.output_stdout) {
+      config.summary_path = "shape_metrics_summary.json";
     } else {
-      config.output_dir = std::filesystem::path(".");
-      output_arg        = config.output_dir.string();
+      std::filesystem::path output_fs(config.output_path);
+      config.summary_path = output_fs.parent_path() / (output_fs.stem().string() + "_summary.json");
     }
 
     if (args.has(shape_metrics_opts::MinHighFraction)) {
       config.min_high_fraction = std::stod(args.get_string(shape_metrics_opts::MinHighFraction));
       if (config.min_high_fraction < 0.0 || config.min_high_fraction > 1.0) {
-        throw std::runtime_error("--min-high-fraction must be between 0 and 1.");
-      }
-    }
-
-    if (config.output_dir.empty()) {
-      throw std::runtime_error("Output directory cannot be empty.");
-    }
-
-    std::error_code ec;
-    if (std::filesystem::exists(config.output_dir, ec)) {
-      if (ec) {
-        throw std::runtime_error("Unable to access output directory: " + output_arg);
-      }
-      if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
-      }
-    } else {
-      if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
+        throw CliUsageError("--min-high-fraction must be between 0 and 1.");
       }
     }
 
@@ -203,6 +211,7 @@ public:
     plan.save_run_report   = cfg.report.save_run_report;
     plan.run_report_prefix = "shape-metrics";
     plan.threads           = static_cast<std::size_t>(cfg.runtime.threads);
+    plan.success_message   = "Shape-metrics computation completed successfully!";
 
     plan.source_factory = [cfg]() -> PipelinePlan::SourcePtr {
       using Mode = SourceConfig::Mode;
@@ -230,7 +239,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("shape-metrics does not support this source mode");
+      throw CliUsageError("shape-metrics does not support this source mode");
     };
 
     auto sink_cfg           = P::get_default_backpressure_config();
@@ -257,19 +266,25 @@ public:
     PipelineSink data_sink;
     data_sink.channel      = std::string(shape_metrics::OutputChannel);
     data_sink.backpressure = sink_cfg;
-    const auto output_path = (cfg.output_dir / "per_protein_shape_metrics.jsonl").string();
-    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(output_path);
-    Logger::get_logger()->info("Shape-metrics output -> {}", output_path);
+    if (cfg.output_stdout) {
+      data_sink.sink = std::make_shared<P::LoggingSink>();
+      Logger::get_logger()->info("Writing to: stdout");
+    } else {
+      data_sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
+    }
     plan.sinks.push_back(std::move(data_sink));
 
     PipelineSink summary_sink;
     summary_sink.channel      = std::string(shape_metrics::OutputChannel);
     summary_sink.backpressure = sink_cfg;
-    summary_sink.sink         = shape_metrics::make_shape_metrics_summary_sink(cfg.output_dir,
+    summary_sink.sink         = shape_metrics::make_shape_metrics_summary_sink(cfg.summary_path,
                                                                        cfg.task_config->counters);
-    Logger::get_logger()->info("Shape-metrics summary -> {}",
-                               (cfg.output_dir / "shape_metrics_summary.json").string());
     plan.sinks.push_back(std::move(summary_sink));
+
+    Logger::get_logger()->info("Writing to: {}", cfg.summary_path.string());
+    plan.output_files.push_back(cfg.summary_path.string());
 
     return plan;
   }

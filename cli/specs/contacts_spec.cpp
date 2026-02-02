@@ -1,4 +1,3 @@
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -10,9 +9,9 @@
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "pipeline/task/api.hpp"
-#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
@@ -29,8 +28,6 @@ constexpr std::string_view Summary = "Compute inter-atomic contacts.";
 // Contacts-specific argument validators
 namespace contacts_validate {
 
-inline constexpr std::string_view HELP_SUFFIX = " (run lahuta contacts -h for more information)";
-
 inline std::string_view opt_name(const option::Option &opt) noexcept {
   return {opt.name, static_cast<std::size_t>(opt.namelen)};
 }
@@ -38,7 +35,10 @@ inline std::string_view opt_name(const option::Option &opt) noexcept {
 option::ArgStatus Provider(const option::Option &option, bool msg) {
   if (!option.arg) {
     if (msg) {
-      Logger::get_logger()->error("Option '{}' requires a provider{}", opt_name(option), HELP_SUFFIX);
+      std::string message = "Option '";
+      message.append(opt_name(option));
+      message.append("' requires a provider");
+      validate::add_error(std::move(message));
     }
     return option::ARG_ILLEGAL;
   }
@@ -49,9 +49,10 @@ option::ArgStatus Provider(const option::Option &option, bool msg) {
   }
 
   if (msg) {
-    Logger::get_logger()->error("Invalid provider '{}'. Must be 'arpeggio', 'molstar', or 'getcontacts'{}",
-                                provider,
-                                HELP_SUFFIX);
+    std::string message = "Invalid provider '";
+    message.append(provider);
+    message.append("'. Must be 'arpeggio', 'molstar', or 'getcontacts'");
+    validate::add_error(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }
@@ -59,7 +60,10 @@ option::ArgStatus Provider(const option::Option &option, bool msg) {
 option::ArgStatus ContactType(const option::Option &option, bool msg) {
   if (!option.arg) {
     if (msg) {
-      Logger::get_logger()->error("Option '{}' requires a contact type{}", opt_name(option), HELP_SUFFIX);
+      std::string message = "Option '";
+      message.append(opt_name(option));
+      message.append("' requires a contact type");
+      validate::add_error(std::move(message));
     }
     return option::ARG_ILLEGAL;
   }
@@ -70,7 +74,10 @@ option::ArgStatus ContactType(const option::Option &option, bool msg) {
   }
 
   if (msg) {
-    Logger::get_logger()->error("Invalid contact type '{}'{}", type, HELP_SUFFIX);
+    std::string message = "Invalid contact type '";
+    message.append(type);
+    message.append("'");
+    validate::add_error(std::move(message));
   }
   return option::ARG_ILLEGAL;
 }
@@ -79,7 +86,13 @@ option::ArgStatus ContactType(const option::Option &option, bool msg) {
 
 namespace contacts_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { SourceMD = BaseIndex, Provider, InteractionType, OutputJson, OutputText, OutputLog };
+enum : unsigned { //
+  SourceMD = BaseIndex,
+  Provider,
+  InteractionType,
+  OutputPath,
+  OutputStdout
+};
 } // namespace contacts_opts
 
 enum class ContactsSourceMode { Directory, Vector, FileList, Database, MD };
@@ -93,12 +106,8 @@ struct ContactsConfig {
   A::ContactProvider provider          = A::ContactProvider::MolStar;
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
   bool is_af2_model                    = false;
-  bool want_json                       = false;
-  bool want_text                       = false;
-  bool want_log                        = false;
-  std::string run_timestamp;
-  std::string contacts_json_path;
-  std::string contacts_text_path;
+  bool output_stdout                   = false;
+  std::string output_path;
 };
 
 class ContactsSpec final : public CommandSpec {
@@ -108,7 +117,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz"};
 
     runtime_spec_.include_writer_threads = true;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 200;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
@@ -129,26 +137,7 @@ public:
                              "  detail      - Detailed diagnostics for in-depth analysis (tiny overhead).")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
-    schema_.add({shared_opts::SourceDirectory,
-                 "d",
-                 "directory",
-                 validate::Required,
-                 "  --directory, -d <path>       \tProcess all files in directory."});
-    schema_.add({shared_opts::SourceVector,
-                 "f",
-                 "files",
-                 validate::Required,
-                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
-    schema_.add({shared_opts::SourceFileList,
-                 "l",
-                 "file-list",
-                 validate::Required,
-                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
-    schema_.add({shared_opts::SourceDatabase,
-                 "",
-                 "database",
-                 validate::Required,
-                 "  --database <path>            \tProcess structures from database."});
+    add_source_options(schema_, source_spec_);
     schema_.add({contacts_opts::SourceMD,
                  "",
                  "md",
@@ -156,18 +145,18 @@ public:
                  "  --md <path>                  \tMD input file. Specify once for structure (PDB/GRO) and "
                  "once or more for trajectories (XTC)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
-    schema_.add({shared_opts::SourceExtension,
-                 "e",
-                 "extension",
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
+    schema_.add({contacts_opts::OutputPath,
+                 "o",
+                 "output",
                  validate::Required,
-                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
-                 "comma-separate values (default: .cif, .cif.gz)."});
-    schema_.add({shared_opts::SourceRecursive,
-                 "r",
-                 "recursive",
+                 "  --output, -o <path>          \tWrite JSONL to file (default: "
+                 "contacts.jsonl). Use '-' for stdout."});
+    schema_.add({contacts_opts::OutputStdout,
+                 "",
+                 "stdout",
                  option::Arg::None,
-                 "  --recursive, -r              \tRecursively search subdirectories."});
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({contacts_opts::Provider,
@@ -182,28 +171,8 @@ public:
                  contacts_validate::ContactType,
                  "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', "
                  "etc. Repeat or comma-separate to combine.\n"});
-    schema_.add({shared_opts::SourceIsAf2Model,
-                 "",
-                 "is_af2_model",
-                 option::Arg::None,
-                 "  --is_af2_model               \tInputs are AlphaFold2 models (or AF2-like)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({contacts_opts::OutputJson,
-                 "",
-                 "json",
-                 option::Arg::None,
-                 "  --json                       \tOutput results in JSON format."});
-    schema_.add({contacts_opts::OutputText,
-                 "",
-                 "text",
-                 option::Arg::None,
-                 "  --text                       \tOutput results in text format."});
-    schema_.add({contacts_opts::OutputLog,
-                 "",
-                 "log",
-                 option::Arg::None,
-                 "  --log                        \tOutput results to standard output (logging)."});
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
@@ -230,11 +199,11 @@ public:
                                      args.has(shared_opts::SourceDatabase);
 
     if (!has_md && !has_standard_source) {
-      throw std::runtime_error(
+      throw CliUsageError(
           "Must specify exactly one source option: --directory, --files, --file-list, --database, or --md");
     }
     if (has_md && has_standard_source) {
-      throw std::runtime_error("Cannot specify multiple source options");
+      throw CliUsageError("Cannot specify multiple source options");
     }
 
     if (has_md) {
@@ -265,8 +234,8 @@ public:
       if (auto provider = A::contact_provider_from_string(provider_arg)) {
         config.provider = *provider;
       } else {
-        throw std::runtime_error("Invalid provider '" + provider_arg +
-                                 "'. Must be 'molstar', 'arpeggio', or 'getcontacts'");
+        throw CliUsageError("Invalid provider '" + provider_arg +
+                            "'. Must be 'molstar', 'arpeggio', or 'getcontacts'");
       }
     }
 
@@ -278,7 +247,7 @@ public:
         auto parsed = parse_interaction_type_sequence(raw, ',');
         if (!parsed) parsed = parse_interaction_type_sequence(raw, '|');
         if (!parsed) {
-          throw std::runtime_error("Invalid interaction type specification '" + raw + "'");
+          throw CliUsageError("Invalid interaction type specification '" + raw + "'");
         }
         if (!has_selection) {
           selected      = *parsed;
@@ -292,16 +261,28 @@ public:
       }
     }
 
-    config.want_json = args.get_flag(contacts_opts::OutputJson);
-    config.want_text = args.get_flag(contacts_opts::OutputText);
-    config.want_log  = args.get_flag(contacts_opts::OutputLog);
-    if (!config.want_json && !config.want_text && !config.want_log) {
-      config.want_json = true;
+    config.output_stdout = args.get_flag(contacts_opts::OutputStdout);
+
+    std::string output_arg;
+    if (args.has(contacts_opts::OutputPath)) {
+      output_arg = args.get_string(contacts_opts::OutputPath);
+      if (output_arg.empty()) {
+        throw CliUsageError("--output requires a value.");
+      }
+      if (output_arg == "-") {
+        config.output_stdout = true;
+      } else {
+        config.output_path = output_arg;
+      }
     }
 
-    config.run_timestamp      = current_timestamp_string();
-    config.contacts_json_path = "contacts_" + config.run_timestamp + ".jsonl";
-    config.contacts_text_path = "contacts_" + config.run_timestamp + ".txt";
+    if (config.output_stdout && !output_arg.empty() && output_arg != "-") {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
+    if (!config.output_stdout && config.output_path.empty()) {
+      config.output_path = "contacts.jsonl";
+    }
 
     return std::make_any<ContactsConfig>(std::move(config));
   }
@@ -369,16 +350,14 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("contacts does not support this source mode");
+      throw CliUsageError("contacts does not support this source mode");
     };
-
-    const bool json_out = cfg.want_json || !cfg.want_text;
 
     P::ContactsParams params;
     params.provider = cfg.provider;
     params.type     = cfg.interaction_types;
     params.channel  = "contacts";
-    params.format   = json_out ? P::ContactsOutputFormat::Json : P::ContactsOutputFormat::Text;
+    params.format   = P::ContactsOutputFormat::Json;
 
     PipelineComputation computation;
     computation.name    = "contacts";
@@ -389,29 +368,18 @@ public:
     auto sink_cfg           = P::get_default_backpressure_config();
     sink_cfg.writer_threads = cfg.runtime.writer_threads;
 
-    if (json_out && cfg.want_json) {
-      PipelineSink sink;
-      sink.channel      = "contacts";
-      sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.contacts_json_path);
-      sink.backpressure = sink_cfg;
-      plan.sinks.push_back(std::move(sink));
-      Logger::get_logger()->info("Contacts JSON sink -> {}", cfg.contacts_json_path);
+    PipelineSink sink;
+    sink.channel      = "contacts";
+    sink.backpressure = sink_cfg;
+    if (cfg.output_stdout) {
+      sink.sink = std::make_shared<P::LoggingSink>();
+      Logger::get_logger()->info("Writing to: stdout");
+    } else {
+      sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
     }
-    if (!json_out && cfg.want_text) {
-      PipelineSink sink;
-      sink.channel      = "contacts";
-      sink.sink         = std::make_shared<P::NdjsonFileSink>(cfg.contacts_text_path);
-      sink.backpressure = sink_cfg;
-      plan.sinks.push_back(std::move(sink));
-      Logger::get_logger()->info("Contacts text sink -> {}", cfg.contacts_text_path);
-    }
-    if (cfg.want_log) {
-      PipelineSink sink;
-      sink.channel      = "contacts";
-      sink.sink         = std::make_shared<P::LoggingSink>();
-      sink.backpressure = sink_cfg;
-      plan.sinks.push_back(std::move(sink));
-    }
+    plan.sinks.push_back(std::move(sink));
 
     return plan;
   }

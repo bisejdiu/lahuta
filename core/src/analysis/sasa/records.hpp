@@ -24,8 +24,9 @@ struct SasaSrRecord {
   std::string model_path;
   std::vector<std::string> labels;
   std::vector<double> per_atom;
-  double total       = 0.0;
-  bool include_total = false;
+  double total        = 0.0;
+  bool include_total  = false;
+  bool show_atom_info = false;
 };
 
 } // namespace lahuta::analysis

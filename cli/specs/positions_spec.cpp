@@ -1,13 +1,14 @@
 #include <filesystem>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
+#include "runner/time_utils.hpp"
 #include "schemas/shared_options.hpp"
 #include "specs/command_spec.hpp"
 #include "tasks/positions_task.hpp"
@@ -38,7 +39,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz", ".pdb", ".pdb.gz"};
 
     runtime_spec_.include_writer_threads = false;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
 
     schema_.add(
@@ -46,11 +46,11 @@ public:
          "",
          "",
          validate::Unknown,
-        std::string("Usage: lahuta positions --output <dir> [options]\n"
-                    "Author: ")
-            .append(Author)
-            .append("\n\n")
-            .append(Summary)
+         std::string("Usage: lahuta positions [--output <dir>] [options]\n"
+                     "Author: ")
+             .append(Author)
+             .append("\n\n")
+             .append(Summary)
              .append(
                  "\n"
                  "If you are running this on millions of files, use a --tree-depth of 2 to not hit any OS "
@@ -59,46 +59,15 @@ public:
                  "Python: np.fromfile(path, dtype=np.float32).reshape(-1, 3)")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
-    schema_.add({shared_opts::SourceDatabase,
-                 "",
-                 "database",
-                 validate::Required,
-                 "  --database <path>            \tProcess structures from database."});
-    schema_.add({shared_opts::SourceDirectory,
-                 "d",
-                 "directory",
-                 validate::Required,
-                 "  --directory, -d <path>       \tProcess all files in directory."});
-    schema_.add({shared_opts::SourceVector,
-                 "f",
-                 "files",
-                 validate::Required,
-                 "  --files, -f <file1,file2>    \tProcess specific files (comma-separated or repeat -f)."});
-    schema_.add({shared_opts::SourceFileList,
-                 "l",
-                 "file-list",
-                 validate::Required,
-                 "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
+    add_source_options(schema_, source_spec_);
 
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
-    schema_.add({shared_opts::SourceExtension,
-                 "e",
-                 "extension",
-                 validate::Required,
-                 "  --extension, -e <ext>        \tFile extension(s) for directory mode. Repeat or "
-                 "comma-separate values (default: .cif, .cif.gz, .pdb, .pdb.gz)."});
-    schema_.add({shared_opts::SourceRecursive,
-                 "r",
-                 "recursive",
-                 option::Arg::None,
-                 "  --recursive, -r              \tRecursively search subdirectories."});
-
-    schema_.add({0, "", "", option::Arg::None, "\nRequired:"});
+    schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
     schema_.add({positions_opts::Output,
                  "o",
                  "output",
                  validate::Required,
-                 "  --output, -o <dir>           \tOutput directory for sharded binary files."});
+                 "  --output, -o <dir>           \tOutput directory for sharded binary files "
+                 "(default: positions_<timestamp>)."});
     schema_.add({positions_opts::TreeDepth,
                  "",
                  "tree-depth",
@@ -107,12 +76,6 @@ public:
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
     add_runtime_options(schema_, runtime_spec_);
-    schema_.add({shared_opts::SourceIsAf2Model,
-                 "",
-                 "is_af2_model",
-                 option::Arg::None,
-                 "  --is_af2_model               \tTreat file inputs as AlphaFold2 models (ignored for "
-                 "--database)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nGlobal Options:"});
     add_global_options(schema_);
@@ -134,44 +97,27 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("positions expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("positions expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
-    if (!args.has(positions_opts::Output)) {
-      throw std::runtime_error("Missing required --output option.");
+    std::string output_arg;
+    if (args.has(positions_opts::Output)) {
+      output_arg = args.get_string(positions_opts::Output);
+      if (output_arg.empty()) {
+        throw CliUsageError("--output requires a value.");
+      }
+    } else {
+      output_arg = "positions_" + current_timestamp_string();
     }
-
-    const std::string output_arg = args.get_string(positions_opts::Output);
-    if (output_arg.empty()) {
-      throw std::runtime_error("--output requires a value.");
-    }
-    config.output_dir = std::filesystem::path(output_arg);
-
     if (args.has(positions_opts::TreeDepth)) {
       config.tree_depth = std::stoi(args.get_string(positions_opts::TreeDepth));
       if (config.tree_depth < 0 || config.tree_depth > 2) {
-        throw std::runtime_error("--tree-depth must be 0, 1, or 2.");
+        throw CliUsageError("--tree-depth must be 0, 1, or 2.");
       }
     }
 
-    if (config.output_dir.empty()) {
-      throw std::runtime_error("Output directory cannot be empty.");
-    }
-
-    std::error_code ec;
-    if (std::filesystem::exists(config.output_dir, ec)) {
-      if (ec) {
-        throw std::runtime_error("Unable to access output directory: " + output_arg);
-      }
-      if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
-      }
-    } else {
-      if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
-      }
-    }
+    config.output_dir = validate_output_dir(output_arg);
 
     return std::make_any<PositionsConfig>(std::move(config));
   }
@@ -179,11 +125,9 @@ public:
   [[nodiscard]] PipelinePlan build_plan(const std::any &config) const override {
     const auto &cfg = std::any_cast<const PositionsConfig &>(config);
     PipelinePlan plan;
-    plan.report_label           = "positions";
-    plan.threads                = static_cast<std::size_t>(cfg.runtime.threads);
-    plan.override_system_params = true;
-    plan.system_params.is_model = (cfg.source.mode == SourceConfig::Mode::Database) ? true
-                                                                                    : cfg.source.is_af2_model;
+    plan.report_label    = "positions";
+    plan.threads         = static_cast<std::size_t>(cfg.runtime.threads);
+    plan.success_message = "Positions extraction completed successfully!";
 
     plan.source_factory = [cfg]() -> PipelinePlan::SourcePtr {
       using Mode = SourceConfig::Mode;
@@ -211,7 +155,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("positions does not support this source mode");
+      throw CliUsageError("positions does not support this source mode");
     };
 
     const bool needs_parse_task = cfg.source.mode != SourceConfig::Mode::Database;
@@ -232,8 +176,9 @@ public:
     positions_task.thread_safe = true;
     plan.tasks.push_back(std::move(positions_task));
 
-    Logger::get_logger()->info("Positions output directory: {}", cfg.output_dir.string());
-    Logger::get_logger()->info("Positions output tree depth: {}", cfg.tree_depth);
+    Logger::get_logger()->info("Writing to: {}/", cfg.output_dir.string());
+    Logger::get_logger()->info("Tree depth: {}", cfg.tree_depth);
+    plan.output_files.push_back(cfg.output_dir.string() + "/");
 
     return plan;
   }

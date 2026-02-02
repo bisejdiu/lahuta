@@ -67,10 +67,12 @@ using SasaSrRecord = lahuta::analysis::SasaSrRecord;
 template <>
 struct Serializer<fmt::json, SasaSrRecord> {
   static std::string serialize(const SasaSrRecord &v) {
-    const std::size_t count = std::min(v.labels.size(), v.per_atom.size());
-    std::size_t reserve     = v.model_path.size() + 32;
-    for (std::size_t i = 0; i < count; ++i) {
-      reserve += v.labels[i].size() + 16;
+    const std::size_t count = v.per_atom.size();
+    std::size_t reserve     = v.model_path.size() + 32 + count * 12;
+    if (v.show_atom_info) {
+      for (std::size_t i = 0; i < std::min(v.labels.size(), count); ++i) {
+        reserve += v.labels[i].size() + 8;
+      }
     }
     if (v.include_total) reserve += 16;
 
@@ -78,17 +80,28 @@ struct Serializer<fmt::json, SasaSrRecord> {
     out.reserve(reserve);
     out.append("{\"model\":\"");
     detail::append_escaped(out, v.model_path);
-    out.append("\",\"Atom\":[");
-    for (std::size_t i = 0; i < count; ++i) {
-      if (i > 0) out.push_back(',');
-      out.append("{\"");
-      detail::append_escaped(out, v.labels[i]);
-      out.append("\":");
-      detail::append_fixed_3(out, v.per_atom[i]);
-      out.push_back('}');
+
+    if (v.show_atom_info) {
+      out.append("\",\"sasa\":[");
+      const std::size_t label_count = std::min(v.labels.size(), count);
+      for (std::size_t i = 0; i < label_count; ++i) {
+        if (i > 0) out.push_back(',');
+        out.append("{\"");
+        detail::append_escaped(out, v.labels[i]);
+        out.append("\":");
+        detail::append_fixed_3(out, v.per_atom[i]);
+        out.push_back('}');
+      }
+    } else {
+      out.append("\",\"sasa\":[");
+      for (std::size_t i = 0; i < count; ++i) {
+        if (i > 0) out.push_back(',');
+        detail::append_fixed_3(out, v.per_atom[i]);
+      }
     }
+
     if (v.include_total) {
-      out.append("],\"Total\":");
+      out.append("],\"total\":");
       detail::append_fixed_3(out, v.total);
       out.push_back('}');
     } else {

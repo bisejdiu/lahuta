@@ -30,7 +30,6 @@ constexpr C::ParameterInterface::TypeId DSSP           = 36;
 
 enum class ContactsOutputFormat : uint8_t {
   Json,
-  Text,
   Binary,
 };
 
@@ -60,8 +59,9 @@ struct SasaSrParams : public C::ParameterBase<SasaSrParams> {
   static constexpr C::ParameterInterface::TypeId TYPE_ID = param_ids::SASA_SR;
 
   analysis::SasaParams params;
-  std::string channel = std::string(analysis::SasaSrOutputChannel);
-  bool include_total  = false;
+  std::string channel  = std::string(analysis::SasaSrOutputChannel);
+  bool include_total   = false;
+  bool show_atom_info  = false;
   std::shared_ptr<analysis::SasaSrCounters> counters;
 };
 
@@ -71,7 +71,6 @@ struct DsspParams : public C::ParameterBase<DsspParams> {
   std::string channel    = std::string(analysis::DsspOutputChannel);
   bool prefer_pi_helices = true;
   int pp_stretch_length  = 2;
-  bool strict            = false;
 };
 
 // Ensure that the topology's atom typing matches desired mode. desired = std::nullopt means no preference

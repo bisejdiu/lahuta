@@ -2,6 +2,7 @@
 #define LAHUTA_CLI_SHARED_OPTIONS_HPP
 
 #include <cstddef>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -71,6 +72,8 @@ struct RuntimeOptionSpec {
   int default_threads                = 8;
   std::size_t default_batch_size     = 512;
   std::size_t default_writer_threads = 1;
+
+  RuntimeOptionSpec();
 };
 
 struct RuntimeConfig {
@@ -97,6 +100,14 @@ void add_report_options(OptionSchema &schema);
 [[nodiscard]] RuntimeConfig parse_runtime_config(const ParsedArgs &args);
 [[nodiscard]] RuntimeConfig parse_runtime_config(const ParsedArgs &args, const RuntimeOptionSpec &spec);
 [[nodiscard]] ReportConfig parse_report_config(const ParsedArgs &args);
+[[nodiscard]] std::filesystem::path validate_output_dir(const std::string &output_arg);
+[[nodiscard]] std::string ensure_jsonl_extension(const std::string &path);
+[[nodiscard]] std::string require_arg(const ParsedArgs &args,
+                                      int option,
+                                      std::string_view label,
+                                      std::string_view missing_message = {},
+                                      std::string_view empty_message = {});
+[[nodiscard]] int default_thread_count();
 
 } // namespace lahuta::cli
 

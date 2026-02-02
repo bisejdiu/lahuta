@@ -1,18 +1,18 @@
 #include <cmath>
-#include <filesystem>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
 
-#include "analysis/extract/extract_tasks.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "analysis/sasa/computation.hpp"
 #include "logging/logging.hpp"
 #include "parsing/arg_validation.hpp"
+#include "parsing/usage_error.hpp"
 #include "pipeline/ingest/factory.hpp"
 #include "pipeline/runtime/api.hpp"
 #include "schemas/shared_options.hpp"
+#include "sinks/logging.hpp"
 #include "sinks/ndjson.hpp"
 #include "specs/command_spec.hpp"
 
@@ -26,10 +26,12 @@ constexpr std::string_view Summary = "Compute Shrake-Rupley solvent accessible s
 namespace sasa_sr_opts {
 constexpr unsigned BaseIndex = 200;
 enum : unsigned { //
-  OutputDir = BaseIndex,
+  Output = BaseIndex,
+  OutputStdout,
   ProbeRadius,
   Points,
   IncludeTotal,
+  ShowAtomInfo,
   UseBitmask,
   NoSimd
 };
@@ -39,12 +41,14 @@ struct SasaSrCliConfig {
   SourceConfig source;
   RuntimeConfig runtime;
   ReportConfig report;
-  std::filesystem::path output_dir;
-  double probe_radius  = 1.4;
-  std::size_t n_points = 128;
-  bool include_total   = false;
-  bool use_bitmask     = false;
-  bool use_simd        = true;
+  bool output_stdout    = false;
+  std::string output_path;
+  double probe_radius   = 1.4;
+  std::size_t n_points  = 128;
+  bool include_total    = false;
+  bool show_atom_info   = false;
+  bool use_bitmask      = false;
+  bool use_simd         = true;
   P::SasaSrParams params;
 };
 
@@ -55,7 +59,6 @@ public:
     source_spec_.default_extensions   = {".cif", ".cif.gz", ".pdb", ".pdb.gz"};
 
     runtime_spec_.include_writer_threads = true;
-    runtime_spec_.default_threads        = 8;
     runtime_spec_.default_batch_size     = 512;
     runtime_spec_.default_writer_threads = P::get_default_backpressure_config().writer_threads;
 
@@ -63,16 +66,16 @@ public:
                  "",
                  "",
                  validate::Unknown,
-                std::string("Usage: lahuta sasa-sr [--output-dir <dir>] [options]\n"
-                            "Author: ")
-                    .append(Author)
-                    .append("\n\n")
-                    .append(Summary)
+                 std::string("Usage: lahuta sasa-sr [--output <file>] [options]\n"
+                             "Author: ")
+                     .append(Author)
+                     .append("\n\n")
+                     .append(Summary)
                      .append("\n"
-                             "Outputs: per_protein_sasa_sr.jsonl (NDJSON) in the output directory.\n"
-                             "Each entry has an \"Atom\" array of {label: sasa} objects where label is\n"
-                             "atom-index-atom_name-residue_id-residue_name-chain_id.\n"
-                             "Note: file-based inputs must be AF2 model files (mmCIF).")});
+                             "Outputs: SASA values in JSONL format.\n"
+                             "Default output: {\"model\":\"...\",\"sasa\":[...]} with per-atom SASA values.\n"
+                             "Use --show-atom-info for labeled output with atom identifiers.\n"
+                             "Note: file-based inputs must be AF2 model files.")});
 
     schema_.add({0, "", "", option::Arg::None, "\nInput Options (choose one):"});
     schema_.add({shared_opts::SourceDatabase,
@@ -96,7 +99,6 @@ public:
                  validate::Required,
                  "  --file-list, -l <path>       \tProcess files listed in text file (one per line)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nDirectory Options:"});
     schema_.add({shared_opts::SourceExtension,
                  "e",
                  "extension",
@@ -109,7 +111,6 @@ public:
                  option::Arg::None,
                  "  --recursive, -r              \tRecursively search subdirectories."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nModel Options:"});
     schema_.add({shared_opts::SourceIsAf2Model,
                  "",
                  "is_af2_model",
@@ -118,18 +119,29 @@ public:
                  "models (AF2-like mmCIF)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nOutput Options:"});
-    schema_.add({sasa_sr_opts::OutputDir,
+    schema_.add({sasa_sr_opts::Output,
                  "o",
-                 "output-dir",
+                 "output",
                  validate::Required,
-                 "  --output-dir, -o <dir>       \tOutput directory for per-model JSON files (default: .)."});
+                 "  --output, -o <file>          \tOutput file for SASA JSONL (default: sasa_sr.jsonl). "
+                 "Use '-' for stdout."});
+    schema_.add({sasa_sr_opts::OutputStdout,
+                 "",
+                 "stdout",
+                 option::Arg::None,
+                 "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
     schema_.add({sasa_sr_opts::IncludeTotal,
                  "",
                  "include-total",
                  option::Arg::None,
                  "  --include-total              \tInclude total SASA in JSON output."});
+    schema_.add({sasa_sr_opts::ShowAtomInfo,
+                 "",
+                 "show-atom-info",
+                 option::Arg::None,
+                 "  --show-atom-info             \tInclude atom labels in output (default: values only)."});
 
-    schema_.add({0, "", "", option::Arg::None, "\nAlgorithm Options:"});
+    schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({sasa_sr_opts::ProbeRadius,
                  "",
                  "probe-radius",
@@ -151,6 +163,8 @@ public:
                  "no-simd",
                  option::Arg::None,
                  "  --no-simd                    \tDisable SIMD optimizations for bitmask."});
+
+    schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
     schema_.add({0, "", "", option::Arg::None, "\nRuntime Options:"});
@@ -177,57 +191,51 @@ public:
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
-      throw std::runtime_error("sasa-sr expects AlphaFold2 model inputs. For file-based sources, pass "
-                               "--is_af2_model (or use --database).");
+      throw CliUsageError("sasa-sr expects AlphaFold2 model inputs. For file-based sources, pass "
+                          "--is_af2_model (or use --database).");
     }
 
-    std::string output_arg;
-    if (args.has(sasa_sr_opts::OutputDir)) {
-      output_arg = args.get_string(sasa_sr_opts::OutputDir);
+    config.output_stdout = args.get_flag(sasa_sr_opts::OutputStdout);
+
+    if (args.has(sasa_sr_opts::Output)) {
+      const auto output_arg = args.get_string(sasa_sr_opts::Output);
       if (output_arg.empty()) {
-        throw std::runtime_error("--output-dir requires a value.");
+        throw CliUsageError("--output requires a value.");
       }
-      config.output_dir = std::filesystem::path(output_arg);
-    } else {
-      config.output_dir = std::filesystem::path(".");
-      output_arg        = config.output_dir.string();
+      if (output_arg == "-") {
+        config.output_stdout = true;
+      } else {
+        config.output_path = ensure_jsonl_extension(output_arg);
+      }
+    }
+
+    if (config.output_stdout && !config.output_path.empty()) {
+      throw CliUsageError("--stdout cannot be combined with --output <path>. Use --output - for stdout.");
+    }
+
+    if (!config.output_stdout && config.output_path.empty()) {
+      config.output_path = "sasa_sr.jsonl";
     }
 
     if (args.has(sasa_sr_opts::ProbeRadius)) {
       config.probe_radius = std::stod(args.get_string(sasa_sr_opts::ProbeRadius));
       if (!std::isfinite(config.probe_radius) || config.probe_radius < 0.0) {
-        throw std::runtime_error("--probe-radius must be finite and >= 0.");
+        throw CliUsageError("--probe-radius must be finite and >= 0.");
       }
     }
 
     if (args.has(sasa_sr_opts::Points)) {
       const auto raw = std::stoll(args.get_string(sasa_sr_opts::Points));
       if (raw <= 0) {
-        throw std::runtime_error("--points must be > 0.");
+        throw CliUsageError("--points must be > 0.");
       }
       config.n_points = static_cast<std::size_t>(raw);
     }
 
-    config.include_total = args.get_flag(sasa_sr_opts::IncludeTotal);
-    config.use_bitmask   = args.get_flag(sasa_sr_opts::UseBitmask);
-    config.use_simd      = !args.get_flag(sasa_sr_opts::NoSimd);
-    if (config.output_dir.empty()) {
-      throw std::runtime_error("Output directory cannot be empty.");
-    }
-
-    std::error_code ec;
-    if (std::filesystem::exists(config.output_dir, ec)) {
-      if (ec) {
-        throw std::runtime_error("Unable to access output directory: " + output_arg);
-      }
-      if (!std::filesystem::is_directory(config.output_dir, ec)) {
-        throw std::runtime_error("Output path is not a directory: " + output_arg);
-      }
-    } else {
-      if (!std::filesystem::create_directories(config.output_dir, ec) || ec) {
-        throw std::runtime_error("Unable to create output directory: " + output_arg);
-      }
-    }
+    config.include_total  = args.get_flag(sasa_sr_opts::IncludeTotal);
+    config.show_atom_info = args.get_flag(sasa_sr_opts::ShowAtomInfo);
+    config.use_bitmask    = args.get_flag(sasa_sr_opts::UseBitmask);
+    config.use_simd       = !args.get_flag(sasa_sr_opts::NoSimd);
 
     P::SasaSrParams params;
     params.params.probe_radius = config.probe_radius;
@@ -235,6 +243,7 @@ public:
     params.params.use_bitmask  = config.use_bitmask;
     params.params.use_simd     = config.use_simd;
     params.include_total       = config.include_total;
+    params.show_atom_info      = config.show_atom_info;
     params.channel             = std::string(A::SasaSrOutputChannel);
     params.counters            = std::make_shared<A::SasaSrCounters>();
     config.params              = std::move(params);
@@ -250,6 +259,7 @@ public:
     plan.save_run_report   = cfg.report.save_run_report;
     plan.run_report_prefix = "sasa-sr";
     plan.threads           = static_cast<std::size_t>(cfg.runtime.threads);
+    plan.success_message   = "SASA-SR computation completed successfully!";
 
     plan.source_factory = [cfg]() -> PipelinePlan::SourcePtr {
       using Mode = SourceConfig::Mode;
@@ -277,7 +287,7 @@ public:
           return PipelinePlan::SourcePtr(std::move(source));
         }
       }
-      throw std::runtime_error("sasa-sr does not support this source mode");
+      throw CliUsageError("sasa-sr does not support this source mode");
     };
 
     const bool needs_parse_task = cfg.source.mode != SourceConfig::Mode::Database;
@@ -306,9 +316,14 @@ public:
     PipelineSink data_sink;
     data_sink.channel      = cfg.params.channel;
     data_sink.backpressure = sink_cfg;
-    const auto output_path = (cfg.output_dir / "per_protein_sasa_sr.jsonl").string();
-    data_sink.sink         = std::make_shared<P::NdjsonFileSink>(output_path);
-    Logger::get_logger()->info("SASA-SR output -> {}", output_path);
+    if (cfg.output_stdout) {
+      data_sink.sink = std::make_shared<P::LoggingSink>();
+      Logger::get_logger()->info("Writing to: stdout");
+    } else {
+      data_sink.sink = std::make_shared<P::NdjsonFileSink>(cfg.output_path);
+      Logger::get_logger()->info("Writing to: {}", cfg.output_path);
+      plan.output_files.push_back(cfg.output_path);
+    }
     plan.sinks.push_back(std::move(data_sink));
 
     Logger::get_logger()->info("SASA-SR probe radius: {}", cfg.params.params.probe_radius);

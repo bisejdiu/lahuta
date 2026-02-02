@@ -1,13 +1,25 @@
+#include <exception>
+#include <filesystem>
 #include <sstream>
-#include <stdexcept>
 #include <string_view>
+#include <thread>
 
 #include "parsing/arg_validation.hpp"
 #include "parsing/extension_utils.hpp"
+#include "parsing/usage_error.hpp"
 #include "runner/reporting.hpp"
 #include "schemas/shared_options.hpp"
 
 namespace lahuta::cli {
+
+int default_thread_count() {
+  const auto count = std::thread::hardware_concurrency();
+  if (count > 0) return static_cast<int>(count);
+  return 8;
+}
+
+RuntimeOptionSpec::RuntimeOptionSpec() : default_threads(default_thread_count()) {}
+
 namespace {
 
 SourceOptionSpec default_source_spec() {
@@ -58,38 +70,83 @@ std::string build_writer_threads_help(std::size_t default_writer_threads) {
 }
 
 std::size_t parse_size_t(std::string_view value, std::string_view label, bool allow_zero) {
-  if (value.empty()) {
-    throw std::runtime_error(std::string(label) + " requires a value.");
-  }
+  if (value.empty()) throw CliUsageError(std::string(label) + " requires a value.");
+
   std::size_t parsed = 0;
   try {
     parsed = std::stoull(std::string(value));
   } catch (const std::exception &) {
-    throw std::runtime_error("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
+    throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
   if (!allow_zero && parsed == 0) {
-    throw std::runtime_error(std::string(label) + " must be positive");
+    throw CliUsageError(std::string(label) + " must be positive");
   }
   return parsed;
 }
 
 int parse_int(std::string_view value, std::string_view label) {
-  if (value.empty()) {
-    throw std::runtime_error(std::string(label) + " requires a value.");
-  }
+  if (value.empty()) throw CliUsageError(std::string(label) + " requires a value.");
+
   int parsed = 0;
   try {
     parsed = std::stoi(std::string(value));
   } catch (const std::exception &) {
-    throw std::runtime_error("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
+    throw CliUsageError("Invalid " + std::string(label) + " value '" + std::string(value) + "'");
   }
-  if (parsed <= 0) {
-    throw std::runtime_error(std::string(label) + " must be positive");
-  }
+  if (parsed <= 0) throw CliUsageError(std::string(label) + " must be positive");
   return parsed;
 }
 
 } // namespace
+
+std::filesystem::path validate_output_dir(const std::string &output_arg) {
+  std::filesystem::path output_dir(output_arg);
+  if (output_dir.empty()) throw CliUsageError("Output directory cannot be empty.");
+
+  std::error_code ec;
+  if (std::filesystem::exists(output_dir, ec)) {
+    if (ec) {
+      throw CliUsageError("Unable to access output directory: " + output_arg);
+    }
+    if (!std::filesystem::is_directory(output_dir, ec)) {
+      throw CliUsageError("Output path is not a directory: " + output_arg);
+    }
+  } else {
+    if (!std::filesystem::create_directories(output_dir, ec) || ec) {
+      throw CliUsageError("Unable to create output directory: " + output_arg);
+    }
+  }
+  return output_dir;
+}
+
+std::string ensure_jsonl_extension(const std::string &path) {
+  if (path == "-") return path;
+
+  std::filesystem::path p(path);
+  if (p.extension() == ".jsonl") {
+    return path;
+  }
+
+  p.replace_extension(".jsonl");
+  return p.string();
+}
+
+std::string require_arg(const ParsedArgs &args, int option, std::string_view label,
+                        std::string_view missing_message, std::string_view empty_message) {
+
+  if (!args.has(option)) {
+    if (!missing_message.empty()) throw CliUsageError(std::string(missing_message));
+    throw CliUsageError("Missing required " + std::string(label) + " option.");
+  }
+
+  const auto values = args.get_all_strings(option);
+  for (const auto &value : values) {
+    if (!value.empty()) return value;
+  }
+
+  if (!empty_message.empty()) throw CliUsageError(std::string(empty_message));
+  throw CliUsageError(std::string(label) + " requires a value.");
+}
 
 void add_global_options(OptionSchema &schema) {
   schema.add({shared_opts::GlobalHelp,
@@ -217,9 +274,9 @@ GlobalConfig parse_global_config(const ParsedArgs &args) {
     } else if (level == "2") {
       config.log_level = lahuta::Logger::LogLevel::Debug;
     } else if (level.empty()) {
-      throw std::runtime_error("Option '-v/--verbose' expects <level> (0,1,2)");
+      throw CliUsageError("Option '-v/--verbose' expects <level> (0,1,2)");
     } else {
-      throw std::runtime_error("Invalid verbosity level '" + level + "'. Must be 0, 1 or 2");
+      throw CliUsageError("Invalid verbosity level '" + level + "'. Must be 0, 1 or 2");
     }
   }
 
@@ -281,10 +338,10 @@ SourceConfig parse_source_config(const ParsedArgs &args, const SourceOptionSpec 
     if (spec.allow_file_list) {
       allowed.emplace_back("--file-list");
     }
-    throw std::runtime_error("Must specify exactly one source option: " + join_option_list(allowed));
+    throw CliUsageError("Must specify exactly one source option: " + join_option_list(allowed));
   }
   if (source_count > 1) {
-    throw std::runtime_error("Cannot specify multiple source options");
+    throw CliUsageError("Cannot specify multiple source options");
   }
 
   if (spec.allow_directory && args.has(shared_opts::SourceExtension)) {
@@ -342,13 +399,12 @@ ReportConfig parse_report_config(const ParsedArgs &args) {
 
   if (args.has(shared_opts::ReportReporter)) {
     const std::string name = args.get_string(shared_opts::ReportReporter);
-    if (name.empty()) {
-      throw std::runtime_error("--reporter requires a value.");
-    }
+    if (name.empty()) throw CliUsageError("--reporter requires a value.");
+
     if (const auto *reporter = find_pipeline_reporter(name)) {
       config.reporter = reporter;
     } else {
-      throw std::runtime_error("Unknown reporter '" + name + "'");
+      throw CliUsageError("Unknown reporter '" + name + "'");
     }
   }
 

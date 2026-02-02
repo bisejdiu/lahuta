@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "analysis/system/model_loader.hpp"
+#include "analysis/system/model_parse_task.hpp"
 #include "logging/logging.hpp"
 #include "models/dssp.hpp"
 #include "models/plddt.hpp"
@@ -43,29 +43,6 @@ inline char dssp_to_char(DSSPAssignment dssp) noexcept {
 }
 // clang-format on
 
-inline constexpr const char *CTX_PARSED_MODEL_KEY = "lahuta.parsed_model";
-
-inline std::shared_ptr<const ModelParserResult> get_cached_model_parser_result(const P::TaskContext &ctx) {
-  return ctx.get_object<ModelParserResult>(CTX_PARSED_MODEL_KEY);
-}
-
-class ModelParseTask final : public P::ITask {
-public:
-  P::TaskResult run(const std::string &item_path, P::TaskContext &ctx) override {
-    if (ctx.model_payload()) return {};
-    if (get_cached_model_parser_result(ctx)) return {};
-
-    try {
-      auto parsed = load_model_parser_result(item_path);
-      ctx.set_object<ModelParserResult>(CTX_PARSED_MODEL_KEY,
-                                        std::make_shared<ModelParserResult>(std::move(parsed)));
-    } catch (const std::exception &e) {
-      Logger::get_logger()->warn("[extract:parse] Failed to parse '{}': {}", item_path, e.what());
-    }
-    return {};
-  }
-};
-
 class SequenceExtractTask final : public P::ITask {
 public:
   explicit SequenceExtractTask(std::string output_channel) : output_channel_(std::move(output_channel)) {}
@@ -78,7 +55,7 @@ public:
     if (payload && payload->sequence && !payload->sequence->empty()) {
       sequence = payload->sequence.get();
     } else if (!payload) {
-      parsed = get_cached_model_parser_result(ctx);
+      parsed = get_parsed_model_result(ctx);
       if (parsed && !parsed->sequence.empty()) {
         sequence = &parsed->sequence;
       }
@@ -116,7 +93,7 @@ public:
     if (payload && payload->plddts && !payload->plddts->empty()) {
       plddts = payload->plddts.get();
     } else if (!payload) {
-      parsed = get_cached_model_parser_result(ctx);
+      parsed = get_parsed_model_result(ctx);
       if (parsed && !parsed->plddt_per_residue.empty()) {
         plddts = &parsed->plddt_per_residue;
       }
@@ -160,7 +137,7 @@ public:
     if (payload && payload->dssp && !payload->dssp->empty()) {
       dssp = payload->dssp.get();
     } else if (!payload) {
-      parsed = get_cached_model_parser_result(ctx);
+      parsed = get_parsed_model_result(ctx);
       if (parsed && !parsed->dssp_per_residue.empty()) {
         dssp = &parsed->dssp_per_residue;
       }
@@ -204,7 +181,7 @@ public:
     if (payload && payload->metadata) {
       metadata = payload->metadata.get();
     } else if (!payload) {
-      parsed = get_cached_model_parser_result(ctx);
+      parsed = get_parsed_model_result(ctx);
       if (parsed) {
         metadata = &parsed->metadata;
       }

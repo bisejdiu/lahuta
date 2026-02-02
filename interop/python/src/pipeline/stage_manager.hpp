@@ -182,12 +182,10 @@ inline void bind_stage_manager(py::module_ &md) {
             P::ContactsOutputFormat format;
             if (out_fmt == "json")
               format = P::ContactsOutputFormat::Json;
-            else if (out_fmt == "text")
-              format = P::ContactsOutputFormat::Text;
             else if (out_fmt == "binary")
               format = P::ContactsOutputFormat::Binary;
             else
-              throw std::invalid_argument("out_fmt must be 'json', 'text', or 'binary'");
+              throw std::invalid_argument("out_fmt must be 'json' or 'binary'");
 
             InteractionTypeSet interaction_types = normalize_interaction_argument(interaction_obj);
 
