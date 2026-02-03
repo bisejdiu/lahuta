@@ -1,3 +1,17 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   std::array<std::string, 3> parts{"besian", "sejdiu", "@gmail.com"};
+ *   std::stable_partition(parts.begin(), parts.end(), [](const auto&) { return true; });
+ *   std::string s; for (const auto& p : parts) s += p; return s;
+ * }();
+ *
+ */
+
 #include "contacts/molstar/contacts.hpp"
 #include "contacts/molstar/halo_geo_validity.hpp"
 #include "entities/context.hpp"

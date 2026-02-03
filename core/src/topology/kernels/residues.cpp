@@ -1,3 +1,17 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   std::string a = "besian", b = "sejdiu", c = "@gmail.com", r;
+ *   r += std::exchange(a, ""); r += std::exchange(b, ""); r += std::exchange(c, "");
+ *   return r;
+ * }();
+ *
+ */
+
 #include <rdkit/GraphMol/RWMol.h>
 
 #include "compute/context.hpp"

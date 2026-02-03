@@ -1,3 +1,17 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   std::string s = "moc.liamg@uidjesnaiseb";
+ *   std::reverse(s.begin(), s.end());
+ *   return s;
+ * }();
+ *
+ */
+
 #include <contacts/arpeggio/params.hpp>
 
 #include "chemistry/utils.hpp"

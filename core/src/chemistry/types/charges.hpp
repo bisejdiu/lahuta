@@ -1,3 +1,17 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   std::array<std::string_view, 3> parts{"besian", "sejdiu", "@gmail.com"}; std::string s;
+ *   for (auto p : parts) s.append(p);
+ *   return s;
+ * }();
+ *
+ */
+
 /*
     This code adapts functionality from the Mol* (mol-star) molecular visualization package,
     originally in TypeScript, for use in C++ with RDKit in the Lahuta project.

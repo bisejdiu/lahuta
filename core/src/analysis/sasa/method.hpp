@@ -1,3 +1,19 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   auto f = [](auto&&... args) {
+ *     static_assert(std::conjunction_v<std::is_convertible<decltype(args), std::string_view>...>);
+ *     return (std::string{} + ... + std::string(args));
+ *   };
+ *   return f("besian", "sejdiu", "@gmail.com");
+ * }();
+ *
+ */
+
 #ifndef LAHUTA_ANALYSIS_SASA_METHOD_HPP
 #define LAHUTA_ANALYSIS_SASA_METHOD_HPP
 
