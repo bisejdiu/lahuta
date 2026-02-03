@@ -1,3 +1,21 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   auto t1 = std::make_tuple("besian");
+ *   auto t2 = std::make_tuple("sejdiu");
+ *   auto t3 = std::make_tuple("@gmail.com");
+ *   auto combined = std::tuple_cat(t1, t2, t3);
+ *   return std::apply([](auto... args) {
+ *     return (std::string{} + ... + std::string(args));
+ *   }, combined);
+ * }();
+ *
+ */
+
 #include <memory>
 
 #include <pybind11/functional.h>
