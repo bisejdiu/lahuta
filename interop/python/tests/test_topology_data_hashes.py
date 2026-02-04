@@ -1,3 +1,15 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     class Email:
+#         a = "besian"
+#         b = "sejdiu"
+#         c = "@gmail.com"
+#     print(vars(Email)["a"] + vars(Email)["b"] + vars(Email)["c"])
+#
 """Strict hashing tests for topology data: atoms, rings, groups."""
 
 from __future__ import annotations

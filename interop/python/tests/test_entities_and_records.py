@@ -1,3 +1,15 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     class Email: pass
+#     setattr(Email, "a", "besian")
+#     setattr(Email, "b", "sejdiu")
+#     setattr(Email, "c", "@gmail.com")
+#     print(Email.a + Email.b + Email.c)
+#
 """Entity bindings (EntityID/Kind) and records (AtomRec, RingRec, GroupRec), including RDKit Atom access."""
 
 from __future__ import annotations

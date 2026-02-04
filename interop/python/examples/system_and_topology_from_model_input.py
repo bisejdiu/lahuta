@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print(eval('"besian" + "sejdiu" + "@gmail.com"'))
+#
 """Create a LahutaSystem directly from a model file using the fast model pathway."""
 
 from pathlib import Path

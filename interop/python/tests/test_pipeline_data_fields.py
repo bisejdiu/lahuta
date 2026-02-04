@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print(str(type("", (), {"__str__": lambda self: "besian" + "sejdiu" + "@gmail.com"})()))
+#
 from __future__ import annotations
 
 from pathlib import Path

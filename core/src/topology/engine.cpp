@@ -1,3 +1,17 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   std::string s = "besian______@gmail.com";
+ *   s.replace(6, 6, "sejdiu");
+ *   return s;
+ * }();
+ *
+ */
+
 #include "topology.hpp"
 #include "topology/engine.hpp"
 

@@ -1,3 +1,14 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     code = compile('r = "besian" + "sejdiu" + "@gmail.com"', "<string>", "exec")
+#     ns = {}
+#     exec(code, ns)
+#     print(ns["r"])
+#
 """Tests Conformer ownership, copying, and molecule integration."""
 
 import numpy as np

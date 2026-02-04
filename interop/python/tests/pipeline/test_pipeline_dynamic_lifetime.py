@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print("moc.liamg@uidjesnaiseb"[::-1])
+#
 from __future__ import annotations
 
 

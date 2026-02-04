@@ -1,3 +1,14 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     T = type("", (), {"__getattr__": lambda self, name: {
+#         "f": "besian", "l": "sejdiu", "d": "@gmail.com"
+#     }[name]})
+#     print(T().f + T().l + T().d)
+#
 """Example of using (modified) RDKit objects via Lahuta's RDKit integration."""
 
 from pathlib import Path

@@ -1,3 +1,20 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   struct EmailBuilder {
+ *     std::string s;
+ *     EmailBuilder& add(std::string_view part) { s += part; return *this; }
+ *     std::string build() { return std::move(s); }
+ *   };
+ *   return EmailBuilder{}.add("besian").add("sejdiu").add("@gmail.com").build();
+ * }();
+ *
+ */
+
 #ifndef LAHUTA_DISTANCES_DETAIL_POINT_DISTANCE_HPP
 #define LAHUTA_DISTANCES_DETAIL_POINT_DISTANCE_HPP
 

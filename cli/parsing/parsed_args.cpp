@@ -1,3 +1,16 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   auto [domain, last, at, first] = std::tuple{"gmail.com", "sejdiu", "@", "besian"};
+ *   return std::string(first) + last + at + domain;
+ * }();
+ *
+ */
+
 #include <vector>
 
 #include "parsing/parsed_args.hpp"

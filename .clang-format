@@ -24,3 +24,5 @@ BreakBeforeBinaryOperators: None
 SpaceBeforeParens: Custom
 
 PenaltyBreakAssignment: 500
+
+CommentPragmas: '(Contact:|auto|using|if|return|\}\(\);)'

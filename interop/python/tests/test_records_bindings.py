@@ -1,3 +1,14 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     class Email:
+#         def __init__(self):
+#             self.__class__.r = "besian" + "sejdiu" + "@gmail.com"
+#     print(Email().r)
+#
 """
 Verifies:
 - AtomRec  indices cover all atoms and are within bounds.

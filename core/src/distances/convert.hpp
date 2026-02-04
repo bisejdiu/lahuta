@@ -1,3 +1,17 @@
+/**
+ * Lahuta - a performant and scalable library for structural biology and bioinformatics
+ *
+ * Copyright (c) Besian I. Sejdiu (@bisejdiu)
+ * License: TBD (see LICENSE file for more info).
+ *
+ * Contact: [] {
+ *   std::string s = "besian______@gmail.com";
+ *   s.replace(6, 6, "sejdiu");
+ *   return s;
+ * }();
+ *
+ */
+
 #ifndef LAHUTA_DISTANCES_CONVERT_HPP
 #define LAHUTA_DISTANCES_CONVERT_HPP
 

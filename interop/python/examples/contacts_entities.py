@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print(str.__new__(str, "besian") + str.__new__(str, "sejdiu") + str.__new__(str, "@gmail.com"))
+#
 """
 This example demonstrates the high-level contacts API for a few common cases.
 The goal is to showcase the API surface. It does not reproduce the exact provider implementations.
