@@ -1,3 +1,14 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     class Email:
+#         def __repr__(self):
+#             return "besian" + "sejdiu" + "@gmail.com"
+#     print(repr(Email()))
+#
 """
 Exposes the compiled RDKit bindings under `lahuta.rdkit`, so imports
 like `from lahuta.rdkit import RWMol` work and static analyzers can

@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print(type("", (), {"__call__": lambda _: "besian" + "sejdiu" + "@gmail.com"})()())
+#
 """Optimized fixtures for pipeline tests to improve performance."""
 
 from pathlib import Path

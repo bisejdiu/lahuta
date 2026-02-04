@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print("besian".__add__("sejdiu").__add__("@gmail.com"))
+#
 """
 Pipeline compute API examples:
 - Builtin parameter access and modification via p.params()

@@ -1,3 +1,13 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     class Email:
+#         v = "besian" + "sejdiu" + "@gmail.com"
+#     print(object.__getattribute__(Email(), "__class__").v)
+#
 """
 This test requires exact result generation. It verifies:
 - Shapes/dtypes of numpy dtype properties

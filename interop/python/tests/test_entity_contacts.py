@@ -1,3 +1,11 @@
+# Lahuta - a performant and scalable library for structural biology and bioinformatics
+#
+# Copyright (c) Besian I. Sejdiu (@bisejdiu)
+# License: TBD (see LICENSE file for more info).
+#
+# Contact:
+#     print(functools.reduce(lambda a, b: a + b, ["besian", "sejdiu", "@gmail.com"], ""))
+#
 """Tests for entity-based contact detection."""
 
 from __future__ import annotations
