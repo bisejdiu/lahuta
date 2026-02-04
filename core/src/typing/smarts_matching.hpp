@@ -60,7 +60,7 @@ constexpr std::pair<const char *, AtomType> AtomTypeSMARTS[] = {
 };
 
 inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
-  static std::array<RDKit::ROMol*, std::size(AtomTypeSMARTS)> patterns = [] {
+  thread_local std::array<RDKit::ROMol*, std::size(AtomTypeSMARTS)> patterns = [] {
     std::array<RDKit::ROMol*, std::size(AtomTypeSMARTS)> temp{};
     for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
       temp[i] = RDKit::SmartsToMol(AtomTypeSMARTS[i].first);
@@ -71,7 +71,7 @@ inline std::vector<AtomType> match_atom_types(RDKit::ROMol &mol) {
   RDKit::SubstructMatchParameters params;
   params.maxMatches = mol.getNumAtoms();
 
-  std::vector<AtomType> types = {mol.getNumAtoms(), AtomType::None};
+  std::vector<AtomType> types(mol.getNumAtoms(), AtomType::None);
   for (size_t i = 0; i < std::size(AtomTypeSMARTS); ++i) {
     const auto &[smarts, atom_type] = AtomTypeSMARTS[i];
     RDKit::ROMol *pattern = patterns[i];
