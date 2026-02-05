@@ -41,7 +41,7 @@ try:
     # fmt: off
     from .lib import lahuta as _lib
     from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
-        AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
+        AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, InputType, KDIndex, \
         FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, InteractionTypeSet, Kind, \
         LahutaSystem, LahutaSystemProperties, Logger, \
         MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
@@ -77,7 +77,7 @@ __all__ = [
     'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
     'AtomTypingMethod', 'ContactProvider', 'ContactSet',
     'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
-    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'InteractionTypeSet', 'Kind',
+    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InputType', 'InteractionType', 'InteractionTypeSet', 'Kind',
     'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
     'LuniPropertyResult', 'MolStarContactsEngine', 'GetContactsEngine', 'NSResults',
     'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',
