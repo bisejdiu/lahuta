@@ -51,7 +51,7 @@ def main() -> None:
     eid_atom = EntityID.make(Kind.Atom, atom_idx)
     logging.info(f"Atom EntityID: {eid_atom} (repr={eid_atom!r}) kind={eid_atom.kind} index={eid_atom.index}")
 
-    mol = sys.get_molecule()
+    mol = topo.molecule()
     rd_atom = mol.getAtomWithIdx(atom_idx)
     logging.info(f"RDKit Atom[{atom_idx}]: Z={rd_atom.getAtomicNum()} symbol={rd_atom.getSymbol()} degree={rd_atom.getDegree()}")
 

@@ -289,15 +289,6 @@ void bind_luni(py::module &m) {
           py::return_value_policy::move,
           py::keep_alive<0, 1>(),
           "Residues container (computed from molecule; does not build topology)")
-      .def("get_molecule",
-           &Luni::get_molecule,
-           py::return_value_policy::reference_internal,
-           "Get RDKit molecule object")
-      .def("get_conformer",
-           &Luni::get_conformer,
-           py::arg("id") = -1,
-           py::return_value_policy::reference_internal,
-           "Get conformer by ID")
       .def("get_atom",
            &Luni::get_atom,
            py::arg("idx"),

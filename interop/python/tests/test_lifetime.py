@@ -76,12 +76,13 @@ def test_topology_keeps_owner_alive(ubi_cif: Path) -> None:
 
 
 def test_molecule_and_conformer_keep_owner_alive(ubi_cif: Path) -> None:
-    """Verify that RDKit molecule and conformer handles remain usable after LahutaSystem is deleted."""
+    """Verify that RDKit molecule and conformer handles remain usable after LahutaSystem and Topology are deleted."""
     sys  = _build_sys(ubi_cif)
-    mol  = sys.get_molecule()
-    conf = sys.get_conformer(0)
+    top  = sys.get_topology()
+    mol  = top.molecule()
+    conf = top.conformer(0)
 
-    del sys
+    del sys, top
     gc.collect()
 
     assert mol.getNumAtoms() > 0

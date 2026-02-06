@@ -154,7 +154,7 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
 def test_molecule_and_conformer_handles(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
     mol  = topo.molecule()
-    conf = topo.conformer()
+    conf = topo.conformer(0)
     xyz  = luni_built.props.positions
 
     assert mol.getNumAtoms()  == luni_built.n_atoms

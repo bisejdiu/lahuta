@@ -307,8 +307,15 @@ void bind_topology(py::module &m) {
       }, py::arg("id"), py::return_value_policy::reference_internal,
       "Resolve a Group EntityID to GroupRec (reference, lifetime tied to Topology)")
 
-    .def("molecule",  [](const Topology &self) -> auto { return self.molecule();  }, py::return_value_policy::reference_internal, "Underlying RDKit molecule (borrowed reference)")
-    .def("conformer", [](const Topology &self) -> auto { return self.conformer(); }, py::return_value_policy::reference_internal, "RDKit conformer used for positions (borrowed reference)");
+    .def("molecule",
+         [](const Topology &self) -> const RDKit::RWMol & { return self.molecule(); },
+         py::return_value_policy::reference_internal,
+         "Underlying RDKit molecule (borrowed reference)")
+    .def("conformer",
+         [](const Topology &self, int idx) -> const RDKit::Conformer & { return self.molecule().getConformer(idx); },
+         py::arg("idx") = 0,
+         py::return_value_policy::reference_internal,
+         "RDKit conformer by id (borrowed reference)");
 }
 
 } // namespace lahuta::bindings

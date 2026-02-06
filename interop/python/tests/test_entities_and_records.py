@@ -35,7 +35,7 @@ def test_entities_and_records_rdkit(luni: LahutaSystem, topo: Topology) -> None:
     assert eid_atom.kind == Kind.Atom and eid_atom.index == a0_idx
     assert str(eid_atom).startswith("Atom#")
 
-    mol = luni.get_molecule()
+    mol = topo.molecule()
     rd_atom = mol.getAtomWithIdx(a0_idx)
     assert isinstance(rd_atom, rdkit.Atom)
     assert rd_atom.getIdx() == a0_idx
@@ -78,7 +78,7 @@ def test_hypothesis_sampling_over_indices(luni: LahutaSystem, topo: Topology) ->
         # RDKit Atom by index agrees with AtomRec.idx()
         rec = topo.get_atom(i)
         assert int(rec.idx()) == i
-        mol = luni.get_molecule()
+        mol = topo.molecule()
         a = mol.getAtomWithIdx(i)
         assert isinstance(a, rdkit.Atom) and a.getIdx() == i
 

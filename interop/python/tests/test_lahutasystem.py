@@ -146,8 +146,8 @@ def test_topology_build_and_accessors(luni: LahutaSystem) -> None:
     assert topo.has_computed(TopologyComputers.Rings) is True
 
     # Access RDKit handles
-    mol  = luni.get_molecule()
-    conf = luni.get_conformer()
+    mol  = topo.molecule()
+    conf = topo.conformer(0)
     xyz  = luni.props.positions
     assert mol.getNumAtoms()  == luni.n_atoms
     assert conf.getNumAtoms() == luni.n_atoms

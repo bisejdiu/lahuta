@@ -380,7 +380,7 @@ def compute_pi_cation(topology: Topology, metadata: AtomMetadata) -> ContactSet:
 
     ring_geoms = _ring_geometries(topology)
     mol  = topology.molecule()
-    conf = topology.conformer()
+    conf = topology.conformer(0)
 
     positive_indices = metadata.positive_atoms
     aromatic_ring_selector = rings(lambda r: r.aromatic)
@@ -511,7 +511,7 @@ def compute_hbonds(topology: Topology, metadata: AtomMetadata, classifier: Hydro
     exclude_sulfur = True
 
     mol  = topology.molecule()
-    conf = topology.conformer()
+    conf = topology.conformer(0)
 
     donor_selector    = atoms(lambda rec: rec.type.has(AtomType.HbondDonor))
     acceptor_selector = atoms(lambda rec: rec.type.has(AtomType.HbondAcceptor))
