@@ -58,6 +58,7 @@ void bind_atom_types(py::module &m) {
 
     .def_property_readonly("label", &lahuta::atom_type_to_string, "Human-readable label for this atom type")
     .def("has",     [](AtomType self, AtomType flag)  { return Flags::has(self, flag); },      "Return True if all bits in flag are set in self",  py::arg("flag"))
+    .def("__contains__", [](AtomType self, AtomType flag) { return Flags::has(self, flag); }, py::arg("flag"), "Return True if self contains all bits in flag")
     .def("has_any", [](AtomType self, AtomType flags) { return Flags::has_any(self, flags); }, "Return True if any bits in flags are set in self", py::arg("flags"))
     .def("all",     [](AtomType self, AtomType flags) { return Flags::all(self, flags); },     "Return True if self contains all bits in flags",   py::arg("flags"))
     .def("any",     [](AtomType self, AtomType flags) { return Flags::any(self, flags); },     "Return True if self contains any bits in flags",   py::arg("flags"))

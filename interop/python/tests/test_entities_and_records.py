@@ -26,10 +26,10 @@ def topo(luni: LahutaSystem) -> Topology:
 
 
 def test_entities_and_records_rdkit(luni: LahutaSystem, topo: Topology) -> None:
-    atom_recs = topo.atom_types
+    atom_recs = topo.atom_records
     assert isinstance(atom_recs, list) and len(atom_recs) == luni.n_atoms
     a0 = atom_recs[0]
-    a0_idx = int(a0.idx())
+    a0_idx = int(a0.idx)
 
     eid_atom = EntityID.make(Kind.Atom, a0_idx)
     assert eid_atom.kind == Kind.Atom and eid_atom.index == a0_idx
@@ -69,15 +69,15 @@ def test_hypothesis_sampling_over_indices(luni: LahutaSystem, topo: Topology) ->
     hyp = pytest.importorskip("hypothesis", reason="Hypothesis not installed")
     st = pytest.importorskip("hypothesis.strategies", reason="Hypothesis not installed")
 
-    atom_count = len(topo.atom_types)
+    atom_count = len(topo.atom_records)
     ring_count = len(topo.rings)
     group_count = len(topo.groups)
 
     @hyp.given(st.integers(min_value=0, max_value=max(0, atom_count - 1)))
     def _atoms(i: int) -> None:
-        # RDKit Atom by index agrees with AtomRec.idx()
+        # RDKit Atom by index agrees with AtomRec.idx
         rec = topo.get_atom(i)
-        assert int(rec.idx()) == i
+        assert int(rec.idx) == i
         mol = topo.molecule()
         a = mol.getAtomWithIdx(i)
         assert isinstance(a, rdkit.Atom) and a.getIdx() == i

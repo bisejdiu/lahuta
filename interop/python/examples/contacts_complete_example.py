@@ -125,7 +125,7 @@ def format_ring_or_group(mol: RWMol, atoms: list[Atom]) -> str:
 def format_entity(mol: RWMol, record: AtomRec | RingRec | GroupRec) -> str:
     """Format any entity record (AtomRec, RingRec, GroupRec)."""
     if isinstance(record, AtomRec):
-        return format_atom(mol, int(record.idx()))
+        return format_atom(mol, int(record.idx))
     elif isinstance(record, RingRec):
         return format_ring_or_group(mol, list(record.atoms))
     elif isinstance(record, GroupRec):

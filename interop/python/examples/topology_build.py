@@ -46,10 +46,10 @@ def typing_compare(sys: LahutaSystem) -> None:
     top = sys.get_topology()
 
     top.assign_typing(AtomTypingMethod.MolStar)
-    mol_types = [rec.type for rec in top.atom_types]
+    mol_types = [rec.type for rec in top.atom_records]
 
     top.assign_typing(AtomTypingMethod.Arpeggio)
-    arp_types = [rec.type for rec in top.atom_types]
+    arp_types = [rec.type for rec in top.atom_records]
 
     diffs = sum(m != a for m, a in zip(mol_types, arp_types))
     logging.info(f"typing differences: {diffs} / {len(mol_types)}")

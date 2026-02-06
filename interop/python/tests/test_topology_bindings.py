@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from lahuta import AtomTypingMethod, LahutaSystem, TopologyBuildingOptions, TopologyComputers
+from lahuta import AtomType, AtomTypingMethod, LahutaSystem, TopologyBuildingOptions, TopologyComputers
 
 
 # Isolated, per-test system with topology already built.
@@ -133,10 +133,10 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
 
     # Assign types using both backends, lists must have size N_atoms
     topo.assign_typing(AtomTypingMethod.MolStar)
-    types_molstar = topo.atom_types
+    types_molstar = topo.atom_records
 
     topo.assign_typing(AtomTypingMethod.Arpeggio)
-    types_arpeggio = topo.atom_types
+    types_arpeggio = topo.atom_records
 
     assert isinstance(types_molstar, list) and isinstance(types_arpeggio, list)
     assert len(types_molstar) == len(types_arpeggio) == luni_built.n_atoms
@@ -145,10 +145,16 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     all_recs = topo.atom_types_filter_by_fn(lambda _: True)
     assert isinstance(all_recs, list) and len(all_recs) == luni_built.n_atoms
 
+    # atoms_with_type should match manual filtering
+    hydrophobic = topo.atoms_with_type(AtomType.Hydrophobic)
+    manual = [r for r in topo.atom_records if AtomType.Hydrophobic in r.type]
+    assert isinstance(hydrophobic, list)
+    assert len(hydrophobic) == len(manual)
+
     # Access a single atom record and check idx consistency
     rec0 = topo.get_atom(0)
     assert hasattr(rec0, "idx")
-    assert isinstance(rec0.idx(), int) and rec0.idx() == 0
+    assert isinstance(rec0.idx, int) and rec0.idx == 0
 
 
 def test_molecule_and_conformer_handles(luni_built: LahutaSystem) -> None:

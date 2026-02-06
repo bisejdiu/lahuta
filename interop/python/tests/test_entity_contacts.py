@@ -41,7 +41,7 @@ def _key(c: Contact) -> tuple[Kind, int, Kind, int, Category]:
 
 def test_system_sanity(luni: LahutaSystem, topo: Topology) -> None:
     assert isinstance(luni.n_atoms, int) and luni.n_atoms == 671
-    assert len(topo.atom_types) == 671
+    assert len(topo.atom_records) == 671
     assert len(topo.rings)  >= 1
     assert len(topo.groups) >= 1
 

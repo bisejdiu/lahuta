@@ -384,7 +384,7 @@ def compute_pi_cation(topology: Topology, metadata: AtomMetadata) -> ContactSet:
 
     positive_indices = metadata.positive_atoms
     aromatic_ring_selector = rings(lambda r: r.aromatic)
-    cation_atom_selector   = atoms(lambda rec: rec.idx() in positive_indices)
+    cation_atom_selector   = atoms(lambda rec: rec.idx in positive_indices)
 
     def tester(idx_cation: int, idx_ring: int, _d2: float) -> InteractionType:
         geom_ring = ring_geoms[idx_ring]
@@ -611,8 +611,8 @@ def compute_salt_bridges(topology: Topology, meta: AtomMetadata) -> ContactSet:
     negative_indices = meta.negative_atoms
     positive_indices = meta.positive_atoms
 
-    negative_atom_selector = atoms(lambda rec: rec.idx() in negative_indices)
-    positive_atom_selector = atoms(lambda rec: rec.idx() in positive_indices)
+    negative_atom_selector = atoms(lambda rec: rec.idx in negative_indices)
+    positive_atom_selector = atoms(lambda rec: rec.idx in positive_indices)
 
     def tester(idx_anion: int, idx_cation: int, dist_sq: float) -> InteractionType:
         if dist_sq > distance_cutoff_sq:
@@ -636,7 +636,7 @@ def compute_vdw_contacts(topology: Topology, meta: AtomMetadata) -> ContactSet:
     distance_max = 6.0
     min_residue_offset = 2
 
-    heavy_atom_selector = atoms(lambda rec: meta.atomic_numbers[rec.idx()] != 1)
+    heavy_atom_selector = atoms(lambda rec: meta.atomic_numbers[rec.idx] != 1)
 
     def tester(idx_a: int, idx_b: int, dist_sq: float) -> InteractionType:
         if idx_a == idx_b:
