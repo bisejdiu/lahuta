@@ -35,7 +35,7 @@
 // clang-format off
 namespace lahuta {
 
-inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block &block_) {
+inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block &block_, const std::string &source) {
   namespace cif = gemmi::cif;
 
   auto &block = const_cast<cif::Block &>(block_);
@@ -145,7 +145,7 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
 
   if (new_end != model_coords.end()) {
     model_coords.erase(new_end, model_coords.end());
-    Logger::get_logger()->warn("Dropping {} models with inconsistent number of atoms", model_coords.size());
+    Logger::get_logger()->warn("Dropping {} models with inconsistent number of atoms from '{}'", model_coords.size(), source);
   }
 
   unsigned int conf_id = 0;

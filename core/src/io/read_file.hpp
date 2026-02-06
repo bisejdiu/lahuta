@@ -37,7 +37,7 @@ inline std::shared_ptr<RDKit::RWMol> make_molecule(cif::Document&& doc) {
     if (doc.blocks[i].has_tag("_atom_site.id")) {
       gemmi::fail("2+ blocks are ok if only the first one has coordinates;\n _atom_site in block #" + std::to_string(i+1) + ": " + doc.source);
     }
-  return make_mol_from_block(doc.blocks.at(0));
+  return make_mol_from_block(doc.blocks.at(0), doc.source);
 }
 
 template<typename T>
