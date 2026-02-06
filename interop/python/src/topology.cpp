@@ -291,7 +291,6 @@ void bind_topology(py::module &m) {
     .def("is_computation_enabled", &Topology::is_computation_enabled, py::arg("comp"),    "Whether a stage is enabled")
     .def("execute_computation",    &Topology::execute_computation,    py::arg("comp"),    "Run a single stage, resolving dependencies")
     .def("set_cutoff",             &Topology::set_cutoff,             py::arg("cutoff"),  "Neighbor cutoff used by bond perception (A)")
-    .def("set_atom_typing_method", &Topology::set_atom_typing_method, py::arg("method"),  "Set atom typing backend for future typing")
     .def("set_compute_nonstandard_bonds", &Topology::set_compute_nonstandard_bonds, py::arg("compute"), "Include metal/coordination bonds if True")
 
     .def("get_atom",  &Topology::atom,  py::arg("idx"), py::return_value_policy::reference_internal, "Atom record at atom index")

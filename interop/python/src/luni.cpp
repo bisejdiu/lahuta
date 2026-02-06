@@ -222,10 +222,6 @@ void bind_luni(py::module &m) {
            &Luni::set_search_cutoff_for_bonds,
            py::arg("cutoff"),
            "Set the cutoff distance for neighbor search in bond perception")
-      .def("set_atom_typing_method",
-           &Luni::set_atom_typing_method,
-           py::arg("method"),
-           "Set the atom typing method (Arpeggio or MolStar)")
 
       // filtering
       .def("filter",

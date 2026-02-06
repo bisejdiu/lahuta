@@ -75,11 +75,9 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
 
     # Assign types using both backends, lists must have size N_atoms
-    topo.set_atom_typing_method(AtomTypingMethod.MolStar)
     topo.assign_typing(AtomTypingMethod.MolStar)
     types_molstar = topo.atom_types
 
-    topo.set_atom_typing_method(AtomTypingMethod.Arpeggio)
     topo.assign_typing(AtomTypingMethod.Arpeggio)
     types_arpeggio = topo.atom_types
 
