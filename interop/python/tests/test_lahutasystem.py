@@ -68,7 +68,7 @@ EXPECTED = {
 
     "neighbors_file": {
         "cutoff"  : 4.5,
-        "res_dif" : 1,
+        "residue_difference" : 1,
         "count"   : 1500,
         "mean"    : 3.957,
         "min"     : 2.584,
@@ -79,7 +79,7 @@ EXPECTED = {
 
     "neighbors_filtered": {
         "cutoff"  : 4.0,
-        "res_dif" : 0,
+        "residue_difference" : 0,
         "count"   : 1706,
         "mean"    : 2.747,
         "min"     : 1.224,
@@ -169,7 +169,7 @@ def _sqrt_distances(ns) -> np.ndarray:
 
 def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_file"]
-    ns = luni.find_neighbors(cutoff=cfg["cutoff"], res_dif=cfg["res_dif"])
+    ns = luni.find_neighbors(cutoff=cfg["cutoff"], residue_difference=cfg["residue_difference"])
     ns = ns.filter(cfg["cutoff"])
     dij = _sqrt_distances(ns)
     assert dij.shape[0] == cfg["count"]
@@ -184,7 +184,7 @@ def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
 
 def test_neighbor_search_filtered_system(filtered_backbone: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_filtered"]
-    ns  = filtered_backbone.find_neighbors(cutoff=cfg["cutoff"], res_dif=cfg["res_dif"])
+    ns  = filtered_backbone.find_neighbors(cutoff=cfg["cutoff"], residue_difference=cfg["residue_difference"])
     ns  = ns.filter(cfg["cutoff"])
     dij = _sqrt_distances(ns)
     assert filtered_backbone.n_atoms == EXPECTED["n_atoms_filtered"]

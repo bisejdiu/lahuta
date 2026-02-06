@@ -26,11 +26,11 @@ DATA = Path(__file__).resolve().parents[3] / "data" / "ubi.cif"
 # fmt: off
 def neighbors_search(sys: LahutaSystem):
     cutoff  = 4.0
-    res_dif = 0
+    residue_difference = 0
 
     # Directly from the read-in system
-    ns = sys.find_neighbors(cutoff=cutoff, res_dif=res_dif).filter(cutoff)
-    logging.info(f"sys.find_neighbors: n_pairs={len(ns)}, cutoff={cutoff}, res_dif={res_dif}")
+    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference).filter(cutoff)
+    logging.info(f"sys.find_neighbors: n_pairs={len(ns)}, cutoff={cutoff}, residue_difference={residue_difference}")
     return ns
 
 

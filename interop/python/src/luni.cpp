@@ -315,21 +315,21 @@ void bind_luni(py::module &m) {
       // very simple neighbor search
       .def(
           "find_neighbors",
-          [](class Luni &luni, double cutoff, int res_dif) {
+          [](class Luni &luni, double cutoff, int residue_difference) {
             auto grid = FastNS(luni.get_conformer().getPositions());
             if (!grid.build(cutoff)) {
               Logger::get_logger()->error("Failed to update the grid with the given cutoff");
               return NSResults();
             }
             auto ns = grid.self_search();
-            if (res_dif > 0) {
-              ns = remove_adjascent_residueid_pairs(luni, ns, res_dif);
+            if (residue_difference > 0) {
+              ns = remove_adjascent_residueid_pairs(luni, ns, residue_difference);
             }
             return ns;
           },
           py::arg("cutoff"),
-          py::arg("res_dif") = 0,
-          "Find neighboring atoms within cutoff distance. If res_dif > 0, exclude neighbors from the same "
-          "residue or within res_dif residues.");
+          py::arg("residue_difference") = 0,
+          "Find neighboring atoms within cutoff distance. If residue_difference > 0, exclude neighbors from the same "
+          "residue or within residue_difference residues.");
 }
 } // namespace lahuta::bindings

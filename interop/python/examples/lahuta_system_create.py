@@ -55,8 +55,8 @@ def show_properties(sys: LahutaSystem) -> None:
     logging.info(f"backbone atoms: {n_backbone}\n")
 
 
-def neighbor_search(sys: LahutaSystem, cutoff: float = 4.5, res_dif: int = 1) -> None:
-    ns = sys.find_neighbors(cutoff=cutoff, res_dif=res_dif).filter(cutoff)
+def neighbor_search(sys: LahutaSystem, cutoff: float = 4.5, residue_difference: int = 1) -> None:
+    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference).filter(cutoff)
 
     dij = ns.get_sqrt_distances()
 
