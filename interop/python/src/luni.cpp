@@ -258,6 +258,25 @@ void bind_luni(py::module &m) {
           [](Luni &self) -> const Topology & { return *self.get_topology(); },
           py::return_value_policy::reference_internal,
           "Get the topology object (keeps the parent LahutaSystem alive)")
+      .def(
+          "get_or_build_topology",
+          [](Luni &self, std::optional<TopologyBuildingOptions> opts) -> const Topology & {
+            if (!self.has_topology_built()) {
+              TopologyBuildingOptions local = opts.value_or(TopologyBuildingOptions{});
+              if (self.is_model_origin()) local.mode = TopologyBuildMode::Model;
+              if (!self.build_topology(local)) {
+                throw py::value_error("Failed to build topology");
+              }
+            }
+            auto topo = self.get_topology();
+            if (!topo) {
+              throw py::value_error("Topology not available");
+            }
+            return *topo;
+          },
+          py::arg("t_opts") = std::nullopt,
+          py::return_value_policy::reference_internal,
+          "Return topology if built, otherwise build with optional options")
       .def_property_readonly(
           "residues",
           [](Luni &self) {
