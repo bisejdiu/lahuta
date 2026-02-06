@@ -34,7 +34,7 @@ def test_topology_build_with_options_and_flags(luni: LahutaSystem) -> None:
     opts = TopologyBuildingOptions()
     opts.cutoff = 4.5
     opts.compute_nonstandard_bonds = True
-    opts.atom_typing_method = AtomTypingMethod.Molstar
+    opts.atom_typing_method = AtomTypingMethod.MolStar
 
     # Start with no stages, then selectively enable
     luni.enable_only(TopologyComputers.None_)
@@ -75,8 +75,8 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
 
     # Assign types using both backends, lists must have size N_atoms
-    topo.set_atom_typing_method(AtomTypingMethod.Molstar)
-    topo.assign_typing(AtomTypingMethod.Molstar)
+    topo.set_atom_typing_method(AtomTypingMethod.MolStar)
+    topo.assign_typing(AtomTypingMethod.MolStar)
     types_molstar = topo.atom_types
 
     topo.set_atom_typing_method(AtomTypingMethod.Arpeggio)

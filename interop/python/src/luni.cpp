@@ -225,7 +225,7 @@ void bind_luni(py::module &m) {
       .def("set_atom_typing_method",
            &Luni::set_atom_typing_method,
            py::arg("method"),
-           "Set the atom typing method (Arpeggio or Molstar)")
+           "Set the atom typing method (Arpeggio or MolStar)")
 
       // filtering
       .def("filter",
