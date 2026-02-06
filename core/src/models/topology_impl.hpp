@@ -30,18 +30,7 @@ public:
 
   bool build(const ModelTopologyBuildingOptions& options = {});
 
-  void enable_computation(ModelTopologyComputation comp, bool enabled);
-  void enable_only(ModelTopologyComputation comps);
-  bool is_computation_enabled(ModelTopologyComputation comp) const;
-
-  void run_computations(ModelTopologyComputation mask);    // Execute specific computations
-  bool execute_computation(ModelTopologyComputation comp); // Execute a specific computation
-
-  void set_graph_type(RDKit::GraphType type);
-
   std::shared_ptr<RDKit::RWMol> get_molecule() const { return engine_->get_data().mol; }
-  topology::ModelTopologyEngine& get_engine() { return *engine_; }
-  const topology::ModelTopologyEngine& get_engine() const { return *engine_; }
 
 private:
   std::unique_ptr<topology::ModelTopologyEngine> engine_;

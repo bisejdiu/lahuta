@@ -77,6 +77,11 @@ public:
   // Concurrency: serialized per Luni instance. If multiple threads call concurrently
   // with different TopologyBuildingOptions, the first successful one wins
   bool build_topology(std::optional<TopologyBuildingOptions> tops = std::nullopt) const;
+  bool build_topology(const TopologyBuildingOptions &tops, TopologyComputation include) const;
+
+  /// Return a fresh system by reloading the original input file.
+  /// Only supported for file-backed systems (generic or model).
+  Luni reset_topology() const;
 
   std::string get_file_name() const { return file_name_; };
 
@@ -101,45 +106,8 @@ public:
   /// filter the molecule based on the atom indices
   Luni filter(std::vector<int> &atom_indices) const;
 
-  /// Enable or disable a specific computation in the topology
-  void enable_computation(TopologyComputation comp, bool enabled) const {
-    [[maybe_unused]] auto guard = acquire_topology_write_guard();
-    ensure_topology_initialized();
-    if (topology) {
-      topology->enable_computation(comp, enabled);
-    }
-  }
-
-  /// Enable only the specified computations (disabling all others)
-  void enable_only(TopologyComputation comps) const {
-    [[maybe_unused]] auto guard = acquire_topology_write_guard();
-    ensure_topology_initialized();
-    if (topology) {
-      topology->enable_only(comps);
-    }
-  }
-
-  /// Check if a specific computation is enabled
-  bool is_computation_enabled(TopologyComputation comp) const {
-    if (topology) {
-      return topology->is_computation_enabled(comp);
-    }
-    Logger::get_logger()->error("Topology not initialized. Cannot check computation status.");
-    return false;
-  }
-
   // Whether this system originated from a model input
   bool is_model_origin() const { return model_origin_; }
-
-  /// Execute a specific computation with its dependencies
-  bool execute_computation(TopologyComputation comp) {
-    [[maybe_unused]] auto guard = acquire_topology_write_guard();
-    if (topology) {
-      return topology->execute_computation(comp);
-    }
-    Logger::get_logger()->error("Topology not initialized. Cannot execute computation.");
-    return false;
-  }
 
   /// Set the cutoff for neighbor search
   void set_search_cutoff_for_bonds(double cutoff) const {

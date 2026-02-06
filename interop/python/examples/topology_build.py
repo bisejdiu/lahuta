@@ -11,20 +11,17 @@
 from pathlib import Path
 from typing import Callable
 
-from lahuta import AtomTypingMethod, LahutaSystem, Residue, TopologyComputers, logging
+from lahuta import AtomTypingMethod, LahutaSystem, Residue, TopologyBuildingOptions, TopologyComputers, logging
 
 
 # fmt: off
 def topology_build(path: str | Path) -> None:
     logging.set_global_verbosity(logging.LogLevel.INFO)
     sys = LahutaSystem(str(path))
-    sys.enable_only(TopologyComputers.Bonds)
-    sys.set_search_cutoff_for_bonds(5)
-    sys.build_topology()
-
-    if not sys.is_computation_enabled(TopologyComputers.Rings):
-        sys.enable_computation(TopologyComputers.Rings, True)
-    sys.execute_computation(TopologyComputers.Rings)
+    opts = TopologyBuildingOptions()
+    opts.cutoff = 5.0
+    sys.build_topology(opts, include=TopologyComputers.Bonds)
+    sys.build_topology(opts, include=TopologyComputers.Rings)
 
     top = sys.get_topology()
     logging.info(f"Number of rings: {len(top.rings)}")

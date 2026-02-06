@@ -16,6 +16,7 @@
 
 #include <cctype>
 #include <filesystem>
+#include <stdexcept>
 #include <type_traits>
 
 #include <gtest/gtest.h>
@@ -160,30 +161,85 @@ TEST(Luni_Topology, BuildAndExecuteRings) {
 
   Luni luni(path.string());
 
-  luni.enable_only(TopologyComputation::Standard);
-  luni.set_search_cutoff_for_bonds(1.9);
+  TopologyBuildingOptions opts{};
+  opts.cutoff = 1.9;
 
-  ASSERT_TRUE(luni.build_topology());
+  ASSERT_TRUE(luni.build_topology(opts, TopologyComputation::Standard));
   ASSERT_TRUE(luni.has_topology_built());
 
-  if (!luni.is_computation_enabled(TopologyComputation::Rings)) {
-    luni.enable_computation(TopologyComputation::Rings, true);
-  }
-  EXPECT_TRUE(luni.execute_computation(TopologyComputation::Rings));
+  EXPECT_TRUE(luni.build_topology(opts, TopologyComputation::Rings));
 
   const auto &topo = luni.get_topology();
   (void)*topo; // contract: no throw and not null
+  EXPECT_TRUE(topo->has_computed(TopologyComputation::Rings));
 
   auto shared_topo = luni.get_topology();
   EXPECT_NE(shared_topo, nullptr);
   EXPECT_TRUE(luni.has_topology_built()); // Should still be built with shared access
 
-  EXPECT_TRUE(luni.execute_computation(TopologyComputation::Rings));
+  EXPECT_TRUE(luni.build_topology(opts, TopologyComputation::Rings));
 
   auto shared_topo2 = luni.get_topology();
   EXPECT_NE(shared_topo2, nullptr);
   EXPECT_EQ(shared_topo.get(), shared_topo2.get());
   EXPECT_TRUE(luni.has_topology_built());
+}
+
+TEST(Luni_Topology, ResetTopology_FileBacked) {
+  auto path = locate_data_file("ubi.cif");
+  if (path.empty()) GTEST_SKIP() << "core/data/ubi.cif not found. Skipping integration test.";
+
+  Luni luni(path.string());
+
+  TopologyBuildingOptions opts{};
+  opts.cutoff = 1.9;
+
+  ASSERT_TRUE(luni.build_topology(opts, TopologyComputation::Neighbors));
+  ASSERT_TRUE(luni.get_topology());
+
+  auto fresh = luni.reset_topology();
+  EXPECT_EQ(fresh.get_file_name(), luni.get_file_name());
+  EXPECT_NE(&fresh.get_molecule(), &luni.get_molecule());
+
+  ASSERT_TRUE(fresh.build_topology(opts, TopologyComputation::Neighbors));
+  ASSERT_TRUE(luni.build_topology(opts, TopologyComputation::Neighbors));
+
+  auto old_topo = luni.get_topology();
+  auto new_topo = fresh.get_topology();
+  ASSERT_TRUE(old_topo);
+  ASSERT_TRUE(new_topo);
+  EXPECT_NE(old_topo.get(), new_topo.get());
+}
+
+TEST(Luni_Topology, ResetTopology_ModelFileBacked) {
+  auto path = locate_data_file("fubi.cif");
+  if (path.empty()) GTEST_SKIP() << "core/data/fubi.cif not found. Skipping integration test.";
+
+  Luni sys = Luni::from_model_file(path.string());
+  EXPECT_TRUE(sys.is_model_origin());
+  ASSERT_TRUE(sys.build_topology());
+
+  auto fresh = sys.reset_topology();
+  EXPECT_TRUE(fresh.is_model_origin());
+  EXPECT_NE(&fresh.get_molecule(), &sys.get_molecule());
+
+  ASSERT_TRUE(fresh.build_topology());
+  ASSERT_TRUE(sys.build_topology());
+}
+
+TEST(Luni_Topology, ResetTopology_NonFileBacked_Throws) {
+  IR ir(
+      std::vector<int>{0, 1, 2},                     // atom_indices
+      std::vector<int>{7, 6, 8},                     // atomic_numbers (N, C, O)
+      std::vector<std::string>{"N", "CA", "O"},      // atom_names
+      std::vector<int>{1, 1, 1},                     // resids
+      std::vector<std::string>{"GLY", "GLY", "GLY"}, // resnames
+      std::vector<std::string>{"A", "A", "A"},       // chainlabels
+      std::vector<std::vector<float>>{{0.f, 0.f, 0.f}, {1.f, 0.f, 0.f}, {0.f, 1.f, 0.f}}
+  );
+
+  auto sys = Luni::create(ir);
+  EXPECT_THROW(sys.reset_topology(), std::runtime_error);
 }
 
 TEST(Luni_CreateFromIR, RoundtripAndFilter) {

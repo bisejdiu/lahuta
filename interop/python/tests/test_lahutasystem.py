@@ -23,7 +23,7 @@ import hashlib
 import numpy as np
 import pytest
 
-from lahuta import LahutaSystem, LahutaSystemProperties, TopologyComputers
+from lahuta import LahutaSystem, LahutaSystemProperties, TopologyBuildingOptions, TopologyComputers
 
 
 # fmt: off
@@ -134,15 +134,16 @@ def test_centroid(props: LahutaSystemProperties) -> None:
 
 def test_topology_build_and_accessors(luni: LahutaSystem) -> None:
     # Configure and build
-    luni.enable_only(TopologyComputers.Standard)
-    luni.set_search_cutoff_for_bonds(1.9)
-    assert luni.build_topology() is True
+    opts = TopologyBuildingOptions()
+    opts.cutoff = 1.9
+    assert luni.build_topology(opts, include=TopologyComputers.Standard) is True
     assert luni.has_topology_built() is True
 
     # Execute Rings
-    if not luni.is_computation_enabled(TopologyComputers.Rings):
-        luni.enable_computation(TopologyComputers.Rings, True)
-    assert luni.execute_computation(TopologyComputers.Rings) is True
+    assert luni.build_topology(opts, include=TopologyComputers.Rings) is True
+    topo = luni.get_topology()
+    assert topo is not None
+    assert topo.has_computed(TopologyComputers.Rings) is True
 
     # Access RDKit handles
     mol  = luni.get_molecule()

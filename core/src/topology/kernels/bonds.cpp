@@ -53,6 +53,9 @@ ComputationResult BondKernel::execute(DataContext<DataT, Mut::ReadWrite> &contex
     // than the bond cutoff, we'll have to redo the neighbor search. It's a performance vs memory tradeoff.
     // Right now we prioritize memory. - Besian, August 2025
     //
+    // Note: neighbor results are intentionally ephemeral after bonds.
+    // We don't waant to keep them.   - Besian, February 2026
+    //
     neighbors->clear();
     neighbors.reset();
 

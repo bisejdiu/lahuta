@@ -141,19 +141,17 @@ Luni Luni::from_model_data(const ModelParserResult &data, ModelTopologyMethod me
 bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
   auto state = ensure_topology_state();
   std::unique_lock<std::mutex> state_lock(state->mutex);
-  if (topology_built_.load(std::memory_order_acquire)) {
-    Logger::get_logger()->debug(
-        "Topology already built, skipping rebuild to prevent molecule state corruption");
-    return true;
-  }
-
   while (state->building) {
     state->cv.wait(state_lock, [state]() { return !state->building; });
-    if (topology_built_.load(std::memory_order_acquire)) {
-      Logger::get_logger()->debug(
-          "Topology already built, skipping rebuild to prevent molecule state corruption");
-      return true;
+  }
+
+  if (topology_built_.load(std::memory_order_acquire)) {
+    bool complete = true;
+    if (!model_origin_) {
+      ensure_topology_initialized();
+      complete = topology->has_computed(TopologyComputation::Complete);
     }
+    if (complete) return true;
   }
 
   state->building = true;
@@ -164,12 +162,25 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
   try {
     ensure_topology_initialized();
 
-    if (tops) {
-      built = topology->build(*tops);
+    if (!topology_built_.load(std::memory_order_acquire)) {
+      if (tops) {
+        built = topology->build(*tops);
+      } else {
+        TopologyBuildingOptions opts;
+        if (model_origin_) opts.mode = TopologyBuildMode::Model;
+        built = topology->build(opts);
+      }
+      if (built) {
+        topology_built_.store(true, std::memory_order_release);
+      }
     } else {
-      TopologyBuildingOptions opts;
-      if (model_origin_) opts.mode = TopologyBuildMode::Model;
-      built = topology->build(opts);
+      built = true;
+    }
+
+    if (built && !model_origin_) {
+      if (!topology->has_computed(TopologyComputation::Complete)) {
+        built = topology->ensure_computed(TopologyComputation::Complete);
+      }
     }
   } catch (const std::exception &e) {
     Logger::get_logger()->error("Error building topology: {}", e.what());
@@ -177,15 +188,87 @@ bool Luni::build_topology(std::optional<TopologyBuildingOptions> tops) const {
   }
 
   state_lock.lock();
-  if (built) {
-    topology_built_.store(true, std::memory_order_release);
-  }
   state->building = false;
   state_lock.unlock();
   modify_lock.unlock();
   state->cv.notify_all();
 
   return built;
+}
+
+bool Luni::build_topology(const TopologyBuildingOptions &tops, TopologyComputation include) const {
+  auto state = ensure_topology_state();
+  std::unique_lock<std::mutex> state_lock(state->mutex);
+
+  while (state->building) {
+    state->cv.wait(state_lock, [state]() { return !state->building; });
+  }
+
+  if (topology_built_.load(std::memory_order_acquire)) {
+    bool complete = (include == TopologyComputation::None);
+    if (!complete) {
+      ensure_topology_initialized();
+      complete = topology->has_computed(include);
+    }
+    if (complete) return true;
+  }
+
+  state->building = true;
+  std::unique_lock<std::mutex> modify_lock(state->modify_mutex);
+  state_lock.unlock();
+
+  bool ok = false;
+  try {
+    ensure_topology_initialized();
+
+    if (tops.mode == TopologyBuildMode::Model) {
+      if (!topology_built_.load(std::memory_order_acquire)) {
+        ok = topology->build(tops);
+        if (ok) topology_built_.store(true, std::memory_order_release);
+      } else {
+        ok = true;
+      }
+    } else {
+      bool initialized_ok = true;
+      if (!topology_built_.load(std::memory_order_acquire)) {
+        initialized_ok = topology->initialize(tops);
+      }
+
+      if (initialized_ok) {
+        if (include == TopologyComputation::None) {
+          ok = true;
+        } else {
+          ok = topology->ensure_computed(include);
+          if (ok) topology_built_.store(true, std::memory_order_release);
+        }
+      } else {
+        ok = false;
+      }
+    }
+  } catch (const std::exception &e) {
+    Logger::get_logger()->error("Error building topology: {}", e.what());
+    ok = false;
+  }
+
+  state_lock.lock();
+  state->building = false;
+  state_lock.unlock();
+  modify_lock.unlock();
+  state->cv.notify_all();
+
+  return ok;
+}
+
+Luni Luni::reset_topology() const {
+  if (file_name_.empty()) {
+    throw std::runtime_error("reset_topology requires a file-backed LahutaSystem");
+  }
+
+  if (model_origin_) {
+    return Luni::from_model_file(file_name_);
+  }
+
+  return Luni(file_name_);
 }
 
 const std::vector<std::string> Luni::symbols() const {

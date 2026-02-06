@@ -36,16 +36,41 @@ def test_topology_build_with_options_and_flags(luni: LahutaSystem) -> None:
     opts.compute_nonstandard_bonds = True
     opts.atom_typing_method = AtomTypingMethod.MolStar
 
-    # Start with no stages, then selectively enable
-    luni.enable_only(TopologyComputers.None_)
-    luni.enable_only(TopologyComputers.Standard)
-
-    assert luni.build_topology(opts) is True
+    # Build standard topology first
+    assert luni.build_topology(opts, include=TopologyComputers.Standard) is True
     assert luni.has_topology_built() is True
 
-    if not luni.is_computation_enabled(TopologyComputers.Rings):
-        luni.enable_computation(TopologyComputers.Rings, True)
-    assert luni.execute_computation(TopologyComputers.Rings) is True
+    # Ensure rings are computed
+    assert luni.build_topology(opts, include=TopologyComputers.Rings) is True
+    topo = luni.get_topology()
+    assert topo.has_computed(TopologyComputers.Rings) is True
+
+
+def test_build_topology_include_only_defaults(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    assert sys.build_topology(include=TopologyComputers.Neighbors) is True
+    topo = sys.get_topology()
+    assert topo.has_computed(TopologyComputers.Neighbors) is True
+    assert topo.has_computed(TopologyComputers.Bonds) is False
+
+
+def test_reset_topology_file_backed(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    assert sys.build_topology(include=TopologyComputers.Neighbors) is True
+
+    fresh = sys.reset_topology()
+    assert fresh is not sys
+    assert fresh.n_atoms == sys.n_atoms
+
+    assert fresh.build_topology(include=TopologyComputers.Neighbors) is True
+    assert sys.build_topology(include=TopologyComputers.Bonds) is True
+
+
+def test_reset_topology_non_file_backed_raises(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    filtered = sys.filter([0, 1, 2])
+    with pytest.raises(RuntimeError):
+        filtered.reset_topology()
 
 
 def test_residues_container_and_helpers(luni_built: LahutaSystem) -> None:

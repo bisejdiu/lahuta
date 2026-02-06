@@ -194,30 +194,29 @@ void bind_luni(py::module &m) {
       // "Create from a Gemmi structure")
 
       .def("build_topology",
-           &Luni::build_topology,
+           py::overload_cast<std::optional<TopologyBuildingOptions>>(&Luni::build_topology, py::const_),
            py::arg("t_opts") = std::nullopt,
            "Build the topology with optional configuration")
+      .def("build_topology",
+           py::overload_cast<const TopologyBuildingOptions &, TopologyComputation>(&Luni::build_topology, py::const_),
+           py::arg("t_opts"),
+           py::arg("include"),
+           "Build topology and ensure requested computations")
+      .def("build_topology",
+           [](const Luni &self, TopologyComputation include) {
+             TopologyBuildingOptions opts;
+             if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
+             return self.build_topology(opts, include);
+           },
+           py::arg("include"),
+           "Build topology with default options and ensure requested computations")
+      .def("reset_topology",
+           &Luni::reset_topology,
+           "Return a fresh system by reloading the original input file")
       .def("has_topology_built",
            &Luni::has_topology_built,
            "Check if the topology has been successfully built")
 
-      .def("enable_computation",
-           &Luni::enable_computation,
-           py::arg("comp"),
-           py::arg("enabled"),
-           "Enable or disable a specific topology computation")
-      .def("enable_only",
-           &Luni::enable_only,
-           py::arg("comps"),
-           "Enable only the specified topology computations (disabling all others)")
-      .def("is_computation_enabled",
-           &Luni::is_computation_enabled,
-           py::arg("comp"),
-           "Check if a specific topology computation is enabled")
-      .def("execute_computation",
-           &Luni::execute_computation,
-           py::arg("comp"),
-           "Execute a specific topology computation with its dependencies")
       .def("set_search_cutoff_for_bonds",
            &Luni::set_search_cutoff_for_bonds,
            py::arg("cutoff"),
