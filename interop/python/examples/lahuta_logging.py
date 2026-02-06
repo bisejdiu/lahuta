@@ -18,11 +18,12 @@
 """Demonstrates the logging capabilities of the lahuta library."""
 
 from lahuta import logging
-from lahuta.logging import LogLevel
+from lahuta.logging import FormatStyle, LogLevel
 
 
 def logging_quickstart() -> None:
     logging.set_global_verbosity(LogLevel.INFO)
+    logging.set_format(FormatStyle.Detailed)
     logging.info("hello from lahuta logging")
     logging.info("percent style: %s" % "works")
     logging.debug("this debug is hidden at INFO level")

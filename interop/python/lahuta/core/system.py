@@ -82,7 +82,7 @@ class MolecularSystem:
             path=None,
         )
 
-    # NOTE: some of these may be handled directly by lhxx
+    # NOTE: some of these may be handled directly by the C++ bindings
     def to_ir(self) -> _lib.IR:
         """Convert to intermediate representation for C++ bindings."""
         return _lib.IR(

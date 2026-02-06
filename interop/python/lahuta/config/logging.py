@@ -17,6 +17,7 @@ Python-native logging configuration for Lahuta.
 
 This module exposes a simple, Python-first logging API with:
 - Global verbosity control via integers or `LogLevel`
+- Format control via `FormatStyle`
 - Context managers for temporary verbosity changes
 - A decorator to pass per call verbosity into any custom functions
 """
@@ -42,6 +43,9 @@ class LogLevel(IntEnum):
     TRACE    = 6
 
 
+FormatStyle = Logger.FormatStyle
+
+
 class LoggingConfig:
     """
     Simple logging configuration and helpers.
@@ -57,9 +61,9 @@ class LoggingConfig:
     _global_verbosity: int = LogLevel.INFO
 
     def __init__(self):
-        self._loggerxx = Logger.get_instance()
-        self._loggerxx.set_log_level(self._verbosity_to_cxx_level(self._global_verbosity))
-        self._loggerxx.set_format(Logger.FormatStyle.Simple)
+        self._logger_cpp = Logger.get_instance()
+        self._logger_cpp.set_log_level(self._verbosity_to_cpp_level(self._global_verbosity))
+        self._logger_cpp.set_format(FormatStyle.Simple)
 
     @classmethod
     def get_instance(cls) -> "LoggingConfig":
@@ -69,7 +73,7 @@ class LoggingConfig:
         return cls._instance
 
     @staticmethod
-    def _verbosity_to_cxx_level(verbosity: int | LogLevel) -> Logger.LogLevel:
+    def _verbosity_to_cpp_level(verbosity: int | LogLevel) -> Logger.LogLevel:
         try:
             v = int(verbosity)
         except Exception:
@@ -88,7 +92,7 @@ class LoggingConfig:
         return mapping.get(v, Logger.LogLevel.Info)
 
     @staticmethod
-    def _cxx_level_to_verbosity(cpp_level: Logger.LogLevel) -> int:
+    def _cpp_level_to_verbosity(cpp_level: Logger.LogLevel) -> int:
         mapping: dict[Logger.LogLevel, int] = {
             Logger.LogLevel.Off:      LogLevel.OFF.value,
             Logger.LogLevel.Critical: LogLevel.CRITICAL.value,
@@ -113,11 +117,11 @@ class LoggingConfig:
 
         level = max(0, min(6, int(level)))
         self._global_verbosity = level
-        self._loggerxx.set_log_level(self._verbosity_to_cxx_level(level))
+        self._logger_cpp.set_log_level(self._verbosity_to_cpp_level(level))
 
-    def get_verbosity(self) -> int:
+    def get_verbosity(self) -> LogLevel:
         """Get the current global verbosity level."""
-        return self._global_verbosity
+        return LogLevel(self._global_verbosity)
 
     def set_format_style(self, detailed: bool = False) -> None:
         """
@@ -127,8 +131,14 @@ class LoggingConfig:
             detailed: If True, use detailed format with timestamps and thread info.
                      If False, use simple format with just level and message.
         """
-        style = Logger.FormatStyle.Detailed if detailed else Logger.FormatStyle.Simple
-        self._loggerxx.set_format(style)
+        style = FormatStyle.Detailed if detailed else FormatStyle.Simple
+        self._logger_cpp.set_format(style)
+
+    def set_format(self, style: FormatStyle) -> None:
+        """
+        Set the logging format style via FormatStyle enum.
+        """
+        self._logger_cpp.set_format(style)
 
     def log(self, message: str, level: int | LogLevel, *args: Any) -> None:
         """
@@ -152,8 +162,8 @@ class LoggingConfig:
             else:
                 formatted = message
 
-            cpp_level = self._verbosity_to_cxx_level(lvl)
-            self._loggerxx.log(cpp_level, formatted)
+            cpp_level = self._verbosity_to_cpp_level(lvl)
+            self._logger_cpp.log(cpp_level, formatted)
 
     def trace(self, message: str, *args: Any) -> None:
         """Log a trace message (verbosity 6)."""
@@ -170,6 +180,7 @@ class LoggingConfig:
     def warn(self, message: str, *args: Any) -> None:
         """Log a warning message (verbosity 3)."""
         self.log(message, LogLevel.WARN, *args)
+
 
     def error(self, message: str, *args: Any) -> None:
         """Log an error message (verbosity 2)."""
@@ -221,8 +232,8 @@ def set_global_verbosity(level: int | LogLevel) -> None:
     get_logger().set_verbosity(level)
 
 
-def get_global_verbosity() -> int:
-    """Get the current global verbosity level."""
+def get_global_verbosity() -> LogLevel:
+    """Get the current global verbosity level as a LogLevel."""
     return get_logger().get_verbosity()
 
 
@@ -313,6 +324,8 @@ def warn(message: str, *args: Any) -> None:
     get_logger().warn(message, *args)
 
 
+
+
 def error(message: str, *args: Any) -> None:
     """Log an error message."""
     get_logger().error(message, *args)
@@ -321,3 +334,28 @@ def error(message: str, *args: Any) -> None:
 def critical(message: str, *args: Any) -> None:
     """Log a critical message."""
     get_logger().critical(message, *args)
+
+
+def set_format(style: FormatStyle) -> None:
+    """Set the logging format style via FormatStyle enum."""
+    get_logger().set_format(style)
+
+
+__all__ = [
+    "LogLevel",
+    "FormatStyle",
+    "LoggingConfig",
+    "get_logger",
+    "set_global_verbosity",
+    "get_global_verbosity",
+    "set_format",
+    "set_format_style",
+    "with_verbosity",
+    "log_context",
+    "trace",
+    "debug",
+    "info",
+    "warn",
+    "error",
+    "critical",
+]

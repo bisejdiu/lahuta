@@ -79,9 +79,9 @@ class NearestNeighbors:
 
         if X is None:
             # Self neighbors: always use grid-based self search
-            from .lib.lahuta import neighbors as _cxx_neighbors
+            from .lib.lahuta import neighbors as _cpp_neighbors
 
-            return _cxx_neighbors.radius_neighbors(
+            return _cpp_neighbors.radius_neighbors(
                 self._X, self.radius, return_distance=return_distance, sort_results=sort
             )
 
@@ -91,9 +91,9 @@ class NearestNeighbors:
 
         if self._kd is None or not self.algorithm.startswith("kd"):
             # Functional cross API uses KD internally, but rebuilds each call (no persistent index)
-            from .lib.lahuta import neighbors as _cxx_neighbors
+            from .lib.lahuta import neighbors as _cpp_neighbors
 
-            return _cxx_neighbors.radius_neighbors(
+            return _cpp_neighbors.radius_neighbors(
                 Q, self.radius, Y=self._X, return_distance=return_distance, sort_results=sort
             )
 

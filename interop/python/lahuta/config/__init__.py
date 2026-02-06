@@ -8,6 +8,24 @@
 #
 """Configuration module for Lahuta Python bindings."""
 
-from .logging import LoggingConfig, set_global_verbosity, with_verbosity
+from .logging import (
+    FormatStyle,
+    LogLevel,
+    LoggingConfig,
+    get_global_verbosity,
+    log_context,
+    set_format,
+    set_global_verbosity,
+    with_verbosity,
+)
 
-__all__ = ["LoggingConfig", "with_verbosity", "set_global_verbosity"]
+__all__ = [
+    "FormatStyle",
+    "LogLevel",
+    "LoggingConfig",
+    "get_global_verbosity",
+    "log_context",
+    "set_format",
+    "set_global_verbosity",
+    "with_verbosity",
+]
