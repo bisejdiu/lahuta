@@ -53,6 +53,20 @@ def test_build_topology_include_only_defaults(ubi_cif: Path) -> None:
     assert topo.has_computed(TopologyComputers.Neighbors) is True
     assert topo.has_computed(TopologyComputers.Bonds) is False
 
+def test_build_topology_include_list_defaults(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    assert sys.build_topology(include=[TopologyComputers.Residues]) is True
+    topo = sys.get_topology()
+    assert topo.has_computed(TopologyComputers.Residues) is True
+    assert topo.has_computed(TopologyComputers.Bonds) is False
+
+
+def test_system_residues_lazy(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    residues = sys.residues
+    assert len(residues) > 0
+    assert sys.has_topology_built() is False
+
 
 def test_reset_topology_file_backed(ubi_cif: Path) -> None:
     sys = LahutaSystem(str(ubi_cif))
