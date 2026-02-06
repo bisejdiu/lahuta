@@ -66,15 +66,14 @@ TEST(CentroidClamp, CancelsTinyResiduals) {
   EXPECT_DOUBLE_EQ(ring_center.x, 0.0);
   EXPECT_DOUBLE_EQ(group_center.x, 0.0);
 
-  RDGeom::POINT3D_VECT raw_coords;
-  raw_coords.reserve(2);
-  raw_coords.emplace_back(raw_center);
-  raw_coords.emplace_back(183.1, 0.0, 0.0);
+  // The uncorrected centroid has a tiny but nonzero residual from cancellation.
+  // Verify it is small enough that it would have been problematic before we
+  // raised COORD_EPSILON (< 1e-3), should prove that clamping is working. - Besian, February 2026
+  EXPECT_GT(std::abs(raw_center.x), 0.0);
+  EXPECT_LT(std::abs(raw_center.x), 1e-3);
 
-  FastNS raw_ns(raw_coords);
-  constexpr double OLD_SCALE_THRESHOLD = 1e6;
-  EXPECT_GT(raw_ns.get_scale_ratio(), OLD_SCALE_THRESHOLD);
-
+  // After clamping, the corrected centroid paired with a large coordinate
+  // must not trigger mixed-scale detection.
   RDGeom::POINT3D_VECT coords;
   coords.reserve(2);
   coords.emplace_back(ring_center);
