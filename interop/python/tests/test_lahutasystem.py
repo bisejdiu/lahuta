@@ -169,8 +169,8 @@ def _sqrt_distances(ns) -> np.ndarray:
 
 def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_file"]
-    ns = luni.find_neighbors(cutoff=cfg["cutoff"], residue_difference=cfg["residue_difference"])
-    ns = ns.filter(cfg["cutoff"])
+    ns = luni.find_neighbors(cutoff=cfg["cutoff"] + 1.0, residue_difference=cfg["residue_difference"])
+    ns = ns.filter(cfg["cutoff"])  # narrow to test cutoff
     dij = _sqrt_distances(ns)
     assert dij.shape[0] == cfg["count"]
 
@@ -184,7 +184,7 @@ def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
 
 def test_neighbor_search_filtered_system(backbone_system: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_filtered"]
-    ns  = backbone_system.find_neighbors(cutoff=cfg["cutoff"], residue_difference=cfg["residue_difference"])
+    ns  = backbone_system.find_neighbors(cutoff=cfg["cutoff"] + 1.0, residue_difference=cfg["residue_difference"])
     ns  = ns.filter(cfg["cutoff"])
     dij = _sqrt_distances(ns)
     assert backbone_system.n_atoms == EXPECTED["n_atoms_filtered"]

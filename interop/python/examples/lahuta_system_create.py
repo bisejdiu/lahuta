@@ -56,7 +56,7 @@ def show_properties(sys: LahutaSystem) -> None:
 
 
 def neighbor_search(sys: LahutaSystem, cutoff: float = 4.5, residue_difference: int = 1) -> None:
-    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference).filter(cutoff)
+    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference)
 
     dij = ns.get_sqrt_distances()
 

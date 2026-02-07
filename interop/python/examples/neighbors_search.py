@@ -29,7 +29,7 @@ def neighbors_search(sys: LahutaSystem):
     residue_difference = 0
 
     # Directly from the read-in system
-    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference).filter(cutoff)
+    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference)
     logging.info(f"sys.find_neighbors: n_pairs={len(ns)}, cutoff={cutoff}, residue_difference={residue_difference}")
     return ns
 
