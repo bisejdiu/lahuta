@@ -465,7 +465,7 @@ void bind_contacts(py::module_ &m) {
       .value("GetContacts", analysis::ContactProvider::GetContacts);
 
   py::enum_<Category>(m, "Category")
-      .value("None_",                 Category::None)
+      .value("Unclassified",          Category::None)
       .value("Generic",               Category::Generic)
       .value("Hydrophobic",           Category::Hydrophobic)
       .value("Halogen",               Category::Halogen)
@@ -491,10 +491,10 @@ void bind_contacts(py::module_ &m) {
 
   py::class_<InteractionType>(m, "InteractionType")
       .def(py::init<Category, Flavor>(),
-           py::arg_v("category", Category::None, "Category.None_"),
+           py::arg_v("category", Category::None, "Category.Unclassified"),
            py::arg_v("flavor",   Flavor::Default, "Flavor.Default"))
       .def_readonly_static("All",                   &InteractionType::All)
-      .def_readonly_static("None_",                 &InteractionType::None)
+      .def_readonly_static("NoInteraction",         &InteractionType::None)
       .def_readonly_static("Generic",               &InteractionType::Generic)
       .def_readonly_static("Hydrophobic",           &InteractionType::Hydrophobic)
       .def_readonly_static("Halogen",               &InteractionType::Halogen)

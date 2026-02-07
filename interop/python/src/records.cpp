@@ -27,7 +27,7 @@ namespace Flags = AtomTypeFlags;
 
 void bind_records(py::module &m) {
   py::enum_<FeatureGroup>(m, "FeatureGroup", "Functional group classification used by the topology")
-    .value("None_",           FeatureGroup::None)
+    .value("NoGroup",         FeatureGroup::None)
     .value("QuaternaryAmine", FeatureGroup::QuaternaryAmine)
     .value("TertiaryAmine",   FeatureGroup::TertiaryAmine)
     .value("Sulfonium",       FeatureGroup::Sulfonium)

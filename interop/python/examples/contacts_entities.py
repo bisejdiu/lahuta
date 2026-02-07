@@ -43,7 +43,7 @@ def example_self_hydrophobic_like(top: Topology) -> None:
     hydrophobic_atom_selector = atoms(lambda atom_rec: atom_rec.type.has(AtomType.Hydrophobic))
 
     def within_45_tester(i: int, j: int, d2: float) -> InteractionType:
-        return InteractionType.Hydrophobic if d2 <= 4.5 * 4.5 else InteractionType.None_
+        return InteractionType.Hydrophobic if d2 <= 4.5 * 4.5 else InteractionType.NoInteraction
 
     cs = find_contacts(top, hydrophobic_atom_selector, tester=within_45_tester, distance_max=4.5)
     print(f"Hydrophobic-like atom-atom contacts: {cs.size()}")
@@ -55,7 +55,7 @@ def example_cross_cation_pi_like(top: Topology) -> None:
     aromatic_ring_selector = rings(lambda r: r.aromatic)
 
     def cation_pi_tester(i: int, j: int, d2: float) -> InteractionType:
-        return InteractionType.CationPi if d2 <= 6.0 * 6.0 else InteractionType.None_
+        return InteractionType.CationPi if d2 <= 6.0 * 6.0 else InteractionType.NoInteraction
 
     cs = find_contacts(top, charged_group_selector, aromatic_ring_selector, tester=cation_pi_tester, distance_max=6.0)
     print(f"Cation-pi-like group-ring contacts: {cs.size()}")
@@ -66,7 +66,7 @@ def example_self_pi_stacking_like(top: Topology) -> None:
     aromatic_ring_selector = rings(lambda r: r.aromatic)
 
     def pi_stack_tester(i: int, j: int, d2: float) -> InteractionType:
-        return InteractionType.PiStacking if d2 <= 6.0 * 6.0 else InteractionType.None_
+        return InteractionType.PiStacking if d2 <= 6.0 * 6.0 else InteractionType.NoInteraction
 
     cs = find_contacts(top, aromatic_ring_selector, tester=pi_stack_tester, distance_max=6.0)
     print(f"Pi-stacking-like ring-ring contacts: {cs.size()}")

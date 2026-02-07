@@ -137,7 +137,7 @@ void bind_topology(py::module &m) {
     .def_readwrite("compute_nonstandard_bonds", &TopologyBuildingOptions::compute_nonstandard_bonds, "Include non-standard/metal coordination where applicable");
 
   py::enum_<TopologyComputation>(m, "TopologyComputers", "Bitmask flags representing topology stages. Combine with | and &.")
-    .value("None_",            TopologyComputation::None,             "No stage selected")
+    .value("NoComp",           TopologyComputation::None,             "No stage selected")
     .value("Neighbors",        TopologyComputation::Neighbors,        "Compute neighbor lists (used by bond perception)")
     .value("Bonds",            TopologyComputation::Bonds,            "Perceive covalent bonds from neighbors/chemistry")
     .value("NonStandardBonds", TopologyComputation::NonStandardBonds, "Include non-standard bonds/coordination where supported")

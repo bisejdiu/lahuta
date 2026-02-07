@@ -297,7 +297,7 @@ def compute_pi_stacking(topology: Topology) -> ContactSet:
         geom_b = ring_geoms[idx_b]
 
         if _rings_same_residue(mol, geom_a.first_atom_idx, geom_b.first_atom_idx):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         center_a = geom_a.center
         center_b = geom_b.center
@@ -307,19 +307,19 @@ def compute_pi_stacking(topology: Topology) -> ContactSet:
         vec_ab = _vector_sub(center_a, center_b)
         center_distance_sq = _length_sq(vec_ab)
         if center_distance_sq <= 1e-16:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
         if center_distance_sq > params_centroid_cutoff_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         normal_angle = _vector_angle_deg(normal_a, normal_b)
         aligned = normal_angle if normal_angle <= 90.0 else 180.0 - normal_angle
         if aligned > params_angle_cutoff:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         psi_a = _psi_angle_deg(center_a, center_b, normal_a)
         psi_b = _psi_angle_deg(center_b, center_a, normal_b)
         if min(psi_a, psi_b) > params_psi_cutoff:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         return InteractionType.PiStackingP
 
@@ -343,7 +343,7 @@ def compute_t_stacking(topology: Topology) -> ContactSet:
         geom_b = ring_geoms[idx_b]
 
         if _rings_same_residue(mol, geom_a.first_atom_idx, geom_b.first_atom_idx):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         center_a = geom_a.center
         center_b = geom_b.center
@@ -353,18 +353,18 @@ def compute_t_stacking(topology: Topology) -> ContactSet:
         vec_ab = _vector_sub(center_a, center_b)
         center_distance_sq = _length_sq(vec_ab)
         if center_distance_sq <= 1e-16:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
         if center_distance_sq > params_centroid_cutoff_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         normal_angle = _vector_angle_deg(normal_a, normal_b)
         if abs(normal_angle - 90.0) > params_angle_cutoff:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         psi_a = _psi_angle_deg(center_a, center_b, normal_a)
         psi_b = _psi_angle_deg(center_b, center_a, normal_b)
         if min(psi_a, psi_b) > params_psi_cutoff:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         return InteractionType.PiStackingT
 
@@ -390,7 +390,7 @@ def compute_pi_cation(topology: Topology, metadata: AtomMetadata) -> ContactSet:
         geom_ring = ring_geoms[idx_ring]
 
         if _atoms_same_residue(mol, idx_cation, geom_ring.first_atom_idx):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         center = geom_ring.center
         normal = geom_ring.normal
@@ -400,14 +400,14 @@ def compute_pi_cation(topology: Topology, metadata: AtomMetadata) -> ContactSet:
 
         center_distance_sq = _length_sq(vec_center_to_cation)
         if center_distance_sq <= 1e-16:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
         if center_distance_sq > params_centroid_cutoff_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         raw_angle = _vector_angle_deg(normal, vec_center_to_cation)
         angle = raw_angle if raw_angle <= 90.0 else 180.0 - raw_angle
         if angle > params_angle_cutoff:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         return InteractionType.CationPi
 
@@ -471,29 +471,29 @@ def compute_hydrophobic(topology: Topology, metadata: AtomMetadata, classifier: 
 
     def tester(idx_a: int, idx_b: int, dist_sq: float) -> InteractionType:
         if residues_too_close(idx_a, idx_b, metadata.residue_infos, params_min_res_offset):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if not _is_hydrophobic_carbon(mol, idx_a):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
         if not _is_hydrophobic_carbon(mol, idx_b):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if is_cys_disulfide_contact(idx_a, idx_b, metadata.residue_infos, metadata.cys_sg_lookup, mol):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if dist_sq > params_distance_max_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         cutoff = metadata.vdw_radii[idx_a] + metadata.vdw_radii[idx_b] + params_epsilon
         cutoff_sq = cutoff * cutoff
         if dist_sq >= cutoff_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if classifier is not None:
             distance = math.sqrt(dist_sq)
             result = classifier(idx_a, idx_b, distance)
             if result is None:
-                return InteractionType.None_
+                return InteractionType.NoInteraction
             return result
 
         return InteractionType.Hydrophobic
@@ -518,27 +518,27 @@ def compute_hbonds(topology: Topology, metadata: AtomMetadata, classifier: Hydro
 
     def tester(idx_d: int, idx_a: int, dist_sq: float) -> InteractionType:
         if residues_too_close(idx_d, idx_a, metadata.residue_infos, params_min_residue_offset):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         atomic_d = metadata.atomic_numbers[idx_d]
         atomic_a = metadata.atomic_numbers[idx_a]
         if exclude_sulfur and (atomic_d == 16 or atomic_a == 16):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if dist_sq > params_distance_cutoff_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         angle = _best_dha_angle_deg(mol, conf, idx_d, idx_a)
         if angle is not None:
             min_angle = 180.0 - params_angle_tolerance
             if angle < min_angle:
-                return InteractionType.None_
+                return InteractionType.NoInteraction
 
         if classifier is not None:
             distance = math.sqrt(dist_sq)
             result = classifier(idx_d, idx_a, distance, angle)
             if result is None:
-                return InteractionType.None_
+                return InteractionType.NoInteraction
             return result
 
         return InteractionType.HydrogenBond
@@ -616,13 +616,13 @@ def compute_salt_bridges(topology: Topology, meta: AtomMetadata) -> ContactSet:
 
     def tester(idx_anion: int, idx_cation: int, dist_sq: float) -> InteractionType:
         if dist_sq > distance_cutoff_sq:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
         if idx_anion == idx_cation:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         pair = tuple(sorted((idx_anion, idx_cation)))
         if pair in meta.disulfide_pairs:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         return InteractionType.Ionic
 
@@ -640,23 +640,23 @@ def compute_vdw_contacts(topology: Topology, meta: AtomMetadata) -> ContactSet:
 
     def tester(idx_a: int, idx_b: int, dist_sq: float) -> InteractionType:
         if idx_a == idx_b:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if meta.atomic_numbers[idx_a] == 1 or meta.atomic_numbers[idx_b] == 1:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if residues_too_close(idx_a, idx_b, meta.residue_infos, min_residue_offset):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if is_cys_disulfide_contact(idx_a, idx_b, meta.residue_infos, meta.cys_sg_lookup, mol):
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         radius_sum = meta.vdw_radii[idx_a] + meta.vdw_radii[idx_b] + epsilon
         if radius_sum <= 0.0:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         if dist_sq > radius_sum * radius_sum:
-            return InteractionType.None_
+            return InteractionType.NoInteraction
 
         return InteractionType.VanDerWaals
 

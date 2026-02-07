@@ -30,7 +30,7 @@ namespace Flags = AtomTypeFlags;
 
 void bind_atom_types(py::module &m) {
   py::enum_<AtomType> (m, "AtomType")
-    .value("None_",             AtomType::None)
+    .value("NoType",            AtomType::None)
     .value("HbondAcceptor",     AtomType::HbondAcceptor)
     .value("HbondDonor",        AtomType::HbondDonor)
     .value("WeakHbondAcceptor", AtomType::WeakHbondAcceptor)
@@ -63,7 +63,7 @@ void bind_atom_types(py::module &m) {
     .def("all",     [](AtomType self, AtomType flags) { return Flags::all(self, flags); },     "Return True if self contains all bits in flags",   py::arg("flags"))
     .def("any",     [](AtomType self, AtomType flags) { return Flags::any(self, flags); },     "Return True if self contains any bits in flags",   py::arg("flags"))
     .def("none",    [](AtomType self, AtomType flags) { return Flags::none(self, flags); },    "Return True if self contains none of the bits in flags", py::arg("flags"))
-    .def_property_readonly("empty",   [](AtomType self) { return Flags::empty(self); },        "True if self has no bits set (AtomType.None_)")
+    .def_property_readonly("empty",   [](AtomType self) { return Flags::empty(self); },        "True if self has no bits set (AtomType.NoType)")
     .def("split",   [](AtomType self) { return Flags::split(self); },                          "Return list of individual flags set in self")
     ;
 }
