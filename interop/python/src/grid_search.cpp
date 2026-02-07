@@ -234,15 +234,9 @@ Notes:
         auto out = py::array_t<float>(n);
         if (n == 0) return out;
 
-        auto *dst = static_cast<float *>(out.mutable_data());
-        const float *src = d.data();
-        for (py::ssize_t i = 0; i < n; ++i) {
-          float v = src[i];
-          if (v < 0.0f) v = (v > -1e-8f) ? 0.0f : 0.0f;
-          dst[i] = std::sqrt(v);
-        }
+        std::memcpy(out.mutable_data(), d.data(), static_cast<size_t>(n) * sizeof(float));
         return out;
-    }, "Alias of 'get_sqrt_distances': Euclidean distances (copy)")
+    }, "Alias of 'distances': squared distances (copy)")
 
     .def("__len__", &NSResults::size, "Number of stored neighbor pairs.")
     .def("__iter__", [](const NSResults &self) { return py::make_iterator(self.begin(), self.end()); },

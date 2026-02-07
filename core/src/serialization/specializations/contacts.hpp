@@ -66,7 +66,7 @@ struct Serializer<fmt::json, ContactsRes> {
       builder.begin_object()
              .key("lhs")     .value(ContactTableFormatter::format_entity_compact(*v.topology, pair.first))
              .key("rhs")     .value(ContactTableFormatter::format_entity_compact(*v.topology, pair.second))
-             .key("distance").value(contact.distance)
+             .key("distance_sq").value(contact.distance)
              .key("type")    .value(interaction_type_to_string(contact.type))
              .end_object();
     }
@@ -131,7 +131,7 @@ struct Serializer<fmt::text, ContactsRes> {
       auto pair = resolver.resolve(contact);
       oss << ContactTableFormatter::format_entity_compact(*v.topology, pair.first) << " -&- "
           << ContactTableFormatter::format_entity_compact(*v.topology, pair.second) << " " << std::fixed
-          << std::setprecision(3) << contact.distance << " (" << interaction_type_to_string(contact.type)
+          << std::setprecision(3) << contact.distance << " A^2 (" << interaction_type_to_string(contact.type)
           << ")";
       oss << "\n";
     }

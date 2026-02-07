@@ -16,7 +16,7 @@ The output format matches what `lahuta contacts -f <file>` produces:
     "num_contacts": N,
     "frame_index": 0,
     "contacts": [
-        {"lhs": "...", "rhs": "...", "distance": ..., "type": "..."},
+        {"lhs": "...", "rhs": "...", "distance_sq": ..., "type": "..."},
         ...
     ]
 }
@@ -52,7 +52,7 @@ DATA = DATA_DIR / "models" / "AF-P0CL56-F1-model_v4.cif.gz"
 class ContactDict(TypedDict):
     lhs: str
     rhs: str
-    distance: float
+    distance_sq: float
     type: str
 
 
@@ -107,7 +107,7 @@ def print_contact_summary(result: ContactOutputDict, max_contacts: int = 10) -> 
 
     print(f"First {min(max_contacts, len(result['contacts']))} contacts:")
     for contact in result["contacts"][:max_contacts]:
-        print(f"  {contact['lhs']:20} -&- {contact['rhs']:20} {contact['distance']:8.3f} A ({contact['type']})")
+        print(f"  {contact['lhs']:20} -&- {contact['rhs']:20} {contact['distance_sq']:8.3f} A^2 ({contact['type']})")
 
 
 def pipeline_basic_directory(
@@ -150,7 +150,7 @@ def pipeline_basic_directory(
 def pipeline_custom_postprocessing(directory: Path | None = None, provider: ContactProviderType = "molstar") -> list[dict[str, Any]]:
     """
     Process a directory with custom post-processing: group contacts by type
-    and compute summary statistics (count, min/max/avg distance per type).
+    and compute summary statistics (count, min/max/avg distance_sq per type).
     """
 
     def contacts_with_stats(ctx: PipelineContext) -> dict[str, Any]:
@@ -167,19 +167,19 @@ def pipeline_custom_postprocessing(directory: Path | None = None, provider: Cont
                 {
                     "lhs": record["lhs"],
                     "rhs": record["rhs"],
-                    "distance": record["distance"],
+                    "distance_sq": record["distance_sq"],
                 }
             )
 
         stats = {}
         for ctype, contacts in by_type.items():
-            distances = [c["distance"] for c in contacts]
+            distances_sq = [c["distance_sq"] for c in contacts]
             stats[ctype] = {
                 "count": len(contacts),
                 # these checks are very defensive, as distances should never be empty
-                "min_distance": min(distances) if distances else 0,
-                "max_distance": max(distances) if distances else 0,
-                "avg_distance": sum(distances) / len(distances) if distances else 0,
+                "min_distance_sq": min(distances_sq) if distances_sq else 0,
+                "max_distance_sq": max(distances_sq) if distances_sq else 0,
+                "avg_distance_sq": sum(distances_sq) / len(distances_sq) if distances_sq else 0,
             }
 
         return {
@@ -243,7 +243,7 @@ def main() -> None:
         print(f"\n  {Path(r['file_path']).name}: {r['total_contacts']} total contacts")
         print("    Stats by type:")
         for ctype, stats in r.get("stats_by_type", {}).items():
-            print(f"      {ctype}: {stats['count']} (avg: {stats['avg_distance']:.2f} A)")
+            print(f"      {ctype}: {stats['count']} (avg: {stats['avg_distance_sq']:.2f} A^2)")
     if len(stats_results) > 3:
         print(f"\n  ... and {len(stats_results) - 3} more")
 

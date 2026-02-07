@@ -45,6 +45,7 @@ ResidueKey: TypeAlias = tuple[str, int, str]
 ChainResidueKey: TypeAlias = tuple[str, int]
 DisulfidePair:   TypeAlias = tuple[AtomIndex, AtomIndex]
 
+# distance_sq is the squared distance (A^2).
 ContactClassifier:      TypeAlias = Callable[[AtomIndex, AtomIndex, float],               InteractionType | None]
 HydrogenBondClassifier: TypeAlias = Callable[[AtomIndex, AtomIndex, float, float | None], InteractionType | None]
 
@@ -490,8 +491,7 @@ def compute_hydrophobic(topology: Topology, metadata: AtomMetadata, classifier: 
             return InteractionType.NoInteraction
 
         if classifier is not None:
-            distance = math.sqrt(dist_sq)
-            result = classifier(idx_a, idx_b, distance)
+            result = classifier(idx_a, idx_b, dist_sq)
             if result is None:
                 return InteractionType.NoInteraction
             return result
@@ -535,8 +535,7 @@ def compute_hbonds(topology: Topology, metadata: AtomMetadata, classifier: Hydro
                 return InteractionType.NoInteraction
 
         if classifier is not None:
-            distance = math.sqrt(dist_sq)
-            result = classifier(idx_d, idx_a, distance, angle)
+            result = classifier(idx_d, idx_a, dist_sq, angle)
             if result is None:
                 return InteractionType.NoInteraction
             return result
