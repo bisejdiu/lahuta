@@ -21,6 +21,6 @@
 #define LAHUTA_FORMATS_HPP
 
 // not inside lahuta::formats namespace to avoid conflicts with spdlog
-namespace fmt { struct binary{}; struct json{}; struct text{}; } // namespace fmt
+namespace fmt { struct binary{}; struct json{}; struct json_compact{}; struct text{}; } // namespace fmt
 
 #endif // LAHUTA_FORMATS_HPP

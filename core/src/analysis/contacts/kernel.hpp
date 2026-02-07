@@ -32,7 +32,7 @@
 #include "pipeline/task/context.hpp"
 #include "pipeline/task/emission.hpp"
 #include "serialization/formats.hpp"
-#include "serialization/serializer.hpp"
+#include "serialization/specializations/contacts.hpp"
 #include "topology.hpp"
 
 namespace lahuta::analysis {
@@ -130,6 +130,9 @@ struct ContactsKernel {
           break;
         case P::ContactsOutputFormat::Binary:
           payload = serialization::Serializer<fmt::binary, ContactsRecord>::serialize(res);
+          break;
+        case P::ContactsOutputFormat::JsonCompact:
+          payload = serialization::Serializer<fmt::json_compact, ContactsRecord>::serialize(res);
           break;
         default:
           throw std::runtime_error("Contacts unsupported output format");

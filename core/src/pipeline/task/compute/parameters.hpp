@@ -45,6 +45,7 @@ constexpr C::ParameterInterface::TypeId DSSP           = 36;
 enum class ContactsOutputFormat : uint8_t {
   Json,
   Binary,
+  JsonCompact,
 };
 
 struct SystemReadParams : public C::ParameterBase<SystemReadParams> {

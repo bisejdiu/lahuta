@@ -15,9 +15,12 @@
 #ifndef LAHUTA_SERIALIZATION_CONTACTS_SERIALIZER_HPP
 #define LAHUTA_SERIALIZATION_CONTACTS_SERIALIZER_HPP
 
+#include <cmath>
 #include <cstring>
+#include <iomanip>
 #include <limits>
 #include <sstream>
+#include <string_view>
 #include <vector>
 
 #include "analysis/contacts/provider.hpp"
@@ -29,10 +32,129 @@
 #include "serialization/json.hpp"
 #include "serialization/serializer_impl.hpp"
 
+namespace lahuta {
+
+struct JsonNumber {
+  std::string_view repr;
+};
+
+template <>
+struct JsonWritable<JsonNumber> : std::true_type {
+  static void write(std::string &out, JsonNumber v) {
+    out.append(v.repr.data(), v.repr.size());
+  }
+};
+
+} // namespace lahuta
+
 namespace serialization {
 using namespace lahuta;
 
 using ContactsRes = lahuta::analysis::ContactsRecord;
+
+namespace detail {
+
+inline std::string_view provider_short_code(analysis::ContactProvider provider) noexcept {
+  switch (provider) {
+    case analysis::ContactProvider::MolStar:     return "ms";
+    case analysis::ContactProvider::Arpeggio:    return "ap";
+    case analysis::ContactProvider::GetContacts: return "gc";
+  }
+  return {};
+}
+
+inline std::optional<analysis::ContactProvider> provider_from_short_code(std::string_view code) noexcept {
+  if (code == "ms") return analysis::ContactProvider::MolStar;
+  if (code == "ap") return analysis::ContactProvider::Arpeggio;
+  if (code == "gc") return analysis::ContactProvider::GetContacts;
+  return std::nullopt;
+}
+
+inline std::string format_compact_distance(float distance_sq) {
+  const double rounded = std::round(static_cast<double>(distance_sq) * 100.0) / 100.0;
+  std::ostringstream oss;
+  oss << std::fixed << std::setprecision(2) << rounded;
+  std::string out = oss.str();
+  if (auto dot = out.find('.'); dot != std::string::npos) {
+    while (!out.empty() && out.back() == '0') out.pop_back();
+    if (!out.empty() && out.back() == '.') out.pop_back();
+  }
+  return out;
+}
+
+inline uint32_t hash_label(std::string_view label) noexcept {
+  uint32_t h = 2166136261u;
+  for (unsigned char c : label) {
+    h ^= c;
+    h *= 16777619u;
+  }
+  return h;
+}
+
+inline uint32_t parse_label_index(std::string_view label, bool &parsed) noexcept {
+  parsed = false;
+  if (label.empty()) return 0;
+  std::size_t i = (label.front() == '(') ? 1u : 0u;
+  const std::size_t start = i;
+  uint64_t value = 0;
+  while (i < label.size()) {
+    const char c = label[i];
+    if (c < '0' || c > '9') break;
+    value = (value * 10u) + static_cast<uint64_t>(c - '0');
+    if (value > std::numeric_limits<uint32_t>::max()) {
+      parsed = false;
+      return 0;
+    }
+    ++i;
+  }
+  if (i == start) return 0;
+  parsed = true;
+  return static_cast<uint32_t>(value);
+}
+
+inline EntityID compact_entity_id(std::string_view label) noexcept {
+  bool parsed = false;
+  uint32_t index = parse_label_index(label, parsed);
+  if (!parsed) index = hash_label(label);
+  const Kind kind = (!label.empty() && label.front() == '(') ? Kind::Group : Kind::Atom;
+  return EntityID::make(kind, index);
+}
+
+inline std::string_view sv_from_sajson(const sajson::string &str) noexcept {
+  return {str.data(), str.length()};
+}
+
+inline std::string require_string(const sajson::value &v, std::string_view key) {
+  if (v.get_type() != sajson::TYPE_STRING) {
+    throw std::runtime_error("expected string for key \"" + std::string(key) + '"');
+  }
+  return v.as_string();
+}
+
+inline std::string optional_string(const sajson::value &v, std::string_view key) {
+  if (v.get_type() == sajson::TYPE_NULL) return {};
+  return require_string(v, key);
+}
+
+inline bool optional_bool(const sajson::value &v, bool default_value, std::string_view key) {
+  if (v.get_type() == sajson::TYPE_NULL) return default_value;
+  if (v.get_type() == sajson::TYPE_TRUE) return true;
+  if (v.get_type() == sajson::TYPE_FALSE) return false;
+  throw std::runtime_error("expected boolean for key \"" + std::string(key) + '"');
+}
+
+inline double require_number(const sajson::value &v, std::string_view key) {
+  if (v.get_type() == sajson::TYPE_INTEGER) return static_cast<double>(v.get_integer_value());
+  if (v.get_type() == sajson::TYPE_DOUBLE)  return v.get_double_value();
+  throw std::runtime_error("expected number for key \"" + std::string(key) + '"');
+}
+
+inline double optional_number(const sajson::value &v, double default_value, std::string_view key) {
+  if (v.get_type() == sajson::TYPE_NULL) return default_value;
+  return require_number(v, key);
+}
+
+} // namespace detail
 
 template <>
 struct Serializer<fmt::json, ContactsRes> {
@@ -103,6 +225,174 @@ struct Serializer<fmt::json, ContactsRes> {
     out.num_contacts = r.get<size_t>("num_contacts");
     out.frame_index  = r.get_or<std::size_t>("frame_index", 0);
     out.topology     = nullptr; // we cannot restore the topology from the serialized contact data
+
+    return out;
+  }
+};
+
+template <>
+struct Serializer<fmt::json_compact, ContactsRes> {
+  using Record = ContactsRes;
+
+  static std::string serialize(const ContactsRes &v) {
+    JsonBuilder builder;
+
+    builder.key("f").value(v.file_path);
+    if (v.trajectory_file) {
+      builder.key("tf").value(*v.trajectory_file);
+    }
+    if (!v.success) {
+      builder.key("ok").value(false);
+    }
+    builder.key("p").value(detail::provider_short_code(v.provider));
+    if (!v.contact_types.is_all()) {
+      builder.key("ct").value(interaction_type_set_to_string(v.contact_types, "|"));
+    }
+    if (v.frame_index != 0) {
+      builder.key("fi").value(v.frame_index);
+    }
+
+    if (!v.topology) {
+      Logger::get_logger()->warn(
+          "ContactsRes compact serialization: topology is null, cannot serialize contacts.");
+      return builder.str();
+    }
+
+    auto sorted = sort_interactions(v.contacts);
+    auto spans  = slice_by_type(sorted);
+
+    builder.key("c").begin_object();
+    EntityResolver resolver(*v.topology);
+    for (auto s : spans) {
+      if (s.empty()) continue;
+      const InteractionType type = s[0].type;
+      const std::string_view code = interaction_type_to_short_code(type);
+      if (code.empty()) {
+        throw std::runtime_error("ContactsRes compact serializer: unknown interaction type");
+      }
+      builder.key(code).begin_array();
+      for (const auto &contact : s) {
+        auto pair = resolver.resolve(contact);
+        std::string lhs = ContactTableFormatter::format_entity_compact(*v.topology, pair.first, ",");
+        std::string rhs = ContactTableFormatter::format_entity_compact(*v.topology, pair.second, ",");
+        std::string dist = detail::format_compact_distance(contact.distance);
+        builder.begin_array()
+            .value(lhs)
+            .value(rhs)
+            .value(JsonNumber{dist})
+            .end_array();
+      }
+      builder.end_array();
+    }
+    builder.end_object();
+
+    return builder.str();
+  }
+
+  static ContactsRes deserialize(const std::string &s) {
+    ContactsRes out{};
+
+    auto doc = sajson::parse(sajson::dynamic_allocation(),
+                             sajson::mutable_string_view(s.size(), const_cast<char *>(s.data())));
+    if (!doc.is_valid()) {
+      throw std::runtime_error(doc.get_error_message_as_cstring());
+    }
+    const auto root = doc.get_root();
+    if (root.get_type() != sajson::TYPE_OBJECT) {
+      throw std::runtime_error("expected JSON object");
+    }
+
+    auto get_key = [&](std::string_view key) -> sajson::value {
+      const sajson::string k{key.data(), key.size()};
+      return root.get_value_of_key(k);
+    };
+
+    out.file_path = detail::require_string(get_key("f"), "f");
+    out.success   = detail::optional_bool(get_key("ok"), true, "ok");
+
+    const std::string provider_code = detail::require_string(get_key("p"), "p");
+    if (auto provider = detail::provider_from_short_code(provider_code)) {
+      out.provider = *provider;
+    } else {
+      throw std::runtime_error("Unknown contact provider code: " + provider_code);
+    }
+
+    const std::string ct_value = detail::optional_string(get_key("ct"), "ct");
+    if (ct_value.empty()) {
+      out.contact_types = InteractionTypeSet::all();
+    } else if (auto parsed = parse_interaction_type_sequence(ct_value, '|')) {
+      out.contact_types = *parsed;
+    } else {
+      throw std::runtime_error("ContactsRes compact deserialize: unknown contact type list: " +
+                               ct_value);
+    }
+
+    out.frame_index = static_cast<std::size_t>(detail::optional_number(get_key("fi"), 0.0, "fi"));
+
+    const std::string traj = detail::optional_string(get_key("tf"), "tf");
+    if (!traj.empty()) {
+      out.trajectory_file = traj;
+    }
+
+    out.topology = nullptr;
+
+    const sajson::value contacts_value = get_key("c");
+    if (contacts_value.get_type() == sajson::TYPE_OBJECT) {
+      std::vector<Contact> contacts;
+      std::size_t total = 0;
+      const std::size_t groups = contacts_value.get_length();
+      for (std::size_t i = 0; i < groups; ++i) {
+        const auto arr = contacts_value.get_object_value(i);
+        if (arr.get_type() == sajson::TYPE_ARRAY) {
+          total += arr.get_length();
+        }
+      }
+      contacts.reserve(total);
+
+      for (std::size_t i = 0; i < groups; ++i) {
+        const auto key = contacts_value.get_object_key(i);
+        const std::string_view type_code = detail::sv_from_sajson(key);
+        auto type = short_code_to_interaction_type(type_code);
+        if (!type) {
+          throw std::runtime_error("ContactsRes compact deserialize: unknown type code '" +
+                                   std::string(type_code) + "'");
+        }
+
+        const auto arr = contacts_value.get_object_value(i);
+        if (arr.get_type() != sajson::TYPE_ARRAY) {
+          throw std::runtime_error("ContactsRes compact deserialize: expected array for type '" +
+                                   std::string(type_code) + "'");
+        }
+        const std::size_t arr_size = arr.get_length();
+        for (std::size_t j = 0; j < arr_size; ++j) {
+          const auto entry = arr.get_array_element(j);
+          if (entry.get_type() != sajson::TYPE_ARRAY) {
+            throw std::runtime_error("ContactsRes compact deserialize: expected array entry");
+          }
+          if (entry.get_length() != 3) {
+            throw std::runtime_error("ContactsRes compact deserialize: expected 3-element entry");
+          }
+
+          const auto lhs_value = entry.get_array_element(0);
+          const auto rhs_value = entry.get_array_element(1);
+          const auto dist_value = entry.get_array_element(2);
+          const std::string lhs_label = detail::require_string(lhs_value, "lhs");
+          const std::string rhs_label = detail::require_string(rhs_value, "rhs");
+          const float dist = static_cast<float>(detail::require_number(dist_value, "distance_sq"));
+
+          const EntityID lhs_id = detail::compact_entity_id(lhs_label);
+          const EntityID rhs_id = detail::compact_entity_id(rhs_label);
+          contacts.emplace_back(lhs_id, rhs_id, dist, *type);
+        }
+      }
+
+      out.contacts = ContactSet(std::move(contacts), true);
+      out.num_contacts = out.contacts.size();
+    } else if (contacts_value.get_type() == sajson::TYPE_NULL) {
+      out.num_contacts = 0;
+    } else {
+      throw std::runtime_error("ContactsRes compact deserialize: expected object for key \"c\"");
+    }
 
     return out;
   }
