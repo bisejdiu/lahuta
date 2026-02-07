@@ -16,6 +16,7 @@
  */
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -37,6 +38,7 @@
 #include "contacts/molstar/provider.hpp"
 #include "entities/contact.hpp"
 #include "entities/entity_id.hpp"
+#include "entities/formatter.hpp"
 #include "entities/interaction_types.hpp"
 #include "interactions.hpp"
 #include "numpy_utils.hpp"
@@ -494,7 +496,7 @@ void bind_contacts(py::module_ &m) {
            py::arg_v("category", Category::None, "Category.Unclassified"),
            py::arg_v("flavor",   Flavor::Default, "Flavor.Default"))
       .def_readonly_static("All",                   &InteractionType::All)
-      .def_readonly_static("NoInteraction",         &InteractionType::None)
+      .def_readonly_static("NoInteraction",          &InteractionType::None)
       .def_readonly_static("Generic",               &InteractionType::Generic)
       .def_readonly_static("Hydrophobic",           &InteractionType::Hydrophobic)
       .def_readonly_static("Halogen",               &InteractionType::Halogen)
@@ -672,6 +674,10 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
           [](const Contact &self) { return self.distance; },
           [](Contact &self, float value) { self.distance = value; },
           "Distance squared between entities (A^2)")
+      .def_property_readonly(
+          "distance",
+          [](const Contact &self) { return std::sqrt(self.distance); },
+          "Distance between entities (A)")
       .def_property(
           "type",
           [](const Contact &self) { return self.type; },
@@ -717,6 +723,17 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
                          self.distance);
            })
       .def(
+          "describe",
+          [](const Contact &self, const Topology &topology) {
+            auto lhs = ContactTableFormatter::format_entity_compact(topology, self.lhs);
+            auto rhs = ContactTableFormatter::format_entity_compact(topology, self.rhs);
+            const auto dist = std::sqrt(self.distance);
+            return py::str("{} -&- {} {:.3f} A ({})")
+                .format(std::move(lhs), std::move(rhs), dist, interaction_type_to_string(self.type));
+          },
+          py::arg("topology"),
+          R"doc(Return a human-readable description using topology resolution.)doc")
+      .def(
           "to_dict",
           [](const Contact &self) {
             py::dict d;
@@ -730,7 +747,19 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
             d[py::str("flavor")]      = self.type.flavor;
             return d;
           },
-          "Return a dict representation suitable for testing/serialization");
+          "Return a dict representation suitable for testing/serialization")
+      .def(
+          "to_dict",
+          [](const Contact &self, const Topology &topology) {
+            py::dict d;
+            d[py::str("lhs")]      = ContactTableFormatter::format_entity_compact(topology, self.lhs);
+            d[py::str("rhs")]      = ContactTableFormatter::format_entity_compact(topology, self.rhs);
+            d[py::str("distance")] = std::sqrt(self.distance);
+            d[py::str("type")]     = py::str(interaction_type_to_string(self.type));
+            return d;
+          },
+          py::arg("topology"),
+          "Return a human-readable dict representation using topology resolution");
 
   // Ordered container for Contact obj with set operations and no duplicates
   py::class_<ContactSet>(m, "ContactSet")
@@ -749,6 +778,9 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
       .def("make_generic", &ContactSet::make_generic)
 
       .def("__len__", &ContactSet::size)
+      .def("__repr__", [](const ContactSet &self) {
+        return py::str("ContactSet(size={})").format(self.size());
+      })
       .def(
           "__and__",
           [](const ContactSet &a, const ContactSet &b) { return a & b; },

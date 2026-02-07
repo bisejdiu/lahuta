@@ -666,6 +666,7 @@ def compute_vdw_contacts(topology: Topology, meta: AtomMetadata) -> ContactSet:
 def summarize_contacts(
     label: str,
     contacts: ContactSet,
+    topology: Topology,
     limit: int,
 ) -> None:
     print(f"{label}: {contacts.size()} contacts")
@@ -675,11 +676,7 @@ def summarize_contacts(
     count = min(limit, contacts.size())
     for idx in range(count):
         contact = contacts[idx]
-        lhs = str(contact.lhs)
-        rhs = str(contact.rhs)
-        distance = math.sqrt(contact.distance_sq)
-        kind = str(contact.type)
-        print(f"  {lhs:>12} - {rhs:<12}  {distance:5.2f} A  ({kind})")
+        print(f"  {contact.describe(topology)}")
 
 
 def parse_args() -> argparse.Namespace:
@@ -714,13 +711,13 @@ def main() -> None:
     pi_parallel  = compute_pi_stacking(topology)
     pi_t         = compute_t_stacking(topology)
 
-    summarize_contacts("Salt bridges",   salt_bridges, args.limit)
-    summarize_contacts("Van der Waals",  vdw_contacts, args.limit)
-    summarize_contacts("Hydrophobic",    hydrophobic,  args.limit)
-    summarize_contacts("Hydrogen bonds", hbonds,       args.limit)
-    summarize_contacts("Pi stacking",    pi_parallel,  args.limit)
-    summarize_contacts("T stacking",     pi_t,         args.limit)
-    summarize_contacts("Pi-cation",      pi_cation,    args.limit)
+    summarize_contacts("Salt bridges",   salt_bridges, topology, args.limit)
+    summarize_contacts("Van der Waals",  vdw_contacts, topology, args.limit)
+    summarize_contacts("Hydrophobic",    hydrophobic,  topology, args.limit)
+    summarize_contacts("Hydrogen bonds", hbonds,       topology, args.limit)
+    summarize_contacts("Pi stacking",    pi_parallel,  topology, args.limit)
+    summarize_contacts("T stacking",     pi_t,         topology, args.limit)
+    summarize_contacts("Pi-cation",      pi_cation,    topology, args.limit)
 
 
 if __name__ == "__main__":
