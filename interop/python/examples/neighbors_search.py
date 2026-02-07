@@ -18,9 +18,9 @@ from pathlib import Path
 
 import numpy as np
 
-from lahuta import NearestNeighbors, LahutaSystem, logging, NSResults
+from lahuta import FastNS, KDIndex, NearestNeighbors, LahutaSystem, logging, NSResults
 
-DATA = Path(__file__).resolve().parents[3] / "data" / "ubi.cif"
+DATA = Path(__file__).resolve().parents[3] / "core" / "data" / "ubi.cif"
 
 
 # fmt: off
@@ -68,9 +68,49 @@ def construct_and_search(sys: LahutaSystem) -> bool:
     return True
 
 
+def kdindex_search(sys: LahutaSystem) -> None:
+    positions = np.asarray(sys.props.positions_view, dtype=np.float64, order="C")
+    if positions.size == 0:
+        logging.info("KDIndex: empty positions array")
+        return
+
+    kd = KDIndex()
+    assert kd.build_view(positions)
+
+    radius = 5.0
+    queries = positions[:5]
+    flat = kd.radius_search(queries, radius)
+    logging.info("KDIndex radius_search: n_pairs=%d, n_queries=%d, radius=%.1f", len(flat), len(queries), radius)
+
+    distances, indices = kd.radius_search(
+        queries, radius, grouped=True, return_distance=True, sort_results=True
+    )
+    if indices:
+        logging.info(
+            "KDIndex grouped: q0_indices=%s q0_distances=%s",
+            indices[0][:5],
+            np.round(distances[0][:5], 2),
+        )
+
+
+def fastns_search(sys: LahutaSystem) -> None:
+    positions = np.asarray(sys.props.positions_view, dtype=np.float64, order="C")
+    if positions.size == 0:
+        logging.info("FastNS: empty positions array")
+        return
+
+    cutoff = 4.0
+    ns = FastNS(positions)
+    assert ns.build(cutoff)
+    res = ns.self_search()
+    logging.info("FastNS self_search: n_pairs=%d, cutoff=%.1f", len(res), cutoff)
+
+
 if __name__ == "__main__":
     sys = LahutaSystem(str(DATA))
     # NOTE: that for simple geometric search, building topology is not necessary.
     ns = neighbors_search(sys)
     search_with_filters(ns)
     construct_and_search(sys)
+    kdindex_search(sys)
+    fastns_search(sys)

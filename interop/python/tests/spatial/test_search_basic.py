@@ -89,6 +89,88 @@ def test_search_numpy_overload_equivalence():
         assert math.isclose(a[k], b[k], rel_tol=1e-6, abs_tol=1e-6)
 
 
+def test_kdindex_build_view_accepts_float64(coords_simple: np.ndarray) -> None:
+    coords = coords_simple
+    assert coords.dtype == np.float64
+    assert coords.flags.c_contiguous
+
+    kd = KDIndex()
+    assert kd.build_view(coords)
+    assert kd.ready
+
+
+def test_kdindex_radius_search_grouped_matches_nsresults(coords_simple: np.ndarray) -> None:
+    coords = coords_simple
+    kd = KDIndex()
+    assert kd.build(coords)
+
+    def expected_grouped(
+        pairs: np.ndarray,
+        d2: np.ndarray,
+        *,
+        return_distance: bool,
+        sort_results: bool,
+    ) -> list[np.ndarray] | tuple[list[np.ndarray], list[np.ndarray]]:
+        n_queries = coords.shape[0]
+        idx_lists: list[list[int]] = [[] for _ in range(n_queries)]
+        dist_lists: list[list[float]] = [[] for _ in range(n_queries)]
+
+        for (i, j), v in zip(pairs.tolist(), d2.tolist()):
+            idx_lists[i].append(int(j))
+            dist_lists[i].append(math.sqrt(max(0.0, float(v))))
+
+        indices: list[np.ndarray] = []
+        distances: list[np.ndarray] = []
+        for idxs, dsts in zip(idx_lists, dist_lists):
+            if sort_results:
+                if return_distance:
+                    order = np.argsort(np.asarray(dsts, dtype=np.float64))
+                    idxs = [idxs[int(o)] for o in order]
+                    dsts = [dsts[int(o)] for o in order]
+                else:
+                    idxs = sorted(idxs)
+            indices.append(np.asarray(idxs, dtype=np.int32))
+            distances.append(np.asarray(dsts, dtype=np.float64))
+
+        return (distances, indices) if return_distance else indices
+
+    flat = kd.radius_search(coords, 1.1)
+    expected = expected_grouped(
+        flat.pairs,
+        flat.distances,
+        return_distance=False,
+        sort_results=False,
+    )
+    grouped = kd.radius_search(coords, 1.1, grouped=True, sort_results=False)
+    assert isinstance(grouped, list)
+    assert len(grouped) == len(expected) == coords.shape[0]
+    for g, e in zip(grouped, expected):
+        np.testing.assert_array_equal(g, e)
+
+    expected_distances, expected_indices = expected_grouped(
+        flat.pairs,
+        flat.distances,
+        return_distance=True,
+        sort_results=False,
+    )
+    grouped_distances, grouped_indices = kd.radius_search(
+        coords, 1.1, grouped=True, return_distance=True, sort_results=False
+    )
+    assert len(grouped_distances) == len(grouped_indices) == coords.shape[0]
+    assert len(expected_distances) == len(expected_indices) == coords.shape[0]
+    for gd, gi, ed, ei in zip(grouped_distances, grouped_indices, expected_distances, expected_indices):
+        np.testing.assert_array_equal(gi, ei)
+        np.testing.assert_allclose(gd, ed, rtol=1e-6, atol=1e-6)
+
+    sorted_distances, sorted_indices = kd.radius_search(
+        coords, 1.1, grouped=True, return_distance=True, sort_results=True
+    )
+    for sd, si in zip(sorted_distances, sorted_indices):
+        assert sd.shape == si.shape
+        if sd.size > 1:
+            assert np.all(sd[:-1] <= sd[1:])
+
+
 def test_search_numpy_bad_shape_errors():
     rng = np.random.default_rng(1)
     coords = rng.normal(size=(10, 3)).astype(np.float64)
