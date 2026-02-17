@@ -47,7 +47,7 @@ constexpr std::size_t CELL_EIGEN_THRESHOLD  = 8;      // min points in cell to u
 constexpr std::size_t CROSS_EIGEN_THRESHOLD = 50;
 constexpr std::size_t BRUTE_EIGEN_THRESHOLD = 100;
 
-constexpr double COORD_EPSILON = 1e-10;
+constexpr double COORD_EPSILON = 1e-3; // Coordinates below 0.001 A are treated as zero for mixed-scale detection
 constexpr double SCALE_THRESHOLD = 1.0 / std::numeric_limits<float>::epsilon();
 
 constexpr std::array<std::array<int, DIMENSIONS>, 13> NEIGHBOR_CELLS = {{
@@ -253,7 +253,8 @@ bool FastNS::build(double cutoff, bool brute_force_fallback) {
   if (has_mixed_scales_) {
     Logger::get_logger()->warn(
         "FastNS.build: mixed-scale coordinates detected (ratio={:.2e}, orders~{:.1f}, range=[{:.3e}, {:.3e}])."
-        "Small distances may underflow to 0.0 with float precision.", scale_ratio_, std::log10(scale_ratio_), min_abs_coord_, max_abs_coord_);
+        "Small distances may underflow to 0.0 with float precision.",
+        scale_ratio_, std::log10(scale_ratio_), min_abs_coord_, max_abs_coord_);
   }
 
   Logger::get_logger()->trace(

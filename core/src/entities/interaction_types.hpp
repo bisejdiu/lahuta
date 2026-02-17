@@ -291,6 +291,51 @@ inline constexpr InteractionType InteractionType::VanDerWaals {Category::VanDerW
   }
 }
 
+[[nodiscard]] inline std::string_view interaction_type_to_short_code(const InteractionType& type) noexcept {
+  if (type == InteractionType::HydrogenBond)         return "hb";
+  if (type == InteractionType::WeakHydrogenBond)     return "whb";
+  if (type == InteractionType::PolarHydrogenBond)    return "phb";
+  if (type == InteractionType::WeakPolarHydrogenBond)return "wphb";
+  if (type == InteractionType::Hydrophobic)          return "hp";
+  if (type == InteractionType::Ionic)                return "io";
+  if (type == InteractionType::Halogen)              return "ha";
+  if (type == InteractionType::MetalCoordination)    return "mc";
+  if (type == InteractionType::PiStacking)           return "ps";
+  if (type == InteractionType::PiStackingP)          return "psp";
+  if (type == InteractionType::PiStackingT)          return "pst";
+  if (type == InteractionType::CationPi)             return "cp";
+  if (type == InteractionType::VanDerWaals)          return "vdw";
+  if (type == InteractionType::Aromatic)             return "ar";
+  if (type == InteractionType::Carbonyl)             return "co";
+  if (type == InteractionType::DonorPi)              return "dp";
+  if (type == InteractionType::SulphurPi)            return "sp";
+  if (type == InteractionType::CarbonPi)             return "cbp";
+  return {};
+}
+
+[[nodiscard]] inline std::optional<InteractionType>
+short_code_to_interaction_type(std::string_view code) noexcept {
+  if (code == "hb")   return InteractionType::HydrogenBond;
+  if (code == "whb")  return InteractionType::WeakHydrogenBond;
+  if (code == "phb")  return InteractionType::PolarHydrogenBond;
+  if (code == "wphb") return InteractionType::WeakPolarHydrogenBond;
+  if (code == "hp")   return InteractionType::Hydrophobic;
+  if (code == "io")   return InteractionType::Ionic;
+  if (code == "ha")   return InteractionType::Halogen;
+  if (code == "mc")   return InteractionType::MetalCoordination;
+  if (code == "ps")   return InteractionType::PiStacking;
+  if (code == "psp")  return InteractionType::PiStackingP;
+  if (code == "pst")  return InteractionType::PiStackingT;
+  if (code == "cp")   return InteractionType::CationPi;
+  if (code == "vdw")  return InteractionType::VanDerWaals;
+  if (code == "ar")   return InteractionType::Aromatic;
+  if (code == "co")   return InteractionType::Carbonyl;
+  if (code == "dp")   return InteractionType::DonorPi;
+  if (code == "sp")   return InteractionType::SulphurPi;
+  if (code == "cbp")  return InteractionType::CarbonPi;
+  return std::nullopt;
+}
+
 inline std::string normalize_interaction_type_token(std::string_view token) {
   std::string normalized;
   normalized.reserve(token.size());

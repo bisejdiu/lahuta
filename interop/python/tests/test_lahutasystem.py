@@ -23,7 +23,7 @@ import hashlib
 import numpy as np
 import pytest
 
-from lahuta import LahutaSystem, LahutaSystemProperties, TopologyComputers
+from lahuta import LahutaSystem, LahutaSystemProperties, TopologyBuildingOptions, TopologyComputers
 
 
 # fmt: off
@@ -68,7 +68,7 @@ EXPECTED = {
 
     "neighbors_file": {
         "cutoff"  : 4.5,
-        "res_dif" : 1,
+        "residue_difference" : 1,
         "count"   : 1500,
         "mean"    : 3.957,
         "min"     : 2.584,
@@ -79,7 +79,7 @@ EXPECTED = {
 
     "neighbors_filtered": {
         "cutoff"  : 4.0,
-        "res_dif" : 0,
+        "residue_difference" : 0,
         "count"   : 1706,
         "mean"    : 2.747,
         "min"     : 1.224,
@@ -96,9 +96,9 @@ def props(luni: LahutaSystem) -> LahutaSystemProperties:
 
 
 @pytest.fixture(scope="session")
-def filtered_backbone(luni: LahutaSystem) -> LahutaSystem:
+def backbone_system(luni: LahutaSystem) -> LahutaSystem:
     names = luni.props.names
-    keep = [i for i, nm in enumerate(names) if str(nm).strip() in {"N", "CA", "C", "O"}]
+    keep = [i for i, nm in enumerate(names) if str(nm) in {"N", "CA", "C", "O"}]
     return luni.filter(keep)
 
 def test_basic_shapes_dtypes_and_hashes(luni: LahutaSystem, props: LahutaSystemProperties) -> None:
@@ -134,19 +134,20 @@ def test_centroid(props: LahutaSystemProperties) -> None:
 
 def test_topology_build_and_accessors(luni: LahutaSystem) -> None:
     # Configure and build
-    luni.enable_only(TopologyComputers.Standard)
-    luni.set_search_cutoff_for_bonds(1.9)
-    assert luni.build_topology() is True
+    opts = TopologyBuildingOptions()
+    opts.cutoff = 1.9
+    assert luni.build_topology(opts, include=TopologyComputers.Standard) is True
     assert luni.has_topology_built() is True
 
     # Execute Rings
-    if not luni.is_computation_enabled(TopologyComputers.Rings):
-        luni.enable_computation(TopologyComputers.Rings, True)
-    assert luni.execute_computation(TopologyComputers.Rings) is True
+    assert luni.build_topology(opts, include=TopologyComputers.Rings) is True
+    topo = luni.get_topology()
+    assert topo is not None
+    assert topo.has_computed(TopologyComputers.Rings) is True
 
     # Access RDKit handles
-    mol  = luni.get_molecule()
-    conf = luni.get_conformer()
+    mol  = topo.molecule()
+    conf = topo.conformer(0)
     xyz  = luni.props.positions
     assert mol.getNumAtoms()  == luni.n_atoms
     assert conf.getNumAtoms() == luni.n_atoms
@@ -168,8 +169,8 @@ def _sqrt_distances(ns) -> np.ndarray:
 
 def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_file"]
-    ns = luni.find_neighbors(cutoff=cfg["cutoff"], res_dif=cfg["res_dif"])
-    ns = ns.filter(cfg["cutoff"])
+    ns = luni.find_neighbors(cutoff=cfg["cutoff"] + 1.0, residue_difference=cfg["residue_difference"])
+    ns = ns.filter(cfg["cutoff"])  # narrow to test cutoff
     dij = _sqrt_distances(ns)
     assert dij.shape[0] == cfg["count"]
 
@@ -181,12 +182,12 @@ def test_neighbor_search_file_system(luni: LahutaSystem) -> None:
     assert np.isclose(mx,   cfg["max"],  rtol=cfg["rtol"], atol=cfg["atol"])
 
 
-def test_neighbor_search_filtered_system(filtered_backbone: LahutaSystem) -> None:
+def test_neighbor_search_filtered_system(backbone_system: LahutaSystem) -> None:
     cfg = EXPECTED["neighbors_filtered"]
-    ns  = filtered_backbone.find_neighbors(cutoff=cfg["cutoff"], res_dif=cfg["res_dif"])
+    ns  = backbone_system.find_neighbors(cutoff=cfg["cutoff"] + 1.0, residue_difference=cfg["residue_difference"])
     ns  = ns.filter(cfg["cutoff"])
     dij = _sqrt_distances(ns)
-    assert filtered_backbone.n_atoms == EXPECTED["n_atoms_filtered"]
+    assert backbone_system.n_atoms == EXPECTED["n_atoms_filtered"]
     assert dij.shape[0] == cfg["count"]
 
     mean = float(dij.mean())

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from lahuta import (
     AtomRec,
+    AtomType,
     EntityID,
     GroupRec,
     Kind,
@@ -39,19 +40,27 @@ def main() -> None:
     topo = sys.get_topology()
 
     # AtomRec and EntityID for an atom
-    atoms: list[AtomRec] = topo.atom_types  # NOTE: type shown for clarity (it's correctly inferred)
+    atoms: list[AtomRec] = topo.atom_records  # NOTE: type shown for clarity (it's correctly inferred)
 
     if not atoms:
         logging.warn("No AtomRec entries exposed")
         return
 
     a0 = atoms[0]
-    atom_idx = int(a0.idx())
+    atom_idx = int(a0.idx)
+    logging.info(
+        "AtomRec flags: donor=%s acceptor=%s hydrophobic=%s",
+        a0.is_donor,
+        a0.is_acceptor,
+        a0.is_hydrophobic,
+    )
+    logging.info("Hydrophobic via contains: %s", AtomType.Hydrophobic in a0.type)
+    logging.info("Hydrophobic atom count: %d", len(topo.atoms_with_type(AtomType.Hydrophobic)))
 
     eid_atom = EntityID.make(Kind.Atom, atom_idx)
     logging.info(f"Atom EntityID: {eid_atom} (repr={eid_atom!r}) kind={eid_atom.kind} index={eid_atom.index}")
 
-    mol = sys.get_molecule()
+    mol = topo.molecule()
     rd_atom = mol.getAtomWithIdx(atom_idx)
     logging.info(f"RDKit Atom[{atom_idx}]: Z={rd_atom.getAtomicNum()} symbol={rd_atom.getSymbol()} degree={rd_atom.getDegree()}")
 

@@ -54,24 +54,19 @@ struct BuildTopologyKernel {
         TopologyBuildingOptions opts{};
         opts.mode               = TopologyBuildMode::Model;
         opts.atom_typing_method = p.atom_typing_method;
-        (void)sys->build_topology(opts); // idempotent if already built
-        sys->enable_only(p.flags);
+        (void)sys->build_topology(opts, p.flags); // idempotent if already built
         auto topo = sys->get_topology();
         if (data.ctx && topo) data.ctx->set_object<const Topology>(P::CTX_TOPOLOGY_KEY, topo);
         return C::ComputationResult(true);
       }
 
-      // exec full topology comp
-      sys->enable_only(p.flags);
-
       // edge case
       // allow disabling all computations while still materializing a Topology object in context.
       if (p.flags == TopologyComputation::None) {
+        TopologyBuildingOptions opts{};
+        opts.atom_typing_method = p.atom_typing_method;
+        (void)sys->build_topology(opts, TopologyComputation::None);
         auto topo0 = sys->get_topology();
-        if (!topo0) {
-          sys->enable_only(TopologyComputation::None);
-          topo0 = sys->get_topology();
-        }
         if (data.ctx && topo0) data.ctx->set_object<const Topology>(P::CTX_TOPOLOGY_KEY, topo0);
         return C::ComputationResult(true);
       }
@@ -80,10 +75,9 @@ struct BuildTopologyKernel {
       TopologyBuildingOptions opts{};
       opts.compute_nonstandard_bonds = has_flag(p.flags, TopologyComputation::NonStandardBonds);
       opts.atom_typing_method        = p.atom_typing_method;
-      if (!sys->build_topology(opts)) {
+      if (!sys->build_topology(opts, p.flags)) {
         return C::ComputationResult(C::ComputationError("BuildTopology failed"));
       }
-      sys->enable_only(p.flags);
       auto topo = sys->get_topology();
       if (data.ctx && topo) data.ctx->set_object<const Topology>(P::CTX_TOPOLOGY_KEY, topo);
       return C::ComputationResult(true);

@@ -24,11 +24,10 @@ DATA = Path(__file__).resolve().parents[3] / "core" / "data" / "ubi.cif"
 def rdkit_integration() -> tuple[int, int]:
     sys = LahutaSystem(str(DATA))
 
-    # NOTE: topology needs to be built before accessing RDKit objects
-    assert sys.build_topology(), "Failed to build topology for the system."
-
-    mol  = sys.get_molecule()
-    conf = sys.get_conformer(0)  # first conformer
+    # Accessing RDKit requires building the topology first.
+    topo = sys.get_or_build_topology()
+    mol  = topo.molecule()
+    conf = topo.conformer(0)  # first conformer
 
     logging.info(f"rdkit: atoms={mol.getNumAtoms()}, conformers={mol.getNumConformers()}, bonds={mol.getNumBonds()}")
     logging.info(f"rdkit: conformer id={conf.getId()}, atoms={conf.getNumAtoms()}, position shape={conf.getPositions().shape}")

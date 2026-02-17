@@ -51,6 +51,9 @@ ExecOrder schedule_and_run(Registry<D, M> &registry, DataContext<D, M> &ctx) {
       auto params = node.proto->clone();
       node.res    = node.impl->execute(ctx, *params);
       node.done   = true;
+#ifdef LAHUTA_TESTING
+      ++node.run_count;
+#endif
     }
     exec_order.node_indices[exec_order.size++]  = node_idx;
     satisfied_deps                             |= (Mask{1} << node_idx);
@@ -77,6 +80,9 @@ void execute_pipeline(Registry<D, M> &registry, DataContext<D, M> &ctx, const Ex
     auto params = node.proto->clone();
     node.res    = node.impl->execute(ctx, *params);
     node.done   = true;
+#ifdef LAHUTA_TESTING
+    ++node.run_count;
+#endif
   }
 }
 
@@ -121,6 +127,9 @@ ExecOrder schedule_and_run_from(Registry<D, M> &registry, DataContext<D, M> &ctx
     auto params = node.proto->clone();
     node.res    = node.impl->execute(ctx, *params);
     node.done   = true;
+#ifdef LAHUTA_TESTING
+    ++node.run_count;
+#endif
   }
   return plan;
 }

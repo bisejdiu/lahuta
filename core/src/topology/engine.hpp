@@ -99,7 +99,7 @@ public:
   bool execute_computation(const ComputationLabel &label) {
     try {
       Logger::get_logger()->debug("TopologyEngine run: {}", label.to_string_view());
-      return engine_->run<void>(label);
+      return engine_->run_from<void>(label);
     } catch (const std::exception &e) {
       Logger::get_logger()->error("Error executing computation {}: {}", label.to_string_view(), e.what());
       return false;

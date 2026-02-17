@@ -90,30 +90,10 @@ public:
     }
   }
 
-  bool execute_computation(const C::ComputationLabel &label) {
-    try {
-      return engine_->run<void>(label);
-    } catch (const std::exception &e) {
-      Logger::get_logger()->error("Error executing model computation {}: {}",
-                                  label.to_string_view(),
-                                  e.what());
-      return false;
-    }
-  }
-
   ModelData &get_data() { return *data_; }
   const ModelData &get_data() const { return *data_; }
 
   void enable(const C::ComputationLabel &label, bool enabled) { engine_->enable(label, enabled); }
-
-  void enable_computation(ModelTopologyComputation comp, bool enabled);
-  void enable_only(ModelTopologyComputation comps);
-  bool is_computation_enabled(ModelTopologyComputation comp) const;
-
-  bool is_computation_available(const C::ComputationLabel &label) const {
-    int idx = engine_->find_label(label);
-    return idx >= 0 && engine_->is_enabled(idx);
-  }
 
   template <typename P>
   P *get_parameters(const C::ComputationLabel &label) {
@@ -133,8 +113,6 @@ private:
     engine_->add(std::make_unique<ModelDisulfidesComputation<>>(ModelDisulfidesParams{}));
     engine_->add(std::make_unique<ModelBuildComputation<>>(ModelBuildParams{}));
   }
-
-  static const C::ComputationLabel &get_label(ModelTopologyComputation comp);
 
 private:
   std::unique_ptr<ModelData> data_;

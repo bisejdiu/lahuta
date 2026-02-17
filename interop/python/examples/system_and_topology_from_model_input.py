@@ -10,14 +10,14 @@
 
 from pathlib import Path
 
-from lahuta import LahutaSystem, logging
+from lahuta import InputType, LahutaSystem, logging
 from lahuta.pipeline import InMemoryPolicy, Pipeline, PipelineContext
 from lahuta.sources import FileSource
 
 
 # fmt: off
 def system_from_model_file(path: str | Path) -> LahutaSystem:
-    sys = LahutaSystem.from_model_file(str(path))
+    sys = LahutaSystem(str(path), input_type=InputType.AlphaFold)
     ok = sys.build_topology()
     if not ok:
         raise RuntimeError("Failed to build topology from model file.")

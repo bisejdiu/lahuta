@@ -52,7 +52,7 @@ def test_topology_resolve_returns_correct_record_types(topo: Topology, contacts)
         if c.lhs.kind == Kind.Atom:
             rec = topo.resolve_atom(c.lhs)
             assert isinstance(rec, AtomRec)
-            assert int(rec.idx()) == c.lhs.index
+            assert int(rec.idx) == c.lhs.index
         elif c.lhs.kind == Kind.Ring:
             rec = topo.resolve_ring(c.lhs)
             assert isinstance(rec, RingRec)
@@ -65,7 +65,7 @@ def test_topology_resolve_returns_correct_record_types(topo: Topology, contacts)
         if c.rhs.kind == Kind.Atom:
             rec = topo.resolve_atom(c.rhs)
             assert isinstance(rec, AtomRec)
-            assert int(rec.idx()) == c.rhs.index
+            assert int(rec.idx) == c.rhs.index
         elif c.rhs.kind == Kind.Ring:
             rec = topo.resolve_ring(c.rhs)
             assert isinstance(rec, RingRec)
@@ -82,14 +82,14 @@ def test_entityresolver_resolve_contact_and_resolve_all(topo: Topology, contacts
     c0 = contacts[0]
     lhs, rhs = resolver.resolve_contact(c0)
     if c0.lhs.kind == Kind.Atom:
-        assert isinstance(lhs, AtomRec) and int(lhs.idx()) == c0.lhs.index
+        assert isinstance(lhs, AtomRec) and int(lhs.idx) == c0.lhs.index
     elif c0.lhs.kind == Kind.Ring:
         assert isinstance(lhs, RingRec) and lhs.size >= 1
     else:
         assert isinstance(lhs, GroupRec) and len(lhs.atoms) >= 1
 
     if c0.rhs.kind == Kind.Atom:
-        assert isinstance(rhs, AtomRec) and int(rhs.idx()) == c0.rhs.index
+        assert isinstance(rhs, AtomRec) and int(rhs.idx) == c0.rhs.index
     elif c0.rhs.kind == Kind.Ring:
         assert isinstance(rhs, RingRec) and rhs.size >= 1
     else:
@@ -110,7 +110,7 @@ def test_non_atom_contact_subset_and_first_five_atom_pairs(topo: Topology, conta
         rhs_is_atom = isinstance(rhs, AtomRec)
         if lhs_is_atom and rhs_is_atom:
             if len(atom_atom) < 5:
-                atom_atom.append((int(lhs.idx()), int(rhs.idx()), c.type.category))
+                atom_atom.append((int(lhs.idx), int(rhs.idx), c.type.category))
         else:
             non_atom_pairs.append((lhs, rhs, c))
 

@@ -234,15 +234,9 @@ Notes:
         auto out = py::array_t<float>(n);
         if (n == 0) return out;
 
-        auto *dst = static_cast<float *>(out.mutable_data());
-        const float *src = d.data();
-        for (py::ssize_t i = 0; i < n; ++i) {
-          float v = src[i];
-          if (v < 0.0f) v = (v > -1e-8f) ? 0.0f : 0.0f;
-          dst[i] = std::sqrt(v);
-        }
+        std::memcpy(out.mutable_data(), d.data(), static_cast<size_t>(n) * sizeof(float));
         return out;
-    }, "Alias of 'get_sqrt_distances': Euclidean distances (copy)")
+    }, "Alias of 'distances': squared distances (copy)")
 
     .def("__len__", &NSResults::size, "Number of stored neighbor pairs.")
     .def("__iter__", [](const NSResults &self) { return py::make_iterator(self.begin(), self.end()); },
@@ -319,6 +313,49 @@ Returns:
     .def_static("dist",    [](const float *a, const float *b) { return sqrt(FastNS::dist_sq(a, b)); },
          "Return the Euclidean distance between two contiguous float[3] coordinates.");
 
+  auto retain_external_owner = [](KDTreeIndex &self, const py::array &coords_np) {
+    auto holder = std::shared_ptr<const void>(
+        new py::object(coords_np),
+        [](const void *p){ delete static_cast<const py::object*>(p); }
+    );
+    self.set_external_owner(std::move(holder));
+  };
+
+  auto build_view_f32 = [&retain_external_owner](KDTreeIndex &self, py::array_t<float, py::array::c_style> coords_np, int leaf_size) {
+    // Zero-copy view build: requires dtype=float32, C-contiguous (n,3)
+    py::buffer_info buf = coords_np.request();
+    if (buf.ndim != 2 || buf.shape[1] != 3) throw std::invalid_argument("coords must have shape (n, 3)");
+    const auto n = static_cast<std::size_t>(buf.shape[0]);
+    const float *ptr = static_cast<const float *>(buf.ptr);
+    bool ok = false;
+    {
+      py::gil_scoped_release nogil;
+      ok = self.build_view_f32(ptr, n, leaf_size);
+    }
+    if (ok) retain_external_owner(self, coords_np);
+    return ok;
+  };
+
+  auto build_view_f64 = [&retain_external_owner](KDTreeIndex &self, py::array_t<double, py::array::c_style> coords_np, int leaf_size) {
+    // Zero-copy view build: requires dtype=float64, C-contiguous (n,3)
+    py::buffer_info buf = coords_np.request();
+    if (buf.ndim != 2 || buf.shape[1] != 3) throw std::invalid_argument("coords must have shape (n, 3)");
+    const auto n = static_cast<std::size_t>(buf.shape[0]);
+    const double *ptr = static_cast<const double *>(buf.ptr);
+    bool ok = false;
+    {
+      py::gil_scoped_release nogil;
+      ok = self.build_view_f64(ptr, n, leaf_size);
+    }
+    if (ok) retain_external_owner(self, coords_np);
+    return ok;
+  };
+
+  auto build_grouped_cross = [](const NSResults &res, int n_queries, bool return_distance, bool sort_results) -> py::object {
+    auto [indices_list, distances_list] = nb::build_ragged_cross(res, n_queries, return_distance, sort_results);
+    return return_distance ? py::make_tuple(distances_list, indices_list) : py::object(indices_list);
+  };
+
   // KD index for cross search
   py::class_<KDTreeIndex>(m, "KDIndex")
     .def(py::init<>(), "Create an empty KDIndex. Call build() before searching.")
@@ -339,55 +376,36 @@ Returns:
         py::gil_scoped_release nogil;
         return self.build(ptr, n);
       }, py::arg("coords"), R"doc(Build KD index from an ndarray of shape (n, 3), dtype=float64.)doc")
-    .def("build_view", [](KDTreeIndex &self, py::array_t<float, py::array::c_style> coords_np, int leaf_size) {
-        // Zero-copy view build: requires dtype=float32, C-contiguous (n,3)
-        py::buffer_info buf = coords_np.request();
-        if (buf.ndim != 2 || buf.shape[1] != 3) throw std::invalid_argument("coords must have shape (n, 3)");
-        const auto n = static_cast<std::size_t>(buf.shape[0]);
-        const float *ptr = static_cast<const float *>(buf.ptr);
-        // Build from view and retain owner to keep memory alive
-        bool ok = false;
-        {
-          py::gil_scoped_release nogil;
-          ok = self.build_view_f32(ptr, n, leaf_size);
-        }
-        // Retain a reference to the NumPy array memory by storing an owning shared_ptr<void>
-        if (ok) {
-          auto holder = std::shared_ptr<const void>(new py::object(coords_np), [](const void *p){ delete static_cast<const py::object*>(p); });
-          self.set_external_owner(std::move(holder));
-        }
-        return ok;
-      }, py::arg("coords"), py::arg("leaf_size") = 40,
-      R"doc(Build KD index by viewing a float32 NumPy array (n,3) without copying. The array must remain alive.)doc")
-    .def("build_view_f64", [](KDTreeIndex &self, py::array_t<double, py::array::c_style> coords_np, int leaf_size) {
-        // Zero-copy view build for float64 (n,3)
-        py::buffer_info buf = coords_np.request();
-        if (buf.ndim != 2 || buf.shape[1] != 3) throw std::invalid_argument("coords must have shape (n, 3)");
-        const auto n = static_cast<std::size_t>(buf.shape[0]);
-        const double *ptr = static_cast<const double *>(buf.ptr);
-        bool ok = false;
-        {
-          py::gil_scoped_release nogil;
-          ok = self.build_view_f64(ptr, n, leaf_size);
-        }
-        if (ok) {
-          auto holder = std::shared_ptr<const void>(new py::object(coords_np), [](const void *p){ delete static_cast<const py::object*>(p); });
-          self.set_external_owner(std::move(holder));
-        }
-        return ok;
-      }, py::arg("coords"), py::arg("leaf_size") = 40,
-      R"doc(Build KD index by viewing a float64 NumPy array (n,3) without copying. The array must remain alive.)doc")
+    .def("build_view", build_view_f32, py::arg("coords"), py::arg("leaf_size") = 40,
+      R"doc(Build KD index by viewing a float32 or float64 NumPy array (n,3) without copying. The array must remain alive.)doc")
+    .def("build_view", build_view_f64, py::arg("coords"), py::arg("leaf_size") = 40,
+      R"doc(Build KD index by viewing a float32 or float64 NumPy array (n,3) without copying. The array must remain alive.)doc")
     .def_property_readonly("ready", &KDTreeIndex::ready, "Return True if the KD index is built and ready.")
-    .def("radius_search", [](const KDTreeIndex &self, const std::vector<RDGeom::Point3D> &queries, double radius) {
-        return self.radius_search(queries, radius);
-      }, py::arg("queries"), py::arg("radius"), R"doc(Return neighbors as NSResults.)doc")
-    .def("radius_search", [](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius) {
-        numpy::require_shape_2d_cols(queries_np, 3, "queries must have shape (n, 3)");
-        auto q = numpy::to_point3d_vect(queries_np);
-        py::gil_scoped_release nogil;
-        return self.radius_search(q, radius);
-      }, py::arg("queries"), py::arg("radius"), R"doc(Return neighbors as NSResults.)doc")
-    .def("radius_neighbors", [](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius, bool return_distance, bool sort_results) {
+    .def("radius_search", [&build_grouped_cross](const KDTreeIndex &self, const std::vector<RDGeom::Point3D> &queries, double radius, bool grouped, bool return_distance, bool sort_results) -> py::object {
+        NSResults res;
+        {
+          py::gil_scoped_release nogil;
+          res = self.radius_search(queries, radius);
+        }
+        if (!grouped) return py::cast(std::move(res));
+        const int n_queries = static_cast<int>(queries.size());
+        return build_grouped_cross(res, n_queries, return_distance, sort_results);
+      }, py::arg("queries"), py::arg("radius"), py::arg("grouped") = false, py::arg("return_distance") = false, py::arg("sort_results") = false,
+      R"doc(
+Search neighbors within radius.
+
+Args:
+    queries: Query coordinates.
+    radius: Search radius.
+    grouped: If True, return per-query lists.
+    return_distance: If grouped is True, include distances.
+    sort_results: If grouped is True, sort neighbors per query.
+
+Returns:
+    NSResults if grouped is False.
+    list or (distances, indices) if grouped is True.
+)doc")
+    .def("radius_search", [&build_grouped_cross](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius, bool grouped, bool return_distance, bool sort_results) -> py::object {
         numpy::require_shape_2d_cols(queries_np, 3, "queries must have shape (n, 3)");
         auto q = numpy::to_point3d_vect(queries_np);
         NSResults res;
@@ -395,12 +413,24 @@ Returns:
           py::gil_scoped_release nogil;
           res = self.radius_search(q, radius);
         }
-
+        if (!grouped) return py::cast(std::move(res));
         const int n_queries = static_cast<int>(queries_np.shape(0));
-        auto [indices_list, distances_list] = nb::build_ragged_cross(res, n_queries, return_distance, sort_results);
-        return return_distance ? py::make_tuple(distances_list, indices_list) : py::object(indices_list);
-      }, py::arg("queries"), py::arg("radius"), py::arg("return_distance") = false, py::arg("sort_results") = false,
-      R"doc(Grouped neighbors for each query, like sklearn's radius_neighbors.)doc")
+        return build_grouped_cross(res, n_queries, return_distance, sort_results);
+      }, py::arg("queries"), py::arg("radius"), py::arg("grouped") = false, py::arg("return_distance") = false, py::arg("sort_results") = false,
+      R"doc(
+Search neighbors within radius.
+
+Args:
+    queries: Query coordinates.
+    radius: Search radius.
+    grouped: If True, return per-query lists.
+    return_distance: If grouped is True, include distances.
+    sort_results: If grouped is True, sort neighbors per query.
+
+Returns:
+    NSResults if grouped is False.
+    list or (distances, indices) if grouped is True.
+)doc")
     .def("radius_neighbors_flat", [](const KDTreeIndex &self, numpy::np_f64 queries_np, double radius, bool return_distance, bool sort_results) {
         numpy::require_shape_2d_cols(queries_np, 3, "queries must have shape (n, 3)");
         auto q = numpy::to_point3d_vect(queries_np);

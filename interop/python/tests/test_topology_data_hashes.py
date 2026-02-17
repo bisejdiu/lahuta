@@ -33,7 +33,7 @@ def hash_atoms(atom_recs) -> str:
     h.update(b"LHX2|atoms|")
     h.update(struct.pack("<Q", len(atom_recs)))
     for rec in atom_recs:
-        idx = int(rec.idx())
+        idx = int(rec.idx)
         at = int(rec.type)
         h.update(struct.pack("<II", idx, at))
     return h.hexdigest()
@@ -147,7 +147,7 @@ def test_topology_hashes_atoms_rings_groups(luni: LahutaSystem, capsys: pytest.C
     _ensure_topology(luni)
     topo = luni.get_topology()
 
-    atoms  = topo.atom_types
+    atoms  = topo.atom_records
     rings  = topo.rings
     groups = topo.groups
 

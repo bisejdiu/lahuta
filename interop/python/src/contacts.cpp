@@ -37,6 +37,7 @@
 #include "contacts/molstar/provider.hpp"
 #include "entities/contact.hpp"
 #include "entities/entity_id.hpp"
+#include "entities/formatter.hpp"
 #include "entities/interaction_types.hpp"
 #include "interactions.hpp"
 #include "numpy_utils.hpp"
@@ -211,7 +212,7 @@ py::dict make_contacts_numpy(ContactsRecordColumns decoded) {
   py::dict contacts;
   contacts["lhs"]      = string_array_1d(decoded.lhs_names);
   contacts["rhs"]      = string_array_1d(decoded.rhs_names);
-  contacts["distance"] = move_to_numpy_owning<float>(std::move(decoded.distances));
+  contacts["distance_sq"] = move_to_numpy_owning<float>(std::move(decoded.distances));
   contacts["type"]     = string_array_1d(type_strings);
 
   py::dict out;
@@ -244,7 +245,7 @@ py::dict decode_contacts_to_dict_direct(ContactsRecordColumns decoded) {
     py::dict contact;
     contact["lhs"]      = py::str(decoded.lhs_names[i]);
     contact["rhs"]      = py::str(decoded.rhs_names[i]);
-    contact["distance"] = py::float_(decoded.distances[i]);
+    contact["distance_sq"] = py::float_(decoded.distances[i]);
     contact["type"]     = py::str(interaction_type_to_string(type));
 
     contacts_list[i] = std::move(contact);
@@ -289,7 +290,7 @@ py::dict decode_contacts_to_dict_columnar(ContactsRecordColumns decoded) {
   py::dict contacts;
   contacts["lhs"]      = std::move(lhs_list);
   contacts["rhs"]      = std::move(rhs_list);
-  contacts["distance"] = std::move(dist_list);
+  contacts["distance_sq"] = std::move(dist_list);
   contacts["type"]     = std::move(type_list);
 
   py::dict result;
@@ -370,7 +371,7 @@ py::dict decode_contacts_binary_columnar(py::bytes payload) {
     py::dict contacts;
     contacts["lhs"]      = py::list();
     contacts["rhs"]      = py::list();
-    contacts["distance"] = py::list();
+    contacts["distance_sq"] = py::list();
     contacts["type"]     = py::list();
     empty["contacts"]    = std::move(contacts);
     return empty;
@@ -465,7 +466,7 @@ void bind_contacts(py::module_ &m) {
       .value("GetContacts", analysis::ContactProvider::GetContacts);
 
   py::enum_<Category>(m, "Category")
-      .value("None_",                 Category::None)
+      .value("Unclassified",          Category::None)
       .value("Generic",               Category::Generic)
       .value("Hydrophobic",           Category::Hydrophobic)
       .value("Halogen",               Category::Halogen)
@@ -491,10 +492,10 @@ void bind_contacts(py::module_ &m) {
 
   py::class_<InteractionType>(m, "InteractionType")
       .def(py::init<Category, Flavor>(),
-           py::arg_v("category", Category::None, "Category.None_"),
+           py::arg_v("category", Category::None, "Category.Unclassified"),
            py::arg_v("flavor",   Flavor::Default, "Flavor.Default"))
       .def_readonly_static("All",                   &InteractionType::All)
-      .def_readonly_static("None_",                 &InteractionType::None)
+      .def_readonly_static("NoInteraction",          &InteractionType::None)
       .def_readonly_static("Generic",               &InteractionType::Generic)
       .def_readonly_static("Hydrophobic",           &InteractionType::Hydrophobic)
       .def_readonly_static("Halogen",               &InteractionType::Halogen)
@@ -717,6 +718,16 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
                          self.distance);
            })
       .def(
+          "describe",
+          [](const Contact &self, const Topology &topology) {
+            auto lhs = ContactTableFormatter::format_entity_compact(topology, self.lhs);
+            auto rhs = ContactTableFormatter::format_entity_compact(topology, self.rhs);
+            return py::str("{} -&- {} {:.3f} A^2 ({})")
+                .format(std::move(lhs), std::move(rhs), self.distance, interaction_type_to_string(self.type));
+          },
+          py::arg("topology"),
+          R"doc(Return a human-readable description using topology resolution.)doc")
+      .def(
           "to_dict",
           [](const Contact &self) {
             py::dict d;
@@ -730,7 +741,19 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
             d[py::str("flavor")]      = self.type.flavor;
             return d;
           },
-          "Return a dict representation suitable for testing/serialization");
+          "Return a dict representation suitable for testing/serialization")
+      .def(
+          "to_dict",
+          [](const Contact &self, const Topology &topology) {
+            py::dict d;
+            d[py::str("lhs")]      = ContactTableFormatter::format_entity_compact(topology, self.lhs);
+            d[py::str("rhs")]      = ContactTableFormatter::format_entity_compact(topology, self.rhs);
+            d[py::str("distance_sq")] = self.distance;
+            d[py::str("type")]        = py::str(interaction_type_to_string(self.type));
+            return d;
+          },
+          py::arg("topology"),
+          "Return a human-readable dict representation using topology resolution");
 
   // Ordered container for Contact obj with set operations and no duplicates
   py::class_<ContactSet>(m, "ContactSet")
@@ -749,6 +772,9 @@ Layout: [ flavor:16 | category:16 ]. Both Category and Flavor are 16-bit enums.
       .def("make_generic", &ContactSet::make_generic)
 
       .def("__len__", &ContactSet::size)
+      .def("__repr__", [](const ContactSet &self) {
+        return py::str("ContactSet(size={})").format(self.size());
+      })
       .def(
           "__and__",
           [](const ContactSet &a, const ContactSet &b) { return a & b; },

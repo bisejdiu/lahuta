@@ -21,7 +21,7 @@ from pathlib import Path
 from timeit import Timer
 from typing import Callable, Iterable
 
-from lahuta import LahutaSystem
+from lahuta import InputType, LahutaSystem
 
 # fmt: off
 
@@ -84,7 +84,7 @@ def main() -> None:
     DATA   = Path(__file__).resolve().parents[3] / "core"/ "data" / "fubi.cif"
     number = int(os.environ.get("LAHUTA_BENCH_NUMBER", "1000"))
     repeat = int(os.environ.get("LAHUTA_BENCH_REPEAT", "20"))
-    sys    = LahutaSystem.from_model_file(str(DATA))
+    sys    = LahutaSystem(str(DATA), input_type=InputType.AlphaFold)
     props  = sys.props
 
     # first-call latencies before any warmups

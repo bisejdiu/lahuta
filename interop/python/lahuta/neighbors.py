@@ -54,10 +54,8 @@ class NearestNeighbors:
         if self.algorithm.startswith("kd"):
             kd = KDIndex()
             # Fast paths for zero copy KD build
-            if   X.dtype == np.float32 and X.flags.c_contiguous:
+            if X.flags.c_contiguous and X.dtype in (np.float32, np.float64):
                 kd.build_view(X)
-            elif X.dtype == np.float64 and X.flags.c_contiguous:
-                kd.build_view_f64(X)
             else:
                 # Fall back: copy to float64 C and build. There is no dtype conversion in KD
                 kd.build(np.asarray(X, dtype=np.float64, order="C"))
@@ -79,9 +77,9 @@ class NearestNeighbors:
 
         if X is None:
             # Self neighbors: always use grid-based self search
-            from .lib.lahuta import neighbors as _cxx_neighbors
+            from .lib.lahuta import neighbors as _cpp_neighbors
 
-            return _cxx_neighbors.radius_neighbors(
+            return _cpp_neighbors.radius_neighbors(
                 self._X, self.radius, return_distance=return_distance, sort_results=sort
             )
 
@@ -91,13 +89,19 @@ class NearestNeighbors:
 
         if self._kd is None or not self.algorithm.startswith("kd"):
             # Functional cross API uses KD internally, but rebuilds each call (no persistent index)
-            from .lib.lahuta import neighbors as _cxx_neighbors
+            from .lib.lahuta import neighbors as _cpp_neighbors
 
-            return _cxx_neighbors.radius_neighbors(
+            return _cpp_neighbors.radius_neighbors(
                 Q, self.radius, Y=self._X, return_distance=return_distance, sort_results=sort
             )
 
-        return self._kd.radius_neighbors(Q, self.radius, return_distance, sort)
+        return self._kd.radius_search(
+            Q,
+            self.radius,
+            grouped=True,
+            return_distance=return_distance,
+            sort_results=sort,
+        )
 
 
 __all__ = ["NearestNeighbors"]

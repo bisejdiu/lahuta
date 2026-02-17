@@ -25,7 +25,7 @@ Verification goals:
 - `Topology.residues` returns a container view tied to the parent topology,
   and iterators from it keep the container alive.
 - `Residues.__getitem__` returns a view of a residue tied to the container, not a detached copy.
-- `Topology` properties `atom_types`/`rings`/`groups` return lists of live record views.
+- `Topology` properties `atom_records`/`rings`/`groups` return lists of live record views.
   The list keeps the parent `Topology` alive, and individual items are
   reference-bound to the `Topology`, so they remain valid when parents are dropped.
 - RDKit handles (molecule/conformer) remain usable after `LahutaSystem` is dropped.
@@ -37,7 +37,7 @@ Surprisingly, even under heavy stress, crashes did not occur after dropping pare
 
 Still, the bindings were factored so that:
 - `get_atom`/`get_ring`/`get_group` return references (tied to `Topology`).
-- `atom_types`/`rings`/`groups` return lists of references, each element tied to
+- `atom_records`/`rings`/`groups` return lists of references, each element tied to
   the `Topology`, and the list itself keeps the `Topology` alive.
 """
 
@@ -66,7 +66,7 @@ def test_topology_keeps_owner_alive(ubi_cif: Path) -> None:
 
     rings  = top.rings
     groups = top.groups
-    atoms  = top.atom_types
+    atoms  = top.atom_records
 
     assert isinstance(rings,  list)
     assert isinstance(groups, list)
@@ -76,12 +76,13 @@ def test_topology_keeps_owner_alive(ubi_cif: Path) -> None:
 
 
 def test_molecule_and_conformer_keep_owner_alive(ubi_cif: Path) -> None:
-    """Verify that RDKit molecule and conformer handles remain usable after LahutaSystem is deleted."""
+    """Verify that RDKit molecule and conformer handles remain usable after LahutaSystem and Topology are deleted."""
     sys  = _build_sys(ubi_cif)
-    mol  = sys.get_molecule()
-    conf = sys.get_conformer(0)
+    top  = sys.get_topology()
+    mol  = top.molecule()
+    conf = top.conformer(0)
 
-    del sys
+    del sys, top
     gc.collect()
 
     assert mol.getNumAtoms() > 0
@@ -217,12 +218,12 @@ def test_topology_rdkit_handles_keep_chain_alive(ubi_cif: Path) -> None:
 
 
 def test_topology_property_copies_survive_without_parents(ubi_cif: Path) -> None:
-    """Verify that Topology property copies (atom_types, rings, groups) survive after parent deletion."""
+    """Verify that Topology property copies (atom_records, rings, groups) survive after parent deletion."""
     sys = _build_sys(ubi_cif)
     top = sys.get_topology()
 
     # value-returning properties (copies) should be usable after parents go away
-    atom_types = top.atom_types
+    atom_records = top.atom_records
     rings      = top.rings
     groups     = top.groups
 
@@ -230,7 +231,7 @@ def test_topology_property_copies_survive_without_parents(ubi_cif: Path) -> None
     gc.collect()
 
     # these are plain Python containers, hence they must survive
-    assert isinstance(atom_types, list)
+    assert isinstance(atom_records, list)
     assert isinstance(rings,      list)
     assert isinstance(groups,     list)
 
@@ -252,13 +253,13 @@ sys_obj = LahutaSystem({ubi_path!r})
 assert sys_obj.build_topology() is True
 top = sys_obj.get_topology()
 
-recs = top.atom_types
+recs = top.atom_records
 a0 = recs[0]
 
 del top, sys_obj, recs
 gc.collect()
 
-idx = int(a0.idx())
+idx = int(a0.idx)
 print("OK", idx)
 sys.exit(0)
 """

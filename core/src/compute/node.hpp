@@ -50,6 +50,9 @@ struct ComputeNode {
   bool done             = false; // if the computation was run
   ComputationResult res = {};    // the result of the last run
   bool postprocessed    = false; // if on_complete was invoked on the result
+#ifdef LAHUTA_TESTING
+  std::uint64_t run_count = 0;
+#endif
 };
 
 } // namespace lahuta::compute

@@ -600,5 +600,6 @@ endif()
 
 # Tests
 if(BUILD_TESTING)
+  target_compile_definitions(lahuta_core PUBLIC LAHUTA_TESTING)
   add_subdirectory(tests)
 endif()

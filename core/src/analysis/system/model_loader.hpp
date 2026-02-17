@@ -27,9 +27,11 @@
 #include <gemmi/pdb.hpp>
 #include <mmap/MemoryMapped.h>
 
+#include "analysis/dssp/model_dssp.hpp"
 #include "analysis/system/records.hpp"
 #include "models/parser.hpp"
 #include "models/topology.hpp"
+#include "utils/span.hpp"
 
 namespace lahuta::analysis {
 
@@ -37,8 +39,20 @@ inline ModelParserResult load_model_parser_result(const std::string &path) {
   gemmi::MaybeGzipped input(path);
   const auto format = gemmi::coor_format_from_ext(input.basepath());
   if (format == gemmi::CoorFormat::Pdb) {
-    auto st = gemmi::read_pdb(input);
-    return parse_model(st);
+    auto st     = gemmi::read_pdb(input);
+    auto parsed = parse_model(st);
+
+    // Compute DSSP for PDB inputs
+    if (!parsed.sequence.empty() && !parsed.coords.empty()) {
+      std::string error;
+      std::vector<DSSPAssignment> dssp;
+      if (compute_dssp_from_model(parsed.sequence, span<const RDGeom::Point3D>(parsed.coords), dssp, error)) {
+        if (dssp.size() == parsed.sequence.size()) {
+          parsed.dssp_per_residue = std::move(dssp);
+        }
+      }
+    }
+    return parsed;
   }
 
   if (input.is_compressed()) {

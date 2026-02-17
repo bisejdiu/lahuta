@@ -25,14 +25,15 @@
 namespace lahuta {
 
 TEST(FastNSDistanceBug, MixedScaleCoordinatesReportZeroDistance) {
-  // The minimal case that reproduces the bug:
+  // Minimal case: small coordinates above COORD_EPSILON (1e-3) mixed with large ones.
+  // Ratio 2e4 / 2e-3 = 1e7, exceeds SCALE_THRESHOLD (~8.4e6).
   RDGeom::POINT3D_VECT coords;
-  coords.emplace_back( 1e-6, 0.0, 0.0); // small
-  coords.emplace_back(-1e-6, 0.0, 0.0); // small
-  coords.emplace_back( 1e4,  0.0, 0.0); // large (triggers the bug)
-  coords.emplace_back(-1e4,  0.0, 0.0); // large (triggers the bug)
+  coords.emplace_back( 2e-3, 0.0, 0.0); // small but above COORD_EPSILON
+  coords.emplace_back(-2e-3, 0.0, 0.0); // small but above COORD_EPSILON
+  coords.emplace_back( 2e4,  0.0, 0.0); // large (triggers the bug)
+  coords.emplace_back(-2e4,  0.0, 0.0); // large (triggers the bug)
 
-  const double cutoff = 2e-6;
+  const double cutoff = 4.5e-3;
 
   const double expected_distance = std::sqrt(
     std::pow(coords[0].x - coords[1].x, 2) +
@@ -40,7 +41,7 @@ TEST(FastNSDistanceBug, MixedScaleCoordinatesReportZeroDistance) {
     std::pow(coords[0].z - coords[1].z, 2)
   );
 
-  EXPECT_NEAR(expected_distance, 2e-6, 1e-10);
+  EXPECT_NEAR(expected_distance, 4e-3, 1e-10);
 
   FastNS grid(coords);
   const bool success = grid.build(cutoff, /*brute_force_fallback=*/true);
@@ -62,11 +63,13 @@ TEST(FastNSDistanceBug, MixedScaleCoordinatesReportZeroDistance) {
   const double reported_distance_sq = static_cast<double>(distances[0]);
   const double reported_distance = std::sqrt(reported_distance_sq);
 
-  // Known limitation: with mixed-scale coordinates and float precision, this could be 0.0
+  // Known limitation: with mixed-scale coordinates and float precision, the distance
+  // can underflow to 0.0 or lose significant precision. The grid box spans ~4e4, so
+  // float resolution (~2^-23 * box_extent) limits accuracy to ~0.005 at this scale.
   EXPECT_TRUE(grid.has_mixed_scales());
   if (reported_distance != 0.0) {
-    EXPECT_NEAR(reported_distance, expected_distance, 1e-10)
-      << "Distance calculation should match expected value when not impacted by precision";
+    EXPECT_NEAR(reported_distance, expected_distance, 1e-3)
+      << "Distance should be in the right ballpark despite float precision loss";
   }
 }
 
@@ -181,16 +184,18 @@ TEST(FastNSDistanceBug, UniformScaleCoordinatesWorkCorrectly) {
 }
 
 TEST(FastNSKnownLimitations, DetectsMixedScaleCoordinates) {
+  // Coordinates above COORD_EPSILON (1e-3) that still exceed SCALE_THRESHOLD.
+  // Ratio 2e4 / 2e-3 = 1e7 > ~8.4e6.
   RDGeom::POINT3D_VECT coords;
-  coords.emplace_back( 1e-6, 0.0, 0.0);
-  coords.emplace_back(-1e-6, 0.0, 0.0);
-  coords.emplace_back( 1e4,  0.0, 0.0);
-  coords.emplace_back(-1e4,  0.0, 0.0);
+  coords.emplace_back( 2e-3, 0.0, 0.0);
+  coords.emplace_back(-2e-3, 0.0, 0.0);
+  coords.emplace_back( 2e4,  0.0, 0.0);
+  coords.emplace_back(-2e4,  0.0, 0.0);
 
   FastNS grid(coords);
   EXPECT_TRUE(grid.has_mixed_scales()) << "Expected mixed-scale detection to be true";
 
-  const bool success = grid.build(2e-6, /*brute_force_fallback=*/true);
+  const bool success = grid.build(4.5e-3, /*brute_force_fallback=*/true);
   ASSERT_TRUE(success);
 }
 

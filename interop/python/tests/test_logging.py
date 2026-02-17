@@ -73,4 +73,4 @@ def test_with_verbosity_decorator(capfd: pytest.CaptureFixture[str]) -> None:
     assert "i=20" in combined
 
     # Global verbosity remains unchanged
-    assert logging.get_global_verbosity() == LogLevel.WARN.value
+    assert logging.get_global_verbosity() == LogLevel.WARN

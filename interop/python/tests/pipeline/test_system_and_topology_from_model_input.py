@@ -23,12 +23,12 @@ def test_direct_model_then_pipeline_fast_path(data_dir, run_child) -> None:
     p = Path(data_dir) / "fubi.cif"
     model = str(p)
     child = f"""
-from lahuta import LahutaSystem
+from lahuta import InputType, LahutaSystem
 from lahuta.pipeline import Pipeline
 from lahuta.sources import FileSource
 
 # Direct fast-path system
-sys = LahutaSystem.from_model_file({model!r})
+sys = LahutaSystem({model!r}, input_type=InputType.AlphaFold)
 ok = sys.build_topology()
 assert ok is True
 assert sys.has_topology_built is True or sys.has_topology_built()

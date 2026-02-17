@@ -18,6 +18,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <rdkit/GraphMol/MonomerInfo.h>
@@ -33,15 +35,15 @@
 // clang-format off
 namespace lahuta {
 
-namespace {
-static std::vector<Contact> sort_interactions(const ContactSet& contact_set) {
+inline std::vector<Contact> sort_interactions(const ContactSet& contact_set) {
   std::vector<Contact> sorted_contacts(contact_set.begin(), contact_set.end());
 
   std::stable_sort(sorted_contacts.begin(), sorted_contacts.end(),
     [](const Contact& a, const Contact& b) {
-      // compare by type.category only
-      if (a.type.category != b.type.category) {
-        return static_cast<uint8_t>(a.type.category) < static_cast<uint8_t>(b.type.category);
+      const uint32_t a_code = static_cast<uint32_t>(a.type);
+      const uint32_t b_code = static_cast<uint32_t>(b.type);
+      if (a_code != b_code) {
+        return a_code < b_code;
       }
       return a < b; // if types are the same, use existing ordering
     });
@@ -49,7 +51,7 @@ static std::vector<Contact> sort_interactions(const ContactSet& contact_set) {
   return sorted_contacts;
 }
 
-static std::vector<span<const Contact>> slice_by_type(const std::vector<Contact>& contacts) noexcept {
+inline std::vector<span<const Contact>> slice_by_type(const std::vector<Contact>& contacts) noexcept {
   std::vector<span<const Contact>> slices;
   const std::size_t n = contacts.size();
   if (n == 0) return slices;
@@ -68,7 +70,6 @@ static std::vector<span<const Contact>> slice_by_type(const std::vector<Contact>
   slices.emplace_back(contacts.data() + start, n - start); // last slice
   return slices;
 }
-} // namespace
 
 class ContactTableFormatter {
 private:
@@ -83,7 +84,9 @@ private:
   static constexpr size_t TYPE_WIDTH      = 20; // interaction type names
 
 public:
-  static std::string format_entity_compact(const Topology& topology, const AtomRec& atom_rec) {
+  static std::string format_entity_compact(const Topology& topology,
+                                           const AtomRec& atom_rec,
+                                           std::string_view /*atom_separator*/ = ", ") {
     const auto& atom = atom_rec.atom.get();
     auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
     if (!info) return std::to_string(atom.getIdx()) + "-UNK-0-UNK-X";
@@ -96,10 +99,12 @@ public:
     return std::to_string(atom.getIdx()) + "-" + atom_name + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
   }
 
-  static std::string format_entity_compact(const Topology& topology, const RingRec& ring_rec) {
+  static std::string format_entity_compact(const Topology& topology,
+                                           const RingRec& ring_rec,
+                                           std::string_view atom_separator = ", ") {
     if (ring_rec.atoms.empty()) return "()-0-UNK-X";
 
-    std::string atom_info = format_truncated_atoms(ring_rec.atoms);
+    std::string atom_info = format_truncated_atoms(ring_rec.atoms, atom_separator);
     const auto& first_atom = ring_rec.atoms[0].get();
     auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(first_atom.getMonomerInfo());
     if (!info) return atom_info + "-0-UNK-X";
@@ -111,14 +116,16 @@ public:
     return atom_info + "-" + std::to_string(res_num) + "-" + res_name + "-" + chain_id;
   }
 
-  static std::string format_entity_compact(const Topology& topology, const GroupRec& group_rec) {
+  static std::string format_entity_compact(const Topology& topology,
+                                           const GroupRec& group_rec,
+                                           std::string_view atom_separator = ", ") {
     if (group_rec.atoms.empty()) return "()-0-UNK-X";
 
     if (group_rec.atoms.size() == 1) {
-      return format_entity_compact(topology, AtomRec{group_rec.a_type, group_rec.atoms[0]});
+      return format_entity_compact(topology, AtomRec{group_rec.a_type, group_rec.atoms[0]}, atom_separator);
     }
 
-    std::string atom_info = format_truncated_atoms(group_rec.atoms);
+    std::string atom_info = format_truncated_atoms(group_rec.atoms, atom_separator);
 
     const auto& first_atom = group_rec.atoms[0].get();
     auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(first_atom.getMonomerInfo());
@@ -137,19 +144,23 @@ public:
   // We visit the variant and delegate to the corresponding overload of format_entity_compact
   // that accepts a concrete record type. - Besian, August 2025
   //
-  static std::string format_entity_compact(const Topology& topology, const EntityRef& ref) {
+  static std::string format_entity_compact(const Topology& topology,
+                                           const EntityRef& ref,
+                                           std::string_view atom_separator = ", ") {
     return std::visit([&](const auto& rref){
       using RefT = std::decay_t<decltype(rref)>;
       using T = typename RefT::type;
-      return format_entity_compact(topology, rref.get());
+      return format_entity_compact(topology, rref.get(), atom_separator);
     }, ref);
   }
 
-  static std::string format_truncated_atoms(const std::vector<std::reference_wrapper<const RDKit::Atom>>& atoms) {
+  static std::string format_truncated_atoms(
+      const std::vector<std::reference_wrapper<const RDKit::Atom>>& atoms,
+      std::string_view atom_separator = ", ") {
     if (atoms.size() <= MAX_RING_ATOMS) {
       std::string result = "(";
       for (size_t i = 0; i < atoms.size(); ++i) {
-        if (i > 0) result += ", ";
+        if (i > 0) result.append(atom_separator);
         const auto& atom = atoms[i].get();
         auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
         std::string atom_name = info ? info->getName() : "UNK";
@@ -161,22 +172,25 @@ public:
       // Show first FALLBACK_RING_ATOMS atoms, then "..."
       std::string result = "(";
       for (size_t i = 0; i < FALLBACK_RING_ATOMS; ++i) {
-        if (i > 0) result += ", ";
+        if (i > 0) result.append(atom_separator);
         const auto& atom = atoms[i].get();
         auto* info = static_cast<const RDKit::AtomPDBResidueInfo*>(atom.getMonomerInfo());
         std::string atom_name = info ? info->getName() : "UNK";
         result += std::to_string(atom.getIdx()) + "-" + atom_name;
       }
-      result += ", ...)";
+      result.append(atom_separator);
+      result += "...)";
       return result;
     }
   }
 
-  static std::string format_entity_compact(const Topology& topology, EntityID entity_id) {
+  static std::string format_entity_compact(const Topology& topology,
+                                           EntityID entity_id,
+                                           std::string_view atom_separator = ", ") {
     switch (entity_id.kind()) {
-      case Kind::Atom:  return format_entity_compact(topology, topology.resolve<Kind::Atom>(entity_id));
-      case Kind::Ring:  return format_entity_compact(topology, topology.resolve<Kind::Ring>(entity_id));
-      case Kind::Group: return format_entity_compact(topology, topology.resolve<Kind::Group>(entity_id));
+      case Kind::Atom:  return format_entity_compact(topology, topology.resolve<Kind::Atom>(entity_id), atom_separator);
+      case Kind::Ring:  return format_entity_compact(topology, topology.resolve<Kind::Ring>(entity_id), atom_separator);
+      case Kind::Group: return format_entity_compact(topology, topology.resolve<Kind::Group>(entity_id), atom_separator);
       default:          return "UNKNOWN-ENTITY";
     }
   }

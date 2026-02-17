@@ -200,6 +200,22 @@ public:
     return (idx >= 0 && registry[idx].done && registry[idx].res.is_success());
   }
 
+#ifdef LAHUTA_TESTING
+  /// Test-only: execution count for a computation label
+  std::uint64_t get_run_count(ComputationLabel label) const {
+    int idx = registry.find(label);
+    if (idx < 0) throw std::runtime_error("unknown label");
+    return registry[idx].run_count;
+  }
+
+  /// Test-only: reset all execution counters
+  void reset_run_counts() {
+    for (int node_idx = 0; node_idx < registry.size(); ++node_idx) {
+      registry[node_idx].run_count = 0;
+    }
+  }
+#endif
+
   /// Returns all results of enabled computations
   std::vector<ResultEntry> w_execute_all() {
     registry.seal();

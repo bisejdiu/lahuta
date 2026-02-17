@@ -53,7 +53,7 @@ EXPECTED_CONTACT_KEYS = [
     "num_contacts",
     "contacts",
 ]
-EXPECTED_INDIVIDUAL_CONTACT_KEYS = ["lhs", "rhs", "distance", "type"]
+EXPECTED_INDIVIDUAL_CONTACT_KEYS = ["lhs", "rhs", "distance_sq", "type"]
 
 
 @pytest.fixture(scope="class")
@@ -115,8 +115,8 @@ class TestPipelineFromDirectory:
                 for contact in contacts_list[:3]:  # first few contacts
                     for key in EXPECTED_INDIVIDUAL_CONTACT_KEYS:
                         assert key in contact, f"Missing contact key: {key}"
-                    assert isinstance(contact["distance"], (int, float))
-                    assert contact["distance"] > 0
+                    assert isinstance(contact["distance_sq"], (int, float))
+                    assert contact["distance_sq"] > 0
                     assert isinstance(contact["type"], str)
                     assert len(contact["type"]) > 0
 

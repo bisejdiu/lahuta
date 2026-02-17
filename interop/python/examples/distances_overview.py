@@ -32,7 +32,7 @@ def load_ca_atoms(structure_path: Path) -> CoordinateSelection:
         raise RuntimeError(f"Failed to build topology for {structure_path}")
 
     props = system.props
-    names = np.asarray([str(name).strip() for name in props.names])
+    names = np.asarray([str(name) for name in props.names])
     mask = names == "CA"
     ca_positions = props.positions[mask]
     if ca_positions.size == 0:

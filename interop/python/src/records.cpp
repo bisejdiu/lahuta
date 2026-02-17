@@ -16,16 +16,18 @@
 #include <pybind11/stl.h>
 
 #include "entities/records.hpp"
+#include "typing/flags.hpp"
 #include "typing/types.hpp"
 
 namespace py = pybind11;
 
 // clang-format off
 namespace lahuta::bindings {
+namespace Flags = AtomTypeFlags;
 
 void bind_records(py::module &m) {
   py::enum_<FeatureGroup>(m, "FeatureGroup", "Functional group classification used by the topology")
-    .value("None_",           FeatureGroup::None)
+    .value("NoGroup",         FeatureGroup::None)
     .value("QuaternaryAmine", FeatureGroup::QuaternaryAmine)
     .value("TertiaryAmine",   FeatureGroup::TertiaryAmine)
     .value("Sulfonium",       FeatureGroup::Sulfonium)
@@ -43,7 +45,37 @@ void bind_records(py::module &m) {
       [](AtomRec &self, const AtomType &value) { self.type = value; },
       "Atom type classification"
     )
-    .def("idx", [](const AtomRec &self) { return self.atom.get().getIdx(); }, "RDKit atom index")
+    .def_property_readonly("idx", [](const AtomRec &self) { return self.atom.get().getIdx(); }, "RDKit atom index")
+    .def_property_readonly(
+      "is_donor",
+      [](const AtomRec &self) { return Flags::has(self.type, AtomType::HbondDonor); },
+      "True if atom type includes HbondDonor"
+    )
+    .def_property_readonly(
+      "is_acceptor",
+      [](const AtomRec &self) { return Flags::has(self.type, AtomType::HbondAcceptor); },
+      "True if atom type includes HbondAcceptor"
+    )
+    .def_property_readonly(
+      "is_hydrophobic",
+      [](const AtomRec &self) { return Flags::has(self.type, AtomType::Hydrophobic); },
+      "True if atom type includes Hydrophobic"
+    )
+    .def_property_readonly(
+      "is_aromatic",
+      [](const AtomRec &self) { return Flags::has(self.type, AtomType::Aromatic); },
+      "True if atom type includes Aromatic"
+    )
+    .def_property_readonly(
+      "is_positive",
+      [](const AtomRec &self) { return Flags::has(self.type, AtomType::PositiveCharge); },
+      "True if atom type includes PositiveCharge"
+    )
+    .def_property_readonly(
+      "is_negative",
+      [](const AtomRec &self) { return Flags::has(self.type, AtomType::NegativeCharge); },
+      "True if atom type includes NegativeCharge"
+    )
     .def("__repr__", [](const AtomRec &self) {
         return py::str("AtomRec(type={}, idx={})").format(static_cast<uint32_t>(self.type), self.atom.get().getIdx() );
     });

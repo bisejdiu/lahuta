@@ -111,7 +111,8 @@ enum : unsigned { //
   Provider,
   InteractionType,
   OutputPath,
-  OutputStdout
+  OutputStdout,
+  OutputCompact
 };
 } // namespace contacts_opts
 
@@ -127,6 +128,7 @@ struct ContactsConfig {
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
   bool is_af2_model                    = false;
   bool output_stdout                   = false;
+  bool output_compact                  = false;
   std::string output_path;
 };
 
@@ -177,6 +179,12 @@ public:
                  "stdout",
                  option::Arg::None,
                  "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
+    schema_.add({contacts_opts::OutputCompact,
+                 "",
+                 "compact",
+                 option::Arg::None,
+                 "  --compact                    \tWrite compact JSONL (short keys, grouped contacts, 2dp "
+                 "distances)."});
 
     schema_.add({0, "", "", option::Arg::None, "\nCompute Options:"});
     schema_.add({contacts_opts::Provider,
@@ -282,6 +290,7 @@ public:
     }
 
     config.output_stdout = args.get_flag(contacts_opts::OutputStdout);
+    config.output_compact = args.get_flag(contacts_opts::OutputCompact);
 
     std::string output_arg;
     if (args.has(contacts_opts::OutputPath)) {
@@ -377,7 +386,7 @@ public:
     params.provider = cfg.provider;
     params.type     = cfg.interaction_types;
     params.channel  = "contacts";
-    params.format   = P::ContactsOutputFormat::Json;
+    params.format   = cfg.output_compact ? P::ContactsOutputFormat::JsonCompact : P::ContactsOutputFormat::Json;
 
     PipelineComputation computation;
     computation.name    = "contacts";

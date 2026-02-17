@@ -22,7 +22,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from lahuta import LahutaSystem, Topology
+from lahuta import AtomType, LahutaSystem, Topology
 
 from pathlib import Path
 
@@ -37,10 +37,10 @@ def topo(ubi_cif: Path) -> Topology:
 
 
 def test_atomrec_indices_cover_atoms(luni: LahutaSystem, topo: Topology) -> None:
-    recs = topo.atom_types
+    recs = topo.atom_records
     n = luni.n_atoms
     assert len(recs) == n
-    idxs = [int(r.idx()) for r in recs]
+    idxs = [int(r.idx) for r in recs]
     assert min(idxs) == 0 and max(idxs) == n - 1
     # It's possible order is 0..n-1, check uniqueness
     assert len(set(idxs)) == n
@@ -84,7 +84,7 @@ def test_grouprec_invariants(luni: LahutaSystem, topo: Topology) -> None:
 
 def test_atomrec_property_setter_no_crash(topo: Topology) -> None:
     # Setting to the same value should be a no-op and not crash.
-    recs = topo.atom_types
+    recs = topo.atom_records
     if not recs:
         pytest.skip("No atom records exposed")
     rec0 = recs[0]
@@ -93,18 +93,32 @@ def test_atomrec_property_setter_no_crash(topo: Topology) -> None:
     assert int(rec0.type) == t0
 
 
+def test_atomrec_type_helpers(topo: Topology) -> None:
+    recs = topo.atom_records
+    if not recs:
+        pytest.skip("No atom records exposed")
+    rec0 = recs[0]
+    assert (AtomType.HbondDonor in rec0.type) == rec0.type.has(AtomType.HbondDonor)
+    assert rec0.is_donor == rec0.type.has(AtomType.HbondDonor)
+    assert rec0.is_acceptor == rec0.type.has(AtomType.HbondAcceptor)
+    assert rec0.is_hydrophobic == rec0.type.has(AtomType.Hydrophobic)
+    assert rec0.is_aromatic == rec0.type.has(AtomType.Aromatic)
+    assert rec0.is_positive == rec0.type.has(AtomType.PositiveCharge)
+    assert rec0.is_negative == rec0.type.has(AtomType.NegativeCharge)
+
+
 def test_hypothesis_indexed_access(topo: Topology) -> None:
     hyp = pytest.importorskip("hypothesis",            reason="Hypothesis not installed")
     st  = pytest.importorskip("hypothesis.strategies", reason="Hypothesis not installed")
 
-    atom_count  = len(topo.atom_types)
+    atom_count  = len(topo.atom_records)
     ring_count  = len(topo.rings)
     group_count = len(topo.groups)
 
     @hyp.given(st.integers(min_value=0, max_value=max(0, atom_count - 1)))
     def _atom_idx_prop(i: int) -> None:
         r = topo.get_atom(i)
-        assert int(r.idx()) == i
+        assert int(r.idx) == i
 
     @hyp.given(st.integers(min_value=0, max_value=max(0, ring_count - 1)))
     def _ring_idx_prop(i: int) -> None:

@@ -253,7 +253,7 @@ class Pipeline:
                 case _lib.ContactProvider.GetContacts:
                     self._topology_params.atom_typing_method = _lib.AtomTypingMethod.GetContacts
                 case _:
-                    self._topology_params.atom_typing_method = _lib.AtomTypingMethod.Molstar
+                    self._topology_params.atom_typing_method = _lib.AtomTypingMethod.MolStar
 
             emission_fmt = task.fmt if isinstance(task.fmt, OutputFormat) else OutputFormat(task.fmt)
             sink_override = self._preferred_sink_format(out)

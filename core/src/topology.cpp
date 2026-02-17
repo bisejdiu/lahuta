@@ -22,16 +22,13 @@
 // clang-format off
 namespace lahuta {
 
-bool Topology::build(TopologyBuildingOptions tops) {
-  std::lock_guard<std::mutex> lock(engine_mutex_);
+bool Topology::initialize_locked(TopologyBuildingOptions tops) {
   if (!mol_) {
     Logger::get_logger()->critical("Cannot build topology without a molecule.");
     return false;
   }
 
   try {
-    Logger::get_logger()->debug("Topology build start");
-
     engine_->initialize(tops);
 
     if (tops.mode == TopologyBuildMode::Model) {
@@ -47,6 +44,30 @@ bool Topology::build(TopologyBuildingOptions tops) {
       }
     }
 
+    return true;
+  } catch (const std::exception &e) {
+    Logger::get_logger()->critical(
+        "Error creating topology! Exception caught: {} Will not terminate, "
+        "but some topology-based features will not be available.", e.what());
+  } catch (...) {
+    Logger::get_logger()->critical(
+        "Error creating topology! Unknown exception caught. Some topology-based features will not be available.");
+  }
+
+  return false;
+}
+
+bool Topology::initialize(TopologyBuildingOptions tops) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
+  return initialize_locked(tops);
+}
+
+bool Topology::build(TopologyBuildingOptions tops) {
+  std::lock_guard<std::mutex> lock(engine_mutex_);
+  Logger::get_logger()->debug("Topology build start");
+  if (!initialize_locked(tops)) return false;
+
+  try {
     bool success = engine_->execute();
     if (!success) {
       Logger::get_logger()->error("Failed to execute topology computations");
@@ -85,67 +106,35 @@ void Topology::assign_typing(AtomTypingMethod method) {
   }
 }
 
-void Topology::enable_computation(TopologyComputation comp, bool enabled) {
+bool Topology::has_computed(TopologyComputation comp) const {
   std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
 
-  if (is_base_flag(comp)) {
-    Logger::get_logger()->debug("{} computation {}", get_label(comp).to_string_view(), enabled ? "enabled" : "disabled");
-    engine_->enable(get_label(comp), enabled);
-    return;
-  }
-
-  for (auto flag : BASE_COMPUTATION_FLAGS) {
-    if (has_flag(comp, flag)) {
-      Logger::get_logger()->debug("{} computation {}", get_label(flag).to_string_view(), enabled ? "enabled" : "disabled");
-      engine_->enable(get_label(flag), enabled);
-    }
-  }
-}
-
-void Topology::enable_only(TopologyComputation comps) {
-  std::lock_guard<std::mutex> lock(engine_mutex_);
-  if (!engine_) throw std::runtime_error("No engine available");
-
-  for (auto flag : BASE_COMPUTATION_FLAGS) {
-    engine_->enable(get_label(flag), false);
-  }
-
-  for (auto flag : BASE_COMPUTATION_FLAGS) {
-    if (has_flag(comps, flag)) {
-      engine_->enable(get_label(flag), true);
-    }
-  }
-}
-
-bool Topology::is_computation_enabled(TopologyComputation comp) const {
-  std::lock_guard<std::mutex> lock(engine_mutex_);
-  if (!engine_) throw std::runtime_error("No engine available");
-  if (is_base_flag(comp)) return engine_->is_computation_available(get_label(comp));
+  if (is_base_flag(comp)) return engine_->get_engine()->has_completed(get_label(comp));
 
   bool result = true;
   for (auto flag : BASE_COMPUTATION_FLAGS) {
-    if (has_flag(comp, flag) && !engine_->is_computation_available(get_label(flag))) {
+    if (has_flag(comp, flag) && !engine_->get_engine()->has_completed(get_label(flag))) {
       result = false;
     }
   }
   return result;
 }
 
-bool Topology::execute_computation(TopologyComputation comp) {
+bool Topology::ensure_computed(TopologyComputation comp) {
   std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) return false;
 
-  if (is_base_flag(comp)) {
-    Logger::get_logger()->debug("Running computation: {}", get_label(comp).to_string_view());
-    return engine_->execute_computation(get_label(comp));
-  }
-
   bool success = true;
   for (auto flag : BASE_COMPUTATION_FLAGS) {
-    if (has_flag(comp, flag)) {
-      Logger::get_logger()->debug("Running computation: {}", get_label(flag).to_string_view());
-      success &= engine_->execute_computation(get_label(flag));
+    if (!has_flag(comp, flag)) continue;
+    Logger::get_logger()->debug("ensure_computed: {}", get_label(flag).to_string_view());
+    try {
+      success &= engine_->get_engine()->run_from<void>(get_label(flag));
+    } catch (const std::exception &e) {
+      Logger::get_logger()->error("ensure_computed: computation {} threw exception: {}",
+                                  get_label(flag).to_string_view(), e.what());
+      success = false;
     }
   }
 

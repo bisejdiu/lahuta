@@ -41,9 +41,9 @@ try:
     # fmt: off
     from .lib import lahuta as _lib
     from .lib.lahuta import ArpeggioContactsEngine, AtomRec, AtomType, Category, Contact, \
-        AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, KDIndex, \
+        AtomTypingMethod, ContactProvider, ContactSet, EntityID, EntityResolver, FastNS, InputType, KDIndex, \
         FeatureGroup, Flavor, GroupRec, IR, IdentityAnalyzerLuni, InteractionType, InteractionTypeSet, Kind, \
-        LahutaSystem, LahutaSystemProperties, Logger, \
+        LahutaSystem, LahutaSystemProperties, \
         MolStarContactsEngine, GetContactsEngine, NSResults, PropertyAnalyzerLuni, PropertyKey, \
         PropertyQueryLuni, Residue, Residues, RingRec, SearchOptions, Topology, \
         TopologyBuildingOptions, TopologyComputers, compute_angles, factorize, find_contacts, vdw_radius
@@ -77,8 +77,8 @@ __all__ = [
     'ArpeggioContactsEngine', 'AtomRec', 'AtomType', 'Category', 'Contact',
     'AtomTypingMethod', 'ContactProvider', 'ContactSet',
     'EntityID', 'EntityResolver', 'FastNS', 'KDIndex', 'FeatureGroup',
-    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InteractionType', 'InteractionTypeSet', 'Kind',
-    'LahutaSystem', 'LahutaSystemProperties', 'Logger', 'LuniFileProcessor',
+    'Flavor', 'GroupRec', 'IR', 'IdentityAnalyzerLuni', 'InputType', 'InteractionType', 'InteractionTypeSet', 'Kind',
+    'LahutaSystem', 'LahutaSystemProperties', 'LuniFileProcessor',
     'LuniPropertyResult', 'MolStarContactsEngine', 'GetContactsEngine', 'NSResults',
     'PropertyAnalyzerLuni', 'PropertyKey', 'PropertyQueryLuni',
     'Residue', 'Residues', 'RingRec', 'SearchOptions', 'Topology',

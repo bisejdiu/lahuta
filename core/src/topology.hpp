@@ -14,7 +14,6 @@
 #ifndef LAHUTA_TOPOLOGY_HPP
 #define LAHUTA_TOPOLOGY_HPP
 
-#include <exception>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -61,36 +60,15 @@ public:
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
   [[nodiscard]] bool build(TopologyBuildingOptions tops);
-
-  void run_mask(TopologyComputation mask) const {
-    std::lock_guard<std::mutex> lock(engine_mutex_);
-    for (auto bit : BASE_COMPUTATION_FLAGS)
-      if (has_flag(mask, bit)) {
-        Logger::get_logger()->debug("run_mask: {}", Topology::get_label(bit).to_string_view());
-        try {
-          auto ok = engine_->get_engine()->run<void>(Topology::get_label(bit)); // auto-heal inside
-          if (!ok) {
-            Logger::get_logger()->warn("run_mask: computation {} reported failure", Topology::get_label(bit).to_string_view());
-          }
-        } catch (const std::exception &e) {
-          Logger::get_logger()->error("run_mask: computation {} threw exception: {}", Topology::get_label(bit).to_string_view(), e.what());
-        }
-      }
-  }
+  [[nodiscard]] bool initialize(TopologyBuildingOptions tops);
 
   void assign_typing(AtomTypingMethod method);
 
-  /// Enable/disable a specific computation
-  void enable_computation(TopologyComputation comp, bool enabled);
+  /// Check if a computation has completed successfully
+  bool has_computed(TopologyComputation comp) const;
 
-  /// Enable only the specified computations (disabling all others)
-  void enable_only(TopologyComputation comps);
-
-  /// Check if a specific computation is enabled
-  bool is_computation_enabled(TopologyComputation comp) const;
-
-  /// Execute a specific computation (with dependencies)
-  bool execute_computation(TopologyComputation comp);
+  /// Ensure computations are executed (with dependencies)
+  bool ensure_computed(TopologyComputation comp);
 
   /// Set the neighbor search cutoff
   void set_cutoff(double cutoff);
@@ -142,6 +120,7 @@ public:
   }
 
 private:
+  bool initialize_locked(TopologyBuildingOptions tops);
   static const topology::ComputationLabel& get_label(TopologyComputation comp);
 
 private:

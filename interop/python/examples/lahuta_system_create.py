@@ -33,7 +33,7 @@ def read_with_options(path: str | Path) -> LahutaSystem:
     opts = TopologyBuildingOptions()
     opts.cutoff = 4.5  # this is the cutoff for bond perception (4.5 is default)
     opts.compute_nonstandard_bonds = True
-    opts.atom_typing_method = AtomTypingMethod.Molstar  # the default
+    opts.atom_typing_method = AtomTypingMethod.MolStar  # the default
     if not sys.build_topology(opts):
         raise RuntimeError("Failed to build topology with options from the system.")
     logging.info("Successfully built topology with options.")
@@ -55,8 +55,8 @@ def show_properties(sys: LahutaSystem) -> None:
     logging.info(f"backbone atoms: {n_backbone}\n")
 
 
-def neighbor_search(sys: LahutaSystem, cutoff: float = 4.5, res_dif: int = 1) -> None:
-    ns = sys.find_neighbors(cutoff=cutoff, res_dif=res_dif).filter(cutoff)
+def neighbor_search(sys: LahutaSystem, cutoff: float = 4.5, residue_difference: int = 1) -> None:
+    ns = sys.find_neighbors(cutoff=cutoff, residue_difference=residue_difference)
 
     dij = ns.get_sqrt_distances()
 

@@ -121,7 +121,7 @@ def test_molstar_contact_count_sanity_check(data_dir: Path) -> None:
 )
 def test_molstar_contacts_regression(data_dir: Path, structure_file: str, expected_file: str) -> None:
     """
-    Test that Molstar contact computation produces consistent results.
+    Test that MolStar contact computation produces consistent results.
 
     We do not check:
     - Exact ordering of contacts

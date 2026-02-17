@@ -41,7 +41,7 @@ def _key(c: Contact) -> tuple[Kind, int, Kind, int, Category]:
 
 def test_system_sanity(luni: LahutaSystem, topo: Topology) -> None:
     assert isinstance(luni.n_atoms, int) and luni.n_atoms == 671
-    assert len(topo.atom_types) == 671
+    assert len(topo.atom_records) == 671
     assert len(topo.rings)  >= 1
     assert len(topo.groups) >= 1
 
@@ -108,7 +108,7 @@ def test_self_hydrophobic_like_count_and_invariants(luni: LahutaSystem, topo: To
     sel = atoms(lambda a: a.type.has(AtomType.Hydrophobic))
 
     def within_45(i: int, j: int, d2: float) -> InteractionType:
-        return InteractionType.Hydrophobic if d2 <= 4.5 * 4.5 else InteractionType.None_
+        return InteractionType.Hydrophobic if d2 <= 4.5 * 4.5 else InteractionType.NoInteraction
 
     cs = find_contacts(topo, sel, tester=within_45, distance_max=4.5)
     assert cs.size() == 340
@@ -141,7 +141,7 @@ def test_cross_cation_pi_like_count_and_shape(luni: LahutaSystem, topo: Topology
     sel_rings  = rings(lambda r: r.aromatic)
 
     def cation_pi(i: int, j: int, d2: float):
-        return InteractionType.CationPi if d2 <= 6.0 * 6.0 else InteractionType.None_
+        return InteractionType.CationPi if d2 <= 6.0 * 6.0 else InteractionType.NoInteraction
 
     cs = find_contacts(topo, sel_groups, sel_rings, tester=cation_pi, distance_max=6.0)
     assert cs.size() == 7
@@ -156,7 +156,7 @@ def test_cross_cation_pi_like_count_and_shape(luni: LahutaSystem, topo: Topology
     for c in cs:
         kinds = {c.lhs.kind, c.rhs.kind}
         assert kinds == {Kind.Ring, Kind.Group}
-        if c.type.category != Category.None_:
+        if c.type.category != Category.Unclassified:
             assert c.type.category == Category.CationPi
             assert c.distance_sq >= 0.0
 
@@ -165,7 +165,7 @@ def test_self_pi_stacking_like_count(luni: LahutaSystem, topo: Topology) -> None
     sel_rings = rings(lambda r: r.aromatic)
 
     def pi_stack(i: int, j: int, d2: float):
-        return InteractionType.PiStacking if d2 <= 6.0 * 6.0 else InteractionType.None_
+        return InteractionType.PiStacking if d2 <= 6.0 * 6.0 else InteractionType.NoInteraction
 
     cs = find_contacts(topo, sel_rings, tester=pi_stack, distance_max=6.0)
     assert cs.size() == 1

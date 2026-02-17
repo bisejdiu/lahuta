@@ -97,7 +97,7 @@ void initialize_and_populate_ringinfo(const RDKit::RWMol &mol, const Residues &r
       residue_counts[res.name]++;
     }
     for (const auto &[name, count] : residue_counts) {
-      logger->info("unk residue: {}, {}", name, count);
+      logger->debug("unk residue: {}, {}", name, count);
     }
   }
 

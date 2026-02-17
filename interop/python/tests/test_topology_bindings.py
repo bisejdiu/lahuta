@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from lahuta import AtomTypingMethod, LahutaSystem, TopologyBuildingOptions, TopologyComputers
+from lahuta import AtomType, AtomTypingMethod, LahutaSystem, TopologyBuildingOptions, TopologyComputers
 
 
 # Isolated, per-test system with topology already built.
@@ -34,18 +34,75 @@ def test_topology_build_with_options_and_flags(luni: LahutaSystem) -> None:
     opts = TopologyBuildingOptions()
     opts.cutoff = 4.5
     opts.compute_nonstandard_bonds = True
-    opts.atom_typing_method = AtomTypingMethod.Molstar
+    opts.atom_typing_method = AtomTypingMethod.MolStar
 
-    # Start with no stages, then selectively enable
-    luni.enable_only(TopologyComputers.None_)
-    luni.enable_only(TopologyComputers.Standard)
-
-    assert luni.build_topology(opts) is True
+    # Build standard topology first
+    assert luni.build_topology(opts, include=TopologyComputers.Standard) is True
     assert luni.has_topology_built() is True
 
-    if not luni.is_computation_enabled(TopologyComputers.Rings):
-        luni.enable_computation(TopologyComputers.Rings, True)
-    assert luni.execute_computation(TopologyComputers.Rings) is True
+    # Ensure rings are computed
+    assert luni.build_topology(opts, include=TopologyComputers.Rings) is True
+    topo = luni.get_topology()
+    assert topo.has_computed(TopologyComputers.Rings) is True
+
+
+def test_build_topology_include_only_defaults(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    assert sys.build_topology(include=TopologyComputers.Neighbors) is True
+    topo = sys.get_topology()
+    assert topo.has_computed(TopologyComputers.Neighbors) is True
+    assert topo.has_computed(TopologyComputers.Bonds) is False
+
+
+def test_build_topology_include_list_defaults(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    assert sys.build_topology(include=[TopologyComputers.Residues]) is True
+    topo = sys.get_topology()
+    assert topo.has_computed(TopologyComputers.Residues) is True
+    assert topo.has_computed(TopologyComputers.Bonds) is False
+
+
+def test_system_residues_lazy(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    residues = sys.residues
+    assert len(residues) > 0
+    assert sys.has_topology_built() is False
+
+
+def test_get_or_build_topology_defaults(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    topo = sys.get_or_build_topology()
+    assert topo is not None
+    assert sys.has_topology_built() is True
+    assert topo.has_computed(TopologyComputers.Standard) is True
+
+
+def test_get_or_build_topology_with_options(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    opts = TopologyBuildingOptions()
+    opts.cutoff = 3.9
+    topo = sys.get_or_build_topology(opts)
+    assert topo is not None
+    assert sys.has_topology_built() is True
+
+
+def test_reset_topology_file_backed(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    assert sys.build_topology(include=TopologyComputers.Neighbors) is True
+
+    fresh = sys.reset_topology()
+    assert fresh is not sys
+    assert fresh.n_atoms == sys.n_atoms
+
+    assert fresh.build_topology(include=TopologyComputers.Neighbors) is True
+    assert sys.build_topology(include=TopologyComputers.Bonds) is True
+
+
+def test_reset_topology_non_file_backed_raises(ubi_cif: Path) -> None:
+    sys = LahutaSystem(str(ubi_cif))
+    filtered = sys.filter([0, 1, 2])
+    with pytest.raises(RuntimeError):
+        filtered.reset_topology()
 
 
 def test_residues_container_and_helpers(luni_built: LahutaSystem) -> None:
@@ -75,13 +132,11 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
 
     # Assign types using both backends, lists must have size N_atoms
-    topo.set_atom_typing_method(AtomTypingMethod.Molstar)
-    topo.assign_typing(AtomTypingMethod.Molstar)
-    types_molstar = topo.atom_types
+    topo.assign_typing(AtomTypingMethod.MolStar)
+    types_molstar = topo.atom_records
 
-    topo.set_atom_typing_method(AtomTypingMethod.Arpeggio)
     topo.assign_typing(AtomTypingMethod.Arpeggio)
-    types_arpeggio = topo.atom_types
+    types_arpeggio = topo.atom_records
 
     assert isinstance(types_molstar, list) and isinstance(types_arpeggio, list)
     assert len(types_molstar) == len(types_arpeggio) == luni_built.n_atoms
@@ -90,16 +145,22 @@ def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     all_recs = topo.atom_types_filter_by_fn(lambda _: True)
     assert isinstance(all_recs, list) and len(all_recs) == luni_built.n_atoms
 
+    # atoms_with_type should match manual filtering
+    hydrophobic = topo.atoms_with_type(AtomType.Hydrophobic)
+    manual = [r for r in topo.atom_records if AtomType.Hydrophobic in r.type]
+    assert isinstance(hydrophobic, list)
+    assert len(hydrophobic) == len(manual)
+
     # Access a single atom record and check idx consistency
     rec0 = topo.get_atom(0)
     assert hasattr(rec0, "idx")
-    assert isinstance(rec0.idx(), int) and rec0.idx() == 0
+    assert isinstance(rec0.idx, int) and rec0.idx == 0
 
 
 def test_molecule_and_conformer_handles(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
     mol  = topo.molecule()
-    conf = topo.conformer()
+    conf = topo.conformer(0)
     xyz  = luni_built.props.positions
 
     assert mol.getNumAtoms()  == luni_built.n_atoms

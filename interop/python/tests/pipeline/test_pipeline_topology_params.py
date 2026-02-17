@@ -97,7 +97,7 @@ def test_builtins_not_run_when_not_required(single_test_file: str) -> None:
 
 
 def test_topology_flags_neighbors_only(minimal_test_files: list[str]) -> None:
-    """Users can restrict topology via flags; only requested computations are enabled."""
+    """Topology can be restricted via flags, requested computations are computed."""
 
     p = Pipeline(FileSource(minimal_test_files))
     p.params("topology").flags = TopologyComputation.Neighbors
@@ -106,8 +106,8 @@ def test_topology_flags_neighbors_only(minimal_test_files: list[str]) -> None:
         top = ctx.get_topology()
         assert top is not None
         return {
-            "neighbors": top.is_computation_enabled(TopologyComputation.Neighbors),
-            "bonds": top.is_computation_enabled(TopologyComputation.Bonds),
+            "neighbors": top.has_computed(TopologyComputation.Neighbors),
+            "bonds": top.has_computed(TopologyComputation.Bonds),
         }
 
     p.add_task(name="inspect", task=inspect, depends=["topology"])  # requires topology
@@ -158,7 +158,7 @@ def test_implicit_system_dependency(single_test_file: str) -> None:
 
 
 def test_toggle_topology_flags_invalidation_vector_source(single_test_file: str) -> None:
-    """Test VectorSource (from_files) - toggling flags between runs should update enabled computations."""
+    """Test VectorSource (from_files) - toggling flags between runs should update computed state."""
 
     p = Pipeline(FileSource([single_test_file]))
 
@@ -166,8 +166,8 @@ def test_toggle_topology_flags_invalidation_vector_source(single_test_file: str)
         top = ctx.get_topology()
         assert top is not None
         return {
-            "neighbors": top.is_computation_enabled(TopologyComputation.Neighbors),
-            "bonds": top.is_computation_enabled(TopologyComputation.Bonds),
+            "neighbors": top.has_computed(TopologyComputation.Neighbors),
+            "bonds": top.has_computed(TopologyComputation.Bonds),
         }
 
     p.add_task(name="inspect", task=inspect, depends=["topology"])  # requires topology
@@ -190,7 +190,7 @@ def test_toggle_topology_flags_invalidation_vector_source(single_test_file: str)
     # choosing the last record is a simple way to select the most recent item.
     rec2 = out2["inspect"][-1]
     assert rec2["bonds"] is True
-    # We do not assert neighbors explicitly here because engine may auto-enable
+    # We do not assert neighbors explicitly here because engine may compute
     # neighbors as a dependency of bonds at execution time.
 
 
@@ -207,9 +207,9 @@ def test_toggle_topology_flags_invalidation_directory_source() -> None:
             top = ctx.get_topology()
             assert top is not None
             return {
-                "neighbors": top.is_computation_enabled(TopologyComputation.Neighbors),
-                "bonds": top.is_computation_enabled(TopologyComputation.Bonds),
-                "atom_typing": top.is_computation_enabled(TopologyComputation.AtomTyping),
+                "neighbors": top.has_computed(TopologyComputation.Neighbors),
+                "bonds": top.has_computed(TopologyComputation.Bonds),
+                "atom_typing": top.has_computed(TopologyComputation.AtomTyping),
             }
 
         p.add_task(name="inspect", task=inspect, depends=["topology"])
@@ -263,9 +263,9 @@ def test_toggle_topology_flags_invalidation_filelist_source() -> None:
             top = ctx.get_topology()
             assert top is not None
             return {
-                "neighbors": top.is_computation_enabled(TopologyComputation.Neighbors),
-                "bonds": top.is_computation_enabled(TopologyComputation.Bonds),
-                "atom_typing": top.is_computation_enabled(TopologyComputation.AtomTyping),
+                "neighbors": top.has_computed(TopologyComputation.Neighbors),
+                "bonds": top.has_computed(TopologyComputation.Bonds),
+                "atom_typing": top.has_computed(TopologyComputation.AtomTyping),
             }
 
         p.add_task(name="inspect", task=inspect, depends=["topology"])
@@ -326,8 +326,8 @@ def test_all_sources_multi_run_parameter_changes(source_type: str) -> None:
             top = ctx.get_topology()
             assert top is not None
             return {
-                "neighbors": top.is_computation_enabled(TopologyComputation.Neighbors),
-                "bonds": top.is_computation_enabled(TopologyComputation.Bonds),
+                "neighbors": top.has_computed(TopologyComputation.Neighbors),
+                "bonds": top.has_computed(TopologyComputation.Bonds),
             }
 
         p.add_task(name="inspect", task=inspect, depends=["topology"])

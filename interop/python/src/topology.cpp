@@ -26,11 +26,13 @@
 #include "residues/residues.hpp"
 #include "topology.hpp"
 #include "topology_flags.hpp"
+#include "typing/flags.hpp"
 
 namespace py = pybind11;
 
 // clang-format off
 namespace lahuta::bindings {
+namespace Flags = AtomTypeFlags;
 
 // Dynamic views that compute geometry from the owning molecule
 // and keep it alive independently of the Topology via shared_ptr.
@@ -124,7 +126,7 @@ void bind_topology(py::module &m) {
 
   py::enum_<AtomTypingMethod>(m, "AtomTypingMethod", "Atom typing backends used when classifying atoms for contacts.")
     .value("Arpeggio",    AtomTypingMethod::Arpeggio,    "Use Arpeggio-style atom typing")
-    .value("Molstar",     AtomTypingMethod::Molstar,     "Use Mol* atom typing")
+    .value("MolStar",     AtomTypingMethod::Molstar,     "Use Mol* atom typing")
     .value("GetContacts", AtomTypingMethod::GetContacts, "Use getcontacts-style atom typing");
 
   py::class_<TopologyBuildingOptions>(m, "TopologyBuildingOptions", "Options controlling topology construction.")
@@ -135,7 +137,7 @@ void bind_topology(py::module &m) {
     .def_readwrite("compute_nonstandard_bonds", &TopologyBuildingOptions::compute_nonstandard_bonds, "Include non-standard/metal coordination where applicable");
 
   py::enum_<TopologyComputation>(m, "TopologyComputers", "Bitmask flags representing topology stages. Combine with | and &.")
-    .value("None_",            TopologyComputation::None,             "No stage selected")
+    .value("NoComp",           TopologyComputation::None,             "No stage selected")
     .value("Neighbors",        TopologyComputation::Neighbors,        "Compute neighbor lists (used by bond perception)")
     .value("Bonds",            TopologyComputation::Bonds,            "Perceive covalent bonds from neighbors/chemistry")
     .value("NonStandardBonds", TopologyComputation::NonStandardBonds, "Include non-standard bonds/coordination where supported")
@@ -224,7 +226,7 @@ void bind_topology(py::module &m) {
   py::class_<Topology, std::shared_ptr<Topology>>(m, "Topology", "Topology manager built over an RDKit molecule and conformer.")
     // Return Python lists of references tied to the parent Topology so that
     // individual records keep the owner alive even after the list is dropped.
-    .def_property_readonly("atom_types", [](Topology &self) -> py::typing::List<AtomRec> {
+    .def_property_readonly("atom_records", [](Topology &self) -> py::typing::List<AtomRec> {
         const auto &recs = self.records<AtomRec>();
         py::list out;
         for (const auto &rec : recs) {
@@ -279,19 +281,27 @@ void bind_topology(py::module &m) {
         }
         return filtered;
     }, py::arg("func"), "Return atom records for which the predicate returns True")
+    .def("atoms_with_type", [](Topology &self, AtomType type) -> py::typing::List<AtomRec> {
+        const auto &recs = self.records<AtomRec>();
+        py::list out;
+        for (const auto &rec : recs) {
+          if (Flags::has(rec.type, type)) {
+            out.append(py::cast(&rec,
+                                py::return_value_policy::reference_internal,
+                                py::cast(&self, py::return_value_policy::reference)));
+          }
+        }
+        return out;
+      }, py::arg("type"),
+      "Return atom records containing the specified type flag")
 
     .def("get_atom_ids", &Topology::get_atom_ids, "0-based atom indices present in topology")
     .def("build",     &Topology::build, py::arg("options"), "Build all enabled stages. Returns a boolean")
 
-    .def("run_mask",  &Topology::run_mask, py::arg("mask"), "Run stages specified by a bitmask of TopologyComputers")
-    .def("assign_typing", &Topology::assign_typing, py::arg("method"), "Assign per-atom types using specified method; populates atom_types")
+    .def("assign_typing", &Topology::assign_typing, py::arg("method"), "Assign per-atom types using specified method; populates atom_records")
 
-    .def("enable_computation",     &Topology::enable_computation,     py::arg("comp"), py::arg("enabled"), "Enable/disable a specific stage")
-    .def("enable_only",            &Topology::enable_only,            py::arg("comps"),   "Enable only the provided bitmask; disables all others")
-    .def("is_computation_enabled", &Topology::is_computation_enabled, py::arg("comp"),    "Whether a stage is enabled")
-    .def("execute_computation",    &Topology::execute_computation,    py::arg("comp"),    "Run a single stage, resolving dependencies")
+    .def("has_computed",           &Topology::has_computed,           py::arg("comp"),    "Whether a stage completed successfully")
     .def("set_cutoff",             &Topology::set_cutoff,             py::arg("cutoff"),  "Neighbor cutoff used by bond perception (A)")
-    .def("set_atom_typing_method", &Topology::set_atom_typing_method, py::arg("method"),  "Set atom typing backend for future typing")
     .def("set_compute_nonstandard_bonds", &Topology::set_compute_nonstandard_bonds, py::arg("compute"), "Include metal/coordination bonds if True")
 
     .def("get_atom",  &Topology::atom,  py::arg("idx"), py::return_value_policy::reference_internal, "Atom record at atom index")
@@ -312,8 +322,15 @@ void bind_topology(py::module &m) {
       }, py::arg("id"), py::return_value_policy::reference_internal,
       "Resolve a Group EntityID to GroupRec (reference, lifetime tied to Topology)")
 
-    .def("molecule",  [](const Topology &self) -> auto { return self.molecule();  }, py::return_value_policy::reference_internal, "Underlying RDKit molecule (borrowed reference)")
-    .def("conformer", [](const Topology &self) -> auto { return self.conformer(); }, py::return_value_policy::reference_internal, "RDKit conformer used for positions (borrowed reference)");
+    .def("molecule",
+         [](const Topology &self) -> const RDKit::RWMol & { return self.molecule(); },
+         py::return_value_policy::reference_internal,
+         "Underlying RDKit molecule (borrowed reference)")
+    .def("conformer",
+         [](const Topology &self, int idx) -> const RDKit::Conformer & { return self.molecule().getConformer(idx); },
+         py::arg("idx") = 0,
+         py::return_value_policy::reference_internal,
+         "RDKit conformer by id (borrowed reference)");
 }
 
 } // namespace lahuta::bindings
