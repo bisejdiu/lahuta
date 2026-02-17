@@ -42,7 +42,7 @@ constexpr std::string_view Summary = "Extract data from AlphaFold2 model files o
 
 namespace extract_opts {
 constexpr unsigned BaseIndex = 200;
-enum : unsigned { Fields = BaseIndex, Output, OutputStdout };
+enum : unsigned { Fields = BaseIndex, Output, OutputStdout, PlddtFormat };
 } // namespace extract_opts
 
 constexpr std::string_view FIELD_SEQUENCE = "sequence";
@@ -58,13 +58,27 @@ void parse_fields_argument(std::string_view raw, std::vector<std::string> &out) 
   detail::split_argument_list(raw, false, out);
 }
 
-std::shared_ptr<P::ITask> build_extract_task(std::string_view field, std::string output_channel) {
+bool parse_plddt_format(std::string_view raw, A::PlddtExtractFormat &out) {
+  if (raw == "categorical") {
+    out = A::PlddtExtractFormat::Categorical;
+    return true;
+  }
+  if (raw == "numeric") {
+    out = A::PlddtExtractFormat::Numeric;
+    return true;
+  }
+  return false;
+}
+
+std::shared_ptr<P::ITask> build_extract_task(std::string_view field,
+                                             std::string output_channel,
+                                             A::PlddtExtractFormat plddt_format) {
   using namespace analysis;
   if (field == FIELD_SEQUENCE) {
     return std::make_shared<SequenceExtractTask>(std::move(output_channel));
   }
   if (field == FIELD_PLDDT) {
-    return std::make_shared<PlddtExtractTask>(std::move(output_channel));
+    return std::make_shared<PlddtExtractTask>(std::move(output_channel), plddt_format);
   }
   if (field == FIELD_DSSP) {
     return std::make_shared<DsspExtractTask>(std::move(output_channel));
@@ -80,6 +94,7 @@ struct ExtractConfig {
   RuntimeConfig runtime;
   ReportConfig report;
   std::vector<std::string> fields;
+  A::PlddtExtractFormat plddt_format = A::PlddtExtractFormat::Categorical;
   bool output_stdout   = false;
   bool output_override = false;
   std::string output_path;
@@ -114,7 +129,7 @@ public:
                      "  detail      - Summary plus concurrency and stage breakdown details.\n\n"
                      "Fields (repeat --fields or comma-separate):\n"
                      "  sequence   Extract amino acid sequences.\n"
-                     "  plddt      Extract per-residue pLDDT confidence scores.\n"
+                     "  plddt      Extract per-residue pLDDT confidence values.\n"
                      "  dssp       Extract secondary structure assignments (DSSP).\n"
                      "  organism   Extract organism metadata.")});
 
@@ -176,6 +191,12 @@ public:
                  "stdout",
                  option::Arg::None,
                  "  --stdout                     \tWrite JSONL to stdout (same as --output -)."});
+    schema_.add({extract_opts::PlddtFormat,
+                 "",
+                 "plddt-format",
+                 validate::Required,
+                 "  --plddt-format <mode>        \tpLDDT output mode for --fields plddt: categorical|numeric "
+                 "(default: categorical)."});
     schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
 
@@ -216,12 +237,27 @@ public:
     }
 
     std::unordered_set<std::string> seen;
+    bool requested_plddt = false;
     for (const auto &token : field_tokens) {
       if (!is_valid_field(token)) {
         throw CliUsageError("Invalid field '" + token + "'. Must be one of: sequence, plddt, dssp, organism");
       }
       if (seen.insert(token).second) {
         config.fields.push_back(token);
+        requested_plddt = requested_plddt || (token == FIELD_PLDDT);
+      }
+    }
+
+    if (args.has(extract_opts::PlddtFormat)) {
+      if (!requested_plddt) {
+        throw CliUsageError("--plddt-format can only be used when --fields includes plddt.");
+      }
+      const std::string mode = args.get_string(extract_opts::PlddtFormat);
+      if (mode.empty()) {
+        throw CliUsageError("--plddt-format requires a value: categorical or numeric.");
+      }
+      if (!parse_plddt_format(mode, config.plddt_format)) {
+        throw CliUsageError("Invalid --plddt-format '" + mode + "'. Must be categorical or numeric.");
       }
     }
 
@@ -251,6 +287,10 @@ public:
 
     if (config.source.mode == SourceConfig::Mode::Database) {
       config.source.is_af2_model = true;
+      if (requested_plddt && config.plddt_format == A::PlddtExtractFormat::Numeric) {
+        throw CliUsageError("--plddt-format numeric is not supported with --database. "
+                            "Database payloads currently store only categorical pLDDT.");
+      }
     }
 
     if (config.source.mode != SourceConfig::Mode::Database && !config.source.is_af2_model) {
@@ -322,7 +362,7 @@ public:
       const std::string output_channel = field + "_data";
       PipelineTask task;
       task.name = output_channel;
-      task.task = build_extract_task(field, output_channel);
+      task.task = build_extract_task(field, output_channel, cfg.plddt_format);
       if (needs_parse_task) {
         task.deps.emplace_back("parse_model");
       }

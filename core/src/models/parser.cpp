@@ -430,6 +430,11 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
   output.coords.reserve(atom_count);
   output.plddt_per_residue.assign(output.sequence.size(), pLDDTCategory::VeryLow);
+  if (plddt_offset >= 0) {
+    output.plddt_scores.assign(output.sequence.size(), 0.0f);
+  } else {
+    output.plddt_scores.clear();
+  }
   output.dssp_per_residue.assign(output.sequence.size(), DSSPAssignment::Coil);
   parse_struct_conf_entries(data, size, output.dssp_per_residue);
   parse_struct_sheet_range_entries(data, size, output.dssp_per_residue);
@@ -541,6 +546,9 @@ ModelParserResult parse_model(const char *data, size_t size) {
       if (b_start < atom_ptr + line_length) {
         double plddt_score                      = parse_fixed_float(b_start);
         output.plddt_per_residue[residue_index] = categorize_plddt(plddt_score);
+        if (residue_index < output.plddt_scores.size()) {
+          output.plddt_scores[residue_index] = static_cast<float>(plddt_score);
+        }
         recorded_plddt                          = true;
       }
     }
@@ -590,6 +598,7 @@ ModelParserResult parse_model(const gemmi::Structure &st) {
   ModelParserResult output;
   output.sequence.resize(residue_count);
   output.plddt_per_residue.assign(residue_count, pLDDTCategory::VeryLow);
+  output.plddt_scores.assign(residue_count, 0.0f);
   output.dssp_per_residue.assign(residue_count, DSSPAssignment::Coil);
   output.coords.reserve(residue_count * 15 + 1);
 
@@ -617,7 +626,9 @@ ModelParserResult parse_model(const gemmi::Structure &st) {
       output.coords.emplace_back(atom.pos.x, atom.pos.y, atom.pos.z);
     }
 
-    output.plddt_per_residue[res_idx] = categorize_plddt(res.atoms[1].b_iso); // CA atom
+    const double plddt_score = res.atoms[1].b_iso; // CA atom
+    output.plddt_per_residue[res_idx] = categorize_plddt(plddt_score);
+    output.plddt_scores[res_idx] = static_cast<float>(plddt_score);
   }
 
   const auto &last_res  = chain.residues.back();
