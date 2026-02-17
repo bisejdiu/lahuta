@@ -40,6 +40,7 @@ struct ModelParserResult {
   std::string sequence;
   ModelMetadata metadata;
   std::vector<pLDDTCategory> plddt_per_residue;
+  std::vector<float> plddt_scores;
   std::vector<DSSPAssignment> dssp_per_residue;
   mutable RDGeom::POINT3D_VECT coords;
   mutable bool coords_consumed{false};
