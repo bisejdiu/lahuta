@@ -12,6 +12,7 @@
  *
  */
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdlib>
@@ -31,6 +32,18 @@
 namespace lahuta {
 
 namespace {
+
+inline const char *find_substring_bounded(const char *data, size_t size, std::string_view needle,
+                                          const char *from = nullptr) {
+  if (!data || needle.empty()) return nullptr;
+  const char *const end   = data + size;
+  const char *const begin = from ? from : data;
+  if (begin < data || begin > end) return nullptr;
+  if (needle.size() > static_cast<std::size_t>(end - begin)) return nullptr;
+
+  const char *it = std::search(begin, end, needle.begin(), needle.end());
+  return it == end ? nullptr : it;
+}
 
 char require_standard_amino_acid(const gemmi::Residue &res) {
   auto info = gemmi::find_tabulated_residue(res.name);
@@ -178,9 +191,9 @@ inline DSSPAssignment classify_struct_conf_type(std::string_view type) {
 
 inline const char *find_loop_data_start(const char *data, size_t size, const char *first_marker,
                                         const char *last_marker) {
-  const char *start = std::strstr(data, first_marker);
+  const char *start = find_substring_bounded(data, size, first_marker);
   if (!start) return nullptr;
-  const char *last = std::strstr(start, last_marker);
+  const char *last = find_substring_bounded(data, size, last_marker, start);
   if (!last) return nullptr;
   const char *end     = data + size;
   const char *newline = static_cast<const char *>(std::memchr(last, '\n', end - last));
@@ -264,7 +277,7 @@ inline void parse_struct_sheet_range_entries(const char *data, size_t size,
 inline auto extract_marker_value(const char *data, size_t size, const char *marker) {
   std::string result;
 
-  const char *marker_pos = std::strstr(data, marker);
+  const char *marker_pos = find_substring_bounded(data, size, marker);
   if (!marker_pos) return result;
 
   // move pointer to after the marker.
@@ -378,46 +391,30 @@ ModelParserResult parse_model(const char *data, size_t size) {
   const char *q_mark = static_cast<const char *>(std::memchr(first_atom, '?', end - first_atom));
   if (!q_mark) return {};
 
-  // skip '?' and any spaces after it
-  const char *coord_start = q_mark + 1;
-  while (coord_start < end && *coord_start == ' ')
-    coord_start++;
-
-  // find x, y, and z column offsets
-  int x_offset = coord_start - first_atom;
-
-  // find y
-  const char *y_pos = coord_start;
-  while (y_pos < end && ((*y_pos >= '0' && *y_pos <= '9') || *y_pos == '-' || *y_pos == '.'))
-    y_pos++; // xkip x value (digits, minus sign, period)
-  while (y_pos < end && *y_pos == ' ')
-    y_pos++; // skip whitespace to get to y start
-  int y_offset = y_pos - first_atom;
-
-  // find z
-  const char *z_pos = y_pos;
-  while (z_pos < end && ((*z_pos >= '0' && *z_pos <= '9') || *z_pos == '-' || *z_pos == '.'))
-    z_pos++;
-  while (z_pos < end && *z_pos == ' ')
-    z_pos++;
-  int z_offset = z_pos - first_atom;
-
-  // pLDDT
-  const char *plddt_pos = z_pos;
-  for (int i = 0; i < 2; ++i) {
-    while (plddt_pos < end && *plddt_pos != ' ')
-      ++plddt_pos;
-    while (plddt_pos < end && *plddt_pos == ' ')
-      ++plddt_pos;
-  }
-  ptrdiff_t plddt_offset = plddt_pos - first_atom;
+  // coord_section_offset: right after the '?' marker on each ATOM line.
+  // x, y, z (and pLDDT) are parsed sequentially from this point with
+  // space-skipping, so right-aligned columns with varying digit widths
+  // are handled correctly.
+  int coord_section_offset = static_cast<int>((q_mark + 1) - first_atom);
 
   // find the end of first line to determine line length
   const char *line_end = static_cast<const char *>(std::memchr(first_atom, '\n', end - first_atom));
   if (!line_end) line_end = end;
 
-  size_t line_length = line_end - first_atom + 1; // +1 to include newline
-  if (plddt_pos >= line_end) plddt_offset = -1;
+  // Detect whether pLDDT (B_iso) is present by probing the first ATOM line.
+  // After '?', the field order is: x, y, z, occupancy, B_iso (pLDDT).
+  bool has_plddt    = true;
+  const char *probe = q_mark + 1;
+  for (int i = 0; i < 5; ++i) {
+    while (probe < line_end && *probe == ' ')
+      ++probe;
+    if (probe >= line_end) {
+      has_plddt = false;
+      break;
+    }
+    while (probe < line_end && *probe != ' ')
+      ++probe;
+  }
 
   // count ATOM records to reserve space for coordinates
   size_t atom_count   = 0;
@@ -430,7 +427,7 @@ ModelParserResult parse_model(const char *data, size_t size) {
 
   output.coords.reserve(atom_count);
   output.plddt_per_residue.assign(output.sequence.size(), pLDDTCategory::VeryLow);
-  if (plddt_offset >= 0) {
+  if (has_plddt) {
     output.plddt_scores.assign(output.sequence.size(), 0.0f);
   } else {
     output.plddt_scores.clear();
@@ -448,9 +445,8 @@ ModelParserResult parse_model(const char *data, size_t size) {
   size_t atoms_seen_in_residue = 0;
   bool recorded_plddt          = false;
 
-  // 1. all atom recods are the same length
-  // 2. atom records are consecutive
-  // 3. positions have consistent offsets within the file
+  // 1. atom records are consecutive
+  // 2. the '?' column (pdbx_PDB_ins_code) is at a consistent offset
   const char *atom_ptr = first_atom;
   for (size_t i = 0; i < atom_count; i++) {
     if (atom_ptr + 4 >= end || atom_ptr[0] != 'A' || atom_ptr[1] != 'T' || atom_ptr[2] != 'O' ||
@@ -458,99 +454,66 @@ ModelParserResult parse_model(const char *data, size_t size) {
       break;
     }
 
-    // x position
-    double x            = 0.0;
-    bool x_negative     = false;
-    const char *x_start = atom_ptr + x_offset;
+    const char *line_end = static_cast<const char *>(std::memchr(atom_ptr, '\n', end - atom_ptr));
+    if (!line_end) line_end = end;
+    if (line_end <= atom_ptr) break;
+    if (atom_ptr + coord_section_offset >= line_end) break;
 
-    // check sign
-    if (*x_start == '-') {
-      x_negative = true;
-      x_start++;
-    }
+    // Parse x, y, z sequentially from the coordinate section.
+    // Space-skipping on each line handles right-aligned fixed-width columns
+    // where digit widths vary by magnitude.
+    const char *cp = atom_ptr + coord_section_offset;
 
-    // parse integer part
-    while (*x_start >= '0' && *x_start <= '9') {
-      x = x * 10.0 + (*x_start - '0');
-      x_start++;
-    }
+    while (cp < line_end && *cp == ' ')
+      ++cp;
+    if (cp >= line_end) break;
+    const char *x_start = cp;
+    while (cp < line_end && (*cp == '-' || (*cp >= '0' && *cp <= '9') || *cp == '.'))
+      ++cp;
+    if (cp == x_start) break;
+    double x = parse_fixed_float(x_start);
 
-    // skip '.'
-    if (*x_start == '.') x_start++;
+    while (cp < line_end && *cp == ' ')
+      ++cp;
+    if (cp >= line_end) break;
+    const char *y_start = cp;
+    while (cp < line_end && (*cp == '-' || (*cp >= '0' && *cp <= '9') || *cp == '.'))
+      ++cp;
+    if (cp == y_start) break;
+    double y = parse_fixed_float(y_start);
 
-    // parse decimal part
-    double fraction = 0.1;
-    while (*x_start >= '0' && *x_start <= '9') {
-      x        += (*x_start - '0') * fraction;
-      fraction *= 0.1;
-      x_start++;
-    }
-    if (x_negative) x = -x;
-
-    // y position
-    double y            = 0.0;
-    bool y_negative     = false;
-    const char *y_start = atom_ptr + y_offset;
-
-    if (*y_start == '-') {
-      y_negative = true;
-      y_start++;
-    }
-
-    while (*y_start >= '0' && *y_start <= '9') {
-      y = y * 10.0 + (*y_start - '0');
-      y_start++;
-    }
-
-    if (*y_start == '.') y_start++;
-
-    fraction = 0.1;
-    while (*y_start >= '0' && *y_start <= '9') {
-      y        += (*y_start - '0') * fraction;
-      fraction *= 0.1;
-      y_start++;
-    }
-
-    if (y_negative) y = -y;
-
-    // z position
-    double z            = 0.0;
-    bool z_negative     = false;
-    const char *z_start = atom_ptr + z_offset;
-
-    if (*z_start == '-') {
-      z_negative = true;
-      z_start++;
-    }
-
-    while (*z_start >= '0' && *z_start <= '9') {
-      z = z * 10.0 + (*z_start - '0');
-      z_start++;
-    }
-
-    if (*z_start == '.') z_start++;
-
-    fraction = 0.1;
-    while (*z_start >= '0' && *z_start <= '9') {
-      z        += (*z_start - '0') * fraction;
-      fraction *= 0.1;
-      z_start++;
-    }
-
-    if (z_negative) z = -z;
+    while (cp < line_end && *cp == ' ')
+      ++cp;
+    if (cp >= line_end) break;
+    const char *z_start = cp;
+    while (cp < line_end && (*cp == '-' || (*cp >= '0' && *cp <= '9') || *cp == '.'))
+      ++cp;
+    if (cp == z_start) break;
+    double z = parse_fixed_float(z_start);
 
     output.coords.push_back({x, y, z});
 
-    if (!recorded_plddt && plddt_offset >= 0 && residue_index < output.plddt_per_residue.size()) {
-      const char *b_start = atom_ptr + plddt_offset;
-      if (b_start < atom_ptr + line_length) {
-        double plddt_score                      = parse_fixed_float(b_start);
-        output.plddt_per_residue[residue_index] = categorize_plddt(plddt_score);
-        if (residue_index < output.plddt_scores.size()) {
-          output.plddt_scores[residue_index] = static_cast<float>(plddt_score);
-        }
-        recorded_plddt                          = true;
+    // pLDDT: continue scanning past occupancy to reach B_iso.
+    if (!recorded_plddt && has_plddt && residue_index < output.plddt_per_residue.size()) {
+      while (cp < line_end && *cp == ' ')
+        ++cp;
+      if (cp >= line_end) break;
+      while (cp < line_end && *cp != ' ')
+        ++cp; // occupancy
+      while (cp < line_end && *cp == ' ')
+        ++cp; // B_iso
+      if (cp >= line_end) break;
+      const char *b_start = cp;
+      while (cp < line_end && (*cp == '-' || (*cp >= '0' && *cp <= '9') || *cp == '.'))
+        ++cp;
+      if (cp == b_start) break;
+
+      double plddt_score                      = parse_fixed_float(b_start);
+      output.plddt_per_residue[residue_index] = categorize_plddt(plddt_score);
+      if (residue_index < output.plddt_scores.size()) {
+        output.plddt_scores[residue_index] = static_cast<float>(plddt_score);
       }
+      recorded_plddt = true;
     }
 
     if (residue_index < output.plddt_per_residue.size() && atoms_in_residue > 0) {
@@ -569,7 +532,8 @@ ModelParserResult parse_model(const char *data, size_t size) {
       }
     }
 
-    atom_ptr += line_length;
+    if (line_end >= end) break;
+    atom_ptr = line_end + 1;
   }
 
   return output;
@@ -626,9 +590,9 @@ ModelParserResult parse_model(const gemmi::Structure &st) {
       output.coords.emplace_back(atom.pos.x, atom.pos.y, atom.pos.z);
     }
 
-    const double plddt_score = res.atoms[1].b_iso; // CA atom
+    const double plddt_score          = res.atoms[1].b_iso; // CA atom
     output.plddt_per_residue[res_idx] = categorize_plddt(plddt_score);
-    output.plddt_scores[res_idx] = static_cast<float>(plddt_score);
+    output.plddt_scores[res_idx]      = static_cast<float>(plddt_score);
   }
 
   const auto &last_res  = chain.residues.back();
