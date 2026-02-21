@@ -11,6 +11,7 @@ We use the following great libraries in various capacity (order is random):
 - Boost: BSL-1.0, https://www.boost.org
 - Eigen: MPL-2.0, https://eigen.tuxfamily.org
 - Gemmi: MPL-2.0, https://github.com/project-gemmi/gemmi
+- Mol*: MIT, https://github.com/molstar/molstar
 - distopia: MIT, https://github.com/MDAnalysis/distopia
 - highway: Apache-2.0 or BSD-3-Clause, https://github.com/google/highway
 - ctpl: Apache-2.0, https://github.com/vit-vit/CTPL
@@ -27,3 +28,6 @@ Lahuta has also used the following libraries in different capacities (for exampl
 - FreeSASA: MIT, https://github.com/mittinatten/freesasa
 - RustSASA: MIT, https://github.com/maxall41/RustSASA
 - MDAnalysis (FastNS reference implementation): GPL-2.0-or-later, https://github.com/MDAnalysis/mdanalysis
+- Arpeggio: GPL-3.0, https://github.com/PDBeurope/arpeggio
+- GetContacts: Apache-2.0, https://github.com/getcontacts/getcontacts
+- OpenBabel: GPL-2.0, https://github.com/openbabel/openbabel
