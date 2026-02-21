@@ -26,3 +26,4 @@ Lahuta has also used the following libraries in different capacities (for exampl
 - DSSP (PDB-REDO): BSD-2-Clause, https://github.com/PDB-REDO/dssp
 - FreeSASA: MIT, https://github.com/mittinatten/freesasa
 - RustSASA: MIT, https://github.com/maxall41/RustSASA
+- MDAnalysis (FastNS reference implementation): GPL-2.0-or-later, https://github.com/MDAnalysis/mdanalysis
