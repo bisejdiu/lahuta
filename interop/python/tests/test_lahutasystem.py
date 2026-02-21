@@ -126,6 +126,20 @@ def test_basic_shapes_dtypes_and_hashes(luni: LahutaSystem, props: LahutaSystemP
         assert got_hash == exp_hash, f"{key}: sha256 mismatch"
 
 
+def test_resindices_match_system_residue_mapping(luni: LahutaSystem, props: LahutaSystemProperties) -> None:
+    resindices = props.resindices
+    sys_map = luni.residues.atom_to_residue_indices
+    assert len(sys_map) == len(resindices) == luni.n_atoms
+    assert np.array_equal(np.asarray(sys_map, dtype=np.int32), resindices)
+
+
+def test_resindices_cached_on_same_properties_object(luni: LahutaSystem) -> None:
+    props = luni.props
+    first = props.resindices
+    second = props.resindices
+    assert first is second
+
+
 def test_centroid(props: LahutaSystemProperties) -> None:
     centroid = props.positions.mean(axis=0)
     assert centroid.shape == (3,)

@@ -174,6 +174,11 @@ def test_atom_to_residue_lookup_apis_and_errors(luni_built: LahutaSystem) -> Non
     with pytest.raises(IndexError):
         topo_residues.residue_of_atom(n_atoms)
 
+    single = topo_residues.filter(lambda r: r.number == topo_residues[0].number and r.chain_id == topo_residues[0].chain_id)
+    if len(single) > 0:
+        atom_idx = int(single[0].atoms[0].getIdx())
+        assert single.residue_index_of_atom(atom_idx) == single.residue_of_atom(atom_idx).idx
+
     empty = topo_residues.filter(lambda _: False)
     assert empty.residue_index_of_atom(0) == -1
     with pytest.raises(ValueError):

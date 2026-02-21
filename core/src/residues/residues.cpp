@@ -57,12 +57,15 @@ bool Residues::build() {
 Residues Residues::filter(std::function<bool(const Residue &)> predicate) const {
   Residues result(mol_);
   result.atom_to_residue_idx_.assign(atom_to_residue_idx_.size(), -1);
+  result.atom_to_residue_pos_.assign(atom_to_residue_pos_.size(), -1);
   for (const auto &residue : residues_) {
     if (predicate(residue)) {
-      const int mapped_idx = static_cast<int>(result.residues_.size());
+      const int mapped_pos = static_cast<int>(result.residues_.size());
       result.residues_.push_back(residue);
       for (const auto *atom : residue.atoms) {
-        result.atom_to_residue_idx_[static_cast<std::size_t>(atom->getIdx())] = mapped_idx;
+        const std::size_t atom_idx = static_cast<std::size_t>(atom->getIdx());
+        result.atom_to_residue_idx_[atom_idx] = static_cast<int>(residue.idx);
+        result.atom_to_residue_pos_[atom_idx] = mapped_pos;
       }
     }
   }
@@ -72,12 +75,15 @@ Residues Residues::filter(std::function<bool(const Residue &)> predicate) const 
 Residues Residues::filter(std::function<bool(const std::string &)> predicate) const {
   Residues result(mol_);
   result.atom_to_residue_idx_.assign(atom_to_residue_idx_.size(), -1);
+  result.atom_to_residue_pos_.assign(atom_to_residue_pos_.size(), -1);
   for (const auto &residue : residues_) {
     if (predicate(residue.name)) {
-      const int mapped_idx = static_cast<int>(result.residues_.size());
+      const int mapped_pos = static_cast<int>(result.residues_.size());
       result.residues_.push_back(residue);
       for (const auto *atom : residue.atoms) {
-        result.atom_to_residue_idx_[static_cast<std::size_t>(atom->getIdx())] = mapped_idx;
+        const std::size_t atom_idx = static_cast<std::size_t>(atom->getIdx());
+        result.atom_to_residue_idx_[atom_idx] = static_cast<int>(residue.idx);
+        result.atom_to_residue_pos_[atom_idx] = mapped_pos;
       }
     }
   }
@@ -99,6 +105,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
   if (num_atoms == 0) {
     residues_.clear();
     atom_to_residue_idx_.clear();
+    atom_to_residue_pos_.clear();
     status = true;
     return;
   }
@@ -108,6 +115,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
   std::vector<Residue> residues;
   residues.reserve(estimated_residues);
   std::vector<int> atom_to_residue_idx(num_atoms, -1);
+  std::vector<int> atom_to_residue_pos(num_atoms, -1);
 
   std::unordered_map<ResidueKey, ResidueEntry, ResidueKeyHash> residue_map;
   residue_map.reserve(estimated_residues);
@@ -132,6 +140,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
       if (entry.chain_id == chain_id_sv && entry.res_num == res_num && entry.res_name == res_name_sv) {
         residues[entry.index].atoms.push_back(atom);
         atom_to_residue_idx[atom_idx] = static_cast<int>(entry.index);
+        atom_to_residue_pos[atom_idx] = static_cast<int>(entry.index);
       } else {
         bool found = false;
         for (std::size_t i = 0; i < residues.size(); ++i) {
@@ -139,6 +148,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
           if (r.number == res_num && r.chain_id == chain_id_sv && r.name == res_name_sv) {
             r.atoms.push_back(atom);
             atom_to_residue_idx[atom_idx] = static_cast<int>(i);
+            atom_to_residue_pos[atom_idx] = static_cast<int>(i);
             found = true;
             break;
           }
@@ -148,6 +158,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
           residues.emplace_back(std::string(chain_id_sv), res_num, std::string(res_name_sv), "");
           residues.back().atoms.push_back(atom);
           atom_to_residue_idx[atom_idx] = static_cast<int>(new_idx);
+          atom_to_residue_pos[atom_idx] = static_cast<int>(new_idx);
         }
       }
     } else {
@@ -155,6 +166,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
       residues.emplace_back(std::string(chain_id_sv), res_num, std::string(res_name_sv), "");
       residues.back().atoms.push_back(atom);
       atom_to_residue_idx[atom_idx] = static_cast<int>(idx);
+      atom_to_residue_pos[atom_idx] = static_cast<int>(idx);
       residue_map.emplace(key,
                           ResidueEntry{idx, std::string(chain_id_sv), res_num, std::string(res_name_sv)});
     }
@@ -166,6 +178,7 @@ void Residues::build_residues(const RDKit::RWMol &mol, bool &status) {
 
   residues_ = std::move(residues);
   atom_to_residue_idx_ = std::move(atom_to_residue_idx);
+  atom_to_residue_pos_ = std::move(atom_to_residue_pos);
   status    = true;
 }
 

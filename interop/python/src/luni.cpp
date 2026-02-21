@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
@@ -54,6 +55,27 @@ class LuniProperties {
 private:
   Luni &luni_;
   py::object owner_;
+  std::optional<std::vector<int>> resindices_cache_;
+  py::object resindices_array_cache_ = py::none();
+
+  const std::vector<int> &ensure_resindices_cache() {
+    if (resindices_cache_.has_value()) return *resindices_cache_;
+
+    Residues residues(luni_.get_molecule());
+    if (residues.build()) {
+      resindices_cache_ = residues.atom_to_residue_indices();
+      return *resindices_cache_;
+    }
+
+    std::vector<int> fallback;
+    fallback.reserve(static_cast<std::size_t>(luni_.n_atoms()));
+    for (const auto atom : luni_.get_molecule().atoms()) {
+      auto *info = dynamic_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+      fallback.push_back(info ? static_cast<int>(info->getResidueIndex()) : -1);
+    }
+    resindices_cache_ = std::move(fallback);
+    return *resindices_cache_;
+  }
 
 public:
   LuniProperties(Luni &luni) : luni_(luni), owner_(py::cast(luni)) {}
@@ -88,18 +110,10 @@ public:
   auto atom_nums() { return numpy::as_numpy_copy(luni_.atomic_numbers()); }
   auto resids() { return numpy::as_numpy_copy(luni_.resids()); }
   auto resindices() {
-    Residues residues(luni_.get_molecule());
-    if (residues.build()) {
-      return numpy::as_numpy_copy(residues.atom_to_residue_indices());
+    if (resindices_array_cache_.is_none()) {
+      resindices_array_cache_ = numpy::as_numpy_copy(ensure_resindices_cache());
     }
-
-    std::vector<int> fallback;
-    fallback.reserve(static_cast<std::size_t>(luni_.n_atoms()));
-    for (const auto atom : luni_.get_molecule().atoms()) {
-      auto *info = dynamic_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-      fallback.push_back(info ? static_cast<int>(info->getResidueIndex()) : -1);
-    }
-    return numpy::as_numpy_copy(fallback);
+    return py::reinterpret_borrow<py::array>(resindices_array_cache_);
   }
   auto names() { return numpy::string_array_1d(luni_.names()); }
   auto symbols() { return numpy::string_array_1d(luni_.symbols()); }

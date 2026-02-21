@@ -99,11 +99,14 @@ public:
   }
 
   const Residue &residue_of_atom(std::size_t atom_idx) const {
-    const int residue_idx = residue_index_of_atom(atom_idx);
-    if (residue_idx < 0) {
+    if (atom_idx >= atom_to_residue_pos_.size()) {
+      throw std::out_of_range("Atom index out of range");
+    }
+    const int residue_pos = atom_to_residue_pos_[atom_idx];
+    if (residue_pos < 0) {
       throw std::invalid_argument("Atom is not mapped to a residue");
     }
-    return residues_[static_cast<std::size_t>(residue_idx)];
+    return residues_[static_cast<std::size_t>(residue_pos)];
   }
 
   const std::vector<int> &atom_to_residue_indices() const { return atom_to_residue_idx_; }
@@ -120,7 +123,10 @@ private:
 private:
   const RDKit::RWMol &mol_;
   std::vector<Residue> residues_;
+  // Public residue index semantics (stable idx field).
   std::vector<int> atom_to_residue_idx_;
+  // Internal local position in residues_ for O(1) residue_of_atom on filtered containers.
+  std::vector<int> atom_to_residue_pos_;
 };
 
 //
