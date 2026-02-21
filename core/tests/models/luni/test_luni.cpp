@@ -23,6 +23,7 @@
 
 #include "io/convert.hpp"
 #include "lahuta.hpp"
+#include "residues/residues.hpp"
 #include "topology_flags.hpp"
 
 namespace fs = std::filesystem;
@@ -81,7 +82,9 @@ TEST(Luni_DataBasics, CountsAndArrays_FromRealData) {
 
   const auto idxs     = luni.indices();
   const auto resids   = luni.resids();
-  const auto resindex = luni.resindices();
+  Residues residues(luni.get_molecule());
+  ASSERT_TRUE(residues.build());
+  const auto &resindex = residues.atom_to_residue_indices();
   const auto znums    = luni.atomic_numbers();
   const auto names    = luni.names();
   const auto symbols  = luni.symbols();

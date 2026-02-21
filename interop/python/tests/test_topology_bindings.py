@@ -136,6 +136,50 @@ def test_residues_filter_invalid_return_type_raises_clear_error(luni_built: Lahu
         residues.filter(lambda r: r)
 
 
+def test_atom_to_residue_lookup_apis_and_errors(luni_built: LahutaSystem) -> None:
+    topo = luni_built.get_topology()
+    topo_residues = topo.residues
+    sys_residues = luni_built.residues
+
+    n_atoms = luni_built.n_atoms
+    map_top = topo.atom_to_residue_indices
+    map_top_res = topo_residues.atom_to_residue_indices
+    map_sys_res = sys_residues.atom_to_residue_indices
+    props = luni_built.props.resindices
+
+    assert len(map_top) == len(map_top_res) == len(map_sys_res) == n_atoms
+
+    for i in (0, n_atoms // 2, n_atoms - 1):
+        idx_top = topo.residue_index_of_atom(i)
+        idx_top_res = topo_residues.residue_index_of_atom(i)
+        idx_sys_res = sys_residues.residue_index_of_atom(i)
+
+        assert idx_top >= 0
+        assert idx_top == idx_top_res == idx_sys_res
+        assert idx_top == map_top[i] == map_top_res[i] == map_sys_res[i]
+        assert idx_top == int(props[i])
+
+        r_top = topo.residue_of_atom(i)
+        r_top_res = topo_residues.residue_of_atom(i)
+        r_sys_res = sys_residues.residue_of_atom(i)
+        assert r_top.idx == r_top_res.idx == r_sys_res.idx == idx_top
+        assert i in {a.getIdx() for a in r_top.atoms}
+
+    with pytest.raises(IndexError):
+        topo.residue_index_of_atom(n_atoms)
+    with pytest.raises(IndexError):
+        topo.residue_of_atom(n_atoms)
+    with pytest.raises(IndexError):
+        topo_residues.residue_index_of_atom(n_atoms)
+    with pytest.raises(IndexError):
+        topo_residues.residue_of_atom(n_atoms)
+
+    empty = topo_residues.filter(lambda _: False)
+    assert empty.residue_index_of_atom(0) == -1
+    with pytest.raises(ValueError):
+        empty.residue_of_atom(0)
+
+
 def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
 

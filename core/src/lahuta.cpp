@@ -310,13 +310,6 @@ const std::vector<int> Luni::resids() const {
   });
 }
 
-const std::vector<int> Luni::resindices() const {
-  return atom_attrs<int>([](const RDKit::Atom *atom) -> int {
-    auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
-    return info->getSegmentNumber();
-  });
-}
-
 const std::vector<std::string> Luni::chainlabels() const {
   return atom_attrs<std::string>([](const RDKit::Atom *atom) -> const std::string & {
     auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());

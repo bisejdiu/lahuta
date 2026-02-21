@@ -59,6 +59,9 @@ public:
   const std::vector<Rec>& records() const noexcept;
 
   std::vector<int> get_atom_ids() const { return get_residues().get_atom_ids(); }
+  int residue_index_of_atom(std::uint32_t atom_idx) const { return get_residues().residue_index_of_atom(atom_idx); }
+  const Residue &residue_of_atom(std::uint32_t atom_idx) const { return get_residues().residue_of_atom(atom_idx); }
+  const std::vector<int> &atom_to_residue_indices() const { return get_residues().atom_to_residue_indices(); }
   [[nodiscard]] bool build(TopologyBuildingOptions tops);
   [[nodiscard]] bool initialize(TopologyBuildingOptions tops);
 

@@ -87,7 +87,20 @@ public:
   auto indices() { return numpy::as_numpy_copy(luni_.indices()); }
   auto atom_nums() { return numpy::as_numpy_copy(luni_.atomic_numbers()); }
   auto resids() { return numpy::as_numpy_copy(luni_.resids()); }
-  auto resindices() { return numpy::as_numpy_copy(luni_.resindices()); }
+  auto resindices() {
+    Residues residues(luni_.get_molecule());
+    if (residues.build()) {
+      return numpy::as_numpy_copy(residues.atom_to_residue_indices());
+    }
+
+    std::vector<int> fallback;
+    fallback.reserve(static_cast<std::size_t>(luni_.n_atoms()));
+    for (const auto atom : luni_.get_molecule().atoms()) {
+      auto *info = dynamic_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+      fallback.push_back(info ? static_cast<int>(info->getResidueIndex()) : -1);
+    }
+    return numpy::as_numpy_copy(fallback);
+  }
   auto names() { return numpy::string_array_1d(luni_.names()); }
   auto symbols() { return numpy::string_array_1d(luni_.symbols()); }
   auto elements() { return numpy::string_array_1d(luni_.elements()); }
@@ -165,7 +178,9 @@ void bind_luni(py::module &m) {
       .def_property_readonly("indices", &LuniProperties::indices, "Atom indices")
       .def_property_readonly("atom_nums", &LuniProperties::atom_nums, "Atomic numbers")
       .def_property_readonly("resids", &LuniProperties::resids, "Residue IDs")
-      .def_property_readonly("resindices", &LuniProperties::resindices, "Residue indices")
+      .def_property_readonly("resindices",
+                             &LuniProperties::resindices,
+                             "Residue indices (AtomPDBResidueInfo.residueIndex)")
       .def_property_readonly("names", &LuniProperties::names, "Atom names")
       .def_property_readonly("symbols", &LuniProperties::symbols, "Element symbols")
       .def_property_readonly("elements", &LuniProperties::elements, "Element names")

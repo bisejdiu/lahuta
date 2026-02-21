@@ -130,7 +130,6 @@ public:
   const auto n_atoms() const { return mol->getNumAtoms(); }
   const std::vector<int> indices()    const;
   const std::vector<int> resids()     const;
-  const std::vector<int> resindices() const;
   const std::vector<int> atomic_numbers() const;
   const std::vector<std::string> names()    const;
   const std::vector<std::string> symbols()  const;
