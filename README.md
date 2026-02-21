@@ -135,6 +135,10 @@ Report issues in the [issues](https://github.com/bisejdiu/lahuta/issues) section
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## License
+
+This project is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+
 ## Acknowledgments
 
 Lahuta includes implementations inspired by and validated against the following projects:
