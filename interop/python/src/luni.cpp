@@ -208,33 +208,37 @@ void bind_luni(py::module &m) {
            py::arg("t_opts") = std::nullopt,
            "Build the topology with optional configuration")
       .def("build_topology",
-           py::overload_cast<const TopologyBuildingOptions &, TopologyComputation>(&Luni::build_topology, py::const_),
+           py::overload_cast<const TopologyBuildingOptions &, TopologyComputation>(&Luni::build_topology,
+                                                                                   py::const_),
            py::arg("t_opts"),
            py::arg("include"),
            "Build topology and ensure requested computations")
-      .def("build_topology",
-           [](const Luni &self, TopologyComputation include) {
-             TopologyBuildingOptions opts;
-             if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
-             return self.build_topology(opts, include);
-           },
-           py::arg("include"),
-           "Build topology with default options and ensure requested computations")
-      .def("build_topology",
-           [](const Luni &self, const TopologyBuildingOptions &opts, py::iterable include) {
-             return self.build_topology(opts, combine_topology_flags(include));
-           },
-           py::arg("t_opts"),
-           py::arg("include"),
-           "Build topology and ensure requested computations (list of flags)")
-      .def("build_topology",
-           [](const Luni &self, py::iterable include) {
-             TopologyBuildingOptions opts;
-             if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
-             return self.build_topology(opts, combine_topology_flags(include));
-           },
-           py::arg("include"),
-           "Build topology with default options and ensure requested computations (list of flags)")
+      .def(
+          "build_topology",
+          [](const Luni &self, TopologyComputation include) {
+            TopologyBuildingOptions opts;
+            if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
+            return self.build_topology(opts, include);
+          },
+          py::arg("include"),
+          "Build topology with default options and ensure requested computations")
+      .def(
+          "build_topology",
+          [](const Luni &self, const TopologyBuildingOptions &opts, py::iterable include) {
+            return self.build_topology(opts, combine_topology_flags(include));
+          },
+          py::arg("t_opts"),
+          py::arg("include"),
+          "Build topology and ensure requested computations (list of flags)")
+      .def(
+          "build_topology",
+          [](const Luni &self, py::iterable include) {
+            TopologyBuildingOptions opts;
+            if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
+            return self.build_topology(opts, combine_topology_flags(include));
+          },
+          py::arg("include"),
+          "Build topology with default options and ensure requested computations (list of flags)")
       .def("reset_topology",
            &Luni::reset_topology,
            "Return a fresh system by reloading the original input file")
@@ -288,7 +292,7 @@ void bind_luni(py::module &m) {
           },
           py::return_value_policy::move,
           py::keep_alive<0, 1>(),
-          "Residues container (computed from molecule; does not build topology)")
+          "Residues container")
       .def("get_atom",
            &Luni::get_atom,
            py::arg("idx"),
@@ -329,7 +333,8 @@ void bind_luni(py::module &m) {
           },
           py::arg("cutoff"),
           py::arg("residue_difference") = 0,
-          "Find neighboring atoms within cutoff distance. If residue_difference > 0, exclude neighbors from the same "
+          "Find neighboring atoms within cutoff distance. If residue_difference > 0, exclude neighbors from "
+          "the same "
           "residue or within residue_difference residues.");
 }
 } // namespace lahuta::bindings

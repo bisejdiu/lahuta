@@ -195,7 +195,18 @@ void bind_topology(py::module &m) {
 
     .def_property_readonly("residues", &Residues::get_residues, "Snapshot list of residues")
     .def("filter", [](const Residues &self, py::function func) {
-        auto pred = [func](const Residue &r) {return func(r).cast<bool>();};
+        auto pred = [func](const Residue &r) {
+          py::object out = func(r);
+          try {
+            return out.cast<bool>();
+          } catch (const py::cast_error &) {
+            const std::string type_name = py::str(out.get_type().attr("__name__"));
+            throw py::type_error(
+              "Residues.filter predicate must return a bool (or bool-castable value), got '" +
+              type_name + "'. Example: lambda r: r.name == 'ARG' or lambda r: True"
+            );
+          }
+        };
         return self.filter(pred);
      }, py::arg("func"),
       py::keep_alive<0, 1>(),

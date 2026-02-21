@@ -420,7 +420,7 @@ if(LAHUTA_BUILD_PYTHON)
     endif()
   endif()
 
-  find_package(pybind11 REQUIRED CONFIG)
+  find_package(pybind11 2.11...<3 REQUIRED CONFIG)
   if(pybind11_FOUND)
     message(STATUS "pybind11 found. Building Python bindings.")
 

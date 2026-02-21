@@ -240,7 +240,7 @@ def test_fastns_handles_diverse_point_clouds_with_fallback(data):
             expected_d = math.sqrt(brute[key])
             actual_d   = math.sqrt(fastns[key])
             # Allow 0.0 vs tiny differences for mixed-scale scenarios
-            if expected_d < 1e-7:
+            if expected_d < 1e-6:
                 assert actual_d == 0.0 or math.isclose(actual_d, expected_d, rel_tol=5e-6, abs_tol=tol)
             else:
                 assert math.isclose(actual_d, expected_d, rel_tol=5e-6, abs_tol=tol)

@@ -128,6 +128,14 @@ def test_residues_container_and_helpers(luni_built: LahutaSystem) -> None:
     assert all(isinstance(i, int) and i >= 0 for i in atom_ids)
 
 
+def test_residues_filter_invalid_return_type_raises_clear_error(luni_built: LahutaSystem) -> None:
+    topo = luni_built.get_topology()
+    residues = topo.residues
+
+    with pytest.raises(TypeError, match="Residues\\.filter predicate must return a bool"):
+        residues.filter(lambda r: r)
+
+
 def test_atom_typing_and_records(luni_built: LahutaSystem) -> None:
     topo = luni_built.get_topology()
 

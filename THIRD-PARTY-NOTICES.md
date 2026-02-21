@@ -1,36 +1,28 @@
 # Third-Party Notices
 
-Lahuta incorporates ideas, algorithms, and validation approaches from the
-following third-party projects:
+Third-party software related to Lahuta.
 
-## DSSP (PDB-REDO)
+## Libraries Used in Lahuta
 
-- **Project**: https://github.com/PDB-REDO/dssp
-- **License**: BSD-2-Clause
-- **Copyright**: (c) 2020 NKI/AVL, Netherlands Cancer Institute
-- **Usage**: Secondary structure assignment algorithm implementation
+We use the following great libraries in various capacity (order is random):
 
-The original DSSP algorithm was designed by Wolfgang Kabsch and Chris Sander:
+- RDKit: BSD-3-Clause, https://github.com/rdkit/rdkit
+- spdlog: MIT, https://github.com/gabime/spdlog
+- Boost: BSL-1.0, https://www.boost.org
+- Eigen: MPL-2.0, https://eigen.tuxfamily.org
+- Gemmi: MPL-2.0, https://github.com/project-gemmi/gemmi
+- distopia: MIT, https://github.com/MDAnalysis/distopia
+- highway: Apache-2.0 or BSD-3-Clause, https://github.com/google/highway
+- ctpl: Apache-2.0, https://github.com/vit-vit/CTPL
+- lmdb: OpenLDAP Public License 2.8, https://github.com/LMDB/lmdb
+- mmap (portable-memory-mapping): zlib, https://create.stephan-brumme.com/portable-memory-mapping
+- simde: MIT, https://github.com/simd-everywhere/simde
+- libdivide: zlib or BSL-1.0, https://github.com/ridiculousfish/libdivide
 
-> Kabsch W, Sander C. "Dictionary of protein secondary structure: pattern
-> recognition of hydrogen-bonded and geometrical features."
-> Biopolymers. 1983 Dec;22(12):2577-637. doi:10.1002/bip.360221211
+## Libraries Referenced During Development
 
-## FreeSASA
+Lahuta has also used the following libraries in different capacities (for example: reference implementations, testing, and benchmarking):
 
-- **Project**: https://github.com/mittinatten/freesasa
-- **License**: MIT
-- **Copyright**: (c) 2016 Simon Mitternacht
-- **Usage**: Reference implementation for SASA validation
-
-FreeSASA implements the Shrake-Rupley algorithm:
-
-> Shrake A, Rupley JA. "Environment and exposure to solvent of protein atoms.
-> Lysozyme and insulin." J Mol Biol. 1973;79(2):351-71.
-
-## RustSASA
-
-- **Project**: https://github.com/maxall41/RustSASA
-- **License**: MIT
-- **Copyright**: (c) 2024 Maxwell Campbell
-- **Usage**: Reference for SASA optimization strategies and validation
+- DSSP (PDB-REDO): BSD-2-Clause, https://github.com/PDB-REDO/dssp
+- FreeSASA: MIT, https://github.com/mittinatten/freesasa
+- RustSASA: MIT, https://github.com/maxall41/RustSASA
