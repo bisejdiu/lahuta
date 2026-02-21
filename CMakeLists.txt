@@ -13,7 +13,6 @@ option(LAHUTA_VENDOR_EIGEN         "Use vendored Eigen headers instead of system
 option(LAHUTA_ENABLE_EXPENSIVE_TESTS "Enable expensive tests that require large datasets" OFF)
 option(LAHUTA_ENABLE_LTO           "Enable interprocedural optimization (LTO/IPO) for non-Debug builds" ON)
 option(LAHUTA_NATIVE_ARCH          "Enable -march=native for non-Debug builds" OFF)
-option(LAHUTA_BUILD_FOLDSEEK       "Build foldseek and mapping components" OFF)
 option(LAHUTA_DISTOPIA_ENABLE_SVE  "Enable Highway SVE targets for distopia" OFF)
 
 add_subdirectory(core)

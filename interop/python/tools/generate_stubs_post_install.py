@@ -101,10 +101,6 @@ def main() -> int:
 
     modules = ["lahuta.lib.lahuta"]
 
-    mapping_module_path = lahuta_pkg_dir / "lib" / "mapping"
-    if mapping_module_path.exists():
-        modules.append("lahuta.lib.mapping")
-
     # pybind11-stubgen creates: <output-dir>/lahuta/lib/<module>/__init__.pyi
     # By setting output-dir to pkg_root (interop/python/), it creates the full path
     for module in modules:

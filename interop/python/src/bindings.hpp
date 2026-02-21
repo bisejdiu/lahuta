@@ -37,10 +37,7 @@ void bind_grid_search(py::module_ &m);
 void bind_contacts(py::module_ &m);
 void bind_distance(py::module_ &m);
 
-void bind_foldseek(py::module_ &m);
-void bind_align(py::module_ &m);
 void bind_properties(py::module_ &m);
-void bind_te(py::module_ &m);
 void bind_rdkit(py::module_ &m);
 
 void bind_logger(py::module_ &m);

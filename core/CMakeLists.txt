@@ -143,14 +143,6 @@ if(NOT HAVE_BGL_HEADERS)
                       "Otherwise, install Boost >= 1.81 and configure with -DLAHUTA_VENDOR_BOOST=OFF.")
 endif()
 
-# Interface header collection used by foldseek
-add_library(lahuta_shared_headers INTERFACE)
-target_include_directories(lahuta_shared_headers INTERFACE
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/fseek
-  ${CMAKE_CURRENT_SOURCE_DIR}/external/ctpl
-  ${CMAKE_CURRENT_SOURCE_DIR}/examples
-)
-
 add_subdirectory(external/spdlog)
 add_subdirectory(external/gemmi)    # Build gemmi first (zlib alignment)
 
@@ -162,16 +154,6 @@ if(TARGET gemmi_headers)
 endif()
 
 add_subdirectory(external/rdkit)
-
-if(LAHUTA_BUILD_FOLDSEEK)
-  add_subdirectory(external/foldseek)
-  add_dependencies(foldseek gemmi_cpp)
-
-  # Set install name for foldseek on macOS
-  if(APPLE)
-    set_target_properties(foldseek PROPERTIES INSTALL_NAME_DIR "@rpath")
-  endif()
-endif()
 add_subdirectory(external/distopia)
 
 #
@@ -346,38 +328,6 @@ else()
   target_link_libraries(lahuta_core PUBLIC ${_lahuta_core_private_libs} ${_lahuta_core_public_libs})
 endif()
 
-# Mapping library
-if(LAHUTA_BUILD_FOLDSEEK)
-  add_library(lahuta_mapping STATIC
-    src/mapping/bitset_mapping.cpp
-    src/mapping/mapping_matrix.cpp
-    src/mapping/residue_set.cpp
-  )
-  target_compile_features(lahuta_mapping PUBLIC cxx_std_17)
-  set_property(TARGET lahuta_mapping PROPERTY POSITION_INDEPENDENT_CODE ON)
-  target_include_directories(lahuta_mapping PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/external
-  )
-  # SIMDe headers for mapping and dependent code
-  target_include_directories(lahuta_mapping PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/simde
-  )
-  # Foldseek headers needed by mapping
-  target_include_directories(lahuta_mapping PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek/simd
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/foldseek/generated
-  )
-  target_link_libraries(lahuta_mapping PUBLIC
-    lahuta_core
-    foldseek
-    ZLIB::ZLIB
-    spdlog::spdlog_header_only
-    Boost::headers
-  )
-endif()
-
 if(LAHUTA_BUILD_EXAMPLES)
   add_subdirectory(examples)
 endif()
@@ -475,30 +425,6 @@ if(LAHUTA_BUILD_PYTHON)
       BUILD_WITH_INSTALL_RPATH TRUE
     )
 
-    # mapping submodule, depends at Python-import level on lahuta
-    if(LAHUTA_BUILD_FOLDSEEK)
-      set(LAHUTA_MAPPING_SOURCES
-        ${PY_SRC_DIR}/mapping/mapping.cpp
-        ${PY_SRC_DIR}/mapping/fseek.cpp
-        ${PY_SRC_DIR}/mapping/align.cpp
-        ${PY_SRC_DIR}/mapping/te.cpp
-      )
-      pybind11_add_module(mapping_ext MODULE ${LAHUTA_MAPPING_SOURCES})
-      target_include_directories(mapping_ext PRIVATE ${PY_SRC_DIR})
-      target_link_libraries(mapping_ext PRIVATE lahuta_mapping spdlog::spdlog_header_only ZLIB::ZLIB)
-      if(TARGET Python3::NumPy)
-        target_link_libraries(mapping_ext PRIVATE Python3::NumPy)
-      endif()
-      target_compile_features(mapping_ext PRIVATE cxx_std_17)
-      set_target_properties(mapping_ext PROPERTIES OUTPUT_NAME "mapping")
-      set_target_properties(mapping_ext PROPERTIES
-        BUILD_RPATH   "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
-        INSTALL_RPATH "$<$<PLATFORM_ID:Darwin>:@loader_path;@loader_path/..>$<$<PLATFORM_ID:Linux>:$ORIGIN;$ORIGIN/..>"
-        # Build with install RPATH to prevent re-install errors on macOS
-        BUILD_WITH_INSTALL_RPATH TRUE
-      )
-    endif()
-
     # Install compiled extensions and runtime libraries into the Python package tree
     # These are relative to the CMAKE_INSTALL_PREFIX (which could be set to sitepackages above)
     # Note: When using direct CMake install (cmake --install), both compiled artifacts and Python files are installed by CMake.
@@ -508,13 +434,6 @@ if(LAHUTA_BUILD_PYTHON)
       COMPONENT python
     )
 
-    if(LAHUTA_BUILD_FOLDSEEK)
-      install(TARGETS mapping_ext
-        LIBRARY DESTINATION "lahuta/lib"
-        COMPONENT python
-      )
-    endif()
-
     # runtime shared libraries needed by Python extensions
     if(LAHUTA_BUILD_SHARED_CORE)
       set(_lahuta_core_python_dest LIBRARY DESTINATION "lahuta/lib")
@@ -522,21 +441,10 @@ if(LAHUTA_BUILD_PYTHON)
       set(_lahuta_core_python_dest ARCHIVE DESTINATION "lahuta/lib")
     endif()
 
-    if(LAHUTA_BUILD_FOLDSEEK)
-      install(TARGETS lahuta_core
-        ${_lahuta_core_python_dest}
-        COMPONENT python
-      )
-      install(TARGETS foldseek
-        LIBRARY DESTINATION "lahuta/lib"
-        COMPONENT python
-      )
-    else()
-      install(TARGETS lahuta_core
-        ${_lahuta_core_python_dest}
-        COMPONENT python
-      )
-    endif()
+    install(TARGETS lahuta_core
+      ${_lahuta_core_python_dest}
+      COMPONENT python
+    )
 
     # Configure Python version file for direct CMake installs
     lahuta_configure_python_version(
