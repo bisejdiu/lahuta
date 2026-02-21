@@ -1,7 +1,7 @@
 # Lahuta - a performant and scalable library for structural biology and bioinformatics
 #
 # Copyright (c) Besian I. Sejdiu (@bisejdiu)
-# License: TBD (see LICENSE file for more info).
+# License: Apache License 2.0 (see LICENSE file for more info).
 #
 # Contact:
 #     print(string.Template("$a$b@$c").substitute(a="besian", b="sejdiu", c="gmail.com"))

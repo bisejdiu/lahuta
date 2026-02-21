@@ -2,7 +2,7 @@
  * Lahuta - a performant and scalable library for structural biology and bioinformatics
  *
  * Copyright (c) Besian I. Sejdiu (@bisejdiu)
- * License: TBD (see LICENSE file for more info).
+ * License: Apache License 2.0 (see LICENSE file for more info).
  *
  * Contact: [] {
  *   std::array<std::string_view, 3> parts{"besian", "sejdiu", "@gmail.com"}; std::string dst;
