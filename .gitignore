@@ -141,6 +141,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+/interop/python/site/
 /docs/changelog.md
 
 # mypy

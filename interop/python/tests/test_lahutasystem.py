@@ -1,7 +1,7 @@
 # Lahuta - a performant and scalable library for structural biology and bioinformatics
 #
 # Copyright (c) Besian I. Sejdiu (@bisejdiu)
-# License: TBD (see LICENSE file for more info).
+# License: Apache License 2.0 (see LICENSE file for more info).
 #
 # Contact:
 #     class Email:
@@ -57,7 +57,7 @@ EXPECTED = {
         "indices":     ((671,), "int32",  "1ab38760f81915e948aa53672172de2fec931eeabaf0f3efeb66e2cbf4313d21"),
         "atom_nums":   ((671,), "int32",  "111a012c1b720b50c803036c1b4b9cd9fb4c7e276b6e1e0034da795e0551fc3d"),
         "resids":      ((671,), "int32",  "2a50c31b68221ed954d0442a60a09e6e29135d552bd442a5f08f76f5d33c2159"),
-        "resindices":  ((671,), "int32",  "695ecbe032a769c5bfab939faf8f08e54c294cf6e1ed204637c1c41d8de0fede"),
+        "resindices":  ((671,), "int32",  "c3d97a444b1a035bfe58ee6303caace9bd463ae2469b5caf6512df5faeec6ae2"),
         "names":       ((671,), "object", "a6a3a9d28124a3bbbb57b64e025703bdf19566bc0ee2982692c42611df8f0ecb"),
         "symbols":     ((671,), "object", "07468f9a8f5a0a4869a92a87a985b57393dd9bf89e58ae113779a553e3201905"),
         "elements":    ((671,), "object", "6ef6cc55261792e42927e0e76bbbf2492e3eeaf723fe276b7bc7d74c2ba0e008"),

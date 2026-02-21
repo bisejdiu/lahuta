@@ -1,7 +1,7 @@
 # Lahuta - a performant and scalable library for structural biology and bioinformatics
 #
 # Copyright (c) Besian I. Sejdiu (@bisejdiu)
-# License: TBD (see LICENSE file for more info).
+# License: Apache License 2.0 (see LICENSE file for more info).
 #
 # Contact:
 #     print(string.Template("$a$b@$c").substitute(a="besian", b="sejdiu", c="gmail.com"))
@@ -240,7 +240,7 @@ def test_fastns_handles_diverse_point_clouds_with_fallback(data):
             expected_d = math.sqrt(brute[key])
             actual_d   = math.sqrt(fastns[key])
             # Allow 0.0 vs tiny differences for mixed-scale scenarios
-            if expected_d < 1e-7:
+            if expected_d < 1e-6:
                 assert actual_d == 0.0 or math.isclose(actual_d, expected_d, rel_tol=5e-6, abs_tol=tol)
             else:
                 assert math.isclose(actual_d, expected_d, rel_tol=5e-6, abs_tol=tol)

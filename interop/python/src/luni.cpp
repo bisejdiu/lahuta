@@ -2,7 +2,7 @@
  * Lahuta - a performant and scalable library for structural biology and bioinformatics
  *
  * Copyright (c) Besian I. Sejdiu (@bisejdiu)
- * License: TBD (see LICENSE file for more info).
+ * License: Apache License 2.0 (see LICENSE file for more info).
  *
  * Contact: [] {
  *   std::string first, last, domain;
@@ -87,7 +87,20 @@ public:
   auto indices() { return numpy::as_numpy_copy(luni_.indices()); }
   auto atom_nums() { return numpy::as_numpy_copy(luni_.atomic_numbers()); }
   auto resids() { return numpy::as_numpy_copy(luni_.resids()); }
-  auto resindices() { return numpy::as_numpy_copy(luni_.resindices()); }
+  auto resindices() {
+    Residues residues(luni_.get_molecule());
+    if (residues.build()) {
+      return numpy::as_numpy_copy(residues.atom_to_residue_indices());
+    }
+
+    std::vector<int> fallback;
+    fallback.reserve(static_cast<std::size_t>(luni_.n_atoms()));
+    for (const auto atom : luni_.get_molecule().atoms()) {
+      auto *info = dynamic_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+      fallback.push_back(info ? static_cast<int>(info->getResidueIndex()) : -1);
+    }
+    return numpy::as_numpy_copy(fallback);
+  }
   auto names() { return numpy::string_array_1d(luni_.names()); }
   auto symbols() { return numpy::string_array_1d(luni_.symbols()); }
   auto elements() { return numpy::string_array_1d(luni_.elements()); }
@@ -165,7 +178,9 @@ void bind_luni(py::module &m) {
       .def_property_readonly("indices", &LuniProperties::indices, "Atom indices")
       .def_property_readonly("atom_nums", &LuniProperties::atom_nums, "Atomic numbers")
       .def_property_readonly("resids", &LuniProperties::resids, "Residue IDs")
-      .def_property_readonly("resindices", &LuniProperties::resindices, "Residue indices")
+      .def_property_readonly("resindices",
+                             &LuniProperties::resindices,
+                             "Residue indices (AtomPDBResidueInfo.residueIndex)")
       .def_property_readonly("names", &LuniProperties::names, "Atom names")
       .def_property_readonly("symbols", &LuniProperties::symbols, "Element symbols")
       .def_property_readonly("elements", &LuniProperties::elements, "Element names")
@@ -208,33 +223,37 @@ void bind_luni(py::module &m) {
            py::arg("t_opts") = std::nullopt,
            "Build the topology with optional configuration")
       .def("build_topology",
-           py::overload_cast<const TopologyBuildingOptions &, TopologyComputation>(&Luni::build_topology, py::const_),
+           py::overload_cast<const TopologyBuildingOptions &, TopologyComputation>(&Luni::build_topology,
+                                                                                   py::const_),
            py::arg("t_opts"),
            py::arg("include"),
            "Build topology and ensure requested computations")
-      .def("build_topology",
-           [](const Luni &self, TopologyComputation include) {
-             TopologyBuildingOptions opts;
-             if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
-             return self.build_topology(opts, include);
-           },
-           py::arg("include"),
-           "Build topology with default options and ensure requested computations")
-      .def("build_topology",
-           [](const Luni &self, const TopologyBuildingOptions &opts, py::iterable include) {
-             return self.build_topology(opts, combine_topology_flags(include));
-           },
-           py::arg("t_opts"),
-           py::arg("include"),
-           "Build topology and ensure requested computations (list of flags)")
-      .def("build_topology",
-           [](const Luni &self, py::iterable include) {
-             TopologyBuildingOptions opts;
-             if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
-             return self.build_topology(opts, combine_topology_flags(include));
-           },
-           py::arg("include"),
-           "Build topology with default options and ensure requested computations (list of flags)")
+      .def(
+          "build_topology",
+          [](const Luni &self, TopologyComputation include) {
+            TopologyBuildingOptions opts;
+            if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
+            return self.build_topology(opts, include);
+          },
+          py::arg("include"),
+          "Build topology with default options and ensure requested computations")
+      .def(
+          "build_topology",
+          [](const Luni &self, const TopologyBuildingOptions &opts, py::iterable include) {
+            return self.build_topology(opts, combine_topology_flags(include));
+          },
+          py::arg("t_opts"),
+          py::arg("include"),
+          "Build topology and ensure requested computations (list of flags)")
+      .def(
+          "build_topology",
+          [](const Luni &self, py::iterable include) {
+            TopologyBuildingOptions opts;
+            if (self.is_model_origin()) opts.mode = TopologyBuildMode::Model;
+            return self.build_topology(opts, combine_topology_flags(include));
+          },
+          py::arg("include"),
+          "Build topology with default options and ensure requested computations (list of flags)")
       .def("reset_topology",
            &Luni::reset_topology,
            "Return a fresh system by reloading the original input file")
@@ -288,7 +307,7 @@ void bind_luni(py::module &m) {
           },
           py::return_value_policy::move,
           py::keep_alive<0, 1>(),
-          "Residues container (computed from molecule; does not build topology)")
+          "Residues container")
       .def("get_atom",
            &Luni::get_atom,
            py::arg("idx"),
@@ -329,7 +348,8 @@ void bind_luni(py::module &m) {
           },
           py::arg("cutoff"),
           py::arg("residue_difference") = 0,
-          "Find neighboring atoms within cutoff distance. If residue_difference > 0, exclude neighbors from the same "
+          "Find neighboring atoms within cutoff distance. If residue_difference > 0, exclude neighbors from "
+          "the same "
           "residue or within residue_difference residues.");
 }
 } // namespace lahuta::bindings

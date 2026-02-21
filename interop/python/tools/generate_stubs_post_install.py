@@ -2,7 +2,7 @@
 # Lahuta - a performant and scalable library for structural biology and bioinformatics
 #
 # Copyright (c) Besian I. Sejdiu (@bisejdiu)
-# License: TBD (see LICENSE file for more info).
+# License: Apache License 2.0 (see LICENSE file for more info).
 #
 # Contact:
 #     class Email:
@@ -100,10 +100,6 @@ def main() -> int:
             env["DYLD_INSERT_LIBRARIES"] = lib_path
 
     modules = ["lahuta.lib.lahuta"]
-
-    mapping_module_path = lahuta_pkg_dir / "lib" / "mapping"
-    if mapping_module_path.exists():
-        modules.append("lahuta.lib.mapping")
 
     # pybind11-stubgen creates: <output-dir>/lahuta/lib/<module>/__init__.pyi
     # By setting output-dir to pkg_root (interop/python/), it creates the full path

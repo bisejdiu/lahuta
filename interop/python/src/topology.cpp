@@ -2,7 +2,7 @@
  * Lahuta - a performant and scalable library for structural biology and bioinformatics
  *
  * Copyright (c) Besian I. Sejdiu (@bisejdiu)
- * License: TBD (see LICENSE file for more info).
+ * License: Apache License 2.0 (see LICENSE file for more info).
  *
  * Contact: [] {
  *   auto t1 = std::make_tuple("besian");
@@ -195,7 +195,18 @@ void bind_topology(py::module &m) {
 
     .def_property_readonly("residues", &Residues::get_residues, "Snapshot list of residues")
     .def("filter", [](const Residues &self, py::function func) {
-        auto pred = [func](const Residue &r) {return func(r).cast<bool>();};
+        auto pred = [func](const Residue &r) {
+          py::object out = func(r);
+          try {
+            return out.cast<bool>();
+          } catch (const py::cast_error &) {
+            const std::string type_name = py::str(out.get_type().attr("__name__"));
+            throw py::type_error(
+              "Residues.filter predicate must return a bool (or bool-castable value), got '" +
+              type_name + "'. Example: lambda r: r.name == 'ARG' or lambda r: True"
+            );
+          }
+        };
         return self.filter(pred);
      }, py::arg("func"),
       py::keep_alive<0, 1>(),
@@ -210,6 +221,11 @@ void bind_topology(py::module &m) {
      }, py::arg("func"), "Apply function to each residue, returning a Python list")
     .def("get_atom_ids",      &Residues::get_atom_ids,      "Concatenated atom indices of all residues (order-preserving)")
     .def("get_residue_names", &Residues::get_residue_names, "Residue names aligned to container order")
+    .def("residue_index_of_atom", &Residues::residue_index_of_atom, py::arg("atom_idx"), "Return residue index for an atom index")
+    .def("residue_of_atom",       &Residues::residue_of_atom,       py::arg("atom_idx"),
+      py::return_value_policy::reference_internal, "Return residue object for an atom index")
+    .def_property_readonly("atom_to_residue_indices", &Residues::atom_to_residue_indices,
+      "Atom-aligned residue index mapping (-1 for unmapped atoms)")
     .def("__getitem__", [](Residues &self, size_t i) -> const Residue& {
         const auto &v = self.get_residues();  // NOTE: must be a reference-returning accessor
         if (i >= v.size()) throw py::index_error();
@@ -307,6 +323,11 @@ void bind_topology(py::module &m) {
     .def("get_atom",  &Topology::atom,  py::arg("idx"), py::return_value_policy::reference_internal, "Atom record at atom index")
     .def("get_ring",  &Topology::ring,  py::arg("idx"), py::return_value_policy::reference_internal, "Ring record at index (0..n_rings-1)")
     .def("get_group", &Topology::group, py::arg("idx"), py::return_value_policy::reference_internal, "Group record at index (0..n_groups-1)")
+    .def("residue_index_of_atom", &Topology::residue_index_of_atom, py::arg("atom_idx"), "Return residue index for an atom index")
+    .def("residue_of_atom",       &Topology::residue_of_atom,       py::arg("atom_idx"),
+      py::return_value_policy::reference_internal, "Return residue object for an atom index")
+    .def_property_readonly("atom_to_residue_indices", &Topology::atom_to_residue_indices,
+      "Atom-aligned residue index mapping (-1 for unmapped atoms)")
 
     // Typed resolving helpers
     .def("resolve_atom", [](Topology &self, const EntityID &id) -> const AtomRec& {

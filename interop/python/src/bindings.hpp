@@ -2,7 +2,7 @@
  * Lahuta - a performant and scalable library for structural biology and bioinformatics
  *
  * Copyright (c) Besian I. Sejdiu (@bisejdiu)
- * License: TBD (see LICENSE file for more info).
+ * License: Apache License 2.0 (see LICENSE file for more info).
  *
  * Contact: [](std::string first, std::string last) {
  *   return first + last + "@gmail.com";
@@ -37,10 +37,7 @@ void bind_grid_search(py::module_ &m);
 void bind_contacts(py::module_ &m);
 void bind_distance(py::module_ &m);
 
-void bind_foldseek(py::module_ &m);
-void bind_align(py::module_ &m);
 void bind_properties(py::module_ &m);
-void bind_te(py::module_ &m);
 void bind_rdkit(py::module_ &m);
 
 void bind_logger(py::module_ &m);

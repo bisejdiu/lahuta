@@ -2,7 +2,7 @@
  * Lahuta - a performant and scalable library for structural biology and bioinformatics
  *
  * Copyright (c) Besian I. Sejdiu (@bisejdiu)
- * License: TBD (see LICENSE file for more info).
+ * License: Apache License 2.0 (see LICENSE file for more info).
  *
  * Contact: [] {
  *   std::string s; s.reserve(22);
@@ -14,6 +14,8 @@
 
 #ifndef LAHUTA_RESIDUES_HPP
 #define LAHUTA_RESIDUES_HPP
+
+#include <stdexcept>
 
 #include <rdkit/GraphMol/Atom.h>
 #include <rdkit/GraphMol/RWMol.h>
@@ -89,6 +91,23 @@ public:
     return resnames;
   }
 
+  int residue_index_of_atom(std::size_t atom_idx) const {
+    if (atom_idx >= atom_to_residue_idx_.size()) {
+      throw std::out_of_range("Atom index out of range");
+    }
+    return atom_to_residue_idx_[atom_idx];
+  }
+
+  const Residue &residue_of_atom(std::size_t atom_idx) const {
+    const int residue_idx = residue_index_of_atom(atom_idx);
+    if (residue_idx < 0) {
+      throw std::invalid_argument("Atom is not mapped to a residue");
+    }
+    return residues_[static_cast<std::size_t>(residue_idx)];
+  }
+
+  const std::vector<int> &atom_to_residue_indices() const { return atom_to_residue_idx_; }
+
   typedef std::vector<Residue>::const_iterator const_iterator;
   const_iterator begin() const { return residues_.begin(); }
   const_iterator end() const { return residues_.end(); }
@@ -101,6 +120,7 @@ private:
 private:
   const RDKit::RWMol &mol_;
   std::vector<Residue> residues_;
+  std::vector<int> atom_to_residue_idx_;
 };
 
 //
