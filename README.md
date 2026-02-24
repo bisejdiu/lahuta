@@ -1,4 +1,4 @@
-# ⚡ Lahuta ⚡
+# Lahuta ⚡
 [![Github-CI][github-ci-core]][github-link]
 [![Github-CI][github-ci-python]][github-link]
 [![Conda][conda-badge]][conda-link]
@@ -43,9 +43,10 @@ Lahuta enables screening of millions of models and long MD ensembles on standard
 ## Installation
 
 We recommend using `conda` for installation. Lahuta requires **Python 3.10** or higher.
+Note that currently this will only work for MacOS systems. For Linux you currently need to build from source. We will update this as soon as can!
 
 ```bash
-conda install -c bisejdiu lahuta
+conda install bisejdiu::lahuta
 ```
 
 Or `pip`:
