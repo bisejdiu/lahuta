@@ -92,7 +92,15 @@ set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE
 set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
 
 
-find_package(ZLIB REQUIRED)
+# for zlib , either use vendored zlib-ng (fetched by gemmi) or system zlib
+if(LAHUTA_VENDOR_ZLIB)
+  # Configure gemmi to fetch and build zlib-ng statically
+  set(FETCH_ZLIB_NG ON CACHE BOOL "Use zlib-ng fetched by gemmi" FORCE)
+  set(INTERNAL_ZLIB OFF CACHE BOOL "Don't use gemmi's internal zlib subset" FORCE)
+  message(STATUS "Using vendored zlib-ng (fetched by gemmi)")
+else()
+  find_package(ZLIB REQUIRED)
+endif()
 
 # Boost headers
 if(LAHUTA_VENDOR_BOOST)
@@ -145,6 +153,15 @@ endif()
 
 add_subdirectory(external/spdlog)
 add_subdirectory(external/gemmi)    # Build gemmi first (zlib alignment)
+
+# When using vendored zlib-ng (via gemmi's FETCH_ZLIB_NG), create a ZLIB::ZLIB alias
+# so that other targets can link to it using the standard CMake target name.
+if(LAHUTA_VENDOR_ZLIB AND TARGET zlib)
+  if(NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS zlib)
+    message(STATUS "Created ZLIB::ZLIB alias to vendored zlib-ng")
+  endif()
+endif()
 
 if(TARGET gemmi_cpp)
   target_compile_features(gemmi_cpp PUBLIC cxx_std_17)
@@ -445,6 +462,15 @@ if(LAHUTA_BUILD_PYTHON)
       ${_lahuta_core_python_dest}
       COMPONENT python
     )
+
+    # Install lahuta_core to standard lib location for CLI usage for conda builds only
+    # For pip wheels, CLI uses the library from lahuta/lib/ via rpath
+    if(LAHUTA_BUILD_CLI AND NOT DEFINED SKBUILD)
+      install(TARGETS lahuta_core
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT cli
+      )
+    endif()
 
     # Configure Python version file for direct CMake installs
     lahuta_configure_python_version(

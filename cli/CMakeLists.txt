@@ -34,6 +34,32 @@ target_include_directories(lahuta PRIVATE
 target_link_libraries(lahuta PRIVATE lahuta_core)
 target_compile_features(lahuta PRIVATE cxx_std_17)
 
+# Set rpath so CLI can find liblahuta_core at runtime
+# For pip wheels (SKBUILD): binary in bin/, library in lahuta/lib/
+# For conda/system: binary in bin/, library in lib/
+if(APPLE)
+  if(DEFINED SKBUILD)
+    set(_cli_rpath "@loader_path/../lahuta/lib")
+  else()
+    set(_cli_rpath "@loader_path/../lib")
+  endif()
+else()
+  if(DEFINED SKBUILD)
+    set(_cli_rpath "$ORIGIN/../lahuta/lib")
+  else()
+    set(_cli_rpath "$ORIGIN/../lib")
+  endif()
+endif()
+set_target_properties(lahuta PROPERTIES
+  INSTALL_RPATH "${_cli_rpath}"
+  BUILD_WITH_INSTALL_RPATH TRUE
+)
+
+install(TARGETS lahuta
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  COMPONENT cli
+)
+
 if(BUILD_TESTING)
   add_test(NAME lahuta_help COMMAND lahuta --help)
   set_tests_properties(lahuta_help PROPERTIES PASS_REGULAR_EXPRESSION "Usage: lahuta \\[global-options\\]")
