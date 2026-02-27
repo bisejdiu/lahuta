@@ -2,6 +2,7 @@
 Distance metrics for 3D coordinates.
 """
 from __future__ import annotations
+import numpy
 import typing
 __all__: list[str] = ['cdist', 'pairwise_distances', 'pdist']
 def cdist(XA: numpy.ndarray[typing.Any, numpy.dtype[numpy.float64]], XB: numpy.ndarray[typing.Any, numpy.dtype[numpy.float64]], squared: bool = False) -> numpy.ndarray[typing.Any, numpy.dtype[numpy.float64]]:

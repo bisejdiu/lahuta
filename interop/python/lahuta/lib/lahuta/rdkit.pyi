@@ -2,6 +2,7 @@
 Bindings for RDKit core types
 """
 from __future__ import annotations
+import numpy
 import typing
 __all__: list[str] = ['AROMATIC', 'Atom', 'AtomMonomerInfo', 'AtomPDBResidueInfo', 'BEGINDASH', 'BEGINWEDGE', 'Bond', 'BondDir', 'BondStereo', 'BondType', 'Conformer', 'DOUBLE', 'EITHERDOUBLE', 'ENDDOWNRIGHT', 'ENDUPRIGHT', 'NONE', 'Point3D', 'RWMol', 'SINGLE', 'STEREOANY', 'STEREOATROPCCW', 'STEREOATROPCW', 'STEREOCIS', 'STEREOE', 'STEREONONE', 'STEREOTRANS', 'STEREOZ', 'TRIPLE', 'UNKNOWN', 'UNSPECIFIED', 'hasNonZeroZCoords', 'pAtomPDBResidueInfo']
 class Atom:

@@ -2,6 +2,7 @@
 lahuta: A Python binding for the Lahuta library
 """
 from __future__ import annotations
+import numpy
 import typing
 from . import db
 from . import metrics

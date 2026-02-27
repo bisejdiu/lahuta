@@ -34,25 +34,28 @@ target_include_directories(lahuta PRIVATE
 target_link_libraries(lahuta PRIVATE lahuta_core)
 target_compile_features(lahuta PRIVATE cxx_std_17)
 
-# Set rpath so CLI can find liblahuta_core at runtime
-# For pip wheels (SKBUILD): binary in bin/, library in lahuta/lib/
-# For conda/system: binary in bin/, library in lib/
+# Set rpath so CLI can find liblahuta_core at runtime.
+# In the build tree the executable lives in build/cli and the shared library in
+# build/core. Installed layouts differ between wheel and conda/system packages.
 if(APPLE)
+  set(_cli_build_rpath "@loader_path/../core")
   if(DEFINED SKBUILD)
-    set(_cli_rpath "@loader_path/../lahuta/lib")
+    set(_cli_install_rpath "@loader_path/../lahuta/lib")
   else()
-    set(_cli_rpath "@loader_path/../lib")
+    set(_cli_install_rpath "@loader_path/../lib")
   endif()
 else()
+  set(_cli_build_rpath "$ORIGIN/../core")
   if(DEFINED SKBUILD)
-    set(_cli_rpath "$ORIGIN/../lahuta/lib")
+    set(_cli_install_rpath "$ORIGIN/../lahuta/lib")
   else()
-    set(_cli_rpath "$ORIGIN/../lib")
+    set(_cli_install_rpath "$ORIGIN/../lib")
   endif()
 endif()
 set_target_properties(lahuta PROPERTIES
-  INSTALL_RPATH "${_cli_rpath}"
-  BUILD_WITH_INSTALL_RPATH TRUE
+  BUILD_RPATH "${_cli_build_rpath}"
+  INSTALL_RPATH "${_cli_install_rpath}"
+  BUILD_WITH_INSTALL_RPATH FALSE
 )
 
 install(TARGETS lahuta

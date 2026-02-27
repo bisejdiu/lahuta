@@ -451,17 +451,14 @@ if(LAHUTA_BUILD_PYTHON)
       COMPONENT python
     )
 
-    # runtime shared libraries needed by Python extensions
+    # The Python extension links lahuta_core directly. Only install the shared
+    # runtime library into the package tree when lahuta_core is built shared.
     if(LAHUTA_BUILD_SHARED_CORE)
-      set(_lahuta_core_python_dest LIBRARY DESTINATION "lahuta/lib")
-    else()
-      set(_lahuta_core_python_dest ARCHIVE DESTINATION "lahuta/lib")
+      install(TARGETS lahuta_core
+        LIBRARY DESTINATION "lahuta/lib"
+        COMPONENT python
+      )
     endif()
-
-    install(TARGETS lahuta_core
-      ${_lahuta_core_python_dest}
-      COMPONENT python
-    )
 
     # Install lahuta_core to standard lib location for CLI usage for conda builds only
     # For pip wheels, CLI uses the library from lahuta/lib/ via rpath

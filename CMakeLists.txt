@@ -4,7 +4,7 @@ project(lahuta LANGUAGES C CXX)
 include(CTest)
 
 option(LAHUTA_BUILD_CLI            "Build Lahuta CLI tools" ON)
-option(LAHUTA_BUILD_SHARED_CORE    "Build lahuta_core as a shared library" ON)
+option(LAHUTA_BUILD_SHARED_CORE    "Build lahuta_core as a shared library" OFF)
 option(LAHUTA_BUILD_PYTHON         "Build Python bindings" ON)
 option(LAHUTA_BUILD_EXAMPLES       "Build Lahuta example executables" OFF)
 option(LAHUTA_GENERATE_PY_STUBS    "Generate Python type stubs with pybind11" ON)
