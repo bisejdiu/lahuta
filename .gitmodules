@@ -13,3 +13,6 @@
 [submodule "core/external/Eigen/eigen"]
  path = core/external/Eigen/eigen
  url = https://gitlab.com/libeigen/eigen.git
+[submodule "core/external/zlib-ng"]
+	path = core/external/zlib-ng
+	url = https://github.com/zlib-ng/zlib-ng.git
