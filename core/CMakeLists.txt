@@ -472,7 +472,7 @@ if(LAHUTA_BUILD_PYTHON)
 
     pybind11_add_module(lahuta_ext MODULE ${LAHUTA_PY_SOURCES})
     target_include_directories(lahuta_ext PRIVATE ${PY_SRC_DIR})
-    target_link_libraries(lahuta_ext PRIVATE lahuta_core spdlog::spdlog_header_only ZLIB::ZLIB)
+    target_link_libraries(lahuta_ext PRIVATE lahuta_core spdlog::spdlog_header_only)
     if(TARGET Python3::NumPy)
       target_link_libraries(lahuta_ext PRIVATE Python3::NumPy)
       message(STATUS "NumPy C API found. Enabling optimized array operations for lahuta_ext.")
