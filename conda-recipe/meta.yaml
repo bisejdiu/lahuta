@@ -1,0 +1,53 @@
+{% set name = "lahuta" %}
+{% set version_raw = load_file_regex(load_file='../VERSION', regex_pattern='^([0-9A-Za-z._+-]+)$', from_recipe_dir=True).group(1) %}
+{% set version = version_raw | replace('-', '.') %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  skip: true  # [py<310]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - cmake >=3.20
+    - ninja
+  host:
+    - python
+    - python >=3.10
+    - pybind11 >=2.11,<3
+    - numpy >=2.2
+  run:
+    - python >=3.10
+    - numpy >=2.2
+    - orjson
+    - packaging
+
+test:
+  imports:
+    - lahuta
+    - lahuta.lib
+  commands:
+    - python -c "import lahuta; print('Lahuta version:', lahuta.__version__)"
+    - lahuta --help
+
+about:
+  home: https://github.com/bisejdiu/lahuta
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: High-performance, scalable, structural analysis library
+  description: |
+    Lahuta is a high performance, scalable, structural analysis library designed for
+    large scale datasets and high throughput.
+
+extra:
+  recipe-maintainers:
+    - bisejdiu

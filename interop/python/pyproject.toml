@@ -10,13 +10,16 @@ name = "lahuta"
 dynamic = ["version"]
 description = "C++ bindings for Lahuta"
 authors = [{name = "Besian I Sejdiu, PhD (bisejdiu)"}]
-readme = "README.md"
+readme = "../../README.md"
 requires-python = ">=3.10"
 dependencies = [
     "numpy",
     "orjson",
     "packaging",
 ]
+
+[project.scripts]
+lahuta = "lahuta.cli:main"
 
 [tool.scikit-build]
 minimum-version = "0.8"
@@ -26,15 +29,20 @@ version = ">=3.20"
 source-dir = "../.."
 build-type = "Release"
 args = [
-  "-DLAHUTA_BUILD_CLI=OFF",
+  "-DLAHUTA_BUILD_CLI=ON",
   "-DLAHUTA_BUILD_SHARED_CORE=ON",
   "-DLAHUTA_BUILD_PYTHON=ON",
   "-DLAHUTA_GENERATE_PY_STUBS=ON",
   "-DLAHUTA_VENDOR_BOOST=ON",
+  "-DLAHUTA_USE_VENDORED_ZLIB_NG=ON",
 ]
 
 [tool.scikit-build.wheel]
 packages = ["lahuta"]
+
+[tool.scikit-build.install]
+components = ["python", "cli"]
+strip = false  # Preserve macOS code signatures
 
 [tool.scikit-build.editable]
 mode = "redirect"

@@ -2260,12 +2260,12 @@ simde_mm_testz_si128 (simde__m128i a, simde__m128i b) {
       return !(vgetq_lane_s64(s64, 0) | vgetq_lane_s64(s64, 1));
     #else
       for (size_t i = 0 ; i < (sizeof(a_.u64) / sizeof(a_.u64[0])) ; i++) {
-        if ((a_.u64[i] & b_.u64[i]) == 0)
-          return 1;
+        if ((a_.u64[i] & b_.u64[i]) != 0)
+          return 0;
       }
     #endif
 
-    return 0;
+    return 1;
   #endif
 }
 #if defined(SIMDE_X86_SSE4_1_ENABLE_NATIVE_ALIASES)

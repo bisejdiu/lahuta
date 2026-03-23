@@ -1,6 +1,5 @@
 function(fetch_gmx_test_data)
     set(SIMDB_DEST "${CMAKE_CURRENT_SOURCE_DIR}/../data/simulationdatabase")
-    message(STATUS "Destination for test data: ${SIMDB_DEST}")
 
     if(NOT EXISTS "${SIMDB_DEST}")
         file(MAKE_DIRECTORY "${SIMDB_DEST}")
@@ -30,18 +29,28 @@ function(fetch_gmx_test_data)
 
     list(LENGTH GMX_FILENAMES num_files)
     math(EXPR last_index "${num_files} - 1")
+    set(_lahuta_missing_indices)
 
     foreach(i RANGE ${last_index})
         list(GET GMX_FILENAMES ${i} filename)
-        list(GET GMX_URLS ${i} file_url)
-
         set(dest_file "${SIMDB_DEST}/${filename}")
 
         if(NOT EXISTS "${dest_file}")
-            message(STATUS "Downloading ${filename}...")
-            file(DOWNLOAD "${file_url}" "${dest_file}" SHOW_PROGRESS)
-        else()
-            message(STATUS "Skipping download of ${filename}, file already exists.")
+            list(APPEND _lahuta_missing_indices ${i})
         endif()
+    endforeach()
+
+    list(LENGTH _lahuta_missing_indices _lahuta_missing_count)
+    if(_lahuta_missing_count EQUAL 0)
+        message(STATUS "Using cached GROMACS test data at ${SIMDB_DEST}")
+        return()
+    endif()
+
+    message(STATUS "Fetching ${_lahuta_missing_count} GROMACS test data file(s) into ${SIMDB_DEST}")
+
+    foreach(i IN LISTS _lahuta_missing_indices)
+        list(GET GMX_FILENAMES ${i} filename)
+        list(GET GMX_URLS ${i} file_url)
+        file(DOWNLOAD "${file_url}" "${SIMDB_DEST}/${filename}")
     endforeach()
 endfunction()

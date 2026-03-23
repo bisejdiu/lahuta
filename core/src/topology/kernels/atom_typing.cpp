@@ -28,6 +28,7 @@
 #include "compute/result.hpp"
 #include "logging/logging.hpp"
 #include "residues/residues.hpp"
+#include "rings/aromatics.hpp"
 #include "selections/mol_filters.hpp"
 #include "topology/context.hpp"
 #include "topology/kernels.hpp"
@@ -88,6 +89,25 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
   try {
     switch (params.mode) {
       case AtomTypingMethod::Molstar: {
+
+        //
+        // Defensive stopgap: NonStandardBondComputation mutates the molecule via merge_bonds.
+        // When that path adds a bond, RDKit may reset RingInfo. If NonStandardBonds ran after
+        // RingComputation (which is currently allowed by the dependency graph), Molstar atom
+        // typing can later hit an uninitialized RingInfo and throw from itsdetectors.
+        //
+        // This guard repairs that specific failure mode by rebuilding RingInfo and ring records
+        // only when RDKit has already invalidated them. I know it is not a complete fix.
+        // NonStandardBondComputation can also update existing bonds or aromatic flags without
+        // deinitializing RingInfo, which can still leave cached ring-derived state stale (until
+        // we implement invalidation at the mutation point or a stricter dependency/invalidation
+        // model).  - Besian, March 2026
+        //
+        if (!data.mol->getRingInfo()->isInitialized()) {
+          initialize_and_populate_ringinfo(*data.mol, *data.residues);
+          data.rings = AtomTypingKernel::populate_ring_entities(*data.mol);
+        }
+
         ValenceModel valence_model;
         valence_model.apply(*data.mol);
 

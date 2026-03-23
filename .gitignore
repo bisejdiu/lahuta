@@ -1,8 +1,10 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 cachedir/
-*.py[codi]
+*.py[cod]
 *$py.class
+
+!*.pyi
 
 *.pdb
 *.cif
@@ -142,7 +144,9 @@ venv.bak/
 # mkdocs documentation
 /site
 /interop/python/site/
+interop/python/docs/
 /docs/changelog.md
+docs/
 
 # mypy
 .mypy_cache/

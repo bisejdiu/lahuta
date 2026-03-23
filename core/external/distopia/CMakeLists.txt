@@ -20,7 +20,10 @@ message(STATUS "Using vendored HWY subpackage")
 # Force Highway to build as static library
 set(HWY_FORCE_STATIC_LIBS ON CACHE BOOL "Force Highway to build static" FORCE)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-add_subdirectory("highway")
+block()
+  set(CMAKE_WARN_DEPRECATED OFF)
+  add_subdirectory("highway")
+endblock()
 # Linking highway publicly so it propagates to the final executable when linking statically
 target_link_libraries(libdistopia PUBLIC hwy)
 

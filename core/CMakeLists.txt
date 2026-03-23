@@ -92,7 +92,62 @@ set(HWY_ENABLE_CONTRIB    OFF CACHE BOOL "Disable highway contrib targets" FORCE
 set(HWY_ENABLE_INSTALL    OFF CACHE BOOL "Disable highway install targets" FORCE)
 
 
-find_package(ZLIB REQUIRED)
+# For zlib, either vendor zlib-ng directly at the top level or use system zlib.
+# Discard any cache entries for gemmi and drive them only via normal variables here.
+unset(FETCH_ZLIB_NG CACHE)
+unset(USE_ZLIB_NG CACHE)
+unset(INTERNAL_ZLIB CACHE)
+set(FETCH_ZLIB_NG OFF)
+set(INTERNAL_ZLIB OFF)
+if(LAHUTA_USE_VENDORED_ZLIB_NG)
+  # Make zlib-ng available once so vendored dependencies can consume the same
+  # target without each having to manage their own fetch/configuration flow.
+  set(USE_ZLIB_NG ON)
+  set(ZLIB_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+  set(ZLIBNG_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
+  set(WITH_GTEST OFF CACHE BOOL "" FORCE)
+  set(WITH_SANITIZER OFF CACHE BOOL "" FORCE)
+  if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/external/zlib-ng/CMakeLists.txt")
+    message(FATAL_ERROR "Vendored zlib-ng not found at ${CMAKE_CURRENT_SOURCE_DIR}/external/zlib-ng. "
+                        "Initialize submodules (git submodule update --init --recursive). "
+                        "Or disable vendoring with -DLAHUTA_USE_VENDORED_ZLIB_NG=OFF to use system zlib.")
+  endif()
+
+  message(STATUS "Using vendored zlib-ng")
+
+  block()
+    set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_TESTING OFF)
+    set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
+    set(CMAKE_WARN_DEPRECATED OFF)
+    add_subdirectory(external/zlib-ng EXCLUDE_FROM_ALL)
+  endblock()
+
+  if(TARGET zlib-ng)
+    set(_lahuta_zlib_target zlib-ng)
+  elseif(TARGET zlib)
+    set(_lahuta_zlib_target zlib)
+  else()
+    message(FATAL_ERROR "Vendored zlib-ng did not provide an expected CMake target")
+  endif()
+
+  set_property(TARGET ${_lahuta_zlib_target} PROPERTY POSITION_INDEPENDENT_CODE ON)
+  # Preserve Gemmi's previous zlib-ng IPO workaround. Unless built WITH_NATIVE_INSTRUCTIONS=ON
+  # (-march=native), zlib-ng builds multiple CPU-specific variants of some
+  # functions, and IPO (LTO) has been reported to cause illegal-instruction
+  # crashes in that configuration.
+  if(NOT WITH_NATIVE_INSTRUCTIONS)
+    set_target_properties(${_lahuta_zlib_target} PROPERTIES
+      INTERPROCEDURAL_OPTIMIZATION OFF
+      INTERPROCEDURAL_OPTIMIZATION_RELEASE OFF
+      INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL OFF
+    )
+  endif()
+
+else()
+  set(USE_ZLIB_NG OFF)
+  find_package(ZLIB REQUIRED)
+endif()
 
 # Boost headers
 if(LAHUTA_VENDOR_BOOST)
@@ -145,6 +200,15 @@ endif()
 
 add_subdirectory(external/spdlog)
 add_subdirectory(external/gemmi)    # Build gemmi first (zlib alignment)
+
+# When using vendored zlib-ng, create a ZLIB::ZLIB alias so other targets can
+# link through the standard CMake target name.
+if(LAHUTA_USE_VENDORED_ZLIB_NG AND DEFINED _lahuta_zlib_target)
+  if(NOT TARGET ZLIB::ZLIB)
+    add_library(ZLIB::ZLIB ALIAS ${_lahuta_zlib_target})
+    message(STATUS "Created ZLIB::ZLIB alias to vendored zlib-ng")
+  endif()
+endif()
 
 if(TARGET gemmi_cpp)
   target_compile_features(gemmi_cpp PUBLIC cxx_std_17)
@@ -284,6 +348,13 @@ add_library(lahuta_core ${_lahuta_core_library_type}
 target_compile_features(lahuta_core PUBLIC cxx_std_17)
 set_property(TARGET lahuta_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# SIMDE emulates AVX types portably when -mavx is absent, which triggers GCC's
+# -Wpsabi note about the 32-byte parameter ABI change.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(lahuta_core PUBLIC -Wno-psabi)
+  target_link_options(lahuta_core PUBLIC -Wno-psabi)
+endif()
+
 lahuta_configure_core_version(lahuta_core)
 
 target_include_directories(lahuta_core PUBLIC
@@ -408,7 +479,7 @@ if(LAHUTA_BUILD_PYTHON)
 
     pybind11_add_module(lahuta_ext MODULE ${LAHUTA_PY_SOURCES})
     target_include_directories(lahuta_ext PRIVATE ${PY_SRC_DIR})
-    target_link_libraries(lahuta_ext PRIVATE lahuta_core spdlog::spdlog_header_only ZLIB::ZLIB)
+    target_link_libraries(lahuta_ext PRIVATE lahuta_core spdlog::spdlog_header_only)
     if(TARGET Python3::NumPy)
       target_link_libraries(lahuta_ext PRIVATE Python3::NumPy)
       message(STATUS "NumPy C API found. Enabling optimized array operations for lahuta_ext.")
@@ -434,17 +505,23 @@ if(LAHUTA_BUILD_PYTHON)
       COMPONENT python
     )
 
-    # runtime shared libraries needed by Python extensions
+    # The Python extension links lahuta_core directly. Only install the shared
+    # runtime library into the package tree when lahuta_core is built shared.
     if(LAHUTA_BUILD_SHARED_CORE)
-      set(_lahuta_core_python_dest LIBRARY DESTINATION "lahuta/lib")
-    else()
-      set(_lahuta_core_python_dest ARCHIVE DESTINATION "lahuta/lib")
+      install(TARGETS lahuta_core
+        LIBRARY DESTINATION "lahuta/lib"
+        COMPONENT python
+      )
     endif()
 
-    install(TARGETS lahuta_core
-      ${_lahuta_core_python_dest}
-      COMPONENT python
-    )
+    # Install lahuta_core to standard lib location for CLI usage for conda builds only
+    # For pip wheels, CLI uses the library from lahuta/lib/ via rpath
+    if(LAHUTA_BUILD_CLI AND NOT DEFINED SKBUILD)
+      install(TARGETS lahuta_core
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT cli
+      )
+    endif()
 
     # Configure Python version file for direct CMake installs
     lahuta_configure_python_version(

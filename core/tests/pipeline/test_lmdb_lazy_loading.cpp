@@ -13,6 +13,7 @@
  */
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -502,10 +503,14 @@ TEST(LmdbLazyLoading, ZeroCopyPositionsAlignedTo32Bytes) {
 TEST(LmdbLazyLoading, ProductionDatabaseAlignedPointers) {
   LahutaRuntime::ensure_initialized(1);
 
-  // FIX: don't hardcode
-  auto db_path = fs::path("/Users/bsejdiu/projects/lahuta_dev/lahuta/db_1773");
+  const char *env_path = std::getenv("LAHUTA_TEST_DB");
+  if (!env_path) {
+    GTEST_SKIP() << "LAHUTA_TEST_DB not set; skipping";
+  }
+
+  const fs::path db_path(env_path);
   if (!fs::exists(db_path)) {
-    GTEST_SKIP() << "Production database 'hum_db' not found at " << db_path << ", skipping test";
+    GTEST_SKIP() << "LAHUTA_TEST_DB path does not exist: " << db_path;
     return;
   }
 
