@@ -348,6 +348,13 @@ add_library(lahuta_core ${_lahuta_core_library_type}
 target_compile_features(lahuta_core PUBLIC cxx_std_17)
 set_property(TARGET lahuta_core PROPERTY POSITION_INDEPENDENT_CODE ON)
 
+# SIMDE emulates AVX types portably when -mavx is absent, which triggers GCC's
+# -Wpsabi note about the 32-byte parameter ABI change.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  target_compile_options(lahuta_core PUBLIC -Wno-psabi)
+  target_link_options(lahuta_core PUBLIC -Wno-psabi)
+endif()
+
 lahuta_configure_core_version(lahuta_core)
 
 target_include_directories(lahuta_core PUBLIC
