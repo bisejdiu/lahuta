@@ -117,6 +117,7 @@ target_include_directories(gemmi_cpp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/zlib
 )
 
+target_compile_options(gemmi_cpp PUBLIC -Wno-ignored-attributes)
 target_compile_definitions(gemmi_cpp PUBLIC GEMMI_SHARED)
 target_link_libraries(gemmi_cpp PUBLIC gemmi_headers)
 
