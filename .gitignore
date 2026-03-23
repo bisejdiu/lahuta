@@ -144,7 +144,9 @@ venv.bak/
 # mkdocs documentation
 /site
 /interop/python/site/
+interop/python/docs/
 /docs/changelog.md
+docs/
 
 # mypy
 .mypy_cache/
@@ -158,4 +160,3 @@ dmypy.json
 conda-bld/
 conda-recipe/*.tar.bz2
 conda-recipe/*.conda
-interop/python/docs/
