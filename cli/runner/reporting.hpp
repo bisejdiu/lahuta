@@ -220,7 +220,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
     }
   }
   if (!base_sink) {
-    base_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    base_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
   }
   std::shared_ptr<spdlog::sinks::sink> progress_sink;
   if (std::dynamic_pointer_cast<spdlog::sinks::stderr_color_sink_mt>(base_sink)) {
@@ -228,7 +228,7 @@ inline std::shared_ptr<ProgRunObs> attach_progress_observer(StageManager &manage
   } else if (std::dynamic_pointer_cast<spdlog::sinks::stdout_color_sink_mt>(base_sink)) {
     progress_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
   } else {
-    progress_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    progress_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
   }
   bool inline_color = false;
 #ifdef _WIN32
