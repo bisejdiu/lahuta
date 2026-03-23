@@ -30,6 +30,7 @@
 #include "compute/engine.hpp"
 #include "pipeline/task/compute/context.hpp"
 #include "pipeline/task/compute/parameters.hpp"
+#include "topology/compute.hpp"
 
 using namespace lahuta;
 namespace P = lahuta::pipeline;
@@ -60,7 +61,7 @@ static void run_ok(C::ComputeEngine<P::PipelineContext> &eng, const C::Computati
 static bool current_is_molstar(const Topology &top) {
   auto &eng       = const_cast<Topology &>(top).get_engine();
   const auto &lbl = ::lahuta::topology::AtomTypingComputation<>::label;
-  auto *p         = eng.get_parameters<::lahuta::topology::AtomTypingParams>(lbl);
+  const auto *p   = eng.peek_parameters<::lahuta::topology::AtomTypingParams>(lbl);
   return p ? (p->mode == AtomTypingMethod::Molstar) : true;
 }
 
@@ -142,6 +143,55 @@ TEST(EnsureTypingTest, StaysMolstarWhenRequestedMolstar) {
   const std::string *s = tctx.get_text("atom_typing_mode");
   ASSERT_NE(s, nullptr);
   EXPECT_EQ(*s, "MolStar");
+}
+
+TEST(EnsureTypingTest, MatchingModeDoesNotInvalidateCompletedTyping) {
+  if (RunningUnderASan) {
+    GTEST_SKIP() << "Ring perception by RDKit is flaky when AddressSanitizer is enabled.";
+  }
+
+  P::PipelineContext pcx;
+  namespace fs = std::filesystem;
+  fs::path here(__FILE__);
+  fs::path core_dir  = here.parent_path().parent_path().parent_path(); // core/tests/.. -> core/
+  fs::path item_path = core_dir / "data" / "1kx2_small.cif";
+  pcx.item_path      = item_path.string();
+
+  P::TaskContext tctx;
+  pcx.ctx = &tctx;
+
+  C::ComputeEngine<P::PipelineContext> eng(pcx);
+  P::SystemReadParams sp{};
+  sp.is_model = false;
+  eng.add(std::make_unique<analysis::SystemReadComputation>(sp));
+
+  P::BuildTopologyParams tp{};
+  tp.flags              = TopologyComputation::All;
+  tp.atom_typing_method = AtomTypingMethod::Molstar;
+  eng.add(std::make_unique<analysis::BuildTopologyComputation>(tp));
+
+  P::EnsureTypingParams ep{};
+  ep.desired = AtomTypingMethod::Molstar;
+  eng.add(std::make_unique<analysis::EnsureTypingComputation>(std::string("ensure_typing_molstar"), ep));
+
+  run_ok(eng, analysis::SystemReadComputation::label);
+  run_ok(eng, analysis::BuildTopologyComputation::label);
+
+  auto topo = tctx.topology();
+  ASSERT_TRUE(topo);
+  ASSERT_TRUE(topo->has_computed(TopologyComputation::AtomTyping));
+  ASSERT_TRUE(topo->has_computed(TopologyComputation::Complete));
+
+  auto *topology_engine = const_cast<Topology &>(*topo).get_engine().get_engine();
+  ASSERT_NE(topology_engine, nullptr);
+  topology_engine->reset_run_counts();
+
+  run_ok(eng, C::ComputationLabel{"ensure_typing_molstar"});
+
+  EXPECT_TRUE(current_is_molstar(*topo));
+  EXPECT_TRUE(topo->has_computed(TopologyComputation::AtomTyping));
+  EXPECT_TRUE(topo->has_computed(TopologyComputation::Complete));
+  EXPECT_EQ(topology_engine->get_run_count(::lahuta::topology::AtomTypingComputation<>::label), 0u);
 }
 
 } // namespace
