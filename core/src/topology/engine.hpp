@@ -123,6 +123,11 @@ public:
     return &(engine_->template get_parameters<P>(label));
   }
 
+  template <typename P>
+  const P *peek_parameters(const ComputationLabel &label) const {
+    return &(engine_->template peek_parameters<P>(label));
+  }
+
   ComputeEngine<TopologyContext, Mut::ReadWrite> *get_engine() {
     return static_cast<ComputeEngine<TopologyContext, Mut::ReadWrite> *>(engine_.get());
   }

@@ -301,6 +301,21 @@ public:
     return *typed; // caller mutates in-place
   }
 
+  /// Read-only access to parameters without triggering invalidation.
+  /// Use when we need to inspect current values (e.g. to check before mutating).
+  template <typename P>
+  const P &peek_parameters(ComputationLabel label) const {
+    int node_idx = registry.find(label);
+    if (node_idx < 0) throw std::runtime_error("unknown label");
+
+    const auto *base = registry[node_idx].proto.get();
+    if (!base) throw std::runtime_error("no parameters stored");
+    const auto *typed = dynamic_cast<const P *>(base);
+    if (!typed) throw std::runtime_error("wrong parameter type");
+
+    return *typed;
+  }
+
   /// run a pipeline of computations
   template <const ComputationLabel &...Order>
   void run_pipeline() {

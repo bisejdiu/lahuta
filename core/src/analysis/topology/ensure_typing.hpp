@@ -71,7 +71,7 @@ struct EnsureTypingKernel {
       {
         using namespace lahuta::topology;
         auto &eng    = const_cast<Topology &>(*top_c).get_engine();
-        auto *params = eng.get_parameters<AtomTypingParams>(AtomTypingComputation<>::label);
+        const auto *params = eng.peek_parameters<AtomTypingParams>(AtomTypingComputation<>::label);
         if (params) current_mode = params->mode;
       }
 

@@ -74,7 +74,7 @@ struct ContactsKernel {
         using namespace lahuta::topology;
         auto &label  = AtomTypingComputation<>::label;
         auto &eng    = const_cast<Topology &>(*top).get_engine();
-        auto *params = eng.get_parameters<AtomTypingParams>(label);
+        const auto *params = eng.peek_parameters<AtomTypingParams>(label);
 
         auto current_mode  = params ? params->mode : AtomTypingMethod::Molstar;
         auto required_mode = typing_for_provider(p.provider);

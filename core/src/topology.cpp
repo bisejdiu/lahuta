@@ -144,6 +144,8 @@ bool Topology::ensure_computed(TopologyComputation comp) {
 void Topology::set_cutoff(double cutoff) {
   std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
+  const auto* current = engine_->peek_parameters<topology::NeighborSearchParams>(topology::NeighborSearchComputation<>::label);
+  if (current && current->cutoff == cutoff) return; // no change, skip invalidation
   auto* params = engine_->get_parameters<topology::NeighborSearchParams>(topology::NeighborSearchComputation<>::label);
   if (params) params->cutoff = cutoff;
 }
@@ -151,6 +153,8 @@ void Topology::set_cutoff(double cutoff) {
 void Topology::set_atom_typing_method(AtomTypingMethod method) {
   std::lock_guard<std::mutex> lock(engine_mutex_);
   if (!engine_) throw std::runtime_error("No engine available");
+  const auto* current = engine_->peek_parameters<topology::AtomTypingParams>(topology::AtomTypingComputation<>::label);
+  if (current && current->mode == method) return; // no change, skip invalidation
   auto* params = engine_->get_parameters<topology::AtomTypingParams>(topology::AtomTypingComputation<>::label);
   if (params) params->mode = method;
 }
