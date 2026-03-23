@@ -40,7 +40,7 @@ void Logger::set_log_level(LogLevel level) {
 Logger::LogLevel Logger::get_log_level() { return static_cast<LogLevel>(logger->level()); }
 
 void Logger::configure_for_spinner(indicators::MinimalProgressSpinner *spinner, std::mutex &spinner_mutex) {
-  auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+  auto console_sink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
   std::shared_ptr<spdlog::sinks::sink> sink;
   if (spinner) {
     sink = std::make_shared<indicators::SpinnerAwareSink>(console_sink, spinner, spinner_mutex);
@@ -68,7 +68,7 @@ Logger::Logger() {
   if (existing) {
     logger = existing;
   } else {
-    logger = spdlog::stdout_color_mt("console");
+    logger = spdlog::stderr_color_mt("console");
   }
   // Make this the default logger within this registry to keep free-function calls consistent in this TU
   if (logger) {
