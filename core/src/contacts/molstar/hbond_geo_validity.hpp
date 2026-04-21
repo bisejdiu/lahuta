@@ -24,14 +24,15 @@
 
 #include "chemistry/geometry.hpp"
 #include "chemistry/neighbors.hpp"
+#include "chemistry/utils.hpp"
 #include "contacts/molstar/params.hpp"
+#include "residues/definitions.hpp"
 
 // clang-format off
 namespace lahuta::molstar {
 
 namespace detail {
 
-// Finally got to use the Quake III fast inverse square root
 inline double fast_inv_sqrt(double x) {
   double xhalf = 0.5 * x;
   long long i;
@@ -65,10 +66,27 @@ inline double normalized_cosine(
 
 } // namespace detail
 
-inline bool
-are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor, const HBondParams &opts) {
+inline bool is_cluster_sulfur_with_only_metal_neighbors(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
+  if (atom.getAtomicNum() != Element::S) return false;
 
-  const auto &conf              = mol.getConformer();
+  const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
+  if (!res_info) return false;
+  if (definitions::is_polymer(res_info->getResidueName())) return false;
+
+  bool has_heavy_neighbor = false;
+  for (const auto *neighbor : mol.atomNeighbors(&atom)) {
+    if (!neighbor || neighbor->getAtomicNum() == 1) continue;
+    has_heavy_neighbor = true;
+    if (!is_metal_atom(*neighbor)) return false;
+  }
+
+  return has_heavy_neighbor;
+}
+
+inline bool
+are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Conformer &conf,
+                         const RDKit::Atom &donor, const RDKit::Atom &acceptor, const HBondParams &opts) {
+
   const auto donor_idx          = donor.getIdx();
   const auto acceptor_idx       = acceptor.getIdx();
   const auto &donor_pos         = conf.getAtomPos(donor_idx);
@@ -82,6 +100,7 @@ are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, cons
   const double cos_donor_hydrogen = std::cos(opts.max_don_angle_dev);
   const double cos_donor_lower    = std::cos(donor_lower_angle);
   const double cos_donor_upper    = std::cos(donor_upper_angle);
+  const bool donor_ignore_metal_neighbors = is_cluster_sulfur_with_only_metal_neighbors(mol, donor);
 
   bool has_hydrogen_angles  = false;
   bool hydrogen_angle_valid = false;
@@ -103,6 +122,8 @@ are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, cons
       continue;
     }
 
+    if (donor_ignore_metal_neighbors && is_metal_atom(*neighbor)) continue;
+
     if (cos_angle < cos_donor_upper) return false;
     if (donor_lower_angle > 0.0 && cos_angle > cos_donor_lower) return false;
   }
@@ -110,12 +131,12 @@ are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, cons
   if (!opts.ignore_hydrogens && has_hydrogen_angles && !hydrogen_angle_valid) return false;
 
   if (donor.getHybridization() == HybridizationType::SP2) {
-    auto out_of_plane = chemistry::compute_plane_angle(mol, donor, acceptor);
+    auto out_of_plane = chemistry::compute_plane_angle(mol, conf, donor, acceptor);
     if (out_of_plane.value_or(-1.0) > opts.max_don_out_of_plane_angle) return false;
   }
 
   const auto &donor_atom_for_acc = (!opts.ignore_hydrogens && has_hydrogen_angles)
-      ? chemistry::find_closest_hydrogen_atom(mol, donor, acceptor).value_or(std::cref(donor)).get()
+      ? chemistry::find_closest_hydrogen_atom(mol, conf, donor, acceptor).value_or(std::cref(donor)).get()
       : donor;
 
   const auto donor_for_acc_idx = donor_atom_for_acc.getIdx();
@@ -143,7 +164,7 @@ are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Atom &donor, cons
   }
 
   if (acceptor.getHybridization() == RDKit::Atom::HybridizationType::SP2) {
-    auto out_of_plane = chemistry::compute_plane_angle(mol, acceptor, donor_atom_for_acc);
+    auto out_of_plane = chemistry::compute_plane_angle(mol, conf, acceptor, donor_atom_for_acc);
     if (out_of_plane.value_or(-1.0) > opts.max_acc_out_of_plane_angle) return false;
   }
 

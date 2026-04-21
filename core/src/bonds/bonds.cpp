@@ -15,6 +15,7 @@
  *
  */
 
+#include <algorithm>
 #include <vector>
 
 #include <rdkit/GraphMol/PeriodicTable.h>
@@ -23,9 +24,20 @@
 #include "bonds/rules/lookup.hpp"
 #include "bonds/rules/table.hpp"
 #include "chemistry/common.hpp"
+#include "chemistry/utils.hpp"
 #include "selections/mol_filters.hpp"
 
 namespace lahuta {
+
+namespace {
+
+bool has_chem_comp_bond_schema(const RDKit::Atom &atom) {
+  const auto *info = atom.getMonomerInfo();
+  if (!info) throw std::runtime_error("bond assignment requires monomer info on every atom");
+  return info->hasChemCompBondSchema();
+}
+
+} // namespace
 
 // FIX: see if this fixes the issue with the periodic table
 static const RDKit::PeriodicTable *tbl = RDKit::PeriodicTable::getTable();
@@ -45,7 +57,7 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
   for (auto i = 0; i < results.get_pairs().size(); i++) {
     const auto &[index_1, index_2] = results.get_pairs()[i];
-    auto dist_sq = results.get_distances()[i];
+    auto dist_sq                   = results.get_distances()[i];
 
     AtomInfo atom_1(mol, index_1);
     AtomInfo atom_2(mol, index_2);
@@ -54,6 +66,12 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     if (atom_1.is_hydrogen && atom_2.is_hydrogen) continue;
     if (!is_same_conformer(atom_1, atom_2)) continue;
 
+    if (is_same_residue(mol, *atom_1.atom, *atom_2.atom) && has_chem_comp_bond_schema(*atom_1.atom) &&
+        has_chem_comp_bond_schema(*atom_2.atom) &&
+        !mol.getBondBetweenAtoms(atom_1.atom->getIdx(), atom_2.atom->getIdx())) {
+      continue;
+    }
+
     PossiblyBonded bonded = getIntraBondOrder(atom_1, atom_2);
 
     if (bonded.bond_type != RDKit::Bond::BondType::UNSPECIFIED) {
@@ -61,13 +79,9 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
       double pair_thr = get_pair_threshold(atom_1.atom->getAtomicNum(), atom_2.atom->getAtomicNum());
 
       if (dist_sq <= pair_thr * pair_thr) {
-        if (atom_1.is_hydrogen ^ atom_2.is_hydrogen) {
-          auto non_h_atom = atom_1.is_hydrogen ? atom_2.atom : atom_1.atom;
-          // branchless
-          // RDKit::Atom* non_h_atom = a + ((b - a) & -(is_a_h));
-          non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
+        if (!mol.getBondBetweenAtoms(atom_1.atom->getIdx(), atom_2.atom->getIdx())) {
+          mol.addBond(atom_1.atom->getIdx(), atom_2.atom->getIdx(), bonded.bond_type);
         }
-        mol.addBond(atom_1.atom->getIdx(), atom_2.atom->getIdx(), bonded.bond_type);
       }
 
     } else if (!bonded.atom1_is_predef && !bonded.atom2_is_predef) {
@@ -94,16 +108,16 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
 
       double pair_thr = get_pair_threshold(atom_1.atom->getAtomicNum(), atom_2.atom->getAtomicNum());
       if (dist_sq <= pair_thr * pair_thr) {
-        if (atom_1.is_hydrogen ^ atom_2.is_hydrogen) {
-          auto non_h_atom = atom_1.is_hydrogen ? atom_2.atom : atom_1.atom;
-          non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
+        if (!mol.getBondBetweenAtoms(atom_1.atom->getIdx(), atom_2.atom->getIdx())) {
+          mol.addBond(atom_1.atom->getIdx(), atom_2.atom->getIdx(), RDKit::Bond::BondType::SINGLE);
         }
-        mol.addBond(atom_1.atom->getIdx(), atom_2.atom->getIdx(), RDKit::Bond::BondType::SINGLE);
       }
     }
   }
 
   if (non_predef_atom_indices.empty()) return {};
+
+  std::sort(non_predef_atom_indices.begin(), non_predef_atom_indices.end());
 
   std::vector<int> index_mapping;
   index_mapping.resize(mol.getNumAtoms(), -1);
@@ -111,7 +125,7 @@ BondAssignmentResult assign_bonds(RDKit::RWMol &mol, const NSResults &results) {
     index_mapping[non_predef_atom_indices[i]] = i;
   }
 
-  auto new_mol = filter_with_conf(mol, non_predef_atom_indices);
+  auto new_mol = filter_with_bonds(mol, non_predef_atom_indices);
   for (const auto &bond : bonds) {
     int aIx = index_mapping[bond.first];
     int bIx = index_mapping[bond.second];

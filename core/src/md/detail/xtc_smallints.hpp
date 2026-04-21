@@ -215,8 +215,9 @@ inline void decode_small_ints(BitReader &reader, int num_ints, int num_bits, spa
         libdivide::libdivide_u64_gen(static_cast<std::uint64_t>(d))};
   }
 
-  // Fast path: num_bits <= 32
-  if (num_bits <= 32) {
+  // Fast path: one packed byte or less. Wider packed XTC integers use the
+  // byte-oriented layout decoded below.
+  if (num_bits <= 8) {
     const unsigned bits = static_cast<unsigned>(num_bits);
     std::uint32_t acc = bits ? reader.read_bits(bits) : 0u;
     for (int i = num_ints - 1; i > 0; --i) {
@@ -240,55 +241,8 @@ inline void decode_small_ints(BitReader &reader, int num_ints, int num_bits, spa
     return;
   }
 
-#if defined(__SIZEOF_INT128__)
-  // Wider paths using 64/128-bit accumulators remove the need for the byte-array fallback
-  if (num_bits <= 64) {
-    std::uint64_t acc = read_bits_wide<std::uint64_t>(reader, static_cast<unsigned>(num_bits));
-    for (int i = num_ints - 1; i > 0; --i) {
-      const DivSpec &dv = divs[i];
-      std::uint64_t q;
-      std::uint64_t rem;
-      if (dv.d == 1u) {
-        q = acc;
-        rem = 0ull;
-      } else if (dv.is_pow2) {
-        q = acc >> dv.shift;
-        rem = acc & static_cast<std::uint64_t>(dv.d - 1u);
-      } else {
-        q = libdivide::libdivide_u64_do(acc, &dv.fast64);
-        rem = acc - q * static_cast<std::uint64_t>(dv.d);
-      }
-      dest[static_cast<std::size_t>(i)] = static_cast<int>(rem);
-      acc = q;
-    }
-    dest[0] = static_cast<int>(acc);
-    return;
-  } else if (num_bits <= 128) {
-    using u128 = unsigned __int128;
-    u128 acc = read_bits_wide<u128>(reader, static_cast<unsigned>(num_bits));
-    for (int i = num_ints - 1; i > 0; --i) {
-      const DivSpec &dv = divs[i];
-      u128 q;
-      u128 rem;
-      if (dv.d == 1u) {
-        q = acc;
-        rem = static_cast<u128>(0);
-      } else if (dv.is_pow2) {
-        q = acc >> dv.shift;
-        rem = acc & static_cast<u128>(dv.d - 1u);
-      } else {
-        q = acc / static_cast<u128>(dv.d);
-        rem = acc - q * static_cast<u128>(dv.d);
-      }
-      dest[static_cast<std::size_t>(i)] = static_cast<int>(rem);
-      acc = q;
-    }
-    dest[0] = static_cast<int>(acc);
-    return;
-  }
-#endif
-
-  // Fallback: legacy byte-array long division
+  // Packed XTC integers are byte-oriented. Keep the long-division decoder for
+  // widths above 8 bits so the byte order matches GROMACS/xdrfile and Mol*.
   int bytes[32] = {0};
   int num_bytes = 0;
   int bits_remaining = num_bits;
@@ -325,7 +279,7 @@ inline void decode_small3_precomp(BitReader &reader, unsigned bits, const DivSpe
     return;
   }
 
-  if (bits <= 32u) {
+  if (bits <= 8u) {
     std::uint32_t acc = reader.read_bits(bits);
     if (dv.d == 1u) {
       dest[2] = 0;                     // r2
@@ -353,68 +307,6 @@ inline void decode_small3_precomp(BitReader &reader, unsigned bits, const DivSpe
     return;
   }
 
-#if defined(__SIZEOF_INT128__)
-  if (bits <= 64u) {
-    std::uint64_t acc = reader.read_bits64(bits);
-    std::uint64_t q2, r2;
-    if (dv.d == 1u) {
-      q2 = acc;
-      r2 = 0ull;
-    } else if (dv.is_pow2) {
-      q2 = acc >> dv.shift;
-      r2 = acc & static_cast<std::uint64_t>(dv.d - 1u);
-    } else {
-      q2 = libdivide::libdivide_u64_do(acc, &dv.fast64);
-      r2 = acc - q2 * static_cast<std::uint64_t>(dv.d);
-    }
-    dest[2] = static_cast<int>(r2);
-    std::uint64_t q1, r1;
-    if (dv.d == 1u) {
-      q1 = q2;
-      r1 = 0ull;
-    } else if (dv.is_pow2) {
-      r1 = q2 & static_cast<std::uint64_t>(dv.d - 1u);
-      q1 = q2 >> dv.shift;
-    } else {
-      q1 = libdivide::libdivide_u64_do(q2, &dv.fast64);
-      r1 = q2 - q1 * static_cast<std::uint64_t>(dv.d);
-    }
-    dest[1] = static_cast<int>(r1);
-    dest[0] = static_cast<int>(q1);
-    return;
-  } else if (bits <= 128u) {
-    using u128 = unsigned __int128;
-    u128 acc = read_bits_wide<u128>(reader, bits);
-    u128 q2, r2;
-    if (dv.d == 1u) {
-      q2 = acc;
-      r2 = static_cast<u128>(0);
-    } else if (dv.is_pow2) {
-      q2 = acc >> dv.shift;
-      r2 = acc & static_cast<u128>(dv.d - 1u);
-    } else {
-      q2 = acc / static_cast<u128>(dv.d);
-      r2 = acc - q2 * static_cast<u128>(dv.d);
-    }
-    dest[2] = static_cast<int>(r2);
-    u128 q1, r1;
-    if (dv.d == 1u) {
-      q1 = q2;
-      r1 = static_cast<u128>(0);
-    } else if (dv.is_pow2) {
-      r1 = q2 & static_cast<u128>(dv.d - 1u);
-      q1 = q2 >> dv.shift;
-    } else {
-      q1 = q2 / static_cast<u128>(dv.d);
-      r1 = q2 - q1 * static_cast<u128>(dv.d);
-    }
-    dest[1] = static_cast<int>(r1);
-    dest[0] = static_cast<int>(q1);
-    return;
-  }
-#endif
-
-  // Rare?: fallback to generic when bits > 128 or no 128-bit support
   unsigned sizes_arr[3] = {dv.d, dv.d, dv.d};
   decode_small_ints(
       reader,
@@ -433,7 +325,20 @@ inline void decode_mixed3_precomp(BitReader &reader, unsigned bits, const DivSpe
     return;
   }
 
-  if (bits <= 32u) {
+  //
+  // Packed XTC integers are byte-oriented for widths above 8 bits.
+  if (bits > 8u) {
+    unsigned sizes_arr[3] = {divs[0].d, divs[1].d, divs[2].d};
+    decode_small_ints(
+        reader,
+        3,
+        static_cast<int>(bits),
+        span<const unsigned int>(sizes_arr),
+        span<int>(dest, 3));
+    return;
+  }
+
+  if (bits <= 8u) {
     std::uint32_t acc = reader.read_bits(bits);
     // dest[2]
     std::uint32_t q2, r2;

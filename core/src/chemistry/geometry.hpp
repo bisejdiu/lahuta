@@ -56,6 +56,7 @@ double compute_plane_angle(
 /// Function to calculate the angle out of the plane defined by two bonded neighbors of atom_a
 std::optional<double> compute_plane_angle(
   const RDKit::RWMol &mol,
+  const RDKit::Conformer &conf,
   const RDKit::Atom &atom_a,
   const RDKit::Atom &atom_b
 );

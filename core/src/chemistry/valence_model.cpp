@@ -13,12 +13,39 @@
 
 #include <rdkit/GraphMol/MonomerInfo.h>
 
+#include "chemistry/utils.hpp"
 #include "chemistry/valence_model.hpp"
+#include "residues/definitions.hpp"
 
 namespace lahuta {
 
+namespace {
+
+enum class HydrogenScopeKind {
+  Polymer,
+  Water,
+  Other
+};
+
+HydrogenScopeKind classify_scope_kind(const Residue &residue) {
+  if (definitions::is_water(residue.name)) return HydrogenScopeKind::Water;
+  if (definitions::is_polymer(residue.name)) return HydrogenScopeKind::Polymer;
+  return HydrogenScopeKind::Other;
+}
+
+bool residue_has_explicit_hydrogen(const Residue &residue) {
+  for (const auto *atom : residue.atoms) {
+    if (atom && atom->getAtomicNum() == 1) return true;
+  }
+  return false;
+}
+
+} // namespace
+
 bool ValenceModel::has_double_or_aromatic_bond(const RDKit::Atom &atom, const RDKit::ROMol &mol) const {
   for (const auto &bond : mol.atomBonds(&atom)) {
+    auto *other_atom = bond->getOtherAtom(&atom);
+    if (is_metal_atom(*other_atom)) continue;
     auto bond_type = bond->getBondType();
     if (bond_type == RDKit::Bond::DOUBLE || bond_type == RDKit::Bond::AROMATIC) {
       return true;
@@ -35,9 +62,11 @@ bool ValenceModel::is_excluded_bond(const RDKit::Atom &atom_b, const RDKit::Atom
 
 bool ValenceModel::is_conjugated_and_not_excluded(const RDKit::Atom &atom_b, const RDKit::ROMol &mol) const {
   for (const auto &bond_b : mol.atomBonds(&atom_b)) {
+    auto *other_atom_b = bond_b->getOtherAtom(&atom_b);
+    if (is_metal_atom(*other_atom_b)) continue;
     auto bond_type = bond_b->getBondType();
     if (bond_type == RDKit::Bond::DOUBLE || bond_type == RDKit::Bond::AROMATIC) {
-      RDKit::Atom *atom_c = bond_b->getOtherAtom(&atom_b);
+      RDKit::Atom *atom_c = other_atom_b;
       if (!is_excluded_bond(atom_b, *atom_c)) {
         return true;
       }
@@ -62,6 +91,7 @@ bool ValenceModel::is_conjugated(const RDKit::ROMol &mol, const RDKit::Atom &ato
   if (is_hetero) {
     for (const auto &bond : mol.atomBonds(&atom)) {
       const RDKit::Atom *neighbor = bond->getOtherAtom(&atom);
+      if (is_metal_atom(*neighbor)) continue;
       if (neighbor && is_conjugated_and_not_excluded(*neighbor, mol)) {
         return true;
       }
@@ -75,6 +105,7 @@ int ValenceModel::get_element_count(const RDKit::ROMol &mol, const RDKit::Atom &
   int count = 0;
   for (const auto &bond : mol.atomBonds(&atom)) {
     auto other_atom = bond->getOtherAtom(&atom);
+    if (is_metal_atom(*other_atom)) continue;
     if (other_atom->getAtomicNum() == element) {
       count++;
     }
@@ -101,12 +132,66 @@ bool ValenceModel::is_amidine_or_guanidine_nitrogen(int degree, int h_count, int
   return (degree - h_count == 1 && valence - h_count == 2);
 }
 
+std::vector<bool> ValenceModel::compute_scope_has_explicit_h(const RDKit::RWMol &mol, const Residues &residues) const {
+  std::vector<bool> atom_scope_has_explicit_h(mol.getNumAtoms(), false);
+
+  const auto &residue_list = residues.get_residues();
+  std::size_t i = 0;
+  while (i < residue_list.size()) {
+    const auto &seed = residue_list[i];
+    const auto kind = classify_scope_kind(seed);
+
+    std::size_t j = i + 1;
+    switch (kind) {
+      case HydrogenScopeKind::Polymer:
+        while (j < residue_list.size()) {
+          const auto &next = residue_list[j];
+          if (classify_scope_kind(next) != HydrogenScopeKind::Polymer) break;
+          if (next.chain_id != seed.chain_id) break;
+          ++j;
+        }
+        break;
+      case HydrogenScopeKind::Water:
+        while (j < residue_list.size()) {
+          const auto &next = residue_list[j];
+          if (classify_scope_kind(next) != HydrogenScopeKind::Water) break;
+          if (next.chain_id != seed.chain_id) break;
+          ++j;
+        }
+        break;
+      case HydrogenScopeKind::Other:
+        break;
+    }
+
+    bool scope_has_explicit_h = false;
+    for (std::size_t k = i; k < j; ++k) {
+      if (residue_has_explicit_hydrogen(residue_list[k])) {
+        scope_has_explicit_h = true;
+        break;
+      }
+    }
+
+    for (std::size_t k = i; k < j; ++k) {
+      for (const auto *atom : residue_list[k].atoms) {
+        if (!atom) continue;
+        atom_scope_has_explicit_h[atom->getIdx()] = scope_has_explicit_h;
+      }
+    }
+
+    i = j;
+  }
+
+  return atom_scope_has_explicit_h;
+}
+
 bool ValenceModel::has_neighbor_with_double_bonded_oxygen(const RDKit::ROMol &mol, RDKit::Atom *atom) const {
   for (const auto &bond_a : mol.atomBonds(atom)) {
     RDKit::Atom *other_atom_a = bond_a->getOtherAtom(atom);
+    if (is_metal_atom(*other_atom_a)) continue;
 
     for (const auto &bond_b : mol.atomBonds(other_atom_a)) {
       RDKit::Atom *other_atom_b = bond_b->getOtherAtom(other_atom_a);
+      if (is_metal_atom(*other_atom_b)) continue;
 
       if (other_atom_b != atom && other_atom_b->getAtomicNum() == 8 &&
           bond_b->getBondType() == RDKit::Bond::DOUBLE) {
@@ -141,23 +226,25 @@ HybridizationType ValenceModel::assign_geometry(int total_coordination) const {
 //      ASP-OD2 is evaluated as having 1 implicit H by PropKa (at 7.4) but only
 //      those facing the core of the protein. This means H assignment by PropKa
 //      is context dependent (more accurate).
-void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom) {
+void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom, bool scope_has_explicit_h) {
 
   const int h_count             = get_element_count(mol, atom, 1);
   const unsigned int atomic_num = atom.getAtomicNum();
   int charge                    = atom.getFormalCharge();
 
   const bool assign_charge_flag = charge == 0;
-  const bool assign_h_flag      = h_count == 0;
+  const bool assign_h_flag      = h_count == 0 && !scope_has_explicit_h;
 
-  const int degree  = atom.getDegree();
-  const int valence = atom.getExplicitValence();
+  const int metal_bonds = static_cast<int>(count_bonds_to_metals(mol, atom));
+  const int degree  = static_cast<int>(atom.getDegree()) - metal_bonds;
+  const int valence = atom.getExplicitValence() - metal_bonds;
 
   const bool conjugated = is_conjugated(mol, atom);
   const bool multi_bond = (valence - degree > 0);
 
   int implicit_h = 0;
   auto geom      = HybridizationType::UNSPECIFIED;
+  const auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
 
   switch (atomic_num) {
     case 1:
@@ -256,7 +343,7 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
     case 16:
       if (assign_charge_flag) {
         if (!assign_h_flag) {
-          if (valence <= 3 && atom.getTotalNumHs() == 0) {
+          if (valence <= 3 && h_count == 0) {
             charge = valence - 2; // Deprotonated thiol
           } else {
             charge = 0;
@@ -317,11 +404,10 @@ void ValenceModel::molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &a
   }
 
   // FIX: temporary, until we debug the issue
-  auto *res_info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom.getMonomerInfo());
-  if (res_info->getResidueName() == "TRP" && res_info->getName() == "NE1") {
+  if (assign_h_flag && res_info->getResidueName() == "TRP" && res_info->getName() == "NE1") {
     atom.setNumCompImplicitHs(1);
     return;
-  } else if (res_info->getResidueName() == "HIS" && res_info->getName() == "NE2") {
+  } else if (assign_h_flag && res_info->getResidueName() == "HIS" && res_info->getName() == "NE2") {
     atom.setNumCompImplicitHs(1);
     return;
   }

@@ -12,17 +12,17 @@
  *
  */
 
+#include "chemistry/types/hbonding.hpp"
+#include "chemistry/elements.hpp"
 #include "chemistry/neighbors.hpp"
 #include "chemistry/predicates.hpp"
-#include "chemistry/types/hbonding.hpp"
 #include "chemistry/utils.hpp"
-#include "chemistry/elements.hpp"
 
 // clang-format off
 namespace lahuta {
 
 AtomType add_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  int total_h = atom.getNumExplicitHs() + atom.getNumCompImplicitHs();
+  const int total_h = static_cast<int>(get_bond_count(mol, atom, Element::H)) + atom.getNumCompImplicitHs();
 
   // include both nitrogen atoms in histidine due to their often ambiguous protonation assignment
   if (chemistry::is_histidine_nitrogen(atom, mol)) return AtomType::HbondDonor;
@@ -52,7 +52,8 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom)
     if (formal_charge < 1) {
       // Neutral nitrogen might be an acceptor
       // It must have at least one lone pair not conjugated
-      unsigned int total_bonds = get_bond_count(mol, atom) + atom.getNumCompImplicitHs();
+      unsigned int total_bonds =
+          get_bond_count(mol, atom) - count_bonds_to_metals(mol, atom) + atom.getNumCompImplicitHs();
 
       auto hybridization = atom.getHybridization();
       if (   (hybridization == HybridizationType::SP3 && total_bonds < 4)
@@ -72,7 +73,7 @@ AtomType add_hydrogen_acceptor(const RDKit::RWMol &mol, const RDKit::Atom &atom)
 }
 
 AtomType add_weak_hydrogen_donor(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
-  int total_h = atom.getNumExplicitHs() + atom.getNumCompImplicitHs();
+  const int total_h = static_cast<int>(get_bond_count(mol, atom, Element::H)) + atom.getNumCompImplicitHs();
 
   if (atom.getAtomicNum() == Element::C && total_h > 0) {
     if (get_bond_count(mol, atom, Element::N) > 0 ||

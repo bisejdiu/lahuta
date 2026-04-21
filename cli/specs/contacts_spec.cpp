@@ -110,6 +110,7 @@ enum : unsigned { //
   SourceMD = BaseIndex,
   Provider,
   InteractionType,
+  MolstarWaterWaterHbonds,
   OutputPath,
   OutputStdout,
   OutputCompact
@@ -126,6 +127,7 @@ struct ContactsConfig {
   ReportConfig report;
   A::ContactProvider provider          = A::ContactProvider::MolStar;
   InteractionTypeSet interaction_types = InteractionTypeSet::all();
+  bool molstar_include_water_water_hbonds = false;
   bool is_af2_model                    = false;
   bool output_stdout                   = false;
   bool output_compact                  = false;
@@ -199,6 +201,12 @@ public:
                  contacts_validate::ContactType,
                  "  --interaction, -i <type>     \tInteraction type(s): 'hbond', 'hydrophobic', 'ionic', "
                  "etc. Repeat or comma-separate to combine.\n"});
+    schema_.add({contacts_opts::MolstarWaterWaterHbonds,
+                 "",
+                 "ms-water-water-hbonds",
+                 option::Arg::None,
+                 "  --ms-water-water-hbonds\n"
+                 "                               \tInclude Mol* water-water hydrogen bonds (default: false).\n"});
 
     schema_.add({0, "", "", option::Arg::None, "\nReporting Options:"});
     add_report_options(schema_);
@@ -287,6 +295,10 @@ public:
       if (has_selection) {
         config.interaction_types = selected;
       }
+    }
+
+    if (args.get_flag(contacts_opts::MolstarWaterWaterHbonds)) {
+      config.molstar_include_water_water_hbonds = true;
     }
 
     config.output_stdout = args.get_flag(contacts_opts::OutputStdout);
@@ -385,6 +397,7 @@ public:
     P::ContactsParams params;
     params.provider = cfg.provider;
     params.type     = cfg.interaction_types;
+    params.molstar_include_water_water_hbonds = cfg.molstar_include_water_water_hbonds;
     params.channel  = "contacts";
     params.format   = cfg.output_compact ? P::ContactsOutputFormat::JsonCompact : P::ContactsOutputFormat::Json;
 

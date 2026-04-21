@@ -17,17 +17,6 @@
 
 namespace lahuta::bonds::subset_merge {
 
-void update_explicit_h_count(RDKit::Atom *atom_a, RDKit::Atom *atom_b) {
-  int is_a_h = atom_a->getAtomicNum() == 1;
-  int is_b_h = atom_b->getAtomicNum() == 1;
-
-  // If exactly one atom is hydrogen, increment explicit H count on the non-hydrogen atom
-  if (is_a_h ^ is_b_h) {
-    auto non_h_atom = atom_a->getAtomicNum() == 1 ? atom_b : atom_a;
-    non_h_atom->setNumExplicitHs(non_h_atom->getNumExplicitHs() + 1);
-  }
-}
-
 void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<int> &index_map) {
   // First propagate aromatic flags on atoms in the subset
   // Only set true, avoid clearing existing flags
@@ -45,11 +34,6 @@ void merge_bonds(RDKit::RWMol &target, RDKit::RWMol &source, const std::vector<i
 
     RDKit::Bond *tb = target.getBondBetweenAtoms(b_idx, e_idx);
     if (!tb) {
-      auto a = target.getAtomWithIdx(b_idx);
-      auto b = target.getAtomWithIdx(e_idx);
-
-      update_explicit_h_count(a, b); // Update explicit hydrogen count if forming H-X bond
-
       target.addBond(b_idx, e_idx, sb->getBondType());
       tb = target.getBondBetweenAtoms(b_idx, e_idx);
     } else {

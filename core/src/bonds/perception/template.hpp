@@ -53,12 +53,13 @@ struct BondTemplateData {
 };
 
 struct ResidueTemplate {
+  std::vector<AtomSignature> atom_signature;
   std::vector<AtomTemplateData> atom_data;
   std::vector<BondTemplateData> bond_data;
 
   ResidueTemplate() = default;
-  ResidueTemplate(std::vector<AtomTemplateData> atoms, std::vector<BondTemplateData> bonds)
-      : atom_data(std::move(atoms)), bond_data(std::move(bonds)) {}
+  ResidueTemplate(std::vector<AtomSignature> signature, std::vector<AtomTemplateData> atoms, std::vector<BondTemplateData> bonds)
+      : atom_signature(std::move(signature)), atom_data(std::move(atoms)), bond_data(std::move(bonds)) {}
 };
 
 // One residue copy with indices into the source molecule

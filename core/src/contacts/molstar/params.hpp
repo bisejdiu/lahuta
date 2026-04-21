@@ -31,7 +31,7 @@ constexpr double MAX_ACC_OUT_OF_PLANE_ANGLE = M_PI / 2.0; // 90 degrees
 struct HBondParams {
   bool   ignore_hydrogens  = false;             // Ignore hydrogens in geometry calculations
   bool   include_backbone  = true;              // Include backbone-to-backbone hydrogen bonds
-  bool   include_water     = true;              // Include water-to-water hydrogen bonds
+  bool   include_water     = false;             // Include water-to-water hydrogen bonds
   double max_dist          = MAX_DIST;          // Maximum distance for hydrogen bonds
   double max_sulfur_dist   = MAX_SULFUR_DIST;   // Maximum distance for sulfur atoms
   double distance_max      = std::max(MAX_DIST, MAX_SULFUR_DIST); // Maximum distance for hydrogen bonds
@@ -63,13 +63,13 @@ struct MetalicParams {
 
 struct CationPiParams {
   double distance_max = 6.0;
-  double offset_max = 2.2;
+  double offset_max = 2.0;
 };
 
 struct PiStackingParams {
-  double distance_max = 6.0;
+  double distance_max = 5.5;
   double angle_dev_max = M_PI / 6.0;
-  double offset_max = 2.1;
+  double offset_max = 2.0;
 };
 
 } // namespace lahuta::molstar

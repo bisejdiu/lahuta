@@ -49,16 +49,15 @@ double compute_plane_angle(const RDGeom::Point3D &atom_a_pos, const RDGeom::Poin
   return deviation; // returning the deviation from 90 degrees
 }
 
-std::optional<double> compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
-
+std::optional<double>
+compute_plane_angle(const RDKit::RWMol &mol, const RDKit::Conformer &conf, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
   auto idxs = chemistry::get_bonded_neighbor_indices(atom_a, mol, /*ignore_hydrogens=*/true);
   if (!idxs) return std::nullopt;
 
-  const auto &c = mol.getConformer();
   auto [idx1, idx2] = *idxs;
   auto idx_a = atom_a.getIdx();
   auto idx_b = atom_b.getIdx();
-  return compute_plane_angle(c.getAtomPos(idx_a), c.getAtomPos(idx1), c.getAtomPos(idx2), c.getAtomPos(idx_b));
+  return compute_plane_angle(conf.getAtomPos(idx_a), conf.getAtomPos(idx1), conf.getAtomPos(idx2), conf.getAtomPos(idx_b));
 }
 
 } // namespace lahuta::chemistry

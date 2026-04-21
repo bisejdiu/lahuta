@@ -26,9 +26,9 @@ namespace lahuta::molstar {
 
 
 inline bool
-are_geometrically_viable( const RDKit::RWMol &mol, const RDKit::Atom &donor, const RDKit::Atom &acceptor, const HalogenParams &opts) {
+are_geometrically_viable(const RDKit::RWMol &mol, const RDKit::Conformer &conf,
+                         const RDKit::Atom &donor, const RDKit::Atom &acceptor, const HalogenParams &opts) {
 
-  const auto &conf = mol.getConformer();
   const auto &donor_pos = conf.getAtomPos(donor.getIdx());
   const auto &acceptor_pos = conf.getAtomPos(acceptor.getIdx());
 

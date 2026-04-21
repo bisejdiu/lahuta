@@ -34,7 +34,7 @@ from lahuta.sources import DirectorySource, FileListSource, FileSource
 
 # fmt: off
 EXPECTED_CONTACTS_COUNT = {
-    "1kx2_small.cif": 114,
+    "1kx2_small.cif": 117,
     "fubi.cif":       184,
     "5i55.cif":       58,
 }

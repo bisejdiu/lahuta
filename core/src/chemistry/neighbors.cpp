@@ -45,10 +45,10 @@ get_bonded_neighbor_indices(const RDKit::Atom &atom, const RDKit::RWMol &mol, bo
 std::optional<std::reference_wrapper<const RDKit::Atom>>
 find_closest_hydrogen_atom(
   const RDKit::RWMol &mol,
+  const RDKit::Conformer &conf,
   const RDKit::Atom &atom_a,
   const RDKit::Atom &atom_b
 ) {
-  const auto &conf  = mol.getConformer();
   const auto &pos_b = conf.getAtomPos(atom_b.getIdx());
 
   std::optional<std::reference_wrapper<const RDKit::Atom>> best;

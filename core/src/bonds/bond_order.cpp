@@ -216,6 +216,16 @@ bool atom_has_bond_type(const RDKit::Atom &atom, BondType type) {
   return false;
 }
 
+unsigned bonded_hydrogen_count(const RDKit::Atom &atom) {
+  unsigned count = 0;
+  const auto &mol = atom.getOwningMol();
+  for (const auto *bond : mol.atomBonds(&atom)) {
+    const auto *neighbor = bond->getOtherAtom(&atom);
+    if (neighbor && neighbor->getAtomicNum() == 1) ++count;
+  }
+  return count;
+}
+
 void assign_initial_hybridization(RDKit::RWMol &mol) {
   for (auto *atom : mol.atoms()) {
     atom->setHybridization(Hybridization::SP);
@@ -253,7 +263,7 @@ void refine_hybridization_by_geometry(RDKit::RWMol &mol) {
     const bool in_ring = ring_info && ring_info->numAtomRings(atom->getIdx()) != 0;
 
     // Special case for imines
-    if (atom->getAtomicNum() == 7 && atom->getNumExplicitHs() == 1 && atom->getDegree() == 2 && avg_angle > 109.5) {
+    if (atom->getAtomicNum() == 7 && bonded_hydrogen_count(*atom) == 1 && atom->getDegree() == 2 && avg_angle > 109.5) {
       atom->setHybridization(Hybridization::SP2);
     } else if (atom->getAtomicNum() == 7 && atom->getDegree() == 2 && in_ring) {
       // Azete
