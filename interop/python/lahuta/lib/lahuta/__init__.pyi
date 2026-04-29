@@ -1884,5 +1884,5 @@ def vdw_radius(atomic_number: int) -> float:
     """
     van der Waals radius (A) for the element with the given atomic number.
     """
-__version__: str = '2.0.2'
-__version_info__: tuple = (2, 0, 2, '')
+__version__: str = '2.0.3'
+__version_info__: tuple = (2, 0, 3, '')
