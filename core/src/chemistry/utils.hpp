@@ -24,9 +24,24 @@
 
 namespace lahuta {
 
+inline bool is_metal_atom(const RDKit::Atom &atom) {
+  return elements::is_metal(elements::find_element(atom.getSymbol().c_str()));
+}
+
+inline unsigned int count_bonds_to_metals(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
+  unsigned int bond_count = 0;
+  for (const auto &bond : mol.atomBonds(&atom)) {
+    const RDKit::Atom *neighbor_atom = bond->getOtherAtom(&atom);
+    if (is_metal_atom(*neighbor_atom)) {
+      bond_count++;
+    }
+  }
+  return bond_count;
+}
+
 /// Returns the atoms bonded to the given atom with the specified atomic number.
 inline std::vector<const RDKit::Atom *>
-bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, int atomic_number) {
+bonded_atoms(const RDKit::ROMol &mol, const RDKit::Atom *atom, int atomic_number) {
   std::vector<const RDKit::Atom *> bonded_atoms;
   for (const auto &bond : mol.atomBonds(atom)) {
     RDKit::Atom *neighbor_atom = bond->getOtherAtom(atom);
@@ -38,7 +53,7 @@ bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, int atomic_number
 }
 
 inline std::vector<const RDKit::Atom *>
-bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, Element element) {
+bonded_atoms(const RDKit::ROMol &mol, const RDKit::Atom *atom, Element element) {
   std::vector<const RDKit::Atom *> bonded_atoms;
   for (const auto &bond : mol.atomBonds(atom)) {
     RDKit::Atom *neighbor_atom = bond->getOtherAtom(atom);
@@ -50,7 +65,7 @@ bonded_atoms(const RDKit::RWMol &mol, const RDKit::Atom *atom, Element element) 
 }
 
 /// Returns the number of bonds for a given atom in the molecule.
-inline unsigned int get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
+inline unsigned int get_bond_count(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
   unsigned int bond_count = 0;
   for (const auto &bond : mol.atomBonds(&atom)) {
     bond_count++;
@@ -60,7 +75,7 @@ inline unsigned int get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &a
 
 /// Returns the number of bonds where the neighboring atom has the specified atomic number.
 inline unsigned int
-get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, unsigned int atomic_num) {
+get_bond_count(const RDKit::ROMol &mol, const RDKit::Atom &atom, unsigned int atomic_num) {
   unsigned int bond_count = 0;
   for (const auto &bond : mol.atomBonds(&atom)) {
     const RDKit::Atom *neighbor_atom = bond->getOtherAtom(&atom);
@@ -72,7 +87,7 @@ get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, unsigned int at
 }
 
 inline unsigned int
-get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, const Element &element) {
+get_bond_count(const RDKit::ROMol &mol, const RDKit::Atom &atom, const Element &element) {
   unsigned int bond_count = 0;
   for (const auto &bond : mol.atomBonds(&atom)) {
     const RDKit::Atom *neighbor_atom = bond->getOtherAtom(&atom);
@@ -85,7 +100,7 @@ get_bond_count(const RDKit::RWMol &mol, const RDKit::Atom &atom, const Element &
 
 
 /// Returns the number of hydrogen atoms bonded to the given atom.
-inline int get_h_count(RDKit::ROMol &mol, RDKit::Atom &atom) {
+inline int get_h_count(const RDKit::ROMol &mol, const RDKit::Atom &atom) {
   int hCount = 0;
   for (const auto &bondIt : mol.atomBonds(&atom)) {
     auto other_atom = bondIt->getOtherAtom(&atom);
@@ -96,7 +111,7 @@ inline int get_h_count(RDKit::ROMol &mol, RDKit::Atom &atom) {
   return hCount;
 }
 
-inline bool is_same_residue(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
+inline bool is_same_residue(const RDKit::ROMol &, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b) {
   auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());
   auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b.getMonomerInfo());
 
@@ -109,7 +124,7 @@ inline bool is_same_residue(const RDKit::RWMol &mol, const RDKit::Atom &atom_a, 
 
 // FIX: need an is_protein check
 inline bool are_residueids_close(
-    const RDKit::RWMol &mol, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, int threshold) {
+    const RDKit::ROMol &, const RDKit::Atom &atom_a, const RDKit::Atom &atom_b, int threshold) {
   auto info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a.getMonomerInfo());
   auto info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b.getMonomerInfo());
 

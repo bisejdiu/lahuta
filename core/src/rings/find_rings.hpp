@@ -20,6 +20,8 @@
 #include <array>
 #include <bitset>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -70,6 +72,24 @@ public:
   void build(const Residue &residue) {
 
     adjacency_.resize(residue.atoms.size()); neighbor_counts_.resize(residue.atoms.size(), 0);
+    const bool is_nucleic_residue = definitions::is_nucleic(residue.name);
+
+    auto atom_name = [](const RDKit::Atom *atom) -> std::string {
+      const auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(atom->getMonomerInfo());
+      if (!info) return {};
+      auto name = info->getName();
+      const auto first = name.find_first_not_of(' ');
+      if (first == std::string::npos) return {};
+      const auto last = name.find_last_not_of(' ');
+      return name.substr(first, last - first + 1);
+    };
+
+    auto include_atom = [&](const RDKit::Atom *atom) {
+      if (is_nucleic_residue) {
+        return !definitions::NucleicBackboneAtoms.count(atom_name(atom));
+      }
+      return atom->getIsAromatic();
+    };
 
     // Build atom index mapping
     size_t index = 0;
@@ -81,9 +101,11 @@ public:
 
     for (size_t i = 0; i < residue.atoms.size(); ++i) {
       const auto &atom = residue.atoms[i];
+      if (!include_atom(atom)) continue;
 
       for (const auto *bond : mol_.atomBonds(atom)) {
         const auto neighbor = bond->getOtherAtom(atom);
+        if (!include_atom(neighbor)) continue;
         auto it = atom_indices.find(neighbor);
         if (it != atom_indices.end()) {
           this->add_edge(i, it->second);

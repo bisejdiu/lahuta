@@ -22,13 +22,13 @@ from lahuta.sources import DatabaseHandleSource, FileSource
 
 # Expected contact counts for 1kx2_small.cif using Arpeggio
 EXPECTED_ARPEGGIO_CONTACT_COUNTS: dict[str, int] = {
-    "SulphurPi": 6,
+    "SulphurPi": 7,
     "CarbonPi": 10,
     "DonorPi": 2,
     "CationPi": 0,
     "Carbonyl": 8,
     "Ionic": 11,
-    "Aromatic": 20,
+    "Aromatic": 26,
     "Hydrophobic": 150,
     "VanDerWaals": 56,
     "HydrogenBond": 64,
@@ -81,8 +81,8 @@ def test_create_db_and_compute_contacts(tmp_path: Path, provider: ContactProvide
 
     if provider == ContactProvider.MolStar:
         expected = {
-            "AF-P0CL56-F1-model_v4.cif.gz": 57,
-            "AF-Q57552-F1-model_v4.cif.gz": 695,
+            "AF-P0CL56-F1-model_v4.cif.gz": 58,
+            "AF-Q57552-F1-model_v4.cif.gz": 694,
         }
     else:
         expected = {

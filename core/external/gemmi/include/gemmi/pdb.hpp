@@ -98,6 +98,13 @@ inline ResidueId read_res_id(const char* seq_id, const char* name) {
   return {read_seq_id(seq_id), {}, read_string(name, 4)}; 
 }
 
+inline std::string read_chain_name(const char* chain_field, const char* res_name) {
+  // Pseudo-PDB MD topologies can use 4-character residue names while keeping
+  // the author chain ID in the standard single-character column.
+  if (res_name[3] != ' ') return read_string(chain_field + 1, 1);
+  return read_string(chain_field, 2);
+}
+
 inline char read_altloc(char c) { return c == ' ' ? '\0' : c; }
 
 inline int read_serial(const char* ptr) {
@@ -155,9 +162,9 @@ void process_conn(Structure& st, const std::vector<std::string>& conn_records) {
       c.name = "disulf" + std::to_string(++disulf_count);
       c.type = Connection::Disulf;
       const char* r = record.c_str();
-      c.partner1.chain_name = read_string(r + 14, 2);
+      c.partner1.chain_name = read_chain_name(r + 14, r + 11);
       c.partner1.res_id = read_res_id(r + 17, r + 11);
-      c.partner2.chain_name = read_string(r + 28, 2);
+      c.partner2.chain_name = read_chain_name(r + 28, r + 25);
       char res_id2[5] = {' ', ' ', ' ', ' ', ' '};
       std::memcpy(res_id2, r + 31, std::min((size_t)5, record.length() - 31));
       c.partner2.res_id = read_res_id(res_id2, r + 25);
@@ -183,7 +190,7 @@ void process_conn(Structure& st, const std::vector<std::string>& conn_records) {
       for (int i : {0, 1}) {
         const char* t = record.c_str() + 30 * i;
         AtomAddress& ad = (i == 0 ? c.partner1 : c.partner2);
-        ad.chain_name = read_string(t + 20, 2);
+        ad.chain_name = read_chain_name(t + 20, t + 17);
         ad.res_id = read_res_id(t + 22, t + 17);
         ad.atom_name = read_string(t + 12, 4);
         ad.altloc = read_altloc(t[16]);
@@ -201,9 +208,9 @@ void process_conn(Structure& st, const std::vector<std::string>& conn_records) {
         continue;
       const char* r = record.c_str();
       CisPep cispep;
-      cispep.partner_c.chain_name = read_string(r + 14, 2);
+      cispep.partner_c.chain_name = read_chain_name(r + 14, r + 11);
       cispep.partner_c.res_id = read_res_id(r + 17, r + 11);
-      cispep.partner_n.chain_name = read_string(r + 28, 2);
+      cispep.partner_n.chain_name = read_chain_name(r + 28, r + 25);
       cispep.partner_n.res_id = read_res_id(r + 31, r + 25);
       // In files with a single model in the PDB CISPEP modNum is 0,
       // but _struct_mon_prot_cis.pdbx_PDB_model_num is 1.
@@ -243,7 +250,7 @@ Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
     if (is_record_type(line, "ATOM") || is_record_type(line, "HETATM")) {
       if (len < 55)
         wrong("The line is too short to be correct:\n" + std::string(line));
-      std::string chain_name = read_string(line+20, 2);
+      std::string chain_name = read_chain_name(line + 20, line + 17);
       ResidueId rid = read_res_id(line+22, line+17);
 
       if (!chain || chain_name != chain->name) {
@@ -594,9 +601,9 @@ Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
       if (len < 40)
         continue;
       Helix helix;
-      helix.start.chain_name = read_string(line+18, 2);
+      helix.start.chain_name = read_chain_name(line + 18, line + 15);
       helix.start.res_id = read_res_id(line+21, line+15);
-      helix.end.chain_name = read_string(line+30, 2);
+      helix.end.chain_name = read_chain_name(line + 30, line + 27);
       helix.end.res_id = read_res_id(line+33, line+27);
       helix.set_helix_class_as_int(read_int(line+38, 2));
       if (len > 72)
@@ -610,18 +617,18 @@ Structure read_pdb_from_stream(Stream&& stream, const std::string& source,
       Sheet& sheet = impl::find_or_add(st.sheets, sheet_id);
       sheet.strands.emplace_back();
       Sheet::Strand& strand = sheet.strands.back();
-      strand.start.chain_name = read_string(line+20, 2);
+      strand.start.chain_name = read_chain_name(line + 20, line + 17);
       strand.start.res_id = read_res_id(line+22, line+17);
-      strand.end.chain_name = read_string(line+31, 2);
+      strand.end.chain_name = read_chain_name(line + 31, line + 28);
       strand.end.res_id = read_res_id(line+33, line+28);
       strand.sense = read_int(line+38, 2);
       if (len > 67) {
         // the SHEET record has no altloc for atoms of hydrogen bond
         strand.hbond_atom2.atom_name = read_string(line+41, 4);
-        strand.hbond_atom2.chain_name = read_string(line+48, 2);
+        strand.hbond_atom2.chain_name = read_chain_name(line + 48, line + 45);
         strand.hbond_atom2.res_id = read_res_id(line+50, line+45);
         strand.hbond_atom1.atom_name = read_string(line+56, 4);
-        strand.hbond_atom1.chain_name = read_string(line+63, 2);
+        strand.hbond_atom1.chain_name = read_chain_name(line + 63, line + 60);
         strand.hbond_atom1.res_id = read_res_id(line+65, line+60);
       }
 

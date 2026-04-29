@@ -29,7 +29,7 @@ ContactRecipe<AtomRec, AtomRec, HalogenParams> make_halogen_recipe() {
       const auto &donor    = ctx.topology.atom(a).atom;
       const auto &acceptor = ctx.topology.atom(b).atom;
 
-      if (!are_geometrically_viable(ctx.molecule(), donor, acceptor, params)) return InteractionType::None;
+      if (!are_geometrically_viable(ctx.molecule(), ctx.conformer(), donor, acceptor, params)) return InteractionType::None;
 
       return InteractionType::Halogen;
     }

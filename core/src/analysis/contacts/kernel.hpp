@@ -46,6 +46,14 @@ auto compute_with_provider(const P::ContactsParams &p, const C::TopologySnapshot
   if (p.type.is_all()) return engine.compute(ts);
   return engine.compute(ts, std::optional<lahuta::InteractionTypeSet>{p.type});
 }
+
+template <class Provider>
+auto compute_with_provider(const P::ContactsParams &p, const C::TopologySnapshot &ts, Provider provider) -> lahuta::ContactSet {
+  lahuta::InteractionEngine<Provider> engine;
+  static_cast<Provider &>(engine) = std::move(provider);
+  if (p.type.is_all()) return engine.compute(ts);
+  return engine.compute(ts, std::optional<lahuta::InteractionTypeSet>{p.type});
+}
 } // namespace detail
 
 // Computes contacts using MolStar, Arpeggio, or GetContacts providers and
@@ -103,9 +111,13 @@ struct ContactsKernel {
         case ContactProvider::GetContacts:
           res.contacts = detail::compute_with_provider<GetContactsProvider>(p, ts);
           break;
-        case ContactProvider::MolStar:
-          res.contacts = detail::compute_with_provider<MolStarContactProvider>(p, ts);
+        case ContactProvider::MolStar: {
+          MolStarContactProvider provider;
+          provider.hbond.recipe.params.include_water  = p.molstar_include_water_water_hbonds;
+          provider.whbond.recipe.params.include_water = p.molstar_include_water_water_hbonds;
+          res.contacts = detail::compute_with_provider(p, ts, std::move(provider));
           break;
+        }
         default:
           return C::ComputationResult(C::ComputationError("Contacts unsupported provider"));
       }

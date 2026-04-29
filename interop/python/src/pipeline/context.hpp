@@ -312,6 +312,20 @@ public:
     return cached_payload_;
   }
 
+  py::object frame_positions_view() const {
+    if (!ctx_) return py::none();
+    auto conf = ctx_->conformer();
+    if (!conf) return py::none();
+    const auto &coords = conf->getPositions();
+    if (coords.empty()) return py::none();
+    auto capsule = py::capsule(new std::shared_ptr<const RDKit::Conformer>(conf), [](void *p) {
+      delete static_cast<std::shared_ptr<const RDKit::Conformer> *>(p);
+    });
+    auto arr = numpy::make_coordinates_view_f64(coords, capsule);
+    numpy::set_readonly(arr);
+    return arr;
+  }
+
 private:
   const P::FrameMetadata *frame_metadata_ptr() const {
     if (!ctx_) return nullptr;
@@ -349,6 +363,7 @@ inline void bind_pipeline_context(py::module_ &md) {
       .def_property_readonly("session_id",    &PyPipelineContext::session_id,    py::doc(R"doc(Return the session identifier associated with this item.)doc"))
       .def_property_readonly("timestamp_ps",  &PyPipelineContext::timestamp_ps,  py::doc(R"doc(Optional simulation timestamp in picoseconds.)doc"))
       .def_property_readonly("model_payload", &PyPipelineContext::model_payload, py::doc(R"doc(Structured view over lazily loaded LMDB payload slices.)doc"))
+      .def_property_readonly("frame_positions_view", &PyPipelineContext::frame_positions_view, py::doc(R"doc(Active frame coordinates as a read-only NumPy view with shape (n_atoms, 3).)doc"))
 
       .def("get",          &PyPipelineContext::get)
       .def("get_system",   &PyPipelineContext::get_system)

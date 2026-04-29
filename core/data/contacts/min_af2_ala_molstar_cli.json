@@ -1,0 +1,9 @@
+{
+  "input_file": "/Users/bsejdiu/projects/lahuta/cli/tests/data/min_af2_ala.pdb",
+  "input_format": "pdb",
+  "post_filtering_mode": "keep",
+  "num_intra_contacts": 0,
+  "num_inter_contacts": 0,
+  "num_filtered_contacts": 0,
+  "contacts": []
+}

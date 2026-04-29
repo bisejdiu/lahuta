@@ -604,9 +604,6 @@ bool XtcReader::read_compressed_coords_into(RDGeom::POINT3D_VECT &dest, std::uin
     }
 
     if (run > 0) {
-      // Write the first coordinate (prevcoord) and then the subsequent ones
-      dest[out++] = make_point(prevcoord.data(), scale);
-
       for (int k = 0; k < run; k += 3) {
         thiscoord += 3;
         // Fast specialized path: 3 ints, identical base MagicInts[smallidx]
@@ -620,9 +617,20 @@ bool XtcReader::read_compressed_coords_into(RDGeom::POINT3D_VECT &dest, std::uin
         thiscoord[1] += prevcoord[1] - smallnum;
         thiscoord[2] += prevcoord[2] - smallnum;
 
-        prevcoord[0] = thiscoord[0];
-        prevcoord[1] = thiscoord[1];
-        prevcoord[2] = thiscoord[2];
+        if (k == 0) {
+          // GROMACS XTC swaps the first and second atoms in a run to improve
+          // water compression. Mirror that behavior to preserve atom order.
+          std::swap(thiscoord[0], prevcoord[0]);
+          std::swap(thiscoord[1], prevcoord[1]);
+          std::swap(thiscoord[2], prevcoord[2]);
+
+          if (out >= atom_count) throw ParseError("XTC frame produced too many coordinates");
+          dest[out++] = make_point(prevcoord.data(), scale);
+        } else {
+          prevcoord[0] = thiscoord[0];
+          prevcoord[1] = thiscoord[1];
+          prevcoord[2] = thiscoord[2];
+        }
 
         if (out >= atom_count) throw ParseError("XTC frame produced too many coordinates");
         dest[out++] = make_point(thiscoord, scale);
@@ -640,6 +648,13 @@ bool XtcReader::read_compressed_coords_into(RDGeom::POINT3D_VECT &dest, std::uin
     } else if (is_smaller > 0) {
       smaller  = smallnum;
       smallnum = detail::MagicInts[smallidx] / 2;
+    }
+
+    sizesmall[0] = static_cast<unsigned int>(detail::MagicInts[smallidx]);
+    sizesmall[1] = sizesmall[0];
+    sizesmall[2] = sizesmall[0];
+    if (sizesmall[0] == 0u) {
+      throw ParseError("Corrupted XTC frame (zero small-int size)");
     }
   }
 

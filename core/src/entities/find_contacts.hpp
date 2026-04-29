@@ -31,12 +31,44 @@
 namespace lahuta {
 
 namespace {
+template <typename Rec>
+const RDKit::Atom *representative_atom_for_altloc(const Rec &rec) {
+  if constexpr (std::is_same_v<Rec, AtomRec>) {
+    return &rec.atom.get();
+  } else if constexpr (std::is_same_v<Rec, RingRec> || std::is_same_v<Rec, GroupRec>) {
+    if (rec.atoms.empty()) return nullptr;
+    return &rec.atoms.front().get();
+  } else {
+    return nullptr;
+  }
+}
+
+template <typename RecA, typename RecB>
+bool has_compatible_altlocs(const RecA &rec_a, const RecB &rec_b) {
+  const auto *atom_a = representative_atom_for_altloc(rec_a);
+  const auto *atom_b = representative_atom_for_altloc(rec_b);
+  if (!atom_a || !atom_b) return true;
+
+  const auto *info_a = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_a->getMonomerInfo());
+  const auto *info_b = static_cast<const RDKit::AtomPDBResidueInfo *>(atom_b->getMonomerInfo());
+  if (!info_a || !info_b) return true;
+
+  const auto &alt_a = info_a->getAltLoc();
+  const auto &alt_b = info_b->getAltLoc();
+  return alt_a.empty() || alt_b.empty() || alt_a == alt_b;
+}
+
 template <typename RecA, typename RecB>
 ContactSet make_contacts(const Topology &topo, const search::NeighborResult &nr) {
   std::vector<Contact> contacts;
   contacts.reserve(nr.hits.size());
 
+  const auto &records_a = topo.records<RecA>();
+  const auto &records_b = topo.records<RecB>();
+
   for (const auto &h : nr.hits) {
+    if (!has_compatible_altlocs(records_a[h.i], records_b[h.j])) continue;
+
     EntityID id1 = EntityID::make(KindOf<RecA>::value, h.i);
     EntityID id2 = EntityID::make(KindOf<RecB>::value, h.j);
 

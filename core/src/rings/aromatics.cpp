@@ -32,6 +32,39 @@ void add_rings_to_mol(const RDKit::RWMol &mol, const RDKit::VECT_INT_VECT &rings
   mol.getRingInfo()->addAllRings(rings, bidx);
 }
 
+bool is_molstar_aromatic_ring(const RDKit::RWMol &mol, const std::vector<int> &ring) {
+  static const std::unordered_set<unsigned int> aromatic_elements{
+    5, 6, 7, 8, 14, 15, 16, 32, 33, 50, 51, 83
+  };
+
+  if (ring.empty()) return false;
+  if (const auto *info = static_cast<const RDKit::AtomPDBResidueInfo *>(mol.getAtomWithIdx(ring.front())->getMonomerInfo())) {
+    if (info->getResidueName() == "PRO") return false;
+  }
+
+  int aromatic_bond_count = 0;
+  bool has_aromatic_ring_element = false;
+
+  for (int atom_idx : ring) {
+    const auto *atom = mol.getAtomWithIdx(static_cast<unsigned int>(atom_idx));
+    has_aromatic_ring_element = has_aromatic_ring_element || aromatic_elements.count(atom->getAtomicNum()) > 0;
+
+    for (const auto *bond : mol.atomBonds(atom)) {
+      if (!bond->getIsAromatic()) continue;
+      const int other_idx = static_cast<int>(bond->getOtherAtom(atom)->getIdx());
+      if (std::find(ring.begin(), ring.end(), other_idx) != ring.end()) {
+        aromatic_bond_count += 1;
+      }
+    }
+  }
+
+  if (aromatic_bond_count == 2 * static_cast<int>(ring.size())) return true;
+  if (!has_aromatic_ring_element) return false;
+  if (ring.size() < 5) return false;
+  if (aromatic_bond_count > 0) return false;
+  return is_planar(mol, ring);
+}
+
 AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol) {
   RDKit::VECT_INT_VECT rings, bonds;
   RDKit::MolOps::symmetrizeSSSR(mol, true);

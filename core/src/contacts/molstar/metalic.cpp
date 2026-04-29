@@ -35,7 +35,7 @@ ContactRecipe<AtomRec, AtomRec, MetalicParams> make_metalic_recipe() {
       const auto &m  = ctx.topology.atom(a);
       const auto &mb = ctx.topology.atom(b);
 
-      if (d_sq < opts.distance_max) return InteractionType::None;
+      if (d_sq > opts.distance_max * opts.distance_max) return InteractionType::None;
       if (a == b) return InteractionType::None;
 
       if (!is_metalic(m.type, mb.type) && !is_metalic(mb.type, m.type)) return InteractionType::None;
