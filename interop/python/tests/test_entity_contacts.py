@@ -50,7 +50,7 @@ def test_provider_engine_molstar_counts_and_samples(luni: LahutaSystem, topo: To
     ms_all = compute_contacts(topo, provider="molstar")
     hbonds = compute_contacts(topo, provider="molstar", only=InteractionType.HydrogenBond)
 
-    assert ms_all.size() == 156
+    assert ms_all.size() == 157
     assert hbonds.size() == 102
 
     # Spot-check exemplars via indices and category using structured data

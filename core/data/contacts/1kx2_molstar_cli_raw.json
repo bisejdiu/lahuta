@@ -1,0 +1,3985 @@
+{
+  "input_file": "/Users/bsejdiu/projects/lahuta/core/data/1kx2_small.cif",
+  "post_filtering_mode": "keep",
+  "num_intra_contacts": 49,
+  "num_inter_contacts": 3,
+  "num_filtered_contacts": 0,
+  "contacts": [
+    {
+      "type": "Cation-Pi Interaction",
+      "type_id": 2,
+      "scope": "inter",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 251,
+      "feature_type_a": "Positive Charge",
+      "atoms_a": [
+        {
+          "model_atom_index": 1159,
+          "unit_atom_index": 1159,
+          "type_symbol": "N",
+          "label_atom_id": "NZ",
+          "auth_atom_id": "NZ",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 81,
+          "auth_seq_id": 78,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 81,
+          "auth_seq_id": 78,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 1,
+      "unit_b_operator": "1_555",
+      "feature_b": 8,
+      "feature_type_b": "Aromatic Ring",
+      "atoms_b": [
+        {
+          "model_atom_index": 1179,
+          "unit_atom_index": 5,
+          "type_symbol": "N",
+          "label_atom_id": "NA",
+          "auth_atom_id": "NA",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 1180,
+          "unit_atom_index": 6,
+          "type_symbol": "C",
+          "label_atom_id": "C1A",
+          "auth_atom_id": "C1A",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 1181,
+          "unit_atom_index": 7,
+          "type_symbol": "C",
+          "label_atom_id": "C2A",
+          "auth_atom_id": "C2A",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 1182,
+          "unit_atom_index": 8,
+          "type_symbol": "C",
+          "label_atom_id": "C3A",
+          "auth_atom_id": "C3A",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 1183,
+          "unit_atom_index": 9,
+          "type_symbol": "C",
+          "label_atom_id": "C4A",
+          "auth_atom_id": "C4A",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Metal Coordination",
+      "type_id": 7,
+      "scope": "inter",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 548,
+      "feature_type_a": "Dative Bond Partner",
+      "atoms_a": [
+        {
+          "model_atom_index": 252,
+          "unit_atom_index": 252,
+          "type_symbol": "N",
+          "label_atom_id": "NE2",
+          "auth_atom_id": "NE2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "HIS",
+          "auth_comp_id": "HIS",
+          "label_seq_id": 18,
+          "auth_seq_id": 15,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "HIS",
+          "auth_comp_id": "HIS",
+          "label_seq_id": 18,
+          "auth_seq_id": 15,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 1,
+      "unit_b_operator": "1_555",
+      "feature_b": 19,
+      "feature_type_b": "Transition Metal",
+      "atoms_b": [
+        {
+          "model_atom_index": 1174,
+          "unit_atom_index": 0,
+          "type_symbol": "FE",
+          "label_atom_id": "FE",
+          "auth_atom_id": "FE",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Metal Coordination",
+      "type_id": 7,
+      "scope": "inter",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 657,
+      "feature_type_a": "Dative Bond Partner",
+      "atoms_a": [
+        {
+          "model_atom_index": 805,
+          "unit_atom_index": 805,
+          "type_symbol": "S",
+          "label_atom_id": "SD",
+          "auth_atom_id": "SD",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "MET",
+          "auth_comp_id": "MET",
+          "label_seq_id": 56,
+          "auth_seq_id": 53,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "MET",
+          "auth_comp_id": "MET",
+          "label_seq_id": 56,
+          "auth_seq_id": 53,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 1,
+      "unit_b_operator": "1_555",
+      "feature_b": 19,
+      "feature_type_b": "Transition Metal",
+      "atoms_b": [
+        {
+          "model_atom_index": 1174,
+          "unit_atom_index": 0,
+          "type_symbol": "FE",
+          "label_atom_id": "FE",
+          "auth_atom_id": "FE",
+          "label_alt_id": null,
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "2",
+          "label_asym_id": "B",
+          "auth_asym_id": "A",
+          "label_comp_id": "HEC",
+          "auth_comp_id": "HEC",
+          "label_seq_id": null,
+          "auth_seq_id": 90,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 7,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 82,
+          "unit_atom_index": 82,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 7,
+          "auth_seq_id": 4,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 7,
+          "auth_seq_id": 4,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 117,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 66,
+          "unit_atom_index": 66,
+          "type_symbol": "O",
+          "label_atom_id": "OD1",
+          "auth_atom_id": "OD1",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 5,
+          "auth_seq_id": 2,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 5,
+          "auth_seq_id": 2,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 9,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 107,
+          "unit_atom_index": 107,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 9,
+          "auth_seq_id": 6,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 9,
+          "auth_seq_id": 6,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 116,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 63,
+          "unit_atom_index": 63,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 5,
+          "auth_seq_id": 2,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 5,
+          "auth_seq_id": 2,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 10,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 126,
+          "unit_atom_index": 126,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TYR",
+          "auth_comp_id": "TYR",
+          "label_seq_id": 10,
+          "auth_seq_id": 7,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TYR",
+          "auth_comp_id": "TYR",
+          "label_seq_id": 10,
+          "auth_seq_id": 7,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 119,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 75,
+          "unit_atom_index": 75,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 6,
+          "auth_seq_id": 3,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 6,
+          "auth_seq_id": 3,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 12,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 147,
+          "unit_atom_index": 147,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASN",
+          "auth_comp_id": "ASN",
+          "label_seq_id": 11,
+          "auth_seq_id": 8,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASN",
+          "auth_comp_id": "ASN",
+          "label_seq_id": 11,
+          "auth_seq_id": 8,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 120,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 85,
+          "unit_atom_index": 85,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 7,
+          "auth_seq_id": 4,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 7,
+          "auth_seq_id": 4,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 14,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 161,
+          "unit_atom_index": 161,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 12,
+          "auth_seq_id": 9,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 12,
+          "auth_seq_id": 9,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 123,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 100,
+          "unit_atom_index": 100,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 8,
+          "auth_seq_id": 5,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 8,
+          "auth_seq_id": 5,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 16,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 183,
+          "unit_atom_index": 183,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 13,
+          "auth_seq_id": 10,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 13,
+          "auth_seq_id": 10,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 124,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 110,
+          "unit_atom_index": 110,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 9,
+          "auth_seq_id": 6,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 9,
+          "auth_seq_id": 6,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 18,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 203,
+          "unit_atom_index": 203,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 15,
+          "auth_seq_id": 12,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 15,
+          "auth_seq_id": 12,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 130,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 186,
+          "unit_atom_index": 186,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 13,
+          "auth_seq_id": 10,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 13,
+          "auth_seq_id": 10,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 23,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 249,
+          "unit_atom_index": 249,
+          "type_symbol": "N",
+          "label_atom_id": "ND1",
+          "auth_atom_id": "ND1",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "HIS",
+          "auth_comp_id": "HIS",
+          "label_seq_id": 18,
+          "auth_seq_id": 15,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "HIS",
+          "auth_comp_id": "HIS",
+          "label_seq_id": 18,
+          "auth_seq_id": 15,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 150,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 341,
+          "unit_atom_index": 341,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PRO",
+          "auth_comp_id": "PRO",
+          "label_seq_id": 26,
+          "auth_seq_id": 23,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PRO",
+          "auth_comp_id": "PRO",
+          "label_seq_id": 26,
+          "auth_seq_id": 23,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 28,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 288,
+          "unit_atom_index": 288,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 21,
+          "auth_seq_id": 18,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 21,
+          "auth_seq_id": 18,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 136,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 236,
+          "unit_atom_index": 236,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 17,
+          "auth_seq_id": 14,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 17,
+          "auth_seq_id": 14,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 29,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 295,
+          "unit_atom_index": 295,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 22,
+          "auth_seq_id": 19,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 22,
+          "auth_seq_id": 19,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 136,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 236,
+          "unit_atom_index": 236,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 17,
+          "auth_seq_id": 14,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 17,
+          "auth_seq_id": 14,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 32,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 328,
+          "unit_atom_index": 328,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 25,
+          "auth_seq_id": 22,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 25,
+          "auth_seq_id": 22,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 146,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 298,
+          "unit_atom_index": 298,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 22,
+          "auth_seq_id": 19,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 22,
+          "auth_seq_id": 19,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 33,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 352,
+          "unit_atom_index": 352,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 27,
+          "auth_seq_id": 24,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 27,
+          "auth_seq_id": 24,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 164,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 447,
+          "unit_atom_index": 447,
+          "type_symbol": "O",
+          "label_atom_id": "OD2",
+          "auth_atom_id": "OD2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 33,
+          "auth_seq_id": 30,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 33,
+          "auth_seq_id": 30,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 35,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 374,
+          "unit_atom_index": 374,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "SER",
+          "auth_comp_id": "SER",
+          "label_seq_id": 28,
+          "auth_seq_id": 25,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "SER",
+          "auth_comp_id": "SER",
+          "label_seq_id": 28,
+          "auth_seq_id": 25,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 138,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 246,
+          "unit_atom_index": 246,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "HIS",
+          "auth_comp_id": "HIS",
+          "label_seq_id": 18,
+          "auth_seq_id": 15,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "HIS",
+          "auth_comp_id": "HIS",
+          "label_seq_id": 18,
+          "auth_seq_id": 15,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 41,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 409,
+          "unit_atom_index": 409,
+          "type_symbol": "N",
+          "label_atom_id": "ND2",
+          "auth_atom_id": "ND2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASN",
+          "auth_comp_id": "ASN",
+          "label_seq_id": 30,
+          "auth_seq_id": 27,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASN",
+          "auth_comp_id": "ASN",
+          "label_seq_id": 30,
+          "auth_seq_id": 27,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 164,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 447,
+          "unit_atom_index": 447,
+          "type_symbol": "O",
+          "label_atom_id": "OD2",
+          "auth_atom_id": "OD2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 33,
+          "auth_seq_id": 30,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 33,
+          "auth_seq_id": 30,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 46,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 452,
+          "unit_atom_index": 452,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 159,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 419,
+          "unit_atom_index": 419,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 31,
+          "auth_seq_id": 28,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 31,
+          "auth_seq_id": 28,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 47,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 460,
+          "unit_atom_index": 460,
+          "type_symbol": "N",
+          "label_atom_id": "NE1",
+          "auth_atom_id": "NE1",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 151,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 355,
+          "unit_atom_index": 355,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 27,
+          "auth_seq_id": 24,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 27,
+          "auth_seq_id": 24,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 48,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 476,
+          "unit_atom_index": 476,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 35,
+          "auth_seq_id": 32,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 35,
+          "auth_seq_id": 32,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 159,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 419,
+          "unit_atom_index": 419,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 31,
+          "auth_seq_id": 28,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 31,
+          "auth_seq_id": 28,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 49,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 505,
+          "unit_atom_index": 505,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 165,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 455,
+          "unit_atom_index": 455,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 49,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 505,
+          "unit_atom_index": 505,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 166,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 479,
+          "unit_atom_index": 479,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 35,
+          "auth_seq_id": 32,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 35,
+          "auth_seq_id": 32,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 50,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 512,
+          "unit_atom_index": 512,
+          "type_symbol": "N",
+          "label_atom_id": "NE",
+          "auth_atom_id": "NE",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 169,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 494,
+          "unit_atom_index": 494,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PRO",
+          "auth_comp_id": "PRO",
+          "label_seq_id": 36,
+          "auth_seq_id": 33,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PRO",
+          "auth_comp_id": "PRO",
+          "label_seq_id": 36,
+          "auth_seq_id": 33,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 53,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 529,
+          "unit_atom_index": 529,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 38,
+          "auth_seq_id": 35,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 38,
+          "auth_seq_id": 35,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 165,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 455,
+          "unit_atom_index": 455,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 55,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 558,
+          "unit_atom_index": 558,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 40,
+          "auth_seq_id": 37,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 40,
+          "auth_seq_id": 37,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 170,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 508,
+          "unit_atom_index": 508,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 57,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 580,
+          "unit_atom_index": 580,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 41,
+          "auth_seq_id": 38,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 41,
+          "auth_seq_id": 38,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 170,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 508,
+          "unit_atom_index": 508,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ARG",
+          "auth_comp_id": "ARG",
+          "label_seq_id": 37,
+          "auth_seq_id": 34,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 60,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 615,
+          "unit_atom_index": 615,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASN",
+          "auth_comp_id": "ASN",
+          "label_seq_id": 44,
+          "auth_seq_id": 41,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASN",
+          "auth_comp_id": "ASN",
+          "label_seq_id": 44,
+          "auth_seq_id": 41,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 175,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 590,
+          "unit_atom_index": 590,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 42,
+          "auth_seq_id": 39,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 42,
+          "auth_seq_id": 39,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 62,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 629,
+          "unit_atom_index": 629,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 45,
+          "auth_seq_id": 42,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 45,
+          "auth_seq_id": 42,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 175,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 590,
+          "unit_atom_index": 590,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 42,
+          "auth_seq_id": 39,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 42,
+          "auth_seq_id": 39,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 68,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 697,
+          "unit_atom_index": 697,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 181,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 632,
+          "unit_atom_index": 632,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 45,
+          "auth_seq_id": 42,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 45,
+          "auth_seq_id": 42,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 68,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 697,
+          "unit_atom_index": 697,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 182,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 651,
+          "unit_atom_index": 651,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 46,
+          "auth_seq_id": 43,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 46,
+          "auth_seq_id": 43,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 69,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 713,
+          "unit_atom_index": 713,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 50,
+          "auth_seq_id": 47,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 50,
+          "auth_seq_id": 47,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 182,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 651,
+          "unit_atom_index": 651,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 46,
+          "auth_seq_id": 43,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 46,
+          "auth_seq_id": 43,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 71,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 735,
+          "unit_atom_index": 735,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 51,
+          "auth_seq_id": 48,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 51,
+          "auth_seq_id": 48,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 183,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 667,
+          "unit_atom_index": 667,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 47,
+          "auth_seq_id": 44,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 47,
+          "auth_seq_id": 44,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 73,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 749,
+          "unit_atom_index": 749,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 52,
+          "auth_seq_id": 49,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 52,
+          "auth_seq_id": 49,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 184,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 689,
+          "unit_atom_index": 689,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "SER",
+          "auth_comp_id": "SER",
+          "label_seq_id": 48,
+          "auth_seq_id": 45,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "SER",
+          "auth_comp_id": "SER",
+          "label_seq_id": 48,
+          "auth_seq_id": 45,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 73,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 749,
+          "unit_atom_index": 749,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 52,
+          "auth_seq_id": 49,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 52,
+          "auth_seq_id": 49,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 186,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 700,
+          "unit_atom_index": 700,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 78,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 799,
+          "unit_atom_index": 799,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "MET",
+          "auth_comp_id": "MET",
+          "label_seq_id": 56,
+          "auth_seq_id": 53,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "MET",
+          "auth_comp_id": "MET",
+          "label_seq_id": 56,
+          "auth_seq_id": 53,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 191,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 759,
+          "unit_atom_index": 759,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 53,
+          "auth_seq_id": 50,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LEU",
+          "auth_comp_id": "LEU",
+          "label_seq_id": 53,
+          "auth_seq_id": 50,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 79,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 844,
+          "unit_atom_index": 844,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 59,
+          "auth_seq_id": 56,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 59,
+          "auth_seq_id": 56,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 186,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 700,
+          "unit_atom_index": 700,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "VAL",
+          "auth_comp_id": "VAL",
+          "label_seq_id": 49,
+          "auth_seq_id": 46,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 79,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 844,
+          "unit_atom_index": 844,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 59,
+          "auth_seq_id": 56,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 59,
+          "auth_seq_id": 56,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 187,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 716,
+          "unit_atom_index": 716,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 50,
+          "auth_seq_id": 47,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 50,
+          "auth_seq_id": 47,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 80,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 851,
+          "unit_atom_index": 851,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 60,
+          "auth_seq_id": 57,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 60,
+          "auth_seq_id": 57,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 197,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 819,
+          "unit_atom_index": 819,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PRO",
+          "auth_comp_id": "PRO",
+          "label_seq_id": 57,
+          "auth_seq_id": 54,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PRO",
+          "auth_comp_id": "PRO",
+          "label_seq_id": 57,
+          "auth_seq_id": 54,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 82,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 875,
+          "unit_atom_index": 875,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 62,
+          "auth_seq_id": 59,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 62,
+          "auth_seq_id": 59,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 199,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 847,
+          "unit_atom_index": 847,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 59,
+          "auth_seq_id": 56,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLY",
+          "auth_comp_id": "GLY",
+          "label_seq_id": 59,
+          "auth_seq_id": 56,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 86,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 911,
+          "unit_atom_index": 911,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 65,
+          "auth_seq_id": 62,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "CYS",
+          "auth_comp_id": "CYS",
+          "label_seq_id": 65,
+          "auth_seq_id": 62,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 205,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 888,
+          "unit_atom_index": 888,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 63,
+          "auth_seq_id": 60,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 63,
+          "auth_seq_id": 60,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 92,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 974,
+          "unit_atom_index": 974,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TYR",
+          "auth_comp_id": "TYR",
+          "label_seq_id": 70,
+          "auth_seq_id": 67,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TYR",
+          "auth_comp_id": "TYR",
+          "label_seq_id": 70,
+          "auth_seq_id": 67,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 212,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 924,
+          "unit_atom_index": 924,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 66,
+          "auth_seq_id": 63,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "THR",
+          "auth_comp_id": "THR",
+          "label_seq_id": 66,
+          "auth_seq_id": 63,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 94,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 995,
+          "unit_atom_index": 995,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 71,
+          "auth_seq_id": 68,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 71,
+          "auth_seq_id": 68,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 214,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 938,
+          "unit_atom_index": 938,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 67,
+          "auth_seq_id": 64,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 67,
+          "auth_seq_id": 64,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 95,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1003,
+          "unit_atom_index": 1003,
+          "type_symbol": "N",
+          "label_atom_id": "NZ",
+          "auth_atom_id": "NZ",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 71,
+          "auth_seq_id": 68,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 71,
+          "auth_seq_id": 68,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 178,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 610,
+          "unit_atom_index": 610,
+          "type_symbol": "O",
+          "label_atom_id": "OD2",
+          "auth_atom_id": "OD2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 43,
+          "auth_seq_id": 40,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 43,
+          "auth_seq_id": 40,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 96,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1017,
+          "unit_atom_index": 1017,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 72,
+          "auth_seq_id": 69,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 72,
+          "auth_seq_id": 69,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 217,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 950,
+          "unit_atom_index": 950,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 68,
+          "auth_seq_id": 65,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 68,
+          "auth_seq_id": 65,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 97,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1027,
+          "unit_atom_index": 1027,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 73,
+          "auth_seq_id": 70,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 73,
+          "auth_seq_id": 70,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 220,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 965,
+          "unit_atom_index": 965,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 69,
+          "auth_seq_id": 66,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ASP",
+          "auth_comp_id": "ASP",
+          "label_seq_id": 69,
+          "auth_seq_id": 66,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 98,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1037,
+          "unit_atom_index": 1037,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 74,
+          "auth_seq_id": 71,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 74,
+          "auth_seq_id": 71,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 223,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 977,
+          "unit_atom_index": 977,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TYR",
+          "auth_comp_id": "TYR",
+          "label_seq_id": 70,
+          "auth_seq_id": 67,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TYR",
+          "auth_comp_id": "TYR",
+          "label_seq_id": 70,
+          "auth_seq_id": 67,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 99,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1056,
+          "unit_atom_index": 1056,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 75,
+          "auth_seq_id": 72,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "GLU",
+          "auth_comp_id": "GLU",
+          "label_seq_id": 75,
+          "auth_seq_id": 72,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 225,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 998,
+          "unit_atom_index": 998,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 71,
+          "auth_seq_id": 68,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 71,
+          "auth_seq_id": 68,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 100,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1071,
+          "unit_atom_index": 1071,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PHE",
+          "auth_comp_id": "PHE",
+          "label_seq_id": 76,
+          "auth_seq_id": 73,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "PHE",
+          "auth_comp_id": "PHE",
+          "label_seq_id": 76,
+          "auth_seq_id": 73,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 226,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 1020,
+          "unit_atom_index": 1020,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 72,
+          "auth_seq_id": 69,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ALA",
+          "auth_comp_id": "ALA",
+          "label_seq_id": 72,
+          "auth_seq_id": 69,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 101,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1091,
+          "unit_atom_index": 1091,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "MET",
+          "auth_comp_id": "MET",
+          "label_seq_id": 77,
+          "auth_seq_id": 74,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "MET",
+          "auth_comp_id": "MET",
+          "label_seq_id": 77,
+          "auth_seq_id": 74,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 228,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 1040,
+          "unit_atom_index": 1040,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 74,
+          "auth_seq_id": 71,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 74,
+          "auth_seq_id": 71,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 102,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1108,
+          "unit_atom_index": 1108,
+          "type_symbol": "N",
+          "label_atom_id": "N",
+          "auth_atom_id": "N",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "SER",
+          "auth_comp_id": "SER",
+          "label_seq_id": 78,
+          "auth_seq_id": 75,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "SER",
+          "auth_comp_id": "SER",
+          "label_seq_id": 78,
+          "auth_seq_id": 75,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 228,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 1040,
+          "unit_atom_index": 1040,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 74,
+          "auth_seq_id": 71,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "ILE",
+          "auth_comp_id": "ILE",
+          "label_seq_id": 74,
+          "auth_seq_id": 71,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Hydrogen Bond",
+      "type_id": 4,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 108,
+      "feature_type_a": "Hydrogen Donor",
+      "atoms_a": [
+        {
+          "model_atom_index": 1159,
+          "unit_atom_index": 1159,
+          "type_symbol": "N",
+          "label_atom_id": "NZ",
+          "auth_atom_id": "NZ",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 81,
+          "auth_seq_id": 78,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 81,
+          "auth_seq_id": 78,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 151,
+      "feature_type_b": "Hydrogen Acceptor",
+      "atoms_b": [
+        {
+          "model_atom_index": 355,
+          "unit_atom_index": 355,
+          "type_symbol": "O",
+          "label_atom_id": "O",
+          "auth_atom_id": "O",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 27,
+          "auth_seq_id": 24,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 27,
+          "auth_seq_id": 24,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    },
+    {
+      "type": "Cation-Pi Interaction",
+      "type_id": 2,
+      "scope": "intra",
+      "filtered_by_molstar_postprocessing": false,
+      "unit_a": 0,
+      "unit_a_operator": "1_555",
+      "feature_a": 251,
+      "feature_type_a": "Positive Charge",
+      "atoms_a": [
+        {
+          "model_atom_index": 1159,
+          "unit_atom_index": 1159,
+          "type_symbol": "N",
+          "label_atom_id": "NZ",
+          "auth_atom_id": "NZ",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 81,
+          "auth_seq_id": 78,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_a": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "LYS",
+          "auth_comp_id": "LYS",
+          "label_seq_id": 81,
+          "auth_seq_id": 78,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "unit_b": 0,
+      "unit_b_operator": "1_555",
+      "feature_b": 255,
+      "feature_type_b": "Aromatic Ring",
+      "atoms_b": [
+        {
+          "model_atom_index": 457,
+          "unit_atom_index": 457,
+          "type_symbol": "C",
+          "label_atom_id": "CG",
+          "auth_atom_id": "CG",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 458,
+          "unit_atom_index": 458,
+          "type_symbol": "C",
+          "label_atom_id": "CD1",
+          "auth_atom_id": "CD1",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 459,
+          "unit_atom_index": 459,
+          "type_symbol": "C",
+          "label_atom_id": "CD2",
+          "auth_atom_id": "CD2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 460,
+          "unit_atom_index": 460,
+          "type_symbol": "N",
+          "label_atom_id": "NE1",
+          "auth_atom_id": "NE1",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        },
+        {
+          "model_atom_index": 461,
+          "unit_atom_index": 461,
+          "type_symbol": "C",
+          "label_atom_id": "CE2",
+          "auth_atom_id": "CE2",
+          "label_alt_id": null,
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ],
+      "residues_b": [
+        {
+          "label_entity_id": "1",
+          "label_asym_id": "A",
+          "auth_asym_id": "A",
+          "label_comp_id": "TRP",
+          "auth_comp_id": "TRP",
+          "label_seq_id": 34,
+          "auth_seq_id": 31,
+          "pdbx_PDB_ins_code": null
+        }
+      ]
+    }
+  ]
+}
