@@ -24,6 +24,8 @@
 #include <rdkit/GraphMol/PeriodicTable.h>
 #include <rdkit/GraphMol/ROMol.h>
 
+#include "residues/residues.hpp"
+
 using Bond              = RDKit::Bond;
 using HybridizationType = RDKit::Atom::HybridizationType;
 
@@ -42,9 +44,24 @@ class ValenceModel {
 public:
   void apply(const RDKit::RWMol &mol) {
     for (const auto atom : mol.atoms()) {
-      molstar_valence_model(mol, *atom);
+      molstar_valence_model(mol, *atom, false);
     }
   }
+
+  void apply(const RDKit::RWMol &mol, const Residues &residues) {
+    const auto scope_has_explicit_h = compute_scope_has_explicit_h(mol, residues);
+    for (const auto atom : mol.atoms()) {
+      const auto atom_idx = static_cast<std::size_t>(atom->getIdx());
+
+      const bool has_explicit_h_in_scope = atom_idx < scope_has_explicit_h.size()
+                                               ? scope_has_explicit_h[atom_idx]
+                                               : false;
+
+      molstar_valence_model(mol, *atom, has_explicit_h_in_scope);
+    }
+  }
+
+  std::vector<bool> compute_scope_has_explicit_h(const RDKit::RWMol &mol, const Residues &residues) const;
 
   /// Returns true if the given atom has a double or aromatic bond.
   bool has_double_or_aromatic_bond(const RDKit::Atom &atom, const RDKit::ROMol &mol) const;
@@ -80,7 +97,7 @@ public:
   HybridizationType assign_geometry(int total_coordination) const;
 
   /// Assigns the formal charge, implicit hydrogen count, and hybridization type for the given atom.
-  void molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom);
+  void molstar_valence_model(const RDKit::ROMol &mol, RDKit::Atom &atom, bool scope_has_explicit_h);
 };
 
 } // namespace lahuta

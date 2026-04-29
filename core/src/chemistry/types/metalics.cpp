@@ -108,13 +108,10 @@ AtomType add_metal_binding(const RDKit::RWMol &mol, const RDKit::Atom &atom) {
     }
   }
 
-  if (dative) {
-    return AtomType::DativeBondPartner;
-  }
-  if (ionic) {
-    return AtomType::IonicTypePartner;
-  }
-  return AtomType::None;
+  AtomType type = AtomType::None;
+  if (dative) type |= AtomType::DativeBondPartner;
+  if (ionic)  type |= AtomType::IonicTypePartner;
+  return type;
 }
 
 } // namespace lahuta

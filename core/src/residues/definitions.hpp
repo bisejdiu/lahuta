@@ -132,21 +132,21 @@ constexpr std::array<std::pair<const char *, RingSize>, _AROMATIC_RESIDUES_COUNT
   {"TRP", static_cast<RingSize>(RS_5 | RS_6)},
 
   {"A",   static_cast<RingSize>(RS_5 | RS_6)},
-  {"G",   RS_6},
+  {"G",   static_cast<RingSize>(RS_5 | RS_6)},
   {"C",   RS_6},
   {"U",   RS_6},
 
-  {"DA",  RS_6},
+  {"DA",  static_cast<RingSize>(RS_5 | RS_6)},
   {"DC",  RS_6},
-  {"DG",  RS_6},
+  {"DG",  static_cast<RingSize>(RS_5 | RS_6)},
   {"DT",  RS_6},
 
   {"N",   RS_6},
-  {"I",   RS_6},
+  {"I",   static_cast<RingSize>(RS_5 | RS_6)},
 
   {"DN",  RS_6},
   {"DU",  RS_6},
-  {"DI",  RS_6},
+  {"DI",  static_cast<RingSize>(RS_5 | RS_6)},
 
   {"DTR", static_cast<RingSize>(RS_5 | RS_6)},
   {"DTY", static_cast<RingSize>(RS_5 | RS_6)},

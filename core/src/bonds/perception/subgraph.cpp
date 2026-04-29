@@ -29,7 +29,7 @@ RDKit::RWMol build_rdkit_submol(const RDKit::RWMol &source, span<const int> indi
   for (size_t i = 0; i < indices.size(); ++i) {
     int src_idx = indices[i];
     const RDKit::Atom *src_atom = source.getAtomWithIdx(src_idx);
-    auto *new_atom = new RDKit::Atom(src_atom->getAtomicNum());
+    auto *new_atom = new RDKit::Atom(*src_atom);
     int dst_idx = sub.addAtom(new_atom, false, true);
     map[src_idx] = dst_idx;
     new_conf->setAtomPos(dst_idx, conf.getAtomPos(src_idx));

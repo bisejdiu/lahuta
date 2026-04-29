@@ -64,19 +64,20 @@ struct BuildTopologyParams : public C::ParameterBase<BuildTopologyParams> {
 struct ContactsParams : public C::ParameterBase<ContactsParams> {
   static constexpr C::ParameterInterface::TypeId TYPE_ID = param_ids::CONTACTS;
 
-  analysis::ContactProvider provider = analysis::ContactProvider::MolStar;
-  InteractionTypeSet type            = InteractionTypeSet::all();
-  std::string channel                = "contacts";
-  ContactsOutputFormat format        = ContactsOutputFormat::Json;
+  analysis::ContactProvider provider      = analysis::ContactProvider::MolStar;
+  InteractionTypeSet type                 = InteractionTypeSet::all();
+  bool molstar_include_water_water_hbonds = false;
+  std::string channel                     = "contacts";
+  ContactsOutputFormat format             = ContactsOutputFormat::Json;
 };
 
 struct SasaSrParams : public C::ParameterBase<SasaSrParams> {
   static constexpr C::ParameterInterface::TypeId TYPE_ID = param_ids::SASA_SR;
 
   analysis::SasaParams params;
-  std::string channel  = std::string(analysis::SasaSrOutputChannel);
-  bool include_total   = false;
-  bool show_atom_info  = false;
+  std::string channel = std::string(analysis::SasaSrOutputChannel);
+  bool include_total  = false;
+  bool show_atom_info = false;
   std::shared_ptr<analysis::SasaSrCounters> counters;
 };
 

@@ -177,6 +177,11 @@ class PipelineContext:
         Return the conformer/frame identifier for the current item.
         """
     @property
+    def frame_positions_view(self) -> typing.Any:
+        """
+        Active frame coordinates as a read-only NumPy view with shape (n_atoms, 3).
+        """
+    @property
     def model_payload(self) -> typing.Any:
         """
         Structured view over lazily loaded LMDB payload slices.

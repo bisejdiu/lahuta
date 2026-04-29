@@ -128,6 +128,8 @@ ComputationResult NonStandardBondKernel::execute(DataContext<DataT, Mut::ReadWri
 
     // Merge results back into the original molecule
     bonds::subset_merge::merge_bonds(mol, result.mol, result.atom_indices);
+    mol.updatePropertyCache(false);
+    RDKit::MolOps::setHybridization(mol);
 
     Logger::get_logger()->debug("nonstandard_bonds: merged");
     return ComputationResult(true);

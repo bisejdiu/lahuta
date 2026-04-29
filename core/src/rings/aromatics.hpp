@@ -30,6 +30,7 @@ struct AromaticRing {
 
 void add_rings_to_mol(const RDKit::RWMol &mol, const RDKit::VECT_INT_VECT &rings);
 AromaticRing get_molops_aromatic_rings(RDKit::RWMol &mol);
+bool is_molstar_aromatic_ring(const RDKit::RWMol &mol, const std::vector<int> &ring);
 
 std::vector<std::vector<int>>
 map_rings(const std::vector<std::vector<int>> &aromatic_rings, const std::vector<int> &indices);

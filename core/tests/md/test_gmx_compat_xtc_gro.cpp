@@ -24,6 +24,7 @@
 #include <optional>
 #include <ostream>
 #include <sstream>
+#include <streambuf>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,14 @@ using lahuta::md::XtcReader;
 using lahuta::md::internal::XDRReader;
 
 namespace {
+
+class MemoryReadBuffer final : public std::streambuf {
+public:
+  MemoryReadBuffer(const char *data, std::size_t size) {
+    auto *begin = const_cast<char *>(data);
+    this->setg(begin, begin, begin + static_cast<std::ptrdiff_t>(size));
+  }
+};
 
 std::filesystem::path simdb_dir() {
   std::filesystem::path here = std::filesystem::path(__FILE__).parent_path(); // .../core/tests/md
@@ -302,6 +311,45 @@ TEST_P(GmxCompatXtcTest, RandomAccessByExactTimeMatchesSequential) {
     ASSERT_TRUE(r.seek_time(fi.time, /*forward_only=*/false)) << "seek_time failed for t=" << fi.time;
     EXPECT_EQ(r.current_step(), fi.step);
     EXPECT_FLOAT_EQ(r.current_time(), fi.time);
+  }
+}
+
+TEST_P(GmxCompatXtcTest, PacketRoundTripMatchesDirectDecode) {
+  auto simdb = simdb_dir();
+  const auto xtc = simdb / GetParam().xtc;
+
+  XtcReader direct(xtc.string());
+  XtcReader packet_source(xtc.string());
+  ASSERT_NO_THROW(direct.initialize());
+
+  constexpr int kMaxFramesToCheck = 5;
+  int frame = 0;
+  while (frame < kMaxFramesToCheck) {
+    XtcReader::FramePacket packet;
+    ASSERT_TRUE(packet_source.read_next_packet(packet)) << "frame=" << frame;
+    ASSERT_TRUE(packet.payload) << "frame=" << frame;
+
+    MemoryReadBuffer mem_buf(packet.payload->data(), packet.payload->size());
+    std::istream mem_stream(&mem_buf);
+    XtcReader packet_reader(mem_stream);
+
+    RDGeom::POINT3D_VECT roundtrip;
+    ASSERT_TRUE(packet_reader.read_next_into(roundtrip)) << "frame=" << frame;
+
+    const auto &expected = direct.coords();
+    ASSERT_EQ(roundtrip.size(), expected.size()) << "frame=" << frame;
+    ASSERT_EQ(packet_reader.current_step(), direct.current_step()) << "frame=" << frame;
+    ASSERT_FLOAT_EQ(packet_reader.current_time(), direct.current_time()) << "frame=" << frame;
+
+    for (std::size_t i = 0; i < roundtrip.size(); ++i) {
+      EXPECT_NEAR(roundtrip[i].x, expected[i].x, 1e-6) << "frame=" << frame << " atom=" << i << " axis=x";
+      EXPECT_NEAR(roundtrip[i].y, expected[i].y, 1e-6) << "frame=" << frame << " atom=" << i << " axis=y";
+      EXPECT_NEAR(roundtrip[i].z, expected[i].z, 1e-6) << "frame=" << frame << " atom=" << i << " axis=z";
+    }
+
+    ++frame;
+    if (frame >= kMaxFramesToCheck) break;
+    if (!direct.read_next_frame()) break;
   }
 }
 

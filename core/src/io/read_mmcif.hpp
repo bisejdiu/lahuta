@@ -19,7 +19,10 @@
 #ifndef LAHUTA_READ_MMCIF_HPP
 #define LAHUTA_READ_MMCIF_HPP
 
+#include <cctype>
 #include <stdexcept>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <gemmi/atox.hpp>
@@ -34,6 +37,23 @@
 
 namespace lahuta {
 namespace detail {
+
+struct ResidueAtomRef {
+  unsigned int atom_idx = 0;
+  char alt_loc          = '\0';
+};
+
+struct ResidueAtomBucket {
+  std::unordered_map<std::string, std::vector<ResidueAtomRef>> atoms_by_name;
+};
+
+inline RDKit::AtomMonomerInfo &require_monomer_info(RDKit::Atom &atom) {
+  auto *info = atom.getMonomerInfo();
+  if (!info) {
+    throw std::runtime_error("mmCIF component chemistry requires monomer info on every atom");
+  }
+  return *info;
+}
 
 inline void trim_mmcif_field(std::string &value) noexcept {
   if (value.empty()) return;
@@ -66,6 +86,136 @@ inline void trim_mmcif_field(std::string &value) noexcept {
   }
   if (start > 0) {
     value.erase(0, start);
+  }
+}
+
+inline bool mmcif_yes(std::string value) noexcept {
+  trim_mmcif_field(value);
+  if (value.empty()) return false;
+  const char c = static_cast<char>(std::toupper(static_cast<unsigned char>(value.front())));
+  return c == 'Y';
+}
+
+inline RDKit::Bond::BondType mmcif_bond_type(std::string value) noexcept {
+  trim_mmcif_field(value);
+  if (value == "doub") return RDKit::Bond::BondType::DOUBLE;
+  if (value == "trip") return RDKit::Bond::BondType::TRIPLE;
+  if (value == "quad") return RDKit::Bond::BondType::QUADRUPLE;
+  if (value == "arom") return RDKit::Bond::BondType::AROMATIC;
+  if (value == "delo") return RDKit::Bond::BondType::AROMATIC;
+  return RDKit::Bond::BondType::SINGLE;
+}
+
+inline bool mmcif_alt_compatible(char a, char b) noexcept { return a == '\0' || b == '\0' || a == b; }
+
+inline std::string make_residue_instance_key(std::string_view comp_id, std::string_view chain_id,
+                                             std::string_view auth_seq_id, std::string_view ins_code) {
+  std::string key;
+  key.reserve(comp_id.size() + chain_id.size() + auth_seq_id.size() + ins_code.size() + 4);
+  key.append(comp_id);
+  key.push_back('\x1f');
+  key.append(chain_id);
+  key.push_back('\x1f');
+  key.append(auth_seq_id);
+  key.push_back('\x1f');
+  key.append(ins_code);
+  return key;
+}
+
+inline void
+apply_mmcif_component_aromaticity(RDKit::RWMol &mol, gemmi::cif::Block &block,
+                                  const std::unordered_map<std::string, ResidueAtomBucket> &residue_atoms) {
+  namespace cif = gemmi::cif;
+
+  cif::Table atom_table = block.find("_chem_comp_atom.", {"comp_id", "atom_id", "?pdbx_aromatic_flag"});
+  if (atom_table.length() == 0) return;
+
+  enum { kCompId = 0, kAtomId, kAromaticFlag };
+
+  for (auto row : atom_table) {
+    if (!row.has2(kCompId) || !row.has2(kAtomId)) continue;
+
+    std::string comp_id = row.str(kCompId);
+    std::string atom_id = row.str(kAtomId);
+    detail::trim_mmcif_field(comp_id);
+    detail::trim_mmcif_field(atom_id);
+    if (comp_id.empty() || atom_id.empty()) continue;
+    if (!row.has2(kAromaticFlag) || !detail::mmcif_yes(row.str(kAromaticFlag))) continue;
+
+    const std::string prefix = comp_id + '\x1f';
+    for (const auto &[instance_key, bucket] : residue_atoms) {
+      if (instance_key.rfind(prefix, 0) != 0) continue;
+      auto it = bucket.atoms_by_name.find(atom_id);
+      if (it == bucket.atoms_by_name.end()) continue;
+      for (const auto &ref : it->second) {
+        mol.getAtomWithIdx(ref.atom_idx)->setIsAromatic(true);
+      }
+    }
+  }
+}
+
+inline void
+apply_mmcif_component_bonds(RDKit::RWMol &mol, gemmi::cif::Block &block,
+                            const std::unordered_map<std::string, ResidueAtomBucket> &residue_atoms) {
+  namespace cif = gemmi::cif;
+
+  cif::Table bond_table = block.find(
+      "_chem_comp_bond.",
+      {"comp_id", "atom_id_1", "atom_id_2", "?value_order", "?pdbx_aromatic_flag"});
+  if (bond_table.length() == 0) return;
+
+  enum { kCompId = 0, kAtomId1, kAtomId2, kValueOrder, kAromaticFlag };
+
+  for (auto row : bond_table) {
+    if (!row.has2(kCompId) || !row.has2(kAtomId1) || !row.has2(kAtomId2)) continue;
+
+    std::string comp_id   = row.str(kCompId);
+    std::string atom_id_1 = row.str(kAtomId1);
+    std::string atom_id_2 = row.str(kAtomId2);
+    detail::trim_mmcif_field(comp_id);
+    detail::trim_mmcif_field(atom_id_1);
+    detail::trim_mmcif_field(atom_id_2);
+    if (comp_id.empty() || atom_id_1.empty() || atom_id_2.empty()) continue;
+
+    const auto bond_type = row.has2(kValueOrder) ? detail::mmcif_bond_type(row.str(kValueOrder))
+                                                 : RDKit::Bond::BondType::SINGLE;
+    const bool aromatic  = bond_type == RDKit::Bond::BondType::AROMATIC ||
+                          (row.has2(kAromaticFlag) && detail::mmcif_yes(row.str(kAromaticFlag)));
+
+    const std::string prefix = comp_id + '\x1f';
+    for (const auto &[instance_key, bucket] : residue_atoms) {
+      if (instance_key.rfind(prefix, 0) != 0) continue;
+
+      for (const auto &[_, refs] : bucket.atoms_by_name) {
+        for (const auto &ref : refs) {
+          auto *atom = mol.getAtomWithIdx(ref.atom_idx);
+          detail::require_monomer_info(*atom).setHasChemCompBondSchema(true);
+        }
+      }
+
+      auto it_a = bucket.atoms_by_name.find(atom_id_1);
+      auto it_b = bucket.atoms_by_name.find(atom_id_2);
+      if (it_a == bucket.atoms_by_name.end() || it_b == bucket.atoms_by_name.end()) continue;
+
+      for (const auto &a_ref : it_a->second) {
+        for (const auto &b_ref : it_b->second) {
+          if (a_ref.atom_idx == b_ref.atom_idx) continue;
+          if (!detail::mmcif_alt_compatible(a_ref.alt_loc, b_ref.alt_loc)) continue;
+
+          RDKit::Bond *bond = mol.getBondBetweenAtoms(a_ref.atom_idx, b_ref.atom_idx);
+          if (!bond) {
+            mol.addBond(a_ref.atom_idx, b_ref.atom_idx, bond_type);
+            bond = mol.getBondBetweenAtoms(a_ref.atom_idx, b_ref.atom_idx);
+          } else {
+            bond->setBondType(bond_type);
+          }
+
+          if (bond) {
+            bond->setIsAromatic(aromatic);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -139,6 +289,7 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
   // we expect that models (if multiple) are ordered by model number (1, 1, 2, 2, 3, 3)
   std::vector<std::vector<RDGeom::Point3D>> model_coords;
   model_coords.reserve(20);
+  std::unordered_map<std::string, detail::ResidueAtomBucket> residue_atoms;
 
   std::string current_model;
   for (auto row : atom_table) {
@@ -195,7 +346,18 @@ inline std::shared_ptr<RDKit::RWMol> make_mol_from_block(const gemmi::cif::Block
 
     info->setMonomerType(RDKit::AtomMonomerInfo::PDBRESIDUE);
     rdkit_atom->setMonomerInfo(info);
+
+    const auto residue_key = detail::make_residue_instance_key(
+        res_name,
+        chain_name,
+        auth_seq_id,
+        row.has2(kInsCode) ? std::string(row.str(kInsCode)) : std::string{});
+    residue_atoms[residue_key].atoms_by_name[atom_name].push_back(
+        detail::ResidueAtomRef{rdkit_atom->getIdx(), alt_loc});
   }
+
+  detail::apply_mmcif_component_aromaticity(*mol, block, residue_atoms);
+  detail::apply_mmcif_component_bonds(*mol, block, residue_atoms);
 
   const std::size_t atoms_per_model = model_coords[0].size();
 

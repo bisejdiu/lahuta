@@ -119,7 +119,7 @@ def hash_groups(group_recs) -> str:
 EXPECTED = {
     "atoms": {
         "count": 671,
-        "sha256": "d20618dea32021ec300dc1985a38388fc4db677c10fc64504f2151137ba031fb",
+        "sha256": "30d32d4aebf3203495e13d67500e7df3e45759bbb21aa8986c140401c06807b6",
     },
     "rings": {
         "count": 10,

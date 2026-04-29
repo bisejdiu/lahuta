@@ -109,7 +109,7 @@ AtomTypingKernel::execute(DataContext<DataT, Mut::ReadWrite> &context, const Ato
         }
 
         ValenceModel valence_model;
-        valence_model.apply(*data.mol);
+        valence_model.apply(*data.mol, *data.residues);
 
         data.atoms  = AtomTypeAnalysis()(*data.mol);
         data.groups = GroupTypeAnalysis::analyze(*data.mol, *data.residues);
@@ -216,14 +216,7 @@ std::vector<RingRec> AtomTypingKernel::populate_ring_entities(RDKit::RWMol &mol)
       atoms.push_back(std::cref(*mol.getAtomWithIdx(atom_idx)));
     }
 
-    // aromaticity check
-    bool is_aromatic = false;
-    for (int idx : ring) {
-      if (mol.getAtomWithIdx(idx)->getIsAromatic()) {
-        is_aromatic = true;
-        break;
-      }
-    }
+    const bool is_aromatic = is_molstar_aromatic_ring(mol, ring);
 
     ring_recs.push_back(RingRec{
       /*.atoms    =*/ std::move(atoms),

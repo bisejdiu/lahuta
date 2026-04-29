@@ -39,12 +39,15 @@ class AtomMonomerInfo {
   void setName(const std::string &nm) { d_name = nm; }
   AtomMonomerType getMonomerType() const { return d_monomerType; }
   void setMonomerType(AtomMonomerType typ) { d_monomerType = typ; }
+  bool hasChemCompBondSchema() const { return d_hasChemCompBondSchema; }
+  void setHasChemCompBondSchema(bool val) { d_hasChemCompBondSchema = val; }
 
   virtual AtomMonomerInfo *copy() const { return new AtomMonomerInfo(*this); }
 
  private:
   AtomMonomerType d_monomerType{UNKNOWN};
   std::string d_name{""};
+  bool d_hasChemCompBondSchema{false};
 };
 
 //! Captures atom-level information about peptide residues
@@ -158,6 +161,7 @@ public:
 
   void resetState() {
     setName("");
+    setHasChemCompBondSchema(false);
     setResidueName("");
     setSerialNumber(0);
     setResidueNumber(0);
